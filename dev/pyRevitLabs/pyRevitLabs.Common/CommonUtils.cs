@@ -175,7 +175,7 @@ namespace pyRevitLabs.Common {
             if (CheckInternetConnection())
                 Process.Start(url);
             else {
-                if (logErrMsg == null)
+                if (logErrMsg is null)
                     logErrMsg = string.Format("Error opening url \"{0}\"", url);
 
                 logger.Error(string.Format("{0}. No internet connection detected.", logErrMsg));

@@ -68,7 +68,7 @@ namespace pyRevitLabs.Common {
 
                 // get local branch, or make one (and fetch from remote) if doesn't exist
                 Branch targetBranch = repo.Branches[branchName];
-                if (targetBranch == null) {
+                if (targetBranch is null) {
                     logger.Debug(string.Format("Branch \"{0}\" does not exist in local clone. " +
                                                "Attemping to checkout from remotes...", branchName));
                     // lookup remotes for the branch otherwise

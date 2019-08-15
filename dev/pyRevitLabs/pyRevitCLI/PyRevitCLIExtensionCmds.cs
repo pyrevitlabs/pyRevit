@@ -26,7 +26,7 @@ namespace pyRevitCLI {
 
         internal static void
         PrintExtensions(IEnumerable<PyRevitExtension> extList = null, string headerPrefix = "Installed") {
-            if (extList == null)
+            if (extList is null)
                 extList = PyRevitExtensions.GetInstalledExtensions();
 
             PyRevitCLIAppCmds.PrintHeader(string.Format("{0} Extensions", headerPrefix));

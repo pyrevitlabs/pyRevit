@@ -39,9 +39,9 @@ namespace pyRevitLabs.PyRevit {
             // clone path could be any path inside or outside the clonePath
             // find the clone root first
             var _clonePath = FindValidClonePathAbove(clonePath);
-            if (_clonePath == null) {
+            if (_clonePath is null) {
                 _clonePath = FindValidClonePathBelow(clonePath);
-                if (_clonePath == null)
+                if (_clonePath is null)
                     throw new PyRevitException(
                         string.Format("Path does not point to a valid clone \"{0}\"", clonePath)
                     );
@@ -64,9 +64,9 @@ namespace pyRevitLabs.PyRevit {
             // clone path could be any path inside or outside the clonePath
             // find the clone root first
             var _clonePath = FindValidClonePathAbove(clonePath);
-            if (_clonePath == null) {
+            if (_clonePath is null) {
                 _clonePath = FindValidClonePathBelow(clonePath);
-                if (_clonePath == null)
+                if (_clonePath is null)
                     throw new PyRevitException(
                         string.Format("Path does not point to a valid clone \"{0}\"", clonePath)
                     );
@@ -462,7 +462,7 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug("Deployment: \"{0}\"", contents[2]);
 
                 var args = new PyRevitCloneFromImageArgs {
-                    Url = contents[0] == string.Empty ? PyRevit.SourceRepoUrl : contents[0],
+                    Url = contents[0] == string.Empty ? PyRevit.OriginalRepoPath : contents[0],
                     BranchName = contents[1] == string.Empty ? PyRevit.OriginalRepoDefaultBranch : contents[1],
                     DeploymentName = contents[2] == string.Empty ? null : contents[2]
                 };
@@ -498,7 +498,7 @@ namespace pyRevitLabs.PyRevit {
             string testPath = startingPath;
             while (!IsCloneValid(testPath)) {
                 testPath = Path.GetDirectoryName(testPath);
-                if (testPath == null || testPath == string.Empty)
+                if (testPath is null || testPath == string.Empty)
                     return null;
             }
 
@@ -591,7 +591,7 @@ namespace pyRevitLabs.PyRevit {
                                           PyRevit.LibDirName,
                                           PyRevit.ModuleDirName,
                                           PyRevit.ModuleLoaderDirName,
-                                          PyRevit.ModuleAddinDirName);
+                                          PyRevit.ModuleLegacyAddinDirName);
                 if (!CommonUtils.VerifyPath(enginesDir))
                     throw new pyRevitInvalidGitCloneException(clonePath);
             }

@@ -171,7 +171,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             logger.Debug("On Engine: {0}", engineVer);
 
             // setup the execution environment
-            if (opts == null)
+            if (opts is null)
                 opts = new PyRevitRunnerOptions();
 
             var execEnv = new PyRevitRunnerExecEnv(attachment, scriptPath, modelPaths);

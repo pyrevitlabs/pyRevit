@@ -52,7 +52,7 @@ namespace pyRevitLabs.PyRevit {
                         return LoadAndReturn(fullAssmDllPath);
                 }
                 // handle inputs coming from dynamically compiled CLR scripts e.g. C# and VB
-                else if (args.RequestingAssembly != null && (args.RequestingAssembly.Location == null || args.RequestingAssembly.Location == string.Empty)) {
+                else if (args.RequestingAssembly != null && (args.RequestingAssembly.Location is null || args.RequestingAssembly.Location == string.Empty)) {
                     string missingAssmName = GetMissingAssemblyName(args);
                     var loadedAssembly = FindLoadedAssembly(missingAssmName);
                     if (loadedAssembly != null)

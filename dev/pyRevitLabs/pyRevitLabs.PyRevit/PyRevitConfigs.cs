@@ -114,11 +114,18 @@ namespace pyRevitLabs.PyRevit {
                                        telemetryFilePath, telemetryServerUrl));
             cfg.SetValue(PyRevit.ConfigsTelemetrySection, PyRevit.ConfigsTelemetryStatusKey, true);
 
-            if (telemetryFilePath != null)
-                if (CommonUtils.VerifyPath(telemetryFilePath))
+            if (telemetryFilePath != null) {
+                if (telemetryFilePath == string.Empty) {
+                    // set empty value
                     cfg.SetValue(PyRevit.ConfigsTelemetrySection, PyRevit.ConfigsTelemetryFilePathKey, telemetryFilePath);
-                else
-                    logger.Debug("Invalid log path \"{0}\"", telemetryFilePath);
+                }
+                else {
+                    if (CommonUtils.VerifyPath(telemetryFilePath))
+                        cfg.SetValue(PyRevit.ConfigsTelemetrySection, PyRevit.ConfigsTelemetryFilePathKey, telemetryFilePath);
+                    else
+                        logger.Debug("Invalid log path \"{0}\"", telemetryFilePath);
+                }
+            }
 
             if (telemetryServerUrl != null)
                 cfg.SetValue(PyRevit.ConfigsTelemetrySection, PyRevit.ConfigsTelemetryServerUrlKey, telemetryServerUrl);

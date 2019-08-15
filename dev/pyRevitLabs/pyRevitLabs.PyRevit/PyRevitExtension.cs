@@ -38,13 +38,13 @@ namespace pyRevitLabs.PyRevit {
 
         public PyRevitExtensionDefinition(JObject jsonObj) {
             _jsonObj = jsonObj;
-            if (_jsonObj == null)
+            if (_jsonObj is null)
                 throw new PyRevitException("jsonObj can not be null.");
         }
 
         public PyRevitExtensionDefinition(string extDefJsonFile) {
             _jsonObj = JObject.Parse(File.ReadAllText(extDefJsonFile));
-            if (_jsonObj == null)
+            if (_jsonObj is null)
                 throw new PyRevitException("jsonObj can not be null.");
         }
 

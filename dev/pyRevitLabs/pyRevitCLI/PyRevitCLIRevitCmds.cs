@@ -146,7 +146,7 @@ namespace pyRevitCLI {
                 // determine target revit year
                 int revitYearNumber = 0;
                 // if revit year is not specified try to get from model file
-                if (revitYear == null) {
+                if (revitYear is null) {
                     if (targetFile != null) {
                         try {
                             revitYearNumber = new RevitModelFile(targetFile).RevitProduct.ProductYear;
@@ -202,7 +202,7 @@ namespace pyRevitCLI {
                 if (revitYearNumber != 0) {
                     // determine attached clone
                     var attachment = PyRevitAttachments.GetAttached(revitYearNumber);
-                    if (attachment == null)
+                    if (attachment is null)
                         logger.Error("pyRevit is not attached to Revit \"{0}\". " +
                                      "Runner needs to use the attached clone and engine to execute the script.",
                                      revitYear);
@@ -245,7 +245,7 @@ namespace pyRevitCLI {
                             commandScriptPath = inputCommand;
 
                         // if command is not found, stop
-                        if (commandScriptPath == null)
+                        if (commandScriptPath is null)
                             throw new PyRevitException(
                                 string.Format("Run command not found: \"{0}\"", inputCommand)
                                 );

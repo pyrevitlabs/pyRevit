@@ -114,7 +114,7 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         public static string NullToNA(this string sourceString) {
-            if (sourceString == "" || sourceString == null)
+            if (sourceString == "" || sourceString is null)
                 return "N/A";
             else
                 return sourceString;
@@ -194,7 +194,7 @@ namespace pyRevitLabs.Common.Extensions {
 
         public static string UrlFriendly(this string text, int maxLength = 0) {
             // Return empty value if text is null
-            if (text == null) return "";
+            if (text is null) return "";
             var normalizedString = text
                 // Make lowercase
                 .ToLowerInvariant()

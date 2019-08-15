@@ -66,7 +66,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             string manifest = string.Format(ManifestTemplate, addinName, assemblyPath, addinId, addinClassName, vendorId);
             logger.Debug("Creating addin manifest...\n{0}", manifest);
             string addinFile;
-            if (addinPath == null)
+            if (addinPath is null)
                 addinFile = GetRevitAddonsFilePath(revitYear, addinFileName, allusers: allusers);
             else
                 addinFile = Path.Combine(addinPath, addinFileName);

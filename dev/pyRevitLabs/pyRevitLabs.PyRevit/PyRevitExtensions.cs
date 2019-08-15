@@ -69,7 +69,7 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static List<PyRevitExtension> GetInstalledExtensions(string searchPath = null) {
             List<string> searchPaths;
-            if (searchPath == null)
+            if (searchPath is null)
                 searchPaths = GetRegisteredExtensionSearchPaths();
             else
                 searchPaths = new List<string>() { searchPath };

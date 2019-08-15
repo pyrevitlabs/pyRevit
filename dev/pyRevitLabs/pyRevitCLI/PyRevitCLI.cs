@@ -1,23 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection;
-using System.IO;
-using System.Diagnostics;
-
-using pyRevitCLI.Properties;
-
-using pyRevitLabs.Common;
-using pyRevitLabs.CommonCLI;
-using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.TargetApps.Revit;
 
 using DocoptNet;
+
+using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
+
 using pyRevitLabs.PyRevit;
+using pyRevitCLI.Properties;
 
 using Console = Colorful.Console;
 
@@ -30,7 +24,7 @@ using Console = Colorful.Console;
 // 4) Add command code and make sure PyRevitCLI.ProcessArguments correctly parses the arguments
 // 5) Update AppHelps to accept and print help for new command type
 // 6) Make sure PyRevitCLI.ProcessArguments checks and ask for help print
-// 7) Update the pyrevit-complete.go file with command completion suggestions
+// 7) Update the pyrevit-autocomplete.go file with command completion suggestions
 
 
 namespace pyRevitCLI {
@@ -594,7 +588,7 @@ namespace pyRevitCLI {
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Config);
                 else
                     PyRevitCLIConfigCmds.SeedConfigs(
-                        templateConfigFilePath: TryGetValue("<template_config_path>")
+                        templateConfigFilePath: TryGetValue("--from")
                     );
             }
 
@@ -602,21 +596,19 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);
 
-                else if (all("logs"))
-                    Console.WriteLine(string.Format("Logging Level is {0}", PyRevitConfigs.GetLoggingLevel().ToString()));
+                else if (all("logs")) {
+                    if (all("none"))
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.None);
 
-                else if (all("logs", "none"))
-                    PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.None);
+                    else if (all("verbose"))
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose);
 
-                else if (all("logs", "verbose"))
-                    PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose);
+                    else if (all("debug"))
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
 
-                else if (all("logs", "debug"))
-                    PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
-
-                // TODO: Implement allowremotedll
-                else if (all("allowremotedll"))
-                    throw new NotImplementedException();
+                    else
+                        Console.WriteLine(string.Format("Logging Level is {0}", PyRevitConfigs.GetLoggingLevel().ToString()));
+                }
 
                 else if (all("checkupdates")) {
                     if (any("enable", "disable"))
@@ -684,11 +676,22 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("telemetry")) {
-                    if (all("set", "file"))
-                        PyRevitConfigs.EnableTelemetry(telemetryFilePath: TryGetValue("<dest_path>"));
+                    if (all("file")) {
+                        var destPath = TryGetValue("<dest_path>");
+                        if (destPath is null)
+                            Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
+                        else
+                            PyRevitConfigs.EnableTelemetry(telemetryFilePath: destPath);
+                    }
 
-                    else if (all("set", "server"))
-                        PyRevitConfigs.EnableTelemetry(telemetryServerUrl: TryGetValue("<dest_path>"));
+                    else if (all("server")) {
+                        var serverUrl = TryGetValue("<dest_path>");
+                        if (serverUrl is null)
+                            Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
+                        else
+                            PyRevitConfigs.EnableTelemetry(telemetryServerUrl: serverUrl);
+
+                    }
 
                     else if (all("enable"))
                         PyRevitConfigs.EnableTelemetry();
@@ -705,11 +708,22 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("apptelemetry")) {
-                    if (all("set", "flags"))
-                        PyRevitConfigs.SetAppTelemetryFlags(flags: TryGetValue("<flags>"));
+                    if (all("flags")) {
+                        var flagsValue = TryGetValue("<flags>");
+                        if (flagsValue is null)
+                            Console.WriteLine(string.Format("App Telemetry Flags: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
+                        else
+                            PyRevitConfigs.SetAppTelemetryFlags(flags: flagsValue);
+                    }
 
-                    else if (all("set", "server"))
-                        PyRevitConfigs.EnableAppTelemetry(apptelemetryServerUrl: TryGetValue("<server_path>"));
+                    else if (all("server")) {
+                        var serverPath = TryGetValue("<server_path>");
+                        if (serverPath is null)
+                            Console.WriteLine(string.Format("App Telemetry Server: {0}", PyRevitConfigs.GetAppTelemetryServerUrl()));
+                        else
+                            PyRevitConfigs.EnableAppTelemetry(apptelemetryServerUrl: serverPath);
+
+                    }
 
                     else if (all("enable"))
                         PyRevitConfigs.EnableAppTelemetry();
@@ -727,7 +741,7 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("outputcss")) {
-                    if (arguments["<css_path>"] == null)
+                    if (arguments["<css_path>"] is null)
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
                                                         PyRevitConfigs.GetOutputStyleSheet()));
                     else
@@ -737,7 +751,7 @@ namespace pyRevitCLI {
                 else if (all("seed"))
                     PyRevitConfigs.SeedConfig(makeCurrentUserAsOwner: arguments["--lock"].IsTrue);
 
-                else if (all("enable", "disable")) {
+                else if (any("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {
                         // extract section and option names
                         string orignalOptionValue = TryGetValue("<option_path>");
@@ -748,6 +762,8 @@ namespace pyRevitCLI {
                             var cfg = PyRevitConfigs.GetConfigFile();
                             cfg.SetValue(configSection, configOption, arguments["enable"].IsTrue);
                         }
+                        else
+                            PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
                     }
                 }
 
@@ -765,7 +781,7 @@ namespace pyRevitCLI {
                             var optValue = TryGetValue("<option_value>");
                             if (optValue != null)
                                 cfg.SetValue(configSection, configOption, optValue);
-                            else if (optValue == null) {
+                            else if (optValue is null) {
                                 var existingVal = cfg.GetValue(configSection, configOption);
                                 if (existingVal != null)
                                     Console.WriteLine( string.Format("{0} = {1}", configOption, existingVal));
@@ -773,6 +789,8 @@ namespace pyRevitCLI {
                                     Console.WriteLine(string.Format("Configuration key \"{0}\" is not set.", configOption));
                             }
                         }
+                        else
+                            PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
                     }
                 }
             }

@@ -74,10 +74,9 @@ Usage:
 	pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit doctor
 	pyrevit config --help
-	pyrevit config <template_config_path> [--log=<log_file>]
+	pyrevit config --from=<template_config_path> [--log=<log_file>]
 	pyrevit configs --help
 	pyrevit configs logs [(none | verbose | debug)] [--log=<log_file>]
-	pyrevit configs allowremotedll [(enable | disable)] [--log=<log_file>]
 	pyrevit configs checkupdates [(enable | disable)] [--log=<log_file>]
 	pyrevit configs autoupdate [(enable | disable)] [--log=<log_file>]
 	pyrevit configs rocketmode [(enable | disable)] [--log=<log_file>]
@@ -86,13 +85,11 @@ Usage:
 	pyrevit configs usercanupdate [(Yes | No)] [--log=<log_file>]
 	pyrevit configs usercanextend [(Yes | No)] [--log=<log_file>]
 	pyrevit configs usercanconfig [(Yes | No)] [--log=<log_file>]
-	pyrevit configs telemetry
-	pyrevit configs telemetry set (file | server) <dest_path> [--log=<log_file>]
-	pyrevit configs telemetry (enable | disable) [--log=<log_file>]
-	pyrevit configs apptelemetry
-	pyrevit configs apptelemetry set flags <flags> [--log=<log_file>]
-	pyrevit configs apptelemetry set server <server_path> [--log=<log_file>]
-	pyrevit configs apptelemetry (enable | disable) [--log=<log_file>]
+	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
+	pyrevit configs telemetry (file | server) [<dest_path>] [--log=<log_file>]
+	pyrevit configs apptelemetry [(enable | disable)] [--log=<log_file>]
+	pyrevit configs apptelemetry flags [<flags>] [--log=<log_file>]
+	pyrevit configs apptelemetry server [<server_path>] [--log=<log_file>]
 	pyrevit configs outputcss [<css_path>] [--log=<log_file>]
 	pyrevit configs seed [--lock] [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]

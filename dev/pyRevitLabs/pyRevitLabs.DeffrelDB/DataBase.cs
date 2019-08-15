@@ -143,7 +143,7 @@ namespace pyRevitLabs.DeffrelDB {
                               object recordKey,
                               string lockId = null) {
             // use exisitng or generate new lock uuid
-            if (lockId == null)
+            if (lockId is null)
                 LockId = CommonUtils.NewShortUUID();
             else
                 LockId = lockId;
@@ -157,12 +157,12 @@ namespace pyRevitLabs.DeffrelDB {
             LockTargetDB = dbName;
 
             // make sure db is specified when locking a table
-            if (tableName != null && dbName == null)
+            if (tableName != null && dbName is null)
                 throw new Exception("DB must be specified when locking a table.");
             LockTargetTable = tableName;
 
             // make sure db:table is specified when locking a record
-            if (recordKey != null && (tableName == null || dbName == null))
+            if (recordKey != null && (tableName is null || dbName is null))
                 throw new Exception("DB and Table must be specified when locking a record.");
             LockTargetRecordKey = recordKey;
         }
@@ -178,15 +178,15 @@ namespace pyRevitLabs.DeffrelDB {
         public object LockTargetRecordKey { get; private set; }
 
         public bool IsDataStoreLock {
-            get { return LockTargetDB == null && LockTargetTable == null && LockTargetRecordKey == null; }
+            get { return LockTargetDB is null && LockTargetTable is null && LockTargetRecordKey is null; }
         }
 
         public bool IsDBLock {
-            get { return LockTargetDB != null && LockTargetTable == null && LockTargetRecordKey == null; }
+            get { return LockTargetDB != null && LockTargetTable is null && LockTargetRecordKey is null; }
         }
 
         public bool IsTableLock {
-            get { return LockTargetDB != null && LockTargetTable != null && LockTargetRecordKey == null; }
+            get { return LockTargetDB != null && LockTargetTable != null && LockTargetRecordKey is null; }
         }
 
         public bool IsRecordLock {
@@ -562,10 +562,10 @@ namespace pyRevitLabs.DeffrelDB {
             // validate input
             // db might be null
             // make sure db is specified when locking a table
-            if (tableName != null && dbName == null)
+            if (tableName != null && dbName is null)
                 throw new Exception("DB must be specified when opening a table-level transaction.");
             // make sure db:table is specified when locking a record
-            if (recordKey != null && (tableName == null || dbName == null))
+            if (recordKey != null && (tableName is null || dbName is null))
                 throw new Exception("DB and Table must be specified when opening a record-level transaction.");
 
             // write the lock
@@ -574,7 +574,7 @@ namespace pyRevitLabs.DeffrelDB {
 
             // if no active datastore (means that this is the first BEGIN in a txn chain,
             // then set the active datastore
-            if (activeDStore == null) {
+            if (activeDStore is null) {
                 activeDStore = new DataStore(ActiveDataStoreType);
             }
         }

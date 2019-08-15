@@ -27,7 +27,7 @@ namespace pyRevitLabs.Common {
         public static Errors Instance {
             get {
                 lock (padlock) {
-                    if (instance == null) {
+                    if (instance is null) {
                         instance = new Errors();
                     }
                     return instance;

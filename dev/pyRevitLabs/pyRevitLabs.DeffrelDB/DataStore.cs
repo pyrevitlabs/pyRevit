@@ -19,13 +19,13 @@ namespace pyRevitLabs.DeffrelDB {
         public DataStoreType(string dsource, Version dsourceVersion, Encoding dsourceEncoding) {
             Path = dsource;
 
-            if (dsourceVersion == null)
+            if (dsourceVersion is null)
                 DataFormatVersion = new Version(0, 1);
             else
                 DataFormatVersion = dsourceVersion;
 
             // https://stackoverflow.com/questions/2502990/create-text-file-without-bom
-            if (dsourceEncoding == null)
+            if (dsourceEncoding is null)
                 DataFormatEncoding = CommonUtils.GetUTF8NoBOMEncoding();
             else
                 DataFormatEncoding = dsourceEncoding;
@@ -320,20 +320,20 @@ namespace pyRevitLabs.DeffrelDB {
                 var nLine = (newCounter < newTotal) ? newDataLines[newCounter] : null;
 
                 // if current list ended
-                if (cLine == null && nLine != null) {
+                if (cLine is null && nLine != null) {
                     if (nLine.CommitType == DataLineCommitType.Created || nLine.CommitType == DataLineCommitType.Updated)
                         mergedDlines.Add(new DataLine(nLine.Contents, nLine.CommitType));
                     newCounter++;
                     continue;
                 }
                 // if new list ended
-                else if (cLine != null && nLine == null) {
+                else if (cLine != null && nLine is null) {
                     mergedDlines.Add(new DataLine(cLine.Contents, cLine.CommitType));
                     currentCounter++;
                     continue;
                 }
                 // if both lists are finished
-                else if (cLine == null && nLine == null)
+                else if (cLine is null && nLine is null)
                     break;
 
                 // N is current line from newDataLines

@@ -18,7 +18,7 @@ namespace pyRevitLabs.Common {
         public static GlobalConfigs Instance {
             get {
                 lock (padlock) {
-                    if (instance == null) {
+                    if (instance is null) {
                         instance = new GlobalConfigs();
                     }
                     return instance;

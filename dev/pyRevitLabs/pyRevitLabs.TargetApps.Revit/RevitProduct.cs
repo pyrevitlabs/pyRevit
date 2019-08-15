@@ -252,7 +252,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public string InstallLocation {
             get {
-                if (_registeredInstallPath == null) {
+                if (_registeredInstallPath is null) {
                     string revitInstallDirName = null;
                     if (FullVersion != null)
                         revitInstallDirName = string.Format("Revit {0}", FullVersion.Major);
@@ -350,7 +350,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                         RevitProduct revitProduct = null;
                         revitProduct = LookupRevitProduct(regVersion);
                         // if could not determine product by version
-                        if (revitProduct == null) {
+                        if (revitProduct is null) {
                             logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
                             // try to get product key from binary
                             var binaryLocation = GetBinaryLocation(regPath);

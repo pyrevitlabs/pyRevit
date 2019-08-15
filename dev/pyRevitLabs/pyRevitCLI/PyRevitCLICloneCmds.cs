@@ -379,7 +379,7 @@ namespace pyRevitCLI {
 
         internal static void
         BuildImage(string cloneName, string configFile, string imageFilePath) {
-            if (configFile == null || configFile == string.Empty)
+            if (configFile is null || configFile == string.Empty)
                 throw new PyRevitException("Config file must be specified.");
             else {
                 var paths = File.ReadAllLines(configFile);

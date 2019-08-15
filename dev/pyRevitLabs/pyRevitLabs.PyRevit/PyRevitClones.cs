@@ -192,7 +192,7 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
 
             // determine destination path if not provided
-            if (destPath == null)
+            if (destPath is null)
                 destPath = Path.Combine(PyRevit.pyRevitPath, PyRevit.DefaultCloneInstallName);
             logger.Debug("Destination path determined as \"{0}\"", destPath);
             // make sure destPath exists
@@ -262,7 +262,7 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Image file is \"{0}\"", imageSource);
 
             // determine destination path if not provided
-            if (destPath == null)
+            if (destPath is null)
                 destPath = Path.Combine(PyRevit.pyRevitPath, PyRevit.DefaultCopyInstallName);
 
             // check existing destination path

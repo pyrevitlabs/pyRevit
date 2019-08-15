@@ -80,7 +80,7 @@
       <Version>1.1.3</Version>
     </PackageReference>
     <PackageReference Include="LibGit2Sharp">
-      <Version>0.26.0</Version>
+      <Version>0.26.1</Version>
     </PackageReference>
     <PackageReference Include="MadMilkman.Ini">
       <Version>1.0.6</Version>

@@ -195,7 +195,7 @@
   <PropertyGroup>
     <PostBuildEvent>echo === Post-Build Actions ===
 echo Cleaning up build files
-copy "$(TargetDir)lib\win32\x64\git2-572e4d8.dll" "$(TargetDir)git2-572e4d8.dll"
+copy "$(TargetDir)lib\win32\x64\*.dll" "$(TargetDir)"
 rd /S /Q "$(TargetDir)lib"
 del /Q "$(TargetDir)*.pdb"
 del /Q "$(TargetDir)*.config"

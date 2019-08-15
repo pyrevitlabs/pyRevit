@@ -71,7 +71,7 @@ namespace pyRevitLabs.PyRevit.Controls {
         // public
         public Image FillPatternImage {
             get {
-                if (_fillPatternImage == null)
+                if (_fillPatternImage is null)
                     CreateFillPatternImage();
                 return _fillPatternImage;
             }
@@ -85,7 +85,7 @@ namespace pyRevitLabs.PyRevit.Controls {
         private static void OnFillPatternChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             var fpviewerControl = d as FillPatternViewerControl;
 
-            if (fpviewerControl == null) return;
+            if (fpviewerControl is null) return;
 
             fpviewerControl.OnPropertyChanged("FillPattern");
             fpviewerControl.CreateFillPatternImage();
@@ -114,7 +114,7 @@ namespace pyRevitLabs.PyRevit.Controls {
         private void DrawFillPattern(Graphics gfx, double width, double height) {
             // verify fill pattern
             var fillPattern = FillPattern;
-            if (fillPattern == null)
+            if (fillPattern is null)
                 return;
 
             // determine drawing scale

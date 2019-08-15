@@ -12,31 +12,28 @@ namespace pyRevitLabs.PyRevit {
         // product
         public const string ProductName = "pyRevit";
 
-        // consts for the official pyRevit repo
-        public const string OriginalRepoPath =
-            @"https://github.com/eirannejad/pyRevit.git";
-
-        public const string OriginalZipInternalBranchPath = @"{0}-{1}";
-        public const string ImageFileExtension = ".zip";
-        public const string OriginalImageUrl =
-            @"https://github.com/eirannejad/pyRevit/archive/{0}" + ImageFileExtension;
-
-        public static string ExtensionsDefinitionFileUri =
-            string.Format(
-                @"https://github.com/eirannejad/pyRevit/raw/master/extensions/{0}",
-                ExtensionsDefFileName
-                );
-
         // urls
-        public const string LicenseUrl = @"https://choosealicense.com/licenses/gpl-3.0/";
-        public const string CreditsUrl = @"https://github.com/eirannejad/pyRevit/blob/master/CREDITS.md";
-        public const string BlogsUrl = @"https://eirannejad.github.io/pyRevit/";
-        public const string DocsUrl = @"https://pyrevit.readthedocs.io/en/latest/";
-        public const string SourceRepoUrl = @"https://github.com/eirannejad/pyRevit";
-        public const string IssuesUrl = @"https://github.com/eirannejad/pyRevit/issues";
-        public const string ReleasesUrl = @"https://github.com/eirannejad/pyRevit/releases";
-        public const string YoutubeUrl = @"https://www.youtube.com/pyrevit";
-        public const string SupportUrl = @"https://www.patreon.com/pyrevit";
+        public const string RouterUrl = @"https://ein.sh/";
+        public const string RootUrl = RouterUrl + @"pyRevit/";
+
+        public const string BlogsUrl = RootUrl + @"blog/";
+        public const string DocsUrl = RootUrl + @"docs/";
+        public const string YoutubeUrl = RootUrl + @"videos/";
+        public const string SupportUrl = RootUrl + @"support/";
+
+        public const string SourceRepoUrl = RootUrl + @"source/";
+        public const string IssuesUrl = RootUrl + @"issues/";
+        public const string ReleasesUrl = RootUrl + @"releases/";
+
+        public const string LicenseUrl = RootUrl + @"license";
+        public const string CreditsUrl = RootUrl + @"credits";
+
+        // consts for the official pyRevit repo
+        public const string OriginalRepoPath = @"https://github.com/eirannejad/pyRevit.git";
+        public const string OriginalZipInternalBranchPath = @"{0}-{1}";
+        public const string OriginalImageUrl = @"https://github.com/eirannejad/pyRevit/archive/{0}" + ImageFileExtension;
+        public const string ImageFileExtension = ".zip";
+        public static string ExtensionsDefinitionFileUri = string.Format(@"https://github.com/eirannejad/pyRevit/raw/master/extensions/{0}", ExtensionsDefFileName);
 
         // cli
         public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/docs/cli.md";
@@ -67,7 +64,7 @@ namespace pyRevitLabs.PyRevit {
         public const string LibDirName = "pyrevitlib";
         public const string ModuleDirName = "pyrevit";
         public const string ModuleLoaderDirName = "loader";
-        public const string ModuleAddinDirName = "addin";
+        public const string ModuleLegacyAddinDirName = "addin";
         public const string VersionFilename = "version";
         public const string ReleaseDirName = "release";
         public const string SitePackagesDirName = "site-packages";
