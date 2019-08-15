@@ -54,6 +54,7 @@ namespace pyRevitLabs.CommonWPF.Windows {
             }
 
             RightWindowCommands = windowButtons;
+            LeftWindowCommands = new WindowCommands();
 
             TitleCharacterCasing = CharacterCasing.Normal;
             SaveWindowPosition = true;

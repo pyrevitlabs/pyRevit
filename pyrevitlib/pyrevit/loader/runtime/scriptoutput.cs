@@ -153,6 +153,8 @@ namespace PyRevitRuntime {
         private double prevHeight = 0;
         public bool IsCollapsed = false;
         public bool IsAutoCollapseActive = false;
+        // is window expanded?
+        public bool IsExpanded = false;
 
         // Html renderer and its Winforms host, and navigate handler method
         public System.Windows.Forms.Integration.WindowsFormsHost host;
@@ -245,6 +247,13 @@ namespace PyRevitRuntime {
             baseGrid.Children.Add(activityBar);
             baseGrid.Children.Add(host);
             this.Content = baseGrid;
+
+            // resize buttons
+            var expandToggleButton = new Button() { ToolTip = "Expand/Shrink Window", Focusable = false };
+            expandToggleButton.Width = 32;
+            expandToggleButton.Content = GetExpandToggleIcon(IsExpanded);
+            expandToggleButton.Click += ExpandToggleButton_Click; ;
+            LeftWindowCommands.Items.Insert(0, expandToggleButton);
 
             // TODO: add report button, get email from envvars
             var pinButton = new Button() { ToolTip = "Keep On Top", Focusable = false };
@@ -650,10 +659,10 @@ namespace PyRevitRuntime {
             outputWindow.ClosedByUser = true;
         }
 
-        private System.Windows.Shapes.Path MakeButtonPath(string geom) {
+        private System.Windows.Shapes.Path MakeButtonPath(string geom, int size = 14) {
             var path = new System.Windows.Shapes.Path();
             path.Stretch = Stretch.Uniform;
-            path.Height = 14;
+            path.Height = size;
             path.Fill = Brushes.White;
             path.Data = Geometry.Parse(geom);
             return path;
@@ -705,6 +714,30 @@ namespace PyRevitRuntime {
                 IsAutoCollapseActive = false;
                 button.Content = GetPinIcon(true);
                 button.ToolTip = "Activate Auto Collapse";
+            }
+        }
+
+        private System.Windows.Shapes.Path GetExpandToggleIcon(bool expanded) {
+            if (expanded)
+                return MakeButtonPath("M19,6.41L17.59,5L7,15.59V9H5V19H15V17H8.41L19,6.41Z", size: 12);
+            else
+                return MakeButtonPath("M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z", size: 12);
+        }
+
+        private void ExpandToggleButton_Click(object sender, RoutedEventArgs e) {
+            var button = e.Source as Button;
+
+            if (IsExpanded) {
+                Width = Width / 2;
+                IsExpanded = false;
+                button.Content = GetExpandToggleIcon(IsExpanded);
+                button.ToolTip = "Expand";
+            }
+            else {
+                Width = Width * 2;
+                IsExpanded = true;
+                button.Content = GetExpandToggleIcon(IsExpanded);
+                button.ToolTip = "Shrink";
             }
         }
 
