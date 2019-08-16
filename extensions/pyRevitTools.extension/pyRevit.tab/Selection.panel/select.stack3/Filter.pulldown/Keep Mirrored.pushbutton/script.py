@@ -1,22 +1,14 @@
-__doc__ = """Keep mirrored elements in current selection
+"""Keep only mirrored elements in current selection
 
-Shift-Click: keep only not-Mirrored
+Shift-Click:
+Keep only not-Mirrored
 """
-__context__ = 'Selection'
-
-import inspect
-from pyrevit import forms, script, revit, DB
-from System.Collections.Generic import List
-
-def is_mirrored(e):
-    try:
-        return e.Mirrored
-    except:
-        return False
+#pylint: disable=import-error,invalid-name,broad-except
+from pyrevit import revit
 
 
-if __name__ == '__main__':
-    filtered = list(
-        filter(lambda e: is_mirrored(e) != __shiftclick__, 
-               revit.get_selection().elements))
-    revit.get_selection().set_to(filtered)
+__context__ = 'selection'
+
+
+mirrored_elements = revit.select.select_mirrored(revit.get_selection())
+revit.get_selection().set_to(mirrored_elements)
