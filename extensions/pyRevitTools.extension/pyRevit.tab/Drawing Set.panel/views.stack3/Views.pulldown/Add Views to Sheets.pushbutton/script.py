@@ -15,10 +15,8 @@ __doc__ = 'Adds the selected views (callouts, sections, elevations) to the '\
 
 logger = script.get_logger()
 
-selected_views = []
 
-
-selected_views = forms.select_views(use_selection=True, use_active_view=True)
+selected_views = forms.select_views(use_selection=True)
 
 if selected_views:
     logger.debug('Selected views: {}'.format(len(selected_views)))
