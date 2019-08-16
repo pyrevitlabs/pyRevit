@@ -27,6 +27,8 @@ legends = forms.select_views(
     filterfunc=lambda x: x.ViewType == DB.ViewType.Legend,
     use_selection=True)
 
+print(legends)
+
 if legends:
     # get the first style for Drafting views.
     # This will act as the default style
