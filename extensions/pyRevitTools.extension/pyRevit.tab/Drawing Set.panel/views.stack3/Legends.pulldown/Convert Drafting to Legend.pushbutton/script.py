@@ -23,7 +23,8 @@ all_legend_names = [revit.query.get_name(x)
 # get a list of selected legends
 drafting_views = forms.select_views(
     title='Select Drafting Views',
-    filterfunc=lambda x: x.ViewType == DB.ViewType.DraftingView)
+    filterfunc=lambda x: x.ViewType == DB.ViewType.DraftingView,
+    use_selection=True)
 
 
 if drafting_views:

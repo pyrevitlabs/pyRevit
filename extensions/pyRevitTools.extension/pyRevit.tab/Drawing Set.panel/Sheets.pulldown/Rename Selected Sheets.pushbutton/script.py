@@ -16,7 +16,7 @@ def change_case(sheetlist, upper=True, verbose=False):
             sheetnameparam.Set(new_name)
 
 
-sel_sheets = forms.select_sheets(title='Select Sheets')
+sel_sheets = forms.select_sheets(title='Select Sheets', use_selection=True)
 
 if sel_sheets:
     selected_option, switches = \

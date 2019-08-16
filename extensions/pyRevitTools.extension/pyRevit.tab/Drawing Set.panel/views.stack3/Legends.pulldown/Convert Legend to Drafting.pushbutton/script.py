@@ -24,7 +24,10 @@ all_drafting_names = [revit.query.get_name(x)
 # get a list of selected legends
 legends = forms.select_views(
     title='Select Legends',
-    filterfunc=lambda x: x.ViewType == DB.ViewType.Legend)
+    filterfunc=lambda x: x.ViewType == DB.ViewType.Legend,
+    use_selection=True)
+
+print(legends)
 
 if legends:
     # get the first style for Drafting views.

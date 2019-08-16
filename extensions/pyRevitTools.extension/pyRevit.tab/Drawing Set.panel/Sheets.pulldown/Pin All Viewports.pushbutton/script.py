@@ -4,9 +4,7 @@ Shift-Click:
 Pin all viewports on active sheet.
 """
 
-import sys
-
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit import forms
 
@@ -38,7 +36,7 @@ if __shiftclick__:
         forms.alert('Active view must be a sheet.')
         script.exit()
 else:
-    sel_sheets = forms.select_sheets(title='Select Sheets')
+    sel_sheets = forms.select_sheets(title='Select Sheets', use_selection=True)
 
 
 if sel_sheets:

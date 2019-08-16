@@ -44,6 +44,7 @@ allSheetedSchedules = DB.FilteredElementCollector(revit.doc)\
 
 
 selected_sheets = forms.select_sheets(title='Select Target Sheets',
+                                      include_placeholder=False,
                                       button_name='Select Sheets')
 
 # get a list of viewports to be copied, updated

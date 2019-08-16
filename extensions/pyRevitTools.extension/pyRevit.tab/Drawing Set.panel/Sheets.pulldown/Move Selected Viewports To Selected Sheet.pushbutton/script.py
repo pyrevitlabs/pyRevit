@@ -14,7 +14,9 @@ selViewports = []
 
 dest_sheet = forms.select_sheets(title='Select Target Sheets',
                                  button_name='Select Sheets',
-                                 multiple=False)
+                                 multiple=False,
+                                 include_placeholder=False,
+                                 use_selection=True)
 
 if dest_sheet:
     cursheet = revit.activeview
