@@ -127,14 +127,14 @@ namespace PyRevitRuntime {
                 // Print all errors to stdout and return cancelled to Revit.
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
-                _ipy_err_messages = _ipy_err_messages.Replace("\r\n", Environment.NewLine);
+                _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
                 pyrvtScript.IronLanguageTraceBack = _ipy_err_messages;
 
-                _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
+                _clr_err_message = _clr_err_message.Replace("\r\n", "\n");
                 pyrvtScript.CLRTraceBack = _clr_err_message;
 
-                _ipy_err_messages = string.Join(Environment.NewLine, ScriptOutputConfigs.ipyerrtitle, _ipy_err_messages);
-                _clr_err_message = string.Join(Environment.NewLine, ScriptOutputConfigs.clrerrtitle, _clr_err_message);
+                _ipy_err_messages = string.Join("\n", ScriptOutputConfigs.ipyerrtitle, _ipy_err_messages);
+                _clr_err_message = string.Join("\n", ScriptOutputConfigs.clrerrtitle, _clr_err_message);
 
                 pyrvtScript.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message);
                 return ExecutionResultCodes.ExecutionException;
