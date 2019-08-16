@@ -10,6 +10,7 @@ from pyrevit import DB, UI
 #pylint: disable=W0401
 from pyrevit.revit.db import *
 from pyrevit.revit.db import query
+from pyrevit.revit.db import select
 from pyrevit.revit.db import create
 from pyrevit.revit.db import update
 from pyrevit.revit.db import ensure
