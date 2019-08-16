@@ -350,6 +350,12 @@ namespace PyRevitRuntime {
             var docProps = new Dictionary<string, object>();
             if (doc != null) {
                 var pinfo = doc.ProjectInformation;
+
+                var docProjProps = new Dictionary<string, object>();
+                foreach (Parameter param in pinfo.Parameters)
+                    if (param.Id.IntegerValue > 0)
+                        docProjProps.Add(param.Definition.Name, GetParameterValue(param));
+
                 docProps = new Dictionary<string, object> {
                     { "org_name", pinfo.get_Parameter(BuiltInParameter.PROJECT_ORGANIZATION_NAME).AsString() },
                     { "org_description", pinfo.get_Parameter(BuiltInParameter.PROJECT_ORGANIZATION_DESCRIPTION).AsString() },
@@ -361,11 +367,9 @@ namespace PyRevitRuntime {
                     { "project_status", pinfo.get_Parameter(BuiltInParameter.PROJECT_STATUS).AsString() },
                     { "project_author", pinfo.get_Parameter(BuiltInParameter.PROJECT_AUTHOR).AsString() },
                     { "project_address", pinfo.get_Parameter(BuiltInParameter.PROJECT_ADDRESS).AsString() },
+                    { "project_parameters", docProjProps },
                 };
 
-                foreach (Parameter param in pinfo.Parameters)
-                    if (param.Id.IntegerValue > 0)
-                        docProps.Add(param.Definition.Name, GetParameterValue(param));
             }
             return docProps;
         }
