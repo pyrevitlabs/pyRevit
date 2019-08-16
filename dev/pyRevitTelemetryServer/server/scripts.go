@@ -23,6 +23,9 @@ func RouteScripts(router *mux.Router, opts *cli.Options, dbConn persistence.Conn
 			return
 		}
 
+		// update logrecord timestamp to be backward compatible with older schemas
+		logrec.UpdateTimeStamp()
+
 		// now write to db
 		_, dbWriteErr := dbConn.WriteScriptTelemetry(&logrec, logger)
 		if dbWriteErr != nil {

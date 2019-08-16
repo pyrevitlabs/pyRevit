@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"fmt"
+	"time"
 
 	"../cli"
 )
@@ -88,6 +89,17 @@ func (logrec ScriptTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message 
 
 func (logrec ScriptTelemetryRecord) PrintOKRecordInfo(logger *cli.Logger) {
 	logrec.PrintRecordInfo(logger, OkMessage)
+}
+
+func (logrec ScriptTelemetryRecord) UpdateTimeStamp() {
+	// todo: validate by schema version
+	if logrec.LogMeta.SchemaVersion == "2.0" {
+		timeStamp, parseErr := time.Parse(time.RFC3339, logrec.TimeStamp)
+		if parseErr != nil {
+			logrec.Date = timeStamp.Format("2006-01-02")
+			logrec.Time = timeStamp.Format("15:04:05")
+		}
+	}
 }
 
 func (logrec ScriptTelemetryRecord) Validate() {
