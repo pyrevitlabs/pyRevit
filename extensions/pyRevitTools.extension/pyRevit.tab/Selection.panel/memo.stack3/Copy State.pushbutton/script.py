@@ -12,9 +12,12 @@ import copy_paste_state_utils
 
 __doc__ = 'Copies the state of desired parameter of the active' \
           ' view to memory. e.g. Visibility Graphics settings or' \
+__doc__ = 'Copies the state of desired parameter of the active'\
+          ' view to memory. e.g. Visibility Graphics settings or'\
           ' Zoom state. Run it and see how it works.'
 
 __author__ = 'Gui Talarico\n' \
+__author__ = 'Gui Talarico\n'\
              'Ehsan Iran-Nejad'
 
 
@@ -71,6 +74,7 @@ def make_picklable_list(curve_loops):
             p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
             cloop_lines.append((p1, p2))
 
+        
         all_cloops.append(cloop_lines)
     return all_cloops
 
@@ -84,6 +88,8 @@ selected_option = \
          'Crop Region'],
         message='Select property to be copied to memory:'
     )
+        )
+
 
 if selected_option == 'View Zoom/Pan State':
     datafile = \
@@ -192,12 +198,17 @@ elif selected_option == 'Viewport Placement on Sheet':
         cboxannoparam = selview.get_Parameter(
             DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
         )
+            )
 
         cboxannostate = cboxannoparam.AsInteger()
         curviewelements = DB.FilteredElementCollector(revit.doc) \
             .OwnedByView(selview.Id) \
             .WhereElementIsNotElementType() \
             .ToElements()
+        curviewelements = DB.FilteredElementCollector(revit.doc)\
+                            .OwnedByView(selview.Id)\
+                            .WhereElementIsNotElementType()\
+                            .ToElements()
 
         viewspecificelements = []
         for el in curviewelements:
@@ -211,6 +222,10 @@ elif selected_option == 'Viewport Placement on Sheet':
             .OfClass(DB.BasePoint) \
             .WhereElementIsNotElementType() \
             .ToElements()
+        basepoints = DB.FilteredElementCollector(revit.doc)\
+                       .OfClass(DB.BasePoint)\
+                       .WhereElementIsNotElementType()\
+                       .ToElements()
 
         excludecategories = ['Survey Point',
                              'Project Base Point']
@@ -273,6 +288,7 @@ elif selected_option == 'Viewport Placement on Sheet':
                             List[DB.ElementId](viewspecificelements)
                         )
 
+                            )
 
     datafile = \
         script.get_document_data_file(file_id='SaveViewportLocation',
