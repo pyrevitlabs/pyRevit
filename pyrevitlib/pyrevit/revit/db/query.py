@@ -304,6 +304,17 @@ def get_family(family_name, doc=None):
     return famsyms
 
 
+def get_families(doc=None, only_editable=True):
+    doc = doc or HOST_APP.doc
+    families = [x.Family for x in set(DB.FilteredElementCollector(doc)
+                                        .WhereElementIsElementType()
+                                        .ToElements())
+                if isinstance(x, (DB.FamilySymbol, DB.AnnotationSymbolType))]
+    if only_editable:
+        return [x for x in families if x.IsEditable]
+    return families
+
+
 def get_noteblock_families(doc=None):
     doc = doc or HOST_APP.doc
     return [doc.GetElement(x)
