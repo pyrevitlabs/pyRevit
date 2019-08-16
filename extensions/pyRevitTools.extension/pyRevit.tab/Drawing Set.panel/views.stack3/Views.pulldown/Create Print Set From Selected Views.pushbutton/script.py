@@ -13,7 +13,7 @@ printmanager.PrintRange = DB.PrintRange.Select
 viewsheetsetting = printmanager.ViewSheetSetting
 
 # Collect selected views
-selected_views = forms.select_views()
+selected_views = forms.select_views(use_selection=True)
 if selected_views:
     myviewset = DB.ViewSet()
     for el in selected_views:

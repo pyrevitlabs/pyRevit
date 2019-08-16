@@ -178,6 +178,8 @@ if selected_option:
     detline_collector = \
         revit.query.get_elements_by_class(DB.CurveElement,
                                         view_id=revit.activeview.Id)
+    # filter to leave only Lines.
+    detline_collector = list(filter(lambda l: isinstance(l.GeometryCurve, DB.Line), detline_collector))
 
     # collect comparison info on each detail-lines geomtery
     logger.debug('Extracting 2d domains...')
