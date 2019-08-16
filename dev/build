@@ -39,8 +39,9 @@ PYREVIT_VERSION=""
 PYREVIT_VERSION_FILE=$THISPATH/../pyrevitlib/pyrevit/version
 PYREVIT_CLI_VERSION=""
 
-AUTOCOMPPATH=$UTILSPATH
-AUTOCOMP=$AUTOCOMPPATH/pyrevit-autocomplete.go
+AUTOCOMPBUILDER=$UTILSPATH/pyrevit-generate-autocomplete.py
+USAGEPATTERNS=$THISPATH/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt
+AUTOCOMP=$UTILSPATH/pyrevit-autocomplete.go
 AUTOCOMPBIN=$BINPATH/pyrevit-autocomplete.exe
 
 TELEMETRYSERVERPATH=$THISPATH/pyRevitTelemetryServer
@@ -310,9 +311,15 @@ elif $BUILDLABS; then
     # build pyrevit cli auto complete helper
     echo "building autocomplete helper binary"
     rm -f $AUTOCOMPBIN
+    echo "auto-generating autocomplete helper code"
+    pipenv run python $AUTOCOMPBUILDER $USAGEPATTERNS $AUTOCOMP
+    echo "formatting autocomplete helper code"
+    go fmt $AUTOCOMP
     go get "github.com/posener/complete"
+    echo "compiling autocomplete helper code"
     go build -o=$AUTOCOMPBIN $AUTOCOMP
     upx --mono $AUTOCOMPBIN
+    rm -f $AUTOCOMP
 
     # build pyrevit log server
     rm -f $TELEMETRYSERVERBIN
