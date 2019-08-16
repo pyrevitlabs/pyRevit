@@ -1557,6 +1557,12 @@ def select_sheets(title='Select Sheets',
         current_selected_sheets = revit.get_selection().include(DB.ViewSheet)
         if current_selected_sheets \
                 and ask_to_use_selected("sheets"):
+            if filterfunc:
+                current_selected_sheets = \
+                    filter(filterfunc, current_selected_sheets)
+            if not include_placeholder:
+                current_selected_sheets = \
+                    [x for x in current_selected_sheets if not x.IsPlaceholder]
             return current_selected_sheets
 
     all_ops = {}
@@ -1637,6 +1643,9 @@ def select_views(title='Select Views',
         current_selected_views = revit.get_selection().include(DB.View)
         if current_selected_views \
                 and ask_to_use_selected("views"):
+            if filterfunc:
+                current_selected_views = \
+                    filter(filterfunc, current_selected_views)
             return current_selected_views
 
     all_graphviews = revit.query.get_all_views(doc=doc)
@@ -1694,6 +1703,9 @@ def select_levels(title='Select Levels',
         current_selected_levels = revit.get_selection().include(DB.Level)
         if current_selected_levels \
                 and ask_to_use_selected("levels"):
+            if filterfunc:
+                current_selected_levels = \
+                    filter(filterfunc, current_selected_levels)
             return current_selected_levels
 
     all_levels = \
@@ -2614,7 +2626,7 @@ def ask_to_use_selected(type_name):
     Args:
         type_name (str): Element type of expected selected elements
     """
-    return alert("You currently have a few %s selected. "
+    return alert("You currently have %s selected. "
                  "Do you want to use them?" % type_name.lower(),
                  yes=True, no=True)
 
