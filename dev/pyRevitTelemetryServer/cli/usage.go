@@ -9,13 +9,13 @@ const version string = "0.11"
 const help string = `Record pyRevit usage logs to database
 
 Usage:
-	pyrevit-logserver <db_uri> [--scripts=<script_table>] [--events=<event_table>] --port=<port> [--debug] [--trace]
+	pyrevit-telemetryserver <db_uri> [--scripts=<script_table>] [--events=<event_table>] --port=<port> [--debug] [--trace]
 
 Options:
 	-h --help                    show this screen
 	-V --version                 show version
-	--scripts=<script_table>      target table or collection for script logs
-	--events=<event_table>        target table or collection for app event logs
+	--scripts=<script_table>     target table or collection for script logs
+	--events=<event_table>       target table or collection for app event logs
 	--port=<port>                server port number to listen on
 	--debug                      print debug info
 	--trace                      print trace info e.g. full json logs and sql queries
@@ -28,11 +28,11 @@ Supports:
 	sqlite3:             using github.com/mattn/go-sqlite3
 
 Examples:
-	pyrevit-logserver postgres://user:pass@data.mycompany.com/mydb --scripts="pyrevitlogs" --events="appevents" --port=8080 --debug
-	pyrevit-logserver mongodb://user:pass@localhost:27017/mydb --scripts="pyrevitlogs" --events="appevents" --port=8080
-	pyrevit-logserver "mysql:user:pass@tcp(localhost:3306)/tests" --scripts="pyrevitlogs" --port=8080
-	pyrevit-logserver sqlserver://user:pass@my-azure-db.database.windows.net?database=mydb --scripts="pyrevitlogs" --port=8080
-	pyrevit-logserver sqlite3:data.db --scripts="pyrevitlogs" --port=8080
+	pyrevit-telemetryserver postgres://user:pass@data.mycompany.com/mydb --scripts="pyrevitlogs" --events="appevents" --port=8080 --debug
+	pyrevit-telemetryserver mongodb://user:pass@localhost:27017/mydb --scripts="pyrevitlogs" --events="appevents" --port=8080
+	pyrevit-telemetryserver "mysql:user:pass@tcp(localhost:3306)/tests" --scripts="pyrevitlogs" --port=8080
+	pyrevit-telemetryserver sqlserver://user:pass@my-azure-db.database.windows.net?database=mydb --scripts="pyrevitlogs" --port=8080
+	pyrevit-telemetryserver sqlite3:data.db --scripts="pyrevitlogs" --port=8080
 `
 
 var printHelpAndExit = func(err error, docoptMessage string) {
