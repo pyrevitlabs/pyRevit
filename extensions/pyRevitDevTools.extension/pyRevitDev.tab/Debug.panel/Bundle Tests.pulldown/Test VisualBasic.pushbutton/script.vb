@@ -4,7 +4,7 @@ Imports Microsoft.VisualBasic
 Imports Autodesk.Revit.UI
 Imports Autodesk.Revit.DB
 
-Imports PyRevitRuntime
+Imports PyRevitLabs.PyRevit.Runtime
 
 <Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.ReadOnly)> _
 Public Class HelloWorld

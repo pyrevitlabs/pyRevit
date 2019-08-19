@@ -35,7 +35,7 @@ Example:
 from pyrevit.framework import AppDomain
 from pyrevit.labs import PyRevit
 
-PRODUCT_NAME = str(PyRevit.PyRevit.ProductName).upper()
+PRODUCT_NAME = str(PyRevit.PyRevitConsts.ProductName).upper()
 # root env var dictionary key.
 # must be the same in this file and pyrevit/loader/runtime/envvars.cs
 ENV_VAR_DICT_NAME = PRODUCT_NAME + "EnvVarsDict"

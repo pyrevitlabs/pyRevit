@@ -11,7 +11,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
-from pyrevit.loader import runtime
+from pyrevit import runtime
 from pyrevit.loader.systemdiag import system_diag
 
 

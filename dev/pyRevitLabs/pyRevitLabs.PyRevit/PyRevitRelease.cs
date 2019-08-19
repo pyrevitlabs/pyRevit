@@ -34,10 +34,10 @@ namespace pyRevitLabs.PyRevit {
         public string published_at { get; set; }
 
         // Check whether this is a pyRevit release
-        public bool IsPyRevitRelease { get { return !tag_name.Contains(PyRevit.CLIReleasePrefix); } }
+        public bool IsPyRevitRelease { get { return !tag_name.Contains(PyRevitConsts.CLIReleasePrefix); } }
 
         // Check whether this is a CLI release
-        public bool IsCLIRelease { get { return tag_name.Contains(PyRevit.CLIReleasePrefix); } }
+        public bool IsCLIRelease { get { return tag_name.Contains(PyRevitConsts.CLIReleasePrefix); } }
 
         // Extract version object from tag_name
         public Version Version {
@@ -61,7 +61,7 @@ namespace pyRevitLabs.PyRevit {
 
         // Extract archive download url from zipball_url
         public string ArchiveUrl {
-            get { return PyRevit.GetTagArchiveUrl(Tag); }
+            get { return PyRevitConsts.GetTagArchiveUrl(Tag); }
         }
 
         // Extract installer download url from assets.browser_download_url

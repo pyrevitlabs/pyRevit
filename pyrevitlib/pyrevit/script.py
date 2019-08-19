@@ -169,7 +169,7 @@ def reset_config(section=None):
     if not section:
         script_cfg_postfix = 'config'
         section = EXEC_PARAMS.command_name + script_cfg_postfix
-    elif section in [PyRevit.PyRevit.ConfigsCoreSection]:
+    elif section in [PyRevit.PyRevitConsts.ConfigsCoreSection]:
         raise PyRevitException('Can not remove internal config section: {}'
                                .format(section))
 

@@ -100,7 +100,7 @@ namespace pyRevitLabs.PyRevit {
 
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
-            var clonesList = cfg.GetDictValue(PyRevit.EnvConfigsSectionName, PyRevit.EnvConfigsInstalledClonesKey);
+            var clonesList = cfg.GetDictValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsInstalledClonesKey);
 
             if (clonesList != null) {
                 // verify all registered clones, protect against tampering
@@ -139,7 +139,7 @@ namespace pyRevitLabs.PyRevit {
 
         public static void CreateImageFromClone(PyRevitClone clone, IEnumerable<string> paths, string destPath) {
             // create paths
-            var imagePath = CommonUtils.EnsureFileExtension(destPath, PyRevit.ImageFileExtension);
+            var imagePath = CommonUtils.EnsureFileExtension(destPath, PyRevitConsts.ImageFileExtension);
             var targetDir = Path.Combine(Path.GetDirectoryName(imagePath), Path.GetFileNameWithoutExtension(imagePath));
             CommonUtils.EnsurePath(targetDir);
 
@@ -187,13 +187,13 @@ namespace pyRevitLabs.PyRevit {
                                           string branchName = null,
                                           string repoUrl = null,
                                           string destPath = null) {
-            string repoSourcePath = repoUrl ?? PyRevit.OriginalRepoPath;
-            string repoBranch = branchName != null ? branchName : PyRevit.OriginalRepoDefaultBranch;
+            string repoSourcePath = repoUrl ?? PyRevitConsts.OriginalRepoPath;
+            string repoBranch = branchName != null ? branchName : PyRevitConsts.OriginalRepoDefaultBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
 
             // determine destination path if not provided
             if (destPath is null)
-                destPath = Path.Combine(PyRevit.pyRevitPath, PyRevit.DefaultCloneInstallName);
+                destPath = Path.Combine(PyRevitConsts.pyRevitPath, PyRevitConsts.DefaultCloneInstallName);
             logger.Debug("Destination path determined as \"{0}\"", destPath);
             // make sure destPath exists
             CommonUtils.EnsurePath(destPath);
@@ -251,19 +251,19 @@ namespace pyRevitLabs.PyRevit {
                                            string branchName = null,
                                            string imagePath = null,
                                            string destPath = null) {
-            string repoBranch = branchName != null ? branchName : PyRevit.OriginalRepoDefaultBranch;
-            string imageSource = imagePath != null ? imagePath : PyRevit.GetBranchArchiveUrl(repoBranch);
+            string repoBranch = branchName != null ? branchName : PyRevitConsts.OriginalRepoDefaultBranch;
+            string imageSource = imagePath != null ? imagePath : PyRevitConsts.GetBranchArchiveUrl(repoBranch);
             string imageFilePath = null;
 
             // verify image is zip
-            if (!imageSource.ToLower().EndsWith(PyRevit.ImageFileExtension))
+            if (!imageSource.ToLower().EndsWith(PyRevitConsts.ImageFileExtension))
                 throw new PyRevitException("Clone source must be a ZIP image.");
 
             logger.Debug("Image file is \"{0}\"", imageSource);
 
             // determine destination path if not provided
             if (destPath is null)
-                destPath = Path.Combine(PyRevit.pyRevitPath, PyRevit.DefaultCopyInstallName);
+                destPath = Path.Combine(PyRevitConsts.pyRevitPath, PyRevitConsts.DefaultCopyInstallName);
 
             // check existing destination path
             if (CommonUtils.VerifyPath(destPath)) {
@@ -452,7 +452,7 @@ namespace pyRevitLabs.PyRevit {
                                                  string branchName,
                                                  string imagePath,
                                                  string clonePath) {
-            var cloneMemoryFilePath = Path.Combine(clonePath, PyRevit.DeployFromImageConfigsFilename);
+            var cloneMemoryFilePath = Path.Combine(clonePath, PyRevitConsts.DeployFromImageConfigsFilename);
             logger.Debug(string.Format("Recording deploy parameters for image clone \"{0}\" to \"{1}\"",
                                        cloneName, cloneMemoryFilePath));
 
@@ -541,7 +541,7 @@ namespace pyRevitLabs.PyRevit {
             foreach (var clone in clonesList)
                 newValueDic[clone.Name] = clone.ClonePath;
 
-            cfg.SetValue(PyRevit.EnvConfigsSectionName, PyRevit.EnvConfigsInstalledClonesKey, newValueDic);
+            cfg.SetValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsInstalledClonesKey, newValueDic);
         }
 
     }

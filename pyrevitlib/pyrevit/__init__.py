@@ -72,6 +72,9 @@ MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
 # loader directory
 LOADER_DIR = op.join(MODULE_DIR, 'loader')
 
+# runtime directory
+RUNTIME_DIR = op.join(MODULE_DIR, 'runtime')
+
 # addin directory
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 
@@ -372,7 +375,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def engine_mgr(self):
-        """``PyRevitRuntime.IronPythonEngineManager``: Return engine manager."""
+        """``PyRevitLabs.PyRevit.Runtime.IronPythonEngineManager``: Return engine manager."""
         try:
             return __ipyenginemanager__
         except NameError:
@@ -393,7 +396,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def pyrevit_command(self):
-        """``PyRevitRuntime.ScriptRuntime``: Return command."""
+        """``PyRevitLabs.PyRevit.Runtime.ScriptRuntime``: Return command."""
         try:
             return __externalcommand__
         except NameError:
@@ -417,7 +420,7 @@ class _ExecutorParams(object):
 
     @property   # read
     def window_handle(self):
-        """``PyRevitRuntime.ScriptOutput``: Return output window."""
+        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``: Return output window."""
         if self.pyrevit_command:
             return self.pyrevit_command.OutputWindow
 

@@ -33,12 +33,12 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}",
                                             clone.Name, clone.ClonePath, revitYear));
                 RevitAddons.CreateManifestFile(revitYear,
-                                          PyRevit.AddinFileName,
-                                          PyRevit.AddinName,
+                                          PyRevitConsts.AddinFileName,
+                                          PyRevitConsts.AddinName,
                                           engine.AssemblyPath,
-                                          PyRevit.AddinId,
-                                          PyRevit.AddinClassName,
-                                          PyRevit.VendorId,
+                                          PyRevitConsts.AddinId,
+                                          PyRevitConsts.AddinClassName,
+                                          PyRevitConsts.VendorId,
                                           allusers: allUsers);
             }
             else
@@ -56,7 +56,7 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static void Detach(int revitYear) {
             logger.Debug("Detaching from Revit {0}", revitYear);
-            RevitAddons.RemoveManifestFile(revitYear, PyRevit.AddinName);
+            RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName);
         }
 
         // detach pyrevit attachment
@@ -81,8 +81,8 @@ namespace pyRevitLabs.PyRevit {
 
             foreach (var revit in RevitProduct.ListInstalledProducts()) {
                 logger.Debug("Checking attachment to Revit \"{0}\"", revit.Version);
-                var userManifest = RevitAddons.GetAttachedManifest(PyRevit.AddinName, revit.ProductYear, allUsers: false);
-                var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevit.AddinName, revit.ProductYear, allUsers: true);
+                var userManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: false);
+                var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: true);
 
                 PyRevitAttachment attachment = null;
                 if (allUsersManifest != null) {

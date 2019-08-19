@@ -13,8 +13,8 @@ from pyrevit.coreutils import logger
 from pyrevit.versionmgr import get_pyrevit_version
 
 from pyrevit.loader import HASH_CUTOFF_LENGTH
-from pyrevit.loader.runtime import BASE_TYPES_DIR_HASH
-from pyrevit.loader.runtime import typemaker
+from pyrevit.runtime import BASE_TYPES_DIR_HASH
+from pyrevit.runtime import typemaker
 from pyrevit.userconfig import user_config
 
 

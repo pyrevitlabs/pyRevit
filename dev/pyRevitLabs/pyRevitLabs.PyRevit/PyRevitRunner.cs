@@ -119,7 +119,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                                       PyRevitCloneRunner,
                                       "D49D3677-61C4-47A8-BFFF-49E6616D54C1",
                                       "PyRevitRunner.PyRevitRunnerApplication",
-                                      PyRevit.VendorId,
+                                      PyRevitConsts.VendorId,
                                       addinPath: WorkingDirectory);
         }
 

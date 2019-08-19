@@ -38,13 +38,13 @@ namespace pyRevitLabs.PyRevit {
 
         // save config file to standard location
         public void SaveConfigFile() {
-            logger.Debug("Saving config file \"{0}\"", PyRevit.ConfigFilePath);
+            logger.Debug("Saving config file \"{0}\"", PyRevitConsts.ConfigFilePath);
             try {
-                _config.Save(PyRevit.ConfigFilePath);
+                _config.Save(PyRevitConsts.ConfigFilePath);
             }
             catch (Exception ex) {
                 throw new PyRevitException(string.Format("Failed to save config to \"{0}\". | {1}",
-                                                         PyRevit.ConfigFilePath, ex.Message));
+                                                         PyRevitConsts.ConfigFilePath, ex.Message));
             }
         }
 

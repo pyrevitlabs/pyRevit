@@ -188,7 +188,7 @@ namespace pyRevitCLI {
                 if (clone.IsRepoDeploy) {
                     if (originUrl != null || reset) {
                         string newUrl =
-                            reset ? PyRevit.OriginalRepoPath : originUrl;
+                            reset ? PyRevitConsts.OriginalRepoPath : originUrl;
                         clone.SetOrigin(newUrl);
                     }
                     else {
@@ -291,7 +291,7 @@ namespace pyRevitCLI {
             }
             else if (dynamoSafe) {
                 logger.Debug("Attaching on dynamo-safe engine");
-                engineVer = PyRevit.ConfigsDynamoCompatibleEnginerVer;
+                engineVer = PyRevitConsts.ConfigsDynamoCompatibleEnginerVer;
             }
 
             // decide targets revits to attach to

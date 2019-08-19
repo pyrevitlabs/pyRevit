@@ -45,7 +45,7 @@ namespace pyRevitLabs.PyRevit {
                     // assuming this assembly has been shipped with this module, build the path and test of it exists
                     // in current assembly directory
                     var fullAssmDllPath =
-                        Path.Combine(Path.GetDirectoryName(typeof(PyRevit).Assembly.Location), missingAssmDllName);
+                        Path.Combine(Path.GetDirectoryName(typeof(PyRevitConsts).Assembly.Location), missingAssmDllName);
 
                     // load it if it exists
                     if (File.Exists(fullAssmDllPath))

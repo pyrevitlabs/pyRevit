@@ -11,16 +11,16 @@ namespace pyRevitCLI {
 
         internal static void
         OpenHelp() {
-            string helpUrl = string.Format(PyRevit.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
+            string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
             if (CommonUtils.VerifyUrl(helpUrl))
                 CommonUtils.OpenUrl(
                     helpUrl,
                     logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
                     );
 
-            else if (CommonUtils.VerifyUrl(PyRevit.CLIHelpUrlDev))
+            else if (CommonUtils.VerifyUrl(PyRevitConsts.CLIHelpUrlDev))
                 CommonUtils.OpenUrl(
-                    PyRevit.CLIHelpUrlDev,
+                    PyRevitConsts.CLIHelpUrlDev,
                     logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
                     );
             else

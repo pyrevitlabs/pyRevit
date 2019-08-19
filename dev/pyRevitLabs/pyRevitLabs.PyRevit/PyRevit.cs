@@ -6,7 +6,7 @@ using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
 
 namespace pyRevitLabs.PyRevit {
-    public static class PyRevit {
+    public static class PyRevitConsts {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // product
@@ -190,7 +190,7 @@ namespace pyRevitLabs.PyRevit {
         public static string pyRevitPath =>
             Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                                          PyRevit.AppdataDirName);
+                                          PyRevitConsts.AppdataDirName);
 
         // pyRevit %programdata% path
         // @reviewed
@@ -201,7 +201,7 @@ namespace pyRevitLabs.PyRevit {
         // pyRevit default extensions path
         // @reviewed
         public static string DefaultExtensionsPath =>
-            Path.Combine(pyRevitPath, PyRevit.ExtensionsDefaultDirName);
+            Path.Combine(pyRevitPath, PyRevitConsts.ExtensionsDefaultDirName);
 
         // pyRevit config file path
         // @reviewed

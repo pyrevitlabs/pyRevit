@@ -27,7 +27,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils import envvars
-from pyrevit.coreutils.runtime import ScriptOutputManager
+from pyrevit.runtime.types import ScriptOutputManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
 from pyrevit import DB
@@ -92,7 +92,7 @@ class PyRevitOutputWindow(object):
 
     @property
     def window(self):
-        """``PyRevitRuntime.ScriptOutput``: Return output window object."""
+        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``: Return output window object."""
         return EXEC_PARAMS.window_handle
 
     @property

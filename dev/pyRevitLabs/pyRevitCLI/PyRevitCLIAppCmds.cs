@@ -71,7 +71,7 @@ namespace pyRevitCLI {
         internal static string
         CreateEnvJson() {
             // collecet search paths
-            var searchPaths = new List<string>() { PyRevit.DefaultExtensionsPath };
+            var searchPaths = new List<string>() { PyRevitConsts.DefaultExtensionsPath };
             searchPaths.AddRange(PyRevitExtensions.GetRegisteredExtensionSearchPaths());
 
             // collect list of lookup sources
@@ -91,7 +91,7 @@ namespace pyRevitCLI {
                         { "lookupSources", lookupSrc },
                         { "installed", RevitProduct.ListInstalledProducts() },
                         { "running", RevitController.ListRunningRevits() },
-                        { "pyrevitDataDir", PyRevit.pyRevitPath },
+                        { "pyrevitDataDir", PyRevitConsts.pyRevitPath },
                         { "userEnv", new Dictionary<string, object>() {
                                 { "osVersion", UserEnv.GetWindowsVersion() },
                                 { "execUser", string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName) },
@@ -136,7 +136,7 @@ namespace pyRevitCLI {
         internal static void
         PrintPyRevitPaths() {
             PrintHeader("Cache Directory");
-            Console.WriteLine(string.Format("\"{0}\"", PyRevit.pyRevitPath));
+            Console.WriteLine(string.Format("\"{0}\"", PyRevitConsts.pyRevitPath));
         }
 
         internal static void
@@ -192,7 +192,7 @@ namespace pyRevitCLI {
                             string.Format(
                                 "Newer v{0} is available.\nGo to {1} to download the installer.",
                                 latestVersion,
-                                PyRevit.ReleasesUrl)
+                                PyRevitConsts.ReleasesUrl)
                             );
                     }
                     else
@@ -210,7 +210,7 @@ namespace pyRevitCLI {
                 var iconPath = Path.Combine(processPath, shortcutIconName);
                 CommonUtils.AddShortcut(
                     shortcutName,
-                    PyRevit.ProductName,
+                    PyRevitConsts.ProductName,
                     GetProcessFileName(),
                     shortcutArgs,
                     processPath,

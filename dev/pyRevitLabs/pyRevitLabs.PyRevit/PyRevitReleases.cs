@@ -28,7 +28,7 @@ namespace pyRevitLabs.PyRevit {
         public static List<PyRevitRelease> GetReleases() {
             string nextendpoint;
             var releases = new List<PyRevitRelease>();
-            releases.AddRange(GetReleasesFromAPI(PyRevit.APIReleasesUrl, out nextendpoint));
+            releases.AddRange(GetReleasesFromAPI(PyRevitConsts.APIReleasesUrl, out nextendpoint));
 
             while (nextendpoint != null && nextendpoint != string.Empty) {
                 releases.AddRange(GetReleasesFromAPI(nextendpoint, out nextendpoint));

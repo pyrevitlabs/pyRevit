@@ -134,11 +134,11 @@ namespace pyRevitLabs.PyRevit {
             string extDestDirName = PyRevitExtension.MakeConfigName(extensionName, extensionType);
 
             // determine destination
-            destPath = destPath ?? PyRevit.DefaultExtensionsPath;
+            destPath = destPath ?? PyRevitConsts.DefaultExtensionsPath;
             string finalExtRepoPath = Path.Combine(destPath, extDestDirName).NormalizeAsPath();
 
             // determine branch name
-            branchName = branchName ?? PyRevit.ExtensionRepoDefaultBranch;
+            branchName = branchName ?? PyRevitConsts.ExtensionRepoDefaultBranch;
 
             logger.Debug("Extension branch name determined as \"{0}\"", branchName);
             logger.Debug("Installing extension into \"{0}\"", finalExtRepoPath);
@@ -239,7 +239,7 @@ namespace pyRevitLabs.PyRevit {
             var ext = GetInstalledExtension(extName);
             logger.Debug("{0} extension \"{1}\"", state ? "Enabling" : "Disabling", ext.Name);
             var cfg = PyRevitConfigs.GetConfigFile();
-            cfg.SetValue(ext.ConfigName, PyRevit.ExtensionDisabledKey, !state);
+            cfg.SetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, !state);
         }
 
         // disable extension in config
@@ -262,7 +262,7 @@ namespace pyRevitLabs.PyRevit {
         public static List<string> GetRegisteredExtensionSearchPaths() {
             var validatedPaths = new List<string>();
             var cfg = PyRevitConfigs.GetConfigFile();
-            var searchPaths = cfg.GetListValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey);
+            var searchPaths = cfg.GetListValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserExtensionsKey);
             if (searchPaths != null) {
                 // make sure paths exist
                 foreach (var path in searchPaths) {
@@ -274,7 +274,7 @@ namespace pyRevitLabs.PyRevit {
                 }
 
                 // rewrite verified list
-                cfg.SetValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, validatedPaths);
+                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserExtensionsKey, validatedPaths);
             }
             return validatedPaths;
         }
@@ -287,7 +287,7 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug("Adding extension search path \"{0}\"", searchPath);
                 var searchPaths = GetRegisteredExtensionSearchPaths();
                 searchPaths.Add(searchPath.NormalizeAsPath());
-                cfg.SetValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
+                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserExtensionsKey, searchPaths);
             }
             else
                 throw new pyRevitResourceMissingException(searchPath);
@@ -301,14 +301,14 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Removing extension search path \"{0}\"", normPath);
             var searchPaths = GetRegisteredExtensionSearchPaths();
             searchPaths.Remove(normPath);
-            cfg.SetValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
+            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserExtensionsKey, searchPaths);
         }
 
         // managing extension sources ================================================================================
         // get default extension lookup source
         // @handled @logs
         public static string GetDefaultExtensionLookupSource() {
-            return PyRevit.ExtensionsDefinitionFileUri;
+            return PyRevitConsts.ExtensionsDefinitionFileUri;
         }
 
         // get extension lookup sources
@@ -316,7 +316,7 @@ namespace pyRevitLabs.PyRevit {
         public static List<string> GetRegisteredExtensionLookupSources() {
             var cfg = PyRevitConfigs.GetConfigFile();
             var normSources = new List<string>();
-            var sources = cfg.GetListValue(PyRevit.EnvConfigsSectionName, PyRevit.EnvConfigsExtensionLookupSourcesKey);
+            var sources = cfg.GetListValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsExtensionLookupSourcesKey);
             if (sources != null) {
                 foreach (var src in sources) {
                     var normSrc = src.NormalizeAsPath();
@@ -393,7 +393,7 @@ namespace pyRevitLabs.PyRevit {
                         filePath =
                             CommonUtils.DownloadFile(fileOrUri,
                                                      Path.Combine(Environment.GetEnvironmentVariable("TEMP"),
-                                                                  PyRevit.EnvConfigsExtensionDBFileName)
+                                                                  PyRevitConsts.EnvConfigsExtensionDBFileName)
                             );
                     }
                     catch (Exception ex) {
