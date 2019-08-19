@@ -40,3 +40,15 @@ import startuplibimport
 #     framework.EventHandler[DB.Events.DocumentOpeningEventArgs](
 #         docopen_eventhandler
 #         )
+
+
+from pyrevit import forms
+from pyrevit import routes
+
+api = routes.API("pyrevit-dev")
+
+@api.route('/test', methods=['POST'])
+def test_routes(uiapp):
+    # raise Exception('Hello, World!')
+    forms.alert("Routes works!")
+    return 'Routes works!'

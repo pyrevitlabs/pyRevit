@@ -28,9 +28,10 @@ from pyrevit.loader import uimaker
 from pyrevit.loader import hooks
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
-from pyrevit import telemetry
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
+from pyrevit import telemetry
+from pyrevit import routes
 # import the runtime first to get all the c-sharp code to compile
 from pyrevit import runtime
 # now load the rest of module that could depend on the compiled runtime
@@ -97,7 +98,7 @@ def _set_autoupdate_inprogress(state):
     envvars.set_pyrevit_env_var(envvars.AUTOUPDATING_ENVVAR, state)
 
 
-def _perform_onsessionload_ops():
+def _perform_onsessionloadstart_ops():
     # clear the cached engines
     if not _clear_running_engines():
         mlogger.debug('No Engine Manager exists...')
@@ -137,6 +138,9 @@ def _perform_onsessionloadcomplete_ops():
 
     # activate hooks now
     hooks.activate()
+
+    # activate runtime routes server
+    routes.activate_routes()
 
 
 def _new_session():
@@ -248,7 +252,7 @@ def load_session():
     timer = Timer()
 
     # perform pre-load tasks
-    _perform_onsessionload_ops()
+    _perform_onsessionloadstart_ops()
 
     # create a new session
     _new_session()
@@ -276,6 +280,7 @@ def load_session():
                       imp_err)
 
     _cleanup_output()
+    return sessioninfo.get_session_uuid()
 
 
 def _perform_onsessionreload_ops():
@@ -289,7 +294,7 @@ def _perform_onsessionreloadcomplete_ops():
 def reload_pyrevit():
     _perform_onsessionreload_ops()
     mlogger.info('Reloading....')
-    load_session()
+    return load_session()
     _perform_onsessionreloadcomplete_ops()
 
 # -----------------------------------------------------------------------------
