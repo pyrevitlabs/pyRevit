@@ -120,9 +120,9 @@ class LoggerWrapper(logging.Logger):
         self._curlevel = \
             envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
-        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
+        # the loader assembly sets EXEC_PARAMS.debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
-        if EXEC_PARAMS.forced_debug_mode:
+        if EXEC_PARAMS.debug_mode:
             self._curlevel = logging.DEBUG
 
         # if file logging is disabled, return the current logging level
@@ -139,9 +139,9 @@ class LoggerWrapper(logging.Logger):
         self._curlevel = \
             envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
-        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
+        # the loader assembly sets EXEC_PARAMS.debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
-        if EXEC_PARAMS.forced_debug_mode:
+        if EXEC_PARAMS.debug_mode:
             self._curlevel = logging.DEBUG
 
         return level >= self._curlevel

@@ -116,7 +116,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
         try:
             # first check to see if command is not in forced debug mode
-            if not EXEC_PARAMS.forced_debug_mode:
+            if not EXEC_PARAMS.debug_mode:
                 if self.core.debug:
                     mlogger.set_debug_mode()
                     mlogger.debug('Debug mode is enabled in user settings.')

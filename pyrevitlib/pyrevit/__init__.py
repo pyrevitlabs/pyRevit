@@ -388,11 +388,19 @@ class _ExecutorParams(object):
             return PyRevitLoader.ScriptExecutor.EngineVersion
 
     @property  # read-only
+    def cached_engine(self):
+        """bool: Check whether pyrevit is running on a cached engine."""
+        try:
+            return __cachedengine__
+        except NameError:
+            return False
+
+    @property  # read-only
     def first_load(self):
         """bool: Check whether pyrevit is not running in pyrevit command."""
         # if no output window is set by the executor, it means that pyRevit
         # is loading at Revit startup (not reloading)
-        return True if EXEC_PARAMS.window_handle is None else False
+        return True if self.window_handle is None else False
 
     @property   # read-only
     def pyrevit_command(self):
@@ -403,10 +411,50 @@ class _ExecutorParams(object):
             return None
 
     @property   # read-only
-    def forced_debug_mode(self):
+    def debug_mode(self):
         """bool: Check if command is in debug mode."""
         if self.pyrevit_command:
             return self.pyrevit_command.DebugMode
+        else:
+            return False
+
+    @property   # read-only
+    def config_mode(self):
+        """bool: Check if command is in config mode."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.ConfigMode
+        else:
+            return False
+
+    @property   # read-only
+    def needs_clean_engine(self):
+        """bool: Check if command needs a clean IronPython engine."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.NeedsFullFrameEngine
+        else:
+            return False
+
+    @property   # read-only
+    def needs_fullframe_engine(self):
+        """bool: Check if command needs a full-frame IronPython engine."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.NeedsFullFrameEngine
+        else:
+            return False
+
+    @property   # read-only
+    def needs_persistent_engine(self):
+        """bool: Check if command needs a persistent IronPython engine."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.NeedsPersistentEngine
+        else:
+            return False
+
+    @property   # read-only
+    def needs_refreshed_engine(self):
+        """bool: Check if command needs a newly refreshed IronPython engine."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.NeedsRefreshedEngine
         else:
             return False
 
@@ -420,7 +468,9 @@ class _ExecutorParams(object):
 
     @property   # read
     def window_handle(self):
-        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``: Return output window."""
+        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``:
+                Return output window. handle
+        """
         if self.pyrevit_command:
             return self.pyrevit_command.OutputWindow
 
@@ -431,7 +481,7 @@ class _ExecutorParams(object):
                 and __builtins__['__commandpath__']:
             return __builtins__['__commandpath__']
         elif self.pyrevit_command:
-            return op.dirname(self.pyrevit_command.ScriptSourceFile)
+            return op.dirname(self.pyrevit_command.ScriptData.ScriptPath)
 
     @property   # read-only
     def command_config_path(self):
@@ -440,7 +490,7 @@ class _ExecutorParams(object):
                 and __builtins__['__configcommandpath__']:
             return __builtins__['__configcommandpath__']
         elif self.pyrevit_command:
-            return op.dirname(self.pyrevit_command.ConfigScriptSourceFile)
+            return op.dirname(self.pyrevit_command.ScriptData.ConfigScriptPath)
 
     @property   # read-only
     def command_name(self):
@@ -449,7 +499,7 @@ class _ExecutorParams(object):
                 and __builtins__['__commandname__']:
             return __builtins__['__commandname__']
         elif self.pyrevit_command:
-            return self.pyrevit_command.CommandName
+            return self.pyrevit_command.ScriptData.CommandName
 
     @property   # read-only
     def command_bundle(self):
@@ -458,7 +508,7 @@ class _ExecutorParams(object):
                 and __builtins__['__commandbundle__']:
             return __builtins__['__commandbundle__']
         elif self.pyrevit_command:
-            return self.pyrevit_command.CommandBundle
+            return self.pyrevit_command.ScriptData.CommandBundle
 
     @property   # read-only
     def command_extension(self):
@@ -467,7 +517,7 @@ class _ExecutorParams(object):
                 and __builtins__['__commandextension__']:
             return __builtins__['__commandextension__']
         elif self.pyrevit_command:
-            return self.pyrevit_command.CommandExtension
+            return self.pyrevit_command.ScriptData.CommandExtension
 
     @property   # read-only
     def command_uniqueid(self):
@@ -476,13 +526,19 @@ class _ExecutorParams(object):
                 and __builtins__['__commanduniqueid__']:
             return __builtins__['__commanduniqueid__']
         elif self.pyrevit_command:
-            return self.pyrevit_command.CommandUniqueId
+            return self.pyrevit_command.ScriptData.CommandUniqueId
 
     @property
     def command_data(self):
         """``ExternalCommandData``: Return current command data."""
         if self.pyrevit_command:
             return self.pyrevit_command.CommandData
+
+    @property
+    def command_elements(self):
+        """``DB.ElementSet``: Return elements passed to by Revit."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.SelectedElements
 
     @property
     def doc_mode(self):
@@ -502,6 +558,18 @@ class _ExecutorParams(object):
         """``Dictionary<String, String>``: Return results dict for logging."""
         if self.pyrevit_command:
             return self.pyrevit_command.GetResultsDictionary()
+
+    @property
+    def event_sender(self):
+        """``Object``: Return event sender object."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.EventSender
+
+    @property
+    def event_args(self):
+        """``DB.RevitAPIEventArgs``: Return event arguments object."""
+        if self.pyrevit_command:
+            return self.pyrevit_command.EventArgs
 
 
 # create an instance of _ExecutorParams wrapping current runtime.
