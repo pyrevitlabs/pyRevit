@@ -344,13 +344,9 @@
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow">
                             Telemetry system, records each use of tools under any of the pyRevit extensions.
-                            You can activate telemetry for a local or network folder, or for an outside
-                            webserver, or both. If activated, the system will send telemetry records to any of the outputs provided
-                            here. Leave any of the fields blank to disable sending telemetry records to that destination.
-                        </TextBlock>
-                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,10,0,0">
-                            pyRevit creates a new log file for every sesssion to avoid creating large log files that
-                            would potentially slow down the logger. Log files are written in *.JSON format.
+                            You can activate telemetry and send the data to a server (pyRevit has a builtin telemetry server),
+                            or to a series of JSON files in a given directory. If activated, the system will send telemetry records
+                            to the destinations provided here. Leave any of the fields blank to disable sending telemetry records to that destination.
                         </TextBlock>
                         <StackPanel >
                             <WrapPanel Margin="0,15,0,0">
@@ -368,6 +364,10 @@
                                     <LineBreak/>http://telemetry.mycompany.com:8080/api/v1/scripts/
                                 </TextBlock>
                             </DockPanel>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
+                                If a destination directory is provided here, pyRevit creates a new JSON file for each pyRevit sesssion to avoid creating large files that
+                                would potentially slow down the telemetry service. The session id is added to the JSON file name.
+                            </TextBlock>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current Telemetry JSON File:</TextBlock>
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
