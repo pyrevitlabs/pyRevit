@@ -355,10 +355,21 @@
                         <StackPanel >
                             <WrapPanel Margin="0,15,0,0">
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="telemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0">Log Telemetry Data</TextBlock>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Send Script Telemetry</TextBlock>
                             </WrapPanel>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current telemetry file:</TextBlock>
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Script Telemetry Server URL or API Endpoint</TextBlock>
+                                <TextBox x:Name="telemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" 
+                                         Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
+                                         VerticalContentAlignment="Center"/>
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
+                                    Examples
+                                    <LineBreak/>http://telemetryserver.io:8080
+                                    <LineBreak/>http://telemetry.mycompany.com:8080/api/v1/scripts/
+                                </TextBlock>
+                            </DockPanel>
+                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current Telemetry JSON File:</TextBlock>
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
                                     <Button Content="Open Folder" Width="90" Margin="6,0,0,0" Height="24"
                                             Click="open_telemetry_folder" ToolTip="Open the current telemetry folder"/>
@@ -368,7 +379,7 @@
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="top" VerticalAlignment="Center">Log telemetry data to folder (e.g. C:\pyRevitTelemetry):</TextBlock>
+                                <TextBlock DockPanel.Dock="top" VerticalAlignment="Center">Script Telemetry Data Folder (e.g. C:\pyRevitTelemetry):</TextBlock>
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
                                     <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                                             Width="48" Height="24" Margin="6,0,3,0" Padding="0,0,0,2"
@@ -379,41 +390,29 @@
                                          Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
-                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current telemetry server url:</TextBlock>
-                                <TextBox x:Name="cur_telemetryserverurl_tb" FontFamily="Consolas" 
-                                         Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
-                                         VerticalContentAlignment="Center"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Log telemetry data to webserver (e.g. http://telemetryserver.io):</TextBlock>
-                                <TextBox x:Name="telemetryserver_tb" FontFamily="Consolas" 
-                                         Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
-                                         VerticalContentAlignment="Center"/>
-                            </DockPanel>
                             <WrapPanel Margin="0,25,0,0">
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="apptelemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0">Application Telemetry Data</TextBlock>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Send Application Telemetry</TextBlock>
                             </WrapPanel>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
                                 Application Telemetry system, sends event information collected from event handlers to the telemetry server listed below. You can toggle event logging for each of the events listed blow.
                             </TextBlock>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current application telemetry server url:</TextBlock>
-                                <TextBox x:Name="cur_apptelemetryserverurl_tb" FontFamily="Consolas" 
-                                         Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Application Telemetry Server URL or API Endpoint (e.g. http://telemetryserver.io):</TextBlock>
+                                <TextBox x:Name="apptelemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" 
+                                         Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Log application telemetry data to webserver (e.g. http://telemetryserver.io):</TextBlock>
-                                <TextBox x:Name="apptelemetryserver_tb" FontFamily="Consolas" 
-                                         Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
-                                         VerticalContentAlignment="Center"/>
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
+                                    Examples
+                                    <LineBreak/>http://telemetryserver.io:8080
+                                    <LineBreak/>http://telemetry.mycompany.com:8080/api/v1/events/
+                                </TextBlock>
                             </DockPanel>
                             <StackPanel x:Name="event_telemetry_sp" Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
-                                <WrapPanel Orientation="Horizontal" FlowDirection="RightToLeft">
-                                    <Button Content="Toggle All" Width="80" Height="25" Click="toggle_event_cbs" ></Button>
-                                </WrapPanel>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Toggle All" Width="80" Height="25" Click="toggle_event_cbs" ></Button>
+                                    <TextBlock VerticalAlignment="Center" FontWeight="Medium">Select Active Application Telemetry Events</TextBlock>
+                                </DockPanel>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>

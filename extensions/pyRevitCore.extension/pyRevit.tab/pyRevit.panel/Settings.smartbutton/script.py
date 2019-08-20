@@ -198,6 +198,7 @@ class SettingsWindow(forms.WPFWindow):
         supportedEvents = \
             EventUtils.GetSupportedEventTypes()
         for event_type in coreutils.get_enum_values(EventType):
+            api_name = str(event_type).replace('_', '.')
             cbox = Controls.CheckBox()
             cbox.Margin = Windows.Thickness(0, 10, 0, 0)
             cbox.FontFamily = Windows.Media.FontFamily("Consolas")
@@ -207,7 +208,7 @@ class SettingsWindow(forms.WPFWindow):
                            "API Event Type:      {}\n" \
                            "pyRevit Event Name:  {}".format(
                 ' '.join(coreutils.split_words(str(event_type))[1:]),
-                event_type,
+                api_name,
                 EventUtils.GetEventName(event_type))
             if not cbox.IsEnabled:
                 cbox.Content += "\nNot Supported in this Revit Version"
@@ -224,15 +225,12 @@ class SettingsWindow(forms.WPFWindow):
         self.telemetryfile_tb.Text = \
             telemetry.get_telemetry_file_dir()
 
-        self.telemetryserver_tb.Text = self.cur_telemetryserverurl_tb.Text = \
+        self.telemetryserver_tb.Text = \
             telemetry.get_telemetry_server_url()
-        self.cur_telemetryserverurl_tb.IsReadOnly = True
 
         self.apptelemetry_cb.IsChecked = telemetry.get_apptelemetry_state()
         self.apptelemetryserver_tb.Text = \
-            self.cur_apptelemetryserverurl_tb.Text = \
-                telemetry.get_apptelemetry_server_url()
-        self.cur_apptelemetryserverurl_tb.IsReadOnly = True
+            telemetry.get_apptelemetry_server_url()
 
         event_flags = telemetry.get_apptelemetry_event_flags(user_config)
         for event_checkbox, event_type in zip(
