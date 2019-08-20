@@ -259,7 +259,6 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.STACK_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.SMART_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.TOGGLE_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.LINK_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
