@@ -273,9 +273,11 @@ class GenericUIContainer(GenericUIComponent):
     def _update_from_directory(self):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent._update_from_directory(self)
-        # process layout file
-        # sets self.layout_items
-        self.parse_layout_file()
+        # process layout
+        # default is layout in metadata, the older layout file is deprecate
+        # and is for fallback only
+        if not self.parse_layout_metadata():
+            self.parse_layout_file()
 
     def _apply_layout_directive(self, directive, component):
         # if matching directive found, process the directive
@@ -342,15 +344,25 @@ class GenericUIContainer(GenericUIComponent):
             return LayoutItem(name=layout_item_name,
                               directive=layout_item_drctv)
 
+    def parse_layout_items(self, layout_lines):
+        for layout_line in layout_lines:
+            layout_item = self.parse_layout_item(layout_line)
+            if layout_item:
+                self.layout_items.append(layout_item)
+        mlogger.debug('Layout is: %s', self.layout_items)
+
+    def parse_layout_metadata(self):
+        layout = self.meta.get(exts.MDATA_LAYOUT, [])
+        if layout:
+            self.parse_layout_items(layout)
+            return True
+
     def parse_layout_file(self):
         layout_filepath = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
         if op.exists(layout_filepath):
             with codecs.open(layout_filepath, 'r', 'utf-8') as layout_file:
-                for layout_line in layout_file.read().splitlines():
-                    layout_item = self.parse_layout_item(layout_line)
-                    if layout_item:
-                        self.layout_items.append(layout_item)
-            mlogger.debug('Layout is: %s', self.layout_items)
+                self.parse_layout_items(layout_file.read().splitlines())
+                return True
         else:
             mlogger.debug('Container does not have layout file defined: %s',
                           self)

@@ -138,14 +138,10 @@ class ContentButton(GenericUICommand):
                 exts.CONTENT_POSTFIX,
                 ])
 
-        # find if any alternate content is specified
-        if self.meta:
-            alt_content = \
-                self.meta.get(exts.MDATA_CONTENT_BUTTON_ALT_CONTENT, None)
-            if alt_content:
-                self.config_script_file = \
-                    self.get_bundle_file(alt_content) \
-                        or self.config_script_file
+        self.config_script_file = \
+            self.find_bundle_file([
+                exts.ALT_CONTENT_POSTFIX,
+                ])
 
 
 # Command groups only include commands. these classes can include
