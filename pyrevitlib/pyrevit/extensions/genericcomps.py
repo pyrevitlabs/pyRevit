@@ -169,10 +169,6 @@ class GenericUIComponent(GenericComponent):
                     )
 
     def _read_bundle_metadata(self):
-        self.icon_file = self.get_bundle_file(
-            self.meta.get(exts.MDATA_ICON_FILE, self.icon_file)
-            ) or self.icon_file
-
         self.ui_title = self.meta.get(exts.MDATA_UI_TITLE, self.ui_title)
         self.tooltip = self.meta.get(exts.MDATA_TOOLTIP, self.tooltip)
 

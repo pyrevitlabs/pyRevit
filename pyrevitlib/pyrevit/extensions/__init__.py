@@ -81,7 +81,6 @@ ALT_BUNDLEMATA_POSTFIX = ALT_BUNDLEMATA_NAME + YAML_FILE_FORMAT
 EXT_MANIFEST_TEMPLATES_KEY = 'templates'
 
 # metadata schema: Bundles
-MDATA_ICON_FILE = 'icon'
 MDATA_UI_TITLE = 'title'
 MDATA_TOOLTIP = 'tooltip'
 MDATA_MEDIA = 'media'
