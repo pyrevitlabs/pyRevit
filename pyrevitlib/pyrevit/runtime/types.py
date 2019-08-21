@@ -1,16 +1,23 @@
 """Provide access to classes and functionalty inside base loader module."""
 
 from pyrevit import EXEC_PARAMS
+import pyrevit.compat as compat
 from pyrevit.framework import clr
 from pyrevit.runtime import RUNTIME_ASSM, RUNTIME_NAMESPACE
 
 #pylint: disable=W0703,C0302,C0103
 if not EXEC_PARAMS.doc_mode:
     # import base classes module
-    clr.AddReference(RUNTIME_ASSM)
+    if compat.PY3:
+        clr.AddReference(RUNTIME_ASSM.Location)
+    else:
+        clr.AddReference(RUNTIME_ASSM)
+
     # The __import__ function will return the top level module of a package,
     # unless you pass a nonempty fromlist argument
     runtime_module = __import__(RUNTIME_NAMESPACE, fromlist=['object'])
+    if compat.PY3:
+        runtime_module = runtime_module.PyRevit.Runtime
 
     # envvars.cs
     DomainStorageKeys = runtime_module.DomainStorageKeys

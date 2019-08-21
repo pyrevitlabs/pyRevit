@@ -49,6 +49,8 @@ VB_LANG = 'visualbasic'
 RUBY_LANG = 'ruby'
 DYNAMO_LANG = 'dynamobim'
 GRASSHOPPER_LANG = 'grasshopper'
+# cpython hash-bang
+CPYTHON_HASHBANG = '#! python3'
 
 # supported script files
 PYTHON_SCRIPT_FILE_FORMAT = '.py'

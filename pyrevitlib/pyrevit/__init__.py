@@ -126,6 +126,9 @@ class PyRevitException(Exception):
         else:
             return ''
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         """Process stack trace and prepare report for output window."""
         sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
@@ -145,6 +148,22 @@ class PyRevitIOError(PyRevitException):
     """Common base class for all pyRevit io-related exceptions."""
 
     pass
+
+
+class PyRevitCPythonNotSupported(PyRevitException):
+    """Common base class for all pyRevit io-related exceptions."""
+    def __init__(self, feature_name):
+        super(PyRevitCPythonNotSupported, self).__init__()
+        self.feature_name = feature_name
+
+    def __str__(self):
+        return self.msg
+
+    @property
+    def msg(self):
+        """Return exception message."""
+        return '\"{}\" is not currently supported under CPython' \
+                .format(self.feature_name)
 
 
 # -----------------------------------------------------------------------------

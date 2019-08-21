@@ -27,6 +27,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string defaultelement = "<div class=\"entry\"></div>";
         public static string errordiv = "<div class=\"errorentry\"></div>";
         public static string ipyerrtitle = "<strong>IronPython Traceback:</strong>";
+        public static string cpyerrtitle = "<strong>CPython Traceback:</strong>";
         public static string irubyerrtitle = "<strong>IronRuby Traceback:</strong>";
         public static string clrerrtitle = "<strong>Script Executor Traceback:</strong>";
         public static string progressindicator = "<div class=\"progressindicator\" id=\"pbarcontainer\"></div>";

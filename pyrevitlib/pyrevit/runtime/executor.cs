@@ -4,18 +4,20 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
 // iron languages
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using IronPython.Runtime.Exceptions;
+using IronPython.Runtime;
 using IronPython.Compiler;
+using IronPython.Runtime.Exceptions;
 //using IronRuby;
 
 // cpython
-using Python.Runtime;
+using pyRevitLabs.PythonNet;
 
 // csharp
 using System.CodeDom.Compiler;
@@ -24,6 +26,7 @@ using Microsoft.CSharp;
 using Microsoft.VisualBasic;
 
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.Common.Extensions;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class ExecutionResultCodes {
@@ -158,42 +161,132 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// Run the script using CPython Engine
         private static int ExecuteCPythonScript(ref ScriptRuntime pyrvtScript) {
+            var newGlobals = false;
+            int result = ExecutionResultCodes.Succeeded;
+
+            // get the GIL
             using (Py.GIL()) {
                 // initialize
                 if (!PythonEngine.IsInitialized)
                     PythonEngine.Initialize();
 
                 // set output stream
-                // TODO: implement __builtins__ like ironpython
-                dynamic sys = PythonEngine.ImportModule("sys");
-                sys.stdout = pyrvtScript.OutputStream;
+                PyObject sys = PythonEngine.ImportModule("sys");
+                sys.SetAttr("stdout", PyObject.FromManagedObject(pyrvtScript.OutputStream));
 
-                // set uiapplication
-                sys.host = pyrvtScript.UIApp;
-
-                // run
-                try {
-                    var scriptContents = File.ReadAllText(pyrvtScript.ScriptSourceFile);
-                    PythonEngine.Exec(scriptContents);
-                    return ExecutionResultCodes.Succeeded;
+                // set sys paths
+                PyObject sysPaths = sys.GetAttr("path");
+                foreach (string searchPath in pyrvtScript.ModuleSearchPaths.Reverse<string>()) {
+                    var searthPathStr = new PyString(searchPath);
+                    pyRevitLabs.PythonNet.Runtime.PyList_Insert(sysPaths.Handle, 0, searthPathStr.Handle);
                 }
-                catch (Exception cpyex) {
-                    string _cpy_err_message = cpyex.Message;
+
+                // get builtins
+                IntPtr builtins = pyRevitLabs.PythonNet.Runtime.PyEval_GetBuiltins();
+                // get globals
+                IntPtr globals = pyRevitLabs.PythonNet.Runtime.PyEval_GetGlobals();
+                if (globals == IntPtr.Zero) {
+                    globals = pyRevitLabs.PythonNet.Runtime.PyDict_New();
+                    SetVariable(globals, "__builtins__", builtins);
+                    newGlobals = true;
+                }
+
+                // set builtins
+                SetVariable(builtins, "__cachedengine__", false);
+                SetVariable(builtins, "__ipyenginemanager__", null);
+                SetVariable(builtins, "__externalcommand__", pyrvtScript);
+
+                if (pyrvtScript.UIApp != null)
+                    SetVariable(builtins, "__revit__", pyrvtScript.UIApp);
+                else if (pyrvtScript.UIControlledApp != null)
+                    SetVariable(builtins, "__revit__", pyrvtScript.UIControlledApp);
+                else if (pyrvtScript.App != null)
+                    SetVariable(builtins, "__revit__", pyrvtScript.App);
+                else
+                    SetVariable(builtins, "__revit__", null);
+
+                // Adding data provided by IExternalCommand.Execute
+                SetVariable(builtins, "__commanddata__", pyrvtScript.CommandData);
+                SetVariable(builtins, "__elements__", pyrvtScript.SelectedElements);
+
+                // Adding information on the command being executed
+                SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(pyrvtScript.ScriptData.ScriptPath));
+                SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(pyrvtScript.ScriptData.ConfigScriptPath));
+                SetVariable(builtins, "__commandname__", pyrvtScript.ScriptData.CommandName);
+                SetVariable(builtins, "__commandbundle__", pyrvtScript.ScriptData.CommandBundle);
+                SetVariable(builtins, "__commandextension__", pyrvtScript.ScriptData.CommandExtension);
+                SetVariable(builtins, "__commanduniqueid__", pyrvtScript.ScriptData.CommandUniqueId);
+                SetVariable(builtins, "__forceddebugmode__", pyrvtScript.DebugMode);
+                SetVariable(builtins, "__shiftclick__", pyrvtScript.ConfigMode);
+
+                // Add reference to the results dictionary
+                // so the command can add custom values for logging
+                SetVariable(builtins, "__result__", pyrvtScript.GetResultsDictionary());
+
+                // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
+                // set event arguments for engine
+                SetVariable(builtins, "__eventsender__", pyrvtScript.EventSender);
+                SetVariable(builtins, "__eventargs__", pyrvtScript.EventArgs);
+
+                // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
+                foreach (KeyValuePair<string, object> data in pyrvtScript.GetBuiltInVariables())
+                    SetVariable(builtins, data.Key, data.Value);
+
+                // set globals
+                var fileVarPyObject = new PyString(pyrvtScript.ScriptSourceFile);
+                SetVariable(globals, "__file__", fileVarPyObject.Handle);
+
+                // now RUN
+                var scriptContents = File.ReadAllText(pyrvtScript.ScriptSourceFile);
+                try {
+                    PythonEngine.Exec(scriptContents, globals: globals);
+                }
+                catch (PythonException cpyex) {
+                    var traceBackParts = cpyex.StackTrace.Split(']');
+                    string pyTraceback = traceBackParts[0].Trim() + "]";
+                    string cleanedPyTraceback = string.Empty;
+                    foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
+                        if (tbLine.Contains("File \"<string>\"")) {
+                            var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", pyrvtScript.ScriptSourceFile));
+                            cleanedPyTraceback += fixedTbLine;
+                            var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
+                            cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
+                        }
+                        else {
+                            cleanedPyTraceback += tbLine;
+                        }
+                    }
+
+                    string pyNetTraceback = traceBackParts[1].Trim();
+
+                    string _cpy_err_message = string.Join(
+                        "\n",
+                        cpyex.Message,
+                        cleanedPyTraceback,
+                        cpyex.Source,
+                        pyNetTraceback
+                        );
+
                     // Print all errors to stdout and return cancelled to Revit.
                     // This is to avoid getting window prompts from Revit.
                     // Those pop ups are small and errors are hard to read.
-                    _cpy_err_message = _cpy_err_message.Replace("\r\n", Environment.NewLine);
+                    _cpy_err_message = _cpy_err_message.Replace("\r\n", "\n");
                     pyrvtScript.CpythonTraceBack = _cpy_err_message;
 
+                    _cpy_err_message = string.Join("\n", ScriptOutputConfigs.cpyerrtitle, _cpy_err_message);
                     pyrvtScript.OutputStream.WriteError(_cpy_err_message);
-                    return ExecutionResultCodes.ExecutionException;
+                    result = ExecutionResultCodes.ExecutionException;
                 }
                 finally {
-                    // shutdown halts and breaks Revit
-                    // let's not do that!
-                    // PythonEngine.Shutdown();
+                    // deref newly created globals
+                    if (newGlobals)
+                        pyRevitLabs.PythonNet.Runtime.XDecref(globals);
                 }
             }
+            
+            // cleanup
+            PythonEngine.Shutdown();
+            return result;
         }
 
         /// Run the script using C# or VisualBasic script engine
@@ -497,6 +590,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         // utility methods -------------------------------------------------------------------------------------------
+        // cpython
+        private static void SetVariable(IntPtr? globals, string key, IntPtr value) {
+            pyRevitLabs.PythonNet.Runtime.PyDict_SetItemString(
+                pointer: globals.Value,
+                key: key,
+                value: value
+            );
+        }
+
+        private static void SetVariable(IntPtr? globals, string key, object value) {
+            SetVariable(globals, key, PyObject.FromManagedObject(value).Handle);
+        }
+
         // clr scripts
         private static IEnumerable<Type> GetTypesSafely(Assembly assembly) {
             try {

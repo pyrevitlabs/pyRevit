@@ -460,7 +460,7 @@ class GenericUICommand(GenericUIComponent):
             # allow python tools to load side scripts
             self.add_module_path(self.directory)
             # read the metadata from python script if not metadata file
-            if not self.meta:
+            if not self.meta and not self.is_cpython:
                 # sets up self.meta from script global variables
                 self._read_bundle_metadata_from_python_script()
 
@@ -585,6 +585,11 @@ class GenericUICommand(GenericUIComponent):
                 return exts.GRASSHOPPER_LANG
         else:
             return None
+
+    @property
+    def is_cpython(self):
+        with open(self.script_file, 'r') as script_f:
+            return exts.CPYTHON_HASHBANG in script_f.readline()
 
     def has_config_script(self):
         return self.config_script_file != self.script_file

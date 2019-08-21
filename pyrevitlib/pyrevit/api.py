@@ -2,7 +2,6 @@
 
 Example:
     >>> from pyrevit.api import AdWindows
-    >>> from pyrevit.api import NSJson
 """
 
 #pylint: disable=E0401,W0611,W0703,C0413
@@ -25,10 +24,3 @@ from Autodesk.Revit import Attributes
 from Autodesk.Revit import ApplicationServices
 from Autodesk.Revit import DB
 from Autodesk.Revit import UI
-
-# try loading some utility modules shipped with revit
-try:
-    clr.AddReference('pyRevitLabs.Json')
-    import pyRevitLabs.Json as NSJson
-except Exception:
-    pass

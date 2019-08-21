@@ -7,14 +7,14 @@ import os.path as op
 __context__ = 'zerodoc'
 
 import clr
-# add path of active python.runtime.dll to the sys.path
+# add path of active pyRevitLabs.PythonNet.dll to the sys.path
 from pyrevit.userconfig import user_config
 sys.path.append(op.dirname(user_config.get_active_cpython_engine().AssemblyPath))
 print('\n'.join(sys.path))
 # now load the cpython assembly
-# clr.AddReference('Python.Runtime')
-clr.AddReferenceToFile('Python.Runtime.dll')
-import Python as py
+# clr.AddReference('pyRevitLabs.PythonNet')
+clr.AddReferenceToFile('pyRevitLabs.PythonNet.dll')
+import pyRevitLabs.PythonNet as py
 
 TEST_CODE = """import sys
 print('\\n'.join(sys.path))
@@ -23,13 +23,13 @@ import System
 print(System)
 """
 
-pe = py.Runtime.PythonEngine
+pe = py.PythonEngine
 
 if not pe.IsInitialized:
     pe.Initialize()
 
 try:
-    # with py.Runtime.Py.GIL():
+    # with py.Py.GIL():
     # print version
     print(pe.Version)
 

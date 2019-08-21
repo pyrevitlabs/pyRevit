@@ -4,24 +4,26 @@ Example:
     >>> from pyrevit.framework import Assembly, Windows
 """
 
-#pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
+#pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
+import pyrevit.compat as compat
 
 import clr
 import System
 
 
-clr.AddReference("System.Core")
+clr.AddReference('System.Core')
 clr.AddReference('System.Management')
-clr.AddReferenceByPartialName('System.Windows.Forms')
-clr.AddReferenceByPartialName('System.Drawing')
+clr.AddReference('System.Windows.Forms')
+clr.AddReference('System.Drawing')
 clr.AddReference('PresentationCore')
 clr.AddReference('PresentationFramework')
 clr.AddReference('System.Xml.Linq')
-clr.AddReferenceByPartialName('WindowsBase')
+clr.AddReference('WindowsBase')
 
 # add linq extensions?
-clr.ImportExtensions(System.Linq)
+if compat.PY2:
+    clr.ImportExtensions(System.Linq)
 
 from System import AppDomain, Version
 from System import Type
@@ -71,17 +73,33 @@ from System.Runtime.Serialization import FormatterServices
 
 from Microsoft.CSharp import CSharpCodeProvider
 
+wpf = None
 clr.AddReference('IronPython.Wpf')
-import wpf
+if compat.PY3:
+    import IronPython
+    wpf = IronPython.Modules.Wpf
+else:
+    import wpf
 
+CPDialogs = None
 try:
     # clr.AddReference('Microsoft.WindowsAPICodePack')
     clr.AddReference('Microsoft.WindowsAPICodePack.Shell')
     import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs #pylint: disable=ungrouped-imports
 except Exception:
-    CPDialogs = None
+    pass
 
 
+# try loading some utility modules shipped with revit
+NSJson = None
+try:
+    clr.AddReference('pyRevitLabs.Json')
+    import pyRevitLabs.Json as NSJson
+except Exception:
+    pass
+
+
+# do not import anything from pyrevit before this
 from pyrevit import BIN_DIR
 
 

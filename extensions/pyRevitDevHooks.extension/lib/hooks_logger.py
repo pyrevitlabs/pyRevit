@@ -33,5 +33,4 @@ def log_hook(hook_file, data, log_doc_access=False):
     for k,v in data.items():
         record_str += '{}: "{}" '.format(k, v)
     record_str += 'count: {}'.format(str(count))
-
     _write_record(record_str)
