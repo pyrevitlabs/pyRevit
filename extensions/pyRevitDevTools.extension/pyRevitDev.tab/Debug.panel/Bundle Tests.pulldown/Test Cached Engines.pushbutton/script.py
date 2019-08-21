@@ -9,7 +9,7 @@ print('Active Engines:')
 for engine_id in EngineManager.EngineDict:
     print(engine_id)
 
-print('Running in reused engine?\n{}'
+print('Running in cached engine?\n{}'
       .format('Yes' if __cachedengine__ else 'No'))
 
 

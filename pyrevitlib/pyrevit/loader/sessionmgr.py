@@ -54,7 +54,9 @@ def _clear_running_engines():
         if my_output:
             my_output.close_others(all_open_outputs=True)
 
-        runtime_types.EngineManager.ClearEngines()
+        runtime_types.EngineManager.ClearEngines(
+            excludeEngine=EXEC_PARAMS.engine_id
+            )
     except AttributeError:
         return False
 

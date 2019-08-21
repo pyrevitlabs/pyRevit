@@ -20,7 +20,7 @@ print(__revit__)
 
 print('\n## pyRevit globals:')
 print(__cachedengine__)
-print(__ipyenginemanager__)
+print(__cachedengineid__)
 print(__externalcommand__)
 print(__commanddata__)
 print(__elements__)

@@ -147,88 +147,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// Run the script using CPython Engine
         private static int ExecuteCPythonScript(ref ScriptRuntime runtime) {
-            var newGlobals = false;
-            int result = ExecutionResultCodes.Succeeded;
+            // get new engine manager (EngineManager manages document-specific engines)
+            // and ask for an engine (EngineManager return either new engine or an already active one)
+            CPythonEngine cpy = EngineManager.GetEngine<CPythonEngine>(ref runtime);
 
             // get the GIL
+            int result = ExecutionResultCodes.Succeeded;
             using (Py.GIL()) {
-                // initialize
-                if (!PythonEngine.IsInitialized)
-                    PythonEngine.Initialize();
-
-                // set output stream
-                PyObject sys = PythonEngine.ImportModule("sys");
-                sys.SetAttr("stdout", PyObject.FromManagedObject(runtime.OutputStream));
-                // dont write bytecode (__pycache__)
-                // https://docs.python.org/3.7/library/sys.html?highlight=pythondontwritebytecode#sys.dont_write_bytecode
-                sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
-
-                // set sys paths
-                PyObject sysPaths = sys.GetAttr("path");
-                foreach (string searchPath in runtime.ModuleSearchPaths.Reverse<string>()) {
-                    var searthPathStr = new PyString(searchPath);
-                    pyRevitLabs.PythonNet.Runtime.PyList_Insert(sysPaths.Handle, 0, searthPathStr.Handle);
-                }
-
-                // get builtins
-                IntPtr builtins = pyRevitLabs.PythonNet.Runtime.PyEval_GetBuiltins();
-                // get globals
-                IntPtr globals = pyRevitLabs.PythonNet.Runtime.PyEval_GetGlobals();
-                if (globals == IntPtr.Zero) {
-                    globals = pyRevitLabs.PythonNet.Runtime.PyDict_New();
-                    SetVariable(globals, "__builtins__", builtins);
-                    newGlobals = true;
-                }
-
-                // set builtins
-                SetVariable(builtins, "__cachedengine__", false);
-                SetVariable(builtins, "__ipyenginemanager__", null);
-                SetVariable(builtins, "__externalcommand__", runtime);
-
-                if (runtime.UIApp != null)
-                    SetVariable(builtins, "__revit__", runtime.UIApp);
-                else if (runtime.UIControlledApp != null)
-                    SetVariable(builtins, "__revit__", runtime.UIControlledApp);
-                else if (runtime.App != null)
-                    SetVariable(builtins, "__revit__", runtime.App);
-                else
-                    SetVariable(builtins, "__revit__", null);
-
-                // Adding data provided by IExternalCommand.Execute
-                SetVariable(builtins, "__commanddata__", runtime.CommandData);
-                SetVariable(builtins, "__elements__", runtime.SelectedElements);
-
-                // Adding information on the command being executed
-                SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
-                SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
-                SetVariable(builtins, "__commandname__", runtime.ScriptData.CommandName);
-                SetVariable(builtins, "__commandbundle__", runtime.ScriptData.CommandBundle);
-                SetVariable(builtins, "__commandextension__", runtime.ScriptData.CommandExtension);
-                SetVariable(builtins, "__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
-                SetVariable(builtins, "__forceddebugmode__", runtime.DebugMode);
-                SetVariable(builtins, "__shiftclick__", runtime.ConfigMode);
-
-                // Add reference to the results dictionary
-                // so the command can add custom values for logging
-                SetVariable(builtins, "__result__", runtime.GetResultsDictionary());
-
-                // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
-                // set event arguments for engine
-                SetVariable(builtins, "__eventsender__", runtime.EventSender);
-                SetVariable(builtins, "__eventargs__", runtime.EventArgs);
-
-                // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
-                foreach (KeyValuePair<string, object> data in runtime.GetBuiltInVariables())
-                    SetVariable(builtins, data.Key, data.Value);
-
-                // set globals
-                var fileVarPyObject = new PyString(runtime.ScriptSourceFile);
-                SetVariable(globals, "__file__", fileVarPyObject.Handle);
-
                 // now RUN
                 var scriptContents = File.ReadAllText(runtime.ScriptSourceFile);
                 try {
-                    PythonEngine.Exec(scriptContents, globals: globals);
+                    PythonEngine.Exec(scriptContents, globals: cpy.Globals);
+                    
                 }
                 catch (PythonException cpyex) {
                     var traceBackParts = cpyex.StackTrace.Split(']');
@@ -265,14 +195,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     result = ExecutionResultCodes.ExecutionException;
                 }
                 finally {
-                    // deref newly created globals
-                    if (newGlobals)
-                        pyRevitLabs.PythonNet.Runtime.XDecref(globals);
                 }
             }
-            
-            // cleanup
-            PythonEngine.Shutdown();
+
+            cpy.Shutdown();
             return result;
         }
 
@@ -578,17 +504,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         // utility methods -------------------------------------------------------------------------------------------
         // cpython
-        private static void SetVariable(IntPtr? globals, string key, IntPtr value) {
-            pyRevitLabs.PythonNet.Runtime.PyDict_SetItemString(
-                pointer: globals.Value,
-                key: key,
-                value: value
-            );
-        }
-
-        private static void SetVariable(IntPtr? globals, string key, object value) {
-            SetVariable(globals, key, PyObject.FromManagedObject(value).Handle);
-        }
 
         // clr scripts
         private static IEnumerable<Type> GetTypesSafely(Assembly assembly) {

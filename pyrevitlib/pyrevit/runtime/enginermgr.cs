@@ -1,13 +1,30 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 
+// iron languages
+using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using IronPython.Hosting;
+using IronPython.Runtime;
+using IronPython.Compiler;
+using IronPython.Runtime.Exceptions;
+//using IronRuby;
+
+// cpython
+using pyRevitLabs.PythonNet;
+
+// csharp
+using System.CodeDom.Compiler;
+using Microsoft.CSharp;
+//vb
+using Microsoft.VisualBasic;
 
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum EngineType {
+        Unknown,
         IronPython,
         CPython,
         CSharp,
@@ -19,15 +36,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         Content,
     }
 
-    public abstract class ExecutionEngine {
-        public abstract string Id { get; set; }
-        public abstract bool NeedsNew { get; set; }
-        public abstract EngineType EngineType { get; }
-        public abstract bool Cached { get; set; }
+    public class ExecutionEngine {
+        public string Id { get; private set; }
 
-        public abstract void Init(ref ScriptRuntime runtime);
-        public abstract void Setup(ref ScriptRuntime runtime);
-        public abstract void Shutdown();
+        public virtual bool NeedsNew { get; set; }
+        public virtual bool Cached { get; set; }
+        public virtual EngineType EngineType { get { return EngineType.Unknown; } }
+
+        public virtual void Init(ref ScriptRuntime runtime) {
+            Id = string.Format("{0}:{1}", EngineType.ToString(), runtime.ScriptData.CommandExtension);
+            Cached = false;
+        }
+
+        public virtual void Setup(ref ScriptRuntime runtime) { }
+        public virtual void Shutdown() { }
     }
 
     public static class EngineManager {
@@ -52,24 +74,31 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return engine;
         }
 
-        public static Dictionary<string, ExecutionEngine> EngineDict {
+        public static Dictionary<string, object> EngineDict {
             get {
-                var engineDict = (Dictionary<string, ExecutionEngine>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnginesDictKey);
-
-                if (engineDict == null)
-                    engineDict = ClearEngines();
-
+                Dictionary<string, object> engineDict;
+                var exstDict = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnginesDictKey);
+                if (exstDict == null) {
+                    engineDict = new Dictionary<string, object>();
+                    AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnginesDictKey, engineDict);
+                }
+                else
+                    engineDict = (Dictionary<string, object>)exstDict;
                 return engineDict;
             }
         }
 
-        public static Dictionary<string, ExecutionEngine> ClearEngines() {
+        public static Dictionary<string, object> ClearEngines(string excludeEngine = null) {
             // shutdown all existing engines
-            foreach (KeyValuePair<string, ExecutionEngine> kv in EngineDict)
-                kv.Value.Shutdown();
-            
+            foreach (KeyValuePair<string, object> engineRecord in EngineDict) {
+                if (engineRecord.Key == excludeEngine)
+                    continue;
+                else
+                    engineRecord.Value.GetType().GetMethod("Shutdown").Invoke(engineRecord.Value, new object[] { });
+            }
+
             // create a new list
-            var newEngineDict = new Dictionary<string, ExecutionEngine>();
+            var newEngineDict = new Dictionary<string, object>();
             AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnginesDictKey, newEngineDict);
             return newEngineDict;
         }
@@ -92,9 +121,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private List<string> _commandBuiltins = new List<string>();
         private List<ScriptScope> _scopes = new List<ScriptScope>();
 
-        public override string Id { get; set; }
-        public override bool NeedsNew { get; set; }
-        public override bool Cached { get; set; }
         public override EngineType EngineType { get { return EngineType.IronPython; } }
 
         public ScriptEngine Engine { get; private set; }
@@ -108,17 +134,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public IronPythonEngine() : base() { }
-
         public override void Init(ref ScriptRuntime runtime) {
-            Id = runtime.ScriptData.CommandExtension;
+            base.Init(ref runtime);
 
             // If the command required a fullframe engine
             // or if the command required a clean engine
             // of if the user is asking to refresh the cached engine for the command,
             NeedsNew = runtime.NeedsFullFrameEngine || runtime.NeedsCleanEngine || runtime.NeedsRefreshedEngine;
-
-            Cached = false;
         }
 
         public override void Setup(ref ScriptRuntime runtime) {
@@ -162,8 +184,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             CleanScopes();
             CleanupEngineBuiltins();
             CleanupStreams();
-            _commandBuiltins = null;
-            _scopes = null;
+            _commandBuiltins = new List<string>();
+            _scopes = new List<ScriptScope>();
         }
 
         public ScriptScope GetNewScope() {
@@ -191,8 +213,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Let commands know if they're being run in a cached engine
             builtin.SetVariable("__cachedengine__", Cached);
 
-            // Add current engine manager to builtins
-            builtin.SetVariable("__ipyenginemanager__", this);
+            // Add current engine id to builtins
+            builtin.SetVariable("__cachedengineid__", Id);
 
             // Add this script executor to the the builtin to be globally visible everywhere
             // This support pyrevit functionality to ask information about the current executing command
@@ -272,29 +294,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void CleanupEngineBuiltins() {
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
 
-            builtin.SetVariable("__cachedengine__", null);
-            builtin.SetVariable("__ipyenginemanager__", null);
-            builtin.SetVariable("__externalcommand__", null);
-            builtin.SetVariable("__commanddata__", null);
-            builtin.SetVariable("__elements__", null);
-            builtin.SetVariable("__commandpath__", null);
-            builtin.SetVariable("__configcommandpath__", null);
-            builtin.SetVariable("__commandname__", null);
-            builtin.SetVariable("__commandbundle__", null);
-            builtin.SetVariable("__commandextension__", null);
-            builtin.SetVariable("__commanduniqueid__", null);
-            builtin.SetVariable("__forceddebugmode__", null);
-            builtin.SetVariable("__shiftclick__", null);
+            builtin.SetVariable("__cachedengine__", (object)null);
+            builtin.SetVariable("__cachedengineid__", (object)null);
+            builtin.SetVariable("__externalcommand__", (object)null);
+            builtin.SetVariable("__commanddata__", (object)null);
+            builtin.SetVariable("__elements__", (object)null);
+            builtin.SetVariable("__commandpath__", (object)null);
+            builtin.SetVariable("__configcommandpath__", (object)null);
+            builtin.SetVariable("__commandname__", (object)null);
+            builtin.SetVariable("__commandbundle__", (object)null);
+            builtin.SetVariable("__commandextension__", (object)null);
+            builtin.SetVariable("__commanduniqueid__", (object)null);
+            builtin.SetVariable("__forceddebugmode__", (object)null);
+            builtin.SetVariable("__shiftclick__", (object)null);
 
-            builtin.SetVariable("__result__", null);
+            builtin.SetVariable("__result__", (object)null);
 
-            builtin.SetVariable("__eventsender__", null);
-            builtin.SetVariable("__eventargs__", null);
+            builtin.SetVariable("__eventsender__", (object)null);
+            builtin.SetVariable("__eventargs__", (object)null);
 
             // cleanup all data set by command custom builtins
             if (_commandBuiltins.Count > 0)
                 foreach (string builtinVarName in _commandBuiltins)
-                    builtin.SetVariable(builtinVarName, null);
+                    builtin.SetVariable(builtinVarName, (object)null);
         }
 
         private void CleanupStreams() {
@@ -304,6 +326,131 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 Engine.Runtime.IO.SetOutput(outStream.Item1, outStream.Item2);
                 outStream.Item1.Dispose();
             }
+        }
+    }
+
+    public class CPythonEngine : ExecutionEngine {
+        public override EngineType EngineType { get { return EngineType.CPython; } }
+
+        public IntPtr Globals = IntPtr.Zero;
+
+        public override void Init(ref ScriptRuntime runtime) {
+            base.Init(ref runtime);
+
+            // If the user is asking to refresh the cached engine for the command,
+            NeedsNew = runtime.NeedsFullFrameEngine || runtime.NeedsCleanEngine || runtime.NeedsRefreshedEngine;
+        }
+
+        public override void Setup(ref ScriptRuntime runtime) {
+            using (Py.GIL()) {
+                // initialize
+                if (!PythonEngine.IsInitialized)
+                    PythonEngine.Initialize();
+            }
+
+            SetupStreams(ref runtime);
+            SetupBuiltins(ref runtime);
+            SetupSearchPaths(ref runtime);
+            SetupArguments(ref runtime);
+        }
+
+        public override void Shutdown() {
+            using (Py.GIL()) {
+                // deref newly created globals
+                pyRevitLabs.PythonNet.Runtime.XDecref(Globals);
+                Globals = IntPtr.Zero;
+            }
+            PythonEngine.Shutdown();
+        }
+
+        private void SetupStreams(ref ScriptRuntime runtime) {
+            // set output stream
+            PyObject sys = PythonEngine.ImportModule("sys");
+            sys.SetAttr("stdout", PyObject.FromManagedObject(runtime.OutputStream));
+            // dont write bytecode (__pycache__)
+            // https://docs.python.org/3.7/library/sys.html?highlight=pythondontwritebytecode#sys.dont_write_bytecode
+            sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
+        }
+
+        private void SetupBuiltins(ref ScriptRuntime runtime) {
+            // get globals
+            Globals = pyRevitLabs.PythonNet.Runtime.PyEval_GetGlobals();
+            // get builtins
+            IntPtr builtins = pyRevitLabs.PythonNet.Runtime.PyEval_GetBuiltins();
+            if (Globals == IntPtr.Zero) {
+                Globals = pyRevitLabs.PythonNet.Runtime.PyDict_New();
+                SetVariable(Globals, "__builtins__", builtins);
+            }
+
+            // set builtins
+            SetVariable(builtins, "__cachedengine__", false);
+            SetVariable(builtins, "__cachedengineid__", Id);
+            SetVariable(builtins, "__externalcommand__", runtime);
+
+            if (runtime.UIApp != null)
+                SetVariable(builtins, "__revit__", runtime.UIApp);
+            else if (runtime.UIControlledApp != null)
+                SetVariable(builtins, "__revit__", runtime.UIControlledApp);
+            else if (runtime.App != null)
+                SetVariable(builtins, "__revit__", runtime.App);
+            else
+                SetVariable(builtins, "__revit__", null);
+
+            // Adding data provided by IExternalCommand.Execute
+            SetVariable(builtins, "__commanddata__", runtime.CommandData);
+            SetVariable(builtins, "__elements__", runtime.SelectedElements);
+
+            // Adding information on the command being executed
+            SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
+            SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
+            SetVariable(builtins, "__commandname__", runtime.ScriptData.CommandName);
+            SetVariable(builtins, "__commandbundle__", runtime.ScriptData.CommandBundle);
+            SetVariable(builtins, "__commandextension__", runtime.ScriptData.CommandExtension);
+            SetVariable(builtins, "__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
+            SetVariable(builtins, "__forceddebugmode__", runtime.DebugMode);
+            SetVariable(builtins, "__shiftclick__", runtime.ConfigMode);
+
+            // Add reference to the results dictionary
+            // so the command can add custom values for logging
+            SetVariable(builtins, "__result__", runtime.GetResultsDictionary());
+
+            // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
+            // set event arguments for engine
+            SetVariable(builtins, "__eventsender__", runtime.EventSender);
+            SetVariable(builtins, "__eventargs__", runtime.EventArgs);
+
+            // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
+            foreach (KeyValuePair<string, object> data in runtime.GetBuiltInVariables())
+                SetVariable(builtins, data.Key, data.Value);
+
+            // set globals
+            var fileVarPyObject = new PyString(runtime.ScriptSourceFile);
+            SetVariable(Globals, "__file__", fileVarPyObject.Handle);
+        }
+
+        private void SetupSearchPaths(ref ScriptRuntime runtime) {
+            // set sys paths
+            // set output stream
+            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sysPaths = sys.GetAttr("path");
+            foreach (string searchPath in runtime.ModuleSearchPaths.Reverse<string>()) {
+                var searthPathStr = new PyString(searchPath);
+                pyRevitLabs.PythonNet.Runtime.PyList_Insert(sysPaths.Handle, 0, searthPathStr.Handle);
+            }
+        }
+
+        private void SetupArguments(ref ScriptRuntime runtime) { }
+
+        private static void SetVariable(IntPtr? globals, string key, IntPtr value) {
+            pyRevitLabs.PythonNet.Runtime.PyDict_SetItemString(
+                pointer: globals.Value,
+                key: key,
+                value: value
+            );
+        }
+
+        private static void SetVariable(IntPtr? globals, string key, object value) {
+            SetVariable(globals, key, PyObject.FromManagedObject(value).Handle);
         }
     }
 }

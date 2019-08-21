@@ -393,6 +393,14 @@ class _ExecutorParams(object):
     """Private Wrapper that provides runtime environment info."""
 
     @property   # read-only
+    def engine_id(self):
+        """Return engine id"""
+        try:
+            return __cachedengineid__
+        except NameError:
+            raise AttributeError()
+
+    @property   # read-only
     def engine_ver(self):
         """str: Return PyRevitLoader.ScriptExecutor hardcoded version."""
         if PyRevitLoader:
