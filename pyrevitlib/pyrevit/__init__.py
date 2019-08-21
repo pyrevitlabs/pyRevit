@@ -393,14 +393,6 @@ class _ExecutorParams(object):
     """Private Wrapper that provides runtime environment info."""
 
     @property   # read-only
-    def engine_mgr(self):
-        """``PyRevitLabs.PyRevit.Runtime.IronPythonEngineManager``: Return engine manager."""
-        try:
-            return __ipyenginemanager__
-        except NameError:
-            raise AttributeError()
-
-    @property   # read-only
     def engine_ver(self):
         """str: Return PyRevitLoader.ScriptExecutor hardcoded version."""
         if PyRevitLoader:

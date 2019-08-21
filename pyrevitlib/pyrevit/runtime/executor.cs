@@ -45,26 +45,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// Executes a script
     public class ScriptExecutor {
         /// Run the script and print the output to a new output window.
-        public static int ExecuteScript(ref ScriptRuntime pyrvtScript) {
-            switch (pyrvtScript.EngineType) {
+        public static int ExecuteScript(ref ScriptRuntime runtime) {
+            switch (runtime.EngineType) {
                 case EngineType.IronPython:
-                    return ExecuteIronPythonScript(ref pyrvtScript);
+                    return ExecuteIronPythonScript(ref runtime);
                 case EngineType.CPython:
-                    return ExecuteCPythonScript(ref pyrvtScript);
+                    return ExecuteCPythonScript(ref runtime);
                 case EngineType.CSharp:
-                    return ExecuteCLRScript(ref pyrvtScript);
+                    return ExecuteCLRScript(ref runtime);
                 case EngineType.Invoke:
-                    return ExecuteInvokableDLL(ref pyrvtScript);
+                    return ExecuteInvokableDLL(ref runtime);
                 case EngineType.VisualBasic:
-                    return ExecuteCLRScript(ref pyrvtScript);
+                    return ExecuteCLRScript(ref runtime);
                 case EngineType.IronRuby:
-                    return ExecuteRubyScript(ref pyrvtScript);
+                    return ExecuteRubyScript(ref runtime);
                 case EngineType.Dynamo:
-                    return ExecuteDynamoDefinition(ref pyrvtScript);
+                    return ExecuteDynamoDefinition(ref runtime);
                 case EngineType.Grasshopper:
-                    return ExecuteGrasshopperDocument(ref pyrvtScript);
+                    return ExecuteGrasshopperDocument(ref runtime);
                 case EngineType.Content:
-                    return ExecuteContentLoader(ref pyrvtScript);
+                    return ExecuteContentLoader(ref runtime);
                 default:
                     // should not get here
                     throw new Exception("Unknown engine type.");
@@ -72,21 +72,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// Run the script using IronPython Engine
-        private static int ExecuteIronPythonScript(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteIronPythonScript(ref ScriptRuntime runtime) {
             // 1: ----------------------------------------------------------------------------------------------------
             // get new engine manager (EngineManager manages document-specific engines)
             // and ask for an engine (EngineManager return either new engine or an already active one)
-            var engineMgr = new IronPythonEngineManager();
-            var engine = engineMgr.GetEngine(ref pyrvtScript);
+            IronPythonEngine ipy = EngineManager.GetEngine<IronPythonEngine>(ref runtime);
 
             // 2: ----------------------------------------------------------------------------------------------------
             // Setup the command scope in this engine with proper builtin and scope parameters
-            var scope = engine.CreateScope();
+            var scope = ipy.GetNewScope();
 
             // 3: ----------------------------------------------------------------------------------------------------
             // Create the script from source file
-            var script = engine.CreateScriptSourceFromFile(
-                    pyrvtScript.ScriptSourceFile,
+            var script = ipy.Engine.CreateScriptSourceFromFile(
+                    runtime.ScriptSourceFile,
                     System.Text.Encoding.UTF8,
                     SourceCodeKind.File
                 );
@@ -94,7 +93,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // 4: ----------------------------------------------------------------------------------------------------
             // Setting up error reporter and compile the script
             // setting module to be the main module so __name__ == __main__ is True
-            var compiler_options = (PythonCompilerOptions)engine.GetCompilerOptions(scope);
+            var compiler_options = (PythonCompilerOptions)ipy.Engine.GetCompilerOptions(scope);
             compiler_options.ModuleName = "__main__";
             compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
 
@@ -104,7 +103,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Process compile errors if any
             if (command == null) {
                 // compilation failed, print errors and return
-                pyrvtScript.OutputStream.WriteError(string.Join(Environment.NewLine, errors.Errors.ToArray()), EngineType.IronPython);
+                runtime.OutputStream.WriteError(string.Join(Environment.NewLine, errors.Errors.ToArray()), EngineType.IronPython);
                 return ExecutionResultCodes.CompileException;
             }
 
@@ -121,42 +120,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
             catch (Exception exception) {
                 // show (power) user everything!
                 string _clr_err_message = exception.ToString();
-                string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
+                string _ipy_err_messages = ipy.Engine.GetService<ExceptionOperations>().FormatException(exception);
 
                 // Print all errors to stdout and return cancelled to Revit.
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
                 _ipy_err_messages = _ipy_err_messages.NormalizeNewLine();
-                pyrvtScript.IronLanguageTraceBack = _ipy_err_messages;
+                runtime.IronLanguageTraceBack = _ipy_err_messages;
 
                 _clr_err_message = _clr_err_message.NormalizeNewLine();
-                pyrvtScript.CLRTraceBack = _clr_err_message;
+                runtime.CLRTraceBack = _clr_err_message;
 
                 // manually add the CLR traceback since this is a two part error message
                 _clr_err_message = string.Join("\n", ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader), _clr_err_message);
 
-                pyrvtScript.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message, EngineType.IronPython);
+                runtime.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message, EngineType.IronPython);
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {
                 // clean the scope unless the script is requesting persistent engine
-                if (!pyrvtScript.NeedsPersistentEngine) {
-                    // cleaning removes all references to revit content that's been casualy stored in global-level
-                    // variables and prohibit the GC from cleaning them up and releasing memory
-                    var cleanupScript = engine.CreateScriptSourceFromString(
-                        "for __deref in dir():\n" +
-                        "    if not __deref.startswith('__'):\n" +
-                        "        del globals()[__deref]");
-                    cleanupScript.Compile();
-                    cleanupScript.Execute(scope);
-
-                    engineMgr.CleanupEngine(engine);
+                if (!runtime.NeedsPersistentEngine) {
+                    ipy.Shutdown();
                 }
             }
         }
 
         /// Run the script using CPython Engine
-        private static int ExecuteCPythonScript(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteCPythonScript(ref ScriptRuntime runtime) {
             var newGlobals = false;
             int result = ExecutionResultCodes.Succeeded;
 
@@ -168,14 +158,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // set output stream
                 PyObject sys = PythonEngine.ImportModule("sys");
-                sys.SetAttr("stdout", PyObject.FromManagedObject(pyrvtScript.OutputStream));
+                sys.SetAttr("stdout", PyObject.FromManagedObject(runtime.OutputStream));
                 // dont write bytecode (__pycache__)
                 // https://docs.python.org/3.7/library/sys.html?highlight=pythondontwritebytecode#sys.dont_write_bytecode
                 sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
 
                 // set sys paths
                 PyObject sysPaths = sys.GetAttr("path");
-                foreach (string searchPath in pyrvtScript.ModuleSearchPaths.Reverse<string>()) {
+                foreach (string searchPath in runtime.ModuleSearchPaths.Reverse<string>()) {
                     var searthPathStr = new PyString(searchPath);
                     pyRevitLabs.PythonNet.Runtime.PyList_Insert(sysPaths.Handle, 0, searthPathStr.Handle);
                 }
@@ -193,50 +183,50 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // set builtins
                 SetVariable(builtins, "__cachedengine__", false);
                 SetVariable(builtins, "__ipyenginemanager__", null);
-                SetVariable(builtins, "__externalcommand__", pyrvtScript);
+                SetVariable(builtins, "__externalcommand__", runtime);
 
-                if (pyrvtScript.UIApp != null)
-                    SetVariable(builtins, "__revit__", pyrvtScript.UIApp);
-                else if (pyrvtScript.UIControlledApp != null)
-                    SetVariable(builtins, "__revit__", pyrvtScript.UIControlledApp);
-                else if (pyrvtScript.App != null)
-                    SetVariable(builtins, "__revit__", pyrvtScript.App);
+                if (runtime.UIApp != null)
+                    SetVariable(builtins, "__revit__", runtime.UIApp);
+                else if (runtime.UIControlledApp != null)
+                    SetVariable(builtins, "__revit__", runtime.UIControlledApp);
+                else if (runtime.App != null)
+                    SetVariable(builtins, "__revit__", runtime.App);
                 else
                     SetVariable(builtins, "__revit__", null);
 
                 // Adding data provided by IExternalCommand.Execute
-                SetVariable(builtins, "__commanddata__", pyrvtScript.CommandData);
-                SetVariable(builtins, "__elements__", pyrvtScript.SelectedElements);
+                SetVariable(builtins, "__commanddata__", runtime.CommandData);
+                SetVariable(builtins, "__elements__", runtime.SelectedElements);
 
                 // Adding information on the command being executed
-                SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(pyrvtScript.ScriptData.ScriptPath));
-                SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(pyrvtScript.ScriptData.ConfigScriptPath));
-                SetVariable(builtins, "__commandname__", pyrvtScript.ScriptData.CommandName);
-                SetVariable(builtins, "__commandbundle__", pyrvtScript.ScriptData.CommandBundle);
-                SetVariable(builtins, "__commandextension__", pyrvtScript.ScriptData.CommandExtension);
-                SetVariable(builtins, "__commanduniqueid__", pyrvtScript.ScriptData.CommandUniqueId);
-                SetVariable(builtins, "__forceddebugmode__", pyrvtScript.DebugMode);
-                SetVariable(builtins, "__shiftclick__", pyrvtScript.ConfigMode);
+                SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
+                SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
+                SetVariable(builtins, "__commandname__", runtime.ScriptData.CommandName);
+                SetVariable(builtins, "__commandbundle__", runtime.ScriptData.CommandBundle);
+                SetVariable(builtins, "__commandextension__", runtime.ScriptData.CommandExtension);
+                SetVariable(builtins, "__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
+                SetVariable(builtins, "__forceddebugmode__", runtime.DebugMode);
+                SetVariable(builtins, "__shiftclick__", runtime.ConfigMode);
 
                 // Add reference to the results dictionary
                 // so the command can add custom values for logging
-                SetVariable(builtins, "__result__", pyrvtScript.GetResultsDictionary());
+                SetVariable(builtins, "__result__", runtime.GetResultsDictionary());
 
                 // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
                 // set event arguments for engine
-                SetVariable(builtins, "__eventsender__", pyrvtScript.EventSender);
-                SetVariable(builtins, "__eventargs__", pyrvtScript.EventArgs);
+                SetVariable(builtins, "__eventsender__", runtime.EventSender);
+                SetVariable(builtins, "__eventargs__", runtime.EventArgs);
 
                 // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
-                foreach (KeyValuePair<string, object> data in pyrvtScript.GetBuiltInVariables())
+                foreach (KeyValuePair<string, object> data in runtime.GetBuiltInVariables())
                     SetVariable(builtins, data.Key, data.Value);
 
                 // set globals
-                var fileVarPyObject = new PyString(pyrvtScript.ScriptSourceFile);
+                var fileVarPyObject = new PyString(runtime.ScriptSourceFile);
                 SetVariable(globals, "__file__", fileVarPyObject.Handle);
 
                 // now RUN
-                var scriptContents = File.ReadAllText(pyrvtScript.ScriptSourceFile);
+                var scriptContents = File.ReadAllText(runtime.ScriptSourceFile);
                 try {
                     PythonEngine.Exec(scriptContents, globals: globals);
                 }
@@ -246,7 +236,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     string cleanedPyTraceback = string.Empty;
                     foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
                         if (tbLine.Contains("File \"<string>\"")) {
-                            var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", pyrvtScript.ScriptSourceFile));
+                            var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", runtime.ScriptSourceFile));
                             cleanedPyTraceback += fixedTbLine;
                             var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
                             cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
@@ -270,8 +260,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // This is to avoid getting window prompts from Revit.
                     // Those pop ups are small and errors are hard to read.
                     _cpy_err_message = _cpy_err_message.NormalizeNewLine();
-                    pyrvtScript.CpythonTraceBack = _cpy_err_message;
-                    pyrvtScript.OutputStream.WriteError(_cpy_err_message, EngineType.CPython);
+                    runtime.CpythonTraceBack = _cpy_err_message;
+                    runtime.OutputStream.WriteError(_cpy_err_message, EngineType.CPython);
                     result = ExecutionResultCodes.ExecutionException;
                 }
                 finally {
@@ -287,32 +277,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// Run the script using C# or VisualBasic script engine
-        private static int ExecuteCLRScript(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteCLRScript(ref ScriptRuntime runtime) {
             // compile first
             Assembly scriptAssm = null;
             try {
-                scriptAssm = CompileCLRScript(ref pyrvtScript);
+                scriptAssm = CompileCLRScript(ref runtime);
             }
             catch (Exception compileEx) {
                 string _clr_err_message = compileEx.ToString();
                 _clr_err_message = _clr_err_message.NormalizeNewLine();
-                pyrvtScript.CLRTraceBack = _clr_err_message;
+                runtime.CLRTraceBack = _clr_err_message;
 
                 // TODO: change to script output for all script types
-                if (pyrvtScript.InterfaceType == InterfaceType.ExternalCommand)
-                    TaskDialog.Show(PyRevitConsts.ProductName, pyrvtScript.CLRTraceBack);
+                if (runtime.InterfaceType == InterfaceType.ExternalCommand)
+                    TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
 
-                TaskDialog.Show(PyRevitConsts.ProductName, pyrvtScript.CLRTraceBack);
+                TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
 
                 return ExecutionResultCodes.CompileException;
             }
 
             // scriptAssm must have value
-            switch (pyrvtScript.InterfaceType) {
+            switch (runtime.InterfaceType) {
                 // if is an external command
                 case InterfaceType.ExternalCommand:
                     try {
-                        var resultCode = ExecuteExternalCommand(scriptAssm, null, ref pyrvtScript);
+                        var resultCode = ExecuteExternalCommand(scriptAssm, null, ref runtime);
                         if (resultCode == ExecutionResultCodes.ExternalInterfaceNotImplementedException)
                             TaskDialog.Show(PyRevitConsts.ProductName,
                                 string.Format(
@@ -324,7 +314,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
                         _clr_err_message = _clr_err_message.NormalizeNewLine();
-                        pyrvtScript.CLRTraceBack = _clr_err_message;
+                        runtime.CLRTraceBack = _clr_err_message;
                         // TODO: same outp
                         TaskDialog.Show(PyRevitConsts.ProductName, _clr_err_message);
 
@@ -334,14 +324,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // if is an event hook
                 case InterfaceType.EventHandler:
                     try {
-                        return ExecuteEventHandler(scriptAssm, ref pyrvtScript);
+                        return ExecuteEventHandler(scriptAssm, ref runtime);
                     }
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
                         _clr_err_message = _clr_err_message.NormalizeNewLine();
-                        pyrvtScript.CLRTraceBack = _clr_err_message;
+                        runtime.CLRTraceBack = _clr_err_message;
 
-                        TaskDialog.Show(PyRevitConsts.ProductName, pyrvtScript.CLRTraceBack);
+                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
                         return ExecutionResultCodes.ExecutionException;
                     }
 
@@ -351,15 +341,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// Run the script by directly invoking the IExternalCommand type from given dll
-        private static int ExecuteInvokableDLL(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteInvokableDLL(ref ScriptRuntime runtime) {
             try {
                 // first argument is the script name
                 // script.py assmFile:className
-                if (pyrvtScript.Arguments.Count == 2) {
+                if (runtime.Arguments.Count == 2) {
                     // load the binary data from the DLL
                     // Direct invoke commands use the config script source file to point
                     // to the target dll assembly location
-                    string argumentString = pyrvtScript.Arguments[1];
+                    string argumentString = runtime.Arguments[1];
                     string assmFile = argumentString;
                     string className = null;
                     if (argumentString.Contains("::")) {
@@ -374,7 +364,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     byte[] assmBin = File.ReadAllBytes(assmFile);
                     Assembly assmObj = Assembly.Load(assmBin);
 
-                    var resultCode = ExecuteExternalCommand(assmObj, className, ref pyrvtScript);
+                    var resultCode = ExecuteExternalCommand(assmObj, className, ref runtime);
                     if (resultCode == ExecutionResultCodes.ExternalInterfaceNotImplementedException)
                         TaskDialog.Show(PyRevitConsts.ProductName,
                             string.Format(
@@ -399,7 +389,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// Run the script using ruby script engine
-        private static int ExecuteRubyScript(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteRubyScript(ref ScriptRuntime runtime) {
             // TODO: ExecuteRubyScript
             TaskDialog.Show(PyRevitConsts.ProductName, "Ruby-Script Execution Engine Not Yet Implemented.");
             return ExecutionResultCodes.EngineNotImplementedException;
@@ -446,13 +436,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// Run the script using DynamoBIM
-        private static int ExecuteDynamoDefinition(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteDynamoDefinition(ref ScriptRuntime runtime) {
             var journalData = new Dictionary<string, string>() {
                 // Specifies the path to the Dynamo workspace to execute.
-                { "dynPath", pyrvtScript.ScriptSourceFile },
+                { "dynPath", runtime.ScriptSourceFile },
 
                 // Specifies whether the Dynamo UI should be visible (set to false - Dynamo will run headless).
-                { "dynShowUI", pyrvtScript.DebugMode.ToString() },
+                { "dynShowUI", runtime.DebugMode.ToString() },
 
                 // If the journal file specifies automation mode
                 // Dynamo will run on the main thread without the idle loop.
@@ -489,7 +479,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 MethodInfo execDynamo = dynRevitApp.GetType().GetMethod("ExecuteDynamoCommand");
 
                 // run the script
-                execDynamo.Invoke(dynRevitApp, new object[] { journalData, pyrvtScript.UIApp });
+                execDynamo.Invoke(dynRevitApp, new object[] { journalData, runtime.UIApp });
                 return ExecutionResultCodes.Succeeded;
             }
             catch (FileNotFoundException) {
@@ -502,21 +492,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// Run the script using Grasshopper
-        private static int ExecuteGrasshopperDocument(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteGrasshopperDocument(ref ScriptRuntime runtime) {
             // TODO: ExecuteGrasshopperDocument
             TaskDialog.Show(PyRevitConsts.ProductName, "Grasshopper Execution Engine Not Yet Implemented.");
             return ExecutionResultCodes.EngineNotImplementedException;
         }
 
         /// Run the content bundle and place in active document
-        private static int ExecuteContentLoader(ref ScriptRuntime pyrvtScript) {
+        private static int ExecuteContentLoader(ref ScriptRuntime runtime) {
 #if (REVIT2013 || REVIT2014)
             TaskDialog.Show(PyRevitConsts.ProductName, NotSupportedFeatureException.NotSupportedMessage);
             return ExecutionResultCodes.NotSupportedFeatureException;
 #else
-            if (pyrvtScript.UIApp != null && pyrvtScript.UIApp.ActiveUIDocument != null) {
-                string familySourceFile = pyrvtScript.ScriptSourceFile;
-                UIDocument uidoc = pyrvtScript.UIApp.ActiveUIDocument;
+            if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null) {
+                string familySourceFile = runtime.ScriptSourceFile;
+                UIDocument uidoc = runtime.UIApp.ActiveUIDocument;
                 Document doc = uidoc.Document;
 
                 // find or load family first

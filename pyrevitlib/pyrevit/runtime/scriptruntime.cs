@@ -11,19 +11,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         ExternalCommand,
         EventHandler,
     }
-
-    public enum EngineType {
-        IronPython,
-        CPython,
-        CSharp,
-        Invoke,
-        VisualBasic,
-        IronRuby,
-        Dynamo,
-        Grasshopper,
-        Content,
-    }
-
     public class ScriptData {
         public string ScriptPath;
         public string ConfigScriptPath;
@@ -34,7 +21,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public string HelpSource;
     }
-
 
     public class ScriptRuntime : IDisposable {
         // app handles

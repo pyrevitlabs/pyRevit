@@ -30,6 +30,12 @@ if not EXEC_PARAMS.doc_mode:
     CommandSelectionAvail = runtime_module.CommandSelectionAvail
     CommandZeroDocAvail = runtime_module.CommandZeroDocAvail
 
+    # enginemgr.cs
+    EngineType = runtime_module.EngineType
+    ExecutionEngine = runtime_module.ExecutionEngine
+    EngineManager = runtime_module.EngineManager
+    IronPythonEngine = runtime_module.IronPythonEngine
+
     # scriptruntime.cs
     ScriptData = runtime_module.ScriptData
     ScriptRuntime = runtime_module.ScriptRuntime

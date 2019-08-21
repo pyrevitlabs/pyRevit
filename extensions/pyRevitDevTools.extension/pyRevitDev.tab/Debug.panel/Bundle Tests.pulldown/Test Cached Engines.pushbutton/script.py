@@ -1,11 +1,12 @@
-from pyrevit.runtime.types import ScriptOutputManager
+from pyrevit.runtime.types import ScriptOutputManager, EngineManager
 
 
 __context__ = 'zerodoc'
 
 
 from pyrevit import EXEC_PARAMS
-for engine_id in EXEC_PARAMS.engine_mgr.EngineDict:
+print('Active Engines:')
+for engine_id in EngineManager.EngineDict:
     print(engine_id)
 
 print('Running in reused engine?\n{}'
