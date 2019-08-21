@@ -99,8 +99,6 @@ class WPFWindow(framework.Windows.Window):
                                   os.path.join(EXEC_PARAMS.command_path,
                                                xaml_source))
             else:
-                print(self, type(self))
-                print(xaml_source, type(xaml_source))
                 wpf.LoadComponent(self, xaml_source)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
