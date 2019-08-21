@@ -493,16 +493,6 @@ def reverse_html(input_html):
 
 
 # def check_internet_connection():
-#     client = framework.WebClient()
-#     try:
-#         client.OpenRead("http://www.google.com")
-#         return True
-#     except:
-#         return False
-#
-
-
-# def check_internet_connection():
     # import urllib2
     #
     # def internet_on():
@@ -533,6 +523,16 @@ def can_access_url(url_to_open, timeout=1000):
         return True
     except Exception:
         return False
+
+
+def read_url(url_to_open):
+    """Get the url and return response.
+
+    Args:
+        url_to_open (str): url to check access for
+    """
+    client = framework.WebClient()
+    return client.DownloadString(url_to_open)
 
 
 def check_internet_connection(timeout=1000):

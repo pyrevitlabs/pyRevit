@@ -3,7 +3,7 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
-from pyrevit.framework import Windows, Controls
+from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
@@ -13,6 +13,7 @@ from pyrevit import forms
 from pyrevit import output
 from pyrevit.labs import TargetApps, PyRevit
 from pyrevit.coreutils import envvars
+from pyrevit.coreutils import apidocs
 from pyrevit.userconfig import user_config
 
 import pyrevitcore_globals
@@ -204,14 +205,31 @@ class SettingsWindow(forms.WPFWindow):
             cbox.FontFamily = Windows.Media.FontFamily("Consolas")
             cbox.IsChecked = False
             cbox.IsEnabled = event_type in supportedEvents
-            cbox.Content = "{}\n" \
-                           "API Event Type:      {}\n" \
-                           "pyRevit Event Name:  {}".format(
-                ' '.join(coreutils.split_words(str(event_type))[1:]),
-                api_name,
-                EventUtils.GetEventName(event_type))
+            tblock = Controls.TextBlock()
+            tblock.Inlines.Add(Documents.Run(
+                "{}\n".format(' '.join(
+                    coreutils.split_words(str(event_type))[1:]
+                ))))
+            tblock.Inlines.Add(Documents.Run(
+                "API Event Type:      "
+                ))
+            api_namespace = 'Autodesk.Revit.ApplicationServices.'
+            if api_name.startswith('UIApplication.'):
+                api_namespace = 'Autodesk.Revit.UI.'
+            hyperlink = Documents.Hyperlink(Documents.Run(api_name + "\n"))
+            hyperlink.NavigateUri = \
+                System.Uri(apidocs.make_event_uri(api_namespace + api_name))
+            hyperlink.Click += self.handle_url_click
+            tblock.Inlines.Add(hyperlink)
+            tblock.Inlines.Add(Documents.Run(
+                "pyRevit Event Name:  {}".format(
+                    EventUtils.GetEventName(event_type)
+                )))
             if not cbox.IsEnabled:
-                cbox.Content += "\nNot Supported in this Revit Version"
+                tblock.Inlines.Add(Documents.Run(
+                    "Not Supported in this Revit Version\n"
+                ))
+            cbox.Content = tblock
             self.event_telemetry_sp.Children.Add(cbox)
 
     def _setup_telemetry(self):

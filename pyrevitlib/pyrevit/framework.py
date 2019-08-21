@@ -59,6 +59,7 @@ from System import Windows
 from System.Windows import Forms
 from System.Windows.Forms import Clipboard
 from System.Windows import Controls
+from System.Windows import Documents
 from System.Windows import Media
 from System.Windows import Threading
 from System.Windows import Interop
