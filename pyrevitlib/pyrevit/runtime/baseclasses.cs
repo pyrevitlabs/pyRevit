@@ -153,7 +153,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // menu item to copy ;-separated sys paths to clipboard
                 // Example: "path1;path2;path3"
                 MenuItem copySysPaths = new MenuItem();
-                var sysPathsText = baked_syspaths.Replace(new string(Path.PathSeparator, 1), "\r\n");
+                var sysPathsText = baked_syspaths.Replace(new string(Path.PathSeparator, 1), Environment.NewLine);
                 copySysPaths.Header = "Copy Sys Paths";
                 copySysPaths.ToolTip = sysPathsText;
                 copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(sysPathsText); };

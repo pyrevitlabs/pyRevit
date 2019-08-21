@@ -15,11 +15,11 @@ output.set_title('Output Tests')
 output.print_md('**Testing log levels:**')
 logger.critical('Test Log Level')
 logger.warning('Test Log Level')
-logger.info('Test Log Level :ok_hand_sign:')
+logger.info('Test Log Level :OK_hand:')
 logger.debug('Test Log Level')
 
 output.print_md('**Testing large buffer output (>1023 chars):**')
-output.print_html('<div style="background:green">{}</div>'.format('Test '*256))
+output.print_html('<div style="background:green">{} END</div>'.format('Test '*256))
 
 output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'

@@ -104,11 +104,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Process compile errors if any
             if (command == null) {
                 // compilation failed, print errors and return
-                pyrvtScript.OutputStream.WriteError(
-                    string.Join(Environment.NewLine,
-                                ScriptOutputConfigs.ipyerrtitle,
-                                string.Join(Environment.NewLine, errors.Errors.ToArray()))
-                    );
+                pyrvtScript.OutputStream.WriteError(string.Join(Environment.NewLine, errors.Errors.ToArray()), EngineType.IronPython);
                 return ExecutionResultCodes.CompileException;
             }
 
@@ -130,16 +126,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // Print all errors to stdout and return cancelled to Revit.
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
-                _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
+                _ipy_err_messages = _ipy_err_messages.NormalizeNewLine();
                 pyrvtScript.IronLanguageTraceBack = _ipy_err_messages;
 
-                _clr_err_message = _clr_err_message.Replace("\r\n", "\n");
+                _clr_err_message = _clr_err_message.NormalizeNewLine();
                 pyrvtScript.CLRTraceBack = _clr_err_message;
 
-                _ipy_err_messages = string.Join("\n", ScriptOutputConfigs.ipyerrtitle, _ipy_err_messages);
-                _clr_err_message = string.Join("\n", ScriptOutputConfigs.clrerrtitle, _clr_err_message);
+                // manually add the CLR traceback since this is a two part error message
+                _clr_err_message = string.Join("\n", ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader), _clr_err_message);
 
-                pyrvtScript.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message);
+                pyrvtScript.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message, EngineType.IronPython);
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {
@@ -270,11 +266,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // Print all errors to stdout and return cancelled to Revit.
                     // This is to avoid getting window prompts from Revit.
                     // Those pop ups are small and errors are hard to read.
-                    _cpy_err_message = _cpy_err_message.Replace("\r\n", "\n");
+                    _cpy_err_message = _cpy_err_message.NormalizeNewLine();
                     pyrvtScript.CpythonTraceBack = _cpy_err_message;
-
-                    _cpy_err_message = string.Join("\n", ScriptOutputConfigs.cpyerrtitle, _cpy_err_message);
-                    pyrvtScript.OutputStream.WriteError(_cpy_err_message);
+                    pyrvtScript.OutputStream.WriteError(_cpy_err_message, EngineType.CPython);
                     result = ExecutionResultCodes.ExecutionException;
                 }
                 finally {
@@ -298,7 +292,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             catch (Exception compileEx) {
                 string _clr_err_message = compileEx.ToString();
-                _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
+                _clr_err_message = _clr_err_message.NormalizeNewLine();
                 pyrvtScript.CLRTraceBack = _clr_err_message;
 
                 // TODO: change to script output for all script types
@@ -326,7 +320,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
-                        _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
+                        _clr_err_message = _clr_err_message.NormalizeNewLine();
                         pyrvtScript.CLRTraceBack = _clr_err_message;
                         // TODO: same outp
                         TaskDialog.Show(PyRevitConsts.ProductName, _clr_err_message);
@@ -341,7 +335,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
-                        _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
+                        _clr_err_message = _clr_err_message.NormalizeNewLine();
                         pyrvtScript.CLRTraceBack = _clr_err_message;
 
                         TaskDialog.Show(PyRevitConsts.ProductName, pyrvtScript.CLRTraceBack);
@@ -431,10 +425,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             //    // Print all errors to stdout and return cancelled to Revit.
             //    // This is to avoid getting window prompts from Revit.
             //    // Those pop ups are small and errors are hard to read.
-            //    _ruby_err_messages = _ruby_err_messages.Replace("\r\n", Environment.NewLine);
+            //    _ruby_err_messages = _ruby_err_messages.NormalizeNewLine();
             //    pyrvtScript.IronLanguageTraceBack = _ruby_err_messages;
 
-            //    _dotnet_err_message = _dotnet_err_message.Replace("\r\n", Environment.NewLine);
+            //    _dotnet_err_message = _dotnet_err_message.NormalizeNewLine();
             //    pyrvtScript.ClrTraceBack = _dotnet_err_message;
 
             //    _ruby_err_messages = string.Join(Environment.NewLine, ExternalConfig.irubyerrtitle, _ruby_err_messages);
