@@ -31,7 +31,7 @@ def _remove_app_file(file_path):
     try:
         os.remove(file_path)
     except Exception as osremove_err:
-        mlogger.error('Error file cleanup on: %s | %s', file_path, osremove_err)
+        mlogger.debug('Error file cleanup on: %s | %s', file_path, osremove_err)
 
 
 def _list_app_files(prefix, file_ext, universal=False):
