@@ -169,6 +169,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // set output stream
                 PyObject sys = PythonEngine.ImportModule("sys");
                 sys.SetAttr("stdout", PyObject.FromManagedObject(pyrvtScript.OutputStream));
+                // dont write bytecode (__pycache__)
+                // https://docs.python.org/3.7/library/sys.html?highlight=pythondontwritebytecode#sys.dont_write_bytecode
+                sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
 
                 // set sys paths
                 PyObject sysPaths = sys.GetAttr("path");
