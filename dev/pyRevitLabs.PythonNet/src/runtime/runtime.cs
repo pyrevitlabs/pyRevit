@@ -812,6 +812,15 @@ namespace pyRevitLabs.PythonNet {
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr PyRun_String(string code, IntPtr st, IntPtr globals, IntPtr locals);
 
+        // https://github.com/pythonnet/pythonnet/issues/818#issuecomment-464688658
+        [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl, EntryPoint = "PyRun_String")]
+        internal static extern IntPtr PyRun_StringUTF8(
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8Marshaler))] string code,
+            IntPtr st,
+            IntPtr globals,
+            IntPtr locals
+            );
+
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr PyEval_EvalCode(IntPtr co, IntPtr globals, IntPtr locals);
 

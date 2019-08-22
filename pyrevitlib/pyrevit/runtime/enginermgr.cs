@@ -430,9 +430,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             int result = ExecutionResultCodes.Succeeded;
 
             using (Py.GIL()) {
-                var scriptContents = File.ReadAllText(runtime.ScriptSourceFile);
+                var scriptContents = File.ReadAllText(runtime.ScriptSourceFile, encoding: System.Text.Encoding.UTF8);
                 try {
-                    PythonEngine.Exec(scriptContents, globals: _globals);
+                    PythonEngine.ExecUTF8(scriptContents, globals: _globals);
                 }
                 catch (PythonException cpyex) {
                     var traceBackParts = cpyex.StackTrace.Split(']');

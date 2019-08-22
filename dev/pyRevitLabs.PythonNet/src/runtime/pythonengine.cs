@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -481,6 +482,13 @@ namespace pyRevitLabs.PythonNet {
             result.Dispose();
         }
 
+        public static void ExecUTF8(string code, IntPtr? globals = null, IntPtr? locals = null) {
+            PyObject result = RunString(code, globals, locals, RunFlagType.File, Encoding.UTF8);
+            if (result.obj != Runtime.PyNone) {
+                throw new PythonException();
+            }
+            result.Dispose();
+        }
 
         /// <summary>
         /// RunString Method. Function has been deprecated and will be removed.
@@ -499,7 +507,7 @@ namespace pyRevitLabs.PythonNet {
         /// executing the code string as a PyObject instance, or null if
         /// an exception was raised.
         /// </remarks>
-        internal static PyObject RunString(string code, IntPtr? globals, IntPtr? locals, RunFlagType flag) {
+        internal static PyObject RunString(string code, IntPtr? globals, IntPtr? locals, RunFlagType flag, Encoding encoding = null) {
             var borrowedGlobals = true;
             if (globals == null) {
                 globals = Runtime.PyEval_GetGlobals();
@@ -518,9 +526,17 @@ namespace pyRevitLabs.PythonNet {
             }
 
             try {
-                IntPtr result = Runtime.PyRun_String(
-                    code, (IntPtr)flag, globals.Value, locals.Value
-                );
+                IntPtr result = IntPtr.Zero;
+                if (encoding == Encoding.UTF8) {
+                    result = Runtime.PyRun_StringUTF8(
+                        code, (IntPtr)flag, globals.Value, locals.Value
+                    );
+                }
+                else {
+                    result = Runtime.PyRun_String(
+                        code, (IntPtr)flag, globals.Value, locals.Value
+                    );
+                }
 
                 Runtime.CheckExceptionOccurred();
 
