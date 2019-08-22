@@ -4,7 +4,7 @@ import os.path as op
 import json
 import codecs
 
-from pyrevit import PyRevitException
+from pyrevit import PyRevitException, HOST_APP
 from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import coreutils
@@ -132,16 +132,37 @@ class ContentButton(GenericUICommand):
             cmp_path=cmp_path,
             needs_script=False
             )
-        # find script file
+        # find content file
         self.script_file = \
             self.find_bundle_file([
-                exts.CONTENT_POSTFIX,
+                exts.CONTENT_VERSION_POSTFIX.format(
+                    version=HOST_APP.version
+                    ),
                 ])
+        if not self.script_file:
+            self.script_file = \
+                self.find_bundle_file([
+                    exts.CONTENT_POSTFIX,
+                    ])
+        # requires at least one bundles
+        if not self.script_file:
+            mlogger.error('Command %s: Does not have content file.', self)
+            self.script_file = ''
 
+        # find alternative content file
         self.config_script_file = \
             self.find_bundle_file([
-                exts.ALT_CONTENT_POSTFIX,
+                exts.ALT_CONTENT_VERSION_POSTFIX.format(
+                    version=HOST_APP.version
+                    ),
                 ])
+        if not self.config_script_file:
+            self.config_script_file = \
+                self.find_bundle_file([
+                    exts.ALT_CONTENT_POSTFIX,
+                    ])
+        if not self.config_script_file:
+            self.config_script_file = ''
 
 
 # Command groups only include commands. these classes can include
