@@ -10,8 +10,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string keyPrefix = PyRevitConsts.ProductName.ToUpper();
 
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
-        public static string IronPythonEnginesDictKey = keyPrefix + "IPYEngines";
-        public static string IronPythonEngineDefaultStreamCfgKey = keyPrefix + "IPYEngineDefaultStreamCfg";
+        public static string EnginesDictKey = keyPrefix + "CachedEngines";
+        public static string IronPythonEngineDefaultStreamCfgKey = keyPrefix + "CachedEngineDefaultStreamCfg";
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
 

@@ -14,8 +14,13 @@ from functools import wraps
 import datetime
 import webbrowser
 
-from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
+from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR, PyRevitCPythonNotSupported
+import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
+
+if compat.PY3:
+    raise PyRevitCPythonNotSupported('pyrevit.forms')
+
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
@@ -1888,12 +1893,13 @@ def select_parameter(src_element,
         ... [<ParamDef >, <ParamDef >]
     """
     param_defs = []
+    non_storage_type = coreutils.get_enum_none(DB.StorageType)
     if include_instance:
         # collect instance parameters
         param_defs.extend(
             [ParamDef(name=x.Definition.Name, istype=False)
              for x in src_element.Parameters
-             if not x.IsReadOnly and x.StorageType != DB.StorageType.None]
+             if not x.IsReadOnly and x.StorageType != non_storage_type]
         )
 
     if include_type:
@@ -1902,7 +1908,7 @@ def select_parameter(src_element,
         param_defs.extend(
             [ParamDef(name=x.Definition.Name, istype=True)
              for x in src_type.Parameters
-             if not x.IsReadOnly and x.StorageType != DB.StorageType.None]
+             if not x.IsReadOnly and x.StorageType != non_storage_type]
         )
 
     if filterfunc:

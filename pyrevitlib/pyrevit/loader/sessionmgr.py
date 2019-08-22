@@ -33,6 +33,7 @@ from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 # import the runtime first to get all the c-sharp code to compile
 from pyrevit import runtime
+from pyrevit.runtime import types as runtime_types
 # now load the rest of module that could depend on the compiled runtime
 from pyrevit import output
 
@@ -53,7 +54,9 @@ def _clear_running_engines():
         if my_output:
             my_output.close_others(all_open_outputs=True)
 
-        EXEC_PARAMS.engine_mgr.ClearEngines()
+        runtime_types.EngineManager.ClearEngines(
+            excludeEngine=EXEC_PARAMS.engine_id
+            )
     except AttributeError:
         return False
 
@@ -192,8 +195,9 @@ def _new_session():
                           assm_ext.ext.name)
 
             # now run
-            execute_script(
+            execute_extension_startup_script(
                 assm_ext.ext.startup_script,
+                assm_ext.ext.name,
                 sys_paths=sys_paths
                 )
 
@@ -518,12 +522,7 @@ def execute_command(pyrevitcmd_unique_id):
         execute_command_cls(cmd_class)
 
 
-def execute_script(script_path,
-                   arguments=None,
-                   sys_paths=None,
-                   clean_engine=True,
-                   fullframe_engine=True,
-                   persistent_engine=True):
+def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     """Executes a script using pyRevit script executor.
 
     Args:
@@ -545,7 +544,7 @@ def execute_script(script_path,
     script_data.CommandUniqueId = ''
     script_data.CommandName = script_name
     script_data.CommandBundle = ''
-    script_data.CommandExtension = ''
+    script_data.CommandExtension = ext_name
     script_data.HelpSource = ''
 
     script_runtime = \
@@ -554,10 +553,10 @@ def execute_script(script_path,
             elements=None,
             scriptData=script_data,
             searchpaths=framework.Array[str](sys_paths or []),
-            arguments=framework.Array[str](arguments or []),
-            needsCleanEngine=clean_engine,
-            needsFullFrameEngine=fullframe_engine,
-            needsPersistentEngine=persistent_engine,
+            arguments=framework.Array[str]([]),
+            needsCleanEngine=True,
+            needsFullFrameEngine=True,
+            needsPersistentEngine=True,
             refreshEngine=False,
             forcedDebugMode=False,
             configScriptMode=False,

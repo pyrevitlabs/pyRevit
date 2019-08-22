@@ -59,7 +59,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static int Execute(EventHook eventHook, object eventSender, object eventArgs) {
             // 1: ----------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
-            var pyrvtScript =
+            var runtime =
                 new ScriptRuntime(
                     cmdData: null,
                     elements: new ElementSet(),
@@ -84,13 +84,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     );
 
             // set sender and args for events
-            pyrvtScript.EventSender = eventSender;
-            pyrvtScript.EventArgs = eventArgs;
+            runtime.EventSender = eventSender;
+            runtime.EventArgs = eventArgs;
             #endregion
 
             // 2: ----------------------------------------------------------------------------------------------------
             #region Execute and log results
-            return ScriptExecutor.ExecuteScript(ref pyrvtScript);
+            return ScriptExecutor.ExecuteScript(ref runtime);
 
             // TODO: log results into command execution telemetry?
             #endregion

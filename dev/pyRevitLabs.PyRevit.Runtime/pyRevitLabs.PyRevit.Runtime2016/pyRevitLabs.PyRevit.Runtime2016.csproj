@@ -90,8 +90,8 @@
     <Reference Include="pyRevitLoader">
       <HintPath>..\..\..\bin\engines\279\pyRevitLoader.dll</HintPath>
     </Reference>
-    <Reference Include="Python.Runtime">
-      <HintPath>..\..\..\bin\engines\372\Python.Runtime.dll</HintPath>
+    <Reference Include="pyRevitLabs.PythonNet">
+      <HintPath>..\..\..\bin\engines\372\pyRevitLabs.PythonNet.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPI">
       <HintPath>.\RevitAPI.dll</HintPath>

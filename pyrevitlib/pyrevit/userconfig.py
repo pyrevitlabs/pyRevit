@@ -34,12 +34,12 @@ Example:
 #pylint: disable=C0103,C0413,W0703
 import os
 import os.path as op
-import _winreg as wr    #pylint: disable=import-error
 
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
 from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
+from pyrevit.compat import winreg as wr
 
 from pyrevit.labs import PyRevit
 

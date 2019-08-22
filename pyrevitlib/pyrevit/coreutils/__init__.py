@@ -18,11 +18,11 @@ import stat
 import codecs
 import math
 from collections import defaultdict
-import _winreg as wr     #pylint: disable=import-error
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
+from pyrevit.compat import winreg as wr
 from pyrevit import framework
 from pyrevit import api
 
@@ -30,10 +30,8 @@ from pyrevit import api
 # import uuid
 from System import Guid
 
-
 #pylint: disable=W0703,C0302
 DEFAULT_SEPARATOR = ';'
-
 
 # extracted from
 # https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
@@ -95,7 +93,7 @@ class ScriptFileParser(object):
         self.file_addr = file_address
         with open(file_address, 'r') as source_file:
             contents = source_file.read()
-            if contents and not '#! python3' in contents:
+            if contents:
                 self.ast_tree = ast.parse(contents)
 
     def get_docstring(self):
@@ -460,7 +458,7 @@ def prepare_html_str(input_string):
     as html tags. To avoid this, all <> characters that are defining
     html content need to be replaced with special phrases. pyRevit output
     later translates these phrases back in to < and >. That is how pyRevit
-    ditinquishes between <> printed from python and <> that define html.
+    distinquishes between <> printed from python and <> that define html.
 
     Args:
         input_string (str): input html string
@@ -480,7 +478,7 @@ def reverse_html(input_html):
     as html tags. To avoid this, all <> characters that are defining
     html content need to be replaced with special phrases. pyRevit output
     later translates these phrases back in to < and >. That is how pyRevit
-    ditinquishes between <> printed from python and <> that define html.
+    distinquishes between <> printed from python and <> that define html.
 
     Args:
         input_html (str): input codified html string
@@ -490,6 +488,10 @@ def reverse_html(input_html):
         "<p>Some text</p>"
     """
     return input_html.replace('&clt;', '<').replace('&cgt;', '>')
+
+
+def escape_for_html(input_string):
+    return input_string.replace('<', '&lt;').replace('>', '&gt;')
 
 
 # def check_internet_connection():

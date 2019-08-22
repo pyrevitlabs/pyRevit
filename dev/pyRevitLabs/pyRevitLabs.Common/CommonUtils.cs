@@ -106,6 +106,10 @@ namespace pyRevitLabs.Common {
             return true;
         }
 
+        public static string GetFileSignature(string filepath) {
+            return System.IO.File.GetLastWriteTimeUtc(filepath).GetHashCode().ToString();
+        }
+
         public static WebClient GetWebClient() {
             if (CheckInternetConnection()) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;

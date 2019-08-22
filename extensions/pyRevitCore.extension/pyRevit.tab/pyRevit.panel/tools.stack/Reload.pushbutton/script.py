@@ -1,5 +1,5 @@
 """Reload pyRevit into new session."""
-
+#pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import EXEC_PARAMS
 from pyrevit import script
 from pyrevit import forms

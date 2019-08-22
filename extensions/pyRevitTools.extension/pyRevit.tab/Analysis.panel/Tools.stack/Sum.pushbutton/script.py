@@ -3,6 +3,7 @@ from collections import namedtuple
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
+from pyrevit import coreutils
 from pyrevit.coreutils import pyutils
 
 
@@ -170,7 +171,7 @@ if options:
         if selected_option:
             for type_name, element_set \
                     in process_sets(selection.elements).items():
-                type_name = type_name.replace('<', '&lt;').replace('>', '&gt;')
+                type_name = coreutils.escape_for_html(type_name)
                 output.print_md('### Totals for: {}'.format(type_name))
                 output_param_total(element_set, selected_option)
                 output.insert_divider()

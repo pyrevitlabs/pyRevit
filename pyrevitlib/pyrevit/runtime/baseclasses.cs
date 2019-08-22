@@ -153,7 +153,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // menu item to copy ;-separated sys paths to clipboard
                 // Example: "path1;path2;path3"
                 MenuItem copySysPaths = new MenuItem();
-                var sysPathsText = baked_syspaths.Replace(new string(Path.PathSeparator, 1), "\r\n");
+                var sysPathsText = baked_syspaths.Replace(new string(Path.PathSeparator, 1), Environment.NewLine);
                 copySysPaths.Header = "Copy Sys Paths";
                 copySysPaths.ToolTip = sysPathsText;
                 copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(sysPathsText); };
@@ -213,7 +213,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // 2: ----------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
-            var pyrvtScript = new ScriptRuntime(
+            var runtime = new ScriptRuntime(
                 cmdData: commandData,
                 elements: elements,
                 scriptData: new ScriptData {
@@ -241,15 +241,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             #region Execute and log results
             // Executing the script and logging the results
             // Get script executor and Execute the script
-            pyrvtScript.ExecutionResult = ScriptExecutor.ExecuteScript(ref pyrvtScript);
+            runtime.ExecutionResult = ScriptExecutor.ExecuteScript(ref runtime);
 
             // Log results
-            ScriptTelemetry.LogScriptTelemetryRecord(pyrvtScript.MakeTelemetryRecord());
+            ScriptTelemetry.LogScriptTelemetryRecord(runtime.MakeTelemetryRecord());
 
             // GC cleanups
-            var re = pyrvtScript.ExecutionResult;
-            pyrvtScript.Dispose();
-            pyrvtScript = null;
+            var re = runtime.ExecutionResult;
+            runtime.Dispose();
+            runtime = null;
 
             // Return results to Revit. Don't report errors since we don't want Revit popup with error results
             if (re == 0)

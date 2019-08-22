@@ -91,12 +91,11 @@ class LoggerWrapper(logging.Logger):
         # needs to cleanup < and > character to avoid html conflict
         if not isinstance(msg, str):
             msg_str = safe_strtype(msg)
+            # get rid of unicode characters
+            msg_str = msg_str.encode('ascii', 'ignore')
+            msg_str = msg_str.replace(os.path.sep, '/')
         else:
             msg_str = msg
-        # get rid of unicode characters
-        msg_str = msg_str.encode('ascii', 'ignore')
-        msg_str = msg_str.replace(os.path.sep, '/')
-
         logging.Logger._log(self, level, msg_str, args,
                             exc_info=exc_info, extra=extra)
 

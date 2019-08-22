@@ -1,8 +1,8 @@
 import re
 import os.path as op
-import _winreg as wr
 
 from pyrevit import script
+from pyrevit.compat import winreg as wr
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
 

@@ -316,6 +316,23 @@ namespace pyRevitLabs.Common.Extensions {
         public static string PrepareJSONForCSV(this string input) {
             return "\"" + input.Replace("\"", "\"\"") + "\"";
         }
+
+        public static IEnumerable<string> SplitIntoChunks(this string input, int chunkSize) {
+            if (string.IsNullOrEmpty(input) || chunkSize < 1)
+                throw new ArgumentException("String can not be null or empty and chunk size should be greater than zero.");
+            var chunkCount = input.Length / chunkSize + (input.Length % chunkSize != 0 ? 1 : 0);
+            for (var i = 0; i < chunkCount; i++) {
+                var startIndex = i * chunkSize;
+                if (startIndex + chunkSize >= input.Length)
+                    yield return input.Substring(startIndex);
+                else
+                    yield return input.Substring(startIndex, chunkSize);
+            }
+        }
+
+        public static string NormalizeNewLine(this string input) {
+            return input.Replace("\r\n", "\n");
+        }
     }
 
     public static class DateTimeExtensions {

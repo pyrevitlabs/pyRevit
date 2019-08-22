@@ -5,6 +5,7 @@ from collections import namedtuple
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
+import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
@@ -89,7 +90,10 @@ def get_name(element, title_on_sheet=False):
 
     # have to use the imported Element otherwise
     # AttributeError occurs
-    return Element.Name.__get__(element)
+    if compat.PY3:
+        return element.Name
+    else:
+        return Element.Name.__get__(element)
 
 
 def get_type(element):

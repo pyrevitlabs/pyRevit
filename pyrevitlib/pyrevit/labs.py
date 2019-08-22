@@ -4,6 +4,7 @@ import logging
 #pylint: disable=superfluous-parens
 from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.framework import clr
+import pyrevit.compat as compat
 
 # try loading pyrevitlabs
 clr.AddReference('Nett')
@@ -78,16 +79,17 @@ if not EXEC_PARAMS.doc_mode:
 
     # configure NLog
     #pylint: disable=W0201
-    config = NLog.Config.LoggingConfiguration()
-    target = PyRevitOutputTarget()
-    target.Name = __name__
-    target.Layout = "${level:uppercase=true}: [${logger}] ${message}"
-    config.AddTarget(__name__, target)
-    config.AddRuleForAllLevels(target)
-    NLog.LogManager.Configuration = config
+    if compat.PY2:
+        config = NLog.Config.LoggingConfiguration()
+        target = PyRevitOutputTarget()
+        target.Name = __name__
+        target.Layout = "${level:uppercase=true}: [${logger}] ${message}"
+        config.AddTarget(__name__, target)
+        config.AddRuleForAllLevels(target)
+        NLog.LogManager.Configuration = config
 
-    for rule in NLog.LogManager.Configuration.LoggingRules:
-        rule.EnableLoggingForLevel(NLog.LogLevel.Info)
-        rule.EnableLoggingForLevel(NLog.LogLevel.Debug)
+        for rule in NLog.LogManager.Configuration.LoggingRules:
+            rule.EnableLoggingForLevel(NLog.LogLevel.Info)
+            rule.EnableLoggingForLevel(NLog.LogLevel.Debug)
 
-    nlog_mlogger = NLog.LogManager.GetLogger(__name__)
+        nlog_mlogger = NLog.LogManager.GetLogger(__name__)

@@ -41,7 +41,7 @@ kernel = 'CPython'
 version = 368
 runtime = false
 path = 'bin\engines\368'
-assembly = 'Python.Runtime.dll'
+assembly = 'pyRevitLabs.PythonNet.dll'
 compatproducts = []
 description = 'Alternative command execution engine.'
 
@@ -50,7 +50,7 @@ kernel = 'CPython'
 version = 372
 runtime = false
 path = 'bin\engines\372'
-assembly = 'Python.Runtime.dll'
+assembly = 'pyRevitLabs.PythonNet.dll'
 compatproducts = []
 description = 'Alternative command execution engine.'
 
