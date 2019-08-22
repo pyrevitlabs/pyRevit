@@ -6,6 +6,8 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
 
+using pyRevitLabs.Common;
+
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum InterfaceType {
         ExternalCommand,
@@ -110,6 +112,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     return ScriptData.ConfigScriptPath;
                 else
                     return ScriptData.ScriptPath;
+            }
+        }
+
+        public string ScriptSourceFileSignature {
+            get {
+                return CommonUtils.GetFileSignature(ScriptSourceFile);
             }
         }
 

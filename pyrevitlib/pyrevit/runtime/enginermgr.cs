@@ -2,12 +2,16 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+
+using System.Reflection;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
 
 // iron languages
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using IronPython.Hosting;
-using IronPython.Runtime;
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 //using IronRuby;
@@ -21,10 +25,12 @@ using Microsoft.CSharp;
 //vb
 using Microsoft.VisualBasic;
 
+using pyRevitLabs.Common;
+using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum EngineType {
-        Unknown,
         IronPython,
         CPython,
         CSharp,
@@ -38,42 +44,52 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public class ExecutionEngine {
         public string Id { get; private set; }
+        public string TypeId { get; private set; }
 
-        public virtual bool NeedsNew { get; set; }
-        public virtual bool Cached { get; set; }
-        public virtual EngineType EngineType { get { return EngineType.Unknown; } }
+        public virtual bool IsRequiredByRuntime { get; set; }
+        public virtual bool RecoveredFromCache { get; set; }
 
         public virtual void Init(ref ScriptRuntime runtime) {
-            Id = string.Format("{0}:{1}", EngineType.ToString(), runtime.ScriptData.CommandExtension);
-            Cached = false;
+            Id = CommonUtils.NewShortUUID();
+            // unqiue typeid of the engine
+            // based on session_id, engine type, and command extension
+            TypeId = string.Join(":",
+                runtime.SessionUUID,
+                runtime.EngineType.ToString(),
+                runtime.ScriptData.CommandExtension);
+
+            // default to false since this is a new engine
+            RecoveredFromCache = false;
         }
 
-        public virtual void Setup(ref ScriptRuntime runtime) { }
+        public virtual void Start(ref ScriptRuntime runtime) { }
+        public virtual int Execute(ref ScriptRuntime runtime) { return ExecutionResultCodes.Succeeded; }
+        public virtual void Stop(ref ScriptRuntime runtime) { }
         public virtual void Shutdown() { }
     }
 
     public static class EngineManager {
         public static T GetEngine<T>(ref ScriptRuntime runtime) where T : ExecutionEngine, new() {
-            T engine = new T();
-            engine.Init(ref runtime);
+            T newEngine = new T();
+            newEngine.Init(ref runtime);
 
-            if (engine.NeedsNew) {
-                SetCachedEngine<T>(engine.Id, engine);
+            if (newEngine.IsRequiredByRuntime) {
+                SetCachedEngine<T>(newEngine.TypeId, newEngine);
             }
             else {
-                var cachedEngine = GetCachedEngine<T>(engine.Id);
+                var cachedEngine = GetCachedEngine<T>(newEngine.TypeId);
                 if (cachedEngine != null) {
-                    engine = cachedEngine;
-                    engine.Cached = true;
+                    newEngine = cachedEngine;
+                    newEngine.RecoveredFromCache = true;
                 }
                 else
-                    SetCachedEngine<T>(engine.Id, engine);
+                    SetCachedEngine<T>(newEngine.TypeId, newEngine);
             }
-
-            engine.Setup(ref runtime);
-            return engine;
+            return newEngine;
         }
 
+        // dicts need to be flexible type since multiple signatures of the ExecutionEngine
+        // type could be placed inside this dictionary between pyRevit live reloads
         public static Dictionary<string, object> EngineDict {
             get {
                 Dictionary<string, object> engineDict;
@@ -103,25 +119,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return newEngineDict;
         }
 
-        private static T GetCachedEngine<T>(string engineId) where T : ExecutionEngine, new() {
-            if (EngineDict.ContainsKey(engineId))
-                return (T)EngineDict[engineId];
+        private static T GetCachedEngine<T>(string engineTypeId) where T : ExecutionEngine, new() {
+            if (EngineDict.ContainsKey(engineTypeId)) {
+                try {
+                    return (T)EngineDict[engineTypeId];
+                }
+                catch (InvalidCastException) {
+                    return null;
+                }
+            }
             return null;
         }
 
-        private static void SetCachedEngine<T>(string engineId, T engine) where T : ExecutionEngine, new() {
-            var cachedEngine = GetCachedEngine<T>(engine.Id);
+        private static void SetCachedEngine<T>(string engineTypeId, T engine) where T : ExecutionEngine, new() {
+            var cachedEngine = GetCachedEngine<T>(engine.TypeId);
             if (cachedEngine != null)
                 cachedEngine.Shutdown();
-            EngineDict[engineId] = engine;
+            EngineDict[engineTypeId] = engine;
         }
     }
 
     public class IronPythonEngine : ExecutionEngine {
         private List<string> _commandBuiltins = new List<string>();
-        private List<ScriptScope> _scopes = new List<ScriptScope>();
-
-        public override EngineType EngineType { get { return EngineType.IronPython; } }
 
         public ScriptEngine Engine { get; private set; }
         public static Tuple<Stream, System.Text.Encoding> DefaultOutputStreamConfig {
@@ -140,11 +159,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // If the command required a fullframe engine
             // or if the command required a clean engine
             // of if the user is asking to refresh the cached engine for the command,
-            NeedsNew = runtime.NeedsFullFrameEngine || runtime.NeedsCleanEngine || runtime.NeedsRefreshedEngine;
+            IsRequiredByRuntime = runtime.NeedsFullFrameEngine || runtime.NeedsCleanEngine || runtime.NeedsRefreshedEngine;
         }
 
-        public override void Setup(ref ScriptRuntime runtime) {
-            if (!Cached) {
+        public override void Start(ref ScriptRuntime runtime) {
+            if (!RecoveredFromCache) {
                 var flags = new Dictionary<string, object>();
 
                 // default flags
@@ -180,18 +199,83 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetupArguments(ref runtime);
         }
 
+        public override int Execute(ref ScriptRuntime runtime) {
+            // Setup the command scope in this engine with proper builtin and scope parameters
+            var scope = Engine.CreateScope();
+
+            // Create the script from source file
+            var script = Engine.CreateScriptSourceFromFile(
+                    runtime.ScriptSourceFile,
+                    System.Text.Encoding.UTF8,
+                    SourceCodeKind.File
+                );
+
+            // Setting up error reporter and compile the script
+            // setting module to be the main module so __name__ == __main__ is True
+            var compiler_options = (PythonCompilerOptions)Engine.GetCompilerOptions(scope);
+            compiler_options.ModuleName = "__main__";
+            compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
+
+            var errors = new IronPythonErrorReporter();
+            var command = script.Compile(compiler_options, errors);
+
+            // Process compile errors if any
+            if (command == null) {
+                // compilation failed, print errors and return
+                runtime.OutputStream.WriteError(string.Join(Environment.NewLine, errors.Errors.ToArray()), EngineType.IronPython);
+                return ExecutionResultCodes.CompileException;
+            }
+
+            // Finally let's execute
+            try {
+                command.Execute(scope);
+                return ExecutionResultCodes.Succeeded;
+            }
+            catch (SystemExitException) {
+                // ok, so the system exited. That was bound to happen...
+                return ExecutionResultCodes.SysExited;
+            }
+            catch (Exception exception) {
+                // show (power) user everything!
+                string _clr_err_message = exception.ToString();
+                string _ipy_err_messages = Engine.GetService<ExceptionOperations>().FormatException(exception);
+
+                // Print all errors to stdout and return cancelled to Revit.
+                // This is to avoid getting window prompts from Revit.
+                // Those pop ups are small and errors are hard to read.
+                _ipy_err_messages = _ipy_err_messages.NormalizeNewLine();
+                runtime.IronLanguageTraceBack = _ipy_err_messages;
+
+                _clr_err_message = _clr_err_message.NormalizeNewLine();
+                runtime.CLRTraceBack = _clr_err_message;
+
+                // manually add the CLR traceback since this is a two part error message
+                _clr_err_message = string.Join("\n", ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader), _clr_err_message);
+
+                runtime.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message, EngineType.IronPython);
+                return ExecutionResultCodes.ExecutionException;
+            }
+            finally {
+                if (!runtime.NeedsPersistentEngine) {
+                    // cleaning removes all references to revit content that's been casualy stored in global-level
+                    // variables and prohibit the GC from cleaning them up and releasing memory
+                    var scopeClearScript = Engine.CreateScriptSourceFromString(
+                    "for __deref in dir():\n" +
+                    "    if not __deref.startswith('__'):\n" +
+                    "        del globals()[__deref]");
+                    scopeClearScript.Compile();
+                    scopeClearScript.Execute(scope);
+                }
+            }
+        }
+
+        public override void Stop(ref ScriptRuntime runtime) {
+        }
+
         public override void Shutdown() {
-            CleanScopes();
             CleanupEngineBuiltins();
             CleanupStreams();
             _commandBuiltins = new List<string>();
-            _scopes = new List<ScriptScope>();
-        }
-
-        public ScriptScope GetNewScope() {
-            var scope = Engine.CreateScope();
-            _scopes.Add(scope);
-            return scope;
         }
 
         private void SetupStdlib(ScriptEngine engine) {
@@ -211,10 +295,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
 
             // Let commands know if they're being run in a cached engine
-            builtin.SetVariable("__cachedengine__", Cached);
+            builtin.SetVariable("__cachedengine__", RecoveredFromCache);
 
             // Add current engine id to builtins
-            builtin.SetVariable("__cachedengineid__", Id);
+            builtin.SetVariable("__cachedengineid__", TypeId);
 
             // Add this script executor to the the builtin to be globally visible everywhere
             // This support pyrevit functionality to ask information about the current executing command
@@ -278,19 +362,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             sysmodule.SetVariable("argv", pythonArgv);
         }
 
-        private void CleanScopes() {
-            // cleaning removes all references to revit content that's been casualy stored in global-level
-            // variables and prohibit the GC from cleaning them up and releasing memory
-            var scopeCleaerScript = Engine.CreateScriptSourceFromString(
-                "for __deref in dir():\n" +
-                "    if not __deref.startswith('__'):\n" +
-                "        del globals()[__deref]");
-            scopeCleaerScript.Compile();
-
-            foreach (ScriptScope scope in _scopes)
-                scopeCleaerScript.Execute(scope);
-        }
-
         private void CleanupEngineBuiltins() {
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
 
@@ -330,22 +401,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class CPythonEngine : ExecutionEngine {
-        public override EngineType EngineType { get { return EngineType.CPython; } }
-
-        public IntPtr Globals = IntPtr.Zero;
+        private PyObject _sysPaths = null;
+        private IntPtr _globals = IntPtr.Zero;
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            NeedsNew = runtime.NeedsFullFrameEngine || runtime.NeedsCleanEngine || runtime.NeedsRefreshedEngine;
+            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
         }
 
-        public override void Setup(ref ScriptRuntime runtime) {
-            using (Py.GIL()) {
-                // initialize
-                if (!PythonEngine.IsInitialized)
-                    PythonEngine.Initialize();
+        public override void Start(ref ScriptRuntime runtime) {
+            if (!RecoveredFromCache) {
+                using (Py.GIL()) {
+                    // initialize
+                    if (!PythonEngine.IsInitialized)
+                        PythonEngine.Initialize();
+                }
             }
 
             SetupStreams(ref runtime);
@@ -354,11 +426,63 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetupArguments(ref runtime);
         }
 
+        public override int Execute(ref ScriptRuntime runtime) {
+            int result = ExecutionResultCodes.Succeeded;
+
+            using (Py.GIL()) {
+                var scriptContents = File.ReadAllText(runtime.ScriptSourceFile);
+                try {
+                    PythonEngine.Exec(scriptContents, globals: _globals);
+                }
+                catch (PythonException cpyex) {
+                    var traceBackParts = cpyex.StackTrace.Split(']');
+                    string pyTraceback = traceBackParts[0].Trim() + "]";
+                    string cleanedPyTraceback = string.Empty;
+                    foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
+                        if (tbLine.Contains("File \"<string>\"")) {
+                            var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", runtime.ScriptSourceFile));
+                            cleanedPyTraceback += fixedTbLine;
+                            var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
+                            cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
+                        }
+                        else {
+                            cleanedPyTraceback += tbLine;
+                        }
+                    }
+
+                    string pyNetTraceback = traceBackParts[1].Trim();
+
+                    string _cpy_err_message = string.Join(
+                        "\n",
+                        cpyex.Message,
+                        cleanedPyTraceback,
+                        cpyex.Source,
+                        pyNetTraceback
+                        );
+
+                    // Print all errors to stdout and return cancelled to Revit.
+                    // This is to avoid getting window prompts from Revit.
+                    // Those pop ups are small and errors are hard to read.
+                    _cpy_err_message = _cpy_err_message.NormalizeNewLine();
+                    runtime.CpythonTraceBack = _cpy_err_message;
+                    runtime.OutputStream.WriteError(_cpy_err_message, EngineType.CPython);
+                    result = ExecutionResultCodes.ExecutionException;
+                }
+                finally {
+                }
+            }
+
+            return result;
+        }
+
+        public override void Stop(ref ScriptRuntime runtime) {
+        }
+
         public override void Shutdown() {
             using (Py.GIL()) {
                 // deref newly created globals
-                pyRevitLabs.PythonNet.Runtime.XDecref(Globals);
-                Globals = IntPtr.Zero;
+                pyRevitLabs.PythonNet.Runtime.XDecref(_globals);
+                _globals = IntPtr.Zero;
             }
             PythonEngine.Shutdown();
         }
@@ -374,17 +498,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void SetupBuiltins(ref ScriptRuntime runtime) {
             // get globals
-            Globals = pyRevitLabs.PythonNet.Runtime.PyEval_GetGlobals();
+            _globals = pyRevitLabs.PythonNet.Runtime.PyEval_GetGlobals();
             // get builtins
             IntPtr builtins = pyRevitLabs.PythonNet.Runtime.PyEval_GetBuiltins();
-            if (Globals == IntPtr.Zero) {
-                Globals = pyRevitLabs.PythonNet.Runtime.PyDict_New();
-                SetVariable(Globals, "__builtins__", builtins);
+            if (_globals == IntPtr.Zero) {
+                _globals = pyRevitLabs.PythonNet.Runtime.PyDict_New();
+                SetVariable(_globals, "__builtins__", builtins);
             }
 
             // set builtins
-            SetVariable(builtins, "__cachedengine__", false);
-            SetVariable(builtins, "__cachedengineid__", Id);
+            SetVariable(builtins, "__cachedengine__", RecoveredFromCache);
+            SetVariable(builtins, "__cachedengineid__", TypeId);
             SetVariable(builtins, "__externalcommand__", runtime);
 
             if (runtime.UIApp != null)
@@ -425,14 +549,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // set globals
             var fileVarPyObject = new PyString(runtime.ScriptSourceFile);
-            SetVariable(Globals, "__file__", fileVarPyObject.Handle);
+            SetVariable(_globals, "__file__", fileVarPyObject.Handle);
         }
 
         private void SetupSearchPaths(ref ScriptRuntime runtime) {
             // set sys paths
-            // set output stream
             PyObject sys = PythonEngine.ImportModule("sys");
             PyObject sysPaths = sys.GetAttr("path");
+
+            // if this is a new engine, save the syspaths
+            if (!RecoveredFromCache) {
+                _sysPaths = CopyPyList(sysPaths.Handle);
+            }
+            // otherwise reset to defautl before changing
+            else {
+                sysPaths = CopyPyList(_sysPaths.Handle);
+                sys.SetAttr("path", sysPaths);
+            }
+
             foreach (string searchPath in runtime.ModuleSearchPaths.Reverse<string>()) {
                 var searthPathStr = new PyString(searchPath);
                 pyRevitLabs.PythonNet.Runtime.PyList_Insert(sysPaths.Handle, 0, searthPathStr.Handle);
@@ -440,6 +574,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void SetupArguments(ref ScriptRuntime runtime) { }
+
+        private static PyObject CopyPyList(IntPtr sourceList) {
+            var newList = new PyList();
+            long itemsCount = pyRevitLabs.PythonNet.Runtime.PyList_Size(sourceList);
+            for (long i = 0; i < itemsCount; i++) {
+                IntPtr listItem = pyRevitLabs.PythonNet.Runtime.PyList_GetItem(sourceList, i);
+                pyRevitLabs.PythonNet.Runtime.PyList_Insert(newList.Handle, i, listItem);
+            }
+            return new PyObject(newList.Handle);
+        }
 
         private static void SetVariable(IntPtr? globals, string key, IntPtr value) {
             pyRevitLabs.PythonNet.Runtime.PyDict_SetItemString(
@@ -451,6 +595,355 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static void SetVariable(IntPtr? globals, string key, object value) {
             SetVariable(globals, key, PyObject.FromManagedObject(value).Handle);
+        }
+    }
+
+    public class CLREngine : ExecutionEngine {
+        private string scriptSig = string.Empty;
+        private Assembly scriptAssm = null;
+
+        public override void Init(ref ScriptRuntime runtime) {
+            base.Init(ref runtime);
+
+            // If the user is asking to refresh the cached engine for the command,
+            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
+        }
+
+        public override int Execute(ref ScriptRuntime runtime) {
+            // compile first
+            // only if the signature doesn't match
+            if (scriptSig == null || runtime.ScriptSourceFileSignature != scriptSig) {
+                try {
+                    scriptSig = runtime.ScriptSourceFileSignature;
+                    scriptAssm = CompileCLRScript(ref runtime);
+                }
+                catch (Exception compileEx) {
+                    string _clr_err_message = compileEx.ToString();
+                    _clr_err_message = _clr_err_message.NormalizeNewLine();
+                    runtime.CLRTraceBack = _clr_err_message;
+
+                    // TODO: change to script output for all script types
+                    if (runtime.InterfaceType == InterfaceType.ExternalCommand)
+                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
+
+                    TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
+
+                    return ExecutionResultCodes.CompileException;
+                }
+            }
+
+            // scriptAssm must have value
+            switch (runtime.InterfaceType) {
+                // if is an external command
+                case InterfaceType.ExternalCommand:
+                    try {
+                        var resultCode = ExecuteExternalCommand(scriptAssm, null, ref runtime);
+                        if (resultCode == ExecutionResultCodes.ExternalInterfaceNotImplementedException)
+                            TaskDialog.Show(PyRevitConsts.ProductName,
+                                string.Format(
+                                    "Can not find any type implementing IExternalCommand in assembly \"{0}\"",
+                                    scriptAssm.Location
+                                    ));
+                        return resultCode;
+                    }
+                    catch (Exception execEx) {
+                        string _clr_err_message = execEx.ToString();
+                        _clr_err_message = _clr_err_message.NormalizeNewLine();
+                        runtime.CLRTraceBack = _clr_err_message;
+                        // TODO: same outp
+                        TaskDialog.Show(PyRevitConsts.ProductName, _clr_err_message);
+
+                        return ExecutionResultCodes.ExecutionException;
+                    }
+
+                // if is an event hook
+                case InterfaceType.EventHandler:
+                    try {
+                        return ExecuteEventHandler(scriptAssm, ref runtime);
+                    }
+                    catch (Exception execEx) {
+                        string _clr_err_message = execEx.ToString();
+                        _clr_err_message = _clr_err_message.NormalizeNewLine();
+                        runtime.CLRTraceBack = _clr_err_message;
+
+                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
+                        return ExecutionResultCodes.ExecutionException;
+                    }
+
+                default:
+                    return ExecutionResultCodes.ExternalInterfaceNotImplementedException;
+            }
+        }
+
+        public static IEnumerable<Type> GetTypesSafely(Assembly assembly) {
+            try {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex) {
+                return ex.Types.Where(x => x != null);
+            }
+        }
+
+        public static Assembly CompileCLRScript(ref ScriptRuntime runtime) {
+            // https://stackoverflow.com/a/3188953
+            // read the script
+            var scriptContents = File.ReadAllText(runtime.ScriptSourceFile);
+
+            // read the referenced dlls from env vars
+            // pyrevit sets this when loading
+            string[] refFiles;
+            var envDic = new EnvDictionary();
+            if (envDic.ReferencedAssemblies.Length == 0) {
+                var refs = AppDomain.CurrentDomain.GetAssemblies();
+                refFiles = refs.Select(a => a.Location).ToArray();
+            }
+            else {
+                refFiles = envDic.ReferencedAssemblies;
+            }
+
+            // create compiler parameters
+            var compileParams = new CompilerParameters(refFiles);
+            compileParams.OutputAssembly = runtime.ScriptData.CommandName;
+            compileParams.CompilerOptions = string.Format("/optimize /define:REVIT{0}", runtime.App.VersionNumber);
+            compileParams.GenerateInMemory = true;
+            compileParams.GenerateExecutable = false;
+            compileParams.ReferencedAssemblies.Add(typeof(ScriptExecutor).Assembly.Location);
+
+            // determine which code provider to use
+            CodeDomProvider compiler;
+            var compConfig = new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } };
+            switch (runtime.EngineType) {
+                case EngineType.CSharp:
+                    compiler = new CSharpCodeProvider(compConfig);
+                    break;
+                case EngineType.VisualBasic:
+                    compiler = new VBCodeProvider(compConfig);
+                    break;
+                default:
+                    throw new Exception("Specified language does not have a compiler.");
+            }
+
+            // compile code first
+            var res = compiler.CompileAssemblyFromSource(
+                options: compileParams,
+                sources: new string[] { scriptContents }
+            );
+
+            // now run
+            return res.CompiledAssembly;
+        }
+
+        public static int ExecuteExternalCommand(Assembly assmObj, string className, ref ScriptRuntime runtime) {
+            foreach (Type assmType in GetTypesSafely(assmObj)) {
+                if (assmType.IsClass) {
+                    // find the appropriate type and execute
+                    if (className != null) {
+                        if (assmType.Name == className)
+                            return ExecuteExternalCommandType(assmType, ref runtime);
+                        else
+                            continue;
+                    }
+                    else if (assmType.GetInterfaces().Contains(typeof(IExternalCommand)))
+                        return ExecuteExternalCommandType(assmType, ref runtime);
+                }
+            }
+
+            return ExecutionResultCodes.ExternalInterfaceNotImplementedException;
+        }
+
+        public static int ExecuteExternalCommandType(Type extCommandType, ref ScriptRuntime runtime) {
+            // create instance
+            object extCommandInstance = Activator.CreateInstance(extCommandType);
+
+            // set properties if available
+            // set script data
+            foreach (var fieldInfo in extCommandType.GetFields()) {
+                if (fieldInfo.FieldType == typeof(ScriptData))
+                    fieldInfo.SetValue(
+                        extCommandInstance,
+                        new ScriptData {
+                            ScriptPath = runtime.ScriptSourceFile,
+                        });
+            }
+
+            // execute
+            string commandMessage = string.Empty;
+            extCommandType.InvokeMember(
+                "Execute",
+                BindingFlags.Default | BindingFlags.InvokeMethod,
+                null,
+                extCommandInstance,
+                new object[] {
+                runtime.CommandData,
+                commandMessage,
+                runtime.SelectedElements}
+                );
+            return ExecutionResultCodes.Succeeded;
+        }
+
+        public static int ExecuteEventHandler(Assembly assmObj, ref ScriptRuntime runtime) {
+            foreach (Type assmType in GetTypesSafely(assmObj))
+                foreach (MethodInfo methodInfo in assmType.GetMethods()) {
+                    var methodParams = methodInfo.GetParameters();
+                    if (methodParams.Count() == 2
+                            && methodParams[0].Name == "sender"
+                            && (methodParams[1].Name == "e" || methodParams[1].Name == "args")) {
+                        object extEventInstance = Activator.CreateInstance(assmType);
+                        assmType.InvokeMember(
+                            methodInfo.Name,
+                            BindingFlags.Default | BindingFlags.InvokeMethod,
+                            null,
+                            extEventInstance,
+                            new object[] {
+                                    runtime.EventSender,
+                                    runtime.EventArgs
+                                }
+                            );
+                        return ExecutionResultCodes.Succeeded;
+                    }
+                }
+
+            return ExecutionResultCodes.ExternalInterfaceNotImplementedException;
+        }
+    }
+
+    public class RubyEngine : ExecutionEngine {
+        public override void Init(ref ScriptRuntime runtime) {
+            base.Init(ref runtime);
+
+            // If the user is asking to refresh the cached engine for the command,
+            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
+        }
+
+        public override int Execute(ref ScriptRuntime runtime) {
+            // TODO: ExecuteRubyScript
+            TaskDialog.Show(PyRevitConsts.ProductName, "Ruby-Script Execution Engine Not Yet Implemented.");
+            return ExecutionResultCodes.EngineNotImplementedException;
+            //// https://github.com/hakonhc/RevitRubyShell/blob/master/RevitRubyShell/RevitRubyShellApplication.cs
+            //// 1: ----------------------------------------------------------------------------------------------------
+            //// start ruby interpreter
+            //var engine = Ruby.CreateEngine();
+            //var scope = engine.CreateScope();
+
+            //// 2: ----------------------------------------------------------------------------------------------------
+            //// Finally let's execute
+            //try {
+            //    // Run the code
+            //    engine.ExecuteFile(pyrvtScript.ScriptSourceFile, scope);
+            //    return ExecutionErrorCodes.Succeeded;
+            //}
+            //catch (SystemExitException) {
+            //    // ok, so the system exited. That was bound to happen...
+            //    return ExecutionErrorCodes.SysExited;
+            //}
+            //catch (Exception exception) {
+            //    // show (power) user everything!
+            //    string _dotnet_err_message = exception.ToString();
+            //    string _ruby_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
+
+            //    // Print all errors to stdout and return cancelled to Revit.
+            //    // This is to avoid getting window prompts from Revit.
+            //    // Those pop ups are small and errors are hard to read.
+            //    _ruby_err_messages = _ruby_err_messages.NormalizeNewLine();
+            //    pyrvtScript.IronLanguageTraceBack = _ruby_err_messages;
+
+            //    _dotnet_err_message = _dotnet_err_message.NormalizeNewLine();
+            //    pyrvtScript.ClrTraceBack = _dotnet_err_message;
+
+            //    _ruby_err_messages = string.Join(Environment.NewLine, ExternalConfig.irubyerrtitle, _ruby_err_messages);
+            //    _dotnet_err_message = string.Join(Environment.NewLine, ExternalConfig.dotneterrtitle, _dotnet_err_message);
+
+            //    pyrvtScript.OutputStream.WriteError(_ruby_err_messages + "\n\n" + _dotnet_err_message);
+            //    return ExecutionErrorCodes.ExecutionException;
+            //}
+            //finally {
+            //    // whatever
+            //}
+        }
+    }
+
+    public class InvokableDLLEngine : ExecutionEngine {
+        private string scriptSig = string.Empty;
+        private Assembly scriptAssm = null;
+
+        public override void Init(ref ScriptRuntime runtime) {
+            base.Init(ref runtime);
+
+            // If the user is asking to refresh the cached engine for the command,
+            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
+        }
+
+        public override int Execute(ref ScriptRuntime runtime) {
+            try {
+                // first argument is the script name
+                // script.py assmFile:className
+                if (runtime.Arguments.Count == 2) {
+                    // load the binary data from the DLL
+                    // Direct invoke commands use the config script source file to point
+                    // to the target dll assembly location
+                    string argumentString = runtime.Arguments[1];
+                    string assmFile = argumentString;
+                    string className = null;
+                    if (argumentString.Contains("::")) {
+                        var parts = argumentString.Split(
+                            new string[] { "::" },
+                            StringSplitOptions.RemoveEmptyEntries
+                            );
+
+                        assmFile = parts[0];
+                        className = parts[1];
+                    }
+
+                    if (scriptSig == null || CommonUtils.GetFileSignature(assmFile) != scriptSig) {
+                        scriptAssm = Assembly.Load(File.ReadAllBytes(assmFile));
+                    }
+
+                    var resultCode = CLREngine.ExecuteExternalCommand(scriptAssm, className, ref runtime);
+                    if (resultCode == ExecutionResultCodes.ExternalInterfaceNotImplementedException)
+                        TaskDialog.Show(PyRevitConsts.ProductName,
+                            string.Format(
+                                "Can not find type \"{0}\" in assembly \"{1}\"",
+                                className,
+                                scriptAssm.Location
+                                ));
+                    return resultCode;
+                }
+                else {
+                    TaskDialog.Show(PyRevitConsts.ProductName, "Target assembly is not set correctly and can not be loaded.");
+                    return ExecutionResultCodes.ExternalInterfaceNotImplementedException;
+                }
+            }
+            catch (Exception invokeEx) {
+                TaskDialog.Show(PyRevitConsts.ProductName, invokeEx.Message);
+                return ExecutionResultCodes.ExecutionException;
+            }
+            finally {
+                // whatever
+            }
+        }
+    }
+
+    public class IronPythonErrorReporter : ErrorListener {
+        public List<string> Errors = new List<string>();
+
+        public override void ErrorReported(ScriptSource source, string message,
+                                           SourceSpan span, int errorCode, Severity severity) {
+            Errors.Add(string.Format("{0} (line {1})", message, span.Start.Line));
+        }
+
+        public int Count {
+            get { return Errors.Count; }
+        }
+    }
+
+    public class ContentLoaderOptions : IFamilyLoadOptions {
+        public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues) {
+            overwriteParameterValues = true;
+            return overwriteParameterValues;
+        }
+
+        public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues) {
+            throw new NotImplementedException();
         }
     }
 }

@@ -6,7 +6,7 @@ Run window as Modal
 # pylint: skip-file
 from pyrevit import forms
 from pyrevit import UI
-from pyrevit.coreutils import runtime
+from pyrevit.runtime import types as runtime_types
 
 
 __title__ = "Test Persistent Engine (NonModal)"
@@ -34,7 +34,7 @@ class NonModalWindow(forms.WPFWindow):
         self.Title, self.prev_title = self.prev_title, self.Title
 
 
-handler = runtime.PlaceKeynoteExternalEventHandler()
+handler = runtime_types.PlaceKeynoteExternalEventHandler()
 
 NonModalWindow(
     'NonModalWindow.xaml',

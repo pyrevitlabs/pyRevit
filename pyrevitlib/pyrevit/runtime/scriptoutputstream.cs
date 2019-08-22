@@ -10,7 +10,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// This can be passed into the python interpreter to render all output to.
     /// Only a minimal subset is actually implemented - this is all we really expect to use.
     public class ScriptOutputStream : Stream, IDisposable {
-        private WeakReference<ScriptRuntime> _pyrvtScript;
+        private WeakReference<ScriptRuntime> _runtime;
         private WeakReference<ScriptOutput> _gui;
         private string _outputBuffer;
         private bool _errored = false;
@@ -18,23 +18,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public bool PrintDebugInfo = false;
 
-        public ScriptOutputStream(ScriptRuntime pyrvtScript) {
+        public ScriptOutputStream(ScriptRuntime runtime) {
             _outputBuffer = string.Empty;
-            _pyrvtScript = new WeakReference<ScriptRuntime>(pyrvtScript);
+            _runtime = new WeakReference<ScriptRuntime>(runtime);
             _gui = new WeakReference<ScriptOutput>(null);
         }
 
         public ScriptOutputStream(ScriptOutput gui) {
             _outputBuffer = string.Empty;
-            _pyrvtScript = new WeakReference<ScriptRuntime>(null);
+            _runtime = new WeakReference<ScriptRuntime>(null);
             _gui = new WeakReference<ScriptOutput>(gui);
         }
 
         public ScriptOutput GetOutput() {
-            ScriptRuntime pyrvtScript;
-            var re = _pyrvtScript.TryGetTarget(out pyrvtScript);
-            if (re && pyrvtScript != null)
-                return pyrvtScript.OutputWindow;
+            ScriptRuntime runtime;
+            var re = _runtime.TryGetTarget(out runtime);
+            if (re && runtime != null)
+                return runtime.OutputWindow;
 
             ScriptOutput output;
             re = _gui.TryGetTarget(out output);
@@ -150,7 +150,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         new public void Dispose() {
-            _pyrvtScript = null;
+            _runtime = null;
             _gui = null;
             Dispose(true);
         }
