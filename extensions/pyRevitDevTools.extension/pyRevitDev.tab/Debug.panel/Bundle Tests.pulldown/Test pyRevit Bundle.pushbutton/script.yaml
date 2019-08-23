@@ -8,8 +8,8 @@ authors:
   - "{{author}}"
   - John Doe
 context:
-  - Walls
-  - Text Notes
+  - OST_Walls
+  - OST_TextNotes
 min_revit_version:
 max_revit_version:
 is_beta: false
