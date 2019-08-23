@@ -12,10 +12,14 @@ __doc__ = 'Select a revision from the list of revisions and this script '\
 revisions = forms.select_revisions(button_name='Create Sheet Set',
                                    multiple=True)
 if revisions:
-    selected_switch = \
-        forms.CommandSwitchWindow.show(['Matching ANY revision',
-                                        'Matching ALL revisions'],
-                                       message='Pick an option:')
+    if len(revisions) > 1:
+        selected_switch = \
+            forms.CommandSwitchWindow.show(['Matching ANY revision',
+                                            'Matching ALL revisions'],
+                                           message='Pick an option:')
+    else:
+        selected_switch = 'Matching ALL revisions'
+
     if selected_switch:
         match_any = (selected_switch == 'Matching ANY revision')
         with revit.Transaction('Create Revision Sheet Set'):
@@ -29,7 +33,7 @@ if revisions:
                 empty_sheets.append(sheet)
 
         if empty_sheets:
-            print('These sheets do not have any contents and seem to be '
+            print('These sheets do not have any model contents and seem to be '
                   'placeholders for other content:')
             for esheet in empty_sheets:
                 revit.report.print_sheet(esheet)
