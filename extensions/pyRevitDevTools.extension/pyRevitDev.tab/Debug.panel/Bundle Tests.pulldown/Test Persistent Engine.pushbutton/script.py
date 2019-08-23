@@ -9,11 +9,6 @@ from pyrevit import UI
 from pyrevit.runtime import types as runtime_types
 
 
-__title__ = "Test Persistent Engine (NonModal)"
-__author__ = "{{author}}"
-__persistentengine__ = True
-
-
 class NonModalWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name, ext_event, ext_event_handler):
         forms.WPFWindow.__init__(self, xaml_file_name)

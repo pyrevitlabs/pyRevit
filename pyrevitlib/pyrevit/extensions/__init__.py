@@ -80,7 +80,6 @@ BUNDLEMATA_POSTFIX = DEFAULT_BUNDLEMATA_NAME + YAML_FILE_FORMAT
 ALT_BUNDLEMATA_POSTFIX = ALT_BUNDLEMATA_NAME + YAML_FILE_FORMAT
 
 # metadata schema: Exensions
-EXT_MANIFEST_TEMPLATES_KEY = 'templates'
 
 # metadata schema: Bundles
 MDATA_UI_TITLE = 'title'
@@ -100,6 +99,7 @@ MDATA_ENGINE_PERSISTENT = 'persistent'
 MDATA_LINK_BUTTON_MODULES = 'modules'
 MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
 MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
+MDATA_TEMPLATES_KEY = 'templates'
 
 # metadata schema: Bundles | legacy
 UI_TITLE_PARAM = '__title__'

@@ -335,8 +335,8 @@ class Extension(GenericUIContainer):
     def configure(self):
         cfg_dict = self.get_manifest()
         if cfg_dict:
-            for cmd in self.get_all_commands():
-                cmd.configure(cfg_dict)
+            for component in self:
+                component.configure(cfg_dict)
 
     def get_all_modules(self):
         referenced_modules = set()

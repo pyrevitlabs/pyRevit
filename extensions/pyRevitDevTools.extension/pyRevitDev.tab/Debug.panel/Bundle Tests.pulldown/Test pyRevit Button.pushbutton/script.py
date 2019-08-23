@@ -9,7 +9,7 @@ slogger = script.get_logger()
 
 
 # __context__ = 'zerodoc'
-__title__ = {"en_us": "Test Button (Custom)", "chinese_s": "测试按钮"}
+__title__ = {"en_us": "Test pyRevit Button (Custom)", "chinese_s": "测试按钮"}
 __context__ = ['OST_Walls', 'OST_TextNotes']
 __helpurl__ = "https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg"
 __authors__ = ["{{author}}", "John Doe"]

@@ -1,7 +1,7 @@
 title:
   en_us: Test pyRevit Bundle (Custom Title)
   chinese_s: 测试包
-tooltip: Test pyRevit Bundle Tooltip
+tooltip: Test pyRevit Bundle Tooltip \n {{template_test}}
 media: tooltip.mp4
 help_url: "{{docpath}}"
 authors:
