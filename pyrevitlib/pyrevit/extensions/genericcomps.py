@@ -172,10 +172,6 @@ class GenericUIComponent(GenericComponent):
         self.ui_title = self.meta.get(exts.MDATA_UI_TITLE, self.ui_title)
         self.tooltip = self.meta.get(exts.MDATA_TOOLTIP, self.tooltip)
 
-        self.media_file = self.get_bundle_file(
-            self.meta.get(exts.MDATA_MEDIA, self.media_file)
-            ) or self.media_file
-
         # authors could be a list or single value
         self.author = self.meta.get(exts.MDATA_AUTHOR, self.author)
         self.author = self.meta.get(exts.MDATA_AUTHORS, self.author)

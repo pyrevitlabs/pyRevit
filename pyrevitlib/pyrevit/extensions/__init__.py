@@ -85,7 +85,6 @@ EXT_MANIFEST_TEMPLATES_KEY = 'templates'
 # metadata schema: Bundles
 MDATA_UI_TITLE = 'title'
 MDATA_TOOLTIP = 'tooltip'
-MDATA_MEDIA = 'media'
 MDATA_AUTHOR = 'author'
 MDATA_AUTHORS = 'authors'
 MDATA_LAYOUT = 'layout'
