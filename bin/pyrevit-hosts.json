@@ -1,0 +1,1010 @@
+[{
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html"
+        },
+        "name": "2008 Architecture Service Pack 2",
+        "version": "0.0.0.0",
+        "build": "20070607_1700",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html"
+        },
+        "name": "2008 Architecture Service Pack 2",
+        "version": "0.0.0.0",
+        "build": "20070810_1700",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807"
+        },
+        "name": "2008 Architecture Service Pack 3",
+        "version": "0.0.0.0",
+        "build": "20080101_2345",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html"
+        },
+        "name": "2009 Architecture Service Pack 1",
+        "version": "0.0.0.0",
+        "build": "20080602_1900",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html"
+        },
+        "name": "2009 Architecture Service Pack 2",
+        "version": "0.0.0.0",
+        "build": "20080915_2100",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html"
+        },
+        "name": "2009 Architecture Service Pack 3",
+        "version": "0.0.0.0",
+        "build": "20081118_1045",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807"
+        },
+        "name": "2010 Architecture Service Pack 1",
+        "version": "0.0.0.0",
+        "build": "20090612_2115",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html"
+        },
+        "name": "2010 Architecture Service Pack 2",
+        "version": "0.0.0.0",
+        "build": "20090917_1515",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://forums.augi.com/showthread.php?138574-Revit-Architecture-Door-Centerline-not-selectable-during-dimensioning"
+        },
+        "name": "2011 Architecture",
+        "version": "0.0.0.0",
+        "build": "20100326_1700",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://revitclinic.typepad.com/my_weblog/2010/06/revit-2011-build-number-update-display.html"
+        },
+        "name": "2011 Architecture Service Pack 1",
+        "version": "0.0.0.0",
+        "build": "20100615_2115",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://revitoped.blogspot.com/2010/09/revit-web-update-2-posted-subscription.html"
+        },
+        "name": "2011 Architecture Service Pack 2",
+        "version": "0.0.0.0",
+        "build": "20100903_2115",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2012 First Customer Ship",
+        "version": "0.0.0.0",
+        "build": "20110309_2315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2012 Update Release 1",
+        "version": "0.0.0.0",
+        "build": "20110622_0930",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2012 Update Release 2",
+        "version": "0.0.0.0",
+        "build": "20110916_2132",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2013 First Customer Ship",
+        "version": "12.02.21203",
+        "build": "20120221_2030",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2013 Update Release 1",
+        "version": "0.0.0.0",
+        "build": "20120716_1115",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2013 Update Release 2",
+        "version": "0.0.0.0",
+        "build": "20121003_2115",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "// https://github.com/eirannejad/pyRevit/issues/622"
+        },
+        "name": "2013 Update Release 3",
+        "version": "12.11.10090",
+        "build": "20130531_2115",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2013 LT First Customer Ship",
+        "version": "0.0.0.0",
+        "build": "20120821_1330",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "name": "2013 LT Update Release 1",
+        "version": "0.0.0.0",
+        "build": "20130531_0300",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2014 First Customer Ship",
+        "version": "13.03.08151",
+        "build": "20130308_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2014 Update Release 1",
+        "version": "0.0.0.0",
+        "build": "20130709_2115",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2014 Update Release 2",
+        "version": "0.0.0.0",
+        "build": "20131024_2115",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "//https://github.com/eirannejad/pyRevit/issues/543"
+        },
+        "name": "2014 Update Release 3",
+        "version": "13.11.00004",
+        "build": "20140709_2115",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://knowledge.autodesk.com/support/revit-products/downloads/caas/downloads/content/autodesk-revit-2015-product-updates.html"
+        },
+        "name": "2015 First Customer Ship",
+        "version": "15.0.136.0",
+        "build": "20140223_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://knowledge.autodesk.com/support/revit-products/downloads/caas/downloads/content/autodesk-revit-2015-product-updates.html"
+        },
+        "name": "2015 Update Release 1",
+        "version": "15.0.136.0",
+        "build": "20140322_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://knowledge.autodesk.com/support/revit-products/downloads/caas/downloads/content/autodesk-revit-2015-product-updates.html"
+        },
+        "name": "2015 Update Release 2",
+        "version": "15.0.166.0",
+        "build": "20140323_1530",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 3",
+        "version": "15.0.207.0",
+        "build": "20140606_1530",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 4",
+        "version": "15.0.270.0",
+        "build": "20140903_1530",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 (Subscription only release)",
+        "version": "15.0.1103.0",
+        "build": "20140905_0730",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 5",
+        "version": "15.0.310.0",
+        "build": "20141119_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 5 (Subscription only release)",
+        "version": "15.0.1133.0",
+        "build": "20141119_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 6",
+        "version": "15.0.315.0",
+        "build": "20150127_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 6 (Subscription only release)",
+        "version": "15.0.1142.0",
+        "build": "20150127_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 7",
+        "version": "15.0.318.0",
+        "build": "20150303_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 7 (Subscription only release)",
+        "version": "15.0.1148.0",
+        "build": "20150303_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 8",
+        "version": "15.0.341.0",
+        "build": "20150512_1015",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 8 (Subscription only release)",
+        "version": "15.0.1170.0",
+        "build": "20150511_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 9",
+        "version": "15.0.361.0",
+        "build": "20150702_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 9 (Subscription only release)",
+        "version": "15.0.1190.0",
+        "build": "20150704_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 10",
+        "version": "15.0.379.0",
+        "build": "20151007_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 10 (Subscription only release)",
+        "version": "15.0.1203.0",
+        "build": "20151008_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 11 *Issue with Revit Server",
+        "version": "15.0.390.0",
+        "build": "20151207_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 11 (Subscription only release) *Issue with Revit Server",
+        "version": "15.0.1225.0",
+        "build": "20151208_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 12",
+        "version": "15.0.403.0",
+        "build": "20160119_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 12 (Subscription only release)",
+        "version": "15.0.1238.0",
+        "build": "20160120_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 13",
+        "version": "15.0.406.0",
+        "build": "20160220_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 13 (Subscription only release)",
+        "version": "15.0.1243.0",
+        "build": "20160220_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Update Release 14",
+        "version": "15.0.421.0",
+        "build": "20160512_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2015 Release 2 Update Release 14  (Subscription only release)",
+        "version": "15.0.1259.0",
+        "build": "20160512_0715",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 First Customer Ship",
+        "version": "16.0.428.0",
+        "build": "20150220_1215",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Service Pack 1",
+        "version": "16.0.462.0",
+        "build": "20150506_1715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "// https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/Revit-2016-Release-2-Error-1642.html"
+        },
+        "name": "2016 Unreleased Update",
+        "version": "16.0.485.0",
+        "build": "20150701_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Service Pack 2",
+        "version": "16.0.490.0",
+        "build": "20150714_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Release 2 (R2)",
+        "version": "16.0.1063",
+        "build": "20151007_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 1 for R2",
+        "version": "16.0.1092.0",
+        "build": "20151209_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 2 for R2",
+        "version": "16.0.1108.0",
+        "build": "20160126_1600",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 3 for R2",
+        "version": "16.0.1118.0",
+        "build": "20160217_1800",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 4 for R2",
+        "version": "16.0.1124.0",
+        "build": "20160314_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 5 for R2",
+        "version": "16.0.1144.0",
+        "build": "20160525_1230",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 6 for R2",
+        "version": "16.0.1161.0",
+        "build": "20160720_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 7 for R2",
+        "version": "16.0.1185.0",
+        "build": "20161004_0715",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2016 Update 8 for R2 (2016.1.8)",
+        "version": "16.0.1205.0",
+        "build": "20170117_1200",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017 First Customer Ship",
+        "version": "17.0.416.0",
+        "build": "20160225_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017 Service Pack 1",
+        "version": "17.0.476.0",
+        "build": "20160606_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017 Service Pack 2",
+        "version": "17.0.501.0",
+        "build": "20160720_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.0.3",
+        "version": "17.0.503.0",
+        "build": "20161205_1400",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.1",
+        "version": "17.0.1081.0",
+        "build": "20161006_0315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.1.1",
+        "version": "17.0.1099.0",
+        "build": "20161117_1200",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.2",
+        "version": "17.0.1117.0",
+        "build": "20170118_1100",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.2.1",
+        "version": "17.0.1128.0",
+        "build": "20170419_0315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.2.2",
+        "version": "17.0.1146.0",
+        "build": "20170816_0615",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.2.3",
+        "version": "17.0.1150.0",
+        "build": "20171027_0315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://github.com/eirannejad/pyRevit/issues/456"
+        },
+        "name": "2017.0.4",
+        "version": "17.0.511.0",
+        "build": "20181011_1545",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.0.5 Security Fix",
+        "version": "17.0.517.0",
+        "build": "20190507_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.2.4",
+        "version": "17.0.1158.0",
+        "build": "20181011_1645",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2017.2.5 Security Fix",
+        "version": "17.0.1169.0",
+        "build": "20190508_0315",
+        "target": "x64"
+    },
+
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018 First Customer Ship",
+        "version": "18.0.0.420",
+        "build": "20170223_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.0.1",
+        "version": "18.0.1.2",
+        "build": "20170421_2315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.0.2",
+        "version": "18.0.2.11",
+        "build": "20170525_2315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.0.3",
+        "version": "18.0.3.6",
+        "build": "20181015_0930",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.1",
+        "version": "18.1.0.92",
+        "build": "20170630_0700",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.1.1",
+        "version": "18.1.1.18",
+        "build": "20170907_2315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.2",
+        "version": "18.2.0.51",
+        "build": "20170927_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://github.com/eirannejad/pyRevit/issues/456"
+        },
+        "name": "2018.3",
+        "version": "18.3.0.81",
+        "build": "20180329_1100",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.3.1",
+        "version": "18.3.1.2",
+        "build": "20180423_1000",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.3.2",
+        "version": "18.3.2.7",
+        "build": "20181011_1500",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2018.3.3 Security Fix",
+        "version": "18.3.3.18",
+        "build": "20190510_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2019 First Customer Ship",
+        "version": "19.0.0.405",
+        "build": "20180216_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2019 Update for Trial Build",
+        "version": "19.0.1.1",
+        "build": "20180328_1600",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2019.0.1",
+        "version": "19.0.10.18",
+        "build": "20180518_1600",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2019.0.2",
+        "version": "19.0.20.1",
+        "build": "20180927_2315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2019.1",
+        "version": "19.1.0.112",
+        "build": "20180806_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2019.2 (Update)",
+        "version": "19.2.0.65",
+        "build": "20181217_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://twitter.com/JarodJSchultz/status/1100459171491676160"
+        },
+        "name": "2019.2 (Full Install)",
+        "version": "19.2.1.1",
+        "build": "20190108_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://up.autodesk.com/2019/RVT/Autodesk_Revit_2019_2_1_Readme.html"
+        },
+        "name": "2019.2.1",
+        "version": "19.2.10.7",
+        "build": "20190225_1515",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://up.autodesk.com/2019/RVT/Autodesk_Revit_2019_2_2_Readme.html"
+        },
+        "name": "2019.2.2 Hotfix",
+        "version": "19.2.20.24",
+        "build": "20190808_0900",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": ""
+        },
+        "name": "2020 First Customer Ship",
+        "version": "20.0.0.377",
+        "build": "20190327_2315",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_2020_0_1_Resolved_Issues_html"
+        },
+        "name": "2020.0.1 Hotfix",
+        "version": "20.0.1.2",
+        "build": "20190412_1200",
+        "target": "x64"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_2020_1_html"
+        },
+        "name": "2020.1 Update",
+        "version": "20.1.0.81",
+        "build": "20190725_1135",
+        "target": "x64"
+    }
+]

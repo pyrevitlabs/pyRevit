@@ -259,7 +259,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def _make_product_name(self, product, note):
         return '_{} | {}({}) {}'.format(
-            product.ProductName,
+            product.Name,
             product.BuildNumber,
             product.BuildTarget,
             note

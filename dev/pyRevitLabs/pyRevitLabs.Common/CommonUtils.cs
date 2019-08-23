@@ -345,6 +345,10 @@ namespace pyRevitLabs.Common {
             }
             return Name;
         }
+
+        public static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
+        public static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
+        public static string GetAssemblyPath<T>() => Path.GetDirectoryName(typeof(T).Assembly.Location);
     }
 }
 

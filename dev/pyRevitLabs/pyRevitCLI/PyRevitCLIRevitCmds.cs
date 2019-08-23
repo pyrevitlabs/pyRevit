@@ -294,7 +294,7 @@ namespace pyRevitCLI {
         // print info on a revit model
         private static void PrintModelInfo(RevitModelFile model) {
             Console.WriteLine(string.Format("Created in: {0} ({1}({2}))",
-                                model.RevitProduct.ProductName,
+                                model.RevitProduct.Name,
                                 model.RevitProduct.BuildNumber,
                                 model.RevitProduct.BuildTarget));
             Console.WriteLine(string.Format("Workshared: {0}", model.IsWorkshared ? "Yes" : "No"));
@@ -321,7 +321,7 @@ namespace pyRevitCLI {
         private static void PrintBuildInfo() {
             PyRevitCLIAppCmds.PrintHeader("Supported Revits");
             foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version))
-                Console.WriteLine(string.Format("{0} | Version: {1} | Build: {2}({3})", revit.ProductName, revit.Version, revit.BuildNumber, revit.BuildTarget));
+                Console.WriteLine(string.Format("{0} | Version: {1} | Build: {2}({3})", revit.Name, revit.Version, revit.BuildNumber, revit.BuildTarget));
 
         }
 
@@ -344,7 +344,7 @@ namespace pyRevitCLI {
                 // create csv entry
                 var data = new List<string>() {
                     string.Format("\"{0}\"", model.FilePath),
-                    string.Format("\"{0}\"", model.RevitProduct != null ? model.RevitProduct.ProductName : ""),
+                    string.Format("\"{0}\"", model.RevitProduct != null ? model.RevitProduct.Name : ""),
                     string.Format("\"{0}\"", model.RevitProduct != null ? model.RevitProduct.BuildNumber : ""),
                     string.Format("\"{0}\"", model.IsWorkshared ? "True" : "False"),
                     string.Format("\"{0}\"", model.CentralModelPath),
@@ -380,7 +380,7 @@ namespace pyRevitCLI {
                 var data = new List<string>() {
                     string.Format("\"{0}\"", revit.BuildNumber),
                     string.Format("\"{0}\"", revit.Version),
-                    string.Format("\"{0}\"", revit.ProductName),
+                    string.Format("\"{0}\"", revit.Name),
                 };
 
                 csv.Append(string.Join(",", data) + "\n");
