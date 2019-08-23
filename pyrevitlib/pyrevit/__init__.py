@@ -266,6 +266,11 @@ class _HostApplication(object):
         return self.app.VersionBuild
 
     @property
+    def language(self):
+        """str: Return language type (e.g. 'LanguageType.English_USA')."""
+        return self.app.Language
+
+    @property
     def username(self):
         """str: Return the username from Revit API (Application.Username)."""
         uname = self.app.Username

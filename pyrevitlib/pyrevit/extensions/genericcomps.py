@@ -7,6 +7,7 @@ import codecs
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
 from pyrevit.coreutils import yaml
+from pyrevit.coreutils import hostlocales
 import pyrevit.extensions as exts
 
 
@@ -67,8 +68,8 @@ class GenericUIComponent(GenericComponent):
         self.directory = cmp_path
         self.unique_name = None
         self.icon_file = None
-        self.ui_title = None
-        self.tooltip = self.author = self.help_url = ""
+        self._ui_title = None
+        self._tooltip = self.author = self._help_url = ""
         self.media_file = None
         self.min_revit_ver = self.max_revit_ver = None
         self.version = None
@@ -121,7 +122,7 @@ class GenericUIComponent(GenericComponent):
 
     def _update_from_directory(self):
         self.name = op.splitext(op.basename(self.directory))[0]
-        self.ui_title = self.name
+        self._ui_title = self.name
         self.unique_name = GenericUIComponent.make_unique_name(self.directory)
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
@@ -168,9 +169,16 @@ class GenericUIComponent(GenericComponent):
                     "Error reading meta file @ %s | %s", self.meta_file, err
                     )
 
+    def _resolve_locale(self, source):
+        if isinstance(source, str):
+            return source
+        elif isinstance(source, dict):
+            return hostlocales.get_locale_string(source)
+
     def _read_bundle_metadata(self):
-        self.ui_title = self.meta.get(exts.MDATA_UI_TITLE, self.ui_title)
-        self.tooltip = self.meta.get(exts.MDATA_TOOLTIP, self.tooltip)
+        self._ui_title = self.meta.get(exts.MDATA_UI_TITLE, self._ui_title)
+
+        self._tooltip = self.meta.get(exts.MDATA_TOOLTIP, self._tooltip)
 
         # authors could be a list or single value
         self.author = self.meta.get(exts.MDATA_AUTHOR, self.author)
@@ -178,8 +186,9 @@ class GenericUIComponent(GenericComponent):
         if isinstance(self.author, list):
             self.author = '\n'.join(self.author)
 
-        self.help_url = \
-            self.meta.get(exts.MDATA_COMMAND_HELP_URL, self.help_url)
+        self._help_url = \
+            self.meta.get(exts.MDATA_COMMAND_HELP_URL, self._help_url)
+
         self.min_revit_ver = \
             self.meta.get(exts.MDATA_MIN_REVIT_VERSION, self.min_revit_ver)
         self.max_revit_ver = \
@@ -187,6 +196,18 @@ class GenericUIComponent(GenericComponent):
 
         self.modules = \
             self.meta.get(exts.MDATA_LINK_BUTTON_MODULES, self.modules)
+
+    @property
+    def ui_title(self):
+        return self._resolve_locale(self._ui_title)
+
+    @property
+    def tooltip(self):
+        return self._resolve_locale(self._tooltip)
+
+    @property
+    def help_url(self):
+        return self._resolve_locale(self._help_url)
 
     @property
     def is_supported(self):
@@ -274,7 +295,7 @@ class GenericUIContainer(GenericUIComponent):
     def _apply_layout_directive(self, directive, component):
         # if matching directive found, process the directive
         if directive.directive_type == 'title':
-            component.ui_title = directive.target
+            component._ui_title = directive.target
 
     def __iter__(self):
         # if item is not listed in layout, it will not be created
@@ -426,9 +447,9 @@ class GenericUICommand(GenericUIComponent):
 
         mlogger.debug('Maximum host version: %s', self.max_revit_ver)
         mlogger.debug('Minimum host version: %s', self.min_revit_ver)
-        mlogger.debug('command tooltip: %s', self.tooltip)
+        mlogger.debug('command tooltip: %s', self._tooltip)
         mlogger.debug('Command author: %s', self.author)
-        mlogger.debug('Command help url: %s', self.help_url)
+        mlogger.debug('Command help url: %s', self._help_url)
 
         if self.beta_cmd:
             mlogger.debug('Command is in beta.')
@@ -501,16 +522,15 @@ class GenericUICommand(GenericUIComponent):
             script_content = \
                 coreutils.ScriptFileParser(self.script_file)
 
-            # extracting min requried Revit and pyRevit versions
-            self.ui_title = \
+            self._ui_title = \
                 script_content.extract_param(exts.UI_TITLE_PARAM) \
-                    or self.ui_title
+                    or self._ui_title
 
             script_docstring = script_content.get_docstring()
             custom_docstring = \
                 script_content.extract_param(exts.DOCSTRING_PARAM)
-            self.tooltip = \
-                custom_docstring or script_docstring or self.tooltip
+            self._tooltip = \
+                custom_docstring or script_docstring or self._tooltip
 
             script_author = script_content.extract_param(exts.AUTHOR_PARAM)
             script_author = script_content.extract_param(exts.AUTHORS_PARAM)
@@ -518,15 +538,16 @@ class GenericUICommand(GenericUIComponent):
                 script_author = '\n'.join(script_author)
             self.author = script_author or self.author
 
+            # extracting min requried Revit and pyRevit versions
             self.max_revit_ver = \
                 script_content.extract_param(exts.MAX_REVIT_VERSION_PARAM) \
                     or self.max_revit_ver
             self.min_revit_ver = \
                 script_content.extract_param(exts.MIN_REVIT_VERSION_PARAM) \
                     or self.min_revit_ver
-            self.help_url = \
+            self._help_url = \
                 script_content.extract_param(exts.COMMAND_HELP_URL_PARAM) \
-                    or self.help_url
+                    or self._help_url
 
             self.beta_cmd = script_content.extract_param(exts.BETA_SCRIPT_PARAM)
 
@@ -562,7 +583,7 @@ class GenericUICommand(GenericUIComponent):
 
     @property
     def configurable_params(self):
-        return ['ui_title', 'tooltip', 'author', 'help_url', 'media_file']
+        return ['_ui_title', '_tooltip', '_help_url', 'author', 'media_file']
 
     @property
     def script_language(self):
