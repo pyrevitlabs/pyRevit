@@ -185,10 +185,11 @@ class LoggerWrapper(logging.Logger):
                   '<strong>Line Text:</strong> {linetext}' \
                   .format(file=parsed_file,
                           type=parse_ex.__class__.__name__,
-                          errmsg=parse_ex.msg,
-                          lineno=parse_ex.lineno,
-                          colno=parse_ex.offset,
-                          linetext=parse_ex.text)
+                          errmsg=parse_ex.msg if hasattr(parse_ex, 'msg') else "",
+                          lineno=parse_ex.lineno if hasattr(parse_ex, 'lineno') else 0,
+                          colno=parse_ex.offset if hasattr(parse_ex, 'offset') else 0,
+                          linetext=parse_ex.text if hasattr(parse_ex, 'text') else "",
+                          )
         self.error(coreutils.prepare_html_str(err_msg))
 
     def deprecate(self, *args):
