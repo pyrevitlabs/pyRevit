@@ -314,7 +314,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             openButton.Click += OpenButton_Click;
             RightWindowCommands.Items.Insert(0, openButton);
 
-            this.Width = 900; this.MinWidth = 50;
+            this.Width = 900; this.MinWidth = 700;
             this.Height = 600; this.MinHeight = this.TitlebarHeight;
             this.ResizeMode = ResizeMode.CanResize;
 
