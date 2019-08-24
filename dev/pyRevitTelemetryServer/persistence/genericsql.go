@@ -104,6 +104,11 @@ func generateScriptInsertQuery(table string, logrec *ScriptTelemetryRecord, logg
 	datalines := make([]string, 0)
 
 	// marshal json data
+	engineCfgs, merr := json.Marshal(logrec.EngineCfgs)
+	if merr != nil {
+		logger.Debug("error logging engine configs")
+	}
+
 	cresults, merr := json.Marshal(logrec.CommandResults)
 	if merr != nil {
 		logger.Debug("error logging command results")
@@ -152,8 +157,7 @@ func generateScriptInsertQuery(table string, logrec *ScriptTelemetryRecord, logg
 			strconv.FormatBool(logrec.IsDebugMode),
 			strconv.FormatBool(logrec.IsConfigMode),
 			strconv.FormatBool(logrec.IsExecFromGUI),
-			strconv.FormatBool(logrec.NeedsCleanEngine),
-			strconv.FormatBool(logrec.NeedsFullFrameEngine),
+			string(engineCfgs),
 			logrec.CommandName,
 			logrec.BundleName,
 			logrec.ExtensionName,

@@ -28,31 +28,30 @@ type TraceInfo struct {
 }
 
 type ScriptTelemetryRecord struct {
-	LogMeta              LogMeta           `json:"meta" bson:"meta"`           // schema 2.0
-	Date                 string            `json:"date" bson:"date"`           // initial schema
-	Time                 string            `json:"time" bson:"time"`           // initial schema
-	TimeStamp            string            `json:"timestamp" bson:"timestamp"` // schema 2.0
-	UserName             string            `json:"username" bson:"username"`
-	RevitVersion         string            `json:"revit" bson:"revit"`
-	RevitBuild           string            `json:"revitbuild" bson:"revitbuild"`
-	SessionId            string            `json:"sessionid" bson:"sessionid"`
-	PyRevitVersion       string            `json:"pyrevit" bson:"pyrevit"`
-	Clone                string            `json:"clone" bson:"clone"` // schema 2.0
-	IsDebugMode          bool              `json:"debug" bson:"debug"`
-	IsConfigMode         bool              `json:"config" bson:"config"`
-	IsExecFromGUI        bool              `json:"from_gui" bson:"from_gui"`                 // schema 2.0
-	NeedsCleanEngine     bool              `json:"clean_engine" bson:"clean_engine"`         // schema 2.0
-	NeedsFullFrameEngine bool              `json:"fullframe_engine" bson:"fullframe_engine"` // schema 2.0
-	CommandName          string            `json:"commandname" bson:"commandname"`
-	CommandUniqueName    string            `json:"commanduniquename" bson:"commanduniquename"`
-	BundleName           string            `json:"commandbundle" bson:"commandbundle"`
-	ExtensionName        string            `json:"commandextension" bson:"commandextension"`
-	DocumentName         string            `json:"docname" bson:"docname"` // schema 2.0
-	DocumentPath         string            `json:"docpath" bson:"docpath"` // schema 2.0
-	ResultCode           int               `json:"resultcode" bson:"resultcode"`
-	CommandResults       map[string]string `json:"commandresults" bson:"commandresults"`
-	ScriptPath           string            `json:"scriptpath" bson:"scriptpath"`
-	TraceInfo            TraceInfo         `json:"trace" bson:"trace"`
+	LogMeta           LogMeta           `json:"meta" bson:"meta"`           // schema 2.0
+	Date              string            `json:"date" bson:"date"`           // initial schema
+	Time              string            `json:"time" bson:"time"`           // initial schema
+	TimeStamp         string            `json:"timestamp" bson:"timestamp"` // schema 2.0
+	UserName          string            `json:"username" bson:"username"`
+	RevitVersion      string            `json:"revit" bson:"revit"`
+	RevitBuild        string            `json:"revitbuild" bson:"revitbuild"`
+	SessionId         string            `json:"sessionid" bson:"sessionid"`
+	PyRevitVersion    string            `json:"pyrevit" bson:"pyrevit"`
+	Clone             string            `json:"clone" bson:"clone"` // schema 2.0
+	IsDebugMode       bool              `json:"debug" bson:"debug"`
+	IsConfigMode      bool              `json:"config" bson:"config"`
+	IsExecFromGUI     bool              `json:"from_gui" bson:"from_gui"`       // schema 2.0
+	EngineCfgs        map[string]string `json:"engine_cfgs" bson:"engine_cfgs"` // schema 2.0
+	CommandName       string            `json:"commandname" bson:"commandname"`
+	CommandUniqueName string            `json:"commanduniquename" bson:"commanduniquename"`
+	BundleName        string            `json:"commandbundle" bson:"commandbundle"`
+	ExtensionName     string            `json:"commandextension" bson:"commandextension"`
+	DocumentName      string            `json:"docname" bson:"docname"` // schema 2.0
+	DocumentPath      string            `json:"docpath" bson:"docpath"` // schema 2.0
+	ResultCode        int               `json:"resultcode" bson:"resultcode"`
+	CommandResults    map[string]string `json:"commandresults" bson:"commandresults"`
+	ScriptPath        string            `json:"scriptpath" bson:"scriptpath"`
+	TraceInfo         TraceInfo         `json:"trace" bson:"trace"`
 }
 
 func (logrec ScriptTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {
