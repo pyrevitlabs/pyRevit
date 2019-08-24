@@ -158,8 +158,7 @@ class GenericUIComponent(GenericComponent):
 
         # find meta file
         self.meta_file = self.find_bundle_file([
-            exts.BUNDLEMATA_POSTFIX,
-            exts.ALT_BUNDLEMATA_POSTFIX
+            exts.BUNDLEMATA_POSTFIX
             ])
         if self.meta_file:
             # sets up self.meta
