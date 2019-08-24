@@ -49,8 +49,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool debug { get; set; }
         public bool config { get; set; }
         public bool from_gui { get; set; }
-        public bool clean_engine { get; set; }
-        public bool fullframe_engine { get; set; }
+        public string engine_cfgs{ get; set; }
         // which script?
         public string commandname { get; set; }
         public string commandbundle { get; set; }
@@ -117,21 +116,56 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public static class ScriptTelemetry {
-        public static void LogScriptTelemetryRecord(ScriptTelemetryRecord scriptTelemetryRecord) {
+        private static ScriptTelemetryRecord MakeTelemetryRecord(ref ScriptRuntime runtime) {
+            // setup a new telemetry record
+            return new ScriptTelemetryRecord {
+                username = runtime.App.Username,
+                revit = runtime.App.VersionNumber,
+                revitbuild = runtime.App.VersionBuild,
+                sessionid = runtime.SessionUUID,
+                pyrevit = runtime.PyRevitVersion,
+                clone = runtime.CloneName,
+                debug = runtime.ScriptRuntimeConfigs.DebugMode,
+                config = runtime.ScriptRuntimeConfigs.ConfigMode,
+                from_gui = runtime.ScriptRuntimeConfigs.ExecutedFromUI,
+                engine_cfgs = runtime.ScriptRuntimeConfigs.EngineConfigs,
+                commandname = runtime.ScriptData.CommandName,
+                commandbundle = runtime.ScriptData.CommandBundle,
+                commandextension = runtime.ScriptData.CommandExtension,
+                commanduniquename = runtime.ScriptData.CommandUniqueId,
+                scriptpath = runtime.ScriptSourceFile,
+                docname = runtime.DocumentName,
+                docpath = runtime.DocumentPath,
+                resultcode = runtime.ExecutionResult,
+                commandresults = runtime.GetResultsDictionary(),
+                trace = new TraceInfo {
+                    engine = new EngineInfo {
+                        type = runtime.EngineType.ToString().ToLower(),
+                        version = runtime.EngineVersion,
+                        syspath = runtime.ScriptRuntimeConfigs.SearchPaths
+                    },
+                    message = runtime.TraceMessage
+                }
+            };
+        }
+
+        public static void LogScriptTelemetryRecord(ref ScriptRuntime runtime) {
             var envDict = new EnvDictionary();
+
+            var record = MakeTelemetryRecord(ref runtime);
 
             if (envDict.TelemetryState) {
                 if (envDict.TelemetryState
                         && envDict.TelemetryServerUrl != null
                         && !string.IsNullOrEmpty(envDict.TelemetryServerUrl))
                     new Task(() =>
-                        Telemetry.PostTelemetryRecord(envDict.TelemetryServerUrl, scriptTelemetryRecord)).Start();
+                        Telemetry.PostTelemetryRecord(envDict.TelemetryServerUrl, record)).Start();
 
                 if (envDict.TelemetryState
                         && envDict.TelemetryFilePath != null
                         && !string.IsNullOrEmpty(envDict.TelemetryFilePath))
                     new Task(() =>
-                        Telemetry.WriteTelemetryRecord(envDict.TelemetryFilePath, scriptTelemetryRecord)).Start();
+                        Telemetry.WriteTelemetryRecord(envDict.TelemetryFilePath, record)).Start();
             }
         }
     }

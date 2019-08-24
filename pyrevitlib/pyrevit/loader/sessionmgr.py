@@ -329,43 +329,45 @@ class PyRevitExternalCommandType(object):
 
     @property
     def script(self):
-        return getattr(self._extcmd, 'baked_scriptSource', None)
+        return getattr(self._extcmd.ScriptData, 'ScriptPath', None)
 
     @property
     def config_script(self):
-        return getattr(self._extcmd, 'baked_configScriptSource', None)
+        return getattr(self._extcmd.ScriptData, 'ConfigScriptPath', None)
 
     @property
-    def syspaths(self):
-        return getattr(self._extcmd, 'baked_syspaths', None)
+    def search_paths(self):
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'SearchPaths', [])
+        return list(value)
+
+    @property
+    def arguments(self):
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'Arguments', [])
+        return list(value)
+
+    @property
+    def engine_cfgs(self):
+        return getattr(self._extcmd.ScriptRuntimeConfigs, 'EngineConfigs', '')
 
     @property
     def helpsource(self):
-        return getattr(self._extcmd, 'baked_helpSource', None)
+        return getattr(self._extcmd.ScriptData, 'HelpSource', None)
 
     @property
     def name(self):
-        return getattr(self._extcmd, 'baked_cmdName', None)
+        return getattr(self._extcmd.ScriptData, 'CommandName', None)
 
     @property
     def bundle(self):
-        return getattr(self._extcmd, 'baked_cmdBundle', None)
+        return getattr(self._extcmd.ScriptData, 'CommandBundle', None)
 
     @property
     def extension(self):
-        return getattr(self._extcmd, 'baked_cmdExtension', None)
+        return getattr(self._extcmd.ScriptData, 'CommandExtension', None)
 
     @property
     def unique_id(self):
-        return getattr(self._extcmd, 'baked_cmdUniqueName', None)
-
-    @property
-    def needs_clean_engine(self):
-        return getattr(self._extcmd, 'baked_needsCleanEngine', None)
-
-    @property
-    def needs_fullframe_engine(self):
-        return getattr(self._extcmd, 'baked_needsFullFrameEngine', None)
+        return getattr(self._extcmd.ScriptData, 'CommandUniqueId', None)
 
     def is_available(self, category_set, zerodoc=False):
         if self._extcmd_availtype:
@@ -479,22 +481,22 @@ def create_tmp_commanddata():
 
 
 def execute_command_cls(extcmd_type, arguments=None,
-                        clean_engine=False, fullframe_engine=False,
-                        config_mode=False):
+                        config_mode=False, exec_from_ui=False):
 
     command_instance = extcmd_type()
-    # this is a manual execution from python code and not by user
-    command_instance.ExecutedFromUI = False
     # pass the arguments to the instance
     if arguments:
         command_instance.argumentList = framework.Array[str](arguments)
-    # force using clean engine
-    command_instance.baked_needsCleanEngine = clean_engine
-    # force using fullframe engine
-    command_instance.baked_needsFullFrameEngine = fullframe_engine
+    # this is a manual execution from python code and not by user
+    command_instance.ExecConfigs.MimicExecFromUI = exec_from_ui
     # force using the config script
-    command_instance.ConfigScriptMode = config_mode
+    command_instance.ExecConfigs.UseConfigScript = config_mode
 
+    # Execute(
+    # ExternalCommandData commandData,
+    # string message,
+    # ElementSet elements
+    # )
     re = command_instance.Execute(create_tmp_commanddata(),
                                   '',
                                   DB.ElementSet())
@@ -547,21 +549,24 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     script_data.CommandExtension = ext_name
     script_data.HelpSource = ''
 
+    script_runtime_cfg = runtime.types.ScriptRuntimeConfigs()
+    script_runtime_cfg.CommandData = create_tmp_commanddata()
+    script_runtime_cfg.SelectedElements = None
+    script_runtime_cfg.SearchPaths = framework.List[str](sys_paths or [])
+    script_runtime_cfg.Arguments = framework.List[str]([])
+    script_runtime_cfg.EngineConfigs = \
+        runtime.create_ipyengine_configs(
+            clean=True,
+            full_frame=True,
+            persistent=True,
+        )
+    script_runtime_cfg.RefreshEngine = False
+    script_runtime_cfg.ConfigMode = False
+    script_runtime_cfg.DebugMode = False
+    script_runtime_cfg.ExecutedFromUI = False
+
     script_runtime = \
-        runtime.types.ScriptRuntime(
-            cmdData=create_tmp_commanddata(),
-            elements=None,
-            scriptData=script_data,
-            searchpaths=framework.Array[str](sys_paths or []),
-            arguments=framework.Array[str]([]),
-            needsCleanEngine=True,
-            needsFullFrameEngine=True,
-            needsPersistentEngine=True,
-            refreshEngine=False,
-            forcedDebugMode=False,
-            configScriptMode=False,
-            executedFromUI=False
-            )
+        runtime.types.ScriptRuntime(script_data, script_runtime_cfg)
 
     runtime.types.ScriptExecutor.ExecuteScript(
         framework.clr.Reference[runtime.types.ScriptRuntime](

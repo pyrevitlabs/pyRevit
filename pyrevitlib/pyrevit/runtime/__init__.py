@@ -2,6 +2,7 @@
 import os
 import os.path as op
 import sys
+import json
 
 from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
 from pyrevit import framework
@@ -14,6 +15,7 @@ from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit.loader import HASH_CUTOFF_LENGTH
 from pyrevit.userconfig import user_config
+import pyrevit.extensions as exts
 
 from pyrevit.runtime import compiler
 
@@ -268,6 +270,14 @@ def _get_runtime_asm():
         return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
     else:
         return _generate_runtime_asm()
+
+
+def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
+    return json.dumps({
+        exts.MDATA_ENGINE_CLEAN: clean,
+        exts.MDATA_ENGINE_FULLFRAME: full_frame,
+        exts.MDATA_ENGINE_PERSISTENT: persistent,
+    })
 
 
 def create_ext_command_attrs():

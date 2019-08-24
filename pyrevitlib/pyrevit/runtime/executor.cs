@@ -83,7 +83,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 { "dynPath", runtime.ScriptSourceFile },
 
                 // Specifies whether the Dynamo UI should be visible (set to false - Dynamo will run headless).
-                { "dynShowUI", runtime.DebugMode.ToString() },
+                { "dynShowUI", runtime.ScriptRuntimeConfigs.DebugMode.ToString() },
 
                 // If the journal file specifies automation mode
                 // Dynamo will run on the main thread without the idle loop.

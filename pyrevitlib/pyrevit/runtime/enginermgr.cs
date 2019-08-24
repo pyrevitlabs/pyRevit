@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
 
 using System.Reflection;
 using Autodesk.Revit.UI;
@@ -40,6 +41,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         Dynamo,
         Grasshopper,
         Content,
+    }
+
+    public class ExecutionEngineConfigs {
+    }
+
+    public class IronPythonEngineConfigs : ExecutionEngineConfigs {
+        public bool clean;
+        public bool full_frame;
+        public bool persistent;
     }
 
     public class ExecutionEngine {
@@ -140,9 +150,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class IronPythonEngine : ExecutionEngine {
-        private List<string> _commandBuiltins = new List<string>();
-
         public ScriptEngine Engine { get; private set; }
+        public IronPythonEngineConfigs ExecEngineConfigs = new IronPythonEngineConfigs();
+
         public static Tuple<Stream, System.Text.Encoding> DefaultOutputStreamConfig {
             get {
                 return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEngineDefaultStreamCfgKey);
@@ -156,10 +166,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
 
+            // extract engine configuration from runtime data
+            try {
+                ExecEngineConfigs = new JavaScriptSerializer().Deserialize<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
+            }
+            catch {
+                // if any errors switch to defaults
+                ExecEngineConfigs.clean = false;
+                ExecEngineConfigs.full_frame = false;
+                ExecEngineConfigs.persistent = false;
+            }
+
             // If the command required a fullframe engine
             // or if the command required a clean engine
             // of if the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.NeedsFullFrameEngine || runtime.NeedsCleanEngine || runtime.NeedsRefreshedEngine;
+            IsRequiredByRuntime = ExecEngineConfigs.clean || ExecEngineConfigs.full_frame || runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override void Start(ref ScriptRuntime runtime) {
@@ -169,7 +190,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // default flags
                 flags["LightweightScopes"] = true;
 
-                if (runtime.NeedsFullFrameEngine) {
+                if (ExecEngineConfigs.full_frame) {
                     flags["Frames"] = true;
                     flags["FullFrames"] = true;
                 }
@@ -244,10 +265,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
                 _ipy_err_messages = _ipy_err_messages.NormalizeNewLine();
-                runtime.IronLanguageTraceBack = _ipy_err_messages;
 
                 _clr_err_message = _clr_err_message.NormalizeNewLine();
-                runtime.CLRTraceBack = _clr_err_message;
+
+                // set the trace messages on runtime for later usage (e.g. logging)
+                runtime.TraceMessage = string.Join("\n", _ipy_err_messages, _clr_err_message);
 
                 // manually add the CLR traceback since this is a two part error message
                 _clr_err_message = string.Join("\n", ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader), _clr_err_message);
@@ -256,7 +278,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {
-                if (!runtime.NeedsPersistentEngine) {
+                if (!ExecEngineConfigs.persistent) {
                     // cleaning removes all references to revit content that's been casualy stored in global-level
                     // variables and prohibit the GC from cleaning them up and releasing memory
                     var scopeClearScript = Engine.CreateScriptSourceFromString(
@@ -275,7 +297,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Shutdown() {
             CleanupEngineBuiltins();
             CleanupStreams();
-            _commandBuiltins = new List<string>();
         }
 
         private void SetupStdlib(ScriptEngine engine) {
@@ -315,8 +336,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 builtin.SetVariable("__revit__", null);
 
             // Adding data provided by IExternalCommand.Execute
-            builtin.SetVariable("__commanddata__", runtime.CommandData);
-            builtin.SetVariable("__elements__", runtime.SelectedElements);
+            builtin.SetVariable("__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
+            builtin.SetVariable("__elements__", runtime.ScriptRuntimeConfigs.SelectedElements);
 
             // Adding information on the command being executed
             builtin.SetVariable("__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
@@ -325,8 +346,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             builtin.SetVariable("__commandbundle__", runtime.ScriptData.CommandBundle);
             builtin.SetVariable("__commandextension__", runtime.ScriptData.CommandExtension);
             builtin.SetVariable("__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
-            builtin.SetVariable("__forceddebugmode__", runtime.DebugMode);
-            builtin.SetVariable("__shiftclick__", runtime.ConfigMode);
+            builtin.SetVariable("__forceddebugmode__", runtime.ScriptRuntimeConfigs.DebugMode);
+            builtin.SetVariable("__shiftclick__", runtime.ScriptRuntimeConfigs.ConfigMode);
 
             // Add reference to the results dictionary
             // so the command can add custom values for logging
@@ -334,22 +355,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
             // set event arguments for engine
-            builtin.SetVariable("__eventsender__", runtime.EventSender);
-            builtin.SetVariable("__eventargs__", runtime.EventArgs);
-
-
-            // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
-            var commandBuiltins = runtime.GetBuiltInVariables();
-            if (commandBuiltins != null)
-                foreach (KeyValuePair<string, object> data in commandBuiltins) {
-                    _commandBuiltins.Add(data.Key);
-                    builtin.SetVariable(data.Key, (object)data.Value);
-                }
+            builtin.SetVariable("__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
+            builtin.SetVariable("__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
         }
 
         private void SetupSearchPaths(ref ScriptRuntime runtime) {
             // process search paths provided to executor
-            Engine.SetSearchPaths(runtime.ModuleSearchPaths);
+            Engine.SetSearchPaths(runtime.ScriptRuntimeConfigs.SearchPaths);
         }
 
         private void SetupArguments(ref ScriptRuntime runtime) {
@@ -358,7 +370,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // engine.Runtime.Setup.HostArguments = new List<object>(arguments);
             var sysmodule = Engine.GetSysModule();
             var pythonArgv = new IronPython.Runtime.List();
-            pythonArgv.extend(runtime.Arguments);
+            pythonArgv.extend(runtime.ScriptRuntimeConfigs.Arguments);
             sysmodule.SetVariable("argv", pythonArgv);
         }
 
@@ -383,11 +395,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             builtin.SetVariable("__eventsender__", (object)null);
             builtin.SetVariable("__eventargs__", (object)null);
-
-            // cleanup all data set by command custom builtins
-            if (_commandBuiltins.Count > 0)
-                foreach (string builtinVarName in _commandBuiltins)
-                    builtin.SetVariable(builtinVarName, (object)null);
         }
 
         private void CleanupStreams() {
@@ -408,7 +415,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
+            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override void Start(ref ScriptRuntime runtime) {
@@ -464,7 +471,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // This is to avoid getting window prompts from Revit.
                     // Those pop ups are small and errors are hard to read.
                     _cpy_err_message = _cpy_err_message.NormalizeNewLine();
-                    runtime.CpythonTraceBack = _cpy_err_message;
+                    runtime.TraceMessage = _cpy_err_message;
                     runtime.OutputStream.WriteError(_cpy_err_message, EngineType.CPython);
                     result = ExecutionResultCodes.ExecutionException;
                 }
@@ -521,8 +528,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 SetVariable(builtins, "__revit__", null);
 
             // Adding data provided by IExternalCommand.Execute
-            SetVariable(builtins, "__commanddata__", runtime.CommandData);
-            SetVariable(builtins, "__elements__", runtime.SelectedElements);
+            SetVariable(builtins, "__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
+            SetVariable(builtins, "__elements__", runtime.ScriptRuntimeConfigs.SelectedElements);
 
             // Adding information on the command being executed
             SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
@@ -531,8 +538,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__commandbundle__", runtime.ScriptData.CommandBundle);
             SetVariable(builtins, "__commandextension__", runtime.ScriptData.CommandExtension);
             SetVariable(builtins, "__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
-            SetVariable(builtins, "__forceddebugmode__", runtime.DebugMode);
-            SetVariable(builtins, "__shiftclick__", runtime.ConfigMode);
+            SetVariable(builtins, "__forceddebugmode__", runtime.ScriptRuntimeConfigs.DebugMode);
+            SetVariable(builtins, "__shiftclick__", runtime.ScriptRuntimeConfigs.ConfigMode);
 
             // Add reference to the results dictionary
             // so the command can add custom values for logging
@@ -540,12 +547,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
             // set event arguments for engine
-            SetVariable(builtins, "__eventsender__", runtime.EventSender);
-            SetVariable(builtins, "__eventargs__", runtime.EventArgs);
-
-            // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
-            foreach (KeyValuePair<string, object> data in runtime.GetBuiltInVariables())
-                SetVariable(builtins, data.Key, data.Value);
+            SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
+            SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
 
             // set globals
             var fileVarPyObject = new PyString(runtime.ScriptSourceFile);
@@ -567,7 +570,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 sys.SetAttr("path", sysPaths);
             }
 
-            foreach (string searchPath in runtime.ModuleSearchPaths.Reverse<string>()) {
+            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths.Reverse<string>()) {
                 var searthPathStr = new PyString(searchPath);
                 pyRevitLabs.PythonNet.Runtime.PyList_Insert(sysPaths.Handle, 0, searthPathStr.Handle);
             }
@@ -606,7 +609,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
+            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
@@ -620,13 +623,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 catch (Exception compileEx) {
                     string _clr_err_message = compileEx.ToString();
                     _clr_err_message = _clr_err_message.NormalizeNewLine();
-                    runtime.CLRTraceBack = _clr_err_message;
+                    runtime.TraceMessage = _clr_err_message;
 
                     // TODO: change to script output for all script types
                     if (runtime.InterfaceType == InterfaceType.ExternalCommand)
-                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
+                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.TraceMessage);
 
-                    TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
+                    TaskDialog.Show(PyRevitConsts.ProductName, runtime.TraceMessage);
 
                     return ExecutionResultCodes.CompileException;
                 }
@@ -649,7 +652,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
                         _clr_err_message = _clr_err_message.NormalizeNewLine();
-                        runtime.CLRTraceBack = _clr_err_message;
+                        runtime.TraceMessage = _clr_err_message;
                         // TODO: same outp
                         TaskDialog.Show(PyRevitConsts.ProductName, _clr_err_message);
 
@@ -664,9 +667,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
                         _clr_err_message = _clr_err_message.NormalizeNewLine();
-                        runtime.CLRTraceBack = _clr_err_message;
+                        runtime.TraceMessage = _clr_err_message;
 
-                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.CLRTraceBack);
+                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.TraceMessage);
                         return ExecutionResultCodes.ExecutionException;
                     }
 
@@ -774,9 +777,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 null,
                 extCommandInstance,
                 new object[] {
-                runtime.CommandData,
+                runtime.ScriptRuntimeConfigs.CommandData,
                 commandMessage,
-                runtime.SelectedElements}
+                runtime.ScriptRuntimeConfigs.SelectedElements}
                 );
             return ExecutionResultCodes.Succeeded;
         }
@@ -795,8 +798,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             null,
                             extEventInstance,
                             new object[] {
-                                    runtime.EventSender,
-                                    runtime.EventArgs
+                                    runtime.ScriptRuntimeConfigs.EventSender,
+                                    runtime.ScriptRuntimeConfigs.EventArgs
                                 }
                             );
                         return ExecutionResultCodes.Succeeded;
@@ -812,7 +815,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
+            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
@@ -848,7 +851,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             //    pyrvtScript.IronLanguageTraceBack = _ruby_err_messages;
 
             //    _dotnet_err_message = _dotnet_err_message.NormalizeNewLine();
-            //    pyrvtScript.ClrTraceBack = _dotnet_err_message;
+            //    pyrvtScript.TraceMessage = _dotnet_err_message;
 
             //    _ruby_err_messages = string.Join(Environment.NewLine, ExternalConfig.irubyerrtitle, _ruby_err_messages);
             //    _dotnet_err_message = string.Join(Environment.NewLine, ExternalConfig.dotneterrtitle, _dotnet_err_message);
@@ -870,18 +873,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.NeedsRefreshedEngine;
+            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
             try {
                 // first argument is the script name
                 // script.py assmFile:className
-                if (runtime.Arguments.Count == 2) {
+                if (runtime.ScriptRuntimeConfigs.Arguments.Count == 1) {
                     // load the binary data from the DLL
                     // Direct invoke commands use the config script source file to point
                     // to the target dll assembly location
-                    string argumentString = runtime.Arguments[1];
+                    string argumentString = runtime.ScriptRuntimeConfigs.Arguments.First();
                     string assmFile = argumentString;
                     string className = null;
                     if (argumentString.Contains("::")) {
