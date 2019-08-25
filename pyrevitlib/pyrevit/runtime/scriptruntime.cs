@@ -15,14 +15,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class ScriptData {
-        public string ScriptPath;
-        public string ConfigScriptPath;
-        public string CommandUniqueId;
-        public string CommandName;
-        public string CommandBundle;
-        public string CommandExtension;
+        public string ScriptPath { get; set; }
+        public string ConfigScriptPath { get; set; }
+        public string CommandUniqueId { get; set; }
+        public string CommandName { get; set; }
+        public string CommandBundle { get; set; }
+        public string CommandExtension { get; set; }
 
-        public string HelpSource;
+        public string HelpSource { get; set; }
     }
 
     public class ScriptRuntimeConfigs : IDisposable {

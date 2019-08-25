@@ -46,12 +46,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public class ExecutionEngineConfigs {
     }
 
-    public class IronPythonEngineConfigs : ExecutionEngineConfigs {
-        public bool clean;
-        public bool full_frame;
-        public bool persistent;
-    }
-
     public class ExecutionEngine {
         public string Id { get; private set; }
         public string TypeId { get; private set; }
@@ -147,6 +141,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 cachedEngine.Shutdown();
             EngineDict[engineTypeId] = engine;
         }
+    }
+
+    public class IronPythonEngineConfigs : ExecutionEngineConfigs {
+        public bool clean;
+        public bool full_frame;
+        public bool persistent;
     }
 
     public class IronPythonEngine : ExecutionEngine {
@@ -258,23 +258,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             catch (Exception exception) {
                 // show (power) user everything!
-                string _clr_err_message = exception.ToString();
-                string _ipy_err_messages = Engine.GetService<ExceptionOperations>().FormatException(exception);
+                string clrTraceMessage = exception.ToString();
+                string ipyTraceMessage = Engine.GetService<ExceptionOperations>().FormatException(exception);
 
                 // Print all errors to stdout and return cancelled to Revit.
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
-                _ipy_err_messages = _ipy_err_messages.NormalizeNewLine();
+                ipyTraceMessage = ipyTraceMessage.NormalizeNewLine();
 
-                _clr_err_message = _clr_err_message.NormalizeNewLine();
+                clrTraceMessage = clrTraceMessage.NormalizeNewLine();
 
                 // set the trace messages on runtime for later usage (e.g. logging)
-                runtime.TraceMessage = string.Join("\n", _ipy_err_messages, _clr_err_message);
+                runtime.TraceMessage = string.Join("\n", ipyTraceMessage, clrTraceMessage);
 
                 // manually add the CLR traceback since this is a two part error message
-                _clr_err_message = string.Join("\n", ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader), _clr_err_message);
+                clrTraceMessage = string.Join("\n", ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader), clrTraceMessage);
 
-                runtime.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message, EngineType.IronPython);
+                runtime.OutputStream.WriteError(ipyTraceMessage + "\n\n" + clrTraceMessage, EngineType.IronPython);
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {
@@ -459,7 +459,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                     string pyNetTraceback = traceBackParts[1].Trim();
 
-                    string _cpy_err_message = string.Join(
+                    string traceMessage = string.Join(
                         "\n",
                         cpyex.Message,
                         cleanedPyTraceback,
@@ -470,9 +470,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // Print all errors to stdout and return cancelled to Revit.
                     // This is to avoid getting window prompts from Revit.
                     // Those pop ups are small and errors are hard to read.
-                    _cpy_err_message = _cpy_err_message.NormalizeNewLine();
-                    runtime.TraceMessage = _cpy_err_message;
-                    runtime.OutputStream.WriteError(_cpy_err_message, EngineType.CPython);
+                    traceMessage = traceMessage.NormalizeNewLine();
+                    runtime.TraceMessage = traceMessage;
+                    runtime.OutputStream.WriteError(traceMessage, EngineType.CPython);
                     result = ExecutionResultCodes.ExecutionException;
                 }
                 finally {
@@ -601,6 +601,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
+    public class ExecParams {
+        public string ScriptPath { get; set; }
+        public string ConfigScriptPath { get; set; }
+        public string CommandUniqueId { get; set; }
+        public string CommandName { get; set; }
+        public string CommandBundle { get; set; }
+        public string CommandExtension { get; set; }
+        public string HelpSource { get; set; }
+        public bool RefreshEngine { get; set; }
+        public bool ConfigMode { get; set; }
+        public bool DebugMode { get; set; }
+        public bool ExecutedFromUI { get; set; }
+    }
+
     public class CLREngine : ExecutionEngine {
         private string scriptSig = string.Empty;
         private Assembly scriptAssm = null;
@@ -621,9 +635,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     scriptAssm = CompileCLRScript(ref runtime);
                 }
                 catch (Exception compileEx) {
-                    string _clr_err_message = compileEx.ToString();
-                    _clr_err_message = _clr_err_message.NormalizeNewLine();
-                    runtime.TraceMessage = _clr_err_message;
+                    string traceMessage = compileEx.ToString();
+                    traceMessage = traceMessage.NormalizeNewLine();
+                    runtime.TraceMessage = traceMessage;
 
                     // TODO: change to script output for all script types
                     if (runtime.InterfaceType == InterfaceType.ExternalCommand)
@@ -640,6 +654,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // if is an external command
                 case InterfaceType.ExternalCommand:
                     try {
+                        // execute now
                         var resultCode = ExecuteExternalCommand(scriptAssm, null, ref runtime);
                         if (resultCode == ExecutionResultCodes.ExternalInterfaceNotImplementedException)
                             TaskDialog.Show(PyRevitConsts.ProductName,
@@ -650,11 +665,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         return resultCode;
                     }
                     catch (Exception execEx) {
-                        string _clr_err_message = execEx.ToString();
-                        _clr_err_message = _clr_err_message.NormalizeNewLine();
-                        runtime.TraceMessage = _clr_err_message;
+                        string traceMessage = execEx.ToString();
+                        traceMessage = traceMessage.NormalizeNewLine();
+                        runtime.TraceMessage = traceMessage;
                         // TODO: same outp
-                        TaskDialog.Show(PyRevitConsts.ProductName, _clr_err_message);
+                        TaskDialog.Show(PyRevitConsts.ProductName, traceMessage);
 
                         return ExecutionResultCodes.ExecutionException;
                     }
@@ -665,9 +680,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         return ExecuteEventHandler(scriptAssm, ref runtime);
                     }
                     catch (Exception execEx) {
-                        string _clr_err_message = execEx.ToString();
-                        _clr_err_message = _clr_err_message.NormalizeNewLine();
-                        runtime.TraceMessage = _clr_err_message;
+                        string traceMessage = execEx.ToString();
+                        traceMessage = traceMessage.NormalizeNewLine();
+                        runtime.TraceMessage = traceMessage;
 
                         TaskDialog.Show(PyRevitConsts.ProductName, runtime.TraceMessage);
                         return ExecutionResultCodes.ExecutionException;
@@ -759,15 +774,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
             object extCommandInstance = Activator.CreateInstance(extCommandType);
 
             // set properties if available
-            // set script data
+            // set ExecParams
             foreach (var fieldInfo in extCommandType.GetFields()) {
-                if (fieldInfo.FieldType == typeof(ScriptData))
+                if (fieldInfo.FieldType == typeof(ExecParams)) {
                     fieldInfo.SetValue(
                         extCommandInstance,
-                        new ScriptData {
-                            ScriptPath = runtime.ScriptSourceFile,
+                        new ExecParams {
+                            ScriptPath = runtime.ScriptData.ScriptPath,
+                            ConfigScriptPath = runtime.ScriptData.ConfigScriptPath,
+                            CommandUniqueId = runtime.ScriptData.CommandUniqueId,
+                            CommandName = runtime.ScriptData.CommandName,
+                            CommandBundle = runtime.ScriptData.CommandBundle,
+                            CommandExtension = runtime.ScriptData.CommandExtension,
+                            HelpSource = runtime.ScriptData.HelpSource,
+                            RefreshEngine = runtime.ScriptRuntimeConfigs.RefreshEngine,
+                            ConfigMode = runtime.ScriptRuntimeConfigs.ConfigMode,
+                            DebugMode = runtime.ScriptRuntimeConfigs.DebugMode,
+                            ExecutedFromUI = runtime.ScriptRuntimeConfigs.ExecutedFromUI
                         });
+                }
             }
+
+            // reroute console output to runtime stream
+            var existingOutStream = Console.Out;
+            StreamWriter runtimeOutputStream = new StreamWriter(runtime.OutputStream);
+            runtimeOutputStream.AutoFlush = true;
+            Console.SetOut(runtimeOutputStream);
 
             // execute
             string commandMessage = string.Empty;
@@ -777,10 +809,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 null,
                 extCommandInstance,
                 new object[] {
-                runtime.ScriptRuntimeConfigs.CommandData,
-                commandMessage,
-                runtime.ScriptRuntimeConfigs.SelectedElements}
+                    runtime.ScriptRuntimeConfigs.CommandData,
+                    commandMessage,
+                    runtime.ScriptRuntimeConfigs.SelectedElements}
                 );
+
+            // reroute console output back to original
+            Console.SetOut(existingOutStream);
+            runtimeOutputStream = null;
+
             return ExecutionResultCodes.Succeeded;
         }
 
