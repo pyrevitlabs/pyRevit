@@ -59,9 +59,10 @@ func (logrec ScriptTelemetryRecordV1) Validate() {
 
 // v2.0
 type EngineInfoV2 struct {
-	Type     string   `json:"type" bson:"type"`
-	Version  string   `json:"version" bson:"version"`
-	SysPaths []string `json:"syspath" bson:"syspath"`
+	Type     string            `json:"type" bson:"type"`
+	Version  string            `json:"version" bson:"version"`
+	SysPaths []string          `json:"syspath" bson:"syspath"`
+	Configs  map[string]string `json:"configs" bson:"configs"`
 }
 
 type TraceInfoV2 struct {
@@ -84,8 +85,7 @@ type ScriptTelemetryRecordV2 struct {
 	Clone             string            `json:"clone" bson:"clone"` // added in v2.0
 	IsDebugMode       bool              `json:"debug" bson:"debug"`
 	IsConfigMode      bool              `json:"config" bson:"config"`
-	IsExecFromGUI     bool              `json:"from_gui" bson:"from_gui"`       // added in v2.0
-	EngineCfgs        map[string]string `json:"engine_cfgs" bson:"engine_cfgs"` // added in v2.0
+	IsExecFromGUI     bool              `json:"from_gui" bson:"from_gui"` // added in v2.0
 	CommandName       string            `json:"commandname" bson:"commandname"`
 	CommandUniqueName string            `json:"commanduniquename" bson:"commanduniquename"`
 	BundleName        string            `json:"commandbundle" bson:"commandbundle"`
