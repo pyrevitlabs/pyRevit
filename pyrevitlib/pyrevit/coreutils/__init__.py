@@ -21,6 +21,7 @@ from collections import defaultdict
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit import compat
 from pyrevit.compat import safe_strtype
 from pyrevit.compat import winreg as wr
 from pyrevit import framework
@@ -91,10 +92,31 @@ class ScriptFileParser(object):
         """
         self.ast_tree = None
         self.file_addr = file_address
-        with open(file_address, 'r') as source_file:
+        with codecs.open(file_address, 'r', 'utf-8') as source_file:
             contents = source_file.read()
             if contents:
                 self.ast_tree = ast.parse(contents)
+
+    def extract_node_value(self, node):
+        """Manual extraction of values from node"""
+        if isinstance(node, ast.Assign):
+            node_value = node.value
+        else:
+            node_value = node
+
+        if isinstance(node_value, ast.Num):
+            return node_value.n
+        elif compat.PY2 and isinstance(node_value, ast.Name):
+            return node_value.id
+        elif compat.PY3 and isinstance(node_value, ast.NameConstant):
+            return node_value.value
+        elif isinstance(node_value, ast.Str):
+            return node_value.s
+        elif isinstance(node_value, ast.List):
+            return node_value.elts
+        elif isinstance(node_value, ast.Dict):
+            return {self.extract_node_value(k):self.extract_node_value(v)
+                    for k, v in zip(node_value.keys, node_value.values)}
 
     def get_docstring(self):
         """Get global docstring."""
@@ -116,15 +138,12 @@ class ScriptFileParser(object):
         """
         if self.ast_tree:
             try:
-                for child in ast.iter_child_nodes(self.ast_tree):
-                    if hasattr(child, 'targets'):
-                        for target in child.targets:
+                for node in ast.iter_child_nodes(self.ast_tree):
+                    if isinstance(node, ast.Assign):
+                        for target in node.targets:
                             if hasattr(target, 'id') \
                                     and target.id == param_name:
-                                param_value = ast.literal_eval(child.value)
-                                if isinstance(param_value, str):
-                                    param_value = param_value.decode('utf-8')
-                                return param_value
+                                return ast.literal_eval(node.value)
             except Exception as err:
                 raise PyRevitException('Error parsing parameter: {} '
                                        'in script file for : {} | {}'

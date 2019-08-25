@@ -84,7 +84,7 @@ else:
 
 CPDialogs = None
 try:
-    # clr.AddReference('Microsoft.WindowsAPICodePack')
+    clr.AddReference('Microsoft.WindowsAPICodePack')
     clr.AddReference('Microsoft.WindowsAPICodePack.Shell')
     import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs #pylint: disable=ungrouped-imports
 except Exception:

@@ -8,60 +8,65 @@ using System.Windows.Input;
 using System.Windows.Controls;
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    [Regeneration(RegenerationOption.Manual)]
-    [Transaction(TransactionMode.Manual)]
-    public abstract class CommandType : IExternalCommand {
-        public string baked_scriptSource = null;
-        public string baked_configScriptSource = null;
-        public string baked_syspaths = null;
-        // list of string arguments to be passed to executor.
-        // executor then sets the sys.argv with these arguments
-        public string baked_arguments = null;
-        public string baked_helpSource = null;
-        public string baked_cmdName = null;
-        public string baked_cmdBundle = null;
-        public string baked_cmdExtension = null;
-        public string baked_cmdUniqueName = null;
-        public bool baked_needsCleanEngine = false;
-        public bool baked_needsFullFrameEngine = false;
-        public bool baked_needsPersistentEngine = false;
-
+    public class CommandTypeExecConfigs {
         // unlike fullframe or clean engine modes, the config script mode is determined at
         // script execution by using a shortcut key combination. This parameter is created to
         // trigger the config script mode when executing a command from a program and not
         // from the Revit user interface.
-        public bool ConfigScriptMode = false;
+        public bool UseConfigScript = false;
 
         // this is true by default since commands are normally executed from ui.
         // pyrevit module will set this to false, when manually executing a
         // pyrevit command from python code. (e.g when executing reload after update)
-        public bool ExecutedFromUI = true;
+        public bool MimicExecFromUI = true;
+    }
 
 
-        public CommandType(string scriptSource,
-                              string configScriptSource,
-                              string syspaths,
-                              string arguments,
-                              string helpSource,
-                              string cmdName,
-                              string cmdBundle,
-                              string cmdExtension,
-                              string cmdUniqueName,
-                              int needsCleanEngine,
-                              int needsFullFrameEngine,
-                              int needsPersistentEngine) {
-            baked_scriptSource = scriptSource;
-            baked_configScriptSource = configScriptSource;
-            baked_syspaths = syspaths;
-            baked_arguments = arguments;
-            baked_helpSource = helpSource;
-            baked_cmdName = cmdName;
-            baked_cmdBundle = cmdBundle;
-            baked_cmdExtension = cmdExtension;
-            baked_cmdUniqueName = cmdUniqueName;
-            baked_needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
-            baked_needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
-            baked_needsPersistentEngine = Convert.ToBoolean(needsPersistentEngine);
+    [Regeneration(RegenerationOption.Manual)]
+    [Transaction(TransactionMode.Manual)]
+    public abstract class CommandType : IExternalCommand {
+        
+        public ScriptData ScriptData;
+        public ScriptRuntimeConfigs ScriptRuntimeConfigs;
+
+        public CommandTypeExecConfigs ExecConfigs = new CommandTypeExecConfigs();
+
+        public CommandType(
+                string scriptSource,
+                string configScriptSource,
+                string searchPaths,
+                string arguments,
+                string helpSource,
+                string cmdName,
+                string cmdBundle,
+                string cmdExtension,
+                string cmdUniqueName,
+                string engineCfgs) {
+            ScriptData = new ScriptData {
+                ScriptPath = scriptSource,
+                ConfigScriptPath = configScriptSource,
+                CommandUniqueId = cmdUniqueName,
+                CommandName = cmdName,
+                CommandBundle = cmdBundle,
+                CommandExtension = cmdExtension,
+                HelpSource = helpSource,
+            };
+
+            // build search paths
+            List<string> searchPathList = new List<string>();
+            if (searchPaths != null && searchPaths != string.Empty)
+                searchPathList = new List<string>(searchPaths.Split(Path.PathSeparator));
+
+            // build arguments
+            List<string> argumentList = new List<string>();
+            if (arguments != null && arguments != string.Empty)
+                argumentList = new List<string>(arguments.Split(Path.PathSeparator));
+
+            ScriptRuntimeConfigs = new ScriptRuntimeConfigs {
+                SearchPaths = searchPathList,
+                Arguments = argumentList,
+                EngineConfigs = engineCfgs,
+            };
         }
 
 
@@ -69,12 +74,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // 1: ----------------------------------------------------------------------------------------------------
             #region Processing modifier keys
             // Processing modifier keys
-            // Default script is the main script unless it is changed by modifier buttons
-            var _script = baked_scriptSource;
 
-            bool _refreshEngine = false;
-            bool _configScriptMode = false;
-            bool _forcedDebugMode = false;
+            bool refreshEngine = false;
+            bool configScriptMode = false;
+            bool forcedDebugMode = false;
 
             bool ALT = Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt);
             bool SHIFT = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
@@ -84,7 +87,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // If Ctrl+Alt+Shift clicking on the tool run in clean engine
             if (CTRL && ALT && SHIFT) {
-                _refreshEngine = true;
+                refreshEngine = true;
             }
 
             // If Alt+Shift clicking on button, open the context menu with options.
@@ -93,50 +96,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 ContextMenu pyRevitCmdContextMenu = new ContextMenu();
 
                 // menu item to open help url if exists
-                if (baked_helpSource != null && baked_helpSource != "") {
+                if (ScriptData.HelpSource != null && ScriptData.HelpSource != "") {
                     MenuItem openHelpSource = new MenuItem();
                     openHelpSource.Header = "Open Help";
-                    openHelpSource.ToolTip = baked_helpSource;
-                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(baked_helpSource); };
+                    openHelpSource.ToolTip = ScriptData.HelpSource;
+                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(ScriptData.HelpSource); };
                     pyRevitCmdContextMenu.Items.Add(openHelpSource);
                 }
-
-                // use a disabled menu item to show if the command requires clean engine
-                MenuItem cleanEngineStatus = new MenuItem();
-                cleanEngineStatus.Header = string.Format("Requests Clean Engine: {0}", baked_needsCleanEngine ? "Yes" : "No");
-                cleanEngineStatus.IsEnabled = false;
-                pyRevitCmdContextMenu.Items.Add(cleanEngineStatus);
-
-                // use a disabled menu item to show if the command requires full frame engine
-                MenuItem fullFrameEngineStatus = new MenuItem();
-                fullFrameEngineStatus.Header = string.Format("Requests FullFrame Engine: {0}", baked_needsFullFrameEngine ? "Yes" : "No");
-                fullFrameEngineStatus.IsEnabled = false;
-                pyRevitCmdContextMenu.Items.Add(fullFrameEngineStatus);
-
-                // use a disabled menu item to show if the command requires full frame engine
-                MenuItem persistentEngineStatus = new MenuItem();
-                persistentEngineStatus.Header = string.Format("Requests Persistent Engine: {0}", baked_needsPersistentEngine ? "Yes" : "No");
-                persistentEngineStatus.IsEnabled = false;
-                pyRevitCmdContextMenu.Items.Add(persistentEngineStatus);
 
                 // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
                 copyScriptPath.Header = "Copy Script Path";
-                copyScriptPath.ToolTip = _script;
-                copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script); };
+                copyScriptPath.ToolTip = ScriptData.ScriptPath;
+                copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(ScriptData.ScriptPath); };
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
                 // menu item to copy config script path to clipboard, if exists
-                if (baked_configScriptSource != null && baked_configScriptSource != "") {
+                if (ScriptData.ConfigScriptPath != null && ScriptData.ConfigScriptPath != "") {
                     MenuItem copyAltScriptPath = new MenuItem();
                     copyAltScriptPath.Header = "Copy Config Script Path";
-                    copyAltScriptPath.ToolTip = baked_configScriptSource;
-                    copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_configScriptSource); };
+                    copyAltScriptPath.ToolTip = ScriptData.ConfigScriptPath;
+                    copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(ScriptData.ConfigScriptPath); };
                     pyRevitCmdContextMenu.Items.Add(copyAltScriptPath);
                 }
 
                 // menu item to copy bundle path to clipboard
-                var bundlePath = Path.GetDirectoryName(_script);
+                var bundlePath = Path.GetDirectoryName(ScriptData.ScriptPath);
                 MenuItem copyBundlePath = new MenuItem();
                 copyBundlePath.Header = "Copy Bundle Path";
                 copyBundlePath.ToolTip = bundlePath;
@@ -145,15 +130,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // menu item to copy command unique name (assigned by pyRevit) to clipboard
                 MenuItem copyUniqueName = new MenuItem();
-                copyUniqueName.Header = string.Format("Copy Unique Id ({0})", baked_cmdUniqueName);
-                copyUniqueName.ToolTip = baked_cmdUniqueName;
-                copyUniqueName.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_cmdUniqueName); };
+                copyUniqueName.Header = string.Format("Copy Unique Id ({0})", ScriptData.CommandUniqueId);
+                copyUniqueName.ToolTip = ScriptData.CommandUniqueId;
+                copyUniqueName.Click += delegate { System.Windows.Forms.Clipboard.SetText(ScriptData.CommandUniqueId); };
                 pyRevitCmdContextMenu.Items.Add(copyUniqueName);
 
                 // menu item to copy ;-separated sys paths to clipboard
                 // Example: "path1;path2;path3"
                 MenuItem copySysPaths = new MenuItem();
-                var sysPathsText = baked_syspaths.Replace(new string(Path.PathSeparator, 1), Environment.NewLine);
+                string sysPathsText = string.Join(Environment.NewLine, ScriptRuntimeConfigs.SearchPaths);
                 copySysPaths.Header = "Copy Sys Paths";
                 copySysPaths.ToolTip = sysPathsText;
                 copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(sysPathsText); };
@@ -162,20 +147,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // menu item to copy ;-separated arguments to clipboard
                 // Example: "path1;path2;path3"
                 MenuItem copyArguments = new MenuItem();
+                string argumentsText = string.Join(Environment.NewLine, ScriptRuntimeConfigs.Arguments);
                 copyArguments.Header = "Copy Arguments";
-                copyArguments.ToolTip = baked_arguments;
-                copyArguments.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_arguments); };
+                copyArguments.ToolTip = argumentsText;
+                copyArguments.Click += delegate { System.Windows.Forms.Clipboard.SetText(argumentsText); };
                 pyRevitCmdContextMenu.Items.Add(copyArguments);
-                if (baked_arguments == null || baked_arguments == string.Empty)
+                if (argumentsText == null || argumentsText == string.Empty)
                     copyArguments.IsEnabled = false;
 
                 // menu item to copy help url
                 MenuItem copyHelpSource = new MenuItem();
                 copyHelpSource.Header = "Copy Help Url";
-                copyHelpSource.ToolTip = baked_helpSource;
-                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_helpSource); };
+                copyHelpSource.ToolTip = ScriptData.HelpSource;
+                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(ScriptData.HelpSource); };
                 pyRevitCmdContextMenu.Items.Add(copyHelpSource);
-                if (baked_helpSource == null || baked_helpSource == string.Empty)
+                if (ScriptData.HelpSource == null || ScriptData.HelpSource == string.Empty)
                     copyHelpSource.IsEnabled = false;
 
                 // open the menu
@@ -185,56 +171,44 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // If Ctrl+Shift clicking on button, run the script in debug mode and run config script instead.
-            else if (CTRL && (SHIFT || ConfigScriptMode)) {
-                _configScriptMode = true;
-                _forcedDebugMode = true;
+            else if (CTRL && (SHIFT || ExecConfigs.UseConfigScript)) {
+                configScriptMode = true;
+                forcedDebugMode = true;
             }
 
             // If Alt clicking on button, open the script in explorer and return.
             else if (ALT) {
                 // combine the arguments together
                 // it doesn't matter if there is a space after ','
-                string argument = "/select, \"" + _script + "\"";
+                string argument = "/select, \"" + ScriptData.ScriptPath + "\"";
 
                 System.Diagnostics.Process.Start("explorer.exe", argument);
                 return Result.Succeeded;
             }
 
             // If Shift clicking on button, run config script instead
-            else if (SHIFT || ConfigScriptMode) {
-                _configScriptMode = true;
+            else if (SHIFT || ExecConfigs.UseConfigScript) {
+                configScriptMode = true;
             }
 
             // If Ctrl clicking on button, set forced debug mode.
             else if (CTRL) {
-                _forcedDebugMode = true;
+                forcedDebugMode = true;
             }
             #endregion
 
             // 2: ----------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
-            var runtime = new ScriptRuntime(
-                cmdData: commandData,
-                elements: elements,
-                scriptData: new ScriptData {
-                    ScriptPath = baked_scriptSource,
-                    ConfigScriptPath = baked_configScriptSource,
-                    CommandUniqueId = baked_cmdUniqueName,
-                    CommandName = baked_cmdName,
-                    CommandBundle = baked_cmdBundle,
-                    CommandExtension = baked_cmdExtension,
-                    HelpSource = baked_helpSource,
-                },
-                searchpaths: baked_syspaths.Split(Path.PathSeparator),
-                arguments: baked_arguments.Split(Path.PathSeparator),
-                needsCleanEngine: baked_needsCleanEngine,
-                needsFullFrameEngine: baked_needsFullFrameEngine,
-                needsPersistentEngine: baked_needsPersistentEngine,
-                refreshEngine: _refreshEngine,
-                forcedDebugMode: _forcedDebugMode,
-                configScriptMode: _configScriptMode,
-                executedFromUI: ExecutedFromUI
-                );
+            // fill in the rest of runtime info
+            ScriptRuntimeConfigs.CommandData = commandData;
+            ScriptRuntimeConfigs.SelectedElements = elements;
+            ScriptRuntimeConfigs.RefreshEngine = refreshEngine;
+            ScriptRuntimeConfigs.ConfigMode = configScriptMode;
+            ScriptRuntimeConfigs.DebugMode = forcedDebugMode;
+            ScriptRuntimeConfigs.ExecutedFromUI = ExecConfigs.MimicExecFromUI;
+
+            // create runtime
+            var runtime = new ScriptRuntime(ScriptData, ScriptRuntimeConfigs);
             #endregion
 
             // 3: ----------------------------------------------------------------------------------------------------
@@ -244,7 +218,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             runtime.ExecutionResult = ScriptExecutor.ExecuteScript(ref runtime);
 
             // Log results
-            ScriptTelemetry.LogScriptTelemetryRecord(runtime.MakeTelemetryRecord());
+            ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
 
             // GC cleanups
             var re = runtime.ExecutionResult;

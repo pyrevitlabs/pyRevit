@@ -1,6 +1,7 @@
 """Create necessary compiled types for pyRevit bundles."""
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
+import pyrevit.extensions as exts
 
 from pyrevit import runtime
 
@@ -21,9 +22,7 @@ def create_bundle_type(
         bundle_full_name,
         bundle_extension_name,
         bundle_unique_name,
-        bundle_requires_clean_engine,
-        bundle_requires_fullframe_engine,
-        bundle_requires_persistent_engine,
+        engine_cfgs,
     ):
     runtime.create_type(
         module_builder,
@@ -39,9 +38,7 @@ def create_bundle_type(
         bundle_full_name,
         bundle_extension_name,
         bundle_unique_name,
-        int(bundle_requires_clean_engine),
-        int(bundle_requires_fullframe_engine),
-        int(bundle_requires_persistent_engine))
+        engine_cfgs)
 
 
 def create_executor_type(extension, module_builder, cmd_component):
@@ -52,6 +49,14 @@ def create_executor_type(extension, module_builder, cmd_component):
                   cmd_component.name, cmd_component.requires_fullframe_engine)
     mlogger.debug('%s requires Fullframe engine: %s',
                   cmd_component.name, cmd_component.requires_fullframe_engine)
+
+    engine_configs = ''
+    if cmd_component.script_language == exts.PYTHON_LANG:
+        engine_configs = runtime.create_ipyengine_configs(
+            clean=cmd_component.requires_clean_engine,
+            full_frame=cmd_component.requires_fullframe_engine,
+            persistent=cmd_component.requires_persistent_engine,
+        )
 
     create_bundle_type(
         module_builder=module_builder,
@@ -65,11 +70,7 @@ def create_executor_type(extension, module_builder, cmd_component):
         bundle_full_name=cmd_component.get_full_bundle_name(),
         bundle_extension_name=extension.name,
         bundle_unique_name=cmd_component.unique_name,
-        bundle_requires_clean_engine=cmd_component.requires_clean_engine,
-        bundle_requires_fullframe_engine=\
-            cmd_component.requires_fullframe_engine,
-        bundle_requires_persistent_engine=\
-            cmd_component.requires_persistent_engine
+        engine_cfgs=engine_configs
         )
 
     mlogger.debug('Successfully created executor type for: %s', cmd_component)

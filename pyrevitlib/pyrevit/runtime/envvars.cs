@@ -56,8 +56,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string RevitVersion;
         public string PyRevitVersion;
         public string PyRevitClone;
-        public int PyRevitIPYVersion;
-        public int PyRevitCPYVersion;
+        public string PyRevitIPYVersion;
+        public string PyRevitCPYVersion;
 
         public int LoggingLevel;
         public bool FileLogging;
@@ -99,10 +99,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 PyRevitClone = (string)_envData[EnvDictionaryKeys.Clone];
 
             if (_envData.Contains(EnvDictionaryKeys.IPYVersion))
-                PyRevitIPYVersion = (int)_envData[EnvDictionaryKeys.IPYVersion];
+                PyRevitIPYVersion = (string)_envData[EnvDictionaryKeys.IPYVersion];
 
             if (_envData.Contains(EnvDictionaryKeys.CPYVersion))
-                PyRevitCPYVersion = (int)_envData[EnvDictionaryKeys.CPYVersion];
+                PyRevitCPYVersion = (string)_envData[EnvDictionaryKeys.CPYVersion];
 
             // logging
             if (_envData.Contains(EnvDictionaryKeys.LoggingLevel))

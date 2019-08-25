@@ -1162,6 +1162,7 @@ class SearchPrompt(WPFWindow):
         self.search_tip = kwargs.get('search_tip', '')
 
         self._search_db = sorted(search_db)
+        self._search_res = None
         self._switches = kwargs.get('switches', [])
         self._setup_response()
 
@@ -1283,11 +1284,8 @@ class SearchPrompt(WPFWindow):
                     self.wordsmatch_tb.Text = '- {}'.format(cur_res)
                     mlogger.debug('wordsmatch_tb.Text: %s',
                                   self.wordsmatch_tb.Text)
-
-            self._setup_response(response=cur_res)
+            self._search_res = cur_res
             return True
-
-        self._setup_response()
         return False
 
     def set_search_results(self, *args):
@@ -1347,6 +1345,7 @@ class SearchPrompt(WPFWindow):
             self.Close()
         # Enter: close, returns matched response automatically
         elif args.Key == Input.Key.Enter:
+            self._setup_response(response=self._search_res)
             self.Close()
         # Shift+Tab, Tab: Cycle through matches
         elif args.Key == Input.Key.Tab and shiftdown:

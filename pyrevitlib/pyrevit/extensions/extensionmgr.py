@@ -75,7 +75,7 @@ def _remove_disabled_extensions(ext_list):
         if _is_extension_enabled(extension):
             cleaned_ext_list.append(extension)
         else:
-            mlogger.info('Skipping disabled extension: %s', extension.name)
+            mlogger.debug('Skipping disabled extension: %s', extension.name)
 
     return cleaned_ext_list
 
@@ -91,8 +91,8 @@ def _parse_or_cache(ext_info):
         ui_extension = get_parsed_extension(ext_info)
 
         # update cache with newly parsed ui_extension
-        mlogger.info('UI Extension successfuly parsed: %s', ui_extension.name)
-        mlogger.info('Updating cache for ui_extension: %s', ui_extension.name)
+        mlogger.debug('UI Extension successfuly parsed: %s', ui_extension.name)
+        mlogger.debug('Updating cache for ui_extension: %s', ui_extension.name)
         update_cache(ui_extension)
 
     # otherwise load the cache
@@ -102,7 +102,7 @@ def _parse_or_cache(ext_info):
         # cacher module takes the ui_extension object and
         # injects cache data into it.
         ui_extension = get_cached_extension(ext_info)
-        mlogger.info('UI Extension successfuly loaded from cache: %s',
+        mlogger.debug('UI Extension successfuly loaded from cache: %s',
                      ui_extension.name)
 
     return ui_extension
@@ -204,7 +204,7 @@ def get_installed_ui_extensions():
                 ui_extension = _parse_or_cache(ext_info)
                 ui_ext_list.append(ui_extension)
             else:
-                mlogger.info('Skipping disabled ui extension: %s',
+                mlogger.debug('Skipping disabled ui extension: %s',
                              ext_info.name)
 
     # update extension master syspaths with standard pyrevit lib paths and

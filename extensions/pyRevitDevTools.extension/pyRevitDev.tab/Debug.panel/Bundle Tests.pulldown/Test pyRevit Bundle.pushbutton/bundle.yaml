@@ -1,13 +1,17 @@
-title: Test pyRevit Bundle (Custom Title)
-tooltip: Test pyRevit Bundle Tooltip
+title:
+  en_us: Test pyRevit Bundle (Custom Title)
+  chinese_s: 测试包
+tooltip: |
+  Test pyRevit Bundle Tooltip
+  {{template_test}}
 media: tooltip.mp4
 help_url: "{{docpath}}"
 authors:
   - "{{author}}"
   - John Doe
 context:
-  - Walls
-  - Text Notes
+  - OST_Walls
+  - OST_TextNotes
 min_revit_version:
 max_revit_version:
 is_beta: false

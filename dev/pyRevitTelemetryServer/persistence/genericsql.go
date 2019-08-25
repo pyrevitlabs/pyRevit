@@ -47,7 +47,7 @@ func (w GenericSQLConnection) WriteScriptTelemetryV2(logrec *ScriptTelemetryReco
 func (w GenericSQLConnection) WriteEventTelemetryV2(logrec *EventTelemetryRecordV2, logger *cli.Logger) (*Result, error) {
 	// generate generic sql insert query
 	logger.Debug("generating query")
-	query, qErr := generateEventInsertQuery(w.Config.EventTarget, logrec, logger)
+	query, qErr := generateEventInsertQueryV2(w.Config.EventTarget, logrec, logger)
 	if qErr != nil {
 		return nil, qErr
 	}
@@ -114,7 +114,6 @@ func generateScriptInsertQueryV1(table string, logrec *ScriptTelemetryRecordV1, 
 	logger.Debug("building insert query for data")
 	datalines := make([]string, 0)
 
-	// marshal json data
 	cresults, merr := json.Marshal(logrec.CommandResults)
 	if merr != nil {
 		logger.Debug("error logging command results")
@@ -235,7 +234,7 @@ func generateScriptInsertQueryV2(table string, logrec *ScriptTelemetryRecordV2, 
 	return full_query, nil
 }
 
-func generateEventInsertQuery(table string, logrec *EventTelemetryRecordV2, logger *cli.Logger) (string, error) {
+func generateEventInsertQueryV2(table string, logrec *EventTelemetryRecordV2, logger *cli.Logger) (string, error) {
 	// read csv file and build sql insert query
 	var querystr strings.Builder
 
@@ -258,26 +257,24 @@ func generateEventInsertQuery(table string, logrec *EventTelemetryRecordV2, logg
 	// generate record id, panic if error
 	recordId := uuid.Must(uuid.NewV4())
 
-	if logrec.RecordMeta.SchemaVersion == "2.0" {
-		record = []string{
-			recordId.String(),
-			logrec.TimeStamp,
-			logrec.EventType,
-			string(cresults),
-			logrec.UserName,
-			logrec.HostUserName,
-			logrec.RevitVersion,
-			logrec.RevitBuild,
-			strconv.FormatBool(logrec.Cancellable),
-			strconv.FormatBool(logrec.Cancelled),
-			strconv.Itoa(logrec.DocumentId),
-			logrec.DocumentType,
-			logrec.DocumentTemplate,
-			logrec.DocumentName,
-			logrec.DocumentPath,
-			logrec.ProjectNumber,
-			logrec.ProjectName,
-		}
+	record = []string{
+		recordId.String(),
+		logrec.TimeStamp,
+		logrec.EventType,
+		string(cresults),
+		logrec.UserName,
+		logrec.HostUserName,
+		logrec.RevitVersion,
+		logrec.RevitBuild,
+		strconv.FormatBool(logrec.Cancellable),
+		strconv.FormatBool(logrec.Cancelled),
+		strconv.Itoa(logrec.DocumentId),
+		logrec.DocumentType,
+		logrec.DocumentTemplate,
+		logrec.DocumentName,
+		logrec.DocumentPath,
+		logrec.ProjectNumber,
+		logrec.ProjectName,
 	}
 	datalines = append(datalines, ToSql(&record, true))
 

@@ -6,18 +6,28 @@ Imports Autodesk.Revit.DB
 
 Imports PyRevitLabs.PyRevit.Runtime
 
-<Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.ReadOnly)> _
-Public Class HelloWorld
-Implements IExternalCommand
-        Public myScriptData As ScriptData
+Public Class HelloWorld Implements IExternalCommand
+        Public execParams As ExecParams
 
-        Public Function Execute(ByVal revit As ExternalCommandData, ByRef message As String, _
-                                ByVal elements As ElementSet) As Autodesk.Revit.UI.Result _
-                                Implements IExternalCommand.Execute
+        Public Function Execute(ByVal revit As ExternalCommandData, _
+                                ByRef message As String, _
+                                ByVal elements As ElementSet) As Autodesk.Revit.UI.Result Implements IExternalCommand.Execute
+                Console.WriteLine(execParams.ScriptPath)
 
                 MsgBox("Hello World from Visual Basic!!")
-                TaskDialog.Show("Revit", "Hello World from Visual Basic!!")
-                TaskDialog.Show("PyRevitBundlePath", myScriptData.ScriptPath)
+                TaskDialog.Show(execParams.CommandName, "Hello World from Visual Basic!!")
+                TaskDialog.Show(execParams.CommandName, execParams.ScriptPath)
+
+                If execParams.ConfigMode Then
+                    TaskDialog.Show(execParams.CommandName, "Command is in Config Mode!")
+                End If
+
+                If execParams.DebugMode Then
+                    TaskDialog.Show(execParams.CommandName, "Command is in Debug Mode!")
+                End If
+
+                Console.WriteLine(":thumbs_up:")
+
                 Return Autodesk.Revit.UI.Result.Succeeded
         End Function
 End Class

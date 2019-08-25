@@ -51,7 +51,7 @@ def setup_runtime_vars():
         envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR,
                                     attachment.Clone.Name)
         envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR,
-                                    attachment.Engine.Version)
+                                    str(attachment.Engine.Version))
     else:
         pass
 
@@ -59,7 +59,7 @@ def setup_runtime_vars():
     cpyengine = user_config.get_active_cpython_engine()
     if cpyengine:
         envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR,
-                                    cpyengine.Version)
+                                    str(cpyengine.Version))
 
     # set a list of important assemblies
     # this is required for dotnet script execution

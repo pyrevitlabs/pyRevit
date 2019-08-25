@@ -20,14 +20,20 @@ namespace pyRevitLabs.TargetApps.Revit {
 
     public class HostProductInfo {
         public HostProductInfoMeta meta { get; set; }
-        public string name { get; set; }
+        public string product { get; set; }
+        public string release { get; set; }
         public string version { get; set; }
         public string build { get; set; }
         public string target { get; set; }
+        public string notes { get; set; }
     }
 
     public class RevitProductData {
-        private const string SourceFileName = "pyrevit-hosts.json";
+        private static List<HostProductInfo> _cache = null;
+        private static string _cacheVersion = string.Empty;
+
+        private const string DataSourceFileName = "pyrevit-hosts.json";
+        private static string DataSourceFilePath => Path.Combine(CommonUtils.GetAssemblyPath<RevitProductData>(), DataSourceFileName);
         private static Regex BuildNumberFinder = new Regex(@".*(?<build>\d{8}_\d{4}).*");
         private static Regex BuildTargetFinder = new Regex(@".*\((?<target>[xX]\d{2})\).*");
 
@@ -54,8 +60,9 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             identifier = identifier.ToLower();
             foreach (HostProductInfo prodInfo in GetAllProductInfo()) {
+                // release, version, and build are unique to hosts and could be used as identifiers
                 if (prodInfo.meta.schema == "1.0") {
-                    if (prodInfo.name.ToLower() == identifier
+                    if (prodInfo.release.ToLower() == identifier
                         || prodInfo.version.ToLower() == identifier
                         || prodInfo.build.ToLower() == identifier)
                         return prodInfo;
@@ -65,10 +72,13 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static List<HostProductInfo> GetAllProductInfo() {
-            var hostInfoDataSet = File.ReadAllText(
-                Path.Combine(CommonUtils.GetAssemblyPath<RevitProductData>(), SourceFileName)
-                );
-            return new JavaScriptSerializer().Deserialize<List<HostProductInfo>>(hostInfoDataSet);
+            var cacheVersion = CommonUtils.GetFileSignature(DataSourceFilePath);
+            if (_cache is null || (_cacheVersion != string.Empty && cacheVersion != _cacheVersion)) {
+                var hostInfoDataSet = File.ReadAllText(DataSourceFilePath);
+                _cache = new JavaScriptSerializer().Deserialize<List<HostProductInfo>>(hostInfoDataSet);
+                _cacheVersion = cacheVersion;
+            }
+            return _cache;
         }
 
         public static string GetBinaryLocation(string installPath) {
@@ -105,7 +115,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             var fileInfo = FileVersionInfo.GetVersionInfo(binaryPath);
             return new HostProductInfo {
                 // attempt at creating a nice name, based on version
-                name = string.Format("{0} 20{1}", fileInfo.ProductName, fileInfo.FileVersion.Substring(0, 2)),
+                release = string.Format("{0} 20{1}", fileInfo.ProductName, fileInfo.FileVersion.Substring(0, 2)),
                 version = fileInfo.FileVersion,
                 build = ExtractBuildNumberFromString(fileInfo.ProductVersion),
                 target = ExtractBuildTargetFromString(fileInfo.ProductVersion)
@@ -120,7 +130,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private RevitProduct(HostProductInfo prodInfo) {
-            Name = prodInfo.name;
+            Name = prodInfo.release;
             Version = new Version(prodInfo.version);
             BuildNumber = prodInfo.build;
             BuildTarget = prodInfo.target;

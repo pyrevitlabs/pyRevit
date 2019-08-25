@@ -61,8 +61,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             #region Setup pyRevit Command Runtime
             var runtime =
                 new ScriptRuntime(
-                    cmdData: null,
-                    elements: new ElementSet(),
+                    //cmdData: null,
+                    //elements: ,
                     scriptData: new ScriptData {
                         ScriptPath = eventHook.Script,
                         ConfigScriptPath = eventHook.Script,
@@ -72,20 +72,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         CommandExtension = eventHook.ExtensionName,
                         HelpSource = "",
                     },
-                    searchpaths: eventHook.SearchPaths,
-                    arguments: new string[] { },
-                    needsCleanEngine: false,
-                    needsFullFrameEngine: false,
-                    needsPersistentEngine: false,
-                    refreshEngine: false,
-                    forcedDebugMode: false,
-                    configScriptMode: false,
-                    executedFromUI: false
-                    );
-
-            // set sender and args for events
-            runtime.EventSender = eventSender;
-            runtime.EventArgs = eventArgs;
+                    scriptRuntimeCfg: new ScriptRuntimeConfigs {
+                        CommandData = null,
+                        SelectedElements = new ElementSet(),
+                        SearchPaths = new List<string>(eventHook.SearchPaths),
+                        Arguments = new List<string>(),
+                        EventSender = eventSender,
+                        EventArgs = eventArgs,
+                        EngineConfigs = null,
+                        RefreshEngine = false,
+                        ConfigMode = false,
+                        DebugMode = false,
+                        ExecutedFromUI = false
+                    }
+                );
             #endregion
 
             // 2: ----------------------------------------------------------------------------------------------------

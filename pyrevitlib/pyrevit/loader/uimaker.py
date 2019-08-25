@@ -160,7 +160,7 @@ def _produce_ui_smartbutton(ui_maker_params):
     if not smartbutton.is_supported:
         return None
 
-    if smartbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if smartbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing smart button: %s', smartbutton)
@@ -267,7 +267,7 @@ def _produce_ui_linkbutton(ui_maker_params):
     if not linkbutton.is_supported:
         return None
 
-    if linkbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if linkbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing button: %s', linkbutton)
@@ -320,7 +320,7 @@ def _produce_ui_pushbutton(ui_maker_params):
     if not pushbutton.is_supported:
         return None
 
-    if pushbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if pushbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing button: %s', pushbutton)
@@ -468,7 +468,7 @@ def _produce_ui_panelpushbutton(ui_maker_params):
     paneldlgbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
-    if paneldlgbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if paneldlgbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing panel button: %s', paneldlgbutton)
