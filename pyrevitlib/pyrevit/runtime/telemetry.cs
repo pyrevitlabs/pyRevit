@@ -289,26 +289,34 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return elements;
         }
 
-        public static List<Dictionary<string, string>> GetViewData(IEnumerable<Element> elements) {
-            var viewNames = new List<Dictionary<string, string>>();
+        public static Dictionary<string, string> GetViewData(Element element) {
+            var viewData = new Dictionary<string, string>();
+            if (element is View) {
+                View view = (View)element;
+                string viewFamilyName = string.Empty;
+                if (view.Document != null) {
+                    var viewamily = view.Document.GetElement(view.GetTypeId());
+                    if (viewamily != null)
+                        viewFamilyName = viewamily.Name;
+                }
+
+                viewData = new Dictionary<string, string> {
+                    { "type", view.ViewType.ToString() },
+                    { "family",  viewFamilyName },
+                    { "name", view.Name },
+                    { "title", view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION).AsString() },
+                };
+            }
+            return viewData;
+        }
+
+        public static List<Dictionary<string, string>> GetViewsData(IEnumerable<Element> elements) {
+            var viewsData = new List<Dictionary<string, string>>();
             foreach (var element in elements)
                 if (element is View) {
-                    View view = (View)element;
-                    string viewFamilyName = string.Empty;
-                    if (view.Document != null) {
-                        var viewamily = view.Document.GetElement(view.GetTypeId());
-                        if (viewamily != null)
-                            viewFamilyName = viewamily.Name;
-                    }
-
-                    viewNames.Add(new Dictionary<string, string> {
-                        { "type", view.ViewType.ToString() },
-                        { "family",  viewFamilyName },
-                        { "name", view.Name },
-                        { "title", view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION).AsString() },
-                    });
+                    viewsData.Add(GetViewData(element));
                 }
-            return viewNames;
+            return viewsData;
         }
 
         public static Dictionary<string, object> GetPrintSettings(PrintParameters printParams) {
@@ -475,8 +483,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                    { "from_view",  e.CurrentActiveView != null ? GetViewData(new List<Element> { e.CurrentActiveView }) : null },
-                    { "to_view",  e.NewActiveView != null ? GetViewData(new List<Element> { e.NewActiveView }) : null },
+                    { "from_view",  e.CurrentActiveView != null ? GetViewData(e.CurrentActiveView) : null },
+                    { "to_view",  e.NewActiveView != null ? GetViewData(e.NewActiveView) : null },
                 }
             }, sender, e);
         }
@@ -489,8 +497,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                    { "from_view",  e.PreviousActiveView != null ? GetViewData(new List<Element> { e.PreviousActiveView }) : null },
-                    { "to_view",  e.CurrentActiveView != null ? GetViewData(new List<Element> { e.CurrentActiveView }) : null },
+                    { "from_view",  e.PreviousActiveView != null ? GetViewData(e.PreviousActiveView) : null },
+                    { "to_view",  e.CurrentActiveView != null ? GetViewData(e.CurrentActiveView) : null },
                 }
             }, sender, e);
         }
@@ -667,7 +675,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                    { "view", GetViewData(views) },
+                    { "view", GetViewsData(views) },
                     { "view_index", e.Index },
                     { "total_views", e.TotalViews },
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
@@ -689,7 +697,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
-                    { "view", GetViewData(views) },
+                    { "view", GetViewsData(views) },
                     { "view_index", e.Index },
                     { "total_views", e.TotalViews },
                 }
@@ -709,7 +717,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                    { "view", GetViewData(views) },
+                    { "view", GetViewsData(views) },
                 }
             }, sender, e);
         }
@@ -727,7 +735,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
-                    { "view", GetViewData(views) },
+                    { "view", GetViewsData(views) },
                 }
             }, sender, e);
         }
@@ -1117,7 +1125,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                { "views", GetViewData(GetElements(e.Document, e.GetViewElementIds())) },
+                { "views", GetViewsData(GetElements(e.Document, e.GetViewElementIds())) },
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
                 { "settings", GetPrintSettings(e.GetSettings().PrintParameters) },
 #else
@@ -1136,8 +1144,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
-                    { "print_pass_views", GetViewData(GetElements(e.Document, e.GetPrintedViewElementIds())) },
-                    { "print_fail_views",  GetViewData(GetElements(e.Document, e.GetFailedViewElementIds())) },
+                    { "print_pass_views", GetViewsData(GetElements(e.Document, e.GetPrintedViewElementIds())) },
+                    { "print_fail_views",  GetViewsData(GetElements(e.Document, e.GetFailedViewElementIds())) },
                 }
             }, sender, e);
         }
