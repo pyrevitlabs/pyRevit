@@ -10,11 +10,15 @@ type MongoDBConnection struct {
 	DatabaseConnection
 }
 
-func (w MongoDBConnection) WriteScriptTelemetry(logrec *ScriptTelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w MongoDBConnection) WriteScriptTelemetryV1(logrec *ScriptTelemetryRecordV1, logger *cli.Logger) (*Result, error) {
 	return commitMongo(w.Config.ConnString, w.Config.ScriptTarget, logrec, logger)
 }
 
-func (w MongoDBConnection) WriteEventTelemetry(logrec *EventTelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w MongoDBConnection) WriteScriptTelemetryV2(logrec *ScriptTelemetryRecordV2, logger *cli.Logger) (*Result, error) {
+	return commitMongo(w.Config.ConnString, w.Config.ScriptTarget, logrec, logger)
+}
+
+func (w MongoDBConnection) WriteEventTelemetryV2(logrec *EventTelemetryRecordV2, logger *cli.Logger) (*Result, error) {
 	return commitMongo(w.Config.ConnString, w.Config.EventTarget, logrec, logger)
 }
 

@@ -14,9 +14,9 @@ func RouteEvents(router *mux.Router, opts *cli.Options, dbConn persistence.Conne
 	// POST events/
 	// create new script telemetry record
 	// https://stackoverflow.com/a/26212073
-	router.HandleFunc("/api/v1/events/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/v2/events/", func(w http.ResponseWriter, r *http.Request) {
 		// parse given json data into a new record
-		logrec := persistence.EventTelemetryRecord{}
+		logrec := persistence.EventTelemetryRecordV2{}
 		decodeErr := json.NewDecoder(r.Body).Decode(&logrec)
 		if decodeErr != nil {
 			logger.Debug(decodeErr)
@@ -24,12 +24,12 @@ func RouteEvents(router *mux.Router, opts *cli.Options, dbConn persistence.Conne
 		}
 
 		// now write to db
-		_, dbWriteErr := dbConn.WriteEventTelemetry(&logrec, logger)
+		_, dbWriteErr := dbConn.WriteEventTelemetryV2(&logrec, logger)
 		if dbWriteErr != nil {
 			logger.Debug(dbWriteErr)
 			logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", dbWriteErr))
 		} else {
-			logrec.PrintOKRecordInfo(logger)
+			logrec.PrintRecordInfo(logger, OkMessage)
 		}
 
 		// dump the telemetry record json data if requested
@@ -53,7 +53,7 @@ func RouteEvents(router *mux.Router, opts *cli.Options, dbConn persistence.Conne
 
 	// GET events/
 	// get recorded telemetry record
-	router.HandleFunc("/api/v1/events/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/v2/events/", func(w http.ResponseWriter, r *http.Request) {
 
 	}).Methods("GET")
 }

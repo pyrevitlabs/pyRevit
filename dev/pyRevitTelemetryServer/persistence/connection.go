@@ -19,8 +19,9 @@ type DatabaseConnection struct {
 }
 
 type Connection interface {
-	WriteScriptTelemetry(*ScriptTelemetryRecord, *cli.Logger) (*Result, error)
-	WriteEventTelemetry(*EventTelemetryRecord, *cli.Logger) (*Result, error)
+	WriteScriptTelemetryV1(*ScriptTelemetryRecordV1, *cli.Logger) (*Result, error)
+	WriteScriptTelemetryV2(*ScriptTelemetryRecordV2, *cli.Logger) (*Result, error)
+	WriteEventTelemetryV2(*EventTelemetryRecordV2, *cli.Logger) (*Result, error)
 	// Read([]ScriptTelemetryRecord, *cli.Logger) (*Result, error)
 }
 

@@ -9,6 +9,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var OkMessage = "[ {g}OK{!} ]"
+
 func Start(opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger) {
 	// http server router
 	router := mux.NewRouter().StrictSlash(true)

@@ -22,10 +22,10 @@ type GenericSQLConnection struct {
 	DatabaseConnection
 }
 
-func (w GenericSQLConnection) WriteScriptTelemetry(logrec *ScriptTelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w GenericSQLConnection) WriteScriptTelemetryV1(logrec *ScriptTelemetryRecordV1, logger *cli.Logger) (*Result, error) {
 	// generate generic sql insert query
 	logger.Debug("generating query")
-	query, qErr := generateScriptInsertQuery(w.Config.ScriptTarget, logrec, logger)
+	query, qErr := generateScriptInsertQueryV1(w.Config.ScriptTarget, logrec, logger)
 	if qErr != nil {
 		return nil, qErr
 	}
@@ -33,7 +33,18 @@ func (w GenericSQLConnection) WriteScriptTelemetry(logrec *ScriptTelemetryRecord
 	return commitSQL(w.Config.Backend, w.Config.ConnString, query, logger)
 }
 
-func (w GenericSQLConnection) WriteEventTelemetry(logrec *EventTelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w GenericSQLConnection) WriteScriptTelemetryV2(logrec *ScriptTelemetryRecordV2, logger *cli.Logger) (*Result, error) {
+	// generate generic sql insert query
+	logger.Debug("generating query")
+	query, qErr := generateScriptInsertQueryV2(w.Config.ScriptTarget, logrec, logger)
+	if qErr != nil {
+		return nil, qErr
+	}
+
+	return commitSQL(w.Config.Backend, w.Config.ConnString, query, logger)
+}
+
+func (w GenericSQLConnection) WriteEventTelemetryV2(logrec *EventTelemetryRecordV2, logger *cli.Logger) (*Result, error) {
 	// generate generic sql insert query
 	logger.Debug("generating query")
 	query, qErr := generateEventInsertQuery(w.Config.EventTarget, logrec, logger)
@@ -92,7 +103,7 @@ func openConnection(backend DBBackendName, connStr string, logger *cli.Logger) (
 	return sql.Open(string(backend), cleanConnStr)
 }
 
-func generateScriptInsertQuery(table string, logrec *ScriptTelemetryRecord, logger *cli.Logger) (string, error) {
+func generateScriptInsertQueryV1(table string, logrec *ScriptTelemetryRecordV1, logger *cli.Logger) (string, error) {
 	// read csv file and build sql insert query
 	var querystr strings.Builder
 
@@ -115,58 +126,99 @@ func generateScriptInsertQuery(table string, logrec *ScriptTelemetryRecord, logg
 	// generate record id, panic if error
 	recordId := uuid.Must(uuid.NewV4())
 
-	if logrec.LogMeta.SchemaVersion == "" {
-		re := regexp.MustCompile(`(\d+:\d+:\d+)`)
-		record = []string{
-			logrec.Date,
-			re.FindString(logrec.Time),
-			logrec.UserName,
-			logrec.RevitVersion,
-			logrec.RevitBuild,
-			logrec.SessionId,
-			logrec.PyRevitVersion,
-			strconv.FormatBool(logrec.IsDebugMode),
-			strconv.FormatBool(logrec.IsConfigMode),
-			logrec.CommandName,
-			logrec.BundleName,
-			logrec.ExtensionName,
-			logrec.CommandUniqueName,
-			strconv.Itoa(logrec.ResultCode),
-			string(cresults),
-			logrec.ScriptPath,
-			logrec.TraceInfo.EngineInfo.Version,
-			logrec.TraceInfo.IronPythonTraceDump,
-			logrec.TraceInfo.CLRTraceDump,
-		}
+	re := regexp.MustCompile(`(\d+:\d+:\d+)`)
+	record = []string{
+		recordId.String(),
+		logrec.Date,
+		re.FindString(logrec.Time),
+		logrec.UserName,
+		logrec.RevitVersion,
+		logrec.RevitBuild,
+		logrec.SessionId,
+		logrec.PyRevitVersion,
+		strconv.FormatBool(logrec.IsDebugMode),
+		strconv.FormatBool(logrec.IsConfigMode),
+		logrec.CommandName,
+		logrec.BundleName,
+		logrec.ExtensionName,
+		logrec.CommandUniqueName,
+		strconv.Itoa(logrec.ResultCode),
+		string(cresults),
+		logrec.ScriptPath,
+		logrec.TraceInfo.EngineInfo.Version,
+		logrec.TraceInfo.IronPythonTraceDump,
+		logrec.TraceInfo.CLRTraceDump,
+	}
 
-	} else if logrec.LogMeta.SchemaVersion == "2.0" {
-		record = []string{
-			recordId.String(),
-			logrec.TimeStamp,
-			logrec.UserName,
-			logrec.RevitVersion,
-			logrec.RevitBuild,
-			logrec.SessionId,
-			logrec.PyRevitVersion,
-			logrec.Clone,
-			strconv.FormatBool(logrec.IsDebugMode),
-			strconv.FormatBool(logrec.IsConfigMode),
-			strconv.FormatBool(logrec.IsExecFromGUI),
-			strconv.FormatBool(logrec.NeedsCleanEngine),
-			strconv.FormatBool(logrec.NeedsFullFrameEngine),
-			logrec.CommandName,
-			logrec.BundleName,
-			logrec.ExtensionName,
-			logrec.CommandUniqueName,
-			logrec.DocumentName,
-			logrec.DocumentPath,
-			strconv.Itoa(logrec.ResultCode),
-			string(cresults),
-			logrec.ScriptPath,
-			logrec.TraceInfo.EngineInfo.Type,
-			logrec.TraceInfo.EngineInfo.Version,
-			logrec.TraceInfo.Message,
-		}
+	datalines = append(datalines, ToSql(&record, true))
+
+	// add csv records to query string
+	all_datalines := strings.Join(datalines, ", ")
+	logger.Trace(all_datalines)
+	querystr.WriteString(all_datalines)
+	querystr.WriteString(";\n")
+	logger.Debug("building query completed")
+
+	// execute query
+	full_query := querystr.String()
+	logger.Trace(full_query)
+	return full_query, nil
+}
+
+func generateScriptInsertQueryV2(table string, logrec *ScriptTelemetryRecordV2, logger *cli.Logger) (string, error) {
+	// read csv file and build sql insert query
+	var querystr strings.Builder
+
+	logger.Debug("generating insert query with-out headers")
+	querystr.WriteString(fmt.Sprintf("INSERT INTO %s values ", table))
+
+	// build sql data info
+	logger.Debug("building insert query for data")
+	datalines := make([]string, 0)
+
+	// marshal json data
+	engineCfgs, merr := json.Marshal(logrec.EngineCfgs)
+	if merr != nil {
+		logger.Debug("error logging engine configs")
+	}
+
+	// marshal json data
+	cresults, merr := json.Marshal(logrec.CommandResults)
+	if merr != nil {
+		logger.Debug("error logging command results")
+	}
+
+	// create record based on schema
+	var record []string
+
+	// generate record id, panic if error
+	recordId := uuid.Must(uuid.NewV4())
+
+	record = []string{
+		recordId.String(),
+		logrec.TimeStamp,
+		logrec.UserName,
+		logrec.RevitVersion,
+		logrec.RevitBuild,
+		logrec.SessionId,
+		logrec.PyRevitVersion,
+		logrec.Clone,
+		strconv.FormatBool(logrec.IsDebugMode),
+		strconv.FormatBool(logrec.IsConfigMode),
+		strconv.FormatBool(logrec.IsExecFromGUI),
+		string(engineCfgs),
+		logrec.CommandName,
+		logrec.BundleName,
+		logrec.ExtensionName,
+		logrec.CommandUniqueName,
+		logrec.DocumentName,
+		logrec.DocumentPath,
+		strconv.Itoa(logrec.ResultCode),
+		string(cresults),
+		logrec.ScriptPath,
+		logrec.TraceInfo.EngineInfo.Type,
+		logrec.TraceInfo.EngineInfo.Version,
+		logrec.TraceInfo.Message,
 	}
 	datalines = append(datalines, ToSql(&record, true))
 
@@ -183,7 +235,7 @@ func generateScriptInsertQuery(table string, logrec *ScriptTelemetryRecord, logg
 	return full_query, nil
 }
 
-func generateEventInsertQuery(table string, logrec *EventTelemetryRecord, logger *cli.Logger) (string, error) {
+func generateEventInsertQuery(table string, logrec *EventTelemetryRecordV2, logger *cli.Logger) (string, error) {
 	// read csv file and build sql insert query
 	var querystr strings.Builder
 
@@ -206,7 +258,7 @@ func generateEventInsertQuery(table string, logrec *EventTelemetryRecord, logger
 	// generate record id, panic if error
 	recordId := uuid.Must(uuid.NewV4())
 
-	if logrec.LogMeta.SchemaVersion == "2.0" {
+	if logrec.RecordMeta.SchemaVersion == "2.0" {
 		record = []string{
 			recordId.String(),
 			logrec.TimeStamp,
