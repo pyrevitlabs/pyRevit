@@ -340,9 +340,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     { "hide_refplanes", printParams.HideReforWorkPlanes },
                     { "hide_scopeboxes", printParams.HideScopeBoxes },
 #if !(REVIT2013)
-                    { "hide_unref_vewtags", printParams.HideUnreferencedViewTags },
+                    { "hide_unref_viewtags", printParams.HideUnreferencedViewTags },
 #else
-                    { "hide_unref_vewtags", null },
+                    { "hide_unref_viewtags", null },
 #endif
                     { "margin_type", printParams.MarginType.ToString() },
 #if !(REVIT2013 || REVIT2014)
@@ -475,8 +475,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                    { "from_view",  e.CurrentActiveView != null ? e.CurrentActiveView.Name : "" },
-                    { "to_view",  e.NewActiveView != null ? e.NewActiveView.Name : "" },
+                    { "from_view",  e.CurrentActiveView != null ? GetViewData(new List<Element> { e.CurrentActiveView }) : null },
+                    { "to_view",  e.NewActiveView != null ? GetViewData(new List<Element> { e.NewActiveView }) : null },
                 }
             }, sender, e);
         }
@@ -489,8 +489,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                    { "from_view",  e.PreviousActiveView != null ? e.PreviousActiveView.Name : "" },
-                    { "to_view",  e.CurrentActiveView != null ? e.CurrentActiveView.Name : "" },
+                    { "from_view",  e.PreviousActiveView != null ? GetViewData(new List<Element> { e.PreviousActiveView }) : null },
+                    { "to_view",  e.CurrentActiveView != null ? GetViewData(new List<Element> { e.CurrentActiveView }) : null },
                 }
             }, sender, e);
         }
@@ -603,8 +603,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_DockableFrameVisibilityChanged),
                 args = new Dictionary<string, object> {
-                    { "pane_id", e.PaneId },
-                    { "frame_dhown", e.DockableFrameShown },
+                    { "pane_id", e.PaneId.ToString() },
+                    { "frame_shown", e.DockableFrameShown },
                 }
             }, sender, e);
         }
@@ -613,7 +613,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_DockableFrameFocusChanged),
                 args = new Dictionary<string, object> {
-                    { "pane_id", e.PaneId },
+                    { "pane_id", e.PaneId.ToString() },
                     { "focus_gained", e.FocusGained },
                 }
             }, sender, e);
@@ -781,8 +781,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-                    { "export_path", e.Path },
-                    { "export_format",  e.Format },
+                    { "import_path", e.Path },
+                    { "import_format",  e.Format },
                 }
             }, sender, e);
         }
@@ -796,8 +796,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
-                    { "export_path", e.Path },
-                    { "export_format",  e.Format },
+                    { "import_path", e.Path },
+                    { "import_format",  e.Format },
                 }
             }, sender, e);
         }
