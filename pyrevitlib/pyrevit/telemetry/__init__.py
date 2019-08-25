@@ -75,11 +75,12 @@ def set_telemetry_state(state, configs=None):
 
 
 def set_telemetry_file_dir(file_dir, configs=None):
-    if op.isdir(file_dir):
+    if not file_dir or (file_dir and op.isdir(file_dir)):
         envvars.set_pyrevit_env_var(envvars.TELEMETRYDIR_ENVVAR, file_dir)
         if configs:
             tc = _get_telemetry_configs(configs)
-            tc.set_option(PyRevit.PyRevitConsts.ConfigsTelemetryFilePathKey, file_dir)
+            tc.set_option(
+                PyRevit.PyRevitConsts.ConfigsTelemetryFilePathKey, file_dir)
 
 
 def set_telemetry_file_path(file_path):
