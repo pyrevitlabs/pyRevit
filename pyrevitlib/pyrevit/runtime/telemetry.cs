@@ -21,6 +21,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string type { get; set; }
         public string version { get; set; }
         public List<string> syspath { get; set; }
+        public Dictionary<string, string> configs { get; set; }
     }
 
     public class TraceInfo {
@@ -49,7 +50,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool debug { get; set; }
         public bool config { get; set; }
         public bool from_gui { get; set; }
-        public string engine_cfgs{ get; set; }
         // which script?
         public string commandname { get; set; }
         public string commandbundle { get; set; }
@@ -128,7 +128,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 debug = runtime.ScriptRuntimeConfigs.DebugMode,
                 config = runtime.ScriptRuntimeConfigs.ConfigMode,
                 from_gui = runtime.ScriptRuntimeConfigs.ExecutedFromUI,
-                engine_cfgs = runtime.ScriptRuntimeConfigs.EngineConfigs,
                 commandname = runtime.ScriptData.CommandName,
                 commandbundle = runtime.ScriptData.CommandBundle,
                 commandextension = runtime.ScriptData.CommandExtension,
@@ -142,7 +141,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     engine = new EngineInfo {
                         type = runtime.EngineType.ToString().ToLower(),
                         version = runtime.EngineVersion,
-                        syspath = runtime.ScriptRuntimeConfigs.SearchPaths
+                        syspath = runtime.ScriptRuntimeConfigs.SearchPaths,
+                        configs = new JavaScriptSerializer().Deserialize<Dictionary<string, string>>(runtime.ScriptRuntimeConfigs.EngineConfigs),
                     },
                     message = runtime.TraceMessage
                 }
