@@ -11,13 +11,6 @@ from pyrevit import script
 from pyrevit.userconfig import user_config
 
 
-__context__ = 'zerodoc'
-
-__doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
-          'detailed information on how pyrevit works, updates about the ' \
-          'new tools and changes, and a lot of other information there.'
-
-
 logger = script.get_logger()
 
 
