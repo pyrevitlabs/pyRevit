@@ -4,6 +4,8 @@ from pyrevit import HOST_APP
 from pyrevit.api import ApplicationServices
 
 
+DEFAULT_LOCALE = ApplicationServices.LanguageType.English_USA
+
 HOST_LOCALES = {
     ApplicationServices.LanguageType.English_USA: ["english", "en_us"],
     ApplicationServices.LanguageType.German: ["german", "de_de"],
@@ -46,7 +48,8 @@ def get_locale_string(string_dict):
         >>> hostlocales.get_locale_string(data)
         ... "你好"
     """
-    locale_codes = HOST_LOCALES[HOST_APP.language]
+    locale_codes = \
+        HOST_LOCALES[HOST_APP.language] + HOST_LOCALES[DEFAULT_LOCALE]
     for locale_code in locale_codes:
         if locale_code in string_dict:
             return string_dict[locale_code]
