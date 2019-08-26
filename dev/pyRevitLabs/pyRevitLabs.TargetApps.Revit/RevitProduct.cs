@@ -106,8 +106,13 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static int GetProductYear(Version version) {
-            if (version.Major < 100)
-                return 2000 + version.Major;
+            if (version.Major <= 99) {
+                if (version.Major <= 13)
+                    return 2000 + version.Major + 1;
+                else
+                    return 2000 + version.Major;
+            }
+                
             return version.Major;
         }
 
@@ -172,9 +177,11 @@ namespace pyRevitLabs.TargetApps.Revit {
 
                     if (revitInstallDirName != string.Empty) {
                         var expectedPath = Path.Combine(DefaultInstallLocation, "Autodesk", revitInstallDirName);
-                        logger.Debug("Expected path {0}", expectedPath);
+                        logger.Debug("Expected path \"{0}\"", expectedPath);
                         if (CommonUtils.VerifyPath(expectedPath))
                             return expectedPath;
+                        else
+                            logger.Debug("Product not found at expected path \"{0}\"", expectedPath);
                     }
                 }
 
@@ -227,10 +234,12 @@ namespace pyRevitLabs.TargetApps.Revit {
                         // collect info from reg key
                         var regName = subkey.GetValue("DisplayName") as string;
                         var regVersion = subkey.GetValue("DisplayVersion") as string;
-                        var regPath = (subkey.GetValue("InstallLocation") as string).NormalizeAsPath();
+                        var regInstallPath = (subkey.GetValue("InstallLocation") as string).NormalizeAsPath();
                         int regLangCode = (int)subkey.GetValue("Language");
+                        var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath);
                         logger.Debug("Version from registery key: \"{0}\"", regVersion);
-                        logger.Debug("Install path from registery key: \"{0}\"", regPath);
+                        logger.Debug("Install path from registery key: \"{0}\"", regInstallPath);
+                        logger.Debug("Binary path from registery key: \"{0}\"", binaryFilePath);
                         logger.Debug("Language code from registery key: \"{0}\"", regLangCode);
 
                         // attempt at finding revit product
@@ -240,11 +249,10 @@ namespace pyRevitLabs.TargetApps.Revit {
                         if (revitProduct is null) {
                             logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
                             // try to get product key from binary version
-                            var binaryLocation = RevitProductData.GetBinaryLocation(regPath);
-                            if (binaryLocation != null) {
+                            if (binaryFilePath != null) {
                                 try {
-                                    var prodInfo = RevitProductData.GetBinaryProductInfo(binaryLocation);
-                                    logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryLocation);
+                                    var prodInfo = RevitProductData.GetBinaryProductInfo(binaryFilePath);
+                                    logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryFilePath);
                                     revitProduct = LookupRevitProduct(prodInfo.build);
                                     if (revitProduct is null) {
                                         // revit info might not be available specially if it is new
@@ -253,7 +261,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                                     }
                                 }
                                 catch {
-                                    logger.Debug("Failed reading product info from binary at \"{0}\"", binaryLocation);
+                                    logger.Debug("Failed reading product info from binary at \"{0}\"", binaryFilePath);
                                 }
                             }
                         }
@@ -268,8 +276,10 @@ namespace pyRevitLabs.TargetApps.Revit {
                             if (revitProduct.Version is null && (regVersion != null && regVersion != string.Empty))
                                 revitProduct.Version = new Version(regVersion);
                             // update install path from registry if it can't find one
-                            if (revitProduct.InstallLocation is null && (regPath != null && regPath != string.Empty))
-                                revitProduct.InstallLocation = regPath;
+                            if (regInstallPath != null && regInstallPath != string.Empty) {
+                                if (CommonUtils.VerifyFile(binaryFilePath))
+                                    revitProduct.InstallLocation = regInstallPath;
+                            }
 
                             // this can only come from registrys
                             revitProduct.LanguageCode = regLangCode;

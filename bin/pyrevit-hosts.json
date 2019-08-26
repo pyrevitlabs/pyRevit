@@ -4,8 +4,8 @@
         "source": "https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html"
     },
     "product": "Autodesk Revit",
-    "release": "2008 Architecture Service Pack 2",
-    "version": "0.0.0.0",
+    "release": "2008 Architecture Service Pack 1",
+    "version": "",
     "build": "20070607_1700",
     "target": "x64"
 }, {
@@ -15,7 +15,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2008 Architecture Service Pack 2",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20070810_1700",
     "target": "x64"
 }, {
@@ -25,7 +25,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2008 Architecture Service Pack 3",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20080101_2345",
     "target": "x64"
 }, {
@@ -35,7 +35,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2009 Architecture Service Pack 1",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20080602_1900",
     "target": "x64"
 }, {
@@ -45,7 +45,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2009 Architecture Service Pack 2",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20080915_2100",
     "target": "x64"
 }, {
@@ -55,7 +55,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2009 Architecture Service Pack 3",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20081118_1045",
     "target": "x64"
 }, {
@@ -65,7 +65,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2010 Architecture Service Pack 1",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20090612_2115",
     "target": "x64"
 }, {
@@ -75,7 +75,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2010 Architecture Service Pack 2",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20090917_1515",
     "target": "x64"
 }, {
@@ -85,7 +85,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2011 Architecture",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20100326_1700",
     "target": "x64"
 }, {
@@ -95,18 +95,28 @@
     },
     "product": "Autodesk Revit",
     "release": "2011 Architecture Service Pack 1",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20100615_2115",
     "target": "x64"
 }, {
     "meta": {
         "schema": "1.0",
-        "source": "http://revitoped.blogspot.com/2010/09/revit-web-update-2-posted-subscription.html"
+        "source": "https://knowledge.autodesk.com/support/revit-products/downloads/caas/downloads/content/hotfix--E2-80-93-black-preview-swatch.html?v=2011"
     },
     "product": "Autodesk Revit",
-    "release": "2011 Architecture Service Pack 2",
-    "version": "0.0.0.0",
+    "release": "2011 Hotfix - Black Preview Swatch",
+    "version": "",
     "build": "20100903_2115",
+    "target": "x64"
+}, {
+    "meta": {
+        "schema": "1.0",
+        "source": "https://knowledge.autodesk.com/support/revit-products/downloads/caas/downloads/content/hotfix-autodesk-revit-architecture-2011-colorfills.html?v=2011"
+    },
+    "product": "Autodesk Revit",
+    "release": "2011 Hotfix - Color Fills",
+    "version": "",
+    "build": "20110218_1300",
     "target": "x64"
 }, {
     "meta": {
@@ -115,7 +125,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2012 First Customer Ship",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20110309_2315",
     "target": "x64"
 }, {
@@ -125,7 +135,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2012 Update Release 1",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20110622_0930",
     "target": "x64"
 }, {
@@ -135,7 +145,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2012 Update Release 2",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20110916_2132",
     "target": "x64"
 }, {
@@ -155,7 +165,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2013 Update Release 1",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20120716_1115",
     "target": "x64"
 }, {
@@ -165,7 +175,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2013 Update Release 2",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20121003_2115",
     "target": "x64"
 }, {
@@ -185,7 +195,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2013 LT First Customer Ship",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20120821_1330",
     "target": "x64"
 }, {
@@ -195,7 +205,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2013 LT Update Release 1",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20130531_0300",
     "target": "x64"
 }, {
@@ -215,7 +225,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2014 Update Release 1",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20130709_2115",
     "target": "x64"
 }, {
@@ -225,7 +235,7 @@
     },
     "product": "Autodesk Revit",
     "release": "2014 Update Release 2",
-    "version": "0.0.0.0",
+    "version": "",
     "build": "20131024_2115",
     "target": "x64"
 }, {
