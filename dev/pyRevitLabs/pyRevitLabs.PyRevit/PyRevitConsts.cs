@@ -35,6 +35,10 @@ namespace pyRevitLabs.PyRevit {
         public const string ImageFileExtension = ".zip";
         public static string ExtensionsDefinitionFileUri = string.Format(@"https://github.com/eirannejad/pyRevit/raw/master/extensions/{0}", ExtensionsDefFileName);
 
+        // data
+        public static string HostFile = @"https://raw.githubusercontent.com/eirannejad/pyRevit/master/bin/pyrevit-hosts.json";
+        public static string ProductFile = @"https://raw.githubusercontent.com/eirannejad/pyRevit/master/bin/pyrevit-products.json";
+
         // cli
         public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/docs/cli.md";
         public const string CLIHelpUrlDev = @"https://github.com/eirannejad/pyRevit/blob/develop/docs/cli.md";
@@ -84,6 +88,7 @@ namespace pyRevitLabs.PyRevit {
 
         // consts for recording pyrevit.exe config in the pyRevit configuration file
         public const string AppdataDirName = "pyRevit";
+        public const string AppdataCacheDirName = "Cache";
         public const string AppdataLogsDirName = "Logs";
 
         // core configs
@@ -221,12 +226,10 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
+        // pyrevit general cache folder 
+        public static string CacheDirectory => Path.Combine(pyRevitPath, AppdataCacheDirName);
+
         // pyrevit logs folder 
-        // @reviewed
-        public static string LogsDirectory {
-            get {
-                return Path.Combine(pyRevitPath, AppdataLogsDirName);
-            }
-        }
+        public static string LogsDirectory => Path.Combine(pyRevitPath, AppdataLogsDirName);
     }
 }

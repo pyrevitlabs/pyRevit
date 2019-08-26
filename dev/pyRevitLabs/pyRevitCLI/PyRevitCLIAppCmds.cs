@@ -34,6 +34,8 @@ namespace pyRevitCLI {
     internal static class PyRevitCLIAppCmds {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        internal static string HostProductFile => Path.Combine(PyRevitConsts.CacheDirectory, PyRevitProduct.DefaultDataSourceFileName);
+
         // consts:
         private const string autocompleteBinaryName = "pyrevit-autocomplete";
         private const string shortcutIconName = "pyrevit.ico";
@@ -176,7 +178,7 @@ namespace pyRevitCLI {
 
         internal static void
         InspectAndFixEnv() {
-
+            UpdateProductCacheFile();
         }
 
         // cli specific commands
@@ -218,6 +220,17 @@ namespace pyRevitCLI {
                     shortcutDesc,
                     allUsers: allUsers
                 );
+            }
+        }
+
+        internal static void UpdateProductCacheFile() {
+            try {
+                CommonUtils.EnsurePath(PyRevitConsts.CacheDirectory);
+                CommonUtils.DownloadFile(PyRevitConsts.ProductFile, HostProductFile);
+                PyRevitProduct.DataSourceFilePath = HostProductFile;
+            }
+            catch {
+                logger.Debug("Error downloading pyRevit product database file...");
             }
         }
     }

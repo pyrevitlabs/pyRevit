@@ -29,13 +29,29 @@ namespace pyRevitLabs.TargetApps.Revit {
     }
 
     public class RevitProductData {
-        private static List<HostProductInfo> _cache = null;
-        private static string _cacheVersion = string.Empty;
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string DataSourceFileName = "pyrevit-hosts.json";
-        private static string DataSourceFilePath => Path.Combine(CommonUtils.GetAssemblyPath<RevitProductData>(), DataSourceFileName);
+        private static List<HostProductInfo> _cache = new List<HostProductInfo>();
+        private static string _cacheVersion = string.Empty;
+        private static string _datasource = string.Empty;
+
         private static Regex BuildNumberFinder = new Regex(@".*(?<build>\d{8}_\d{4}).*");
         private static Regex BuildTargetFinder = new Regex(@".*\((?<target>[xX]\d{2})\).*");
+
+        public const string DefaultDataSourceFileName = "pyrevit-hosts.json";
+        public static string DefaultDataSourceFilePath => Path.Combine(CommonUtils.GetAssemblyPath<RevitProductData>(), DefaultDataSourceFileName);
+        public static bool RevertToDefaultSourceOnErrors = true;
+        public static string DataSourceFilePath {
+            get {
+                if (_datasource != null && _datasource != string.Empty && CommonUtils.VerifyFile(_datasource))
+                    return _datasource;
+                return DefaultDataSourceFilePath;
+            }
+            set {
+                if (value != null && value != string.Empty)
+                    _datasource = value;
+            }
+        }
 
         public static string ExtractBuildNumberFromString(string inputString) {
             Match match = BuildNumberFinder.Match(inputString);
@@ -52,6 +68,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static HostProductInfo GetProductInfo(string identifier) {
+            logger.Debug("Getting host product info for: {0}", identifier);
+
             if (identifier != null && identifier != string.Empty) {
                 // identifier can be build, version, or name (any of the properties in the data set
                 // check if the string has build number e.g. "20110309_2315"
@@ -74,11 +92,19 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static List<HostProductInfo> GetAllProductInfo() {
-            var cacheVersion = CommonUtils.GetFileSignature(DataSourceFilePath);
-            if (_cache is null || (_cacheVersion != string.Empty && cacheVersion != _cacheVersion)) {
-                var hostInfoDataSet = File.ReadAllText(DataSourceFilePath);
-                _cache = new JavaScriptSerializer().Deserialize<List<HostProductInfo>>(hostInfoDataSet);
-                _cacheVersion = cacheVersion;
+            var dataSources = new List<string>() { DataSourceFilePath };
+            if (RevertToDefaultSourceOnErrors)
+                dataSources.Add(DefaultDataSourceFilePath);
+            foreach(string dataSource in dataSources) {
+                var cacheVersion = CommonUtils.GetFileSignature(dataSource);
+                if (_cache is null || _cache.Count == 0 || (_cacheVersion != string.Empty && cacheVersion != _cacheVersion)) {
+                    var hostInfoDataSet = File.ReadAllText(dataSource);
+                    _cache = new JavaScriptSerializer().Deserialize<List<HostProductInfo>>(hostInfoDataSet);
+                    if (_cache != null && _cache.Count > 0) {
+                        _cacheVersion = cacheVersion;
+                        return _cache;
+                    }
+                }
             }
             return _cache;
         }
@@ -138,7 +164,10 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         private RevitProduct(HostProductInfo prodInfo) {
             Name = prodInfo.release;
-            Version = new Version(prodInfo.version);
+            try {
+                Version = new Version(prodInfo.version);
+            }
+            catch { Version = null; }
             BuildNumber = prodInfo.build;
             BuildTarget = prodInfo.target;
         }
@@ -276,8 +305,12 @@ namespace pyRevitLabs.TargetApps.Revit {
                                 revitProduct.Name = regName;
 
                             // build from a registry version if it doesn't already have one
-                            if (revitProduct.Version is null && (regVersion != null && regVersion != string.Empty))
-                                revitProduct.Version = new Version(regVersion);
+                            if (revitProduct.Version is null && (regVersion != null && regVersion != string.Empty)) {
+                                try {
+                                    revitProduct.Version = new Version(regVersion);
+                                } catch {}
+                            }
+                                
                             // update install path from registry if it can't find one
                             if (regInstallPath != null && regInstallPath != string.Empty) {
                                 if (CommonUtils.VerifyFile(binaryFilePath))

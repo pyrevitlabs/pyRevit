@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -150,6 +151,9 @@ namespace pyRevitCLI {
                 IsHelpUsagePatternMode = arguments["--usage"].IsTrue;
 
                 try {
+                    // prepare environment
+                    PrepareEnv();
+
                     // now call methods based on inputs
                     ProcessArguments();
 
@@ -168,6 +172,11 @@ namespace pyRevitCLI {
                 logger.Debug("Arg processing failed. | {0}", ex.Message);
                 PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
             }
+        }
+
+        // prepare environment
+        private static void PrepareEnv() {
+            PyRevitCLIRevitCmds.UpdateHostCacheFile();
         }
 
         // cli argument processor

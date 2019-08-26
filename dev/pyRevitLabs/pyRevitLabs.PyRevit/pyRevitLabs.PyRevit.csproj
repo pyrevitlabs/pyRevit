@@ -64,6 +64,7 @@
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
@@ -93,6 +94,7 @@
     <Compile Include="PyRevitEngines.cs" />
     <Compile Include="PyRevitExtension.cs" />
     <Compile Include="PyRevitExtensions.cs" />
+    <Compile Include="PyRevitProduct.cs" />
     <Compile Include="PyRevitRelease.cs" />
     <Compile Include="PyRevitReleases.cs" />
     <Compile Include="PyRevitRunner.cs" />
