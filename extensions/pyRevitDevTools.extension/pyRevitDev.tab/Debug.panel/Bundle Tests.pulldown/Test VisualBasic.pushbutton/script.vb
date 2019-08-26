@@ -6,28 +6,31 @@ Imports Autodesk.Revit.DB
 
 Imports PyRevitLabs.PyRevit.Runtime
 
-Public Class HelloWorld Implements IExternalCommand
-        Public execParams As ExecParams
+Public Class HelloWorld
+    Implements IExternalCommand
 
-        Public Function Execute(ByVal revit As ExternalCommandData, _
-                                ByRef message As String, _
-                                ByVal elements As ElementSet) As Autodesk.Revit.UI.Result Implements IExternalCommand.Execute
-                Console.WriteLine(execParams.ScriptPath)
+    Public execParams As ExecParams
 
-                MsgBox("Hello World from Visual Basic!!")
-                TaskDialog.Show(execParams.CommandName, "Hello World from Visual Basic!!")
-                TaskDialog.Show(execParams.CommandName, execParams.ScriptPath)
+    Public Function Execute(ByVal revit As ExternalCommandData, _
+                            ByRef message As String, _
+                            ByVal elements As ElementSet) As Autodesk.Revit.UI.Result _
+                                Implements IExternalCommand.Execute
+            Console.WriteLine(execParams.ScriptPath)
 
-                If execParams.ConfigMode Then
-                    TaskDialog.Show(execParams.CommandName, "Command is in Config Mode!")
-                End If
+            MsgBox("Hello World from Visual Basic!!")
+            TaskDialog.Show(execParams.CommandName, "Hello World from Visual Basic!!")
+            TaskDialog.Show(execParams.CommandName, execParams.ScriptPath)
 
-                If execParams.DebugMode Then
-                    TaskDialog.Show(execParams.CommandName, "Command is in Debug Mode!")
-                End If
+            If execParams.ConfigMode Then
+                TaskDialog.Show(execParams.CommandName, "Command is in Config Mode!")
+            End If
 
-                Console.WriteLine(":thumbs_up:")
+            If execParams.DebugMode Then
+                TaskDialog.Show(execParams.CommandName, "Command is in Debug Mode!")
+            End If
 
-                Return Autodesk.Revit.UI.Result.Succeeded
-        End Function
+            Console.WriteLine(":thumbs_up:")
+
+            Return Autodesk.Revit.UI.Result.Succeeded
+    End Function
 End Class

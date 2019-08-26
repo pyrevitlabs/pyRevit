@@ -78,7 +78,7 @@
     <Compile Include="Controls\FillPatternViewerControl.cs" />
     <Compile Include="Controls\PyRevitWindow.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PyRevit.cs" />
+    <Compile Include="PyRevitConsts.cs" />
     <Compile Include="PyRevitAttachment.cs" />
     <Compile Include="PyRevitAttachments.cs" />
     <Compile Include="PyRevitBindings.cs" />

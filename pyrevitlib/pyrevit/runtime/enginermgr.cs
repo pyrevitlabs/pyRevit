@@ -721,7 +721,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // create compiler parameters
             var compileParams = new CompilerParameters(refFiles);
-            compileParams.OutputAssembly = runtime.ScriptData.CommandName;
+            compileParams.OutputAssembly = Path.Combine(
+                UserEnv.UserTemp,
+                string.Format("{0}.dll", runtime.ScriptData.CommandName)
+                );
             compileParams.CompilerOptions = string.Format("/optimize /define:REVIT{0}", runtime.App.VersionNumber);
             compileParams.GenerateInMemory = true;
             compileParams.GenerateExecutable = false;
@@ -747,7 +750,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 sources: new string[] { scriptContents }
             );
 
-            // now run
             return res.CompiledAssembly;
         }
 
