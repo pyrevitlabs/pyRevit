@@ -52,20 +52,22 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static HostProductInfo GetProductInfo(string identifier) {
-            // identifier can be build, version, or name (any of the properties in the data set
-            // check if the string has build number e.g. "20110309_2315"
-            var buildNumber = ExtractBuildNumberFromString(identifier);
-            if (buildNumber != string.Empty)
-                identifier = buildNumber;
+            if (identifier != null && identifier != string.Empty) {
+                // identifier can be build, version, or name (any of the properties in the data set
+                // check if the string has build number e.g. "20110309_2315"
+                var buildNumber = ExtractBuildNumberFromString(identifier);
+                if (buildNumber != string.Empty)
+                    identifier = buildNumber;
 
-            identifier = identifier.ToLower();
-            foreach (HostProductInfo prodInfo in GetAllProductInfo()) {
-                // release, version, and build are unique to hosts and could be used as identifiers
-                if (prodInfo.meta.schema == "1.0") {
-                    if (prodInfo.release.ToLower() == identifier
-                        || prodInfo.version.ToLower() == identifier
-                        || prodInfo.build.ToLower() == identifier)
-                        return prodInfo;
+                identifier = identifier.ToLower();
+                foreach (HostProductInfo prodInfo in GetAllProductInfo()) {
+                    // release, version, and build are unique to hosts and could be used as identifiers
+                    if (prodInfo.meta.schema == "1.0") {
+                        if (prodInfo.release.ToLower() == identifier
+                            || prodInfo.version.ToLower() == identifier
+                            || prodInfo.build.ToLower() == identifier)
+                            return prodInfo;
+                    }
                 }
             }
             return null;
@@ -244,6 +246,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
                         // attempt at finding revit product
                         RevitProduct revitProduct = null;
+                        logger.Debug("Looking up Revit Product in database...");
                         revitProduct = LookupRevitProduct(regVersion);
                         // if could not determine product by version
                         if (revitProduct is null) {
@@ -266,8 +269,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                             }
                         }
 
-                        logger.Debug("Revit Product is : {0}", revitProduct);
                         if (revitProduct != null) {
+                            logger.Debug("Revit Product is : {0}", revitProduct);
                             // grab the registery name if it doesn't have a name
                             if (revitProduct.Name is null || revitProduct.Name == string.Empty)
                                 revitProduct.Name = regName;
