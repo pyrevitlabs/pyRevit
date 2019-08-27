@@ -25,17 +25,8 @@ namespace pyRevitLabs.PyRevit {
         }
 
         // Find releases
-        public static List<PyRevitRelease> GetReleases() {
-            string nextendpoint;
-            var releases = new List<PyRevitRelease>();
-            releases.AddRange(GetReleasesFromAPI(PyRevitConsts.APIReleasesUrl, out nextendpoint));
-
-            while (nextendpoint != null && nextendpoint != string.Empty) {
-                releases.AddRange(GetReleasesFromAPI(nextendpoint, out nextendpoint));
-            }
-
-            return releases.OrderByDescending(r => r.CreatedTimeStamp).ToList();
-        }
+        public static List<PyRevitRelease> GetReleases() =>
+            GithubAPI.GetReleases<PyRevitRelease>(PyRevitLabsConsts.OriginalRepoId).OrderByDescending(r => r.CreatedTimeStamp).ToList();
 
         public static List<PyRevitRelease> FindReleases(string searchPattern, bool includePreRelease = false) {
             return GetReleases().Where(r => r.IsPyRevitRelease && (r.Name.Contains(searchPattern) || r.Tag.Contains(searchPattern))).ToList();
@@ -55,31 +46,5 @@ namespace pyRevitLabs.PyRevit {
             return GetReleases().Where(r => r.IsCLIRelease).Select(r => r.Version).Max();
         }
 
-        // privates
-        private static IEnumerable<PyRevitRelease> GetReleasesFromAPI(string endpoint, out string nextendpoint) {
-            logger.Debug("Getting releases from {0}", endpoint);
-
-            // make github api call and get a list of releases
-            // https://developer.github.com/v3/repos/releases/
-            HttpWebRequest request = CommonUtils.GetHttpWebRequest(endpoint);
-            var response = request.GetResponse();
-
-            // extract list of  PyRevitRelease from json
-            IList<PyRevitRelease> releases;
-            using (var reader = new StreamReader(response.GetResponseStream())) {
-                releases = JsonConvert.DeserializeObject<IList<PyRevitRelease>>(reader.ReadToEnd());
-            }
-
-            var m = Regex.Match(response.Headers["Link"], "\\<(?<next>.+?)\\>;\\srel=\"next\"");
-            if (m.Success) {
-                nextendpoint = m.Groups["next"].Value;
-            }
-            else
-                nextendpoint = null;
-
-            logger.Debug("Next release list is at {0}", nextendpoint);
-
-            return releases;
-        }
     }
 }

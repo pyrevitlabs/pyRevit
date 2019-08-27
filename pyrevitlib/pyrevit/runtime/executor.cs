@@ -7,7 +7,7 @@ using System.Reflection;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
-using pyRevitLabs.PyRevit;
+using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class ExecutionResultCodes {
@@ -125,7 +125,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             catch (FileNotFoundException) {
                 // if failed in finding DynamoRevitDS.dll, assume no dynamo
-                TaskDialog.Show(PyRevitConsts.ProductName,
+                TaskDialog.Show(PyRevitLabsConsts.ProductName,
                     "Can not find dynamo installation or determine which Dynamo version to Run.\n\n" +
                     "Run Dynamo once to select the active version.");
                 return ExecutionResultCodes.ExecutionException;
@@ -135,14 +135,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// Run the script using Grasshopper
         private static int ExecuteGrasshopperDocument(ref ScriptRuntime runtime) {
             // TODO: ExecuteGrasshopperDocument
-            TaskDialog.Show(PyRevitConsts.ProductName, "Grasshopper Execution Engine Not Yet Implemented.");
+            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Grasshopper Execution Engine Not Yet Implemented.");
             return ExecutionResultCodes.EngineNotImplementedException;
         }
 
         /// Run the content bundle and place in active document
         private static int ExecuteContentLoader(ref ScriptRuntime runtime) {
 #if (REVIT2013 || REVIT2014)
-            TaskDialog.Show(PyRevitConsts.ProductName, NotSupportedFeatureException.NotSupportedMessage);
+            TaskDialog.Show(PyRevitLabsConsts.ProductName, NotSupportedFeatureException.NotSupportedMessage);
             return ExecutionResultCodes.NotSupportedFeatureException;
 #else
             if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null) {
@@ -177,14 +177,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         txn.Commit();
                     }
                     catch (Exception loadEx) {
-                        TaskDialog.Show(PyRevitConsts.ProductName,
+                        TaskDialog.Show(PyRevitLabsConsts.ProductName,
                             string.Format("Failed loading content.\n{0}\n{1}", loadEx.Message, loadEx.StackTrace));
                         return ExecutionResultCodes.FailedLoadingContent;
                     }
                 }
 
                 if (contentFamily == null) {
-                    TaskDialog.Show(PyRevitConsts.ProductName,
+                    TaskDialog.Show(PyRevitLabsConsts.ProductName,
                         string.Format("Failed finding or loading bundle content at:\n{0}", familySourceFile));
                     return ExecutionResultCodes.FailedLoadingContent;
                 }
@@ -204,7 +204,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             return ExecutionResultCodes.Succeeded;
                         }
                         catch (Exception promptEx) {
-                            TaskDialog.Show(PyRevitConsts.ProductName,
+                            TaskDialog.Show(PyRevitLabsConsts.ProductName,
                                 string.Format("Failed placing content.\n{0}\n{1}",
                                               promptEx.Message, promptEx.StackTrace));
                             return ExecutionResultCodes.FailedLoadingContent;
@@ -212,7 +212,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
 
-            TaskDialog.Show(PyRevitConsts.ProductName, "Failed accessing Appication.");
+            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Failed accessing Appication.");
             return ExecutionResultCodes.FailedLoadingContent;
 #endif
         }

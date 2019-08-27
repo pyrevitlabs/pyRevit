@@ -81,7 +81,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(telemetryServerUrl);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
-            httpWebRequest.UserAgent = PyRevitConsts.ProductName;
+            httpWebRequest.UserAgent = PyRevitLabsConsts.ProductName;
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream())) {
                 // serialize and write

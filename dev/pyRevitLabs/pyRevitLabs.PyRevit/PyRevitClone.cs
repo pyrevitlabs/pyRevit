@@ -57,7 +57,7 @@ namespace pyRevitLabs.PyRevit {
                     throw new PyRevitException(string.Format("Name \"{0}\" is reserved.", name));
             }
             else
-                Name = string.Format("Unnamed-{0}", ClonePath.GenerateHash().GetHashShort());
+                Name = string.Format("Unnamed-{0}", ClonePath.GenerateMD5Hash().GetHashShort());
         }
 
         private PyRevitClone(string clonePath) {
@@ -185,7 +185,7 @@ namespace pyRevitLabs.PyRevit {
         // static methods ============================================================================================
         // determine if this is a git repo
         public static bool IsDeployedWithRepo(string clonePath) {
-            return CommonUtils.VerifyPath(Path.Combine(clonePath, PyRevitConsts.DefaultGitDirName));
+            return CommonUtils.VerifyPath(Path.Combine(clonePath, PyRevitLabsConsts.DefaultGitDirName));
         }
 
         // get extensions path
@@ -462,8 +462,8 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug("Deployment: \"{0}\"", contents[2]);
 
                 var args = new PyRevitCloneFromImageArgs {
-                    Url = contents[0] == string.Empty ? PyRevitConsts.OriginalRepoPath : contents[0],
-                    BranchName = contents[1] == string.Empty ? PyRevitConsts.OriginalRepoDefaultBranch : contents[1],
+                    Url = contents[0] == string.Empty ? PyRevitLabsConsts.OriginalRepoPath : contents[0],
+                    BranchName = contents[1] == string.Empty ? PyRevitLabsConsts.TragetBranch : contents[1],
                     DeploymentName = contents[2] == string.Empty ? null : contents[2]
                 };
 

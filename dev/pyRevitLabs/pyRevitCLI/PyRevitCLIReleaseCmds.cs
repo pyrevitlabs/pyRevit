@@ -77,7 +77,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        DownloadReleaseAsset(PyRevitReleaseAssetType assetType, string destPath, string searchPattern, bool latest = false, bool listPreReleases = false) {
+        DownloadReleaseAsset(GithubReleaseAssetType assetType, string destPath, string searchPattern, bool latest = false, bool listPreReleases = false) {
             // get dest path
             if (destPath is null)
                 destPath = UserEnv.GetPath(KnownFolder.Downloads);
@@ -105,9 +105,9 @@ namespace pyRevitCLI {
             // grab download url
             string downloadUrl = null;
             switch (assetType) {
-                case PyRevitReleaseAssetType.Archive: downloadUrl = matchedRelease.ArchiveUrl; break;
-                case PyRevitReleaseAssetType.Installer: downloadUrl = matchedRelease.InstallerUrl; break;
-                case PyRevitReleaseAssetType.Unknown: downloadUrl = null; break;
+                case GithubReleaseAssetType.Archive: downloadUrl = matchedRelease.ArchiveURL; break;
+                case GithubReleaseAssetType.Installer: downloadUrl = matchedRelease.InstallerURL; break;
+                case GithubReleaseAssetType.Unknown: downloadUrl = null; break;
             }
 
             if (downloadUrl != null) {

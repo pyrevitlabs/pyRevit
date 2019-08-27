@@ -641,9 +641,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                     // TODO: change to script output for all script types
                     if (runtime.InterfaceType == InterfaceType.ExternalCommand)
-                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.TraceMessage);
+                        TaskDialog.Show(PyRevitLabsConsts.ProductName, runtime.TraceMessage);
 
-                    TaskDialog.Show(PyRevitConsts.ProductName, runtime.TraceMessage);
+                    TaskDialog.Show(PyRevitLabsConsts.ProductName, runtime.TraceMessage);
 
                     return ExecutionResultCodes.CompileException;
                 }
@@ -657,7 +657,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         // execute now
                         var resultCode = ExecuteExternalCommand(scriptAssm, null, ref runtime);
                         if (resultCode == ExecutionResultCodes.ExternalInterfaceNotImplementedException)
-                            TaskDialog.Show(PyRevitConsts.ProductName,
+                            TaskDialog.Show(PyRevitLabsConsts.ProductName,
                                 string.Format(
                                     "Can not find any type implementing IExternalCommand in assembly \"{0}\"",
                                     scriptAssm.Location
@@ -669,7 +669,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         traceMessage = traceMessage.NormalizeNewLine();
                         runtime.TraceMessage = traceMessage;
                         // TODO: same outp
-                        TaskDialog.Show(PyRevitConsts.ProductName, traceMessage);
+                        TaskDialog.Show(PyRevitLabsConsts.ProductName, traceMessage);
 
                         return ExecutionResultCodes.ExecutionException;
                     }
@@ -684,7 +684,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         traceMessage = traceMessage.NormalizeNewLine();
                         runtime.TraceMessage = traceMessage;
 
-                        TaskDialog.Show(PyRevitConsts.ProductName, runtime.TraceMessage);
+                        TaskDialog.Show(PyRevitLabsConsts.ProductName, runtime.TraceMessage);
                         return ExecutionResultCodes.ExecutionException;
                     }
 
@@ -859,7 +859,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public override int Execute(ref ScriptRuntime runtime) {
             // TODO: ExecuteRubyScript
-            TaskDialog.Show(PyRevitConsts.ProductName, "Ruby-Script Execution Engine Not Yet Implemented.");
+            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Ruby-Script Execution Engine Not Yet Implemented.");
             return ExecutionResultCodes.EngineNotImplementedException;
             //// https://github.com/hakonhc/RevitRubyShell/blob/master/RevitRubyShell/RevitRubyShellApplication.cs
             //// 1: ----------------------------------------------------------------------------------------------------
@@ -942,7 +942,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                     var resultCode = CLREngine.ExecuteExternalCommand(scriptAssm, className, ref runtime);
                     if (resultCode == ExecutionResultCodes.ExternalInterfaceNotImplementedException)
-                        TaskDialog.Show(PyRevitConsts.ProductName,
+                        TaskDialog.Show(PyRevitLabsConsts.ProductName,
                             string.Format(
                                 "Can not find type \"{0}\" in assembly \"{1}\"",
                                 className,
@@ -951,12 +951,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     return resultCode;
                 }
                 else {
-                    TaskDialog.Show(PyRevitConsts.ProductName, "Target assembly is not set correctly and can not be loaded.");
+                    TaskDialog.Show(PyRevitLabsConsts.ProductName, "Target assembly is not set correctly and can not be loaded.");
                     return ExecutionResultCodes.ExternalInterfaceNotImplementedException;
                 }
             }
             catch (Exception invokeEx) {
-                TaskDialog.Show(PyRevitConsts.ProductName, invokeEx.Message);
+                TaskDialog.Show(PyRevitLabsConsts.ProductName, invokeEx.Message);
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {

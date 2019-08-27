@@ -34,8 +34,6 @@ namespace pyRevitCLI {
     internal static class PyRevitCLIAppCmds {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        internal static string HostProductFile => Path.Combine(PyRevitConsts.CacheDirectory, PyRevitProduct.DefaultDataSourceFileName);
-
         // consts:
         private const string autocompleteBinaryName = "pyrevit-autocomplete";
         private const string shortcutIconName = "pyrevit.ico";
@@ -93,7 +91,7 @@ namespace pyRevitCLI {
                         { "lookupSources", lookupSrc },
                         { "installed", RevitProduct.ListInstalledProducts() },
                         { "running", RevitController.ListRunningRevits() },
-                        { "pyrevitDataDir", PyRevitConsts.pyRevitPath },
+                        { "pyrevitDataDir", PyRevitLabsConsts.PyRevitPath },
                         { "userEnv", new Dictionary<string, object>() {
                                 { "osVersion", UserEnv.GetWindowsVersion() },
                                 { "execUser", string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName) },
@@ -138,7 +136,7 @@ namespace pyRevitCLI {
         internal static void
         PrintPyRevitPaths() {
             PrintHeader("Cache Directory");
-            Console.WriteLine(string.Format("\"{0}\"", PyRevitConsts.pyRevitPath));
+            Console.WriteLine(string.Format("\"{0}\"", PyRevitLabsConsts.PyRevitPath));
         }
 
         internal static void
@@ -178,7 +176,13 @@ namespace pyRevitCLI {
 
         internal static void
         InspectAndFixEnv() {
-            UpdateProductCacheFile();
+        }
+
+        internal static void
+        ListProducts() {
+            PrintHeader("Known Products");
+            foreach (PyRevitProduct product in PyRevitProduct.ListKnownProducts())
+                Console.WriteLine(product);
         }
 
         // cli specific commands
@@ -212,7 +216,7 @@ namespace pyRevitCLI {
                 var iconPath = Path.Combine(processPath, shortcutIconName);
                 CommonUtils.AddShortcut(
                     shortcutName,
-                    PyRevitConsts.ProductName,
+                    PyRevitLabsConsts.ProductName,
                     GetProcessFileName(),
                     shortcutArgs,
                     processPath,
@@ -220,17 +224,6 @@ namespace pyRevitCLI {
                     shortcutDesc,
                     allUsers: allUsers
                 );
-            }
-        }
-
-        internal static void UpdateProductCacheFile() {
-            try {
-                CommonUtils.EnsurePath(PyRevitConsts.CacheDirectory);
-                CommonUtils.DownloadFile(PyRevitConsts.ProductFile, HostProductFile);
-                PyRevitProduct.DataSourceFilePath = HostProductFile;
-            }
-            catch {
-                logger.Debug("Error downloading pyRevit product database file...");
             }
         }
     }

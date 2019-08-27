@@ -321,7 +321,7 @@ namespace pyRevitLabs.PyRevit {
         private static void InitConfigFile() {
             // get allusers seed config file
             // if admin config file exists, seed initial config states from there.
-            var adminFile = PyRevitConsts.FindConfigFileInDirectory(PyRevitConsts.pyRevitProgramDataPath);
+            var adminFile = PyRevitConsts.FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
             if (adminFile != null)
                 SeedConfig(false, setupFromTemplate: adminFile);
             else

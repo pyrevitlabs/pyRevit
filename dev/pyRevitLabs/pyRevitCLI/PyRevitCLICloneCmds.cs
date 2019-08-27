@@ -188,7 +188,7 @@ namespace pyRevitCLI {
                 if (clone.IsRepoDeploy) {
                     if (originUrl != null || reset) {
                         string newUrl =
-                            reset ? PyRevitConsts.OriginalRepoPath : originUrl;
+                            reset ? PyRevitLabsConsts.OriginalRepoPath : originUrl;
                         clone.SetOrigin(newUrl);
                     }
                     else {

@@ -138,7 +138,7 @@ namespace pyRevitLabs.PyRevit {
             string finalExtRepoPath = Path.Combine(destPath, extDestDirName).NormalizeAsPath();
 
             // determine branch name
-            branchName = branchName ?? PyRevitConsts.ExtensionRepoDefaultBranch;
+            branchName = branchName ?? PyRevitConsts.DefaultExtensionRepoDefaultBranch;
 
             logger.Debug("Extension branch name determined as \"{0}\"", branchName);
             logger.Debug("Installing extension into \"{0}\"", finalExtRepoPath);

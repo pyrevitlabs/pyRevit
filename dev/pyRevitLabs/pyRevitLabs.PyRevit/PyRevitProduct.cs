@@ -20,27 +20,16 @@ namespace pyRevitLabs.PyRevit {
         public string key { get; set; }
     }
 
-    public class PyRevitProduct {
+    public class PyRevitProductData {
+        public static string ProductFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TragetBranch, @"bin/pyrevit-products.json");
+
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static List<PyRevitProductInfo> _cache = new List<PyRevitProductInfo>();
-        private static string _cacheVersion = string.Empty;
-        private static string _datasource = string.Empty;
-
-        public const string DefaultDataSourceFileName = "pyrevit-products.json";
-        public static string DefaultDataSourceFilePath => Path.Combine(CommonUtils.GetAssemblyPath<PyRevitProduct>(), DefaultDataSourceFileName);
-        public static bool RevertToDefaultSourceOnErrors = true;
-        public static string DataSourceFilePath {
-            get {
-                if (_datasource != null && _datasource != string.Empty && CommonUtils.VerifyFile(_datasource))
-                    return _datasource;
-                return DefaultDataSourceFilePath;
-            }
-            set {
-                if (value != null && value != string.Empty)
-                    _datasource = value;
-            }
-        }
+        private static JSONDataSource<PyRevitProductInfo> _dstore = new JSONDataSource<PyRevitProductInfo>(
+            "pyrevit-products.json",
+            dataSourceUrl: ProductFileURL,
+            dataCachePath: PyRevitLabsConsts.CacheDirectory
+            );
 
         public static PyRevitProductInfo GetProductInfo(string identifier) {
             logger.Debug("Getting pyRevit product info for: {0}", identifier);
@@ -58,22 +47,49 @@ namespace pyRevitLabs.PyRevit {
             return null;
         }
 
-        public static List<PyRevitProductInfo> GetAllProductInfo() {
-            var dataSources = new List<string>() { DataSourceFilePath };
-            if (RevertToDefaultSourceOnErrors)
-                dataSources.Add(DefaultDataSourceFilePath);
-            foreach (string dataSource in dataSources) {
-                var cacheVersion = CommonUtils.GetFileSignature(dataSource);
-                if (_cache is null || _cache.Count == 0 || (_cacheVersion != string.Empty && cacheVersion != _cacheVersion)) {
-                    var productInfoDataSet = File.ReadAllText(dataSource);
-                    _cache = new JavaScriptSerializer().Deserialize<List<PyRevitProductInfo>>(productInfoDataSet);
-                    if (_cache != null && _cache.Count > 0) {
-                        _cacheVersion = cacheVersion;
-                        return _cache;
-                    }
-                }
+        public static List<PyRevitProductInfo> GetAllProductInfo() => _dstore.GetAllData();
+    }
+
+    public class PyRevitProduct {
+        public PyRevitProduct(PyRevitProductInfo prodInfo) {
+            Name = prodInfo.product;
+            Release = prodInfo.release;
+            try {
+                Version = new Version(prodInfo.version);
             }
-            return _cache;
+            catch {
+                Version = null;
+            }
+            InstallerId = prodInfo.key;
+        }
+
+        public override string ToString() {
+            return string.Format("{0} | Version: {1} | Release: {2} | Installer Id: \"{3}\"", Name, Version, Release, InstallerId);
+        }
+
+        public override int GetHashCode() {
+            return InstallerId.GetHashCode();
+        }
+
+
+        public string Name { get; set; }
+        public string Release { get; set; }
+        public Version Version { get; set; }
+        public string InstallerId { get; set; }
+
+        public static PyRevitProduct LookupRevitProduct(string releaseOrVersionOrIdString) {
+            var prodInfo = PyRevitProductData.GetProductInfo(releaseOrVersionOrIdString);
+            if (prodInfo != null)
+                return new PyRevitProduct(prodInfo);
+            return null;
+        }
+
+        public static List<PyRevitProduct> ListKnownProducts() {
+            var products = new List<PyRevitProduct>();
+            foreach (PyRevitProductInfo prodInfo in PyRevitProductData.GetAllProductInfo())
+                products.Add(new PyRevitProduct(prodInfo));
+            return products;
         }
     }
+
 }

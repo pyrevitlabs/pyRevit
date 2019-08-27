@@ -322,7 +322,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.Activated += ScriptOutput_GotFocus;
             this.Deactivated += ScriptOutput_LostFocus;
 
-            this.OutputTitle = PyRevitConsts.ProductName;
+            this.OutputTitle = PyRevitLabsConsts.ProductName;
         }
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]

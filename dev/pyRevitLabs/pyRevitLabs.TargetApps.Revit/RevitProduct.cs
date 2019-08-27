@@ -29,29 +29,18 @@ namespace pyRevitLabs.TargetApps.Revit {
     }
 
     public class RevitProductData {
+        public static string HostFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TragetBranch, @"bin/pyrevit-hosts.json");
+
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static List<HostProductInfo> _cache = new List<HostProductInfo>();
-        private static string _cacheVersion = string.Empty;
-        private static string _datasource = string.Empty;
+        private static JSONDataSource<HostProductInfo> _dstore = new JSONDataSource<HostProductInfo>(
+            "pyrevit-hosts.json",
+            dataSourceUrl: HostFileURL,
+            dataCachePath: PyRevitLabsConsts.CacheDirectory
+            );
 
         private static Regex BuildNumberFinder = new Regex(@".*(?<build>\d{8}_\d{4}).*");
         private static Regex BuildTargetFinder = new Regex(@".*\((?<target>[xX]\d{2})\).*");
-
-        public const string DefaultDataSourceFileName = "pyrevit-hosts.json";
-        public static string DefaultDataSourceFilePath => Path.Combine(CommonUtils.GetAssemblyPath<RevitProductData>(), DefaultDataSourceFileName);
-        public static bool RevertToDefaultSourceOnErrors = true;
-        public static string DataSourceFilePath {
-            get {
-                if (_datasource != null && _datasource != string.Empty && CommonUtils.VerifyFile(_datasource))
-                    return _datasource;
-                return DefaultDataSourceFilePath;
-            }
-            set {
-                if (value != null && value != string.Empty)
-                    _datasource = value;
-            }
-        }
 
         public static string ExtractBuildNumberFromString(string inputString) {
             Match match = BuildNumberFinder.Match(inputString);
@@ -91,23 +80,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             return null;
         }
 
-        public static List<HostProductInfo> GetAllProductInfo() {
-            var dataSources = new List<string>() { DataSourceFilePath };
-            if (RevertToDefaultSourceOnErrors)
-                dataSources.Add(DefaultDataSourceFilePath);
-            foreach(string dataSource in dataSources) {
-                var cacheVersion = CommonUtils.GetFileSignature(dataSource);
-                if (_cache is null || _cache.Count == 0 || (_cacheVersion != string.Empty && cacheVersion != _cacheVersion)) {
-                    var hostInfoDataSet = File.ReadAllText(dataSource);
-                    _cache = new JavaScriptSerializer().Deserialize<List<HostProductInfo>>(hostInfoDataSet);
-                    if (_cache != null && _cache.Count > 0) {
-                        _cacheVersion = cacheVersion;
-                        return _cache;
-                    }
-                }
-            }
-            return _cache;
-        }
+        public static List<HostProductInfo> GetAllProductInfo() => _dstore.GetAllData();
 
         public static string GetBinaryLocation(string installPath) {
             var possibleLocations = new List<string>() {

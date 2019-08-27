@@ -9,6 +9,7 @@ using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using IWshRuntimeLibrary;
 
+using LibGit2Sharp;
 using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.Common {
@@ -18,11 +19,15 @@ namespace pyRevitLabs.Common {
         [DllImport("ole32.dll")] private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
 
         public static bool VerifyFile(string filePath) {
-            return System.IO.File.Exists(filePath);
+            if (filePath != null && filePath != string.Empty)
+                return System.IO.File.Exists(filePath);
+            return false;
         }
 
         public static bool VerifyPath(string path) {
-            return Directory.Exists(path);
+            if (path != null && path != string.Empty)
+                return Directory.Exists(path);
+            return false;
         }
 
         public static bool VerifyPythonScript(string path) {
@@ -84,10 +89,10 @@ namespace pyRevitLabs.Common {
             Directory.CreateDirectory(path);
         }
 
-        public static void EnsureFile(string filepath) {
-            EnsurePath(Path.GetDirectoryName(filepath));
-            if (!System.IO.File.Exists(filepath)) {
-                var file = System.IO.File.CreateText(filepath);
+        public static void EnsureFile(string filePath) {
+            EnsurePath(Path.GetDirectoryName(filePath));
+            if (!System.IO.File.Exists(filePath)) {
+                var file = System.IO.File.CreateText(filePath);
                 file.Close();
             }
         }
@@ -349,6 +354,21 @@ namespace pyRevitLabs.Common {
         public static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
         public static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
         public static string GetAssemblyPath<T>() => Path.GetDirectoryName(typeof(T).Assembly.Location);
+
+        public static string GenerateSHA1Hash(string filePath) {
+            // Use input string to calculate SHA1 hash
+            using (FileStream fs = new FileStream(filePath, FileMode.Open)) {
+                using (BufferedStream bs = new BufferedStream(fs)) {
+                    using (var sha1 = new System.Security.Cryptography.SHA1Managed()) {
+                        StringBuilder sb = new StringBuilder();
+                        foreach (byte b in sha1.ComputeHash(bs)) {
+                            sb.Append(b.ToString("X2"));
+                        }
+                        return sb.ToString();
+                    }
+                }
+            }
+        }
     }
 }
 

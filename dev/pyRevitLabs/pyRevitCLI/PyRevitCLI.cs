@@ -12,6 +12,7 @@ using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
 
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.TargetApps.Revit;
 using pyRevitCLI.Properties;
 
 using Console = Colorful.Console;
@@ -151,9 +152,6 @@ namespace pyRevitCLI {
                 IsHelpUsagePatternMode = arguments["--usage"].IsTrue;
 
                 try {
-                    // prepare environment
-                    PrepareEnv();
-
                     // now call methods based on inputs
                     ProcessArguments();
 
@@ -174,9 +172,8 @@ namespace pyRevitCLI {
             }
         }
 
-        // prepare environment
+        // configure env
         private static void PrepareEnv() {
-            PyRevitCLIRevitCmds.UpdateHostCacheFile();
         }
 
         // cli argument processor
@@ -457,7 +454,7 @@ namespace pyRevitCLI {
 
                 else if (all("download"))
                     PyRevitCLIReleaseCmds.DownloadReleaseAsset(
-                        arguments["archive"].IsTrue ? PyRevitReleaseAssetType.Archive : PyRevitReleaseAssetType.Installer,
+                        arguments["archive"].IsTrue ? GithubReleaseAssetType.Archive : GithubReleaseAssetType.Installer,
                         destPath: TryGetValue("--dest"),
                         searchPattern: TryGetValue("<search_pattern>"),
                         latest: arguments["latest"].IsTrue,
@@ -587,6 +584,9 @@ namespace pyRevitCLI {
             else if (all("doctor")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Doctor);
+
+                else if (arguments["--products"].IsTrue)
+                    PyRevitCLIAppCmds.ListProducts();
 
                 else
                     PyRevitCLIAppCmds.InspectAndFixEnv();

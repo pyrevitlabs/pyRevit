@@ -139,7 +139,7 @@ namespace pyRevitLabs.PyRevit {
 
         public static void CreateImageFromClone(PyRevitClone clone, IEnumerable<string> paths, string destPath) {
             // create paths
-            var imagePath = CommonUtils.EnsureFileExtension(destPath, PyRevitConsts.ImageFileExtension);
+            var imagePath = CommonUtils.EnsureFileExtension(destPath, GithubAPI.ArchiveFileExtension);
             var targetDir = Path.Combine(Path.GetDirectoryName(imagePath), Path.GetFileNameWithoutExtension(imagePath));
             CommonUtils.EnsurePath(targetDir);
 
@@ -187,13 +187,13 @@ namespace pyRevitLabs.PyRevit {
                                           string branchName = null,
                                           string repoUrl = null,
                                           string destPath = null) {
-            string repoSourcePath = repoUrl ?? PyRevitConsts.OriginalRepoPath;
-            string repoBranch = branchName != null ? branchName : PyRevitConsts.OriginalRepoDefaultBranch;
+            string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoPath;
+            string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TragetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
 
             // determine destination path if not provided
             if (destPath is null)
-                destPath = Path.Combine(PyRevitConsts.pyRevitPath, PyRevitConsts.DefaultCloneInstallName);
+                destPath = Path.Combine(PyRevitLabsConsts.PyRevitPath, PyRevitConsts.DefaultCloneInstallName);
             logger.Debug("Destination path determined as \"{0}\"", destPath);
             // make sure destPath exists
             CommonUtils.EnsurePath(destPath);
@@ -251,19 +251,19 @@ namespace pyRevitLabs.PyRevit {
                                            string branchName = null,
                                            string imagePath = null,
                                            string destPath = null) {
-            string repoBranch = branchName != null ? branchName : PyRevitConsts.OriginalRepoDefaultBranch;
-            string imageSource = imagePath != null ? imagePath : PyRevitConsts.GetBranchArchiveUrl(repoBranch);
+            string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TragetBranch;
+            string imageSource = imagePath != null ? imagePath : GithubAPI.GetBranchArchiveUrl(PyRevitLabsConsts.OriginalRepoId, repoBranch);
             string imageFilePath = null;
 
             // verify image is zip
-            if (!imageSource.ToLower().EndsWith(PyRevitConsts.ImageFileExtension))
+            if (!imageSource.ToLower().EndsWith(GithubAPI.ArchiveFileExtension))
                 throw new PyRevitException("Clone source must be a ZIP image.");
 
             logger.Debug("Image file is \"{0}\"", imageSource);
 
             // determine destination path if not provided
             if (destPath is null)
-                destPath = Path.Combine(PyRevitConsts.pyRevitPath, PyRevitConsts.DefaultCopyInstallName);
+                destPath = Path.Combine(PyRevitLabsConsts.PyRevitPath, PyRevitConsts.DefaultCopyInstallName);
 
             // check existing destination path
             if (CommonUtils.VerifyPath(destPath)) {

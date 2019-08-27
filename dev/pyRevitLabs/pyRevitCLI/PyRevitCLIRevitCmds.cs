@@ -24,9 +24,6 @@ namespace pyRevitCLI {
     internal static class PyRevitCLIRevitCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
-        internal static string HostCacheFile => Path.Combine(PyRevitConsts.CacheDirectory, RevitProductData.DefaultDataSourceFileName);
-
-
         internal static void
         PrintLocalRevits(bool running = false) {
             if (running) {
@@ -289,17 +286,6 @@ namespace pyRevitCLI {
                         }
                     }
                 }
-            }
-        }
-
-        internal static void UpdateHostCacheFile() {
-            try {
-                CommonUtils.EnsurePath(PyRevitConsts.CacheDirectory);
-                CommonUtils.DownloadFile(PyRevitConsts.HostFile, HostCacheFile);
-                RevitProductData.DataSourceFilePath = HostCacheFile;
-            }
-            catch {
-                logger.Debug("Error downloading host database file...");
             }
         }
 

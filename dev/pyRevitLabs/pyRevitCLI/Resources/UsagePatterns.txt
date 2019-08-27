@@ -72,7 +72,7 @@ Usage:
 	pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<temps_path>]
 	pyrevit caches --help
 	pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
-	pyrevit doctor
+	pyrevit doctor --products
 	pyrevit config --help
 	pyrevit config --from=<template_config_path> [--log=<log_file>]
 	pyrevit configs --help
