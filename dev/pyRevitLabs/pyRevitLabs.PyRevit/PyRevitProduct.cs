@@ -48,6 +48,8 @@ namespace pyRevitLabs.PyRevit {
         }
 
         public static List<PyRevitProductInfo> GetAllProductInfo() => _dstore.GetAllData();
+
+        public static void Update() => _dstore.UpdateData(forceUpdate: true);
     }
 
     public class PyRevitProduct {

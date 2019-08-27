@@ -5,6 +5,7 @@ Usage:
 	pyrevit --usage
 	pyrevit (blog | docs | source | youtube | support)
 	pyrevit env [--json] [--help] [--log=<log_file>]
+	pyrevit update [--help] [--log=<log_file>]
 	pyrevit clone --help
 	pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
 	pyrevit clone <clone_name> --image=<image_url> [--dest=<dest_path>] [--log=<log_file>]

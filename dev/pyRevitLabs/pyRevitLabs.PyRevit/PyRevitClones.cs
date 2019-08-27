@@ -267,6 +267,7 @@ namespace pyRevitLabs.PyRevit {
 
             // check existing destination path
             if (CommonUtils.VerifyPath(destPath)) {
+                destPath = destPath.NormalizeAsPath();
                 logger.Debug("Destination path already exists {0}", destPath);
                 destPath = Path.Combine(destPath, cloneName);
                 logger.Debug("Using subpath {0}", destPath);
@@ -280,11 +281,12 @@ namespace pyRevitLabs.PyRevit {
             // decide to download if source is a url
             if (imageSource.IsValidHttpUrl()) {
                 try {
-                    var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"),
-                                               Path.GetFileName(imageSource));
+                    var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), Path.GetFileName(imageSource));
+                    if (GlobalConfigs.ReportProgress)
+                        Console.WriteLine("Downloading package \"{0}\"", imageSource);
                     logger.Debug("Downloading package \"{0}\" to \"{1}\"", imageSource, pkgDest);
                     imageFilePath =
-                        CommonUtils.DownloadFile(imageSource, pkgDest);
+                        CommonUtils.DownloadFile(imageSource, pkgDest, progressToken: Path.GetFileName(imageSource));
                     logger.Debug("Downloaded to \"{0}\"", imageFilePath);
                 }
                 catch (Exception ex) {
@@ -299,7 +301,7 @@ namespace pyRevitLabs.PyRevit {
             }
             // otherwise the source format is unknown
             else {
-                throw new PyRevitException(string.Format("Unknow source \"{0}\"", imageSource));
+                throw new PyRevitException(string.Format("Unknown source \"{0}\"", imageSource));
             }
 
             // now extract the file
@@ -316,6 +318,9 @@ namespace pyRevitLabs.PyRevit {
                 }
 
                 // unpack image
+                if (GlobalConfigs.ReportProgress)
+                    Console.WriteLine("Preparing package for deployment...");
+
                 try {
                     logger.Debug("Staging package to \"{0}\"", stagedImage);
                     ZipFile.ExtractToDirectory(imageFilePath, stagedImage);
@@ -331,6 +336,9 @@ namespace pyRevitLabs.PyRevit {
                     var clone = new PyRevitClone(stagedImage);
 
                     // deployment: copy the needed directories
+                    if (GlobalConfigs.ReportProgress)
+                        Console.WriteLine("Deploying to \"{0}\"", destPath);
+
                     if (deploymentName != null) {
                         // deploy the requested deployment
                         // throws exceptions if deployment does not exist or on copy error
@@ -366,6 +374,9 @@ namespace pyRevitLabs.PyRevit {
 
                     // register the clone
                     VerifyAndRegisterClone(cloneName, destPath);
+
+                    if (GlobalConfigs.ReportProgress)
+                        Console.WriteLine("Package deployed and registered.");
                 }
                 catch (PyRevitException ex) {
                     logger.Error("Can not find a valid clone inside extracted package. | {0}", ex.Message);

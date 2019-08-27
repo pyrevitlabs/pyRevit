@@ -119,7 +119,7 @@ namespace pyRevitCLI {
                 logger.Debug("Saving package to \"{0}\"", destPath);
 
                 // download file and report
-                CommonUtils.DownloadFile(downloadUrl, destPath);
+                CommonUtils.DownloadFile(downloadUrl, destPath, progressToken: Path.GetFileName(downloadUrl));
                 Console.WriteLine(
                     string.Format("Downloaded package to \"{0}\"", destPath)
                     );

@@ -10,10 +10,15 @@ using System.Text.RegularExpressions;
 using IWshRuntimeLibrary;
 
 using LibGit2Sharp;
+using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
+using System.Linq;
 
 namespace pyRevitLabs.Common {
     public static class CommonUtils {
+        private static object ProgressLock = new object();
+        private static int progress = 0;
+
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         [DllImport("ole32.dll")] private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
@@ -135,17 +140,54 @@ namespace pyRevitLabs.Common {
                 throw new pyRevitNoInternetConnectionException();
         }
 
-        public static string DownloadFile(string url, string destPath) {
+        public static string DownloadFile(string url, string destPath, string progressToken = null) {
             if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                progress = 0;
                 using (var client = GetWebClient()) {
-                    client.DownloadFile(url, destPath);
+                    if (GlobalConfigs.ReportProgress) {
+                        client.DownloadProgressChanged += Client_DownloadProgressChanged;
+                    }
+                    logger.Debug("Downloading \"{0}\"\n", url);
+                    client.DownloadFileAsync(new Uri(url), destPath, progressToken);
+
+                    // wait until downloa is complete
+                    while (progress != 100) {
+                    }
                 }
             }
             else
                 throw new pyRevitNoInternetConnectionException();
 
             return destPath;
+        }
+
+        private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
+            lock (ProgressLock) {
+                if (e.ProgressPercentage > progress) {
+                    // =====>
+                    var pbar = string.Concat(Enumerable.Repeat("=", (int)((e.ProgressPercentage / 100.0) * 50.0))) + ">";
+                    // 4.57 KB/27.56 KB
+                    var sizePbar = string.Format("{0}/{1}", e.BytesReceived.CleanupSize(), e.TotalBytesToReceive.CleanupSize());
+
+                    // Downloading [==========================================>       ] 23.26 KB/27.56 KB
+                    string message = "";
+                    progress = e.ProgressPercentage;
+                    if (progress == 100) {
+                        if (e.UserState != null)
+                            message = string.Format("\r{1}: Download complete ({0})", e.TotalBytesToReceive.CleanupSize(), (string)e.UserState);
+                        else
+                            message = string.Format("\rDownload complete ({0})", e.TotalBytesToReceive.CleanupSize());
+                        Console.WriteLine("{0,-120}", message);
+                    }
+                    else {
+                        if (e.UserState != null)
+                            message = string.Format("\r{2}: Downloading [{0,-50}] {1}", pbar, sizePbar, (string)e.UserState);
+                        else
+                            message = string.Format("\rDownloading [{0,-50}] {1}", pbar, sizePbar);
+                        Console.Write("{0,-120}", message);
+                    }
+                }
+            }
         }
 
         public static bool CheckInternetConnection() {

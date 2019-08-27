@@ -127,6 +127,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                 target = ExtractBuildTargetFromString(fileInfo.ProductVersion)
             };
         }
+
+        public static void Update() => _dstore.UpdateData(forceUpdate: true);
     }
 
     public class RevitProduct {

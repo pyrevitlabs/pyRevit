@@ -87,6 +87,13 @@ namespace pyRevitCLI {
                         });
                     break;
 
+                case PyRevitCLICommandType.Update:
+                    BuildHelp(
+                        new List<string>() { "update" },
+                        header: "Update remote resources used by this utility e.g. Revit product information"
+                        );
+                    break;
+
                 case PyRevitCLICommandType.Clone:
                     BuildHelp(
                         new List<string>() { "clone" },

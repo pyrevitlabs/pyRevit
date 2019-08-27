@@ -26,7 +26,8 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        public static bool UnderTest { get; set; }
-        public static bool AllClonesAreValid { get; set; }
+        public static bool UnderTest { get; set; } = false;
+        public static bool ReportProgress { get; set; } = false;
+        public static bool AllClonesAreValid { get; set; } = false;
     }
 }

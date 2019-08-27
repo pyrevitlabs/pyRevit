@@ -185,5 +185,14 @@ namespace pyRevitCLI {
                     logger.Debug("Failed getting latest release list OR no CLI releases.");
             }
         }
+
+        internal static void
+        UpdateRemoteDateSources() {
+            // update and show progress
+            GlobalConfigs.ReportProgress = true;
+            RevitProductData.Update();
+            PyRevitProductData.Update();
+            GlobalConfigs.ReportProgress = false;
+        }
     }
 }

@@ -26,7 +26,6 @@ using Console = Colorful.Console;
 // 4) Add command code and make sure PyRevitCLI.ProcessArguments correctly parses the arguments
 // 5) Update AppHelps to accept and print help for new command type
 // 6) Make sure PyRevitCLI.ProcessArguments checks and ask for help print
-// 7) Update the pyrevit-autocomplete.go file with command completion suggestions
 
 
 namespace pyRevitCLI {
@@ -47,6 +46,7 @@ namespace pyRevitCLI {
         YouTube,
         Support,
         Env,
+        Update,
         Clone,
         Clones,
         Attach,
@@ -194,6 +194,13 @@ namespace pyRevitCLI {
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
                 else
                     PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue);
+            }
+
+            else if (all("update")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Update);
+                else
+                    PyRevitCLIAppCmds.UpdateRemoteDateSources();
             }
 
             else if (all("clone")) {
