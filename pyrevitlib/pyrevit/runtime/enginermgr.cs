@@ -29,6 +29,9 @@ using Microsoft.VisualBasic;
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.NLog;
+using pyRevitLabs.NLog.Config;
+using pyRevitLabs.NLog.Targets;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum EngineType {
@@ -150,6 +153,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class IronPythonEngine : ExecutionEngine {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         public ScriptEngine Engine { get; private set; }
         public IronPythonEngineConfigs ExecEngineConfigs = new IronPythonEngineConfigs();
 
@@ -408,6 +413,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class CPythonEngine : ExecutionEngine {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         private PyObject _sysPaths = null;
         private IntPtr _globals = IntPtr.Zero;
 
@@ -615,7 +622,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool ExecutedFromUI { get; set; }
     }
 
+    public class CLREngineOutputTarget : TargetWithLayout {
+        public ExecParams CurrentExecParams { get; set; }
+
+        protected override void Write(LogEventInfo logEvent) {
+            try {
+                var message = Layout.Render(logEvent);
+                if (logEvent.Level == LogLevel.Debug) {
+                    if (CurrentExecParams.DebugMode)
+                        Console.WriteLine(message);
+                }
+                else
+                    Console.WriteLine(message);
+            }
+            catch {}
+        }
+    }
+
     public class CLREngine : ExecutionEngine {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         private string scriptSig = string.Empty;
         private Assembly scriptAssm = null;
 
@@ -630,6 +656,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // compile first
             // only if the signature doesn't match
             if (scriptSig == null || runtime.ScriptSourceFileSignature != scriptSig) {
+                TaskDialog.Show("sdfsd", "Recompiling");
                 try {
                     scriptSig = runtime.ScriptSourceFileSignature;
                     scriptAssm = CompileCLRScript(ref runtime);
@@ -723,7 +750,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var compileParams = new CompilerParameters(refFiles);
             compileParams.OutputAssembly = Path.Combine(
                 UserEnv.UserTemp,
-                string.Format("{0}.dll", runtime.ScriptData.CommandName)
+                string.Format("{0}_{1}.dll", runtime.ScriptData.CommandName, runtime.ScriptSourceFileSignature)
                 );
             compileParams.CompilerOptions = string.Format("/optimize /define:REVIT{0}", runtime.App.VersionNumber);
             compileParams.GenerateInMemory = true;
@@ -777,31 +804,40 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // set properties if available
             // set ExecParams
-            foreach (var fieldInfo in extCommandType.GetFields()) {
-                if (fieldInfo.FieldType == typeof(ExecParams)) {
-                    fieldInfo.SetValue(
-                        extCommandInstance,
-                        new ExecParams {
-                            ScriptPath = runtime.ScriptData.ScriptPath,
-                            ConfigScriptPath = runtime.ScriptData.ConfigScriptPath,
-                            CommandUniqueId = runtime.ScriptData.CommandUniqueId,
-                            CommandName = runtime.ScriptData.CommandName,
-                            CommandBundle = runtime.ScriptData.CommandBundle,
-                            CommandExtension = runtime.ScriptData.CommandExtension,
-                            HelpSource = runtime.ScriptData.HelpSource,
-                            RefreshEngine = runtime.ScriptRuntimeConfigs.RefreshEngine,
-                            ConfigMode = runtime.ScriptRuntimeConfigs.ConfigMode,
-                            DebugMode = runtime.ScriptRuntimeConfigs.DebugMode,
-                            ExecutedFromUI = runtime.ScriptRuntimeConfigs.ExecutedFromUI
-                        });
-                }
-            }
+            var execParams = new ExecParams {
+                ScriptPath = runtime.ScriptData.ScriptPath,
+                ConfigScriptPath = runtime.ScriptData.ConfigScriptPath,
+                CommandUniqueId = runtime.ScriptData.CommandUniqueId,
+                CommandName = runtime.ScriptData.CommandName,
+                CommandBundle = runtime.ScriptData.CommandBundle,
+                CommandExtension = runtime.ScriptData.CommandExtension,
+                HelpSource = runtime.ScriptData.HelpSource,
+                RefreshEngine = runtime.ScriptRuntimeConfigs.RefreshEngine,
+                ConfigMode = runtime.ScriptRuntimeConfigs.ConfigMode,
+                DebugMode = runtime.ScriptRuntimeConfigs.DebugMode,
+                ExecutedFromUI = runtime.ScriptRuntimeConfigs.ExecutedFromUI
+            };
+
+            foreach (var fieldInfo in extCommandType.GetFields())
+                if (fieldInfo.FieldType == typeof(ExecParams))
+                    fieldInfo.SetValue(extCommandInstance, execParams );
 
             // reroute console output to runtime stream
             var existingOutStream = Console.Out;
             StreamWriter runtimeOutputStream = new StreamWriter(runtime.OutputStream);
             runtimeOutputStream.AutoFlush = true;
             Console.SetOut(runtimeOutputStream);
+
+            // setup logger
+            var prevLoggerCfg = LogManager.Configuration;
+            var newLoggerCfg = new LoggingConfiguration();
+            var target = new CLREngineOutputTarget();
+            target.CurrentExecParams = execParams;
+            target.Name = logger.Name;
+            target.Layout = "${level:uppercase=true}: [${logger}] ${message}";
+            newLoggerCfg.AddTarget(target.Name, target);
+            newLoggerCfg.AddRuleForAllLevels(target);
+            LogManager.Configuration = newLoggerCfg;
 
             // execute
             string commandMessage = string.Empty;
@@ -815,6 +851,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     commandMessage,
                     runtime.ScriptRuntimeConfigs.SelectedElements}
                 );
+
+            // revert logger back to previous
+            LogManager.Configuration = prevLoggerCfg;
 
             // reroute console output back to original
             Console.SetOut(existingOutStream);
