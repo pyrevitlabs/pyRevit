@@ -34,15 +34,9 @@ namespace pyRevitCLI {
     internal static class PyRevitCLIAppCmds {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        // consts:
-        private const string autocompleteBinaryName = "pyrevit-autocomplete";
-        private const string shortcutIconName = "pyrevit.ico";
-        private const string templatesDirName = "templates";
-
         // internal helpers:
         internal static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
         internal static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
-        internal static string GetTemplatesPath() => Path.Combine(GetProcessPath(), templatesDirName);
 
         internal static void PrintHeader(string header) =>
             Console.WriteLine(string.Format("==> {0}", header), Color.Green);
@@ -134,12 +128,6 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        PrintPyRevitPaths() {
-            PrintHeader("Cache Directory");
-            Console.WriteLine(string.Format("\"{0}\"", PyRevitLabsConsts.PyRevitPath));
-        }
-
-        internal static void
         PrinUserEnv() {
             PrintHeader("User Environment");
             Console.WriteLine(UserEnv.GetWindowsVersion());
@@ -174,17 +162,6 @@ namespace pyRevitCLI {
             Console.WriteLine(string.Format("pyRevit CLI {0}", PyRevitCLI.CLIVersion.ToString()));
         }
 
-        internal static void
-        InspectAndFixEnv() {
-        }
-
-        internal static void
-        ListProducts() {
-            PrintHeader("Known Products");
-            foreach (PyRevitProduct product in PyRevitProduct.ListKnownProducts())
-                Console.WriteLine(product);
-        }
-
         // cli specific commands
         internal static void
         PrintVersion() {
@@ -206,24 +183,6 @@ namespace pyRevitCLI {
                 }
                 else
                     logger.Debug("Failed getting latest release list OR no CLI releases.");
-            }
-        }
-
-        internal static void
-        AddCLIShortcut(string shortcutName, string shortcutArgs, string shortcutDesc, bool allUsers) {
-            if (shortcutName != null && shortcutArgs != null) {
-                var processPath = GetProcessPath();
-                var iconPath = Path.Combine(processPath, shortcutIconName);
-                CommonUtils.AddShortcut(
-                    shortcutName,
-                    PyRevitLabsConsts.ProductName,
-                    GetProcessFileName(),
-                    shortcutArgs,
-                    processPath,
-                    iconPath,
-                    shortcutDesc,
-                    allUsers: allUsers
-                );
             }
         }
     }

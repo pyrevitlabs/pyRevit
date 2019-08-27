@@ -60,19 +60,11 @@ Usage:
 	pyrevit revits --supported [--csv=<output_file>]
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
-	pyrevit revits addons [--help]
-	pyrevit revits addons prepare <revit_year> [--allusers]
-	pyrevit revits addons install <addon_name> [--dest=<dest_path>] [--allusers]
-	pyrevit revits addons uninstall <addon_name>
 	pyrevit run --help
 	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--import=<import_path>]
-	pyrevit init --help
-	pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<temps_path>]
-	pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<temps_path>]
 	pyrevit caches --help
 	pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
-	pyrevit doctor --products
 	pyrevit config --help
 	pyrevit config --from=<template_config_path> [--log=<log_file>]
 	pyrevit configs --help
@@ -94,5 +86,3 @@ Usage:
 	pyrevit configs seed [--lock] [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
-	pyrevit cli --help
-	pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<description>] [--allusers]

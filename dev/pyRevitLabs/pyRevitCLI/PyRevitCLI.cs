@@ -58,16 +58,11 @@ namespace pyRevitCLI {
         ExtensionsPaths,
         ExtensionsSources,
         Releases,
-        Image,
         Revits,
-        RevitsAddons,
         Run,
-        Init,
         Caches,
-        Doctor,
         Config,
         Configs,
-        Cli
     }
 
     internal static class PyRevitCLI {
@@ -470,19 +465,11 @@ namespace pyRevitCLI {
                         );
             }
 
-            else if (all("image")) {
-                if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Image);
-                else
-                    PyRevitCLICloneCmds.BuildImage(
-                        cloneName: TryGetValue("<clone_name>"),
-                        configFile: TryGetValue("--config"),
-                        imageFilePath: TryGetValue("--dest")
-                        );
-            }
-
             else if (all("revits")) {
-                if (all("killall"))
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Revits);
+
+                else if (all("killall"))
                     PyRevitCLIRevitCmds.KillAllRevits(
                         revitYear: TryGetValue("<revit_year>")
                     );
@@ -496,24 +483,6 @@ namespace pyRevitCLI {
                         includeRFA: arguments["--rfa"].IsTrue,
                         includeRFT: arguments["--rft"].IsTrue
                         );
-
-                else if (all("addons")) {
-                    if (IsHelpMode)
-                        PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.RevitsAddons);
-
-                    else if (all("prepare"))
-                        PyRevitCLIRevitCmds.PrepareAddonsDir(
-                            revitYear: TryGetValue("<revit_year>"),
-                            allUses: arguments["--allusers"].IsTrue
-                            );
-
-                    else if (any("install", "uninstall"))
-                        // TODO: implement revit addon manager
-                        logger.Error("Revit addon manager is not implemented yet");
-                }
-
-                else if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Revits);
 
                 else if (arguments["--supported"].IsTrue)
                     PyRevitCLIRevitCmds.ProcessBuildInfo(
@@ -539,37 +508,6 @@ namespace pyRevitCLI {
                     );
             }
 
-            else if (all("init")) {
-                if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Init);
-
-                else if (any("ui", "lib", "run"))
-                    PyRevitCLLInitCmds.InitExtension(
-                        ui: arguments["ui"].IsTrue,
-                        lib: arguments["lib"].IsTrue,
-                        run: arguments["run"].IsTrue,
-                        extensionName: TryGetValue("<extension_name>"),
-                        templatesDir: TryGetValue("--templates"),
-                        useTemplate: arguments["--usetemplate"].IsTrue
-                        );
-
-                else if (any("tab", "panel", "panelopt", "pull", "split", "splitpush", "push", "smart", "command"))
-                    PyRevitCLLInitCmds.InitBundle(
-                        tab: arguments["tab"].IsTrue,
-                        panel: arguments["panel"].IsTrue,
-                        panelopt: arguments["panelopt"].IsTrue,
-                        pull: arguments["pull"].IsTrue,
-                        split: arguments["split"].IsTrue,
-                        splitpush: arguments["splitpush"].IsTrue,
-                        push: arguments["push"].IsTrue,
-                        smart: arguments["smart"].IsTrue,
-                        command: arguments["command"].IsTrue,
-                        bundleName: TryGetValue("<bundle_name>"),
-                        templatesDir: TryGetValue("--templates"),
-                        useTemplate: arguments["--usetemplate"].IsTrue
-                        );
-            }
-
             else if (all("caches")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Caches);
@@ -579,17 +517,6 @@ namespace pyRevitCLI {
                         allCaches: arguments["--all"].IsTrue,
                         revitYear: TryGetValue("<revit_year>")
                         );
-            }
-
-            else if (all("doctor")) {
-                if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Doctor);
-
-                else if (arguments["--products"].IsTrue)
-                    PyRevitCLIAppCmds.ListProducts();
-
-                else
-                    PyRevitCLIAppCmds.InspectAndFixEnv();
             }
 
             else if (all("config")) {
@@ -802,19 +729,6 @@ namespace pyRevitCLI {
                             PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
                     }
                 }
-            }
-
-            else if (all("cli")) {
-                if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Cli);
-
-                else if (all("addshortcut"))
-                    PyRevitCLIAppCmds.AddCLIShortcut(
-                        shortcutName: TryGetValue("<shortcut_name>"),
-                        shortcutArgs: TryGetValue("<shortcut_args>"),
-                        shortcutDesc: TryGetValue("--desc"),
-                        allUsers: arguments["--allusers"].IsTrue
-                    );
             }
 
             else if (IsHelpMode) PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);

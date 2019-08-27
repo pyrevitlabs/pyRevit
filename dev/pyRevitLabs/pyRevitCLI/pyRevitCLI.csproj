@@ -107,7 +107,6 @@
     <Compile Include="PyRevitCLIAppHelps.cs" />
     <Compile Include="PyRevitCLIAppCmds.cs" />
     <Compile Include="PyRevitCLIRevitCmds.cs" />
-    <Compile Include="PyRevitCLLInitCmds.cs" />
     <Compile Include="PyRevitCLIReleaseCmds.cs" />
     <Compile Include="PyRevitCLICloneCmds.cs" />
     <Compile Include="PyRevitCLIConfigCmds.cs" />
