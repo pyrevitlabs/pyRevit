@@ -144,14 +144,21 @@ namespace pyRevitLabs.Common {
             if (CheckInternetConnection()) {
                 progress = 0;
                 using (var client = GetWebClient()) {
+                    logger.Debug("Downloading \"{0}\"\n", url);
                     if (GlobalConfigs.ReportProgress) {
                         client.DownloadProgressChanged += Client_DownloadProgressChanged;
-                    }
-                    logger.Debug("Downloading \"{0}\"\n", url);
-                    client.DownloadFileAsync(new Uri(url), destPath, progressToken);
+                        client.DownloadFileAsync(new Uri(url), destPath, progressToken);
 
-                    // wait until downloa is complete
-                    while (progress != 100) {
+                        // wait until download is complete
+                        while (true) {
+                            lock (ProgressLock) {
+                                if (progress == 100)
+                                    break;
+                            }
+                        }
+                    }
+                    else {
+                        client.DownloadFile(url, destPath);
                     }
                 }
             }
