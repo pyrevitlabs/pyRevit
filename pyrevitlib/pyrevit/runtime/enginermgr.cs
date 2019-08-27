@@ -656,7 +656,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // compile first
             // only if the signature doesn't match
             if (scriptSig == null || runtime.ScriptSourceFileSignature != scriptSig) {
-                TaskDialog.Show("sdfsd", "Recompiling");
                 try {
                     scriptSig = runtime.ScriptSourceFileSignature;
                     scriptAssm = CompileCLRScript(ref runtime);
