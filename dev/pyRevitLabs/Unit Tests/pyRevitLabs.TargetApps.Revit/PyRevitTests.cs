@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using pyRevitLabs.Tests;
+using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.PyRevit;
 
@@ -20,7 +21,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
 
         [TestMethod()]
         public void DeployFromImage_Full_Test() {
-            var testCloneBranch = "master";
+            var testCloneBranch = PyRevitLabsConsts.TragetBranch;
 
             PyRevitClones.DeployFromImage(
                 cloneName: testCloneName,
@@ -39,7 +40,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         [TestMethod()]
         public void DeployFromImage_WithOptions_Test() {
             var testCloneDeployment = "core";
-            var testCloneBranch = "develop";
+            var testCloneBranch = PyRevitLabsConsts.TragetBranch;
 
             PyRevitClones.DeployFromImage(
                 cloneName: testCloneName,
@@ -58,7 +59,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
 
         [TestMethod()]
         public void DeployFromRepo_Full_Test() {
-            var testCloneBranch = "master";
+            var testCloneBranch = PyRevitLabsConsts.TragetBranch;
 
             PyRevitClones.DeployFromRepo(
                 cloneName: testCloneName,
@@ -77,7 +78,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
 
         [TestMethod()]
         public void DeployFromRepo_Develop_Test() {
-            var testCloneBranch = "develop";
+            var testCloneBranch = PyRevitLabsConsts.TragetBranch;
 
             PyRevitClones.DeployFromRepo(
                 cloneName: testCloneName,
@@ -97,7 +98,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         [TestMethod()]
         public void DeployFromRepo_Deployment_Test() {
             var testCloneDeployment = "core";
-            var testCloneBranch = "develop";
+            var testCloneBranch = PyRevitLabsConsts.TragetBranch;
 
             try {
                 PyRevitClones.DeployFromRepo(

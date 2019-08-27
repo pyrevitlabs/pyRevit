@@ -39,7 +39,7 @@ namespace pyRevitLabs.Tests {
 
         [TestMethod()]
         public void DeployFromImage_Full_Test() {
-            var testCloneBranch = "master";
+            var testCloneBranch = PyRevitLabsConsts.TragetBranch;
 
             RunCommand(string.Format("clone \"{0}\" core --dest=\"{1}\"", testCloneName, TempPath));
 
