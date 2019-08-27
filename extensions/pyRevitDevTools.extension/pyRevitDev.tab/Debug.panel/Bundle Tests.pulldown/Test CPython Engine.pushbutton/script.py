@@ -4,7 +4,7 @@ import os
 import sys
 import os.path as op
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 import clr
 # add path of active pyRevitLabs.PythonNet.dll to the sys.path

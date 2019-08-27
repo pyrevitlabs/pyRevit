@@ -60,6 +60,11 @@ tr:nth-child(odd) {
 	padding: 6px;
 }
 
+.logsuccess {
+	background: #f7f9f2;
+	color: #618401;
+}
+
 .logerror {
 	background: #f9f2f4;
 	color: #c7254e;
@@ -73,6 +78,11 @@ tr:nth-child(odd) {
 .logcritical {
 	background: #c7254e;
 	color: white;
+}
+
+.logdeprecate {
+	background: #ffd900;
+	color: #974901;
 }
 
 .inlinewait {

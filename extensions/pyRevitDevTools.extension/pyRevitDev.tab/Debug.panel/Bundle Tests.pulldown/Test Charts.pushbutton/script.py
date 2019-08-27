@@ -1,7 +1,7 @@
 from pyrevit.output import charts
 from pyrevit import script
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 output = script.get_output()

@@ -8,7 +8,7 @@ import IronPython.Hosting
 import IronPython.Runtime
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 output = script.get_output()

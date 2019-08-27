@@ -10,7 +10,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 slogger = script.get_logger()

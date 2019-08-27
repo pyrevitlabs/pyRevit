@@ -4,7 +4,7 @@ import os
 import sys
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 folder = os.path.dirname(__file__)

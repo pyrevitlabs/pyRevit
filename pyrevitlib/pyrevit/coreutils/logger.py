@@ -11,28 +11,49 @@ from pyrevit import coreutils
 from pyrevit.coreutils import envvars
 
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
+LOG_REC_FORMAT_EMOJI = "{emoji} %(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s: [<{}> %(name)s] %(message)s"
 
 LOG_REC_FORMAT_HTML = \
-    coreutils.prepare_html_str('<div class="logdefault {0}">{1}</div>')
+    coreutils.prepare_html_str('<div class="logdefault {style}">{message}</div>')
+
+LOG_REC_CLASS_SUCCESS = 'logsuccess'
+LOG_REC_FORMAT_SUCCESS = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_SUCCESS,
+                               message=LOG_REC_FORMAT)
 
 LOG_REC_CLASS_ERROR = 'logerror'
-LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_ERROR,
-                                                  LOG_REC_FORMAT)
+LOG_REC_FORMAT_ERROR = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_ERROR,
+                               message=LOG_REC_FORMAT)
 
 LOG_REC_CLASS_WARNING = 'logwarning'
-LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_WARNING,
-                                                    LOG_REC_FORMAT)
-
+LOG_REC_FORMAT_WARNING = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_WARNING,
+                               message=LOG_REC_FORMAT)
 
 LOG_REC_CLASS_CRITICAL = 'logcritical'
-LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_CRITICAL,
-                                                     LOG_REC_FORMAT)
+LOG_REC_FORMAT_CRITICAL = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_CRITICAL,
+                               message=LOG_REC_FORMAT)
+
+LOG_REC_CLASS_DEPRECATE = 'logdeprecate'
+LOG_REC_FORMAT_DEPRECATE = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_DEPRECATE,
+                               message=LOG_REC_FORMAT)
 
 
 # Setting default global logging level
 DEFAULT_LOGGING_LEVEL = logging.WARNING
+
+# add deprecate logging level, highest level?
+DEPRECATE_LOG_LEVEL = 90
+logging.addLevelName(DEPRECATE_LOG_LEVEL, "DEPRECATE")
+
+# add deprecate logging level, above logging.INFO
+SUCCESS_LOG_LEVEL = 25
+logging.addLevelName(SUCCESS_LOG_LEVEL, "SUCCESS")
 
 # must be the same in this file and pyrevit/loader/runtime/envdict.cs
 # this is because the csharp code hasn't been compiled when the
@@ -192,18 +213,27 @@ class LoggerWrapper(logging.Logger):
                           )
         self.error(coreutils.prepare_html_str(err_msg))
 
-    def deprecate(self, *args):
-        """Log message with custom Deprecate level."""
-        self.warning(*args)
+    def success(self, message, *args, **kws):
+        if self.isEnabledFor(SUCCESS_LOG_LEVEL):
+            # Yes, logger takes its '*args' as 'args'.
+            self._log(SUCCESS_LOG_LEVEL, message, args, **kws) 
 
+    def deprecate(self, message, *args, **kws):
+        if self.isEnabledFor(DEPRECATE_LOG_LEVEL):
+            # Yes, logger takes its '*args' as 'args'.
+            self._log(DEPRECATE_LOG_LEVEL, message, args, **kws) 
 
 # setting up handlers and formatters -------------------------------------------
 stdout_hndlr = logging.StreamHandler(sys.stdout)
 # e.g [_parser] DEBUG: Can not create command.
 default_formatter = logging.Formatter(LOG_REC_FORMAT)
-formatters = {logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
-              logging.WARNING: logging.Formatter(LOG_REC_FORMAT_WARNING),
-              logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL)}
+formatters = {
+    SUCCESS_LOG_LEVEL: logging.Formatter(LOG_REC_FORMAT_SUCCESS),
+    logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
+    logging.WARNING: logging.Formatter(LOG_REC_FORMAT_WARNING),
+    logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL),
+    DEPRECATE_LOG_LEVEL: logging.Formatter(LOG_REC_FORMAT_DEPRECATE)
+    }
 stdout_hndlr.setFormatter(DispatchingFormatter(formatters, default_formatter))
 
 

@@ -9,7 +9,7 @@ from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
 
 __title__ = 'Minify\nRevit UI'
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 config = script.get_config()

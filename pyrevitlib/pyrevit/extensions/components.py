@@ -52,6 +52,13 @@ class NoScriptButton(GenericUICommand):
                 self.command_class = \
                     script_content.extract_param(exts.LINK_BUTTON_COMMAND_CLASS)
 
+                if self.assembly or self.command_class:
+                    mlogger.deprecate(
+                        "Creating link buttons using \"__assembly__\" "
+                        "and \"__commandclass__\" global "
+                        "variables inside a python file is deprecated. "
+                        "use bundle.yaml instead. | %s", self)
+
             except PyRevitException as err:
                 mlogger.error(err)
 

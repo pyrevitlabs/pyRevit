@@ -4,7 +4,7 @@ from pyrevit import script
 from pyrevit.versionmgr import urls
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 __title__ = 'Script\nAnatomy'
 
 

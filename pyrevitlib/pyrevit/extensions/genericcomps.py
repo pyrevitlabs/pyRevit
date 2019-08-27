@@ -398,6 +398,9 @@ class GenericUIContainer(GenericUIComponent):
     def parse_layout_file(self):
         layout_filepath = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
         if op.exists(layout_filepath):
+            mlogger.deprecate(
+                "\"_layout\" file is deprecated. "
+                "use bundle.yaml instead. | %s", self)
             with codecs.open(layout_filepath, 'r', 'utf-8') as layout_file:
                 self.parse_layout_items(layout_file.read().splitlines())
                 return True
@@ -554,6 +557,12 @@ class GenericUICommand(GenericUIComponent):
             if isinstance(self.context, list):
                 self.context = coreutils.join_strings(self.context)
 
+            if self.context and exts.CTX_ZERODOC[1] in self.context:
+                mlogger.deprecate(
+                    "\"zerodoc\" context is deprecated. "
+                    "use \"zero-doc\" instead. | %s", self)
+
+
     def _read_bundle_metadata_from_python_script(self):
         try:
             # reading script file content to extract parameters
@@ -609,6 +618,11 @@ class GenericUICommand(GenericUIComponent):
                     script_content.extract_param(exts.COMMAND_CONTEXT_PARAM)
                 if isinstance(self.context, list):
                     self.context = coreutils.join_strings(self.context)
+
+                if self.context and exts.CTX_ZERODOC[1] in self.context:
+                    mlogger.deprecate(
+                        "\"zerodoc\" context is deprecated. "
+                        "use \"zero-doc\" instead. | %s", self)
 
         except Exception as parse_err:
             mlogger.log_parse_except(self.script_file, parse_err)

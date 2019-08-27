@@ -21,10 +21,12 @@ nlogger.Debug('Debug Message')
 
 print('Testing pyrevit logger compatibility with NLog')
 logger.info('info Message')
+logger.success('success Message')
 logger.warning('Warning Message')
 logger.error('error Message')
 logger.critical('critical Message')
 logger.debug('debug Message')
+logger.deprecate('deprecate Message')
 
 print('Testing pyRevitLabs CommonWPF ActivityBar interface...')
 output.log_error('sdfdsfsdffds')

@@ -6,7 +6,7 @@ from pyrevit import script
 output = script.get_output()
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 output.freeze()
 for e in ScriptOutputEmojis.emojiDict.Keys:

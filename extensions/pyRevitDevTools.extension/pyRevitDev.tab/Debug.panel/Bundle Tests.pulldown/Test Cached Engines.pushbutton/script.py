@@ -3,7 +3,7 @@ from pyrevit import EXEC_PARAMS
 from pyrevit.runtime.types import ScriptOutputManager, EngineManager
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 print(':fire_engine: Active Engines:')

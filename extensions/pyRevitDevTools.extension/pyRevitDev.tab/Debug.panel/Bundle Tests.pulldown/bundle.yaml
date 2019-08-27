@@ -1,0 +1,34 @@
+layout:
+  - Test Engine Stability
+  - Test Cached Engines
+  - Test FullFrame Engine
+  - Test Persistent Engine
+  - Test IronPython Compile
+  - ---
+  - Test CPython Command
+  - Test CPython Engine
+  - ---
+  - Test pyRevit Bundle
+  - Test pyRevit Button
+  - Test C# Script
+  - Test Direct Invoke
+  - Test Direct Class Invoke
+  - Test Link Button
+  - Test Legacy Link Button
+  - Test VisualBasic
+  - Test Ruby
+  - Test DynamoBIM
+  - Test Grasshopper
+  - Test Content Bundle
+  - ---
+  - Test Output Stream
+  - Test Multiple Outputs
+  - Test Independent Logging
+  - ---
+  - Test Progressbar
+  - Test Charts
+  - Test D3
+  - Test Vue
+  - Test XML
+  - Test Toast
+  - Test FillPatternViewer

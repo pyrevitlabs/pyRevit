@@ -9,7 +9,7 @@ from pyrevit.coreutils.ribbon import ICON_MEDIUM
 logger = script.get_logger()
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 __title__ = 'Revu\nPopup'
 
 

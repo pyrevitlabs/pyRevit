@@ -10,7 +10,7 @@ from pyrevit import script
 logger = script.get_logger()
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 __doc__ = 'Downloads updates from the remote git repositories ' \
           '(e.g github, bitbucket).'

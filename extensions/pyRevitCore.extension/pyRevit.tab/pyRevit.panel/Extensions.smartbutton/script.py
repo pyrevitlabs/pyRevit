@@ -12,7 +12,7 @@ from pyrevit.userconfig import user_config
 import pyrevitcore_globals
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 logger = script.get_logger()

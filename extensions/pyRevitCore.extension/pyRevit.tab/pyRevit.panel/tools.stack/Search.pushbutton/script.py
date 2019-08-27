@@ -11,7 +11,7 @@ from pyrevit import script
 import pyrevit.extensions as exts
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 logger = script.get_logger()

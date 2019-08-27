@@ -2,7 +2,7 @@
 from pyrevit import script
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 url = 'http://regexr.com/'

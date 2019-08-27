@@ -2,7 +2,7 @@
 #pylint: disable=import-error,line-too-long
 from pyrevit.loader import sessionmgr
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 for cmd in ["pyrevitdevtools-pyrevitdev-debug-misctests-testrpw",
             "pyrevittools-pyrevit-selection-select-select-listselectionasclickablelinks"]:

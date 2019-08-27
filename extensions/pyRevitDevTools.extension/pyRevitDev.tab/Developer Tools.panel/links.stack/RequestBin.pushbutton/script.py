@@ -3,7 +3,7 @@
 from pyrevit import script
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 script.open_url('https://requestbin.fullcontact.com/')

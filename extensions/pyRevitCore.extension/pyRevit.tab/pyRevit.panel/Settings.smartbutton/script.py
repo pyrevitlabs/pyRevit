@@ -19,7 +19,7 @@ from pyrevit.userconfig import user_config
 import pyrevitcore_globals
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 __doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
           'pyRevit loads and set some basic parameters here.' \

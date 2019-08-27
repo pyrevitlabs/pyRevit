@@ -2,7 +2,7 @@
 from pyrevit import script
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 url = 'https://icons8.com/icon/set/revit/windows'
