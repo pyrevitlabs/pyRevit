@@ -18,11 +18,6 @@ LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s: [<{}> %(name)s] %(message)s"
 LOG_REC_FORMAT_HTML = \
     coreutils.prepare_html_str('<div class="logdefault {style}">{message}</div>')
 
-LOG_REC_CLASS_SUCCESS = 'logsuccess'
-LOG_REC_FORMAT_SUCCESS = \
-    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_SUCCESS,
-                               message=LOG_REC_FORMAT)
-
 LOG_REC_CLASS_ERROR = 'logerror'
 LOG_REC_FORMAT_ERROR = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_ERROR,
@@ -38,6 +33,11 @@ LOG_REC_FORMAT_CRITICAL = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_CRITICAL,
                                message=LOG_REC_FORMAT)
 
+LOG_REC_CLASS_SUCCESS = 'logsuccess'
+LOG_REC_FORMAT_SUCCESS = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_SUCCESS,
+                               message=LOG_REC_FORMAT)
+
 LOG_REC_CLASS_DEPRECATE = 'logdeprecate'
 LOG_REC_FORMAT_DEPRECATE = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_DEPRECATE,
@@ -47,13 +47,13 @@ LOG_REC_FORMAT_DEPRECATE = \
 # Setting default global logging level
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 
-# add deprecate logging level, highest level?
+# add deprecate logging level
+SUCCESS_LOG_LEVEL = 80
+logging.addLevelName(SUCCESS_LOG_LEVEL, "SUCCESS")
+
+# add deprecate logging level
 DEPRECATE_LOG_LEVEL = 90
 logging.addLevelName(DEPRECATE_LOG_LEVEL, "DEPRECATE")
-
-# add deprecate logging level, above logging.INFO
-SUCCESS_LOG_LEVEL = 25
-logging.addLevelName(SUCCESS_LOG_LEVEL, "SUCCESS")
 
 # must be the same in this file and pyrevit/loader/runtime/envdict.cs
 # this is because the csharp code hasn't been compiled when the
