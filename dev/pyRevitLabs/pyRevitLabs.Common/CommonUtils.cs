@@ -152,10 +152,8 @@ namespace pyRevitLabs.Common {
 
                         // wait until download is complete
                         while (true) {
-                            lock (ProgressLock) {
-                                if (progress == -1)
-                                    break;
-                            }
+                            if (progress == -1)
+                                break;
                         }
                     }
                     else {
@@ -177,7 +175,7 @@ namespace pyRevitLabs.Common {
 
         private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
             lock (ProgressLock) {
-                if (e.ProgressPercentage > progress) {
+                if (progress != -1 && e.ProgressPercentage > progress) {
                     // =====>
                     var pbar = string.Concat(Enumerable.Repeat("=", (int)((e.ProgressPercentage / 100.0) * 50.0))) + ">";
                     // 4.57 KB/27.56 KB
