@@ -1,7 +1,7 @@
-from pyrevit.framework import IntPtr
-
-#pylint: disable=W0611
+#pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import HOST_APP
+from pyrevit.framework import IntPtr
+from pyrevit.framework import Interop, Windows
 from pyrevit.api import AdInternal as ai
 from pyrevit.api import AdPrivate as ap
 from pyrevit.api import AdWindows as ad
@@ -16,6 +16,14 @@ __all__ = ('get_mainwindow_hwnd', 'get_statusbar_hwnd',
 
 def get_mainwindow_hwnd():
     return HOST_APP.proc_window
+
+
+def get_mainwindow():
+    try:
+        hwnd_source = Interop.HwndSource.FromHwnd(HOST_APP.proc_window)
+        return hwnd_source.RootVisual
+    except Exception:
+        pass
 
 
 def get_statusbar_hwnd():

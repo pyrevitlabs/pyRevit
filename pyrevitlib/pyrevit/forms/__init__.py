@@ -939,11 +939,19 @@ class TemplatePromptBar(WPFWindow):
         """Private method to be overriden by subclasses for prompt setup."""
         pass
 
+    def _prepare(self):
+        pass
+
+    def _cleanup(self):
+        pass
+
     def __enter__(self):
+        self._prepare()
         self.Show()
         return self
 
     def __exit__(self, exception, exception_value, traceback):
+        self._cleanup()
         self.Close()
 
 
@@ -1027,6 +1035,27 @@ class ProgressBar(TemplatePromptBar):
 
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
         self._title = kwargs.get('title', '{value}/{max_value}')
+        self._hostwnd = None
+        self._host_task_pbar = None
+
+    def _prepare(self):
+        self._hostwnd = revit.ui.get_mainwindow()
+        self._host_task_pbar = System.Windows.Shell.TaskbarItemInfo()
+        self._hostwnd.TaskbarItemInfo = self._host_task_pbar
+
+    def _cleanup(self):
+        self._hostwnd.TaskbarItemInfo = None
+
+    def _update_task_pbar(self):
+        if self._host_task_pbar is not None:
+            if self.indeterminate:
+                self._host_task_pbar.ProgressState = \
+                    System.Windows.Shell.TaskbarItemProgressState.Indeterminate
+            else:
+                self._host_task_pbar.ProgressState = \
+                    System.Windows.Shell.TaskbarItemProgressState.Normal
+                self._host_task_pbar.ProgressValue = \
+                    (self.new_value / float(self.max_value))
 
     def _update_pbar(self):
         self.update_window()
@@ -1050,6 +1079,9 @@ class ProgressBar(TemplatePromptBar):
     def _dispatch_updater(self):
         # ask WPF dispatcher for gui update
         self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
+                                    Threading.DispatcherPriority.Background)
+        # ask WPF dispatcher for gui update
+        self.pbar.Dispatcher.Invoke(System.Action(self._update_task_pbar),
                                     Threading.DispatcherPriority.Background)
         # give it a little free time to update ui
         self.pbar.Dispatcher.Invoke(System.Action(self._donothing),
