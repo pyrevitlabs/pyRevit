@@ -146,6 +146,8 @@ namespace pyRevitLabs.Common {
                 using (var client = GetWebClient()) {
                     logger.Debug("Downloading \"{0}\"\n", url);
                     if (GlobalConfigs.ReportProgress) {
+                        Console.CursorVisible = false;
+
                         client.DownloadFileCompleted += Client_DownloadFileCompleted;
                         client.DownloadProgressChanged += Client_DownloadProgressChanged;
                         client.DownloadFileAsync(new Uri(url), destPath, progressToken);
@@ -155,6 +157,8 @@ namespace pyRevitLabs.Common {
                             if (progress == -1)
                                 break;
                         }
+
+                        Console.CursorVisible = true;
                     }
                     else {
                         client.DownloadFile(url, destPath);
