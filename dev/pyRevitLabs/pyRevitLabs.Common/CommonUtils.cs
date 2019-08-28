@@ -146,13 +146,14 @@ namespace pyRevitLabs.Common {
                 using (var client = GetWebClient()) {
                     logger.Debug("Downloading \"{0}\"\n", url);
                     if (GlobalConfigs.ReportProgress) {
+                        client.DownloadFileCompleted += Client_DownloadFileCompleted;
                         client.DownloadProgressChanged += Client_DownloadProgressChanged;
                         client.DownloadFileAsync(new Uri(url), destPath, progressToken);
 
                         // wait until download is complete
                         while (true) {
                             lock (ProgressLock) {
-                                if (progress == 100)
+                                if (progress == -1)
                                     break;
                             }
                         }
@@ -166,6 +167,12 @@ namespace pyRevitLabs.Common {
                 throw new pyRevitNoInternetConnectionException();
 
             return destPath;
+        }
+
+        private static void Client_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e) {
+            lock (ProgressLock) {
+                progress = -1;
+            }
         }
 
         private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
