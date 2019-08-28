@@ -328,10 +328,9 @@ namespace pyRevitLabs.Common {
         // https://stackoverflow.com/a/27321188/2350244
         public static string GetISOTimeStamp(DateTime dtimeValue) => dtimeValue.ToString("yyyy-MM-ddTHH:mm:ssK");
 
-        public static string GetISOTimeStampNow() {
-            var dtime = DateTime.Now.ToUniversalTime();
-            return GetISOTimeStamp(dtime);
-        }
+        public static string GetISOTimeStampNow() => GetISOTimeStamp(DateTime.Now.ToUniversalTime());
+
+        public static string GetISOTimeStampLocalNow() => GetISOTimeStamp(DateTime.Now);
 
         public static Encoding GetUTF8NoBOMEncoding() {
             // https://coderwall.com/p/o59zug/encoding-multiply-files-to-utf8-without-bom-with-c

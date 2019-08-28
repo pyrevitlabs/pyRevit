@@ -594,32 +594,39 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("usercanupdate")) {
-                    if (any("enable", "disable"))
-                        PyRevitConfigs.SetUserCanUpdate(arguments["Yes"].IsTrue);
+                    if (any("yes", "no"))
+                        PyRevitConfigs.SetUserCanUpdate(arguments["yes"].IsTrue);
                     else
-                        Console.WriteLine(string.Format("User {0} update.",
+                        Console.WriteLine(string.Format("User {0} update",
                                                         PyRevitConfigs.GetUserCanUpdate() ? "CAN" : "CAN NOT"));
                 }
 
                 else if (all("usercanextend")) {
-                    if (any("enable", "disable"))
-                        PyRevitConfigs.SetUserCanExtend(arguments["Yes"].IsTrue);
+                    if (any("yes", "no"))
+                        PyRevitConfigs.SetUserCanExtend(arguments["yes"].IsTrue);
                     else
-                        Console.WriteLine(string.Format("User {0} extend.",
+                        Console.WriteLine(string.Format("User {0} extend",
                                                         PyRevitConfigs.GetUserCanExtend() ? "CAN" : "CAN NOT"));
                 }
 
                 else if (all("usercanconfig")) {
-                    if (any("enable", "disable"))
-                        PyRevitConfigs.SetUserCanConfig(arguments["Yes"].IsTrue);
+                    if (any("yes", "no"))
+                        PyRevitConfigs.SetUserCanConfig(arguments["yes"].IsTrue);
                     else
-                        Console.WriteLine(string.Format("User {0} config.",
+                        Console.WriteLine(string.Format("User {0} config",
                                                         PyRevitConfigs.GetUserCanConfig() ? "CAN" : "CAN NOT"));
 
                 }
 
                 else if (all("telemetry")) {
-                    if (all("file")) {
+                    if (all("utc")) {
+                        if (any("yes", "no"))
+                            PyRevitConfigs.SetUTCStamps(arguments["yes"].IsTrue);
+                        else
+                            Console.WriteLine(PyRevitConfigs.GetAppTelemetryUTCStamps() ? "Using UTC timestamps" : "Using Local timestamps");
+                    }
+
+                    else if (all("file")) {
                         var destPath = TryGetValue("<dest_path>");
                         if (destPath is null)
                             Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
@@ -729,7 +736,7 @@ namespace pyRevitCLI {
                                 if (existingVal != null)
                                     Console.WriteLine( string.Format("{0} = {1}", configOption, existingVal));
                                 else
-                                    Console.WriteLine(string.Format("Configuration key \"{0}\" is not set.", configOption));
+                                    Console.WriteLine(string.Format("Configuration key \"{0}\" is not set", configOption));
                             }
                         }
                         else

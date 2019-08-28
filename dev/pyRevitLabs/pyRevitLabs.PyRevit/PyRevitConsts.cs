@@ -102,6 +102,8 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryStatusKey = "active";
         public const bool ConfigsTelemetryStatusDefault = false;
+        public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
+        public const bool ConfigsTelemetryUTCTimestampsDefault = true;
         public const string ConfigsTelemetryFilePathKey = "telemetry_file_dir";
         public const string ConfigsTelemetryServerUrlKey = "telemetry_server_url";
         public const string ConfigsAppTelemetryStatusKey = "active_app";

@@ -138,6 +138,12 @@ namespace pyRevitLabs.PyRevit {
         }
 
         // app telemetry
+        public static bool GetAppTelemetryUTCStamps() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryUTCTimestampsDefault;
+        }
+
         public static bool GetAppTelemetryStatus() {
             var cfg = GetConfigFile();
             var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey);
@@ -167,6 +173,12 @@ namespace pyRevitLabs.PyRevit {
         public static string GetAppTelemetryFlags() {
             var cfg = GetConfigFile();
             return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryEventFlagsKey) ?? string.Empty;
+        }
+
+        public static void SetUTCStamps(bool state) {
+            var cfg = GetConfigFile();
+            logger.Debug("Setting telemetry utc timestamps...");
+            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey, state);
         }
 
         public static void SetAppTelemetryFlags(string flags) {

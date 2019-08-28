@@ -34,6 +34,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string RefedAssms = string.Format("{0}_REFEDASSMS", keyPrefix);
 
         public static string TelemetryState = string.Format("{0}_TELEMETRYSTATE", keyPrefix);
+        public static string TelemetryUTCTimeStamps = string.Format("{0}_TELEMETRYUTCTIMESTAMPS", keyPrefix);
         public static string TelemetryFileDir = string.Format("{0}_TELEMETRYDIR", keyPrefix);
         public static string TelemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
         public static string TelemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
@@ -79,6 +80,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public string ActiveStyleSheet;
         public bool AutoUpdate;
+        public bool TelemetryUTCTimeStamps;
 
 
         public EnvDictionary()
@@ -117,6 +119,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (_envData.Contains(EnvDictionaryKeys.RefedAssms))
                 ReferencedAssemblies = ((string)_envData[EnvDictionaryKeys.RefedAssms]).Split(Path.PathSeparator);
 
+            // telemetry
+            if (_envData.Contains(EnvDictionaryKeys.TelemetryUTCTimeStamps))
+                TelemetryUTCTimeStamps = (bool)_envData[EnvDictionaryKeys.TelemetryUTCTimeStamps];
+
             // script telemetry
             if (_envData.Contains(EnvDictionaryKeys.TelemetryState))
                 TelemetryState = (bool)_envData[EnvDictionaryKeys.TelemetryState];
@@ -149,6 +155,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (_envData.Contains(EnvDictionaryKeys.OutputStyleSheet))
                 ActiveStyleSheet = (string)_envData[EnvDictionaryKeys.OutputStyleSheet];
+
         }
 
         public void ResetEventHooks() {

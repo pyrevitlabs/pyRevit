@@ -68,7 +68,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 { "schema", "2.0"},
             };
 
-            timestamp = CommonUtils.GetISOTimeStampNow();
+            var env = new EnvDictionary();
+            if (env.TelemetryUTCTimeStamps)
+                timestamp = CommonUtils.GetISOTimeStampNow();
+            else
+                timestamp = CommonUtils.GetISOTimeStampLocalNow();
         }
     }
 
@@ -207,7 +211,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 { "schema", "2.0"},
             };
 
-            timestamp = CommonUtils.GetISOTimeStampNow();
+            var env = new EnvDictionary();
+            if (env.TelemetryUTCTimeStamps)
+                timestamp = CommonUtils.GetISOTimeStampNow();
+            else
+                timestamp = CommonUtils.GetISOTimeStampLocalNow();
         }
     }
 

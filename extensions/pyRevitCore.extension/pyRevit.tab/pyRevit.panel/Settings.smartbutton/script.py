@@ -236,6 +236,8 @@ class SettingsWindow(forms.WPFWindow):
         """Reads the pyRevit telemetry config and updates the ui"""
         self._setup_event_telemetry_checkboxes()
 
+        self.telemetry_timestamp_cb.IsChecked = \
+            telemetry.get_telemetry_utc_timestamp()
         self.telemetry_cb.IsChecked = telemetry.get_telemetry_state()
         self.cur_telemetryfile_tb.Text = \
             telemetry.get_telemetry_file_path()
@@ -475,6 +477,10 @@ class SettingsWindow(forms.WPFWindow):
 
         # set telemetry configs
         # pyrevit telemetry
+        telemetry.set_telemetry_utc_timestamp(
+            self.telemetry_timestamp_cb.IsChecked,
+            configs=user_config
+            )
         telemetry.set_telemetry_state(self.telemetry_cb.IsChecked,
                                       configs=user_config)
         telemetry.set_telemetry_file_dir(self.telemetryfile_tb.Text,
