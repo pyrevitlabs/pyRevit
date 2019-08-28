@@ -455,9 +455,9 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Output Window Settings" IsExpanded="False" Margin="10px">
+                <Expander Header="User Interface" IsExpanded="False" Margin="10px">
                     <DockPanel Margin="10,10,10,0">
-                        <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current CSS Style Sheet:</TextBlock>
+                        <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Output Styling (CSS Stylesheet)</TextBlock>
                         <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
                             <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                                     Width="48" Margin="6,0,3,0" Height="24" Padding="0,0,0,2"
