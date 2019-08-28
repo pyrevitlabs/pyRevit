@@ -416,8 +416,14 @@ class PyRevitOutputWindow(object):
             self.show_logpanel()
             self.window.SetActivityBarVisibility(False)
 
-    def log_ok(self, message):
-        """Report OK message into output logging panel."""
+    def log_debug(self, message):
+        """Report DEBUG message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLog(message)
+
+    def log_success(self, message):
+        """Report SUCCESS message into output logging panel."""
         if self.window:
             self.show_logpanel()
             self.window.activityBar.ConsoleLogOK(message)
