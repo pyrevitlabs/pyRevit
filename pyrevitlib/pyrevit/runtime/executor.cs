@@ -56,7 +56,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     return ExecuteContentLoader(ref runtime);
                 default:
                     // should not get here
-                    throw new Exception("Unknown engine type.");
+                    throw new PyRevitException("Unknown engine type.");
             }
         }
 

@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
+using pyRevitLabs.Common;
+
 using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
@@ -172,6 +174,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     { EventHook.extension_name_key, extensionName },
                 };
             }
+            else
+                throw new PyRevitException("Invalid hook type");
         }
 
         public void UnRegisterHook(string uniqueId) {

@@ -66,13 +66,17 @@ def get_event_hooks():
 def register_hooks(extension):
     hooks_handler = get_hooks_handler()
     for ext_hook in get_extension_hooks(extension):
-        hooks_handler.RegisterHook(
-            uniqueId=ext_hook.id,
-            eventName=ext_hook.name,
-            scriptPath=ext_hook.script,
-            searchPaths=framework.Array[str](ext_hook.syspaths),
-            extensionName=ext_hook.extension_name,
-        )
+        try:
+            hooks_handler.RegisterHook(
+                uniqueId=ext_hook.id,
+                eventName=ext_hook.name,
+                scriptPath=ext_hook.script,
+                searchPaths=framework.Array[str](ext_hook.syspaths),
+                extensionName=ext_hook.extension_name,
+            )
+        except Exception as hookEx:
+            mlogger.error("Failed registering hook script %s | %s",
+                          ext_hook.script, hookEx)
 
 
 def unregister_hooks(extension):

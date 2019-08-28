@@ -8,6 +8,8 @@ using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 
+using pyRevitLabs.Common;
+
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum EventType {
         // Autodesk.Revit.ApplicationServices.Application Events
@@ -249,7 +251,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static EventType? GetEventType(string eventName) {
-            return eventNames.FirstOrDefault(x => x.Value == eventName).Key;
+            try {
+                return eventNames.First(x => x.Value == eventName).Key;
+            }
+            catch {
+                return null;
+            }
         }
 
         public static Array GetAllEventTypes() {
@@ -668,7 +675,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 App = app;
             }
             else
-                throw new Exception("Application can not be null.");
+                throw new PyRevitException("Application can not be null.");
         }
     }
 
@@ -688,7 +695,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 NewElements = new List<ElementId>();
             }
             else
-                throw new Exception("UIApplication can not be null.");
+                throw new PyRevitException("UIApplication can not be null.");
         }
 
         private void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {

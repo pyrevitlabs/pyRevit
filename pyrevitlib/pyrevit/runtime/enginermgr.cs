@@ -767,7 +767,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     compiler = new VBCodeProvider(compConfig);
                     break;
                 default:
-                    throw new Exception("Specified language does not have a compiler.");
+                    throw new PyRevitException("Specified language does not have a compiler.");
             }
 
             // compile code first

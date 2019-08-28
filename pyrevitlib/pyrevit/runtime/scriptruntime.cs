@@ -178,7 +178,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 // should not get here
-                throw new Exception("Unknown script type.");
+                throw new PyRevitException("Unknown script type.");
             }
         }
 
