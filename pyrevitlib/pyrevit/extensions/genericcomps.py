@@ -562,7 +562,6 @@ class GenericUICommand(GenericUIComponent):
                     "\"zerodoc\" context is deprecated. "
                     "use \"zero-doc\" instead. | %s", self)
 
-
     def _read_bundle_metadata_from_python_script(self):
         try:
             # reading script file content to extract parameters

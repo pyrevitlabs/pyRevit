@@ -316,7 +316,12 @@ class Extension(GenericUIContainer):
 
     @property
     def startup_script(self):
-        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
+        return self.find_bundle_file([
+            exts.PYTHON_EXT_STARTUP_FILE,
+            exts.CSHARP_EXT_STARTUP_FILE,
+            exts.VB_EXT_STARTUP_FILE,
+            exts.RUBY_EXT_STARTUP_FILE,
+        ])
 
     def get_hash(self):
         return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
