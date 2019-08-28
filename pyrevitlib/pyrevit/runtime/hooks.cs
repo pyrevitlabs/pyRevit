@@ -93,8 +93,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // 2: ----------------------------------------------------------------------------------------------------
             #region Execute and log results
             return ScriptExecutor.ExecuteScript(ref runtime);
-
-            // TODO: log results into command execution telemetry?
             #endregion
         }
 

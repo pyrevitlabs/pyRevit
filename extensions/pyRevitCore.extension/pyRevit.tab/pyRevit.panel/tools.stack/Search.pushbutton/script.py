@@ -92,7 +92,7 @@ def show_command_docstring(pyrvtcmd):
 
 def open_command_helpurl(pyrvtcmd):
     script_content = coreutils.ScriptFileParser(selected_cmd.script)
-    helpurl = script_content.extract_param(exts.COMMAND_HELP_URL)
+    helpurl = script_content.extract_param(exts.COMMAND_HELP_URL_PARAM)
     if helpurl:
         script.open_url(helpurl)
         return True

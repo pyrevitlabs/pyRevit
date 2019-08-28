@@ -375,6 +375,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // engine.Runtime.Setup.HostArguments = new List<object>(arguments);
             var sysmodule = Engine.GetSysModule();
             var pythonArgv = new IronPython.Runtime.List();
+            // for python make sure the first argument is the script
+            pythonArgv.append(runtime.ScriptSourceFile);
             pythonArgv.extend(runtime.ScriptRuntimeConfigs.Arguments);
             sysmodule.SetVariable("argv", pythonArgv);
         }
@@ -583,7 +585,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private void SetupArguments(ref ScriptRuntime runtime) { }
+        private void SetupArguments(ref ScriptRuntime runtime) {
+            // TODO: CPythonEngine.SetupArguments
+        }
 
         private static PyObject CopyPyList(IntPtr sourceList) {
             var newList = new PyList();
@@ -665,7 +669,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     traceMessage = traceMessage.NormalizeNewLine();
                     runtime.TraceMessage = traceMessage;
 
-                    // TODO: change to script output for all script types
                     if (runtime.InterfaceType == InterfaceType.ExternalCommand)
                         TaskDialog.Show(PyRevitLabsConsts.ProductName, runtime.TraceMessage);
 
@@ -694,7 +697,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         string traceMessage = execEx.ToString();
                         traceMessage = traceMessage.NormalizeNewLine();
                         runtime.TraceMessage = traceMessage;
-                        // TODO: same outp
                         TaskDialog.Show(PyRevitLabsConsts.ProductName, traceMessage);
 
                         return ExecutionResultCodes.ExecutionException;

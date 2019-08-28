@@ -117,7 +117,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Accents/Steel.xaml")
             };
 
-            // TODO: read the colors from css? all colors and styles should be in the same place
             var pyrevitHighlightColor = Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12);
             var pyrevitBackground = new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
             var pyrevitHighlight = new SolidColorBrush() { Color = pyrevitHighlightColor };
