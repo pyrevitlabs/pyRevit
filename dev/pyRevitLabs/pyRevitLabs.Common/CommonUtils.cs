@@ -17,7 +17,7 @@ using System.Linq;
 namespace pyRevitLabs.Common {
     public static class CommonUtils {
         private static object ProgressLock = new object();
-        private static int progress = 0;
+        private static int lastReport;
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -142,25 +142,24 @@ namespace pyRevitLabs.Common {
 
         public static string DownloadFile(string url, string destPath, string progressToken = null) {
             if (CheckInternetConnection()) {
-                progress = 0;
                 using (var client = GetWebClient()) {
-                    logger.Debug("Downloading \"{0}\"\n", url);
                     if (GlobalConfigs.ReportProgress) {
+                        logger.Debug("Downloading (async) \"{0}\"", url);
                         Console.CursorVisible = false;
 
                         client.DownloadFileCompleted += Client_DownloadFileCompleted;
                         client.DownloadProgressChanged += Client_DownloadProgressChanged;
+
+                        lastReport = 0;
                         client.DownloadFileAsync(new Uri(url), destPath, progressToken);
 
                         // wait until download is complete
-                        while (true) {
-                            if (progress == -1)
-                                break;
-                        }
+                        while (client.IsBusy) ;
 
                         Console.CursorVisible = true;
                     }
                     else {
+                        logger.Debug("Downloading \"{0}\"", url);
                         client.DownloadFile(url, destPath);
                     }
                 }
@@ -172,23 +171,28 @@ namespace pyRevitLabs.Common {
         }
 
         private static void Client_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e) {
-            lock (ProgressLock) {
-                progress = -1;
-            }
+            string message = "";
+            if (e.UserState != null)
+                message = string.Format("\r{0}: Download complete", (string)e.UserState);
+            else
+                message = string.Format("\rDownload complete");
+            Console.WriteLine("{0,-120}", message);
         }
 
         private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
             lock (ProgressLock) {
-                if (progress != -1 && e.ProgressPercentage > progress) {
+                if (e.ProgressPercentage > lastReport) {
+                    lastReport = e.ProgressPercentage;
+
+                    // build progress bar and print
                     // =====>
-                    var pbar = string.Concat(Enumerable.Repeat("=", (int)((e.ProgressPercentage / 100.0) * 50.0))) + ">";
+                    var pbar = string.Concat(Enumerable.Repeat("=", (int)((lastReport / 100.0) * 50.0))) + ">";
                     // 4.57 KB/27.56 KB
                     var sizePbar = string.Format("{0}/{1}", e.BytesReceived.CleanupSize(), e.TotalBytesToReceive.CleanupSize());
 
                     // Downloading [==========================================>       ] 23.26 KB/27.56 KB
                     string message = "";
-                    progress = e.ProgressPercentage;
-                    if (progress == 100) {
+                    if (lastReport == 100) {
                         if (e.UserState != null)
                             message = string.Format("\r{1}: Download complete ({0})", e.TotalBytesToReceive.CleanupSize(), (string)e.UserState);
                         else
