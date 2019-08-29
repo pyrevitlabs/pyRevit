@@ -455,9 +455,12 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="User Interface" IsExpanded="True" Margin="10px">
+                <Expander Header="UI / UX" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10,10,10,0">
-                        <DockPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow">
+                            This section provides all the settings related to User Interface (UI) and User Experience (UX)
+                        </TextBlock>
+                        <DockPanel Margin="0,10,0,0">
                             <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,15,0">Select UI Language:</TextBlock>
                             <ComboBox x:Name="applocales_cb"/>
                         </DockPanel>

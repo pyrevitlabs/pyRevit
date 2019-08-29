@@ -17,7 +17,7 @@ class AppLocale(object):
             self.locale_code = self.locale_codes[0]
 
     def __str__(self):
-        return str(self.lang_type)
+        return '%s (%s)' % (str(self.lang_type), self.locale_code)
 
     def __repr__(self):
         return str(self)
