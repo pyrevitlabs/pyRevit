@@ -160,7 +160,9 @@ class PyRevitConfigParser(object):
             # build a section parser object and return
             return PyRevitConfigSectionParser(self._parser, section_name)
         else:
-            raise AttributeError('Section does not exist in config file.')
+            raise AttributeError(
+                'Section \"{}\" does not exist in config file.'
+                .format(section_name))
 
     def get_config_file_hash(self):
         """Get calculated unique hash for this config."""

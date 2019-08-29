@@ -69,12 +69,15 @@ Usage:
 	pyrevit config --help
 	pyrevit config --from=<template_config_path> [--log=<log_file>]
 	pyrevit configs --help
-	pyrevit configs logs [(none | verbose | debug)] [--log=<log_file>]
+	pyrevit configs bincache [(enable | disable)] [--log=<log_file>]
 	pyrevit configs checkupdates [(enable | disable)] [--log=<log_file>]
 	pyrevit configs autoupdate [(enable | disable)] [--log=<log_file>]
 	pyrevit configs rocketmode [(enable | disable)] [--log=<log_file>]
+	pyrevit configs logs [(none | verbose | debug)] [--log=<log_file>]
 	pyrevit configs filelogging [(enable | disable)] [--log=<log_file>]
+	pyrevit configs startuptimeout [<timeout>] [--log=<log_file>]
 	pyrevit configs loadbeta [(enable | disable)] [--log=<log_file>]
+	pyrevit configs cpyversion [<cpy_version>] [--log=<log_file>]
 	pyrevit configs usercanupdate [(yes | no)] [--log=<log_file>]
 	pyrevit configs usercanextend [(yes | no)] [--log=<log_file>]
 	pyrevit configs usercanconfig [(yes | no)] [--log=<log_file>]

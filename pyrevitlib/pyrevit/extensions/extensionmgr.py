@@ -21,14 +21,14 @@ from pyrevit.userconfig import user_config
 
 if not EXEC_PARAMS.doc_mode:
     try:
-        if user_config.core.bincache:
+        if user_config.bin_cache:
             from pyrevit.extensions.cacher_bin import is_cache_valid,\
                 get_cached_extension, update_cache
         else:
             from pyrevit.extensions.cacher_asc import is_cache_valid,\
                 get_cached_extension, update_cache
     except AttributeError:
-        user_config.core.bincache = True
+        user_config.bin_cache = True
         user_config.save_changes()
         from pyrevit.extensions.cacher_bin import is_cache_valid,\
             get_cached_extension, update_cache

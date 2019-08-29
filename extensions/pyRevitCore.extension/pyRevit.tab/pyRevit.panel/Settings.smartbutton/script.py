@@ -14,6 +14,7 @@ from pyrevit import output
 from pyrevit.labs import TargetApps, PyRevit
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import apidocs
+from pyrevit.coreutils import applocales
 from pyrevit.userconfig import user_config
 
 import pyrevitcore_globals
@@ -99,41 +100,44 @@ class SettingsWindow(forms.WPFWindow):
         self.set_image_source(self.logverbose, 'logverbose.png')
         self.set_image_source(self.logdebug, 'logdebug.png')
 
-        self._setup_outputsettings()
+        self._setup_uiux()
         self._setup_telemetry()
         self._setup_addinfiles()
 
     def _setup_core_options(self):
         """Sets up the pyRevit core configurations"""
-        self.checkupdates_cb.IsChecked = user_config.core.checkupdates
-
-        if not user_config.core.verbose and not user_config.core.debug:
-            self.noreporting_rb.IsChecked = True
-        else:
-            self.debug_rb.IsChecked = user_config.core.debug
-            self.verbose_rb.IsChecked = user_config.core.verbose
-
-        self.filelogging_cb.IsChecked = user_config.core.filelogging
-
-        self.startup_log_timeout.Text = str(user_config.core.startuplogtimeout)
-
-        if user_config.core.bincache:
+        if user_config.bin_cache:
             self.bincache_rb.IsChecked = True
+            self.asciicache_rb.IsChecked = False
         else:
+            self.bincache_rb.IsChecked = False
             self.asciicache_rb.IsChecked = True
 
-        req_build = user_config.core.get_option('requiredhostbuild',
-                                                default_value="")
-        self.requiredhostbuild_tb.Text = str(req_build)
+        self.checkupdates_cb.IsChecked = user_config.check_updates
 
-        min_freespace = user_config.core.get_option('minhostdrivefreespace',
-                                                    default_value=0)
-        self.minhostdrivefreespace_tb.Text = str(min_freespace)
+        self.rocketmode_cb.IsChecked = user_config.rocket_mode
 
-        self.loadbetatools_cb.IsChecked = \
-            user_config.core.get_option('loadbeta', default_value=False)
+        if user_config.log_level == PyRevit.PyRevitLogLevels.Quiet:
+            self.noreporting_rb.IsChecked = True
+            self.verbose_rb.IsChecked = False
+            self.debug_rb.IsChecked = False
+        elif user_config.log_level == PyRevit.PyRevitLogLevels.Verbose:
+            self.noreporting_rb.IsChecked = False
+            self.verbose_rb.IsChecked = True
+            self.debug_rb.IsChecked = False
+        elif user_config.log_level == PyRevit.PyRevitLogLevels.Debug:
+            self.noreporting_rb.IsChecked = False
+            self.verbose_rb.IsChecked = False
+            self.debug_rb.IsChecked = True
 
-        self.rocketmode_cb.IsChecked = user_config.core.rocketmode
+        self.filelogging_cb.IsChecked = user_config.file_logging
+
+        self.startup_log_timeout.Text = str(user_config.startuplog_timeout)
+        self.requiredhostbuild_tb.Text = str(user_config.required_host_build)
+        self.minhostdrivefreespace_tb.Text = \
+            str(user_config.min_host_drivefreespace)
+
+        self.loadbetatools_cb.IsChecked = user_config.load_beta
 
     def _setup_engines(self):
         attachment = user_config.get_current_attachment()
@@ -161,10 +165,10 @@ class SettingsWindow(forms.WPFWindow):
                 self.availableEngines.IsEnabled = False
 
             # now select the current runtime engine
-            self.cpyengine = user_config.get_active_cpython_engine()
-            if self.cpyengine:
+            self.cpyengine_version = user_config.cpython_engine_version
+            if self.cpyengine_version:
                 for engine_cfg in self.cpythonEngines.ItemsSource:
-                    if engine_cfg.engine.Version == self.cpyengine.Version:
+                    if engine_cfg.engine.Version == self.cpyengine_version:
                         self.cpythonEngines.SelectedItem = engine_cfg
                         break
             else:
@@ -187,7 +191,10 @@ class SettingsWindow(forms.WPFWindow):
 
         self.envvars_lb.ItemsSource = env_vars_list
 
-    def _setup_outputsettings(self):
+    def _setup_uiux(self):
+        applocale = applocales.get_current_applocale()
+        self.applocales_cb.ItemsSource = sorted(applocales.APP_LOCALES)
+        self.applocales_cb.SelectedItem = applocale
         # output settings
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
 
@@ -251,8 +258,7 @@ class SettingsWindow(forms.WPFWindow):
         self.apptelemetry_cb.IsChecked = telemetry.get_apptelemetry_state()
         self.apptelemetryserver_tb.Text = \
             telemetry.get_apptelemetry_server_url()
-
-        event_flags = telemetry.get_apptelemetry_event_flags(user_config)
+        event_flags = telemetry.get_apptelemetry_event_flags()
         for event_checkbox, event_type in zip(
                 self._get_event_telemetry_checkboxes(),
                 telemetry.get_apptelemetry_event_types()):
@@ -432,41 +438,49 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for resetting custom style sheet file"""
         self.cur_stylesheet_tb.Text = output.get_default_stylesheet()
 
-    def save_settings(self, sender, args):
-        """Callback method for saving pyRevit settings"""
+    def _save_core_options(self):
         # update the logging system changes first and update.
+        user_config.bin_cache = self.bincache_rb.IsChecked
+
+        # set config values to values set in ui items
+        user_config.check_updates = self.checkupdates_cb.IsChecked
+        
+        user_config.rocket_mode = self.rocketmode_cb.IsChecked
+
         if self.verbose_rb.IsChecked:
             logger.set_verbose_mode()
         if self.debug_rb.IsChecked:
             logger.set_debug_mode()
 
-        # set config values to values set in ui items
-        user_config.core.checkupdates = self.checkupdates_cb.IsChecked
-        user_config.core.verbose = self.verbose_rb.IsChecked
-        user_config.core.debug = self.debug_rb.IsChecked
-        user_config.core.filelogging = self.filelogging_cb.IsChecked
-        user_config.core.bincache = self.bincache_rb.IsChecked
-        user_config.core.requiredhostbuild = self.requiredhostbuild_tb.Text
+        if self.noreporting_rb.IsChecked:
+            user_config.log_level = PyRevit.PyRevitLogLevels.Quiet
+        elif self.verbose_rb.IsChecked:
+            user_config.log_level = PyRevit.PyRevitLogLevels.Verbose
+        elif self.debug_rb.IsChecked:
+            user_config.log_level = PyRevit.PyRevitLogLevels.Debug
 
+        user_config.file_logging = self.filelogging_cb.IsChecked
+        user_config.startuplog_timeout = int(self.startup_log_timeout.Text)
+        user_config.required_host_build = self.requiredhostbuild_tb.Text
+        try:
+            min_freespace = int(self.minhostdrivefreespace_tb.Text)
+            user_config.min_host_drivefreespace = min_freespace
+        except ValueError:
+            logger.error('Minimum free space value must be an integer.')
+            user_config.min_host_drivefreespace = 0
+
+        user_config.load_beta = self.loadbetatools_cb.IsChecked
+
+    def _save_engines(self):
         # set active cpython engine
         engine_cfg = self.cpythonEngines.SelectedItem
         if engine_cfg:
-            user_config.core.cpyengine = engine_cfg.engine.Version
-            if self.cpyengine.Version != engine_cfg.engine.Version:
+            user_config.set_active_cpython_engine(engine_cfg.engine)
+            if self.cpyengine_version != engine_cfg.engine.Version:
                 forms.alert('Active CPython engine has changed. '
                             'Restart Revit for this change to take effect.')
 
-        try:
-            min_freespace = int(self.minhostdrivefreespace_tb.Text)
-            user_config.core.minhostdrivefreespace = min_freespace
-        except ValueError:
-            logger.error('Minimum free space value must be an integer.')
-            user_config.core.minhostdrivefreespace = 0
-
-        user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
-        user_config.core.startuplogtimeout = int(self.startup_log_timeout.Text)
-        user_config.core.rocketmode = self.rocketmode_cb.IsChecked
-
+    def _save_user_extensions_list(self):
         # set extension folders from the list, after cleanup empty items
         if isinstance(self.extfolders_lb.ItemsSource, list):
             user_config.set_thirdparty_ext_root_dirs(
@@ -475,25 +489,29 @@ class SettingsWindow(forms.WPFWindow):
         else:
             user_config.set_thirdparty_ext_root_dirs([])
 
+    def _save_uiux(self):
+        if self.applocales_cb.SelectedItem:
+            user_config.user_locale = \
+                self.applocales_cb.SelectedItem.locale_code
+
+        # output settings
+        output.set_stylesheet(self.cur_stylesheet_tb.Text)
+        if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():
+            user_config.output_stylesheet = self.cur_stylesheet_tb.Text
+
+    def _save_telemetry(self):
         # set telemetry configs
         # pyrevit telemetry
         telemetry.set_telemetry_utc_timestamp(
-            self.telemetry_timestamp_cb.IsChecked,
-            configs=user_config
-            )
-        telemetry.set_telemetry_state(self.telemetry_cb.IsChecked,
-                                      configs=user_config)
-        telemetry.set_telemetry_file_dir(self.telemetryfile_tb.Text,
-                                         configs=user_config)
-        telemetry.set_telemetry_server_url(self.telemetryserver_tb.Text,
-                                           configs=user_config)
+            self.telemetry_timestamp_cb.IsChecked)
+        telemetry.set_telemetry_state(self.telemetry_cb.IsChecked)
+        telemetry.set_telemetry_file_dir(self.telemetryfile_tb.Text)
+        telemetry.set_telemetry_server_url(self.telemetryserver_tb.Text)
         # host app telemetry
-        telemetry.set_apptelemetry_state(self.apptelemetry_cb.IsChecked,
-                                         configs=user_config)
-        telemetry.set_apptelemetry_server_url(self.apptelemetryserver_tb.Text,
-                                              configs=user_config)
+        telemetry.set_apptelemetry_state(self.apptelemetry_cb.IsChecked)
+        telemetry.set_apptelemetry_server_url(self.apptelemetryserver_tb.Text)
 
-        event_flags = telemetry.get_apptelemetry_event_flags(user_config)
+        event_flags = telemetry.get_apptelemetry_event_flags()
         for event_checkbox, event_type in zip(
                 self._get_event_telemetry_checkboxes(),
                 telemetry.get_apptelemetry_event_types()):
@@ -507,15 +525,16 @@ class SettingsWindow(forms.WPFWindow):
                     event_flags,
                     event_type
                     )
-        telemetry.set_apptelemetry_event_flags(event_flags, user_config)
+        telemetry.set_apptelemetry_event_flags(event_flags)
         telemetry.setup_telemetry()
 
-        # output settings
-        output.set_stylesheet(self.cur_stylesheet_tb.Text)
-        if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():
-            user_config.core.outputstylesheet = self.cur_stylesheet_tb.Text
-        else:
-            user_config.core.remove_option('outputstylesheet')
+    def save_settings(self, sender, args):
+        """Callback method for saving pyRevit settings"""
+        self._save_core_options()
+        self._save_engines()
+        self._save_user_extensions_list()
+        self._save_uiux()
+        self._save_telemetry()
 
         # save all new values into config file
         user_config.save_changes()
@@ -534,7 +553,7 @@ class SettingsWindow(forms.WPFWindow):
 # decide if the settings should load or not
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     # do not load the tool if user should not config
-    if not user_config.core.get_option('usercanconfig', True):
+    if not user_config.user_can_config:
         return False
 
 # handles tool click in Revit interface:

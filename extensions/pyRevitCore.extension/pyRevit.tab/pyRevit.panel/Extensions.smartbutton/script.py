@@ -463,7 +463,7 @@ def call_reload():
 # decide if the settings should load or not
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     # do not load the tool if user should not config
-    if not user_config.core.get_option('usercanextend', True):
+    if not user_config.user_can_extend:
         return False
 
 # handles tool click in Revit interface:

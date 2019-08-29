@@ -541,7 +541,7 @@ namespace pyRevitCLI {
 
                 else if (all("logs")) {
                     if (all("none"))
-                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.None);
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Quiet);
 
                     else if (all("verbose"))
                         PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose);
@@ -623,7 +623,7 @@ namespace pyRevitCLI {
                         if (any("yes", "no"))
                             PyRevitConfigs.SetUTCStamps(arguments["yes"].IsTrue);
                         else
-                            Console.WriteLine(PyRevitConfigs.GetAppTelemetryUTCStamps() ? "Using UTC timestamps" : "Using Local timestamps");
+                            Console.WriteLine(PyRevitConfigs.GetUTCStamps() ? "Using UTC timestamps" : "Using Local timestamps");
                     }
 
                     else if (all("file")) {
@@ -631,7 +631,7 @@ namespace pyRevitCLI {
                         if (destPath is null)
                             Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
                         else
-                            PyRevitConfigs.EnableTelemetry(telemetryFilePath: destPath);
+                            PyRevitConfigs.EnableTelemetry(telemetryFileDir: destPath);
                     }
 
                     else if (all("server")) {

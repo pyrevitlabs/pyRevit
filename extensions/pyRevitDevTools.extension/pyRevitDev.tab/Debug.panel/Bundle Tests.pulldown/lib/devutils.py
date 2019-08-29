@@ -7,7 +7,7 @@ def printbuiltins():
     print('__activeuidoc__: %s' % __activeuidoc__)
     print('__activedoc__: %s' % __activedoc__)
     print('__zerodoc__: %s' % __zerodoc__)
-    print('__externalcommand__: %s' % __externalcommand__)
+    print('__scriptruntime__: %s' % __scriptruntime__)
     print('__commanddata__: %s' % __commanddata__)
     print('__commandpath__: %s' % __commandpath__)
     print('__result__: %s' % __result__)

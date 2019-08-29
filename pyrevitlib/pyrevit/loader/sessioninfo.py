@@ -172,7 +172,7 @@ def report_env():
                  envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
                  about.get_pyrevit_about().madein)
 
-    if user_config.core.get_option('rocketmode', False):
+    if user_config.rocket_mode:
         mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
 
     if HOST_APP.is_newer_than(2017):

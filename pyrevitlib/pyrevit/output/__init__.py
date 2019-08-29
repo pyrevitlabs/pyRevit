@@ -59,8 +59,10 @@ def set_stylesheet(stylesheet):
     Args:
         stylesheet (str): full path to stylesheet file
     """
-    envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
-                                stylesheet)
+    if op.isfile(stylesheet):
+        envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
+                                    stylesheet)
+        user_config.output_stylesheet = stylesheet
 
 
 def get_stylesheet():
@@ -82,8 +84,7 @@ def reset_stylesheet():
 # setup output window stylesheet
 if not EXEC_PARAMS.doc_mode:
     active_stylesheet = \
-        user_config.core.get_option('outputstylesheet',
-                                    default_value=get_default_stylesheet())
+        user_config.output_stylesheet or get_default_stylesheet()
     set_stylesheet(active_stylesheet)
 
 
@@ -135,11 +136,11 @@ class PyRevitOutputWindow(object):
         This will cause the output window to print information about the
         buffer stream and other aspects of the output window mechanism.
         """
-        return EXEC_PARAMS.pyrevit_command.OutputStream.PrintDebugInfo
+        return EXEC_PARAMS.output_stream.PrintDebugInfo
 
     @debug_mode.setter
     def debug_mode(self, value):
-        EXEC_PARAMS.pyrevit_command.OutputStream.PrintDebugInfo = value
+        EXEC_PARAMS.output_stream.PrintDebugInfo = value
 
     def _get_head_element(self):
         return self.renderer.Document.GetElementsByTagName('head')[0]

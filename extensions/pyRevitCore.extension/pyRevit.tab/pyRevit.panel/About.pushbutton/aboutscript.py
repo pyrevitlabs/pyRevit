@@ -2,7 +2,6 @@
 #pylint: disable=E0401,E0602,W0703,W0613,C0103
 import sys
 
-from pyrevit import HOST_APP
 from pyrevit import versionmgr
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
@@ -48,9 +47,6 @@ class AboutWindow(forms.WPFWindow):
         self.show_element(self.cli_info)
         self.cliversion.Text = pyrvt_cli_version
 
-        # get cpython engine version
-        self.cpyengine = user_config.get_active_cpython_engine()
-
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.version.Text = nice_version
@@ -59,7 +55,7 @@ class AboutWindow(forms.WPFWindow):
         self.pyrevit_engine.Text = \
             'Running on IronPython {} (cpython {})'\
                 .format(sys.version.split('(')[0].strip(),
-                        '.'.join(list(str(self.cpyengine.Version))))
+                        '.'.join(list(str(user_config.cpython_engine_version))))
 
         rocketmodetext = \
             'Rocket-mode {}' \

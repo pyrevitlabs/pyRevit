@@ -8,7 +8,7 @@ import copy
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
 from pyrevit.coreutils import yaml
-from pyrevit.coreutils import hostlocales
+from pyrevit.coreutils import applocales
 from pyrevit.coreutils import pyutils
 import pyrevit.extensions as exts
 
@@ -175,7 +175,7 @@ class GenericUIComponent(GenericComponent):
         if isinstance(source, str):
             return source
         elif isinstance(source, dict):
-            return hostlocales.get_locale_string(source)
+            return applocales.get_locale_string(source)
 
     def _resolve_liquid_tag(self, param_name, key, value):
         liquid_tag = '{{' + key + '}}'

@@ -38,7 +38,7 @@ def _does_need_clean_engine(extension, cmd_component):
     # core is in rocket-mode
     #   AND extension is rocket-mode compatible
     #       AND the command is not asking for a clean engine
-    if user_config.core.get_option('rocketmode', False) \
+    if user_config.rocket_mode \
             and _is_rocketmode_compat(extension.name) \
             and not cmd_component.requires_clean_engine:
         use_clean_engine = False

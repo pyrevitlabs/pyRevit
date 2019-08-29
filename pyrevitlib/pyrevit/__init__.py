@@ -430,9 +430,15 @@ class _ExecutorParams(object):
     def script_runtime(self):
         """``PyRevitLabs.PyRevit.Runtime.ScriptRuntime``: Return command."""
         try:
-            return __externalcommand__
+            return __scriptruntime__
         except NameError:
             return None
+
+    @property   # read-only
+    def output_stream(self):
+        """Return ScriptOutputStream"""
+        if self.script_runtime:
+            return self.script_runtime.OutputStream
 
     @property   # read-only
     def script_data(self):

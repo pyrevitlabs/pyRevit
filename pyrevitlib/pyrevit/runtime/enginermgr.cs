@@ -328,7 +328,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // Add this script executor to the the builtin to be globally visible everywhere
             // This support pyrevit functionality to ask information about the current executing command
-            builtin.SetVariable("__externalcommand__", runtime);
+            builtin.SetVariable("__scriptruntime__", runtime);
 
             // Add host application handle to the builtin to be globally visible everywhere
             if (runtime.UIApp != null)
@@ -386,7 +386,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             builtin.SetVariable("__cachedengine__", (object)null);
             builtin.SetVariable("__cachedengineid__", (object)null);
-            builtin.SetVariable("__externalcommand__", (object)null);
+            builtin.SetVariable("__scriptruntime__", (object)null);
             builtin.SetVariable("__commanddata__", (object)null);
             builtin.SetVariable("__elements__", (object)null);
             builtin.SetVariable("__commandpath__", (object)null);
@@ -525,7 +525,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // set builtins
             SetVariable(builtins, "__cachedengine__", RecoveredFromCache);
             SetVariable(builtins, "__cachedengineid__", TypeId);
-            SetVariable(builtins, "__externalcommand__", runtime);
+            SetVariable(builtins, "__scriptruntime__", runtime);
 
             if (runtime.UIApp != null)
                 SetVariable(builtins, "__revit__", runtime.UIApp);

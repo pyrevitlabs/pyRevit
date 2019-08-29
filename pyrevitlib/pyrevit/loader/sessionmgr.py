@@ -106,7 +106,7 @@ def _perform_onsessionload_ops():
         mlogger.debug('No Engine Manager exists...')
 
     # check for updates
-    if user_config.core.get_option('autoupdate', default_value=False) \
+    if user_config.auto_update \
             and not _check_autoupdate_inprogress():
         mlogger.info('Auto-update is active. Attempting update...')
         _set_autoupdate_inprogress(True)
@@ -211,8 +211,7 @@ def _new_session():
         uimaker.update_pyrevit_ui(
             assm_ext.ext,
             assm_ext.assm,
-            user_config.core.get_option('loadbeta',
-                                        default_value=False)
+            user_config.load_beta
         )
         mlogger.info('UI created for extension: %s', assm_ext.ext.name)
 
@@ -267,7 +266,7 @@ def load_session():
 
     # if everything went well, self destruct
     try:
-        timeout = user_config.core.startuplogtimeout
+        timeout = user_config.startuplog_timeout
         if timeout > 0 and not logger.loggers_have_errors():
             if EXEC_PARAMS.first_load:
                 # output_window is of type ScriptOutput

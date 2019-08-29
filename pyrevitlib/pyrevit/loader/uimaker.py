@@ -570,7 +570,9 @@ def _recursively_produce_ui_items(ui_maker_params):
         except KeyError:
             mlogger.debug('Can not find create function for: %s', sub_cmp)
         except Exception as create_err:
-            mlogger.critical(create_err)
+            mlogger.critical(
+                'Error creating item: %s | %s', sub_cmp, create_err
+            )
 
         mlogger.debug('UI item created by create func is: %s', ui_item)
 
