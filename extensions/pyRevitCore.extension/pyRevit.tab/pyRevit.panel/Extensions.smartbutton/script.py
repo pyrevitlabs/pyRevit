@@ -1,5 +1,7 @@
 """Add or remove pyRevit extensions."""
 #pylint: disable=E0401,W0703,W0613,C0103,C0111
+import re
+
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import script
@@ -234,10 +236,13 @@ class ExtensionsWindow(forms.WPFWindow):
         else:
             self.ext_toggle_b.Content = \
                 self.ext_toggle_b.Content.replace('En', 'Dis')
-        
+
         if multiple:
             self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content.replace('Extension', 'Extensions')
+                self.ext_toggle_b.Content = \
+                    re.sub("Extensions*",
+                           "Extensions",
+                           self.ext_toggle_b.Content)
         else:
             self.ext_toggle_b.Content = \
                 self.ext_toggle_b.Content.replace('Extensions', 'Extension')
