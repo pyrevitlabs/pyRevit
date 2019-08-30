@@ -140,17 +140,28 @@ namespace pyRevitLabs.PyRevit {
         // bundles
         public const string BundleTabPostfix = ".tab";
         public const string BundlePanelPostfix = ".panel";
-        public const string BundleLinkButtonPostfix = ".linkbutton";
-        public const string BundlePushButtonPostfix = ".pushbutton";
-        public const string BundleToggleButtonPostfix = ".toggle";
-        public const string BundleSmartButtonPostfix = ".smartbutton";
+        public const string BundleStackPostfix = ".stack";
         public const string BundlePulldownButtonPostfix = ".pulldown";
-        public const string BundleStack3Postfix = ".stack3";
-        public const string BundleStack2Postfix = ".stack2";
         public const string BundleSplitButtonPostfix = ".splitbutton";
         public const string BundleSplitPushButtonPostfix = ".splitpushbutton";
+        public const string BundlePushButtonPostfix = ".pushbutton";
+        public const string BundleSmartButtonPostfix = ".smartbutton";
+        public const string BundleToggleButtonPostfix = ".toggle";
         public const string BundlePanelButtonPostfix = ".panelbutton";
         public const string BundleNoButtonPostfix = ".nobutton";
+        public const string BundleLinkButtonPostfix = ".linkbutton";
+        public const string BundleInvokePostfix = ".invokebutton";
+        public const string BundleContentPostfix = ".content";
+        public const string BundleURLPostfix = ".urlbutton";
+        //scripts
+        public const string BundleScriptPythonPostfix = ".py";
+        public const string BundleScriptCSharpPostfix = ".cs";
+        public const string BundleScriptVisualBasicPostfix = ".vb";
+        public const string BundleScriptRubyPostfix = ".rb";
+        public const string BundleScriptDynamoBIMPostfix = ".dyn";
+        public const string BundleScriptGrasshopperPostfix = ".gh";
+        public const string BundleScriptRevitFamilyPostfix = ".rfa";
+
 
         // methods
         public static string FindConfigFileInDirectory(string sourcePath) {

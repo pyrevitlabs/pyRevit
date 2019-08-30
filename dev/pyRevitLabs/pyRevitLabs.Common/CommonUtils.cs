@@ -141,7 +141,7 @@ namespace pyRevitLabs.Common {
         }
 
         public static string DownloadFile(string url, string destPath, string progressToken = null) {
-            if (CheckInternetConnection()) {
+            if (VerifyUrl(url)) {
                 using (var client = GetWebClient()) {
                     if (GlobalConfigs.ReportProgress) {
                         logger.Debug("Downloading (async) \"{0}\"", url);
@@ -165,7 +165,7 @@ namespace pyRevitLabs.Common {
                 }
             }
             else
-                throw new pyRevitNoInternetConnectionException();
+                throw new pyRevitInvalidURLException(url);
 
             return destPath;
         }

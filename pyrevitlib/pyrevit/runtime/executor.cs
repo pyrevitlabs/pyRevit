@@ -21,46 +21,69 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static int BadCommandArguments = 7;
         public static int NotSupportedFeatureException = 8;
         public static int UnknownException = 9;
+        public static int MissingTargetScript = 10;
     }
 
     /// Executes a script
     public class ScriptExecutor {
         /// Run the script and print the output to a new output window.
         public static int ExecuteScript(ref ScriptRuntime runtime) {
-            switch (runtime.EngineType) {
-                case EngineType.IronPython:
-                    return ExecuteManagedScript<IronPythonEngine>(ref runtime);
+            if (EnsureTargetScript(ref runtime)) {
+                switch (runtime.EngineType) {
+                    case EngineType.IronPython:
+                        return ExecuteManagedScript<IronPythonEngine>(ref runtime);
 
-                case EngineType.CPython:
-                    return ExecuteManagedScript<CPythonEngine>(ref runtime);
+                    case EngineType.CPython:
+                        return ExecuteManagedScript<CPythonEngine>(ref runtime);
 
-                case EngineType.CSharp:
-                    return ExecuteManagedScript<CLREngine>(ref runtime);
+                    case EngineType.CSharp:
+                        return ExecuteManagedScript<CLREngine>(ref runtime);
 
-                case EngineType.Invoke:
-                    return ExecuteManagedScript<InvokableDLLEngine>(ref runtime);
+                    case EngineType.Invoke:
+                        return ExecuteManagedScript<InvokableDLLEngine>(ref runtime);
 
-                case EngineType.VisualBasic:
-                    return ExecuteManagedScript<CLREngine>(ref runtime);
+                    case EngineType.VisualBasic:
+                        return ExecuteManagedScript<CLREngine>(ref runtime);
 
-                case EngineType.IronRuby:
-                    return ExecuteManagedScript<RubyEngine>(ref runtime);
+                    case EngineType.IronRuby:
+                        return ExecuteManagedScript<RubyEngine>(ref runtime);
 
-                case EngineType.Dynamo:
-                    return ExecuteDynamoDefinition(ref runtime);
+                    case EngineType.DynamoBIM:
+                        return ExecuteDynamoDefinition(ref runtime);
 
-                case EngineType.Grasshopper:
-                    return ExecuteGrasshopperDocument(ref runtime);
+                    case EngineType.Grasshopper:
+                        return ExecuteGrasshopperDocument(ref runtime);
 
-                case EngineType.Content:
-                    return ExecuteContentLoader(ref runtime);
-                default:
-                    // should not get here
-                    throw new PyRevitException("Unknown engine type.");
+                    case EngineType.Content:
+                        return ExecuteContentLoader(ref runtime);
+
+                    case EngineType.HyperLink:
+                        return OpenHyperlink(ref runtime);
+
+                    default:
+                        // should not get here
+                        throw new PyRevitException("Unknown engine type.");
+                }
             }
+            else
+                return ExecutionResultCodes.MissingTargetScript;
         }
 
-        private static int ExecuteManagedScript<T>(ref ScriptRuntime runtime) where T: ExecutionEngine, new() {
+        public static bool EnsureTargetScript(ref ScriptRuntime runtime) {
+            if (runtime.ScriptRuntimeConfigs.ConfigMode)
+                return EnsureTargetScript(runtime.ScriptData.ConfigScriptPath);
+            else
+                return EnsureTargetScript(runtime.ScriptData.ScriptPath);
+        }
+
+        public static bool EnsureTargetScript(string scriptFile) {
+            if (File.Exists(scriptFile))
+                return true;
+            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Can not find target file. Maybe deleted?");
+            return false;
+        }
+
+        private static int ExecuteManagedScript<T>(ref ScriptRuntime runtime) where T : ExecutionEngine, new() {
             // 1: ----------------------------------------------------------------------------------------------------
             // get new engine manager (EngineManager manages document-specific engines)
             // and ask for an engine (EngineManager return either new engine or an already active one)
@@ -156,7 +179,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // attempt to find previously loaded family
                 Element existingFamily = null;
                 string familyName = Path.GetFileNameWithoutExtension(familySourceFile);
-                var currentFamilies = 
+                var currentFamilies =
                     new FilteredElementCollector(doc).OfClass(typeof(Family)).Where(q => q.Name == familyName);
                 if (currentFamilies.Count() > 0)
                     existingFamily = currentFamilies.First();
@@ -215,6 +238,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
             TaskDialog.Show(PyRevitLabsConsts.ProductName, "Failed accessing Appication.");
             return ExecutionResultCodes.FailedLoadingContent;
 #endif
+        }
+
+        /// Run the url bundle and open the required hyperlink
+        private static int OpenHyperlink(ref ScriptRuntime runtime) {
+            try {
+                // first argument is expected to be a hyperlink
+                if (runtime.ScriptRuntimeConfigs.Arguments.Count == 1) {
+                    string hyperLink = runtime.ScriptRuntimeConfigs.Arguments.First();
+                    System.Diagnostics.Process.Start(hyperLink);
+                    return ExecutionResultCodes.Succeeded;
+                }
+                else {
+                    TaskDialog.Show(PyRevitLabsConsts.ProductName, "Target hyperlink is not set correctly and can not be loaded.");
+                    return ExecutionResultCodes.ExternalInterfaceNotImplementedException;
+                }
+            }
+            catch (Exception hyperlinkEx) {
+                TaskDialog.Show(PyRevitLabsConsts.ProductName, hyperlinkEx.Message);
+                return ExecutionResultCodes.ExecutionException;
+            }
+            finally {
+                // whatever
+            }
         }
     }
 }

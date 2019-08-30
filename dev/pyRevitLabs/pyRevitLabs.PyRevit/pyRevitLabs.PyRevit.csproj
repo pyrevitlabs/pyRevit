@@ -98,6 +98,7 @@
     <Compile Include="PyRevitRelease.cs" />
     <Compile Include="PyRevitReleases.cs" />
     <Compile Include="PyRevitRunner.cs" />
+    <Compile Include="PyRevitScript.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="Styles\Generic.xaml">

@@ -472,7 +472,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 case EngineType.IronRuby:
                     errorHeader = ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.IRubyErrorHeader);
                     break;
-                case EngineType.Dynamo:
+                case EngineType.DynamoBIM:
                     break;
                 case EngineType.Grasshopper:
                     break;

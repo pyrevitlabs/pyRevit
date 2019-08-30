@@ -20,6 +20,7 @@ layout:
   - Test DynamoBIM
   - Test Grasshopper
   - Test Content Bundle
+  - Test Hyperlink
   - ---
   - Test Output Stream
   - Test Multiple Outputs

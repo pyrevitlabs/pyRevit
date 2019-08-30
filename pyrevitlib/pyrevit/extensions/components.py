@@ -172,6 +172,34 @@ class ContentButton(GenericUICommand):
             self.config_script_file = ''
 
 
+class URLButton(GenericUICommand):
+    type_id = exts.URL_BUTTON_POSTFIX
+
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
+        self.target_url = None
+        # read metadata from metadata file
+        if self.meta:
+            # get the target url from metadata
+            self.target_url = \
+                self.meta.get(exts.MDATA_URL_BUTTON_HYPERLINK, None)
+            # for url buttons there is no script source so
+            # assign the metadata file to the script
+            self.script_file = self.config_script_file = self.meta_file
+        else:
+            mlogger.debug("%s does not specify target assembly::class.", self)
+
+        if not self.target_url:
+            mlogger.error("%s does not specify target url.", self)
+
+        mlogger.debug('%s target url: %s', self, self.target_url)
+
+    def get_target_url(self):
+        return self.target_url or ""
+
+
+
 # Command groups only include commands. these classes can include
 # GenericUICommand as sub components
 class GenericUICommandGroup(GenericUIContainer):

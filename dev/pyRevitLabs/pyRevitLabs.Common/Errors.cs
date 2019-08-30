@@ -56,7 +56,7 @@ namespace pyRevitLabs.Common {
 
         public pyRevitResourceMissingException(string resoucePath) { Path = resoucePath; }
 
-        public string Path { get; set; }
+        public string Path { get; private set; }
 
         public override string Message {
             get {
@@ -71,6 +71,19 @@ namespace pyRevitLabs.Common {
         public override string Message {
             get {
                 return "No internet connection detected.";
+            }
+        }
+
+    }
+
+    public class pyRevitInvalidURLException : PyRevitException {
+        public pyRevitInvalidURLException(string url) { URL = url;  }
+
+        public string URL { get; private set; }
+
+        public override string Message {
+            get {
+                return string.Format("Invalid URL {0}", URL);
             }
         }
 

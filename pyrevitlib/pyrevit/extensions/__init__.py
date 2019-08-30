@@ -100,6 +100,7 @@ MDATA_ENGINE_PERSISTENT = 'persistent'
 MDATA_LINK_BUTTON_MODULES = 'modules'
 MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
 MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
+MDATA_URL_BUTTON_HYPERLINK = 'hyperlink'
 MDATA_TEMPLATES_KEY = 'templates'
 
 # metadata schema: Bundles | legacy
@@ -134,6 +135,7 @@ SPLITPUSH_BUTTON_POSTFIX = '.splitpushbutton'
 PANEL_PUSH_BUTTON_POSTFIX = '.panelbutton'
 NOGUI_COMMAND_POSTFIX = '.nobutton'
 CONTENT_BUTTON_POSTFIX = '.content'
+URL_BUTTON_POSTFIX = '.urlbutton'
 
 # known bundle sub-directories
 COMP_LIBRARY_DIR_NAME = 'lib'

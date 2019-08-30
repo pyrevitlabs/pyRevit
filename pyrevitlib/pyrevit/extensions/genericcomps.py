@@ -71,7 +71,7 @@ class GenericUIComponent(GenericComponent):
         self.unique_name = None
         self.icon_file = None
         self._ui_title = None
-        self._tooltip = self.author = self._help_url = ""
+        self._tooltip = self.author = self._help_url = None
         self.media_file = None
         self.min_revit_ver = self.max_revit_ver = None
         self.is_beta = False

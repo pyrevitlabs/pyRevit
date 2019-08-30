@@ -7,6 +7,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum InterfaceType {
@@ -140,45 +141,52 @@ namespace PyRevitLabs.PyRevit.Runtime {
             get {
                 // determine engine necessary to run this script
                 var scriptFile = ScriptSourceFile.ToLower();
-                if (scriptFile.EndsWith(".py")) {
+                if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Python))) {
                     string firstLine = "";
-                    using (StreamReader reader = new StreamReader(scriptFile)) {
-                        firstLine = reader.ReadLine();
+                    if (File.Exists(scriptFile)) {
+                        using (StreamReader reader = new StreamReader(scriptFile)) {
+                            firstLine = reader.ReadLine();
 
-                        if (firstLine != null && (firstLine.Contains("python3") || firstLine.Contains("cpython")))
-                            return EngineType.CPython;
-                        else
-                            return EngineType.IronPython;
+                            if (firstLine != null && (firstLine.Contains("python3") || firstLine.Contains("cpython")))
+                                return EngineType.CPython;
+                            else
+                                return EngineType.IronPython;
+                        }
                     }
                 }
-                else if (scriptFile.EndsWith(".cs")) {
+                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.CSharp))) {
                     return EngineType.CSharp;
                 }
-                else if (scriptFile.EndsWith(".vb")) {
+                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.VisualBasic))) {
                     return EngineType.VisualBasic;
                 }
-                else if (scriptFile.EndsWith(".rb")) {
+                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Ruby))) {
                     return EngineType.IronRuby;
                 }
-                else if (scriptFile.EndsWith(".dyn")) {
-                    return EngineType.Dynamo;
+                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Dynamo))) {
+                    return EngineType.DynamoBIM;
                 }
-                else if (scriptFile.EndsWith(".gh")) {
+                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Grasshopper))) {
                     return EngineType.Grasshopper;
                 }
-                else if (scriptFile.EndsWith(".rfa")) {
+                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.RevitFamily))) {
                     return EngineType.Content;
                 }
 
                 if (ScriptData.CommandBundle != null) {
                     var bundleName = ScriptData.CommandBundle.ToLower();
-                    if (bundleName.EndsWith(".invokebutton")) {
+                    if (bundleName.EndsWith(PyRevitBundle.GetBundleDirExt(PyRevitBundleTypes.InvokeButton))) {
                         return EngineType.Invoke;
+                    }
+                    else if (bundleName.EndsWith(PyRevitBundle.GetBundleDirExt(PyRevitBundleTypes.URLButton))) {
+                        return EngineType.HyperLink;
                     }
                 }
 
-                // should not get here
-                throw new PyRevitException("Unknown script type.");
+                // if the script is deleted during runtime
+                // ScriptSourceFile with be "" and runtime can not determine
+                // the engine type
+                return EngineType.Unknown;
             }
         }
 
@@ -191,7 +199,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     case EngineType.Invoke: return EnvDict.PyRevitVersion;
                     case EngineType.VisualBasic: return EnvDict.PyRevitVersion;
                     case EngineType.IronRuby: return EnvDict.PyRevitVersion;
-                    case EngineType.Dynamo: return EnvDict.PyRevitVersion;
+                    case EngineType.DynamoBIM: return EnvDict.PyRevitVersion;
                     case EngineType.Grasshopper: return EnvDict.PyRevitVersion;
                     case EngineType.Content: return EnvDict.PyRevitVersion;
                     default: return EnvDict.PyRevitVersion;

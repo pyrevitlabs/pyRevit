@@ -35,15 +35,17 @@ using pyRevitLabs.NLog.Targets;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum EngineType {
+        Unknown,
         IronPython,
         CPython,
         CSharp,
         Invoke,
         VisualBasic,
         IronRuby,
-        Dynamo,
+        DynamoBIM,
         Grasshopper,
         Content,
+        HyperLink
     }
 
     public class ExecutionEngineConfigs {
@@ -957,8 +959,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public override int Execute(ref ScriptRuntime runtime) {
             try {
-                // first argument is the script name
-                // script.py assmFile:className
+                // first argument is expected to be assmFile:className
                 if (runtime.ScriptRuntimeConfigs.Arguments.Count == 1) {
                     // load the binary data from the DLL
                     // Direct invoke commands use the config script source file to point

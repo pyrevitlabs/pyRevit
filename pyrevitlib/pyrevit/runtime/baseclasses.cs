@@ -7,6 +7,8 @@ using Autodesk.Revit.Attributes;
 using System.Windows.Input;
 using System.Windows.Controls;
 
+using pyRevitLabs.Common;
+
 namespace PyRevitLabs.PyRevit.Runtime {
     public class CommandTypeExecConfigs {
         // unlike fullframe or clean engine modes, the config script mode is determined at
@@ -177,12 +179,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // If Alt clicking on button, open the script in explorer and return.
+            else if (SHIFT && ALT) {
+                // combine the arguments together
+                // it doesn't matter if there is a space after ','
+                if (ScriptExecutor.EnsureTargetScript(ScriptData.ConfigScriptPath)) {
+                    string argument = "/select, \"" + ScriptData.ConfigScriptPath + "\"";
+
+                    System.Diagnostics.Process.Start("explorer.exe", argument);
+                }
+                return Result.Succeeded;
+            }
+     
             else if (ALT) {
                 // combine the arguments together
                 // it doesn't matter if there is a space after ','
-                string argument = "/select, \"" + ScriptData.ScriptPath + "\"";
+                if (ScriptExecutor.EnsureTargetScript(ScriptData.ScriptPath)) {
+                    string argument = "/select, \"" + ScriptData.ScriptPath + "\"";
 
-                System.Diagnostics.Process.Start("explorer.exe", argument);
+                    System.Diagnostics.Process.Start("explorer.exe", argument);
+                }
                 return Result.Succeeded;
             }
 

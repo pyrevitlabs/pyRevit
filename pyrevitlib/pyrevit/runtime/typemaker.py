@@ -8,6 +8,7 @@ from pyrevit import runtime
 from pyrevit.runtime import bundletypemaker
 from pyrevit.runtime import pythontypemaker
 from pyrevit.runtime import invoketypemaker
+from pyrevit.runtime import urltypemaker
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -70,6 +71,13 @@ def create_exec_types(extension, cmd_component, module_builder=None):
         elif cmd_component.type_id == exts.CONTENT_BUTTON_POSTFIX:
             # link buttons don't need types
             bundletypemaker.create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
+        # if url
+        elif cmd_component.type_id == exts.URL_BUTTON_POSTFIX:
+            urltypemaker.create_executor_type(
                 extension,
                 module_builder,
                 cmd_component
