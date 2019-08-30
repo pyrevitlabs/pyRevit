@@ -300,7 +300,7 @@ class TemplateUserInputWindow(WPFWindow):
 class TemplateListItem(object):
     """Base class for checkbox option wrapping another object."""
 
-    def __init__(self, orig_item, checkable=True, name_attr=None):
+    def __init__(self, orig_item, checked=False, checkable=True, name_attr=None):
         """Initialize the checkbox option and wrap given obj.
 
         Args:
@@ -310,7 +310,7 @@ class TemplateListItem(object):
             name_attr (str): Get this attribute of wrapped object as name
         """
         self.item = orig_item
-        self.state = False
+        self.state = checked
         self._nameattr = name_attr
         self._checkable = checkable
 
@@ -421,7 +421,7 @@ class SelectFromList(TemplateUserInputWindow):
         name property to customize how the checkbox is named on the dialog.
 
         >>> from pyrevit import forms
-        >>> class MyOption(forms.TemplateListItem)
+        >>> class MyOption(forms.TemplateListItem):
         ...    @property
         ...    def name(self):
         ...        return '{} - {}{}'.format(self.item.SheetNumber,
@@ -2342,7 +2342,6 @@ def check_modelview(view, exitscript=False):
         alert("Active view must be a model view.", exitscript=exitscript)
         return False
     return True
-
 
 
 def toast(message, title='pyRevit', appid='pyRevit',
