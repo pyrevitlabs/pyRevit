@@ -77,9 +77,10 @@ def set_telemetry_utc_timestamp(state):
 
 
 def set_telemetry_file_dir(file_dir):
-    if not file_dir or (file_dir and op.isdir(file_dir)):
-        envvars.set_pyrevit_env_var(envvars.TELEMETRYDIR_ENVVAR, file_dir)
-        user_config.telemetry_file_dir = file_dir
+    if not file_dir or not op.isdir(file_dir):
+        disable_telemetry_to_file()
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYDIR_ENVVAR, file_dir)
+    user_config.telemetry_file_dir = file_dir
 
 
 def set_telemetry_file_path(file_path):
@@ -194,8 +195,7 @@ def setup_telemetry(session_id=None):
 
     # read or setup default values for file telemetry
     # default file path and name for telemetry
-    telemetry_file_dir = \
-        user_config.telemetry_file_dir or get_default_telemetry_filepath()
+    telemetry_file_dir = user_config.telemetry_file_dir
     set_telemetry_file_dir(telemetry_file_dir)
 
     # check file telemetry config and setup destination

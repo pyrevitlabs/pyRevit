@@ -454,7 +454,6 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             value=state
         )
 
-
     def get_config_version(self):
         """Return version of config file used for change detection."""
         return self.get_config_file_hash()
