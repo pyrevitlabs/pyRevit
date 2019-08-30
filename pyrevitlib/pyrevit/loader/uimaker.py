@@ -503,7 +503,18 @@ def _produce_ui_panels(ui_maker_params):
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
-        return parent_ui_tab.ribbon_panel(panel.name)
+        new_panel_ui = parent_ui_tab.ribbon_panel(panel.name)
+        # set backgrounds
+        new_panel_ui.reset_backgrounds()
+        if panel.panel_background:
+            new_panel_ui.set_background(panel.panel_background)
+        # override the title background if exists
+        if panel.title_background:
+            new_panel_ui.set_title_background(panel.title_background)
+        # override the slideout background if exists
+        if panel.slideout_background:
+            new_panel_ui.set_slideout_background(panel.slideout_background)
+        return new_panel_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None

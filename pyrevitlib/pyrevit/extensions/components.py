@@ -246,6 +246,29 @@ class Panel(GenericUIContainer):
     allowed_sub_cmps = \
         [GenericStack, GenericUICommandGroup, GenericUICommand, NoScriptButton]
 
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUIContainer.__init__(self, cmp_path=cmp_path)
+        self.panel_background = \
+            self.title_background = \
+                self.slideout_background = None
+        # read metadata from metadata file
+        if self.meta:
+            # check for background color configs
+            self.panel_background = \
+                self.meta.get(exts.MDATA_BACKGROUND_KEY, None)
+            if self.panel_background:
+                if isinstance(self.panel_background, dict):
+                    self.title_background = self.panel_background.get(
+                        exts.MDATA_BACKGROUND_TITLE_KEY, None)
+                    self.slideout_background = self.panel_background.get(
+                        exts.MDATA_BACKGROUND_SLIDEOUT_KEY, None)
+                    self.panel_background = self.panel_background.get(
+                        exts.MDATA_BACKGROUND_PANEL_KEY, None)
+                elif not isinstance(self.panel_background, str):
+                    mlogger.error(
+                        "%s bad background definition in metadata.", self)
+
     def has_commands(self):
         for component in self:
             if not component.is_container:

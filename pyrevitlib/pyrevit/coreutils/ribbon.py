@@ -10,6 +10,7 @@ from pyrevit.framework import System, Uri
 from pyrevit.framework import IO
 from pyrevit.framework import Imaging
 from pyrevit.framework import BindingFlags
+from pyrevit.framework import Media, Convert
 from pyrevit.api import UI, AdWindows
 
 
@@ -28,6 +29,26 @@ DEFAULT_TOOLTIP_IMAGE_FORMAT = '.png'
 DEFAULT_TOOLTIP_VIDEO_FORMAT = '.swf'
 if not EXEC_PARAMS.doc_mode and HOST_APP.is_newer_than(2019, or_equal=True):
     DEFAULT_TOOLTIP_VIDEO_FORMAT = '.mp4'
+
+
+def argb_to_brush(argb_color):
+    # argb_color is formatted as #AARRGGBB
+    a = r = g = b = "FF"
+    try:
+        b = argb_color[-2:]
+        g = argb_color[-4:-2]
+        r = argb_color[-6:-4]
+        if len(argb_color) > 7:
+            a = argb_color[-8:-6]
+        return Media.SolidColorBrush(Media.Color.FromArgb(
+                Convert.ToInt32("0x" + a, 16),
+                Convert.ToInt32("0x" + r, 16),
+                Convert.ToInt32("0x" + g, 16),
+                Convert.ToInt32("0x" + b, 16)
+                )
+            )
+    except Exception as color_ex:
+        mlogger.error("Bad color format %s | %s", argb_color, color_ex)
 
 
 def load_bitmapimage(image_file):
@@ -1036,6 +1057,34 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         for panel in self.parent_tab.Panels:
             if panel.Source and panel.Source.Title == self.name:
                 return panel
+
+    def set_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        color = argb_to_brush(argb_color)
+        panel_adwnd_obj.CustomPanelBackground = color
+        panel_adwnd_obj.CustomPanelTitleBarBackground = color
+        panel_adwnd_obj.CustomSlideOutPanelBackground = color
+
+    def reset_backgrounds(self):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomPanelBackground = None
+        panel_adwnd_obj.CustomPanelTitleBarBackground = None
+        panel_adwnd_obj.CustomSlideOutPanelBackground = None
+
+    def set_panel_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomPanelBackground = \
+            argb_to_brush(argb_color)
+
+    def set_title_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomPanelTitleBarBackground = \
+            argb_to_brush(argb_color)
+
+    def set_slideout_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomSlideOutPanelBackground = \
+            argb_to_brush(argb_color)
 
     def open_stack(self):
         self.itemdata_mode = True

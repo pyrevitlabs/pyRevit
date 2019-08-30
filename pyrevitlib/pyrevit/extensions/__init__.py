@@ -102,6 +102,10 @@ MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
 MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
 MDATA_URL_BUTTON_HYPERLINK = 'hyperlink'
 MDATA_TEMPLATES_KEY = 'templates'
+MDATA_BACKGROUND_KEY = 'background'
+MDATA_BACKGROUND_PANEL_KEY = 'panel'
+MDATA_BACKGROUND_TITLE_KEY = 'title'
+MDATA_BACKGROUND_SLIDEOUT_KEY = 'slideout'
 
 # metadata schema: Bundles | legacy
 UI_TITLE_PARAM = '__title__'
