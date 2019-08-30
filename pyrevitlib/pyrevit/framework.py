@@ -72,6 +72,8 @@ from System.CodeDom import Compiler
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
 
+from System.Linq import Enumerable
+
 from Microsoft.CSharp import CSharpCodeProvider
 
 wpf = None
