@@ -539,18 +539,12 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);
 
-                else if (all("logs")) {
-                    if (all("none"))
-                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Quiet);
-
-                    else if (all("verbose"))
-                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose);
-
-                    else if (all("debug"))
-                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
-
+                else if (all("bincache")) {
+                    if (any("enable", "disable"))
+                        PyRevitConfigs.SetBinaryCaches(arguments["enable"].IsTrue);
                     else
-                        Console.WriteLine(string.Format("Logging Level is {0}", PyRevitConfigs.GetLoggingLevel().ToString()));
+                        Console.WriteLine(string.Format("Binary cache is {0}",
+                                                        PyRevitConfigs.GetBinaryCaches() ? "Enabled" : "Disabled"));
                 }
 
                 else if (all("checkupdates")) {
@@ -577,6 +571,20 @@ namespace pyRevitCLI {
                                                         PyRevitConfigs.GetRocketMode() ? "Enabled" : "Disabled"));
                 }
 
+                else if (all("logs")) {
+                    if (all("none"))
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Quiet);
+
+                    else if (all("verbose"))
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose);
+
+                    else if (all("debug"))
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
+
+                    else
+                        Console.WriteLine(string.Format("Logging Level is {0}", PyRevitConfigs.GetLoggingLevel().ToString()));
+                }
+
                 else if (all("filelogging")) {
                     if (any("enable", "disable"))
                         PyRevitConfigs.SetFileLogging(arguments["enable"].IsTrue);
@@ -585,12 +593,28 @@ namespace pyRevitCLI {
                                                         PyRevitConfigs.GetFileLogging() ? "Enabled" : "Disabled"));
                 }
 
+                else if (all("startuptimeout")) {
+                    if (arguments["<timeout>"] is null)
+                        Console.WriteLine(string.Format("Startup log timeout is set to: {0}",
+                                                        PyRevitConfigs.GetStartupLogTimeout()));
+                    else
+                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(TryGetValue("<timeout>")));
+                }
+
                 else if (all("loadbeta")) {
                     if (any("enable", "disable"))
                         PyRevitConfigs.SetLoadBetaTools(arguments["enable"].IsTrue);
                     else
                         Console.WriteLine(string.Format("Load Beta is {0}",
                                                         PyRevitConfigs.GetLoadBetaTools() ? "Enabled" : "Disabled"));
+                }
+
+                else if (all("cpyversion")) {
+                    if (arguments["<cpy_version>"] is null)
+                        Console.WriteLine(string.Format("CPython version is set to: {0}",
+                                                        PyRevitConfigs.GetCpythonEngineVersion()));
+                    else
+                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(TryGetValue("<cpy_version>")));
                 }
 
                 else if (all("usercanupdate")) {
