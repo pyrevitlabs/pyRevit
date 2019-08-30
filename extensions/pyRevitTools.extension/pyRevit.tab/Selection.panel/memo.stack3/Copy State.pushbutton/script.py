@@ -10,13 +10,10 @@ from pyrevit import script
 import copy_paste_state_utils
 
 
-__doc__ = 'Copies the state of desired parameter of the active' \
-          ' view to memory. e.g. Visibility Graphics settings or' \
 __doc__ = 'Copies the state of desired parameter of the active'\
           ' view to memory. e.g. Visibility Graphics settings or'\
           ' Zoom state. Run it and see how it works.'
 
-__author__ = 'Gui Talarico\n' \
 __author__ = 'Gui Talarico\n'\
              'Ehsan Iran-Nejad'
 
@@ -87,7 +84,6 @@ selected_option = \
          'Visibility Graphics',
          'Crop Region'],
         message='Select property to be copied to memory:'
-    )
         )
 
 
@@ -197,14 +193,9 @@ elif selected_option == 'Viewport Placement on Sheet':
         cboxvisible = selview.CropBoxVisible
         cboxannoparam = selview.get_Parameter(
             DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
-        )
             )
 
         cboxannostate = cboxannoparam.AsInteger()
-        curviewelements = DB.FilteredElementCollector(revit.doc) \
-            .OwnedByView(selview.Id) \
-            .WhereElementIsNotElementType() \
-            .ToElements()
         curviewelements = DB.FilteredElementCollector(revit.doc)\
                             .OwnedByView(selview.Id)\
                             .WhereElementIsNotElementType()\
@@ -218,10 +209,6 @@ elif selected_option == 'Viewport Placement on Sheet':
                     and el.Category is not None:
                 viewspecificelements.append(el.Id)
 
-        basepoints = DB.FilteredElementCollector(revit.doc) \
-            .OfClass(DB.BasePoint) \
-            .WhereElementIsNotElementType() \
-            .ToElements()
         basepoints = DB.FilteredElementCollector(revit.doc)\
                        .OfClass(DB.BasePoint)\
                        .WhereElementIsNotElementType()\
