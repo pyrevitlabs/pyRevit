@@ -588,7 +588,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void SetupArguments(ref ScriptRuntime runtime) {
-            // TODO: CPythonEngine.SetupArguments
+            // setup arguments (sets sys.argv)
+            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sysArgv = sys.GetAttr("argv");
+
+            var pythonArgv = new PyList();
+
+            // for python make sure the first argument is the script
+            var scriptSourceStr = new PyString(runtime.ScriptSourceFile);
+            pyRevitLabs.PythonNet.Runtime.PyList_Append(pythonArgv.Handle, scriptSourceStr.Handle);
+
+            // add the rest of the args
+            foreach (string arg in runtime.ScriptRuntimeConfigs.Arguments) {
+                var argStr = new PyString(arg);
+                pyRevitLabs.PythonNet.Runtime.PyList_Append(pythonArgv.Handle, argStr.Handle);
+            }
+
+            sys.SetAttr("argv", pythonArgv);
         }
 
         private static PyObject CopyPyList(IntPtr sourceList) {
