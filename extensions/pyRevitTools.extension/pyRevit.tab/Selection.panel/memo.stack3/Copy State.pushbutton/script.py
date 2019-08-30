@@ -70,7 +70,6 @@ def make_picklable_list(curve_loops):
             p1 = (rvt_line.GetEndPoint(0).X, rvt_line.GetEndPoint(0).Y)
             p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
             cloop_lines.append((p1, p2))
-
         
         all_cloops.append(cloop_lines)
     return all_cloops
@@ -169,7 +168,6 @@ elif selected_option == 'Viewport Placement on Sheet':
     transmatrix = TransformationMatrix()
     revtransmatrix = TransformationMatrix()
 
-
     def sheet_to_view_transform(sheetcoord):
         global transmatrix
         newx = \
@@ -185,7 +183,6 @@ elif selected_option == 'Viewport Placement on Sheet':
                / (transmatrix.sourcemax.Y - transmatrix.sourcemin.Y))
 
         return DB.XYZ(newx, newy, 0.0)
-
 
     def set_tansform_matrix(selvp, selview):
         # making sure the cropbox is active.
@@ -273,8 +270,6 @@ elif selected_option == 'Viewport Placement on Sheet':
                     if viewspecificelements:
                         selview.UnhideElements(
                             List[DB.ElementId](viewspecificelements)
-                        )
-
                             )
 
     datafile = \
