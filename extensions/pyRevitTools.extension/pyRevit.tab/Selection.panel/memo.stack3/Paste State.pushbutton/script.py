@@ -7,6 +7,7 @@ from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
+import copy_paste_state_utils
 
 
 __doc__ = 'Applies the copied state to the active view. '\
@@ -297,20 +298,16 @@ elif selected_switch == 'Viewport Placement on Sheet':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    selected_ids = revit.get_selection().element_ids
+    selected_elements = revit.get_selection().elements
+    selected_viewports = copy_paste_state_utils.get_viewports(selected_elements)
 
-    if len(selected_ids) == 1:
-        vport_id = selected_ids[0]
-        try:
-            vport = revit.doc.GetElement(vport_id)
-        except Exception:
-            DB.TaskDialog.Show('pyrevit',
-                               'Select exactly one viewport.')
-
-        if isinstance(vport, DB.Viewport):
-            view = revit.doc.GetElement(vport.ViewId)
-            if view is not None and isinstance(view, DB.ViewPlan):
-                with revit.TransactionGroup('Paste Viewport Location'):
+    errors = []
+    changed = 0
+    with revit.TransactionGroup('Paste Viewport Location'):
+        for vport in selected_viewports:
+            if isinstance(vport, DB.Viewport):
+                view = revit.doc.GetElement(vport.ViewId)
+                if view is not None and isinstance(view, DB.ViewPlan):
                     set_tansform_matrix(vport, view)
                     try:
                         with open(datafile, 'rb') as fp:
@@ -321,13 +318,13 @@ elif selected_switch == 'Viewport Placement on Sheet':
                             else:
                                 raise OriginalIsViewDrafting
                     except IOError:
-                        forms.alert('Could not find saved viewport '
+                        errors.append((vport, 'Could not find saved viewport '
                                     'placement.\n'
-                                    'Copy a Viewport Placement first.')
+                                    'Copy a Viewport Placement first.'))
                     except OriginalIsViewDrafting:
-                        forms.alert('Viewport placement info is from a '
+                        errors.append((vport, 'Viewport placement info is from a '
                                     'drafting view and can not '
-                                    'be applied here.')
+                                    'be applied here.'))
                     else:
                         savedcenter_pt = DB.XYZ(savedcen_pt.x,
                                                 savedcen_pt.y,
@@ -342,36 +339,40 @@ elif selected_switch == 'Viewport Placement on Sheet':
                             vport.SetBoxCenter(savedcenter_pt - centerdiff)
                             if PINAFTERSET:
                                 vport.Pinned = True
+                            changed += 1
 
-            elif view is not None and isinstance(view, DB.ViewDrafting):
-                try:
-                    with open(datafile, 'rb') as fp:
-                        originalviewtype = pickle.load(fp)
-                        if originalviewtype == 'ViewDrafting':
-                            savedcen_pt = pickle.load(fp)
-                        else:
-                            raise OriginalIsViewPlan
-                except IOError:
-                    forms.alert('Could not find saved viewport '
-                                'placement.\n'
-                                'Copy a Viewport Placement first.')
-                except OriginalIsViewPlan:
-                    forms.alert('Viewport placement info is from '
-                                'a model view and can not be '
-                                'applied here.')
+                elif view is not None and isinstance(view, DB.ViewDrafting):
+                    try:
+                        with open(datafile, 'rb') as fp:
+                            originalviewtype = pickle.load(fp)
+                            if originalviewtype == 'ViewDrafting':
+                                savedcen_pt = pickle.load(fp)
+                            else:
+                                raise OriginalIsViewPlan
+                    except IOError:
+                        errors.append((vport, 'Could not find saved viewport '
+                                    'placement.\n'
+                                    'Copy a Viewport Placement first.'))
+                    except OriginalIsViewPlan:
+                        errors.append((vport, 'Viewport placement info is from '
+                                    'a model view and can not be '
+                                    'applied here.'))
+                    else:
+                        savedcenter_pt = DB.XYZ(savedcen_pt.x,
+                                                savedcen_pt.y,
+                                                savedcen_pt.z)
+                        with revit.Transaction('Apply Viewport Placement'):
+                            vport.SetBoxCenter(savedcenter_pt)
+                            if PINAFTERSET:
+                                vport.Pinned = True
+                            changed += 1
                 else:
-                    savedcenter_pt = DB.XYZ(savedcen_pt.x,
-                                            savedcen_pt.y,
-                                            savedcen_pt.z)
-                    with revit.Transaction('Apply Viewport Placement'):
-                        vport.SetBoxCenter(savedcenter_pt)
-                        if PINAFTERSET:
-                            vport.Pinned = True
-            else:
-                forms.alert('This tool only works with Plan, '
-                            'RCP, and Detail views and viewports.')
-    else:
-        forms.alert('Select exactly one viewport.')
+                    errors.append((vport, 'This tool only works with Plan, '
+                                'RCP, and Detail views and viewports.'))
+    if errors:
+        forms.alert("\n".join(["ID %d: %s" % (x[0].Id.IntegerValue, x[1]) for x in errors]))
+    elif not changed:
+        forms.alert("No viewports were updated")
 
 elif selected_switch == 'Visibility Graphics':
     datafile = \
@@ -383,11 +384,14 @@ elif selected_switch == 'Visibility Graphics':
         f = open(datafile, 'r')
         id = pickle.load(f)
         f.close()
+        selected_elements = revit.get_selection().elements
         with revit.Transaction('Paste Visibility Graphics'):
-            revit.activeview.ApplyViewTemplateParameters(
-                revit.doc.GetElement(DB.ElementId(id))
-                )
-    except Exception:
+            for view in copy_paste_state_utils.get_views(selected_elements):
+                view.ApplyViewTemplateParameters(
+                    revit.doc.GetElement(DB.ElementId(id))
+                    )
+    except Exception as exc:
+        logger.debug(exc)
         logger.error('CAN NOT FIND ANY VISIBILITY GRAPHICS '
                      'SETTINGS IN MEMORY:\n{0}'.format(datafile))
 
@@ -401,17 +405,19 @@ elif selected_switch == 'Crop Region':
         f = open(datafile, 'r')
         cloops_data = pickle.load(f)
         f.close()
+        selected_elements = revit.get_selection().elements
         with revit.Transaction('Paste Crop Region'):
-            revit.activeview.CropBoxVisible = True
-            crsm = revit.activeview.GetCropRegionShapeManager()
-            all_cloops = unpickle_line_list(cloops_data)
-            for cloop in all_cloops:
-                if HOST_APP.is_newer_than(2015):
-                    crsm.SetCropShape(cloop)
-                else:
-                    crsm.SetCropRegionShape(cloop)
+            for view in copy_paste_state_utils.get_views(selected_elements):
+                crsm = view.GetCropRegionShapeManager()
+                all_cloops = unpickle_line_list(cloops_data)
+                for cloop in all_cloops:
+                    if HOST_APP.is_newer_than(2015):
+                        crsm.SetCropShape(cloop)
+                    else:
+                        crsm.SetCropRegionShape(cloop)
 
         revit.uidoc.RefreshActiveView()
-    except Exception:
+    except Exception as exc:
+        logger.debug(exc)
         logger.error('CAN NOT FIND ANY CROP REGION '
                      'SETTINGS IN MEMORY:\n{0}'.format(datafile))

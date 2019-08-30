@@ -7,13 +7,14 @@ from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
+import copy_paste_state_utils
 
 
-__doc__ = 'Copies the state of desired parameter of the active'\
-          ' view to memory. e.g. Visibility Graphics settings or'\
+__doc__ = 'Copies the state of desired parameter of the active' \
+          ' view to memory. e.g. Visibility Graphics settings or' \
           ' Zoom state. Run it and see how it works.'
 
-__author__ = 'Gui Talarico\n'\
+__author__ = 'Gui Talarico\n' \
              'Ehsan Iran-Nejad'
 
 
@@ -69,7 +70,7 @@ def make_picklable_list(curve_loops):
             p1 = (rvt_line.GetEndPoint(0).X, rvt_line.GetEndPoint(0).Y)
             p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
             cloop_lines.append((p1, p2))
-        
+
         all_cloops.append(cloop_lines)
     return all_cloops
 
@@ -82,8 +83,7 @@ selected_option = \
          'Visibility Graphics',
          'Crop Region'],
         message='Select property to be copied to memory:'
-        )
-
+    )
 
 if selected_option == 'View Zoom/Pan State':
     datafile = \
@@ -167,6 +167,7 @@ elif selected_option == 'Viewport Placement on Sheet':
     transmatrix = TransformationMatrix()
     revtransmatrix = TransformationMatrix()
 
+
     def sheet_to_view_transform(sheetcoord):
         global transmatrix
         newx = \
@@ -183,19 +184,20 @@ elif selected_option == 'Viewport Placement on Sheet':
 
         return DB.XYZ(newx, newy, 0.0)
 
+
     def set_tansform_matrix(selvp, selview):
         # making sure the cropbox is active.
         cboxactive = selview.CropBoxActive
         cboxvisible = selview.CropBoxVisible
         cboxannoparam = selview.get_Parameter(
             DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
-            )
+        )
 
         cboxannostate = cboxannoparam.AsInteger()
-        curviewelements = DB.FilteredElementCollector(revit.doc)\
-                            .OwnedByView(selview.Id)\
-                            .WhereElementIsNotElementType()\
-                            .ToElements()
+        curviewelements = DB.FilteredElementCollector(revit.doc) \
+            .OwnedByView(selview.Id) \
+            .WhereElementIsNotElementType() \
+            .ToElements()
 
         viewspecificelements = []
         for el in curviewelements:
@@ -205,10 +207,10 @@ elif selected_option == 'Viewport Placement on Sheet':
                     and el.Category is not None:
                 viewspecificelements.append(el.Id)
 
-        basepoints = DB.FilteredElementCollector(revit.doc)\
-                       .OfClass(DB.BasePoint)\
-                       .WhereElementIsNotElementType()\
-                       .ToElements()
+        basepoints = DB.FilteredElementCollector(revit.doc) \
+            .OfClass(DB.BasePoint) \
+            .WhereElementIsNotElementType() \
+            .ToElements()
 
         excludecategories = ['Survey Point',
                              'Project Base Point']
@@ -269,22 +271,19 @@ elif selected_option == 'Viewport Placement on Sheet':
                     if viewspecificelements:
                         selview.UnhideElements(
                             List[DB.ElementId](viewspecificelements)
-                            )
+                        )
+
 
     datafile = \
         script.get_document_data_file(file_id='SaveViewportLocation',
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    selected_ids = revit.get_selection().element_ids
+    selected_elements = revit.get_selection().elements
+    selected_viewports = copy_paste_state_utils.get_viewports(selected_elements)
 
-    if len(selected_ids) == 1:
-        vport_id = selected_ids[0]
-        try:
-            vport = revit.doc.GetElement(vport_id)
-        except Exception:
-            forms.alert('Select exactly one viewport.')
-
+    if len(selected_viewports) == 1:
+        vport = selected_viewports[0]
         if isinstance(vport, DB.Viewport):
             view = revit.doc.GetElement(vport.ViewId)
             if view is not None and isinstance(view, DB.ViewPlan):
@@ -319,33 +318,43 @@ elif selected_option == 'Visibility Graphics':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.activeview
+    selected_elements = revit.get_selection().elements
+    selected_views = copy_paste_state_utils.get_views(selected_elements)
 
-    f = open(datafile, 'w')
-    pickle.dump(int(av.Id.IntegerValue), f)
-    f.close()
+    if len(selected_views) == 1:
+        av = selected_views[0]
+        f = open(datafile, 'w')
+        pickle.dump(int(av.Id.IntegerValue), f)
+        f.close()
+    else:
+        forms.alert('Select exactly one view.')
 
 elif selected_option == 'Crop Region':
     datafile = \
         script.get_document_data_file(file_id='SaveCropRegionState',
                                       file_ext='pym',
                                       add_cmd_name=False)
+    selected_elements = revit.get_selection().elements
+    selected_views = copy_paste_state_utils.get_views(selected_elements)
 
-    av = revit.activeview
-    crsm = av.GetCropRegionShapeManager()
+    if len(selected_views) == 1:
+        av = selected_views[0]
+        crsm = av.GetCropRegionShapeManager()
 
-    crsm_valid = False
-    if HOST_APP.is_newer_than(2015):
-        crsm_valid = crsm.CanHaveShape
+        crsm_valid = False
+        if HOST_APP.is_newer_than(2015):
+            crsm_valid = crsm.CanHaveShape
+        else:
+            crsm_valid = crsm.Valid
+
+        if crsm_valid:
+            with open(datafile, 'w') as f:
+                if HOST_APP.is_newer_than(2015):
+                    curve_loops = list(crsm.GetCropShape())
+                else:
+                    curve_loops = [crsm.GetCropRegionShape()]
+
+                if curve_loops:
+                    pickle.dump(make_picklable_list(curve_loops), f)
     else:
-        crsm_valid = crsm.Valid
-
-    if crsm_valid:
-        with open(datafile, 'w') as f:
-            if HOST_APP.is_newer_than(2015):
-                curve_loops = list(crsm.GetCropShape())
-            else:
-                curve_loops = [crsm.GetCropRegionShape()]
-            
-            if curve_loops:
-                pickle.dump(make_picklable_list(curve_loops), f)
+        forms.alert('Select exactly one view.')
