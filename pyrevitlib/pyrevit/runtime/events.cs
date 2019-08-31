@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Interop;
 using System.Windows.Controls;
+using System.Text.RegularExpressions;
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
@@ -11,6 +12,8 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 
 using UIFramework;
+using Xceed.Wpf.AvalonDock.Controls;
+using Xceed.Wpf.AvalonDock.Layout;
 
 using pyRevitLabs.Common;
 
@@ -712,15 +715,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return null;
         }
 
-        public static List<TabItem> GetOpenViewTabs(UIApplication uiapp) {
-            var openViewTabs = new List<TabItem>();
-            var wndRoot = (UIFramework.MainWindow)GetWindowRoot(uiapp);
+        public static LayoutDocumentPaneGroupControl GetDocumentTabGroup(UIApplication uiapp) {
+            var wndRoot = (MainWindow)GetWindowRoot(uiapp);
             if (wndRoot != null) {
-                var tabsCollection = MainWindow.FindFirstChild<Xceed.Wpf.AvalonDock.Controls.DocumentPaneTabPanel>(wndRoot);
-                foreach (TabItem tabItem in tabsCollection.Children)
-                    openViewTabs.Add(tabItem);
+                return MainWindow.FindFirstChild<LayoutDocumentPaneGroupControl>(wndRoot);
             }
-            return openViewTabs;
+            return null;
+        }
+
+        public static IEnumerable<LayoutDocumentPaneControl> GetDocumentPanes(LayoutDocumentPaneGroupControl docTabGroup) {
+            if (docTabGroup != null) {
+                return docTabGroup.FindVisualChildren<LayoutDocumentPaneControl>();
+            }
+            return new List<LayoutDocumentPaneControl>();
+        }
+
+        public static IEnumerable<TabItem> GetDocumentTabs(LayoutDocumentPaneControl docPane) {
+            if (docPane != null) {
+                return docPane.FindVisualChildren<TabItem>();
+            }
+            return new List<TabItem>();
+        }
+
+        public static IEnumerable<TabItem> GetDocumentTabs(LayoutDocumentPaneGroupControl docTabGroup) {
+            if (docTabGroup != null) {
+                return docTabGroup.FindVisualChildren<TabItem>();
+            }
+            return new List<TabItem>();
         }
 
         private void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
@@ -804,8 +825,46 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 #endif
 
-        public void StartColorizingViewTabs(UIApplication uiapp) {
+        public static UIApplication _uiApp { get; private set; }
 
+        public static void StartGroupingDocumentTabs(UIApplication uiapp) {
+            _uiApp = uiapp;
+            uiapp.ViewActivated += UpdateDocumentTabGroups;
+        }
+
+        public static void StopGroupingDocumentTabs(UIApplication uiapp) {
+            uiapp.ViewActivated -= UpdateDocumentTabGroups;
+            _uiApp = null;
+        }
+
+        private static void UpdateDocumentTabGroups(object sender, ViewActivatedEventArgs e) {
+            var brushes = new List<System.Windows.Media.SolidColorBrush> {
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12)),
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)),
+                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)),
+                System.Windows.Media.Brushes.DarkGray,
+                System.Windows.Media.Brushes.LightGray,
+                System.Windows.Media.Brushes.DarkSlateGray,
+            };
+
+            if (_uiApp != null) {
+                var docTabGroup = GetDocumentTabGroup(_uiApp);
+                var docTabs = GetDocumentTabs(docTabGroup);
+                int counter = 0;
+                foreach (Document doc in _uiApp.Application.Documents) {
+                    foreach (TabItem tab in docTabs) {
+                        if (tab.ToolTip.ToString().Contains(doc.Title)) {
+                            var title = ((LayoutDocument)tab.DataContext).Title.ToString();
+                            title = new Regex(@"\d+\s\-\>\s").Replace(title, "");
+                            tab.BorderBrush = brushes[counter];
+                            tab.BorderThickness = new System.Windows.Thickness(0, 2, 0, 0);
+                            ((LayoutDocument)tab.DataContext).Title =
+                                string.Format("{0} -> {1}", counter, title);
+                        }
+                    }
+                    counter++;
+                }
+            }
         }
     }
 
