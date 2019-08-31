@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Interop;
+using System.Windows.Controls;
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
+
+using UIFramework;
 
 using pyRevitLabs.Common;
 
@@ -253,8 +257,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static EventType? GetEventType(string eventName) {
             try {
                 return eventNames.First(x => x.Value == eventName).Key;
-            }
-            catch {
+            } catch {
                 return null;
             }
         }
@@ -272,7 +275,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return supTypes;
         }
 
-        public static void ToggleHooks<T>(T hndlr, UIApplication uiApp, EventType eventType, bool toggle_on = true) where T: IEventTypeHandler {
+        public static void ToggleHooks<T>(T hndlr, UIApplication uiApp, EventType eventType, bool toggle_on = true) where T : IEventTypeHandler {
             switch (eventType) {
                 case EventType.Application_ApplicationInitialized:
                     if (toggle_on)
@@ -673,8 +676,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public AppEventUtils(Application app) {
             if (app != null) {
                 App = app;
-            }
-            else
+            } else
                 throw new PyRevitException("Application can not be null.");
         }
     }
@@ -693,9 +695,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (uiApp != null) {
                 UIApp = uiApp;
                 NewElements = new List<ElementId>();
-            }
-            else
+            } else
                 throw new PyRevitException("UIApplication can not be null.");
+        }
+
+        public static System.Windows.Media.Visual GetWindowRoot(UIApplication uiapp) {
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
+            IntPtr wndHndle = Autodesk.Windows.ComponentManager.ApplicationWindow;
+#else
+            IntPtr wndHndle = uiapp.MainWindowHandle;
+#endif
+            if (wndHndle != IntPtr.Zero) {
+                var wndSource = HwndSource.FromHwnd(wndHndle);
+                return wndSource.RootVisual;
+            }
+            return null;
+        }
+
+        public static List<TabItem> GetOpenViewTabs(UIApplication uiapp) {
+            var openViewTabs = new List<TabItem>();
+            var wndRoot = (UIFramework.MainWindow)GetWindowRoot(uiapp);
+            if (wndRoot != null) {
+                var tabsCollection = MainWindow.FindFirstChild<Xceed.Wpf.AvalonDock.Controls.DocumentPaneTabPanel>(wndRoot);
+                foreach (TabItem tabItem in tabsCollection.Children)
+                    openViewTabs.Add(tabItem);
+            }
+            return openViewTabs;
         }
 
         private void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
@@ -709,8 +734,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #else
                 e.Cancel();
 #endif
-            }
-            else
+            } else
                 e.OverrideResult(1);
         }
 
@@ -735,8 +759,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                 }
                 TXN.Commit();
-            }
-            catch {
+            } catch {
             }
 
             _txnCompleted = true;
@@ -769,7 +792,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             UIApp.Idling += NewElementPropertyValueUpdater;
         }
 
- #if !(REVIT2013)
+#if !(REVIT2013)
         public void PostCommandAndUpdateNewElementProperties(Document doc,
                                                              PostableCommand postableCommand, string transactionName,
                                                              BuiltInParameter bip, string value) {
@@ -780,6 +803,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PostElementPropertyUpdateRequest(doc, transactionName, bip, value);
         }
 #endif
+
+        public void StartColorizingViewTabs(UIApplication uiapp) {
+
+        }
     }
 
     public class PlaceKeynoteExternalEventHandler : IExternalEventHandler {
@@ -787,7 +814,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #if !(REVIT2013)
         public PostableCommand KeynoteType = PostableCommand.UserKeynote;
 #endif
-        public PlaceKeynoteExternalEventHandler() {}
+        public PlaceKeynoteExternalEventHandler() { }
 
         public void Execute(UIApplication app) {
 #if !(REVIT2013)

@@ -464,6 +464,9 @@
                             <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,15,0">Select UI Language:</TextBlock>
                             <ComboBox x:Name="applocales_cb"/>
                         </DockPanel>
+                        <GroupBox Header="Revit GUI Settings" Margin="0,10,0,0" Padding="10">
+                            <CheckBox Content="Colorize View Tabs by Project" IsChecked="False" IsEnabled="True"/>
+                        </GroupBox>
                         <DockPanel Margin="0,10,0,0">
                             <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Output Styling (CSS Stylesheet)</TextBlock>
                             <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">

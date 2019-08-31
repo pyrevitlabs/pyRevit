@@ -46,3 +46,9 @@ def set_statusbar_text(text):
 
 def get_window_rectangle():
     return Common.User32.GetWindowRect(get_mainwindow_hwnd())
+
+
+def toggle_infocenter(state):
+    ad.ComponentManager.InfoCenterToolBar.Visibility = \
+        Windows.Visibility.Visible if state else \
+            Windows.Visibility.Collapsed
