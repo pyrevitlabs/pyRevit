@@ -454,6 +454,20 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             value=state
         )
 
+    @property
+    def colorize_docs(self):
+        return self.core.get_option(
+            CONSTS.ConfigsColorizeDocsKey,
+            default_value=CONSTS.ConfigsColorizeDocsDefault,
+        )
+
+    @colorize_docs.setter
+    def colorize_docs(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsColorizeDocsKey,
+            value=state
+        )
+
     def get_config_version(self):
         """Return version of config file used for change detection."""
         return self.get_config_file_hash()

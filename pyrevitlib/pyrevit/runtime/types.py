@@ -51,7 +51,8 @@ if not EXEC_PARAMS.doc_mode:
     # events.cs
     EventUtils = runtime_module.EventUtils
     AppEventUtils = runtime_module.AppEventUtils
-    UIEventUtils = runtime_module.UIEventUtils
+    DocumentEventUtils = runtime_module.DocumentEventUtils
+    DocumentTabEventUtils = runtime_module.DocumentTabEventUtils
     PlaceKeynoteExternalEventHandler = \
         runtime_module.PlaceKeynoteExternalEventHandler
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Interop;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Text.RegularExpressions;
 
 using Autodesk.Revit.ApplicationServices;
@@ -13,9 +14,10 @@ using Autodesk.Revit.UI.Events;
 
 using UIFramework;
 using Xceed.Wpf.AvalonDock.Controls;
-using Xceed.Wpf.AvalonDock.Layout;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.PyRevit;
+using System.IO;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum EventType {
@@ -684,25 +686,145 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    public class UIEventUtils {
-        private bool _txnCompleted = false;
-        private Document _doc = null;
-        private string _txnName = null;
-        private BuiltInParameter _paramToUpdate;
-        private string _paramToUpdateStringValue = null;
+    public static class DocumentEventUtils {
+        private static bool _txnCompleted = false;
+        private static Document _doc = null;
+        private static string _txnName = null;
+        private static BuiltInParameter _paramToUpdate;
+        private static string _paramToUpdateStringValue = null;
 
-        public UIApplication UIApp { get; private set; }
-        public List<ElementId> NewElements { get; private set; }
+        public static UIApplication UIApp { get; private set; }
+        public static List<ElementId> NewElements { get; private set; }
 
-        public UIEventUtils(UIApplication uiApp) {
-            if (uiApp != null) {
-                UIApp = uiApp;
+        private static void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
+            if (NewElements == null)
                 NewElements = new List<ElementId>();
-            } else
-                throw new PyRevitException("UIApplication can not be null.");
+            NewElements.AddRange(e.GetAddedElementIds());
         }
 
-        public static System.Windows.Media.Visual GetWindowRoot(UIApplication uiapp) {
+        private static void CancelAllDialogs(object sender, DialogBoxShowingEventArgs e) {
+            if (e.Cancellable) {
+#if (REVIT2013 || REVIT2014)
+                e.Cancel = true;
+#else
+                e.Cancel();
+#endif
+            } else
+                e.OverrideResult(1);
+        }
+
+        private static void NewElementPropertyValueUpdater(object sender, IdlingEventArgs e) {
+            // cancel if txn is completed
+            if (_txnCompleted) {
+                UIApp.Idling -= NewElementPropertyValueUpdater;
+                EndCancellingAllDialogs();
+                EndTrackingElements();
+            }
+
+            // now update element parameters
+            try {
+                var TXN = new Transaction(_doc, _txnName);
+                TXN.Start();
+                foreach (var newElId in NewElements) {
+                    var element = _doc.GetElement(newElId);
+                    if (element != null) {
+                        var parameter = element.get_Parameter(_paramToUpdate);
+                        if (parameter != null && !parameter.IsReadOnly)
+                            parameter.Set(_paramToUpdateStringValue);
+                    }
+                }
+                TXN.Commit();
+            } catch {
+            }
+
+            _txnCompleted = true;
+        }
+
+        public static void StartTrackingElements() {
+            UIApp.Application.DocumentChanged += OnDocumentChanged;
+        }
+
+        public static void EndTrackingElements() {
+            UIApp.Application.DocumentChanged -= OnDocumentChanged;
+        }
+
+        public static void StartCancellingAllDialogs() {
+            UIApp.DialogBoxShowing += CancelAllDialogs;
+        }
+
+        public static void EndCancellingAllDialogs() {
+            UIApp.DialogBoxShowing -= CancelAllDialogs;
+        }
+
+        public static void PostElementPropertyUpdateRequest(Document doc, string txnName, BuiltInParameter bip, string value) {
+            _doc = doc;
+            _txnName = txnName;
+            _paramToUpdate = bip;
+            _paramToUpdateStringValue = value;
+            UIApp.Idling += NewElementPropertyValueUpdater;
+        }
+
+#if !(REVIT2013)
+        public static void PostCommandAndUpdateNewElementProperties(UIApplication uiapp, Document doc, PostableCommand postableCommand, string transactionName, BuiltInParameter bip, string value) {
+            UIApp = uiapp;
+            StartTrackingElements();
+            StartCancellingAllDialogs();
+            var postableCommandId = RevitCommandId.LookupPostableCommandId(postableCommand);
+            UIApp.PostCommand(postableCommandId);
+            PostElementPropertyUpdateRequest(doc, transactionName, bip, value);
+        }
+#endif
+    }
+
+    public class PlaceKeynoteExternalEventHandler : IExternalEventHandler {
+        public string KeynoteKey = null;
+#if !(REVIT2013)
+        public PostableCommand KeynoteType = PostableCommand.UserKeynote;
+#endif
+        public void Execute(UIApplication uiApp) {
+#if !(REVIT2013)
+            DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
+                uiApp,
+                uiApp.ActiveUIDocument.Document,
+                KeynoteType,
+                "Update",
+                BuiltInParameter.KEY_VALUE,
+                KeynoteKey
+                );
+#else
+            throw new NotSupportedFeatureException();
+#endif
+        }
+
+        public string GetName() {
+            return "PlaceKeynoteExternalEvent";
+        }
+    }
+
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
+    public static class DocumentTabEventUtils {
+        public static UIApplication UIApp { get; private set; }
+
+        public static bool IsUpdatingDocumentTabs { get; private set; }
+
+        public static Dictionary<int, Brush> DocumentBrushes;
+        public static List<SolidColorBrush> DocumentBrushTheme = new List<SolidColorBrush> {
+                PyRevitConsts.PyRevitAccentBrush,
+                PyRevitConsts.PyRevitBackgroundBrush,
+                Brushes.Gray,
+                Brushes.SaddleBrown,
+                Brushes.Gold,
+                Brushes.DarkTurquoise,
+                Brushes.OrangeRed,
+                Brushes.Aqua,
+                Brushes.YellowGreen,
+                Brushes.DeepPink,
+                Brushes.White
+            };
+
+        private static object UpdateLock = new object();
+
+        public static Visual GetWindowRoot(UIApplication uiapp) {
 #if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
             IntPtr wndHndle = Autodesk.Windows.ComponentManager.ApplicationWindow;
 #else
@@ -744,154 +866,102 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<TabItem>();
         }
 
-        private void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
-            NewElements.AddRange(e.GetAddedElementIds());
-        }
-
-        private void CancelAllDialogs(object sender, DialogBoxShowingEventArgs e) {
-            if (e.Cancellable) {
-#if (REVIT2013 || REVIT2014)
-                e.Cancel = true;
-#else
-                e.Cancel();
-#endif
-            } else
-                e.OverrideResult(1);
-        }
-
-        private void NewElementPropertyValueUpdater(object sender, IdlingEventArgs e) {
-            // cancel if txn is completed
-            if (_txnCompleted) {
-                UIApp.Idling -= NewElementPropertyValueUpdater;
-                EndCancellingAllDialogs();
-                EndTrackingElements();
-            }
-
-            // now update element parameters
-            try {
-                var TXN = new Transaction(_doc, _txnName);
-                TXN.Start();
-                foreach (var newElId in NewElements) {
-                    var element = _doc.GetElement(newElId);
-                    if (element != null) {
-                        var parameter = element.get_Parameter(_paramToUpdate);
-                        if (parameter != null && !parameter.IsReadOnly)
-                            parameter.Set(_paramToUpdateStringValue);
-                    }
-                }
-                TXN.Commit();
-            } catch {
-            }
-
-            _txnCompleted = true;
-        }
-
-        public void StartTrackingElements() {
-            UIApp.Application.DocumentChanged += OnDocumentChanged;
-        }
-
-        public void EndTrackingElements() {
-            UIApp.Application.DocumentChanged -= OnDocumentChanged;
-        }
-
-        public void StartCancellingAllDialogs() {
-            UIApp.DialogBoxShowing += CancelAllDialogs;
-        }
-
-        public void EndCancellingAllDialogs() {
-            UIApp.DialogBoxShowing -= CancelAllDialogs;
-        }
-
-        public void PostElementPropertyUpdateRequest(Document doc,
-                                                     string txnName,
-                                                     BuiltInParameter bip,
-                                                     string value) {
-            _doc = doc;
-            _txnName = txnName;
-            _paramToUpdate = bip;
-            _paramToUpdateStringValue = value;
-            UIApp.Idling += NewElementPropertyValueUpdater;
-        }
-
-#if !(REVIT2013)
-        public void PostCommandAndUpdateNewElementProperties(Document doc,
-                                                             PostableCommand postableCommand, string transactionName,
-                                                             BuiltInParameter bip, string value) {
-            StartTrackingElements();
-            StartCancellingAllDialogs();
-            var postableCommandId = RevitCommandId.LookupPostableCommandId(postableCommand);
-            UIApp.PostCommand(postableCommandId);
-            PostElementPropertyUpdateRequest(doc, transactionName, bip, value);
-        }
-#endif
-
-        public static UIApplication _uiApp { get; private set; }
-
         public static void StartGroupingDocumentTabs(UIApplication uiapp) {
-            _uiApp = uiapp;
-            uiapp.ViewActivated += UpdateDocumentTabGroups;
+            lock (UpdateLock) {
+                if (!IsUpdatingDocumentTabs) {
+                    UIApp = uiapp;
+                    DocumentBrushes = new Dictionary<int, Brush>();
+                    IsUpdatingDocumentTabs = true;
+                    uiapp.Application.ProgressChanged += Application_ProgressChanged;
+                    uiapp.ApplicationClosing += Uiapp_ApplicationClosing;
+                }
+            }
         }
 
         public static void StopGroupingDocumentTabs(UIApplication uiapp) {
-            uiapp.ViewActivated -= UpdateDocumentTabGroups;
-            _uiApp = null;
+            lock (UpdateLock) {
+                if (IsUpdatingDocumentTabs) {
+                    UpdateDocumentTabGroups(clear: true);
+                    IsUpdatingDocumentTabs = false;
+                    uiapp.ApplicationClosing -= Uiapp_ApplicationClosing;
+                    uiapp.Application.ProgressChanged -= Application_ProgressChanged;
+                    DocumentBrushes.Clear();
+                }
+            }
         }
 
-        private static void UpdateDocumentTabGroups(object sender, ViewActivatedEventArgs e) {
-            var brushes = new List<System.Windows.Media.SolidColorBrush> {
-                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12)),
-                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)),
-                new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)),
-                System.Windows.Media.Brushes.DarkGray,
-                System.Windows.Media.Brushes.LightGray,
-                System.Windows.Media.Brushes.DarkSlateGray,
-            };
+        private static void Uiapp_ApplicationClosing(object sender, ApplicationClosingEventArgs e) {
+            if (UIApp != null)
+                StopGroupingDocumentTabs(UIApp);
+        }
 
-            if (_uiApp != null) {
-                var docTabGroup = GetDocumentTabGroup(_uiApp);
-                var docTabs = GetDocumentTabs(docTabGroup);
-                int counter = 0;
-                foreach (Document doc in _uiApp.Application.Documents) {
-                    foreach (TabItem tab in docTabs) {
-                        if (tab.ToolTip.ToString().Contains(doc.Title)) {
-                            var title = ((LayoutDocument)tab.DataContext).Title.ToString();
-                            title = new Regex(@"\d+\s\-\>\s").Replace(title, "");
-                            tab.BorderBrush = brushes[counter];
-                            tab.BorderThickness = new System.Windows.Thickness(0, 2, 0, 0);
-                            ((LayoutDocument)tab.DataContext).Title =
-                                string.Format("{0} -> {1}", counter, title);
+        private static void Application_ProgressChanged(object sender, ProgressChangedEventArgs e) {
+            // if progress update is related to updating views
+            if (e.Caption.StartsWith("Drawing:") && e.Stage == ProgressStage.Finished)
+                UpdateDocumentTabGroups();
+        }
+
+        private static void UpdateDocumentTabGroups(bool clear = false) {
+            lock (UpdateLock) {
+                if (IsUpdatingDocumentTabs) {
+                    // get the ui tabs
+                    var docTabGroup = GetDocumentTabGroup(UIApp);
+                    var docTabs = GetDocumentTabs(docTabGroup);
+
+                    // if clear is requested, reset the tabs
+                    if (clear) {
+                        foreach (TabItem tab in docTabs) {
+                            tab.BorderBrush = Brushes.White;
+                            tab.BorderThickness = new System.Windows.Thickness();
+                        }
+                        return;
+                    }
+
+                    // update doc tabs
+                    var newDocBrushes = new Dictionary<int, Brush>();
+
+                    foreach (Document doc in UIApp.Application.Documents) {
+                        // get doc id
+                        int docId = doc.GetHashCode();
+
+                        // determine which brush to use for this doc
+                        Brush docBrush = null;
+                        if (DocumentBrushes.ContainsKey(docId)) {
+                            docBrush = DocumentBrushes[docId];
+                        } else {
+                            foreach (Brush brush in DocumentBrushTheme)
+                                if (!newDocBrushes.ContainsValue(brush)) {
+                                    docBrush = brush;
+                                    break;
+                                }
+                        }
+
+                        // apply the brush to all doc tabs
+                        if (docBrush != null) {
+                            newDocBrushes[docId] = docBrush;
+                            // TODO: FIXME: need a way to uniquely identify the document tabs
+                            var docTitle = doc.Title;
+                            if (doc.PathName != null && doc.PathName != string.Empty)
+                                docTitle = Path.GetFileName(doc.PathName);
+
+                            Regex matcher = new Regex(docTitle + @"\s\-\s");
+                            foreach (TabItem tab in docTabs) {
+                                if (matcher.IsMatch(tab.ToolTip.ToString())) {
+                                    tab.BorderBrush = docBrush;
+                                    if (doc.IsFamilyDocument)
+                                        tab.BorderThickness = new System.Windows.Thickness(1);
+                                    else
+                                        tab.BorderThickness = new System.Windows.Thickness(0, 1, 0, 0);
+                                }
+                            }
                         }
                     }
-                    counter++;
+
+                    // update brush list
+                    DocumentBrushes = newDocBrushes;
                 }
             }
         }
     }
-
-    public class PlaceKeynoteExternalEventHandler : IExternalEventHandler {
-        public string KeynoteKey = null;
-#if !(REVIT2013)
-        public PostableCommand KeynoteType = PostableCommand.UserKeynote;
 #endif
-        public PlaceKeynoteExternalEventHandler() { }
-
-        public void Execute(UIApplication app) {
-#if !(REVIT2013)
-            var docutils = new UIEventUtils(app);
-            docutils.PostCommandAndUpdateNewElementProperties(
-                app.ActiveUIDocument.Document,
-                KeynoteType,
-                "Update",
-                BuiltInParameter.KEY_VALUE,
-                KeynoteKey
-                );
-#else
-            throw new NotSupportedFeatureException();
-#endif
-        }
-
-        public string GetName() {
-            return "PlaceKeynoteExternalEvent";
-        }
-    }
 }

@@ -8,10 +8,7 @@ from pyrevit.api import AdWindows as ad
 from pyrevit.api import UIFramework as uf
 from pyrevit.api import UIFrameworkServices as ufs
 from pyrevit.labs import Common
-
-
-__all__ = ('get_mainwindow_hwnd', 'get_statusbar_hwnd',
-           'set_statusbar_text', 'get_window_rectangle')
+from pyrevit.runtime import types
 
 
 def get_mainwindow_hwnd():
@@ -52,3 +49,14 @@ def toggle_infocenter(state):
     ad.ComponentManager.InfoCenterToolBar.Visibility = \
         Windows.Visibility.Visible if state else \
             Windows.Visibility.Collapsed
+
+
+def toggle_doc_colorizer(state):
+    if HOST_APP.is_newer_than(2018):
+        # start or stop the document colorizer
+        if state:
+            types.DocumentTabEventUtils.StartGroupingDocumentTabs(
+                HOST_APP.uiapp)
+        else:
+            types.DocumentTabEventUtils.StopGroupingDocumentTabs(
+                HOST_APP.uiapp)

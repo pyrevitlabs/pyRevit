@@ -904,7 +904,7 @@ class TemplatePromptBar(WPFWindow):
         scale_factor = 1.0 / HOST_APP.proc_screen_scalefactor
         top = left = width = height = 0
 
-        window_rect = revit.get_window_rectangle()
+        window_rect = revit.ui.get_window_rectangle()
 
         # set width and height
         width = window_rect.Right - window_rect.Left

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Windows.Media;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
@@ -109,6 +110,8 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsUserCanExtendDefault = true;
         public const string ConfigsUserCanConfigKey = "usercanconfig";
         public const bool ConfigsUserCanConfigDefault = true;
+        public const string ConfigsColorizeDocsKey = "colorize_docs";
+        public const bool ConfigsColorizeDocsDefault = false;
 
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
@@ -161,6 +164,10 @@ namespace pyRevitLabs.PyRevit {
         public const string BundleScriptDynamoBIMPostfix = ".dyn";
         public const string BundleScriptGrasshopperPostfix = ".gh";
         public const string BundleScriptRevitFamilyPostfix = ".rfa";
+
+        // theme
+        public static SolidColorBrush PyRevitAccentBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12));
+        public static SolidColorBrush PyRevitBackgroundBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50));
 
 
         // methods
