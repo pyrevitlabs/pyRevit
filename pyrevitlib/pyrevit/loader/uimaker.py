@@ -206,7 +206,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__shiftclick__'] = False
         __builtins__['__forceddebugmode__'] = False
     except Exception as err:
-        mlogger.error('Smart button import setup: %s | %s', smartbutton, err)
+        mlogger.error('Smart button setup error: %s | %s', smartbutton, err)
         return new_uibutton
 
     try:
@@ -247,11 +247,18 @@ def _produce_ui_smartbutton(ui_maker_params):
             new_uibutton.deactivate()
 
         mlogger.debug('SelfInit successful on Smartbutton: %s', new_uibutton)
-        return new_uibutton
     except Exception as err:
         mlogger.error('Smart button script import error: %s | %s',
                       smartbutton, err)
         return new_uibutton
+
+    new_uibutton.reset_highlights()
+    if smartbutton.is_updated:
+        new_uibutton.highlight_as_updated()
+    if smartbutton.is_new:
+        new_uibutton.highlight_as_new()
+
+    return new_uibutton
 
 
 def _produce_ui_linkbutton(ui_maker_params):
@@ -301,7 +308,13 @@ def _produce_ui_linkbutton(ui_maker_params):
             None,
             update_if_exists=True,
             ui_title=_make_ui_title(linkbutton))
-        return parent_ui_item.button(linkbutton.name)
+        linkbutton_ui = parent_ui_item.button(linkbutton.name)
+        linkbutton_ui.reset_highlights()
+        if linkbutton.is_updated:
+            linkbutton_ui.highlight_as_updated()
+        if linkbutton.is_new:
+            linkbutton_ui.highlight_as_new()
+        return linkbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -339,7 +352,13 @@ def _produce_ui_pushbutton(ui_maker_params):
             avail_class_name=pushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))
-        return parent_ui_item.button(pushbutton.name)
+        button_ui = parent_ui_item.button(pushbutton.name)
+        button_ui.reset_highlights()
+        if pushbutton.is_updated:
+            button_ui.highlight_as_updated()
+        if pushbutton.is_new:
+            button_ui.highlight_as_new()
+        return button_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None

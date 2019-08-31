@@ -11,7 +11,7 @@ from pyrevit.framework import IO
 from pyrevit.framework import Imaging
 from pyrevit.framework import BindingFlags
 from pyrevit.framework import Media, Convert
-from pyrevit.api import UI, AdWindows
+from pyrevit.api import UI, AdWindows, AdInternal
 
 
 mlogger = get_logger(__name__)
@@ -745,6 +745,22 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
             self.set_tooltip_image(tooltip_media)
         elif tooltip_media.endswith(DEFAULT_TOOLTIP_VIDEO_FORMAT):
             self.set_tooltip_video(tooltip_media)
+
+    def reset_highlights(self):
+        adwindows_obj = self.get_adwindows_object()
+        if adwindows_obj:
+            adwindows_obj.Highlight = \
+                coreutils.get_enum_none(AdInternal.Windows.HighlightMode)
+
+    def highlight_as_new(self):
+        adwindows_obj = self.get_adwindows_object()
+        if adwindows_obj:
+            adwindows_obj.Highlight = AdInternal.Windows.HighlightMode.New
+
+    def highlight_as_updated(self):
+        adwindows_obj = self.get_adwindows_object()
+        if adwindows_obj:
+            adwindows_obj.Highlight = AdInternal.Windows.HighlightMode.Updated
 
     def process_deferred_tooltips(self):
         try:

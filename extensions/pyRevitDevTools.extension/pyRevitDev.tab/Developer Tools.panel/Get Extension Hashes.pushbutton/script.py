@@ -1,7 +1,7 @@
 """Prints calculated hash values for each extension."""
 
-
 __title__ = 'Get Extension\nHash Values'
+__highlight_updated__= True
 # __beta__ = True
 
 from pyrevit import script

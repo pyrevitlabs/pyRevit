@@ -199,7 +199,6 @@ class URLButton(GenericUICommand):
         return self.target_url or ""
 
 
-
 # Command groups only include commands. these classes can include
 # GenericUICommand as sub components
 class GenericUICommandGroup(GenericUIContainer):

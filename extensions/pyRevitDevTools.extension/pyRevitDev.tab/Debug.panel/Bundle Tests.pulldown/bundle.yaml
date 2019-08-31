@@ -10,6 +10,7 @@ layout:
   - ---
   - Test pyRevit Bundle
   - Test pyRevit Button
+  - Test Smart Button
   - Test C# Script
   - Test Direct Invoke
   - Test Direct Class Invoke
