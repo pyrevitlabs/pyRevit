@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Provide conversion services between python.locale and host languages"""
+# https://www.science.co.il/language/Locale-codes.php
 from pyrevit import HOST_APP
 from pyrevit.api import ApplicationServices
 from pyrevit.userconfig import user_config
@@ -7,17 +8,22 @@ from pyrevit.userconfig import user_config
 
 class AppLocale(object):
     """Type representing a language option."""
-    def __init__(self, lang_type, locale_codes):
+    def __init__(self, lang_type, locale_codes, lang_name=None, lang_dir='LTR'):
         if isinstance(lang_type, ApplicationServices.LanguageType):
             self.lang_type = lang_type
         elif isinstance(lang_type, str):
             self.lang_type = lang_type
+        self.lang_name = lang_name
+        self.lang_dir = lang_dir
         self.locale_codes = locale_codes
         if self.locale_codes:
             self.locale_code = self.locale_codes[0]
 
     def __str__(self):
-        return '%s (%s)' % (str(self.lang_type), self.locale_code)
+        if self.lang_name:
+            return '%s (%s)' % (self.lang_name, self.locale_code)
+        else:
+            return '%s (%s)' % (str(self.lang_type), self.locale_code)
 
     def __repr__(self):
         return str(self)
@@ -90,13 +96,15 @@ if HOST_APP.is_newer_than(2018, or_equal=True):
 APP_LOCALES.append(
     AppLocale(
         lang_type="Bulgarian",
-        locale_codes=["it_it", "italian"])
+        locale_codes=["bg", "bulgarian"])
     )
 APP_LOCALES.append(
     AppLocale(
         lang_type="Farsi",
-        locale_codes=["it_it", "italian"])
-    )
+        locale_codes=["fa", "farsi", "persian"],
+        lang_name="فارسی",
+        lang_dir='RTL'
+    ))
 
 
 def get_applocale_by_local_code(locale_code):

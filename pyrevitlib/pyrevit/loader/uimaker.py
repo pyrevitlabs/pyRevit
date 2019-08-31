@@ -5,6 +5,7 @@ import imp
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils.logger import get_logger
+# from pyrevit.coreutils import applocales
 
 if not EXEC_PARAMS.doc_mode:
     from pyrevit.coreutils import ribbon
@@ -618,6 +619,10 @@ def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
     cmp_count = _recursively_produce_ui_items(
         UIMakerParams(current_ui, None, ui_ext, ext_asm_info, create_beta))
     mlogger.debug('%s components were created for: %s', cmp_count, ui_ext)
+    # current_applocale = applocales.get_current_applocale()
+    # RLT flips everthing! the texts, the icons, so stupid!
+    # if current_applocale.lang_dir == "RTL":
+    #     current_ui.set_RTL_flow()
 
 
 def sort_pyrevit_ui(ui_ext):

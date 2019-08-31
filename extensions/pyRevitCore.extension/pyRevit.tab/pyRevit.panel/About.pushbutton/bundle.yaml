@@ -5,6 +5,7 @@ title:
   fr_fr: A Propos De
   nl_nl: Over
   pt_br: Sobre pyRevit
+  fa: درباره
 
 tooltip: >
   About pyRevit. Opens the pyRevit blog website. You can find

@@ -6,7 +6,7 @@ from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.framework import System, Uri
+from pyrevit.framework import System, Uri, Windows
 from pyrevit.framework import IO
 from pyrevit.framework import Imaging
 from pyrevit.framework import BindingFlags
@@ -1382,6 +1382,9 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
             raise PyRevitUIError('Can not get panels for this tab: {}'
                                  .format(self._rvtapi_object))
 
+    def get_adwindows_object(self):
+        return self.get_rvtapi_object()
+
     @staticmethod
     def check_pyrevit_tab(revit_ui_tab):
         return hasattr(revit_ui_tab, 'Tag') \
@@ -1460,6 +1463,22 @@ class _PyRevitUI(GenericPyRevitUIContainer):
                 self._add_component(new_pyrvt_tab)
                 mlogger.debug('Native tab added to the list of tabs: %s',
                               new_pyrvt_tab.name)
+
+    def get_adwindows_ribbon_control(self):
+        pyrevit_tabs = self.get_pyrevit_tabs()
+        if pyrevit_tabs:
+            tab_adwnd_obj = pyrevit_tabs[0].get_adwindows_object()
+            return tab_adwnd_obj.RibbonControl
+
+    def set_RTL_flow(self):
+        rctrl = self.get_adwindows_ribbon_control()
+        if rctrl:
+            rctrl.FlowDirection = Windows.FlowDirection.RightToLeft
+
+    def set_LTR_flow(self):
+        rctrl = self.get_adwindows_ribbon_control()
+        if rctrl:
+            rctrl.FlowDirection = Windows.FlowDirection.LeftToRight
 
     def get_pyrevit_tabs(self):
         return [tab for tab in self if tab.is_pyrevit_tab()]
