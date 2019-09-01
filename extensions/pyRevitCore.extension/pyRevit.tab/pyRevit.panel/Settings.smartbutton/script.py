@@ -194,7 +194,8 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_uiux(self):
         applocale = applocales.get_current_applocale()
-        self.applocales_cb.ItemsSource = sorted(applocales.APP_LOCALES)
+        self.applocales_cb.ItemsSource = \
+            sorted(applocales.APP_LOCALES, key=lambda x: str(x.lang_type))
         self.applocales_cb.SelectedItem = applocale
         # colorize docs
         self.colordocs_cb.IsChecked = user_config.colorize_docs

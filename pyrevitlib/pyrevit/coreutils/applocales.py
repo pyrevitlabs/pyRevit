@@ -21,7 +21,8 @@ class AppLocale(object):
 
     def __str__(self):
         if self.lang_name:
-            return '%s (%s)' % (self.lang_name, self.locale_code)
+            return '%s / %s (%s)' % (
+                self.lang_name, str(self.lang_type), self.locale_code)
         else:
             return '%s (%s)' % (str(self.lang_type), self.locale_code)
 
@@ -34,6 +35,7 @@ class AppLocale(object):
 
 DEFAULT_LOCALE = AppLocale(
     lang_type=ApplicationServices.LanguageType.English_USA,
+    lang_name="English USA",
     locale_codes=["en_us", "english"])
 
 APP_LOCALES = [
@@ -41,45 +43,59 @@ APP_LOCALES = [
 
     AppLocale(
         lang_type=ApplicationServices.LanguageType.German,
+        lang_name="Deutsch",
         locale_codes=["de_de", "german"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Spanish,
+        lang_name="español",
         locale_codes=["es_es", "spanish"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.French,
+        lang_name="français",
         locale_codes=["fr_fr", "french"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Italian,
+        lang_name="italiano",
         locale_codes=["it_it", "italian"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Dutch,
+        lang_name="Nederlands",
         locale_codes=["nl_nl", "nl_be", "dutch"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Chinese_Simplified,
+        lang_name="简体中文",
         locale_codes=["chinese_s", "chinese"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Chinese_Traditional,
+        lang_name="繁體中文",
         locale_codes=["chinese_t", "chinese"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Japanese,
+        lang_name="日本語",
         locale_codes=["ja", "japanese"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Korean,
+        lang_name="한국어",
         locale_codes=["ko", "korean"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Russian,
+        lang_name="Русский",
         locale_codes=["ru", "russian"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Czech,
+        lang_name="Čeština",
         locale_codes=["cs", "czech"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Polish,
+        lang_name="Polski",
         locale_codes=["pl", "polish"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Hungarian,
+        lang_name="Magyar",
         locale_codes=["hu", "hungarian"]),
     AppLocale(
         lang_type=ApplicationServices.LanguageType.Brazilian_Portuguese,
+        lang_name="Português do Brasil",
         locale_codes=["pt_br", "portuguese_brazil", "brazilian",
                       "portuguese", "pt_pt"]),
 ]
@@ -89,6 +105,7 @@ if HOST_APP.is_newer_than(2018, or_equal=True):
     APP_LOCALES.append(
         AppLocale(
             lang_type=ApplicationServices.LanguageType.English_GB,
+            lang_name="English Great Britain",
             locale_codes=["en_gb"])
         )
 
@@ -96,6 +113,7 @@ if HOST_APP.is_newer_than(2018, or_equal=True):
 APP_LOCALES.append(
     AppLocale(
         lang_type="Bulgarian",
+        lang_name="Български",
         locale_codes=["bg", "bulgarian"])
     )
 APP_LOCALES.append(
