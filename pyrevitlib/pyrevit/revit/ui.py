@@ -46,10 +46,18 @@ def get_window_rectangle():
     return Common.User32.GetWindowRect(get_mainwindow_hwnd())
 
 
-def toggle_infocenter(state):
+def is_infocenter_visible():
+    return ad.ComponentManager.InfoCenterToolBar.Visibility == \
+        Windows.Visibility.Visible
+
+
+def toggle_infocenter():
+    current_state = ad.ComponentManager.InfoCenterToolBar.Visibility
+    is_hidden = (current_state == Windows.Visibility.Collapsed)
     ad.ComponentManager.InfoCenterToolBar.Visibility = \
-        Windows.Visibility.Visible if state else \
+        Windows.Visibility.Visible if is_hidden else \
             Windows.Visibility.Collapsed
+    return is_infocenter_visible()
 
 
 def toggle_doc_colorizer(state):
