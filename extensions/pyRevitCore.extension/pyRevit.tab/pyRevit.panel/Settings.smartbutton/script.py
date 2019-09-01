@@ -16,6 +16,7 @@ from pyrevit.coreutils import envvars
 from pyrevit.coreutils import apidocs
 from pyrevit.coreutils import applocales
 from pyrevit.userconfig import user_config
+from pyrevit import revit
 
 import pyrevitcore_globals
 
@@ -195,6 +196,8 @@ class SettingsWindow(forms.WPFWindow):
         applocale = applocales.get_current_applocale()
         self.applocales_cb.ItemsSource = sorted(applocales.APP_LOCALES)
         self.applocales_cb.SelectedItem = applocale
+        # colorize docs
+        self.colordocs_cb.IsChecked = user_config.colorize_docs
         # output settings
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
 
@@ -493,7 +496,9 @@ class SettingsWindow(forms.WPFWindow):
         if self.applocales_cb.SelectedItem:
             user_config.user_locale = \
                 self.applocales_cb.SelectedItem.locale_code
-
+        # colorize docs
+        user_config.colorize_docs = self.colordocs_cb.IsChecked
+        revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
         if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():

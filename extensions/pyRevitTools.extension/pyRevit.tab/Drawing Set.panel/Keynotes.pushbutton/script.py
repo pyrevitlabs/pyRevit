@@ -18,7 +18,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
 
-from pyrevit.runtime.types import UIEventUtils
+from pyrevit.runtime.types import DocumentEventUtils
 
 import keynotesdb as kdb
 
@@ -26,6 +26,8 @@ import keynotesdb as kdb
 __title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
 __context__ = ""
+__min_revit_ver__ = 2014
+
 
 logger = script.get_logger()
 output = script.get_output()
@@ -975,10 +977,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             def_kn_typeid = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
             kn_type = revit.doc.GetElement(def_kn_typeid)
             if kn_type:
-                uievent_utils = UIEventUtils(HOST_APP.uiapp)
-                # place keynotes and get placed keynote elements
                 try:
-                    uievent_utils.PostCommandAndUpdateNewElementProperties(
+                    # place keynotes and get placed keynote elements
+                    DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
+                        HOST_APP.uiapp,
                         revit.doc,
                         self.postable_keynote_command,
                         "Update Keynotes",

@@ -17,7 +17,7 @@ from pyrevit.revit.db import delete
 from pyrevit.revit.db.transaction import *
 from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
-from pyrevit.revit.ui import *
+from pyrevit.revit import ui
 from pyrevit.revit import report
 from pyrevit.revit import files
 from pyrevit.revit import serverutils

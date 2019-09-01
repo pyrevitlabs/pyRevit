@@ -141,6 +141,10 @@ def _perform_onsessionloadcomplete_ops():
     # activate hooks now
     hooks.activate()
 
+    # activate internal handlers
+    # toggle doc colorizer
+    revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
+
 
 def _new_session():
     """

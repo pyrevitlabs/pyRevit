@@ -408,6 +408,17 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanConfigKey, state);
         }
 
+        public static bool GetColorizeDocs() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsColorizeDocsDefault;
+        }
+
+        public static void SetColorizeDocs(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey, state);
+        }
+
         // configurations private access methods  ====================================================================
         private static void InitConfigFile() {
             // get allusers seed config file

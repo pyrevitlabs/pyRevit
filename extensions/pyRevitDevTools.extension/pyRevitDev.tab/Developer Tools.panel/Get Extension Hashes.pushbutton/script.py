@@ -2,6 +2,7 @@
 
 __title__ = 'Get Extension\nHash Values'
 __highlight_updated__= True
+__context__ = 'zero-doc'
 # __beta__ = True
 
 from pyrevit import script

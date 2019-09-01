@@ -359,6 +359,7 @@ namespace pyRevitCLI {
                             { "usercanupdate",          "Enable/Disable Update button in pyRevit" },
                             { "usercanextend",          "Enable/Disable Extensions button in pyRevit" },
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
+                            { "colordocs",              "Enable/Disable Document Colorizer" },
                             { "telemetry",              "Telemetry" },
                             { "apptelemetry",           "Application Telemetry" },
                             { "outputcss",              "Output window styling" },

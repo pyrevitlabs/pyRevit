@@ -640,8 +640,16 @@ namespace pyRevitCLI {
                         Console.WriteLine(string.Format("User {0} config",
                                                         PyRevitConfigs.GetUserCanConfig() ? "CAN" : "CAN NOT"));
 
-                }
-
+                } 
+                
+                else if (all("colordocs")) {
+                    if (any("enable", "disable"))
+                        PyRevitConfigs.SetColorizeDocs(arguments["enable"].IsTrue);
+                    else
+                        Console.WriteLine(string.Format("Doc Colorizer is {0}",
+                                                        PyRevitConfigs.GetColorizeDocs() ? "Enabled" : "Disabled"));
+                } 
+                
                 else if (all("telemetry")) {
                     if (all("utc")) {
                         if (any("yes", "no"))

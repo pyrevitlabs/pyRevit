@@ -228,6 +228,7 @@ def get_references():
                 'System.Numerics', 'System.Drawing',
                 'System.Xaml', 'System.Web', 'System.Xml',
                 'System.Windows.Forms', 'System.Web.Extensions',
+                'AdWindows', 'UIFramework', 'Xceed.Wpf.AvalonDock',
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration',
                 'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',

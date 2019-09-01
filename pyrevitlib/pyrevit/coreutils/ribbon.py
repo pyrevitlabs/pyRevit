@@ -1481,10 +1481,7 @@ class _PyRevitUI(GenericPyRevitUIContainer):
                               new_pyrvt_tab.name)
 
     def get_adwindows_ribbon_control(self):
-        pyrevit_tabs = self.get_pyrevit_tabs()
-        if pyrevit_tabs:
-            tab_adwnd_obj = pyrevit_tabs[0].get_adwindows_object()
-            return tab_adwnd_obj.RibbonControl
+        return AdWindows.ComponentManager.Ribbon
 
     def set_RTL_flow(self):
         rctrl = self.get_adwindows_ribbon_control()
