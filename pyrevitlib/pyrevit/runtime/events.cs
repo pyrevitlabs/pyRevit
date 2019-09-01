@@ -1,10 +1,10 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Interop;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Text.RegularExpressions;
 using System.Reflection;
 
 using Autodesk.Revit.ApplicationServices;
@@ -17,8 +17,8 @@ using UIFramework;
 using Xceed.Wpf.AvalonDock.Controls;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.NLog;
 using pyRevitLabs.PyRevit;
-using System.IO;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum EventType {
@@ -804,6 +804,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
     public static class DocumentTabEventUtils {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         public static UIApplication UIApp { get; private set; }
 
         public static bool IsUpdatingDocumentTabs { get; private set; }
@@ -826,11 +828,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static object UpdateLock = new object();
 
         public static Visual GetWindowRoot(UIApplication uiapp) {
+            IntPtr wndHndle = IntPtr.Zero;
+            try {
 #if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
-            IntPtr wndHndle = Autodesk.Windows.ComponentManager.ApplicationWindow;
+                wndHndle = Autodesk.Windows.ComponentManager.ApplicationWindow;
 #else
-            IntPtr wndHndle = uiapp.MainWindowHandle;
+                wndHndle = uiapp.MainWindowHandle;
 #endif
+
+            } catch { }
+
             if (wndHndle != IntPtr.Zero) {
                 var wndSource = HwndSource.FromHwnd(wndHndle);
                 return wndSource.RootVisual;
@@ -838,10 +845,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return null;
         }
 
-        public static LayoutDocumentPaneGroupControl GetDocumentTabGroup(UIApplication uiapp) {
+        public static Xceed.Wpf.AvalonDock.DockingManager GetDockingManager(UIApplication uiapp) {
             var wndRoot = (MainWindow)GetWindowRoot(uiapp);
             if (wndRoot != null) {
-                return MainWindow.FindFirstChild<LayoutDocumentPaneGroupControl>(wndRoot);
+                return MainWindow.FindFirstChild<Xceed.Wpf.AvalonDock.DockingManager>(wndRoot);
+            }
+            return null;
+        }
+
+        public static LayoutDocumentPaneGroupControl GetDocumentTabGroup(UIApplication uiapp) {
+            var wndRoot = GetWindowRoot(uiapp);
+            if (wndRoot != null) {
+                return MainWindow.FindFirstChild<LayoutDocumentPaneGroupControl>((MainWindow)wndRoot);
             }
             return null;
         }
@@ -868,9 +883,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static long GetTabDocumentId(TabItem tab) {
-            return ((UIFramework.MFCMDIFrameHost)((UIFramework.MFCMDIChildFrameControl)(
-                (Xceed.Wpf.AvalonDock.Layout.LayoutDocument)
-                tab.Content).Content).Content).document.ToInt64();
+            return (
+                        (MFCMDIFrameHost)(
+                            (MFCMDIChildFrameControl)(
+                                (Xceed.Wpf.AvalonDock.Layout.LayoutDocument)tab.Content
+                            ).Content
+                        ).Content
+                    ).document.ToInt64();
         }
 
         public static long GetAPIDocumentId(Document doc) {
@@ -886,8 +905,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     UIApp = uiapp;
                     DocumentBrushes = new Dictionary<long, Brush>();
                     IsUpdatingDocumentTabs = true;
-                    uiapp.Application.ProgressChanged += Application_ProgressChanged;
-                    uiapp.ApplicationClosing += Uiapp_ApplicationClosing;
+
+                    var docMgr = GetDockingManager(UIApp);
+                    docMgr.LayoutUpdated += UpdateDockingManagerLayout; ;
                 }
             }
         }
@@ -897,22 +917,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (IsUpdatingDocumentTabs) {
                     UpdateDocumentTabGroups(clear: true);
                     IsUpdatingDocumentTabs = false;
-                    uiapp.ApplicationClosing -= Uiapp_ApplicationClosing;
-                    uiapp.Application.ProgressChanged -= Application_ProgressChanged;
                     DocumentBrushes.Clear();
+
+                    var docMgr = GetDockingManager(UIApp);
+                    docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
                 }
             }
         }
 
-        private static void Uiapp_ApplicationClosing(object sender, ApplicationClosingEventArgs e) {
-            if (UIApp != null)
-                StopGroupingDocumentTabs(UIApp);
-        }
-
-        private static void Application_ProgressChanged(object sender, ProgressChangedEventArgs e) {
-            // if progress update is related to updating views
-            if (e.Caption.StartsWith("Drawing:") && e.Stage == ProgressStage.Finished)
-                UpdateDocumentTabGroups();
+        private static void UpdateDockingManagerLayout(object sender, EventArgs e) {
+            UpdateDocumentTabGroups();
         }
 
         private static void UpdateDocumentTabGroups(bool clear = false) {
@@ -920,53 +934,57 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (IsUpdatingDocumentTabs) {
                     // get the ui tabs
                     var docTabGroup = GetDocumentTabGroup(UIApp);
-                    var docTabs = GetDocumentTabs(docTabGroup);
+                    if (docTabGroup != null) {
+                        var docTabs = GetDocumentTabs(docTabGroup);
 
-                    // if clear is requested, reset the tabs
-                    if (clear) {
-                        foreach (TabItem tab in docTabs) {
-                            tab.BorderBrush = Brushes.White;
-                            tab.BorderThickness = new System.Windows.Thickness();
-                        }
-                        return;
-                    }
-
-                    // update doc tabs
-                    var newDocBrushes = new Dictionary<long, Brush>();
-
-                    foreach (Document doc in UIApp.Application.Documents) {
-                        // get doc id
-                        long docId = GetAPIDocumentId(doc);
-
-                        // determine which brush to use for this doc
-                        Brush docBrush = null;
-                        if (DocumentBrushes.ContainsKey(docId)) {
-                            docBrush = DocumentBrushes[docId];
-                        } else {
-                            foreach (Brush brush in DocumentBrushTheme)
-                                if (!newDocBrushes.ContainsValue(brush)) {
-                                    docBrush = brush;
-                                    break;
-                                }
-                        }
-
-                        // apply the brush to all doc tabs
-                        if (docBrush != null) {
-                            newDocBrushes[docId] = docBrush;
+                        // if clear is requested, reset the tabs
+                        if (clear) {
                             foreach (TabItem tab in docTabs) {
-                                if (GetTabDocumentId(tab) == docId) {
-                                    tab.BorderBrush = docBrush;
-                                    if (doc.IsFamilyDocument)
-                                        tab.BorderThickness = new System.Windows.Thickness(1);
-                                    else
-                                        tab.BorderThickness = new System.Windows.Thickness(0, 1, 0, 0);
+                                tab.BorderBrush = Brushes.White;
+                                tab.BorderThickness = new System.Windows.Thickness();
+                            }
+                            return;
+                        }
+
+                        // update doc tabs
+                        var newDocBrushes = new Dictionary<long, Brush>();
+
+                        foreach (Document doc in UIApp.Application.Documents) {
+                            // get doc id
+                            long docId = GetAPIDocumentId(doc);
+
+                            // determine which brush to use for this doc
+                            Brush docBrush = null;
+                            if (DocumentBrushes.ContainsKey(docId)) {
+                                docBrush = DocumentBrushes[docId];
+                            } else {
+                                foreach (Brush brush in DocumentBrushTheme) {
+                                    if (!DocumentBrushes.ContainsValue(brush)) {
+                                        docBrush = brush;
+                                        break;
+                                    }
+                                }
+                                DocumentBrushes[docId] = docBrush;
+                            }
+
+                            // apply the brush to all doc tabs
+                            if (docBrush != null) {
+                                newDocBrushes[docId] = docBrush;
+                                foreach (TabItem tab in docTabs) {
+                                    if (GetTabDocumentId(tab) == docId) {
+                                        tab.BorderBrush = docBrush;
+                                        if (doc.IsFamilyDocument)
+                                            tab.BorderThickness = new System.Windows.Thickness(1);
+                                        else
+                                            tab.BorderThickness = new System.Windows.Thickness(0, 1, 0, 0);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // update brush list
-                    DocumentBrushes = newDocBrushes;
+                        // update brush list
+                        DocumentBrushes = newDocBrushes;
+                    }
                 }
             }
         }

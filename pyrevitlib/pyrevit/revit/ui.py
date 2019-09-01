@@ -9,6 +9,7 @@ from pyrevit.api import UIFramework as uf
 from pyrevit.api import UIFrameworkServices as ufs
 from pyrevit.labs import Common
 from pyrevit.runtime import types
+from pyrevit.coreutils import envvars
 
 
 def get_mainwindow_hwnd():
@@ -52,11 +53,22 @@ def toggle_infocenter(state):
 
 
 def toggle_doc_colorizer(state):
+    uiapp = HOST_APP.uiapp
     if HOST_APP.is_newer_than(2018):
+        # cancel out the colorizer from previous runtime version
+        current_tabcolorizer = \
+            envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
+        if current_tabcolorizer:
+            current_tabcolorizer.StopGroupingDocumentTabs(uiapp)
+
         # start or stop the document colorizer
         if state:
-            types.DocumentTabEventUtils.StartGroupingDocumentTabs(
-                HOST_APP.uiapp)
+            types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
         else:
-            types.DocumentTabEventUtils.StopGroupingDocumentTabs(
-                HOST_APP.uiapp)
+            types.DocumentTabEventUtils.StopGroupingDocumentTabs(uiapp)
+
+        # set the new colorizer
+        envvars.set_pyrevit_env_var(
+            envvars.TABCOLORIZER_ENVVAR,
+            types.DocumentTabEventUtils
+            )
