@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Text.RegularExpressions;
+using System.Reflection;
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
@@ -807,7 +808,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static bool IsUpdatingDocumentTabs { get; private set; }
 
-        public static Dictionary<int, Brush> DocumentBrushes;
+        public static Dictionary<long, Brush> DocumentBrushes;
         public static List<SolidColorBrush> DocumentBrushTheme = new List<SolidColorBrush> {
                 PyRevitConsts.PyRevitAccentBrush,
                 PyRevitConsts.PyRevitBackgroundBrush,
@@ -866,11 +867,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<TabItem>();
         }
 
+        public static long GetTabDocumentId(TabItem tab) {
+            return ((UIFramework.MFCMDIFrameHost)((UIFramework.MFCMDIChildFrameControl)(
+                (Xceed.Wpf.AvalonDock.Layout.LayoutDocument)
+                tab.Content).Content).Content).document.ToInt64();
+        }
+
+        public static long GetAPIDocumentId(Document doc) {
+            MethodInfo getMFCDocMethod = doc.GetType().GetMethod("getMFCDoc", BindingFlags.Instance | BindingFlags.NonPublic);
+            object mfcDoc = getMFCDocMethod.Invoke(doc, new object[] { });
+            MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
+            return ((IntPtr)ptfValMethod.Invoke(mfcDoc, new object[] { })).ToInt64();
+        }
+
         public static void StartGroupingDocumentTabs(UIApplication uiapp) {
             lock (UpdateLock) {
                 if (!IsUpdatingDocumentTabs) {
                     UIApp = uiapp;
-                    DocumentBrushes = new Dictionary<int, Brush>();
+                    DocumentBrushes = new Dictionary<long, Brush>();
                     IsUpdatingDocumentTabs = true;
                     uiapp.Application.ProgressChanged += Application_ProgressChanged;
                     uiapp.ApplicationClosing += Uiapp_ApplicationClosing;
@@ -918,11 +932,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
 
                     // update doc tabs
-                    var newDocBrushes = new Dictionary<int, Brush>();
+                    var newDocBrushes = new Dictionary<long, Brush>();
 
                     foreach (Document doc in UIApp.Application.Documents) {
                         // get doc id
-                        int docId = doc.GetHashCode();
+                        long docId = GetAPIDocumentId(doc);
 
                         // determine which brush to use for this doc
                         Brush docBrush = null;
@@ -939,14 +953,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         // apply the brush to all doc tabs
                         if (docBrush != null) {
                             newDocBrushes[docId] = docBrush;
-                            // TODO: FIXME: need a way to uniquely identify the document tabs
-                            var docTitle = doc.Title;
-                            if (doc.PathName != null && doc.PathName != string.Empty)
-                                docTitle = Path.GetFileName(doc.PathName);
-
-                            Regex matcher = new Regex(docTitle + @"\s\-\s");
                             foreach (TabItem tab in docTabs) {
-                                if (matcher.IsMatch(tab.ToolTip.ToString())) {
+                                if (GetTabDocumentId(tab) == docId) {
                                     tab.BorderBrush = docBrush;
                                     if (doc.IsFamilyDocument)
                                         tab.BorderThickness = new System.Windows.Thickness(1);
