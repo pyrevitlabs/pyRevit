@@ -8,7 +8,7 @@ from pyrevit.userconfig import user_config
 
 
 __context__ = 'zero-doc'
-
+__min_revit_ver__ = 2019
 
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):

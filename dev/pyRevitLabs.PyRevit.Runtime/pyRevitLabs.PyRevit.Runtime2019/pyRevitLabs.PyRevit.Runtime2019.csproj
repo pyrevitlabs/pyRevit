@@ -29,7 +29,7 @@
   <ItemGroup>
     <Reference Include="AdWindows, Version=2018.11.1.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2019\AdWindows.dll</HintPath>
+      <HintPath>.\AdWindows.dll</HintPath>
     </Reference>
     <Reference Include="ControlzEx">
       <HintPath>..\..\..\bin\ControlzEx.dll</HintPath>
@@ -122,7 +122,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="UIFramework, Version=20.0.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2019\UIFramework.dll</HintPath>
+      <HintPath>.\UIFramework.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="WindowsFormsIntegration" />

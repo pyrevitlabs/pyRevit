@@ -14,7 +14,10 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 
 using UIFramework;
+
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
 using Xceed.Wpf.AvalonDock.Controls;
+#endif
 
 using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
@@ -802,7 +805,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
     public static class DocumentTabEventUtils {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -845,6 +847,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return null;
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public static Xceed.Wpf.AvalonDock.DockingManager GetDockingManager(UIApplication uiapp) {
             var wndRoot = (MainWindow)GetWindowRoot(uiapp);
             if (wndRoot != null) {
@@ -988,6 +991,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
         }
-    }
 #endif
+    }
 }

@@ -228,12 +228,15 @@ def get_references():
                 'System.Numerics', 'System.Drawing',
                 'System.Xaml', 'System.Web', 'System.Xml',
                 'System.Windows.Forms', 'System.Web.Extensions',
-                'AdWindows', 'UIFramework', 'Xceed.Wpf.AvalonDock',
+                'AdWindows', 'UIFramework',
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration',
                 'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
                 'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
                 'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit']
+
+    if HOST_APP.is_newer_than(2018):
+        ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
     refs = [_get_reference_file(ref_name) for ref_name in ref_list]
 
