@@ -309,10 +309,10 @@
                 </WrapPanel>
                 <WrapPanel Margin="0,15,0,0"
                            HorizontalAlignment="Center">
+                    <Button Content="Wiki" FontSize="14"
+                            Click="openwiki"/>
                     <Button Content="Credits" FontSize="14"
                             Click="opencredits"/>
-                    <Button Content="Docs" FontSize="14"
-                            Click="opendocs"/>
                     <Button Content="Blog" FontSize="14"
                             Click="openblog"/>
                     <Button Content="Github" FontSize="14"

@@ -10,22 +10,6 @@ namespace pyRevitLabs.PyRevit {
     public static class PyRevitConsts {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        // urls
-        public const string RouterUrl = @"https://ein.sh/";
-        public const string RootUrl = RouterUrl + @"pyRevit/";
-
-        public const string BlogsUrl = RootUrl + @"blog/";
-        public const string DocsUrl = RootUrl + @"docs/";
-        public const string YoutubeUrl = RootUrl + @"videos/";
-        public const string SupportUrl = RootUrl + @"support/";
-
-        public const string SourceRepoUrl = RootUrl + @"source/";
-        public const string IssuesUrl = RootUrl + @"issues/";
-        public const string ReleasesUrl = RootUrl + @"releases/";
-
-        public const string LicenseUrl = RootUrl + @"license";
-        public const string CreditsUrl = RootUrl + @"credits";
-
         // repo info
         public const string DefaultCloneInstallName = PyRevitLabsConsts.ProductName;
         public const string DefaultCloneRemoteName = PyRevitLabsConsts.DefaultRemoteName;

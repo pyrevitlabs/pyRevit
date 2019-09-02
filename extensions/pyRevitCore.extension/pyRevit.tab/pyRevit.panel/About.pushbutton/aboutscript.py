@@ -70,8 +70,8 @@ class AboutWindow(forms.WPFWindow):
     def opencredits(self, sender, args):
         script.open_url(urls.PYREVIT_CREDITS)
 
-    def opendocs(self, sender, args):
-        script.open_url(urls.PYREVIT_DOCS)
+    def openwiki(self, sender, args):
+        script.open_url(urls.PYREVIT_WIKI)
 
     def openblog(self, sender, args):
         script.open_url(urls.PYREVIT_BLOG)

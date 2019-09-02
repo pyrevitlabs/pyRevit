@@ -179,15 +179,15 @@ namespace pyRevitCLI {
 
             else if (all("help")) PyRevitCLIAppHelps.OpenHelp();
 
-            else if (all("blog")) CommonUtils.OpenUrl(PyRevitConsts.BlogsUrl);
+            else if (all("blog")) CommonUtils.OpenUrl(PyRevitLabsConsts.BlogsUrl);
 
-            else if (all("docs")) CommonUtils.OpenUrl(PyRevitConsts.DocsUrl);
+            else if (all("docs")) CommonUtils.OpenUrl(PyRevitLabsConsts.DocsUrl);
 
-            else if (all("source")) CommonUtils.OpenUrl(PyRevitConsts.SourceRepoUrl);
+            else if (all("source")) CommonUtils.OpenUrl(PyRevitLabsConsts.SourceRepoUrl);
 
-            else if (all("youtube")) CommonUtils.OpenUrl(PyRevitConsts.YoutubeUrl);
+            else if (all("youtube")) CommonUtils.OpenUrl(PyRevitLabsConsts.YoutubeUrl);
 
-            else if (all("support")) CommonUtils.OpenUrl(PyRevitConsts.SupportUrl);
+            else if (all("support")) CommonUtils.OpenUrl(PyRevitLabsConsts.SupportUrl);
 
             else if (all("env")) {
                 if (IsHelpMode)

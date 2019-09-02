@@ -175,7 +175,7 @@ namespace pyRevitCLI {
                             string.Format(
                                 "Newer v{0} is available.\nGo to {1} to download the installer.",
                                 latestVersion,
-                                PyRevitConsts.ReleasesUrl)
+                                PyRevitLabsConsts.ReleasesUrl)
                             );
                     }
                     else

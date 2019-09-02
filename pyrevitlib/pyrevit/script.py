@@ -11,6 +11,7 @@ import sys
 import os
 import os.path as op
 import warnings
+import re
 
 from pyrevit import EXEC_PARAMS, PyRevitException
 from pyrevit import coreutils
@@ -462,7 +463,10 @@ def show_folder_in_explorer(folder_path):
 def open_url(url):
     """Open url in a new tab in default webbrowser."""
     import webbrowser
-    return webbrowser.open_new_tab(url)
+    if re.match('^https*://', url.lower()):
+        webbrowser.open_new_tab(url)
+    else:
+        webbrowser.open_new_tab('http://' + url)
 
 
 def clipboard_copy(string_to_copy):

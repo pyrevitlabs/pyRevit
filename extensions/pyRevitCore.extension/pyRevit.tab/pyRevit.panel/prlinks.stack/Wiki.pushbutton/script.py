@@ -1,4 +1,4 @@
-"""Opens the documentation page."""
+"""Opens the wiki page."""
 from pyrevit import script
 from pyrevit.versionmgr import urls
 
@@ -6,4 +6,4 @@ from pyrevit.versionmgr import urls
 __context__ = 'zero-doc'
 
 
-script.open_url(urls.PYREVIT_DOCS)
+script.open_url(urls.PYREVIT_WIKI)

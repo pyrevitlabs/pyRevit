@@ -10,6 +10,23 @@ namespace pyRevitLabs.Common {
         // product
         public const string ProductName = "pyRevit";
 
+        // urls
+        public const string RouterUrl = @".pyrevitlabs.io";
+
+        public const string WikiUrl = "wiki" + RouterUrl;
+        public const string BlogsUrl = "blog" + RouterUrl;
+        public const string DocsUrl = "docs" + RouterUrl;
+        public const string YoutubeUrl = "videos" + RouterUrl;
+        public const string SupportUrl = "support" + RouterUrl;
+
+        public const string SourceRepoUrl = "source" + RouterUrl;
+        public const string IssuesUrl = "bugs" + RouterUrl;
+        public const string ReleasesUrl = "releases" + RouterUrl;
+
+        public const string LicenseUrl = "license" + RouterUrl;
+        public const string CreditsUrl = "credits" + RouterUrl;
+
+        // repo
         public const string DefaultGitDirName = ".git";
         public const string DefaultRemoteName = "origin";
         public const string OriginalRepoDefaultBranch = "master";
@@ -20,7 +37,8 @@ namespace pyRevitLabs.Common {
         // consts for the official pyRevit repo
         public const string OriginalRepoName = ProductName;
         public static string OriginalRepoId = string.Format(@"eirannejad/{0}", ProductName);
-        public static string OriginalRepoPath = string.Format(@"https://github.com/{0}{1}", OriginalRepoId, DefaultGitDirName);
+        public static string OriginalRepoBasePath = string.Format(@"https://github.com/{0}", OriginalRepoId);
+        public static string OriginalRepoGitPath = OriginalRepoBasePath + DefaultGitDirName;
 
         // consts for recording pyrevit.exe config in the pyRevit configuration file
         public const string AppdataDirName = ProductName;

@@ -187,7 +187,7 @@ namespace pyRevitLabs.PyRevit {
                                           string branchName = null,
                                           string repoUrl = null,
                                           string destPath = null) {
-            string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoPath;
+            string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoGitPath;
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TragetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
 
