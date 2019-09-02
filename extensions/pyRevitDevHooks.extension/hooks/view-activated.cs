@@ -8,6 +8,10 @@ using Autodesk.Revit.UI;
 
 namespace MyEvents {
     public class MyEventMgr {
+        public void TestArgsType(object sender, Autodesk.Revit.UI.Events.ViewActivatingEventArgs e) {
+            TaskDialog.Show("Hooks", "Selected incorrect method");
+        }
+
         public void MyEventMgr_UiApp_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             File.AppendAllText(

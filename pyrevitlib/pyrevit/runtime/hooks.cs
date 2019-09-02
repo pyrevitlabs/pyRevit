@@ -81,7 +81,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         Arguments = new List<string>(),
                         EventSender = eventSender,
                         EventArgs = eventArgs,
-                        EngineConfigs = null,
+                        EngineConfigs = " { \"full_frame\" : true } ",
                         RefreshEngine = false,
                         ConfigMode = false,
                         DebugMode = false,

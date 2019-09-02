@@ -55,7 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string Id { get; private set; }
         public string TypeId { get; private set; }
 
-        public virtual bool IsRequiredByRuntime { get; set; }
+        public virtual bool UseNewEngine { get; set; }
         public virtual bool RecoveredFromCache { get; set; }
 
         public virtual void Init(ref ScriptRuntime runtime) {
@@ -79,22 +79,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public static class EngineManager {
         public static T GetEngine<T>(ref ScriptRuntime runtime) where T : ExecutionEngine, new() {
-            T newEngine = new T();
-            newEngine.Init(ref runtime);
+            T engine = new T();
+            engine.Init(ref runtime);
 
-            if (newEngine.IsRequiredByRuntime) {
-                SetCachedEngine<T>(newEngine.TypeId, newEngine);
+            if (engine.UseNewEngine) {
+                SetCachedEngine<T>(engine.TypeId, engine);
             }
             else {
-                var cachedEngine = GetCachedEngine<T>(newEngine.TypeId);
+                var cachedEngine = GetCachedEngine<T>(engine.TypeId);
                 if (cachedEngine != null) {
-                    newEngine = cachedEngine;
-                    newEngine.RecoveredFromCache = true;
+                    engine = cachedEngine;
+                    engine.RecoveredFromCache = true;
                 }
                 else
-                    SetCachedEngine<T>(newEngine.TypeId, newEngine);
+                    SetCachedEngine<T>(engine.TypeId, engine);
             }
-            return newEngine;
+            return engine;
         }
 
         // dicts need to be flexible type since multiple signatures of the ExecutionEngine
@@ -187,7 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // If the command required a fullframe engine
             // or if the command required a clean engine
             // of if the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = ExecEngineConfigs.clean || ExecEngineConfigs.full_frame || runtime.ScriptRuntimeConfigs.RefreshEngine;
+            UseNewEngine = ExecEngineConfigs.clean || runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override void Start(ref ScriptRuntime runtime) {
@@ -426,7 +426,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
+            UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override void Start(ref ScriptRuntime runtime) {
@@ -671,7 +671,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
+            UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
@@ -882,12 +882,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static int ExecuteEventHandler(Assembly assmObj, ref ScriptRuntime runtime) {
+            var argsType = runtime.ScriptRuntimeConfigs.EventArgs.GetType();
             foreach (Type assmType in GetTypesSafely(assmObj))
                 foreach (MethodInfo methodInfo in assmType.GetMethods()) {
                     var methodParams = methodInfo.GetParameters();
                     if (methodParams.Count() == 2
                             && methodParams[0].Name == "sender"
-                            && (methodParams[1].Name == "e" || methodParams[1].Name == "args")) {
+                            && (methodParams[1].Name == "e" || methodParams[1].Name == "args")
+                            && methodParams[1].ParameterType == argsType) {
                         object extEventInstance = Activator.CreateInstance(assmType);
                         assmType.InvokeMember(
                             methodInfo.Name,
@@ -912,7 +914,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
+            UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
@@ -970,7 +972,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
-            IsRequiredByRuntime = runtime.ScriptRuntimeConfigs.RefreshEngine;
+            UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
