@@ -953,6 +953,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         var newDocBrushes = new Dictionary<long, Brush>();
 
                         foreach (Document doc in UIApp.Application.Documents) {
+                            // skip linked docs. they don't have tabs
+                            if (doc.IsLinked)
+                                continue;
+
                             // get doc id
                             long docId = GetAPIDocumentId(doc);
 
