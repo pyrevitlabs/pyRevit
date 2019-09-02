@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"../cli"
+	"github.com/asaskevich/govalidator"
 )
 
 // v1.0
@@ -59,43 +60,43 @@ func (logrec ScriptTelemetryRecordV1) Validate() {
 
 // v2.0
 type EngineInfoV2 struct {
-	Type     string            `json:"type" bson:"type"`
-	Version  string            `json:"version" bson:"version"`
-	SysPaths []string          `json:"syspath" bson:"syspath"`
-	Configs  map[string]string `json:"configs" bson:"configs"`
+	Type     string                 `json:"type" bson:"type" valid:"-"`
+	Version  string                 `json:"version" bson:"version" valid:"-"`
+	SysPaths []string               `json:"syspath" bson:"syspath" valid:"-"`
+	Configs  map[string]interface{} `json:"configs" bson:"configs" valid:"-"`
 }
 
 type TraceInfoV2 struct {
-	EngineInfo EngineInfoV2 `json:"engine" bson:"engine"`
-	Message    string       `json:"message" bson:"message"`
+	EngineInfo EngineInfoV2 `json:"engine" bson:"engine" valid:"-"`
+	Message    string       `json:"message" bson:"message" valid:"-"`
 }
 
 type RecordMetaV2 struct {
-	SchemaVersion string `json:"schema" bson:"schema"`
+	SchemaVersion string `json:"schema" bson:"schema" valid:"-"`
 }
 
 type ScriptTelemetryRecordV2 struct {
-	RecordMeta        RecordMetaV2      `json:"meta" bson:"meta"`           // added in v2.0
-	TimeStamp         string            `json:"timestamp" bson:"timestamp"` // added in v2.0
-	UserName          string            `json:"username" bson:"username"`
-	RevitVersion      string            `json:"revit" bson:"revit"`
-	RevitBuild        string            `json:"revitbuild" bson:"revitbuild"`
-	SessionId         string            `json:"sessionid" bson:"sessionid"`
-	PyRevitVersion    string            `json:"pyrevit" bson:"pyrevit"`
-	Clone             string            `json:"clone" bson:"clone"` // added in v2.0
-	IsDebugMode       bool              `json:"debug" bson:"debug"`
-	IsConfigMode      bool              `json:"config" bson:"config"`
-	IsExecFromGUI     bool              `json:"from_gui" bson:"from_gui"` // added in v2.0
-	CommandName       string            `json:"commandname" bson:"commandname"`
-	CommandUniqueName string            `json:"commanduniquename" bson:"commanduniquename"`
-	BundleName        string            `json:"commandbundle" bson:"commandbundle"`
-	ExtensionName     string            `json:"commandextension" bson:"commandextension"`
-	DocumentName      string            `json:"docname" bson:"docname"` // added in v2.0
-	DocumentPath      string            `json:"docpath" bson:"docpath"` // added in v2.0
-	ResultCode        int               `json:"resultcode" bson:"resultcode"`
-	CommandResults    map[string]string `json:"commandresults" bson:"commandresults"`
-	ScriptPath        string            `json:"scriptpath" bson:"scriptpath"`
-	TraceInfo         TraceInfoV2       `json:"trace" bson:"trace"` // revised in v2.0
+	RecordMeta        RecordMetaV2           `json:"meta" bson:"meta" valid:"-"`                 // added in v2.0
+	TimeStamp         string                 `json:"timestamp" bson:"timestamp" valid:"rfc3339"` // added in v2.0
+	UserName          string                 `json:"username" bson:"username" valid:"-"`
+	RevitVersion      string                 `json:"revit" bson:"revit" valid:"numeric"`
+	RevitBuild        string                 `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))"`
+	SessionId         string                 `json:"sessionid" bson:"sessionid" valid:"uuidv4"`
+	PyRevitVersion    string                 `json:"pyrevit" bson:"pyrevit" valid:"-"`
+	Clone             string                 `json:"clone" bson:"clone" valid:"-"` // added in v2.0
+	IsDebugMode       bool                   `json:"debug" bson:"debug" valid:"-"`
+	IsConfigMode      bool                   `json:"config" bson:"config" valid:"-"`
+	IsExecFromGUI     bool                   `json:"from_gui" bson:"from_gui" valid:"-"` // added in v2.0
+	CommandName       string                 `json:"commandname" bson:"commandname" valid:"-"`
+	CommandUniqueName string                 `json:"commanduniquename" bson:"commanduniquename" valid:"-"`
+	BundleName        string                 `json:"commandbundle" bson:"commandbundle" valid:"-"`
+	ExtensionName     string                 `json:"commandextension" bson:"commandextension" valid:"-"`
+	DocumentName      string                 `json:"docname" bson:"docname" valid:"-"` // added in v2.0
+	DocumentPath      string                 `json:"docpath" bson:"docpath" valid:"-"` // added in v2.0
+	ResultCode        int                    `json:"resultcode" bson:"resultcode" valid:"-"`
+	CommandResults    map[string]interface{} `json:"commandresults" bson:"commandresults" valid:"-"`
+	ScriptPath        string                 `json:"scriptpath" bson:"scriptpath" valid:"-"`
+	TraceInfo         TraceInfoV2            `json:"trace" bson:"trace" valid:"-"` // revised in v2.0
 }
 
 func (logrec ScriptTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, message string) {
@@ -114,7 +115,10 @@ func (logrec ScriptTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, messag
 	))
 }
 
-func (logrec ScriptTelemetryRecordV2) Validate() {
+func (logrec ScriptTelemetryRecordV2) Validate() error {
+	govalidator.SetFieldsRequiredByDefault(true)
+	_, err := govalidator.ValidateStruct(logrec)
+	return err
 }
 
 // introduced with api v2
