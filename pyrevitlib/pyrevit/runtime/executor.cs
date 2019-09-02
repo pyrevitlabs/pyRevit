@@ -149,17 +149,48 @@ namespace PyRevitLabs.PyRevit.Runtime {
             catch (FileNotFoundException) {
                 // if failed in finding DynamoRevitDS.dll, assume no dynamo
                 TaskDialog.Show(PyRevitLabsConsts.ProductName,
-                    "Can not find dynamo installation or determine which Dynamo version to Run.\n\n" +
+                    "Can not find Dynamo installation or determine which Dynamo version to Run.\n\n" +
                     "Run Dynamo once to select the active version.");
+                return ExecutionResultCodes.ExecutionException;
+            }
+            catch (Exception dynEx) {
+                // on any other errors
+                var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                dialog.MainInstruction = "Error executing Dynamo script.";
+                dialog.ExpandedContent = string.Format("{0}\n{1}", dynEx.Message, dynEx.StackTrace);
+                dialog.Show();
                 return ExecutionResultCodes.ExecutionException;
             }
         }
 
         /// Run the script using Grasshopper
         private static int ExecuteGrasshopperDocument(ref ScriptRuntime runtime) {
-            // TODO: ExecuteGrasshopperDocument
-            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Grasshopper Execution Engine Not Yet Implemented.");
-            return ExecutionResultCodes.EngineNotImplementedException;
+            try {
+                // find RhinoInside.Revit.dll
+                ObjectHandle ghObjHandle =
+                    Activator.CreateInstance("RhinoInside.Revit", "RhinoInside.Revit.UI.RhinoCommand");
+                object ghPlayer = ghObjHandle.Unwrap();
+                MethodInfo execGh = ghPlayer.GetType().GetMethod("Execute");
+
+                // run the script
+                execGh.Invoke(ghPlayer, new object[] { runtime.ScriptSourceFile });
+                return ExecutionResultCodes.Succeeded;
+            }
+            catch (FileNotFoundException) {
+                // if failed in finding DynamoRevitDS.dll, assume no dynamo
+                TaskDialog.Show(PyRevitLabsConsts.ProductName,
+                    "Can not find Rhino.Inside installation or it is not loaded yet.\n\n" +
+                    "Install/Load Rhino.Inside first.");
+                return ExecutionResultCodes.ExecutionException;
+            }
+            catch (Exception ghEx) {
+                // if failed in finding RhinoInside.Revit.dll, assume no rhino
+                var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                dialog.MainInstruction = "Error executing Grasshopper script.";
+                dialog.ExpandedContent = string.Format("{0}\n{1}", ghEx.Message, ghEx.StackTrace);
+                dialog.Show();
+                return ExecutionResultCodes.ExecutionException;
+            }
         }
 
         /// Run the content bundle and place in active document
