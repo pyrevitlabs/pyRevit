@@ -45,5 +45,7 @@ namespace pyRevitLabs.PyRevit {
                 default: return null;
             }
         }
+
+        public static bool IsType(string bundlePath, PyRevitBundleTypes bundleType) => bundlePath.ToLower().EndsWith(GetBundleDirExt(bundleType));
     }
 }

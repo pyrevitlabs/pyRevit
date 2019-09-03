@@ -522,6 +522,7 @@ class GenericUICommand(GenericUIComponent):
                 exts.RUBY_SCRIPT_POSTFIX,
                 exts.DYNAMO_SCRIPT_POSTFIX,
                 exts.GRASSHOPPER_SCRIPT_POSTFIX,
+                exts.GRASSHOPPERX_SCRIPT_POSTFIX,
                 ])
 
         if self.needs_script and not self.script_file:
@@ -538,7 +539,15 @@ class GenericUICommand(GenericUIComponent):
 
         # find config scripts
         self.config_script_file = \
-            self.find_bundle_file([exts.CONFIG_SCRIPT_POSTFIX])
+            self.find_bundle_file([
+                exts.PYTHON_CONFIG_SCRIPT_POSTFIX,
+                exts.CSHARP_CONFIG_SCRIPT_POSTFIX,
+                exts.VB_CONFIG_SCRIPT_POSTFIX,
+                exts.RUBY_CONFIG_SCRIPT_POSTFIX,
+                exts.DYNAMO_CONFIG_SCRIPT_POSTFIX,
+                exts.GRASSHOPPER_CONFIG_SCRIPT_POSTFIX,
+                exts.GRASSHOPPERX_CONFIG_SCRIPT_POSTFIX,
+                ])
 
         if not self.config_script_file:
             mlogger.debug(
@@ -659,7 +668,11 @@ class GenericUICommand(GenericUIComponent):
                 return exts.RUBY_LANG
             elif self.script_file.endswith(exts.DYNAMO_SCRIPT_FILE_FORMAT):
                 return exts.DYNAMO_LANG
-            elif self.script_file.endswith(exts.GRASSHOPPER_SCRIPT_FILE_FORMAT):
+            elif self.script_file.endswith(
+                    exts.GRASSHOPPER_SCRIPT_FILE_FORMAT) \
+                    or self.script_file.endswith(
+                        exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT
+                    ):
                 return exts.GRASSHOPPER_LANG
         else:
             return None

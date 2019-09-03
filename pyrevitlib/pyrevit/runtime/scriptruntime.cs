@@ -140,11 +140,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public EngineType EngineType {
             get {
                 // determine engine necessary to run this script
-                var scriptFile = ScriptSourceFile.ToLower();
-                if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Python))) {
+
+                if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Python)) {
                     string firstLine = "";
-                    if (File.Exists(scriptFile)) {
-                        using (StreamReader reader = new StreamReader(scriptFile)) {
+                    if (File.Exists(ScriptSourceFile)) {
+                        using (StreamReader reader = new StreamReader(ScriptSourceFile)) {
                             firstLine = reader.ReadLine();
 
                             if (firstLine != null && (firstLine.Contains("python3") || firstLine.Contains("cpython")))
@@ -154,31 +154,36 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         }
                     }
                 }
-                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.CSharp))) {
+
+                else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.CSharp)) {
                     return EngineType.CSharp;
                 }
-                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.VisualBasic))) {
+
+                else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.VisualBasic)) {
                     return EngineType.VisualBasic;
                 }
-                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Ruby))) {
+
+                else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Ruby)) {
                     return EngineType.IronRuby;
                 }
-                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Dynamo))) {
+
+                else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Dynamo)) {
                     return EngineType.DynamoBIM;
                 }
-                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.Grasshopper))) {
+
+                else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Grasshopper)) {
                     return EngineType.Grasshopper;
                 }
-                else if (scriptFile.EndsWith(PyRevitScript.GetScriptFileExt(PyRevitScriptTypes.RevitFamily))) {
+
+                else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.RevitFamily)) {
                     return EngineType.Content;
                 }
 
                 if (ScriptData.CommandBundle != null) {
-                    var bundleName = ScriptData.CommandBundle.ToLower();
-                    if (bundleName.EndsWith(PyRevitBundle.GetBundleDirExt(PyRevitBundleTypes.InvokeButton))) {
+                    if (PyRevitBundle.IsType(ScriptData.CommandBundle, PyRevitBundleTypes.InvokeButton)) {
                         return EngineType.Invoke;
                     }
-                    else if (bundleName.EndsWith(PyRevitBundle.GetBundleDirExt(PyRevitBundleTypes.URLButton))) {
+                    else if (PyRevitBundle.IsType(ScriptData.CommandBundle, PyRevitBundleTypes.URLButton)) {
                         return EngineType.HyperLink;
                     }
                 }

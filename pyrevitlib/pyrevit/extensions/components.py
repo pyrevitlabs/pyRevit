@@ -371,6 +371,7 @@ class Extension(GenericUIContainer):
         patfile += '|(\\' + exts.RUBY_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.DYNAMO_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CONTENT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'

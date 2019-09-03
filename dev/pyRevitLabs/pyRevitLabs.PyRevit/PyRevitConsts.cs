@@ -147,6 +147,7 @@ namespace pyRevitLabs.PyRevit {
         public const string BundleScriptRubyPostfix = ".rb";
         public const string BundleScriptDynamoBIMPostfix = ".dyn";
         public const string BundleScriptGrasshopperPostfix = ".gh";
+        public const string BundleScriptGrasshopperXPostfix = ".ghx";
         public const string BundleScriptRevitFamilyPostfix = ".rfa";
 
         // theme

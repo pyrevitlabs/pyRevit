@@ -64,8 +64,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         // should not get here
                         throw new PyRevitException("Unknown engine type.");
                 }
-            }
-            else
+            } else
                 return ExecutionResultCodes.MissingTargetScript;
         }
 
@@ -145,15 +144,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // run the script
                 execDynamo.Invoke(dynRevitApp, new object[] { journalData, runtime.UIApp });
                 return ExecutionResultCodes.Succeeded;
-            }
-            catch (FileNotFoundException) {
+            } catch (FileNotFoundException) {
                 // if failed in finding DynamoRevitDS.dll, assume no dynamo
                 TaskDialog.Show(PyRevitLabsConsts.ProductName,
                     "Can not find Dynamo installation or determine which Dynamo version to Run.\n\n" +
                     "Run Dynamo once to select the active version.");
                 return ExecutionResultCodes.ExecutionException;
-            }
-            catch (Exception dynEx) {
+            } catch (Exception dynEx) {
                 // on any other errors
                 var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
                 dialog.MainInstruction = "Error executing Dynamo script.";
@@ -168,22 +165,53 @@ namespace PyRevitLabs.PyRevit.Runtime {
             try {
                 // find RhinoInside.Revit.dll
                 ObjectHandle ghObjHandle =
-                    Activator.CreateInstance("RhinoInside.Revit", "RhinoInside.Revit.UI.RhinoCommand");
+                    Activator.CreateInstance("RhinoInside.Revit", "RhinoInside.Revit.UI.CommandGrasshopperPlayer");
                 object ghPlayer = ghObjHandle.Unwrap();
-                MethodInfo execGh = ghPlayer.GetType().GetMethod("Execute");
+                foreach (MethodInfo methodInfo in ghPlayer.GetType().GetMethods()) {
+                    var methodParams = methodInfo.GetParameters();
+                    if (methodInfo.Name == "Execute" && methodParams.Count() == 5) {
 
-                // run the script
-                execGh.Invoke(ghPlayer, new object[] { runtime.ScriptSourceFile });
-                return ExecutionResultCodes.Succeeded;
-            }
-            catch (FileNotFoundException) {
+                        View activeView = null;
+#if !(REVIT2013 || REVIT2014)
+                        if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null)
+                            activeView = runtime.UIApp.ActiveUIDocument.ActiveGraphicalView;
+#else
+                        if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null)
+                            activeView = runtime.UIApp.ActiveUIDocument.ActiveView;
+#endif
+
+                        // run the script
+                        if (runtime.UIApp != null) {
+                            string message = string.Empty;
+
+                            methodInfo.Invoke(
+                                ghPlayer,
+                                new object[] {
+                                    runtime.UIApp,
+                                    activeView,
+                                    new Dictionary<string,string>(),
+                                    runtime.ScriptSourceFile,
+                                    message
+                            });
+
+                            return ExecutionResultCodes.Succeeded;
+                        } else {
+                            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Can not access the UIApplication instance");
+                            return ExecutionResultCodes.ExecutionException;
+                        }
+                    }
+                }
+
+                TaskDialog.Show(PyRevitLabsConsts.ProductName, "Can not find appropriate Grasshopper Execute method");
+                return ExecutionResultCodes.ExecutionException;
+
+            } catch (FileNotFoundException) {
                 // if failed in finding DynamoRevitDS.dll, assume no dynamo
                 TaskDialog.Show(PyRevitLabsConsts.ProductName,
                     "Can not find Rhino.Inside installation or it is not loaded yet.\n\n" +
                     "Install/Load Rhino.Inside first.");
                 return ExecutionResultCodes.ExecutionException;
-            }
-            catch (Exception ghEx) {
+            } catch (Exception ghEx) {
                 // if failed in finding RhinoInside.Revit.dll, assume no rhino
                 var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
                 dialog.MainInstruction = "Error executing Grasshopper script.";
@@ -229,8 +257,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             out contentFamily
                             );
                         txn.Commit();
-                    }
-                    catch (Exception loadEx) {
+                    } catch (Exception loadEx) {
                         var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
                         dialog.MainInstruction = "Failed loading content.";
                         dialog.ExpandedContent = string.Format("{0}\n{1}", loadEx.Message, loadEx.StackTrace);
@@ -254,12 +281,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             var placeOps = new PromptForFamilyInstancePlacementOptions();
                             uidoc.PromptForFamilyInstancePlacement(firstSymbol, placeOps);
                             return ExecutionResultCodes.Succeeded;
-                        }
-                        catch (Autodesk.Revit.Exceptions.OperationCanceledException) {
+                        } catch (Autodesk.Revit.Exceptions.OperationCanceledException) {
                             // user cancelled placement
                             return ExecutionResultCodes.Succeeded;
-                        }
-                        catch (Exception promptEx) {
+                        } catch (Exception promptEx) {
                             var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
                             dialog.MainInstruction = "Failed placing content.";
                             dialog.ExpandedContent = string.Format("{0}\n{1}", promptEx.Message, promptEx.StackTrace);
@@ -282,20 +307,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     string hyperLink = runtime.ScriptRuntimeConfigs.Arguments.First();
                     System.Diagnostics.Process.Start(hyperLink);
                     return ExecutionResultCodes.Succeeded;
-                }
-                else {
+                } else {
                     TaskDialog.Show(PyRevitLabsConsts.ProductName, "Target hyperlink is not set correctly and can not be loaded.");
                     return ExecutionResultCodes.ExternalInterfaceNotImplementedException;
                 }
-            }
-            catch (Exception hyperlinkEx) {
+            } catch (Exception hyperlinkEx) {
                 var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
                 dialog.MainInstruction = "Error opening link.";
                 dialog.ExpandedContent = string.Format("{0}\n{1}", hyperlinkEx.Message, hyperlinkEx.StackTrace);
                 dialog.Show();
                 return ExecutionResultCodes.ExecutionException;
-            }
-            finally {
+            } finally {
                 // whatever
             }
         }
