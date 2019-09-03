@@ -85,6 +85,14 @@ tr:nth-child(odd) {
 	color: #974901;
 }
 
+.coreupdatewarn {
+	background: #F7F3F2;
+	color: #E17700;
+	padding: 20px;
+	margin: 10px 0px 10px 0px;
+	border: 1px solid #C64325; 
+}
+
 .inlinewait {
 	border-radius: 0;
 	border: 1px solid #2c3e50;
