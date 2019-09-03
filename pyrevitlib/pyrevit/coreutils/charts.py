@@ -17,9 +17,8 @@ DOUGHNUT_CHART = 'doughnut'
 BUBBLE_CHART = 'bubble'
 
 
-# CHARTS_JS_PATH = op.join(op.dirname(__file__), CHARTS_ENGINE)
 CHARTS_JS_PATH = \
-    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/{version}/Chart.min.js"
 
 
 SCRIPT_TEMPLATE = \
@@ -100,10 +99,11 @@ class PyRevitOutputChart(object):
         chart_type (str): chart type name
     
     """
-    def __init__(self, output, chart_type=LINE_CHART):
+    def __init__(self, output, chart_type=LINE_CHART, version='2.8.0'):
         self._output = output
         self._style = None
         self._width = self._height = None
+        self._version = version
 
         self.type = chart_type
         self.data = PyRevitOutputChartData()
@@ -161,7 +161,13 @@ class PyRevitOutputChart(object):
     def _setup_charts(self):
         cur_head = self._output.get_head_html()
         if CHARTS_JS_PATH not in cur_head:
-            self._output.inject_script('', {'src': CHARTS_JS_PATH, 'async': 'false'})
+            self._output.inject_script(
+                '',
+                {
+                    'src': CHARTS_JS_PATH.format(version=self._version),
+                    'async': 'false',
+                    'defer': 'false'}
+                )
 
     @staticmethod
     def _make_canvas_unique_id():

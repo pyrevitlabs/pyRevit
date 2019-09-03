@@ -604,9 +604,9 @@ class PyRevitOutputWindow(object):
             linkmaker.make_link(element_ids, contents=title)
             )
 
-    def make_chart(self):
+    def make_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return chart object."""
-        return charts.PyRevitOutputChart(self)
+        return charts.PyRevitOutputChart(self, version=version)
 
     def make_line_chart(self):
         """:obj:`PyRevitOutputChart`: Return line chart object."""
