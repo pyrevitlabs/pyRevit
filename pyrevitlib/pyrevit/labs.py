@@ -83,7 +83,7 @@ if not EXEC_PARAMS.doc_mode:
         config = NLog.Config.LoggingConfiguration()
         target = PyRevitOutputTarget()
         target.Name = __name__
-        target.Layout = "${level:uppercase=true}: [${logger}] ${message}"
+        target.Layout = "${level:uppercase=true} [${logger}] ${message}"
         config.AddTarget(__name__, target)
         config.AddRuleForAllLevels(target)
         NLog.LogManager.Configuration = config

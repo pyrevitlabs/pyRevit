@@ -10,10 +10,18 @@ from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit import coreutils
 from pyrevit.coreutils import envvars
 
-LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
-LOG_REC_FORMAT_EMOJI = "{emoji} %(levelname)s: [%(name)s] %(message)s"
-LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
-LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s: [<{}> %(name)s] %(message)s"
+LOG_REC_FORMAT = "%(levelname)s [%(name)s] %(message)s"
+LOG_REC_FORMAT_HEADER = \
+    coreutils.prepare_html_str(
+        "<strong>%(levelname)s</strong> [%(name)s] %(message)s"
+        )
+LOG_REC_FORMAT_HEADER_NO_NAME = \
+    coreutils.prepare_html_str(
+        "<strong>%(levelname)s</strong>\n%(message)s"
+        )
+LOG_REC_FORMAT_EMOJI = "{emoji} %(levelname)s [%(name)s] %(message)s"
+LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s [<{}> %(name)s] %(message)s"
 
 LOG_REC_FORMAT_HTML = \
     coreutils.prepare_html_str('<div class="logdefault {style}">{message}</div>')
@@ -21,27 +29,27 @@ LOG_REC_FORMAT_HTML = \
 LOG_REC_CLASS_ERROR = 'logerror'
 LOG_REC_FORMAT_ERROR = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_ERROR,
-                               message=LOG_REC_FORMAT)
+                               message=LOG_REC_FORMAT_HEADER)
 
 LOG_REC_CLASS_WARNING = 'logwarning'
 LOG_REC_FORMAT_WARNING = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_WARNING,
-                               message=LOG_REC_FORMAT)
+                               message=LOG_REC_FORMAT_HEADER)
 
 LOG_REC_CLASS_CRITICAL = 'logcritical'
 LOG_REC_FORMAT_CRITICAL = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_CRITICAL,
-                               message=LOG_REC_FORMAT)
+                               message=LOG_REC_FORMAT_HEADER)
 
 LOG_REC_CLASS_SUCCESS = 'logsuccess'
 LOG_REC_FORMAT_SUCCESS = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_SUCCESS,
-                               message=LOG_REC_FORMAT)
+                               message=LOG_REC_FORMAT_HEADER_NO_NAME)
 
 LOG_REC_CLASS_DEPRECATE = 'logdeprecate'
 LOG_REC_FORMAT_DEPRECATE = \
     LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_DEPRECATE,
-                               message=LOG_REC_FORMAT)
+                               message=LOG_REC_FORMAT_HEADER_NO_NAME)
 
 
 # Setting default global logging level
