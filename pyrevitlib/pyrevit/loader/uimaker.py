@@ -88,6 +88,14 @@ def _make_full_class_name(asm_name, class_name):
         return '{}.{}'.format(asm_name, class_name)
 
 
+def _update_tooltip_ex(button_ui, button, ext_asm_info):
+    tooltip_ex = _make_button_tooltip_ext(button, ext_asm_info.name)
+    button_cookie = button_ui.get_cookie()
+    if button_cookie and '=' in button_cookie:
+        tooltip_ex += '\n\nCookie:\n' + button_cookie.split('=')[1]
+    button_ui.set_tooltip_ext(tooltip_ex)
+
+
 def _get_effective_classname(button):
     """
     Verifies if button has class_name set. This means that typemaker has
@@ -172,8 +180,6 @@ def _produce_ui_smartbutton(ui_maker_params):
             class_name=_get_effective_classname(smartbutton),
             icon_path=smartbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(smartbutton),
-            tooltip_ext=_make_button_tooltip_ext(smartbutton,
-                                                 ext_asm_info.name),
             tooltip_media=smartbutton.media_file,
             ctxhelpurl=smartbutton.help_url,
             avail_class_name=smartbutton.avail_class_name,
@@ -184,6 +190,10 @@ def _produce_ui_smartbutton(ui_maker_params):
         return None
 
     new_uibutton = parent_ui_item.button(smartbutton.name)
+
+    # update extended tooltip
+    _update_tooltip_ex(new_uibutton, smartbutton, ext_asm_info)
+
     mlogger.debug('Importing smart button as module: %s', smartbutton)
     try:
         # replacing EXEC_PARAMS.command_name value with button name so the
@@ -309,6 +319,10 @@ def _produce_ui_linkbutton(ui_maker_params):
             update_if_exists=True,
             ui_title=_make_ui_title(linkbutton))
         linkbutton_ui = parent_ui_item.button(linkbutton.name)
+
+        # update extended tooltip
+        _update_tooltip_ex(linkbutton_ui, linkbutton, ext_asm_info)
+
         linkbutton_ui.reset_highlights()
         if linkbutton.is_updated:
             linkbutton_ui.highlight_as_updated()
@@ -353,6 +367,10 @@ def _produce_ui_pushbutton(ui_maker_params):
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))
         button_ui = parent_ui_item.button(pushbutton.name)
+
+        # update extended tooltip
+        _update_tooltip_ex(button_ui, pushbutton, ext_asm_info)
+
         button_ui.reset_highlights()
         if pushbutton.is_updated:
             button_ui.highlight_as_updated()

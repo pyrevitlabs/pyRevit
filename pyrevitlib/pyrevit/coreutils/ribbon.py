@@ -804,6 +804,11 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
         else:
             return self._rvtapi_object.ItemText
 
+    def get_cookie(self):
+        adwindows_obj = self.get_adwindows_object()
+        if adwindows_obj and hasattr(adwindows_obj, 'Cookie'):
+            return getattr(adwindows_obj, 'Cookie', '')
+
     @property
     def assembly_name(self):
         return self._rvtapi_object.AssemblyName
