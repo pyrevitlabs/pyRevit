@@ -586,6 +586,8 @@ _component_creation_dict = {
     exts.TAB_POSTFIX: _produce_ui_tab,
     exts.PANEL_POSTFIX: _produce_ui_panels,
     exts.STACK_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.STACK2_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.STACK3_BUTTON_POSTFIX: _produce_ui_stacks,
     exts.PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
     exts.SPLIT_BUTTON_POSTFIX: _produce_ui_split,
     exts.SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,

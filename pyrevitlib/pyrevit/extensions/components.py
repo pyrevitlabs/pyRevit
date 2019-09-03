@@ -239,6 +239,31 @@ class GenericStack(GenericUIContainer):
                     return True
 
 
+class StackButtonGroup(GenericStack):
+    type_id = exts.STACK_BUTTON_POSTFIX
+
+
+class StackTwoButtonGroup(GenericStack):
+    type_id = exts.STACK2_BUTTON_POSTFIX
+
+    def __init__(self, cmp_path=None):
+        GenericStack.__init__(self, cmp_path=cmp_path)
+        mlogger.deprecate(
+            ".stack2 and .stack3 bundles are deprecated and will be removed "
+            "in the next major release. use .stack bundles instead | %s", self)
+
+
+class StackThreeButtonGroup(GenericStack):
+    type_id = exts.STACK3_BUTTON_POSTFIX
+
+    def __init__(self, cmp_path=None):
+        GenericStack.__init__(self, cmp_path=cmp_path)
+        mlogger.deprecate(
+            ".stack2 and .stack3 bundles are deprecated and will be removed "
+            "in the next major release. use .stack bundles instead | %s", self)
+
+
+
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
 class Panel(GenericUIContainer):
     type_id = exts.PANEL_POSTFIX
