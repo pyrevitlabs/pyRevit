@@ -231,8 +231,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         txn.Commit();
                     }
                     catch (Exception loadEx) {
-                        TaskDialog.Show(PyRevitLabsConsts.ProductName,
-                            string.Format("Failed loading content.\n{0}\n{1}", loadEx.Message, loadEx.StackTrace));
+                        var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                        dialog.MainInstruction = "Failed loading content.";
+                        dialog.ExpandedContent = string.Format("{0}\n{1}", loadEx.Message, loadEx.StackTrace);
+                        dialog.Show();
                         return ExecutionResultCodes.FailedLoadingContent;
                     }
                 }
@@ -258,15 +260,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             return ExecutionResultCodes.Succeeded;
                         }
                         catch (Exception promptEx) {
-                            TaskDialog.Show(PyRevitLabsConsts.ProductName,
-                                string.Format("Failed placing content.\n{0}\n{1}",
-                                              promptEx.Message, promptEx.StackTrace));
+                            var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                            dialog.MainInstruction = "Failed placing content.";
+                            dialog.ExpandedContent = string.Format("{0}\n{1}", promptEx.Message, promptEx.StackTrace);
+                            dialog.Show();
                             return ExecutionResultCodes.FailedLoadingContent;
                         }
                 }
             }
 
-            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Failed accessing Appication.");
+            TaskDialog.Show(PyRevitLabsConsts.ProductName, "Failed accessing Application.");
             return ExecutionResultCodes.FailedLoadingContent;
 #endif
         }
@@ -286,12 +289,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
             catch (Exception hyperlinkEx) {
-                TaskDialog.Show(PyRevitLabsConsts.ProductName, hyperlinkEx.Message);
+                var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                dialog.MainInstruction = "Error opening link.";
+                dialog.ExpandedContent = string.Format("{0}\n{1}", hyperlinkEx.Message, hyperlinkEx.StackTrace);
+                dialog.Show();
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {
                 // whatever
             }
+        }
+    }
+
+    public class ContentLoaderOptions : IFamilyLoadOptions {
+        public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues) {
+            overwriteParameterValues = true;
+            return overwriteParameterValues;
+        }
+
+        public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues) {
+            throw new NotImplementedException();
         }
     }
 }

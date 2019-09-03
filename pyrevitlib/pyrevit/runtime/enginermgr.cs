@@ -687,10 +687,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     traceMessage = traceMessage.NormalizeNewLine();
                     runtime.TraceMessage = traceMessage;
 
-                    if (runtime.InterfaceType == InterfaceType.ExternalCommand)
-                        TaskDialog.Show(PyRevitLabsConsts.ProductName, runtime.TraceMessage);
-
-                    TaskDialog.Show(PyRevitLabsConsts.ProductName, runtime.TraceMessage);
+                    if (runtime.InterfaceType == InterfaceType.ExternalCommand) {
+                        var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                        dialog.MainInstruction = "Error compiling .NET script.";
+                        dialog.ExpandedContent = string.Format("{0}\n{1}", compileEx.Message, traceMessage);
+                        dialog.Show();
+                    }
 
                     return ExecutionResultCodes.CompileException;
                 }
@@ -715,7 +717,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         string traceMessage = execEx.ToString();
                         traceMessage = traceMessage.NormalizeNewLine();
                         runtime.TraceMessage = traceMessage;
-                        TaskDialog.Show(PyRevitLabsConsts.ProductName, traceMessage);
+
+                        var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                        dialog.MainInstruction = "Error executing .NET script.";
+                        dialog.ExpandedContent = string.Format("{0}\n{1}", traceMessage, execEx.StackTrace);
+                        dialog.Show();
 
                         return ExecutionResultCodes.ExecutionException;
                     }
@@ -730,7 +736,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         traceMessage = traceMessage.NormalizeNewLine();
                         runtime.TraceMessage = traceMessage;
 
-                        TaskDialog.Show(PyRevitLabsConsts.ProductName, runtime.TraceMessage);
+                        runtime.OutputStream.WriteError(traceMessage, runtime.EngineType);
+
                         return ExecutionResultCodes.ExecutionException;
                     }
 
@@ -1015,7 +1022,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
             catch (Exception invokeEx) {
-                TaskDialog.Show(PyRevitLabsConsts.ProductName, invokeEx.Message);
+                var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
+                dialog.MainInstruction = "Error invoking .NET external command.";
+                dialog.ExpandedContent = string.Format("{0}\n{1}", invokeEx.Message, invokeEx.StackTrace);
+                dialog.Show();
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {
@@ -1034,17 +1044,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public int Count {
             get { return Errors.Count; }
-        }
-    }
-
-    public class ContentLoaderOptions : IFamilyLoadOptions {
-        public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues) {
-            overwriteParameterValues = true;
-            return overwriteParameterValues;
-        }
-
-        public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues) {
-            throw new NotImplementedException();
         }
     }
 }
