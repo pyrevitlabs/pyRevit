@@ -20,6 +20,7 @@ func dumpEventAndRespond(logrec interface{}, w http.ResponseWriter, logger *cli.
 		}
 
 		// write response
+		w.Header().Set("Content-Type", "application/json")
 		_, responseErr := w.Write([]byte(jsonString))
 		if responseErr != nil {
 			logger.Debug(responseErr)
