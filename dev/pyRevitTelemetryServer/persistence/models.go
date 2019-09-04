@@ -133,7 +133,7 @@ type EventTelemetryRecordV2 struct {
 	UserName     string                 `json:"username" bson:"username" valid:"-"`
 	HostUserName string                 `json:"host_user" bson:"host_user" valid:"-"`
 	RevitVersion string                 `json:"revit" bson:"revit" valid:"-"`
-	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild" valid:"-"`
+	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))"`
 
 	// general
 	Cancellable      bool   `json:"cancellable" bson:"cancellable" valid:"-"`
