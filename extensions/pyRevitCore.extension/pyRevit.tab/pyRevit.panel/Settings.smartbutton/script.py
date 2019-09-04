@@ -166,10 +166,11 @@ class SettingsWindow(forms.WPFWindow):
                 self.availableEngines.IsEnabled = False
 
             # now select the current runtime engine
-            self.cpyengine_version = user_config.cpython_engine_version
-            if self.cpyengine_version:
+            self.active_cpyengine = user_config.get_active_cpython_engine()
+            if self.active_cpyengine:
                 for engine_cfg in self.cpythonEngines.ItemsSource:
-                    if engine_cfg.engine.Version == self.cpyengine_version:
+                    if engine_cfg.engine.Version == \
+                            self.active_cpyengine.Version:
                         self.cpythonEngines.SelectedItem = engine_cfg
                         break
             else:
@@ -480,7 +481,7 @@ class SettingsWindow(forms.WPFWindow):
         engine_cfg = self.cpythonEngines.SelectedItem
         if engine_cfg:
             user_config.set_active_cpython_engine(engine_cfg.engine)
-            if self.cpyengine_version != engine_cfg.engine.Version:
+            if self.active_cpyengine.Version != engine_cfg.engine.Version:
                 forms.alert('Active CPython engine has changed. '
                             'Restart Revit for this change to take effect.')
 
