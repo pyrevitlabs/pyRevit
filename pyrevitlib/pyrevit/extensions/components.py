@@ -204,6 +204,18 @@ class URLButton(GenericUICommand):
 class GenericUICommandGroup(GenericUIContainer):
     allowed_sub_cmps = [GenericUICommand, NoScriptButton]
 
+    @property
+    def control_id(self):
+        # stacks don't have control id
+        if self.parent_ctrl_id:
+            deepend_parent_id = self.parent_ctrl_id.replace(
+                '_%CustomCtrl',
+                '_%CustomCtrl_%CustomCtrl'
+            )
+            return deepend_parent_id + '%{}'.format(self.name)
+        else:
+            return '%{}%'.format(self.name)
+
     def has_commands(self):
         for component in self:
             if isinstance(component, GenericUICommand):
@@ -228,6 +240,11 @@ class GenericStack(GenericUIContainer):
 
     allowed_sub_cmps = \
         [GenericUICommandGroup, GenericUICommand, NoScriptButton]
+
+    @property
+    def control_id(self):
+        # stacks don't have control id
+        return self.parent_ctrl_id if self.parent_ctrl_id else ''
 
     def has_commands(self):
         for component in self:
@@ -261,7 +278,6 @@ class StackThreeButtonGroup(GenericStack):
         mlogger.deprecate(
             ".stack2 and .stack3 bundles are deprecated and will be removed "
             "in the next major release. use .stack bundles instead | %s", self)
-
 
 
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
@@ -389,6 +405,10 @@ class Extension(GenericUIContainer):
         self.hooks_path = hooks_path if op.exists(hooks_path) else None
 
         self.dir_hash_value = self._calculate_extension_dir_hash()
+
+    @property
+    def control_id(self):
+        return None
 
     @property
     def startup_script(self):

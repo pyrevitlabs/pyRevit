@@ -25,6 +25,7 @@ layout:
   - ---
   - Test Output Stream
   - Test Multiple Outputs
+  - Test UI Button
   - Test Independent Logging
   - ---
   - Test Progressbar

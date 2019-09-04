@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Windows.Input;
+using System.Windows.Controls;
+
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 using System.Windows.Input;
-using System.Windows.Controls;
 
 using pyRevitLabs.Common;
 
@@ -43,11 +45,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 string cmdBundle,
                 string cmdExtension,
                 string cmdUniqueName,
+                string cmdControlId,
                 string engineCfgs) {
             ScriptData = new ScriptData {
                 ScriptPath = scriptSource,
                 ConfigScriptPath = configScriptSource,
                 CommandUniqueId = cmdUniqueName,
+                CommandControlId = cmdControlId,
                 CommandName = cmdName,
                 CommandBundle = cmdBundle,
                 CommandExtension = cmdExtension,
@@ -132,10 +136,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // menu item to copy command unique name (assigned by pyRevit) to clipboard
                 MenuItem copyUniqueName = new MenuItem();
-                copyUniqueName.Header = string.Format("Copy Unique Id ({0})", ScriptData.CommandUniqueId);
+                copyUniqueName.Header = "Copy Unique Id";
                 copyUniqueName.ToolTip = ScriptData.CommandUniqueId;
                 copyUniqueName.Click += delegate { System.Windows.Forms.Clipboard.SetText(ScriptData.CommandUniqueId); };
                 pyRevitCmdContextMenu.Items.Add(copyUniqueName);
+
+                // menu item to copy command unique name (assigned by pyRevit) to clipboard
+                MenuItem copyControlIdName = new MenuItem();
+                copyControlIdName.Header = "Copy Control Id";
+                copyControlIdName.ToolTip = ScriptData.CommandControlId;
+                copyControlIdName.Click += delegate { System.Windows.Forms.Clipboard.SetText(ScriptData.CommandControlId); };
+                pyRevitCmdContextMenu.Items.Add(copyControlIdName);
 
                 // menu item to copy ;-separated sys paths to clipboard
                 // Example: "path1;path2;path3"

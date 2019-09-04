@@ -605,6 +605,22 @@ class _ExecutorParams(object):
         elif self.script_runtime:
             return self.script_runtime.ScriptData.CommandUniqueId
 
+    @property   # read-only
+    def command_controlid(self):
+        """str: Return current command control id."""
+        if '__commandcontrolid__' in __builtins__ \
+                and __builtins__['__commandcontrolid__']:
+            return __builtins__['__commandcontrolid__']
+        elif self.script_runtime:
+            return self.script_runtime.ScriptData.CommandControlId
+
+    @property   # read-only
+    def command_uibutton(self):
+        """str: Return current command ui button."""
+        if '__uibutton__' in __builtins__ \
+                and __builtins__['__uibutton__']:
+            return __builtins__['__uibutton__']
+
     @property
     def doc_mode(self):
         """bool: Check if pyrevit is running by doc generator."""

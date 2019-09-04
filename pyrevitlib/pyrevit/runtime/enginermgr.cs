@@ -346,6 +346,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             builtin.SetVariable("__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
             builtin.SetVariable("__elements__", runtime.ScriptRuntimeConfigs.SelectedElements);
 
+            // Add ui button handle
+            builtin.SetVariable("__uibutton__", runtime.UIControl);
+
             // Adding information on the command being executed
             builtin.SetVariable("__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
             builtin.SetVariable("__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
@@ -353,6 +356,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             builtin.SetVariable("__commandbundle__", runtime.ScriptData.CommandBundle);
             builtin.SetVariable("__commandextension__", runtime.ScriptData.CommandExtension);
             builtin.SetVariable("__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
+            builtin.SetVariable("__commandcontrolid__", runtime.ScriptData.CommandControlId);
             builtin.SetVariable("__forceddebugmode__", runtime.ScriptRuntimeConfigs.DebugMode);
             builtin.SetVariable("__shiftclick__", runtime.ScriptRuntimeConfigs.ConfigMode);
 
@@ -391,12 +395,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             builtin.SetVariable("__scriptruntime__", (object)null);
             builtin.SetVariable("__commanddata__", (object)null);
             builtin.SetVariable("__elements__", (object)null);
+            builtin.SetVariable("__uibutton__", (object)null);
             builtin.SetVariable("__commandpath__", (object)null);
             builtin.SetVariable("__configcommandpath__", (object)null);
             builtin.SetVariable("__commandname__", (object)null);
             builtin.SetVariable("__commandbundle__", (object)null);
             builtin.SetVariable("__commandextension__", (object)null);
             builtin.SetVariable("__commanduniqueid__", (object)null);
+            builtin.SetVariable("__commandcontrolid__", (object)null);
             builtin.SetVariable("__forceddebugmode__", (object)null);
             builtin.SetVariable("__shiftclick__", (object)null);
 
@@ -542,6 +548,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
             SetVariable(builtins, "__elements__", runtime.ScriptRuntimeConfigs.SelectedElements);
 
+            // Add ui button handle
+            SetVariable(builtins, "__uibutton__", runtime.UIControl);
+            
             // Adding information on the command being executed
             SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
             SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
@@ -549,6 +558,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__commandbundle__", runtime.ScriptData.CommandBundle);
             SetVariable(builtins, "__commandextension__", runtime.ScriptData.CommandExtension);
             SetVariable(builtins, "__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
+            SetVariable(builtins, "__commandcontrolid__", runtime.ScriptData.CommandControlId);
             SetVariable(builtins, "__forceddebugmode__", runtime.ScriptRuntimeConfigs.DebugMode);
             SetVariable(builtins, "__shiftclick__", runtime.ScriptRuntimeConfigs.ConfigMode);
 
@@ -634,6 +644,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string ScriptPath { get; set; }
         public string ConfigScriptPath { get; set; }
         public string CommandUniqueId { get; set; }
+        public string CommandControlId { get; set; }
         public string CommandName { get; set; }
         public string CommandBundle { get; set; }
         public string CommandExtension { get; set; }
@@ -642,6 +653,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool ConfigMode { get; set; }
         public bool DebugMode { get; set; }
         public bool ExecutedFromUI { get; set; }
+        public object UIButton { get; set; }
     }
 
     public class CLREngineOutputTarget : TargetWithLayout {
@@ -834,6 +846,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 ScriptPath = runtime.ScriptData.ScriptPath,
                 ConfigScriptPath = runtime.ScriptData.ConfigScriptPath,
                 CommandUniqueId = runtime.ScriptData.CommandUniqueId,
+                CommandControlId = runtime.ScriptData.CommandControlId,
                 CommandName = runtime.ScriptData.CommandName,
                 CommandBundle = runtime.ScriptData.CommandBundle,
                 CommandExtension = runtime.ScriptData.CommandExtension,
@@ -841,12 +854,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 RefreshEngine = runtime.ScriptRuntimeConfigs.RefreshEngine,
                 ConfigMode = runtime.ScriptRuntimeConfigs.ConfigMode,
                 DebugMode = runtime.ScriptRuntimeConfigs.DebugMode,
-                ExecutedFromUI = runtime.ScriptRuntimeConfigs.ExecutedFromUI
+                ExecutedFromUI = runtime.ScriptRuntimeConfigs.ExecutedFromUI,
+                UIButton = runtime.UIControl
             };
 
+            FieldInfo execParamField = null;
             foreach (var fieldInfo in extCommandType.GetFields())
                 if (fieldInfo.FieldType == typeof(ExecParams))
-                    fieldInfo.SetValue(extCommandInstance, execParams );
+                    execParamField = fieldInfo;
+
+            if (execParamField != null)
+                execParamField.SetValue(extCommandInstance, execParams);
 
             // reroute console output to runtime stream
             var existingOutStream = Console.Out;
@@ -880,6 +898,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // revert logger back to previous
             LogManager.Configuration = prevLoggerCfg;
+
+            // cleanup reference to exec params
+            target.CurrentExecParams = null;
+            if (execParamField != null)
+                execParamField.SetValue(extCommandInstance, null);
 
             // reroute console output back to original
             Console.SetOut(existingOutStream);

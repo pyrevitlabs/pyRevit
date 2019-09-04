@@ -68,7 +68,7 @@ class GenericUIComponent(GenericComponent):
         # using classname otherwise exceptions in superclasses won't show
         GenericComponent.__init__(self)
         self.directory = cmp_path
-        self.unique_name = None
+        self.unique_name = self.parent_ctrl_id = None
         self.icon_file = None
         self._ui_title = None
         self._tooltip = self.author = self._help_url = None
@@ -220,6 +220,13 @@ class GenericUIComponent(GenericComponent):
 
         self.modules = \
             self.meta.get(exts.MDATA_LINK_BUTTON_MODULES, self.modules)
+
+    @property
+    def control_id(self):
+        if self.parent_ctrl_id:
+            return self.parent_ctrl_id + '%{}'.format(self.name)
+        else:
+            return "CustomCtrl_%CustomCtrl_%{}".format(self.name)
 
     @property
     def ui_title(self):
@@ -438,8 +445,13 @@ class GenericUIContainer(GenericUIComponent):
             return self.module_paths.remove(path)
 
     def add_component(self, comp):
+        # set search paths
         for path in self.module_paths:
             comp.add_module_path(path)
+        # set its own control id on the child component
+        if hasattr(comp, 'parent_ctrl_id'):
+            comp.parent_ctrl_id = self.control_id
+        # now add to list
         self.components.append(comp)
 
     def find_components_of_type(self, cmp_type):
@@ -676,6 +688,13 @@ class GenericUICommand(GenericUIComponent):
                 return exts.GRASSHOPPER_LANG
         else:
             return None
+
+    @property
+    def control_id(self):
+        if self.parent_ctrl_id:
+            return self.parent_ctrl_id + '%{}'.format(self.name)
+        else:
+            return '%{}'.format(self.name)
 
     @property
     def is_cpython(self):

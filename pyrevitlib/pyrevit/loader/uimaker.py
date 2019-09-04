@@ -64,12 +64,16 @@ def _make_button_tooltip_ext(button, asm_name):
                         button.min_revit_ver)
 
     if isinstance(button, (components.LinkButton, components.InvokeButton)):
-        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}\n\n'.format(
             button.command_class or 'Runs first matching DB.IExternalCommand',
             button.assembly)
     else:
-        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'\
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}\n\n'\
             .format(button.unique_name, asm_name)
+
+    if button.control_id:
+        tooltip_ext += 'Control Id:\n{}'\
+            .format(button.control_id)
 
     return tooltip_ext
 
@@ -86,14 +90,6 @@ def _make_full_class_name(asm_name, class_name):
         return None
     else:
         return '{}.{}'.format(asm_name, class_name)
-
-
-def _update_tooltip_ex(button_ui, button, ext_asm_info):
-    tooltip_ex = _make_button_tooltip_ext(button, ext_asm_info.name)
-    button_cookie = button_ui.get_cookie()
-    if button_cookie and '=' in button_cookie:
-        tooltip_ex += '\n\nCookie:\n' + button_cookie.split('=')[1]
-    button_ui.set_tooltip_ext(tooltip_ex)
 
 
 def _get_effective_classname(button):
@@ -180,6 +176,8 @@ def _produce_ui_smartbutton(ui_maker_params):
             class_name=_get_effective_classname(smartbutton),
             icon_path=smartbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(smartbutton),
+            tooltip_ext=_make_button_tooltip_ext(smartbutton,
+                                                 ext_asm_info.name),
             tooltip_media=smartbutton.media_file,
             ctxhelpurl=smartbutton.help_url,
             avail_class_name=smartbutton.avail_class_name,
@@ -189,10 +187,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         mlogger.error('UI error: %s', err.msg)
         return None
 
-    new_uibutton = parent_ui_item.button(smartbutton.name)
-
-    # update extended tooltip
-    _update_tooltip_ex(new_uibutton, smartbutton, ext_asm_info)
+    smartbutton_ui = parent_ui_item.button(smartbutton.name)
 
     mlogger.debug('Importing smart button as module: %s', smartbutton)
     try:
@@ -217,7 +212,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__forceddebugmode__'] = False
     except Exception as err:
         mlogger.error('Smart button setup error: %s | %s', smartbutton, err)
-        return new_uibutton
+        return smartbutton_ui
 
     try:
         # setup sys.paths for the smart command
@@ -244,7 +239,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         try:
             # running the smart button initializer function
             res = importedscript.__selfinit__(smartbutton,
-                                              new_uibutton, HOST_APP.uiapp)
+                                              smartbutton_ui, HOST_APP.uiapp)
         except Exception as button_err:
             mlogger.error('Error initializing smart button: %s | %s',
                           smartbutton, button_err)
@@ -253,22 +248,22 @@ def _produce_ui_smartbutton(ui_maker_params):
         # remove the button
         if res is False:
             mlogger.debug('SelfInit returned False on Smartbutton: %s',
-                          new_uibutton)
-            new_uibutton.deactivate()
+                          smartbutton_ui)
+            smartbutton_ui.deactivate()
 
-        mlogger.debug('SelfInit successful on Smartbutton: %s', new_uibutton)
+        mlogger.debug('SelfInit successful on Smartbutton: %s', smartbutton_ui)
     except Exception as err:
         mlogger.error('Smart button script import error: %s | %s',
                       smartbutton, err)
-        return new_uibutton
+        return smartbutton_ui
 
-    new_uibutton.reset_highlights()
+    smartbutton_ui.reset_highlights()
     if smartbutton.is_updated:
-        new_uibutton.highlight_as_updated()
+        smartbutton_ui.highlight_as_updated()
     if smartbutton.is_new:
-        new_uibutton.highlight_as_new()
+        smartbutton_ui.highlight_as_new()
 
-    return new_uibutton
+    return smartbutton_ui
 
 
 def _produce_ui_linkbutton(ui_maker_params):
@@ -306,22 +301,19 @@ def _produce_ui_linkbutton(ui_maker_params):
             linked_asm = linked_asm_list[0]
 
         parent_ui_item.create_push_button(
-            linkbutton.name,
-            linked_asm.Location,
-            _make_full_class_name(linked_asm.GetName().Name,
-                                  linkbutton.command_class),
-            linkbutton.icon_file or parent.icon_file,
-            _make_button_tooltip(linkbutton),
-            _make_button_tooltip_ext(linkbutton, ext_asm_info.name),
-            None,
-            None,
-            None,
+            button_name=linkbutton.name,
+            asm_location=ext_asm_info.location,
+            class_name=_get_effective_classname(linkbutton),
+            icon_path=linkbutton.icon_file or parent.icon_file,
+            tooltip=_make_button_tooltip(linkbutton),
+            tooltip_ext=_make_button_tooltip_ext(linkbutton,
+                                                 ext_asm_info.name),
+            tooltip_media=linkbutton.media_file,
+            ctxhelpurl=linkbutton.help_url,
+            avail_class_name=linkbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(linkbutton))
         linkbutton_ui = parent_ui_item.button(linkbutton.name)
-
-        # update extended tooltip
-        _update_tooltip_ex(linkbutton_ui, linkbutton, ext_asm_info)
 
         linkbutton_ui.reset_highlights()
         if linkbutton.is_updated:
@@ -366,17 +358,14 @@ def _produce_ui_pushbutton(ui_maker_params):
             avail_class_name=pushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))
-        button_ui = parent_ui_item.button(pushbutton.name)
+        pushbutton_ui = parent_ui_item.button(pushbutton.name)
 
-        # update extended tooltip
-        _update_tooltip_ex(button_ui, pushbutton, ext_asm_info)
-
-        button_ui.reset_highlights()
+        pushbutton_ui.reset_highlights()
         if pushbutton.is_updated:
-            button_ui.highlight_as_updated()
+            pushbutton_ui.highlight_as_updated()
         if pushbutton.is_new:
-            button_ui.highlight_as_new()
-        return button_ui
+            pushbutton_ui.highlight_as_new()
+        return pushbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
