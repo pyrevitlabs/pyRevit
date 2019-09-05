@@ -147,6 +147,12 @@ def ask_for_starting_number(category_name):
         )
 
 
+def _unmark_collected(category_name, renumbered_element_ids):
+    # unmark all renumbered elements
+    with revit.Transaction("Unmark {}".format(category_name)):
+        unmark_renamed_elements(revit.active_view, renumbered_element_ids)
+
+
 def pick_and_renumber(category_name, starting_index):
     """Main renumbering routine for elements of given category."""
     # all actions under one transaction
@@ -172,9 +178,7 @@ def pick_and_renumber(category_name, starting_index):
                     renumbered_element_ids.append(picked_element.Id)
                 index = coreutils.increment_str(index)
             # unmark all renumbered elements
-            with revit.Transaction("Unmark {}".format(category_name)):
-                unmark_renamed_elements(revit.active_view,
-                                        renumbered_element_ids)
+            _unmark_collected(category_name, renumbered_element_ids)
 
 
 def door_by_room_renumber():
@@ -183,6 +187,7 @@ def door_by_room_renumber():
     with revit.TransactionGroup("Renumber Doors by Room"):
         # collect existing elements number:id data
         existing_doors_data = get_elements_dict("Doors")
+        renumbered_door_ids = []
         # make sure target elements are easily selectable
         with EasilySelectableElements(revit.active_view, "Doors") \
                 and EasilySelectableElements(revit.active_view, "Rooms"):
@@ -193,7 +198,7 @@ def door_by_room_renumber():
                                                    message="Select a door")
                 if not picked_door:
                     # user cancelled
-                    return
+                    return _unmark_collected("Doors", renumbered_door_ids)
                 # grab the associated rooms
                 from_room, to_room = revit.query.get_door_rooms(picked_door)
 
@@ -205,7 +210,7 @@ def door_by_room_renumber():
                                                        message="Select a room")
                     if not picked_room:
                         # user cancelled
-                        return
+                        return _unmark_collected("Doors", renumbered_door_ids)
                 else:
                     picked_room = from_room or to_room
 
@@ -219,6 +224,7 @@ def door_by_room_renumber():
                         renumber_element(picked_door,
                                          room_number,
                                          existing_doors_data)
+                        renumbered_door_ids.append(picked_door.Id)
                     elif door_count > 1:
                         # match door number to extended room number e.g. 100A
                         # check numbers of existing room doors and pick the next
@@ -231,6 +237,7 @@ def door_by_room_renumber():
                         renumber_element(picked_door,
                                          new_number,
                                          existing_doors_data)
+                        renumbered_door_ids.append(picked_door.Id)
 
 
 # [X] enable room reference lines on view
