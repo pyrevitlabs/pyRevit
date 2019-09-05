@@ -1,3 +1,4 @@
+# pylint: skip-file
 from pyrevit import EXEC_PARAMS
 print(__uibutton__)
 

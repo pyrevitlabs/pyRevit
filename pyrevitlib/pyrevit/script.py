@@ -459,7 +459,6 @@ def show_folder_in_explorer(folder_path):
     coreutils.open_folder_in_explorer(folder_path)
 
 
-
 def open_url(url):
     """Open url in a new tab in default webbrowser."""
     import webbrowser
