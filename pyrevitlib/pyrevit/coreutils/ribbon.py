@@ -11,7 +11,8 @@ from pyrevit.framework import IO
 from pyrevit.framework import Imaging
 from pyrevit.framework import BindingFlags
 from pyrevit.framework import Media, Convert
-from pyrevit.api import UI, AdWindows, AdInternal
+from pyrevit.api import UI, AdWindows, AdInternal, PANELLISTVIEW_TYPE
+from pyrevit.revit import ui
 
 
 mlogger = get_logger(__name__)
@@ -1493,15 +1494,19 @@ class _PyRevitUI(GenericPyRevitUIContainer):
     def get_adwindows_ribbon_control(self):
         return AdWindows.ComponentManager.Ribbon
 
+    def set_panel_flow(self, flow_direction):
+        main_wnd = ui.get_mainwindow()
+        panel_listview = main_wnd.FindFirstChild[PANELLISTVIEW_TYPE](main_wnd)
+        if panel_listview:
+            for cpresenter in panel_listview.Children:
+                if cpresenter.DataContext.Tag == PYREVIT_TAB_IDENTIFIER:
+                    cpresenter.FlowDirection = flow_direction
+
     def set_RTL_flow(self):
-        rctrl = self.get_adwindows_ribbon_control()
-        if rctrl:
-            rctrl.FlowDirection = Windows.FlowDirection.RightToLeft
+        self.set_panel_flow(Windows.FlowDirection.RightToLeft)
 
     def set_LTR_flow(self):
-        rctrl = self.get_adwindows_ribbon_control()
-        if rctrl:
-            rctrl.FlowDirection = Windows.FlowDirection.LeftToRight
+        self.set_panel_flow(Windows.FlowDirection.LeftToRight)
 
     def get_pyrevit_tabs(self):
         return [tab for tab in self if tab.is_pyrevit_tab()]
