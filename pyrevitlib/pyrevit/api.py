@@ -5,7 +5,7 @@ Example:
 """
 
 #pylint: disable=E0401,W0611,W0703,C0413
-from pyrevit.framework import clr
+from pyrevit.framework import clr, Type
 
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
@@ -26,8 +26,9 @@ from Autodesk.Revit import DB
 from Autodesk.Revit import UI
 
 
+# grab the interal PanelSetListView type
 PANELLISTVIEW_TYPE = None
-ADPRIVATE_ASSM = AdPrivate.Windows.ApplicationFrameTheme().GetType().Assembly
+ADPRIVATE_ASSM = Type.GetType(AdPrivate.Windows.RibbonTabList).Assembly
 for apt in ADPRIVATE_ASSM.GetTypes():
     if 'PanelSetListView' in apt.Name:
         PANELLISTVIEW_TYPE = apt
