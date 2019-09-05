@@ -6,12 +6,14 @@ from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import envvars
 from pyrevit.framework import System, Uri, Windows
 from pyrevit.framework import IO
 from pyrevit.framework import Imaging
 from pyrevit.framework import BindingFlags
 from pyrevit.framework import Media, Convert
 from pyrevit.api import UI, AdWindows, AdInternal, PANELLISTVIEW_TYPE
+from pyrevit.runtime import types
 from pyrevit.revit import ui
 
 
@@ -1494,19 +1496,53 @@ class _PyRevitUI(GenericPyRevitUIContainer):
     def get_adwindows_ribbon_control(self):
         return AdWindows.ComponentManager.Ribbon
 
-    def set_panel_flow(self, flow_direction):
+    @staticmethod
+    def toggle_ribbon_updator(
+            state,
+            flow_direction=Windows.FlowDirection.LeftToRight):
+        # cancel out the ribbon updator from previous runtime version
+        current_ribbon_updator = \
+            envvars.get_pyrevit_env_var(envvars.RIBBONUPDATOR_ENVVAR)
+        if current_ribbon_updator:
+            current_ribbon_updator.StopUpdatingRibbon()
+
+        # start or stop the ribbon updator
         main_wnd = ui.get_mainwindow()
-        panel_listview = main_wnd.FindFirstChild[PANELLISTVIEW_TYPE](main_wnd)
-        if panel_listview:
-            for cpresenter in panel_listview.Children:
-                if cpresenter.DataContext.Tag == PYREVIT_TAB_IDENTIFIER:
-                    cpresenter.FlowDirection = flow_direction
+        panel_set = \
+            main_wnd.FindFirstChild[PANELLISTVIEW_TYPE](main_wnd)
+
+        if panel_set:
+            if state:
+                types.RibbonEventUtils.StartUpdatingRibbon(
+                    panelSet=panel_set,
+                    flowDir=flow_direction,
+                    tagTag=PYREVIT_TAB_IDENTIFIER
+                )
+            else:
+                types.RibbonEventUtils.StopUpdatingRibbon()
+
+        # set the new colorizer
+        envvars.set_pyrevit_env_var(
+            envvars.RIBBONUPDATOR_ENVVAR,
+            types.RibbonEventUtils
+            )
 
     def set_RTL_flow(self):
-        self.set_panel_flow(Windows.FlowDirection.RightToLeft)
+        _PyRevitUI.toggle_ribbon_updator(
+            state=True,
+            flow_direction=Windows.FlowDirection.RightToLeft
+            )
 
     def set_LTR_flow(self):
-        self.set_panel_flow(Windows.FlowDirection.LeftToRight)
+        # default is LTR, do nothing
+        pass
+
+    def unset_RTL_flow(self):
+        _PyRevitUI.toggle_ribbon_updator(state=False)
+
+    def unset_LTR_flow(self):
+        # default is LTR, make sure any existing is stopped
+        _PyRevitUI.toggle_ribbon_updator(state=False)
 
     def get_pyrevit_tabs(self):
         return [tab for tab in self if tab.is_pyrevit_tab()]

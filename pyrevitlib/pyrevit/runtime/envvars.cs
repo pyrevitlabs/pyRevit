@@ -48,6 +48,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static string AutoUpdating = string.Format("{0}_AUTOUPDATE", keyPrefix);
         public static string OutputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
+        public static string RibbonUpdator = string.Format("{0}_RIBBONUPDATOR", keyPrefix);
         public static string TabColorizer = string.Format("{0}_TABCOLORIZER", keyPrefix);
     }
 

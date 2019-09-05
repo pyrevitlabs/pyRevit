@@ -27,7 +27,7 @@ if __name__ == '__main__':
                 print(k, v)
     else:
         if DocumentTabEventUtils.IsUpdatingDocumentTabs:
-            DocumentTabEventUtils.StopGroupingDocumentTabs(HOST_APP.uiapp)
+            DocumentTabEventUtils.StopGroupingDocumentTabs()
         else:
             DocumentTabEventUtils.StartGroupingDocumentTabs(HOST_APP.uiapp)
         script.toggle_icon(DocumentTabEventUtils.IsUpdatingDocumentTabs)

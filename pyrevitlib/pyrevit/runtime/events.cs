@@ -266,7 +266,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static EventType? GetEventType(string eventName) {
             try {
                 return eventNames.First(x => x.Value == eventName).Key;
-            } catch {
+            }
+            catch {
                 return null;
             }
         }
@@ -680,13 +681,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class AppEventUtils {
-        public Application App { get; private set; }
+    }
 
-        public AppEventUtils(Application app) {
-            if (app != null) {
-                App = app;
-            } else
-                throw new PyRevitException("Application can not be null.");
+    public class UIAppEventUtils {
+        public static Visual GetWindowRoot(UIApplication uiapp) {
+            IntPtr wndHndle = IntPtr.Zero;
+            try {
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
+                wndHndle = Autodesk.Windows.ComponentManager.ApplicationWindow;
+#else
+                wndHndle = uiapp.MainWindowHandle;
+#endif
+
+            }
+            catch { }
+
+            if (wndHndle != IntPtr.Zero) {
+                var wndSource = HwndSource.FromHwnd(wndHndle);
+                return wndSource.RootVisual;
+            }
+            return null;
         }
     }
 
@@ -713,7 +727,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #else
                 e.Cancel();
 #endif
-            } else
+            }
+            else
                 e.OverrideResult(1);
         }
 
@@ -738,7 +753,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                 }
                 TXN.Commit();
-            } catch {
+            }
+            catch {
             }
 
             _txnCompleted = true;
@@ -811,7 +827,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static UIApplication UIApp { get; private set; }
 
         public static bool IsUpdatingDocumentTabs { get; private set; }
+        private static object UpdateLock = new object();
 
+        // updating view tab colors
         public static Dictionary<long, Brush> DocumentBrushes;
         public static List<SolidColorBrush> DocumentBrushTheme = new List<SolidColorBrush> {
                 PyRevitConsts.PyRevitAccentBrush,
@@ -827,29 +845,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 Brushes.White
             };
 
-        private static object UpdateLock = new object();
-
-        public static Visual GetWindowRoot(UIApplication uiapp) {
-            IntPtr wndHndle = IntPtr.Zero;
-            try {
-#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
-                wndHndle = Autodesk.Windows.ComponentManager.ApplicationWindow;
-#else
-                wndHndle = uiapp.MainWindowHandle;
-#endif
-
-            } catch { }
-
-            if (wndHndle != IntPtr.Zero) {
-                var wndSource = HwndSource.FromHwnd(wndHndle);
-                return wndSource.RootVisual;
-            }
-            return null;
-        }
-
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public static Xceed.Wpf.AvalonDock.DockingManager GetDockingManager(UIApplication uiapp) {
-            var wndRoot = (MainWindow)GetWindowRoot(uiapp);
+            var wndRoot = (MainWindow)UIAppEventUtils.GetWindowRoot(uiapp);
             if (wndRoot != null) {
                 return MainWindow.FindFirstChild<Xceed.Wpf.AvalonDock.DockingManager>(wndRoot);
             }
@@ -857,7 +855,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static LayoutDocumentPaneGroupControl GetDocumentTabGroup(UIApplication uiapp) {
-            var wndRoot = GetWindowRoot(uiapp);
+            var wndRoot = UIAppEventUtils.GetWindowRoot(uiapp);
             if (wndRoot != null) {
                 return MainWindow.FindFirstChild<LayoutDocumentPaneGroupControl>((MainWindow)wndRoot);
             }
@@ -915,7 +913,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public static void StopGroupingDocumentTabs(UIApplication uiapp) {
+        public static void StopGroupingDocumentTabs() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
                     UpdateDocumentTabGroups(clear: true);
@@ -964,7 +962,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             Brush docBrush = null;
                             if (DocumentBrushes.ContainsKey(docId)) {
                                 docBrush = DocumentBrushes[docId];
-                            } else {
+                            }
+                            else {
                                 foreach (Brush brush in DocumentBrushTheme) {
                                     if (!DocumentBrushes.ContainsValue(brush)) {
                                         docBrush = brush;
@@ -996,5 +995,46 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 #endif
+    }
+
+    public static class RibbonEventUtils {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+        public static bool IsUpdatingRibbon { get; private set; }
+        private static object UpdateLock = new object();
+
+        // updating flow direction on tabs
+        public static StackPanel PanelSet;
+        public static string RibbonTabTag;
+        public static System.Windows.FlowDirection FlowDirection { get; set; }
+
+        public static void StartUpdatingRibbon(StackPanel panelSet, System.Windows.FlowDirection flowDir, string tagTag) {
+            PanelSet = panelSet;
+            FlowDirection = flowDir;
+            RibbonTabTag = tagTag;
+            IsUpdatingRibbon = true;
+            PanelSet.LayoutUpdated += PanelSet_LayoutUpdated;
+        }
+
+        public static void StopUpdatingRibbon() {
+            FlowDirection = System.Windows.FlowDirection.RightToLeft;
+            RibbonTabTag = null;
+            PanelSet.LayoutUpdated -= PanelSet_LayoutUpdated;
+            IsUpdatingRibbon = false;
+        }
+
+        public static void PanelSet_LayoutUpdated(object sender, EventArgs e) {
+            lock (UpdateLock) {
+                foreach (ContentPresenter cpresenter in PanelSet.Children.OfType<ContentPresenter>()) {
+                    if (cpresenter.DataContext is Autodesk.Windows.RibbonTab) {
+                        var ribbonTab = (Autodesk.Windows.RibbonTab)cpresenter.DataContext;
+                        if (ribbonTab.Tag is string
+                                && (string)ribbonTab.Tag == RibbonTabTag
+                                && cpresenter.FlowDirection != FlowDirection)
+                            cpresenter.FlowDirection = FlowDirection;
+                    }
+                }
+            }
+        }
     }
 }

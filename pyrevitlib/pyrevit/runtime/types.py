@@ -53,6 +53,7 @@ if not EXEC_PARAMS.doc_mode:
     AppEventUtils = runtime_module.AppEventUtils
     DocumentEventUtils = runtime_module.DocumentEventUtils
     DocumentTabEventUtils = runtime_module.DocumentTabEventUtils
+    RibbonEventUtils = runtime_module.RibbonEventUtils
     PlaceKeynoteExternalEventHandler = \
         runtime_module.PlaceKeynoteExternalEventHandler
 

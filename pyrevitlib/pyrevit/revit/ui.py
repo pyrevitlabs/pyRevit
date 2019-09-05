@@ -67,13 +67,13 @@ def toggle_doc_colorizer(state):
         current_tabcolorizer = \
             envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
         if current_tabcolorizer:
-            current_tabcolorizer.StopGroupingDocumentTabs(uiapp)
+            current_tabcolorizer.StopGroupingDocumentTabs()
 
         # start or stop the document colorizer
         if state:
             types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
         else:
-            types.DocumentTabEventUtils.StopGroupingDocumentTabs(uiapp)
+            types.DocumentTabEventUtils.StopGroupingDocumentTabs()
 
         # set the new colorizer
         envvars.set_pyrevit_env_var(
