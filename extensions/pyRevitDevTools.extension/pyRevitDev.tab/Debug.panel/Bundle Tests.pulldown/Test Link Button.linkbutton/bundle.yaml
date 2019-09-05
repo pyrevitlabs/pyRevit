@@ -3,5 +3,4 @@ tooltip: Test Link Button Tooltip
 author: "{{author}}"
 assembly: PyRevitTestLinkCommand.dll
 command_class: PyRevitTestLinkExternalCommand
-highlight:
-  new: true
+highlight: new

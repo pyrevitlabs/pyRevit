@@ -6,9 +6,16 @@ from pyrevit.api import ApplicationServices
 from pyrevit.userconfig import user_config
 
 
+DEFAULT_LANG_DIR = 'LTR'
+
+
 class AppLocale(object):
     """Type representing a language option."""
-    def __init__(self, lang_type, locale_codes, lang_name=None, lang_dir='LTR'):
+    def __init__(self,
+                 lang_type,
+                 locale_codes,
+                 lang_name=None,
+                 lang_dir=DEFAULT_LANG_DIR):
         if isinstance(lang_type, ApplicationServices.LanguageType):
             self.lang_type = lang_type
         elif isinstance(lang_type, str):

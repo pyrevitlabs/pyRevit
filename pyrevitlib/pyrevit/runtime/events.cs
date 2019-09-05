@@ -1012,27 +1012,40 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PanelSet = panelSet;
             FlowDirection = flowDir;
             RibbonTabTag = tagTag;
-            IsUpdatingRibbon = true;
-            PanelSet.LayoutUpdated += PanelSet_LayoutUpdated;
+
+            if (PanelSet != null && RibbonTabTag != null) {
+                PanelSet.LayoutUpdated += PanelSet_LayoutUpdated;
+                IsUpdatingRibbon = true;
+            }
         }
 
         public static void StopUpdatingRibbon() {
-            FlowDirection = System.Windows.FlowDirection.RightToLeft;
+            FlowDirection = System.Windows.FlowDirection.LeftToRight;
+
+            // reset the ui to default flow direction
+            if (PanelSet != null && RibbonTabTag != null) {
+                PanelSet.LayoutUpdated -= PanelSet_LayoutUpdated;
+                SetTabFlowDirection();
+            }
+
             RibbonTabTag = null;
-            PanelSet.LayoutUpdated -= PanelSet_LayoutUpdated;
             IsUpdatingRibbon = false;
         }
 
         public static void PanelSet_LayoutUpdated(object sender, EventArgs e) {
             lock (UpdateLock) {
-                foreach (ContentPresenter cpresenter in PanelSet.Children.OfType<ContentPresenter>()) {
-                    if (cpresenter.DataContext is Autodesk.Windows.RibbonTab) {
-                        var ribbonTab = (Autodesk.Windows.RibbonTab)cpresenter.DataContext;
-                        if (ribbonTab.Tag is string
-                                && (string)ribbonTab.Tag == RibbonTabTag
-                                && cpresenter.FlowDirection != FlowDirection)
-                            cpresenter.FlowDirection = FlowDirection;
-                    }
+                SetTabFlowDirection();
+            }
+        }
+
+        public static void SetTabFlowDirection() {
+            foreach (ContentPresenter cpresenter in PanelSet.Children.OfType<ContentPresenter>()) {
+                if (cpresenter.DataContext is Autodesk.Windows.RibbonTab) {
+                    var ribbonTab = (Autodesk.Windows.RibbonTab)cpresenter.DataContext;
+                    if (ribbonTab.Tag is string
+                            && (string)ribbonTab.Tag == RibbonTabTag
+                            && cpresenter.FlowDirection != FlowDirection)
+                        cpresenter.FlowDirection = FlowDirection;
                 }
             }
         }

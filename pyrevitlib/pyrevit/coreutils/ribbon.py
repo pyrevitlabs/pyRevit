@@ -923,6 +923,27 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
             ch = UI.ContextualHelp(UI.ContextualHelpType.Url, ctxhelpurl)
             self.get_rvtapi_object().SetContextualHelp(ch)
 
+    def reset_highlights(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.HighlightDropDown = \
+                    coreutils.get_enum_none(AdInternal.Windows.HighlightMode)
+
+    def highlight_as_new(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.HighlightDropDown = \
+                    AdInternal.Windows.HighlightMode.New
+
+    def highlight_as_updated(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.HighlightDropDown = \
+                    AdInternal.Windows.HighlightMode.Updated
+
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
                            tooltip='', tooltip_ext='', tooltip_media='',
@@ -1114,6 +1135,18 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         panel_adwnd_obj = self.get_adwindows_object()
         panel_adwnd_obj.CustomSlideOutPanelBackground = \
             argb_to_brush(argb_color)
+
+    def reset_highlights(self):
+        # no highlighting options for panels
+        pass
+
+    def highlight_as_new(self):
+        # no highlighting options for panels
+        pass
+
+    def highlight_as_updated(self):
+        # no highlighting options for panels
+        pass
 
     def open_stack(self):
         self.itemdata_mode = True
@@ -1414,6 +1447,18 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
     def get_adwindows_object(self):
         return self.get_rvtapi_object()
 
+    def reset_highlights(self):
+        # no highlighting options for tabs
+        pass
+
+    def highlight_as_new(self):
+        # no highlighting options for tabs
+        pass
+
+    def highlight_as_updated(self):
+        # no highlighting options for tabs
+        pass
+
     @staticmethod
     def check_pyrevit_tab(revit_ui_tab):
         return hasattr(revit_ui_tab, 'Tag') \
@@ -1506,26 +1551,30 @@ class _PyRevitUI(GenericPyRevitUIContainer):
         if current_ribbon_updator:
             current_ribbon_updator.StopUpdatingRibbon()
 
-        # start or stop the ribbon updator
-        main_wnd = ui.get_mainwindow()
-        panel_set = \
-            main_wnd.FindFirstChild[PANELLISTVIEW_TYPE](main_wnd)
+        # reset env var
+        envvars.set_pyrevit_env_var(envvars.RIBBONUPDATOR_ENVVAR, None)
+        if state:
+            # start or stop the ribbon updator
+            panel_set = None
+            try:
+                main_wnd = ui.get_mainwindow()
+                panel_set = \
+                    main_wnd.FindFirstChild[PANELLISTVIEW_TYPE](main_wnd)
+            except Exception as raex:
+                mlogger.error('Error activating ribbon updator. | %s', raex)
+                return
 
-        if panel_set:
-            if state:
+            if panel_set:
                 types.RibbonEventUtils.StartUpdatingRibbon(
                     panelSet=panel_set,
                     flowDir=flow_direction,
                     tagTag=PYREVIT_TAB_IDENTIFIER
                 )
-            else:
-                types.RibbonEventUtils.StopUpdatingRibbon()
-
-        # set the new colorizer
-        envvars.set_pyrevit_env_var(
-            envvars.RIBBONUPDATOR_ENVVAR,
-            types.RibbonEventUtils
-            )
+                # set the new colorizer
+                envvars.set_pyrevit_env_var(
+                    envvars.RIBBONUPDATOR_ENVVAR,
+                    types.RibbonEventUtils
+                    )
 
     def set_RTL_flow(self):
         _PyRevitUI.toggle_ribbon_updator(
@@ -1534,8 +1583,8 @@ class _PyRevitUI(GenericPyRevitUIContainer):
             )
 
     def set_LTR_flow(self):
-        # default is LTR, do nothing
-        pass
+        # default is LTR, make sure any existing is stopped
+        _PyRevitUI.toggle_ribbon_updator(state=False)
 
     def unset_RTL_flow(self):
         _PyRevitUI.toggle_ribbon_updator(state=False)
