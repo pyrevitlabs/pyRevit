@@ -213,7 +213,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
        
-        public object UIControl {
+        public Autodesk.Windows.RibbonItem UIControl {
             get {
                 return ((UIFramework.RevitRibbonControl)Autodesk.Windows.ComponentManager.Ribbon).findRibbonItem(ScriptData.CommandControlId, false);
             }

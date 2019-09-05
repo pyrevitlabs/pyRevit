@@ -653,7 +653,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool ConfigMode { get; set; }
         public bool DebugMode { get; set; }
         public bool ExecutedFromUI { get; set; }
-        public object UIButton { get; set; }
+        public Autodesk.Windows.RibbonItem UIButton { get; set; }
     }
 
     public class CLREngineOutputTarget : TargetWithLayout {
