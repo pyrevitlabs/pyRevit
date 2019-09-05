@@ -34,6 +34,7 @@ Public Class HelloWorld
                 TaskDialog.Show(execParams.CommandName, "Command is in Debug Mode!")
             End If
 
+            Console.WriteLine(execParams.UIButton.ToString())
             Console.WriteLine(":thumbs_up:")
 
             Return Autodesk.Revit.UI.Result.Succeeded
