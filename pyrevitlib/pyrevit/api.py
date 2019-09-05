@@ -24,3 +24,12 @@ from Autodesk.Revit import Attributes
 from Autodesk.Revit import ApplicationServices
 from Autodesk.Revit import DB
 from Autodesk.Revit import UI
+
+
+# grab the interal PanelSetListView type
+PANELLISTVIEW_TYPE = None
+ADPRIVATE_ASSM = clr.GetClrType(AdPrivate.Windows.RibbonTabList).Assembly
+for apt in ADPRIVATE_ASSM.GetTypes():
+    if 'PanelSetListView' in apt.Name:
+        PANELLISTVIEW_TYPE = apt
+        break

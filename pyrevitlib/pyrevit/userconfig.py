@@ -468,6 +468,14 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             value=state
         )
 
+    @property
+    def respect_language_direction(self):
+        return False
+
+    @respect_language_direction.setter
+    def respect_language_direction(self, state):
+        pass
+
     def get_config_version(self):
         """Return version of config file used for change detection."""
         return self.get_config_file_hash()

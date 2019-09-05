@@ -5,7 +5,7 @@ import imp
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils.logger import get_logger
-# from pyrevit.coreutils import applocales
+from pyrevit.coreutils import applocales
 
 if not EXEC_PARAMS.doc_mode:
     from pyrevit.coreutils import ribbon
@@ -90,6 +90,14 @@ def _make_full_class_name(asm_name, class_name):
         return None
     else:
         return '{}.{}'.format(asm_name, class_name)
+
+
+def _set_highlights(button, ui_item):
+    ui_item.reset_highlights()
+    if button.highlight_type == exts.MDATA_HIGHLIGHT_TYPE_UPDATED:
+        ui_item.highlight_as_updated()
+    elif button.highlight_type == exts.MDATA_HIGHLIGHT_TYPE_NEW:
+        ui_item.highlight_as_new()
 
 
 def _get_effective_classname(button):
@@ -257,11 +265,7 @@ def _produce_ui_smartbutton(ui_maker_params):
                       smartbutton, err)
         return smartbutton_ui
 
-    smartbutton_ui.reset_highlights()
-    if smartbutton.is_updated:
-        smartbutton_ui.highlight_as_updated()
-    if smartbutton.is_new:
-        smartbutton_ui.highlight_as_new()
+    _set_highlights(smartbutton, smartbutton_ui)
 
     return smartbutton_ui
 
@@ -315,11 +319,8 @@ def _produce_ui_linkbutton(ui_maker_params):
             ui_title=_make_ui_title(linkbutton))
         linkbutton_ui = parent_ui_item.button(linkbutton.name)
 
-        linkbutton_ui.reset_highlights()
-        if linkbutton.is_updated:
-            linkbutton_ui.highlight_as_updated()
-        if linkbutton.is_new:
-            linkbutton_ui.highlight_as_new()
+        _set_highlights(linkbutton, linkbutton_ui)
+
         return linkbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
@@ -360,11 +361,8 @@ def _produce_ui_pushbutton(ui_maker_params):
             ui_title=_make_ui_title(pushbutton))
         pushbutton_ui = parent_ui_item.button(pushbutton.name)
 
-        pushbutton_ui.reset_highlights()
-        if pushbutton.is_updated:
-            pushbutton_ui.highlight_as_updated()
-        if pushbutton.is_new:
-            pushbutton_ui.highlight_as_new()
+        _set_highlights(pushbutton, pushbutton_ui)
+
         return pushbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
@@ -385,7 +383,11 @@ def _produce_ui_pulldown(ui_maker_params):
         parent_ribbon_panel.create_pulldown_button(pulldown.ui_title,
                                                    pulldown.icon_file,
                                                    update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(pulldown.ui_title)
+        pulldown_ui = parent_ribbon_panel.ribbon_item(pulldown.ui_title)
+
+        _set_highlights(pulldown, pulldown_ui)
+
+        return pulldown_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -405,7 +407,11 @@ def _produce_ui_split(ui_maker_params):
         parent_ribbon_panel.create_split_button(split.ui_title,
                                                 split.icon_file,
                                                 update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(split.ui_title)
+        split_ui = parent_ribbon_panel.ribbon_item(split.ui_title)
+
+        _set_highlights(split, split_ui)
+
+        return split_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -425,7 +431,11 @@ def _produce_ui_splitpush(ui_maker_params):
         parent_ribbon_panel.create_splitpush_button(splitpush.ui_title,
                                                     splitpush.icon_file,
                                                     update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(splitpush.ui_title)
+        splitpush_ui = parent_ribbon_panel.ribbon_item(splitpush.ui_title)
+
+        _set_highlights(splitpush, splitpush_ui)
+
+        return splitpush_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -492,27 +502,31 @@ def _produce_ui_panelpushbutton(ui_maker_params):
     """
     parent_ui_item = ui_maker_params.parent_ui
     # parent = ui_maker_params.parent_cmp
-    paneldlgbutton = ui_maker_params.component
+    panelpushbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
-    if paneldlgbutton.is_beta and not ui_maker_params.create_beta_cmds:
+    if panelpushbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
-    mlogger.debug('Producing panel button: %s', paneldlgbutton)
+    mlogger.debug('Producing panel button: %s', panelpushbutton)
     try:
         parent_ui_item.create_panel_push_button(
-            button_name=paneldlgbutton.name,
+            button_name=panelpushbutton.name,
             asm_location=ext_asm_info.location,
-            class_name=_get_effective_classname(paneldlgbutton),
-            tooltip=_make_button_tooltip(paneldlgbutton),
-            tooltip_ext=_make_button_tooltip_ext(paneldlgbutton,
+            class_name=_get_effective_classname(panelpushbutton),
+            tooltip=_make_button_tooltip(panelpushbutton),
+            tooltip_ext=_make_button_tooltip_ext(panelpushbutton,
                                                  ext_asm_info.name),
-            tooltip_media=paneldlgbutton.media_file,
-            ctxhelpurl=paneldlgbutton.help_url,
-            avail_class_name=paneldlgbutton.avail_class_name,
+            tooltip_media=panelpushbutton.media_file,
+            ctxhelpurl=panelpushbutton.help_url,
+            avail_class_name=panelpushbutton.avail_class_name,
             update_if_exists=True)
 
-        return parent_ui_item.button(paneldlgbutton.name)
+        panelpushbutton_ui = parent_ui_item.button(panelpushbutton.name)
+
+        _set_highlights(panelpushbutton, panelpushbutton_ui)
+
+        return panelpushbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -530,18 +544,22 @@ def _produce_ui_panels(ui_maker_params):
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
-        new_panel_ui = parent_ui_tab.ribbon_panel(panel.name)
+        panel_ui = parent_ui_tab.ribbon_panel(panel.name)
+
         # set backgrounds
-        new_panel_ui.reset_backgrounds()
+        panel_ui.reset_backgrounds()
         if panel.panel_background:
-            new_panel_ui.set_background(panel.panel_background)
+            panel_ui.set_background(panel.panel_background)
         # override the title background if exists
         if panel.title_background:
-            new_panel_ui.set_title_background(panel.title_background)
+            panel_ui.set_title_background(panel.title_background)
         # override the slideout background if exists
         if panel.slideout_background:
-            new_panel_ui.set_slideout_background(panel.slideout_background)
-        return new_panel_ui
+            panel_ui.set_slideout_background(panel.slideout_background)
+
+        _set_highlights(panel, panel_ui)
+
+        return panel_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -562,7 +580,11 @@ def _produce_ui_tab(ui_maker_params):
         mlogger.debug('Producing ribbon tab: %s', tab)
         try:
             parent_ui.create_ribbon_tab(tab.name, update_if_exists=True)
-            return parent_ui.ribbon_tab(tab.name)
+            tab_ui = parent_ui.ribbon_tab(tab.name)
+
+            _set_highlights(tab, tab_ui)
+
+            return tab_ui
         except PyRevitException as err:
             mlogger.error('UI error: %s', err.msg)
             return None
@@ -647,10 +669,6 @@ def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
     cmp_count = _recursively_produce_ui_items(
         UIMakerParams(current_ui, None, ui_ext, ext_asm_info, create_beta))
     mlogger.debug('%s components were created for: %s', cmp_count, ui_ext)
-    # current_applocale = applocales.get_current_applocale()
-    # RLT flips everthing! the texts, the icons, so stupid!
-    # if current_applocale.lang_dir == "RTL":
-    #     current_ui.set_RTL_flow()
 
 
 def sort_pyrevit_ui(ui_ext):
@@ -681,3 +699,11 @@ def cleanup_pyrevit_ui():
                 item.deactivate()
             except Exception as deact_err:
                 mlogger.debug(deact_err)
+
+
+def reflow_pyrevit_ui(direction=applocales.DEFAULT_LANG_DIR):
+    # set flow direction of the tabs
+    if direction == "LTR":
+        current_ui.set_LTR_flow()
+    elif direction == "RTL":
+        current_ui.set_RTL_flow()

@@ -75,8 +75,7 @@ class GenericUIComponent(GenericComponent):
         self.media_file = None
         self.min_revit_ver = self.max_revit_ver = None
         self.is_beta = False
-        self.is_new = False
-        self.is_updated = False
+        self.highlight_type = None
         self.version = None
 
         self.meta = {}
@@ -208,15 +207,10 @@ class GenericUIComponent(GenericComponent):
         self.is_beta = \
             self.meta.get(exts.MDATA_BETA_SCRIPT, 'false').lower() == 'true'
 
-        highlights = \
+        highlight = \
             self.meta.get(exts.MDATA_HIGHLIGHT_KEY, None)
-        if highlights and isinstance(highlights, dict):
-            self.is_new = \
-                highlights.get(
-                    exts.MDATA_HIGHLIGHT_NEW_KEY, 'false').lower() == 'true'
-            self.is_updated = \
-                highlights.get(
-                    exts.MDATA_HIGHLIGHT_UPDATED_KEY, 'false').lower() == 'true'
+        if highlight and isinstance(highlight, str):
+            self.highlight_type = highlight.lower()
 
         self.modules = \
             self.meta.get(exts.MDATA_LINK_BUTTON_MODULES, self.modules)
@@ -631,12 +625,10 @@ class GenericUICommand(GenericUIComponent):
             self.is_beta = \
                 script_content.extract_param(exts.BETA_SCRIPT_PARAM) \
                     or self.is_beta
-            self.is_new = \
-                script_content.extract_param(exts.NEW_SCRIPT_PARAM) \
-                    or self.is_new
-            self.is_updated = \
-                script_content.extract_param(exts.UPDATED_SCRIPT_PARAM) \
-                    or self.is_updated
+
+            self.highlight_type = \
+                script_content.extract_param(exts.HIGHLIGHT_SCRIPT_PARAM) \
+                    or self.highlight_type
 
             # only True when command is specifically asking for
             # a clean engine or a fullframe engine. False if not set.
