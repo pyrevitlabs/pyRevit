@@ -45,6 +45,8 @@ func RouteEvents(router *mux.Router, opts *cli.Options, dbConn persistence.Conne
 
 		err := logrec.Validate()
 		if err != nil {
+			// log error
+			logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", err.Error()))
 			// respond with error
 			w.WriteHeader(http.StatusBadRequest)
 			respondError(err, w, logger)
