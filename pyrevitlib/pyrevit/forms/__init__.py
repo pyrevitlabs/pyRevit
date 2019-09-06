@@ -1522,8 +1522,8 @@ def select_sheets(title='Select Sheets',
                   multiple=True,
                   filterfunc=None,
                   doc=None,
-                  use_selection=False,
-                  use_active_view=False):
+                  include_placeholder=True,
+                  use_selection=False):
     """Standard form for selecting sheets.
 
     Sheets are grouped into sheet sets and sheet set can be selected from
@@ -1540,10 +1540,7 @@ def select_sheets(title='Select Sheets',
         doc (DB.Document, optional):
             source document for sheets; defaults to active document
         use_selection (bool, optional):
-            ask user if he wants to use preselected sheets.
-            not available if doc is set, defaults to False
-        use_active_view (bool, optional):
-            ask user if he wants to use preselected sheets, defaults to False
+            ask if user wants to use currently selected sheets.
     Returns:
         list[DB.ViewSheet]: list of selected sheets
 
@@ -1553,15 +1550,15 @@ def select_sheets(title='Select Sheets',
         ... [<Autodesk.Revit.DB.ViewSheet object>,
         ...  <Autodesk.Revit.DB.ViewSheet object>]
     """
-    if not doc and use_selection:
-        preselected = ask_if_user_want_to_use_selection("Sheets",
-                                                        filters=[lambda e: isinstance(e, DB.ViewSheet), filterfunc],
-                                                        multiple=multiple,
-                                                        use_selection=use_selection,
-                                                        use_active_view=use_active_view)
-        if preselected:
-            return preselected
     doc = doc or HOST_APP.doc
+
+    if use_selection:
+        current_selected_sheets = []
+        current_selected_sheets = revit.get_selection().include(DB.ViewSheet)
+        if current_selected_sheets \
+                and ask_to_use_selected("sheets"):
+            return current_selected_sheets
+
     all_ops = {}
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
@@ -1570,6 +1567,9 @@ def select_sheets(title='Select Sheets',
 
     if filterfunc:
         all_sheets = filter(filterfunc, all_sheets)
+
+    if not include_placeholder:
+        all_sheets = [x for x in all_sheets if not x.IsPlaceholder]
 
     all_sheets_ops = sorted([SheetOption(x) for x in all_sheets],
                             key=lambda x: x.number)
@@ -1606,8 +1606,7 @@ def select_views(title='Select Views',
                  multiple=True,
                  filterfunc=None,
                  doc=None,
-                 use_selection=False,
-                 use_active_view=False):
+                 use_selection=False):
     """Standard form for selecting views.
 
     Args:
@@ -1621,10 +1620,7 @@ def select_views(title='Select Views',
         doc (DB.Document, optional):
             source document for views; defaults to active document
         use_selection (bool, optional):
-            ask user if he wants to use preselected sheets.
-            not available if doc is set, defaults to False
-        use_active_view (bool, optional):
-            ask user if he wants to use preselected sheets, defaults to False
+            ask if user wants to use currently selected views.
     Returns:
         list[DB.View]: list of selected views
 
@@ -1634,14 +1630,15 @@ def select_views(title='Select Views',
         ... [<Autodesk.Revit.DB.View object>,
         ...  <Autodesk.Revit.DB.View object>]
     """
-    if not doc and  use_selection:
-        preselected = ask_if_user_want_to_use_selection("Views", filters=[lambda e: isinstance(e, DB.View), filterfunc],
-                                                        multiple=multiple,
-                                                        use_selection=use_selection,
-                                                        use_active_view=use_active_view)
-        if preselected:
-            return preselected
     doc = doc or HOST_APP.doc
+
+    if use_selection:
+        current_selected_views = []
+        current_selected_views = revit.get_selection().include(DB.View)
+        if current_selected_views \
+                and ask_to_use_selected("views"):
+            return current_selected_views
+
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
@@ -1678,12 +1675,11 @@ def select_levels(title='Select Levels',
         filterfunc (function):
             filter function to be applied to context items.
         doc (DB.Document, optional):
-            source document for views; defaults to active document
+            source document for levels; defaults to active document
         use_selection (bool, optional):
-            ask user if he wants to use preselected sheets.
-            not available if doc is set, defaults to False
+            ask if user wants to use currently selected levels.
     Returns:
-        list[DB.View]: list of selected views
+        list[DB.Level]: list of selected levels
 
     Example:
         >>> from pyrevit import forms
@@ -1691,14 +1687,18 @@ def select_levels(title='Select Levels',
         ... [<Autodesk.Revit.DB.Level object>,
         ...  <Autodesk.Revit.DB.Level object>]
     """
-    if not doc and  use_selection:
-        preselected = ask_if_user_want_to_use_selection("Levels", filters=[lambda e: isinstance(e, DB.Level), filterfunc],
-                                                        multiple=multiple,
-                                                        use_selection=use_selection)
-        if preselected:
-            return preselected
     doc = doc or HOST_APP.doc
-    all_levels = revit.query.get_elements_by_category([DB.BuiltInCategory.OST_Levels], doc=doc)
+
+    if use_selection:
+        current_selected_levels = []
+        current_selected_levels = revit.get_selection().include(DB.Level)
+        if current_selected_levels \
+                and ask_to_use_selected("levels"):
+            return current_selected_levels
+
+    all_levels = \
+        revit.query.get_elements_by_category([DB.BuiltInCategory.OST_Levels],
+                                             doc=doc)
 
     if filterfunc:
         all_levels = filter(filterfunc, all_levels)
@@ -1711,7 +1711,6 @@ def select_levels(title='Select Levels',
         width=width,
         multiselect=multiple,
         checked_only=True,
-        param_name="Name"
         )
     return selected_levels
 
@@ -2609,6 +2608,17 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         )
 
 
+def ask_to_use_selected(type_name):
+    """Ask user if wants to use currently selected elements.
+
+    Args:
+        type_name (str): Element type of expected selected elements
+    """
+    return alert("You currently have a few %s selected. "
+                 "Do you want to use them?" % type_name.lower(),
+                 yes=True, no=True)
+
+
 def inform_wip():
     """Show work-in-progress prompt to user and exit script.
 
@@ -2616,52 +2626,3 @@ def inform_wip():
         >>> forms.inform_wip()
     """
     alert("Work in progress.", exitscript=True)
-
-
-def ask_if_user_want_to_use_selection(type_name, filters, multiple=True, use_selection=True, use_active_view=False):
-    """
-    Args:
-        type_name (str):
-            ElementType of elements to show in a dialog, e.g. 'Views'
-        filters (List[function]):
-            fist of filter functions
-        use_selection (bool):
-            check if selection suits
-        use_active_view (bool):
-            check not only selection, but also active_view if it suits
-
-    Returns:
-        List[Element]: list of chosen elements;
-            None - if no suitable selection found or user want to continue with list
-    """
-    selected_elements = revit.selection.get_selection()
-    for filterfunc in filters:
-        selected_elements = filter(filterfunc, selected_elements)
-
-    options = ["Select %s from list" % type_name]
-    results_dict = {}
-    if use_active_view:
-        active_view = revit.activeview
-        for filterfunc in filters:
-            print("filterfunc: %s" % str(filterfunc))
-            if not filterfunc:
-                print("not filterfunc")
-                continue
-            if not filterfunc(active_view):
-                print("not filterfunc(active_view)")
-                active_view = None
-                break
-        if active_view:
-            options += ["Use current %s '%s'" % (type_name, active_view.Name)]
-            results_dict[options[-1]] = [active_view]
-
-    if use_selection and ((multiple and selected_elements) or len(selected_elements) == 1):
-        options += ["Continue with %d selected %s" % (len(selected_elements), type_name)]
-        results_dict[options[-1]] = selected_elements
-
-    if len(options)>1:
-        # ask user whether he wants to use preselected sheets or select them from a list
-        result = alert("You have preselected %s. Do you want to use them?" % type_name,
-                       options=options)
-        if result in results_dict.keys():
-            return results_dict[result]
