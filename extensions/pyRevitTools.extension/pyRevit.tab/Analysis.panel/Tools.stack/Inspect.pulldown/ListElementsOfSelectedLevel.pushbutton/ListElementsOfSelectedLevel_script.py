@@ -9,31 +9,25 @@ from pyrevit import forms
 
 __title__ = 'List Elements of Selected Level(s)'
 __author__ = 'Frederic Beaupere'
-__context__ = 'selection'
+# __context__ = 'selection'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
-
-output = script.get_output()
-
-output.print_md("####LIST ALL ELEMENTS ON SELECTED LEVEL(S):")
-output.print_md('By: [{}]({})'.format(__author__, __contact__))
 
 
 all_elements = DB.FilteredElementCollector(revit.doc)\
                  .WhereElementIsNotElementType()\
                  .ToElements()
 
-selection = revit.get_selection()
 
-levels = []
-for el in selection:
-    if el.Category.Id.IntegerValue == int(DB.BuiltInCategory.OST_Levels):
-        levels.append(el)
+levels = forms.select_levels(use_selection=True)
+
 
 if not levels:
     forms.alert('At least one Level element must be selected.')
 else:
+    output.print_md("####LIST ALL ELEMENTS ON SELECTED LEVEL(S):")
+    output.print_md('By: [{}]({})'.format(__author__, __contact__))
+
     all_count = all_elements.Count
     print('\n' + str(all_count) + ' Elements found in project.')
 

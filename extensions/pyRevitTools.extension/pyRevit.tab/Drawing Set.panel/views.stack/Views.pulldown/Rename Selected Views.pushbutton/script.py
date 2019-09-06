@@ -20,7 +20,7 @@ def change_case(view_list, upper=True, verbose=False):
                       "\t{1}\n\n".format(orig_name, revit.query.get_name(view)))
 
 
-selected_views = forms.select_views()
+selected_views = forms.select_views(use_selection=True)
 
 if selected_views:
     selected_option, switches = \

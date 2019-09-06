@@ -13,33 +13,11 @@ __doc__ = 'Adds the selected views (callouts, sections, elevations) to the '\
           '\n\nShift+Click:\n' \
           'Pick source views from list instead of selection or active view.'
 
+
 logger = script.get_logger()
 
-selected_views = []
 
-
-if __shiftclick__:
-    selected_views = forms.select_views()
-else:
-    # get selection and verify a view is selected
-    selection = revit.get_selection()
-    if not selection.is_empty:
-        logger.debug('Getting views from selection.')
-        for el in selection:
-            if el.Category and el.Category.Id.IntegerValue == int(DB.BuiltInCategory.OST_Views):
-                logger.debug('Selected element referencing: {}'
-                             .format(el.Name))
-                target_view = revit.query.get_view_by_name(el.Name)
-                if target_view:
-                    logger.debug('Target view: {}'
-                                 .format(revit.query.get_name(target_view)))
-                    selected_views.append(target_view)
-    else:
-        selected_view = revit.active_view
-        if not isinstance(selected_view, DB.View):
-            forms.alert('Active view must be placable on a sheet.', exitscript=True)
-        logger.debug('Selected view: {}'.format(selected_view))
-        selected_views = [selected_view]
+selected_views = forms.select_views(use_selection=True, use_active_view=True)
 
 
 if selected_views:
