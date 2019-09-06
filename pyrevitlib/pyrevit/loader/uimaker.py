@@ -306,8 +306,11 @@ def _produce_ui_linkbutton(ui_maker_params):
 
         parent_ui_item.create_push_button(
             button_name=linkbutton.name,
-            asm_location=ext_asm_info.location,
-            class_name=_get_effective_classname(linkbutton),
+            asm_location=linked_asm.Location,
+            class_name=_make_full_class_name(
+                linked_asm.GetName().Name,
+                linkbutton.command_class
+                ),
             icon_path=linkbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(linkbutton),
             tooltip_ext=_make_button_tooltip_ext(linkbutton,
