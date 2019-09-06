@@ -55,11 +55,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return source.Replace("&clt;", "<").Replace("&cgt;", ">");
         }
 
-        public static string EscapeForHTml(string source) {
+        public static string EscapeForHtml(string source) {
             return source.Replace("<", "&lt;").Replace(">", "&gt;");
         }
 
-        public static string UnscapeFromHTml(string source) {
+        public static string UnscapeFromHtml(string source) {
             return source.Replace("&lt;", "<").Replace("&gt;", ">");
         }
 
@@ -427,7 +427,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             
             // order is important
             // "<"      --->    &lt;
-            contents = ScriptOutputConfigs.EscapeForHTml(contents);
+            contents = ScriptOutputConfigs.EscapeForHtml(contents);
             // &clt;    --->    ">"
             contents = ScriptOutputConfigs.FromCustomHtmlTags(contents);
             // "\n"     --->    <br/>
