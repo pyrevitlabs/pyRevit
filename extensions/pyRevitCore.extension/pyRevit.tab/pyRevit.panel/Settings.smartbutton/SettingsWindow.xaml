@@ -1,4 +1,4 @@
- <!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
+﻿<!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
@@ -8,7 +8,7 @@
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
         <s:Boolean x:Key="BooleanTrue">True</s:Boolean>
-        
+
         <Style x:Key="AnimatedSwitch" TargetType="{x:Type ToggleButton}">
             <Setter Property="Foreground" Value="Black" />
             <Setter Property="Background" Value="#FAFAFB" />
@@ -87,6 +87,7 @@
                 </Path.LayoutTransform>
             </Path>
         </Canvas>
+
     </Window.Resources>
     <DockPanel>
         <Grid Background="{DynamicResource pyRevitDarkBrush}" DockPanel.Dock="Bottom">
@@ -466,6 +467,11 @@
                                         <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Gray">Revit Family  (Colored Border)</TextBlock>
                                     </Border>
                                 </WrapPanel>
+                                <TextBlock Foreground="#ffffff" Margin="0,10,0,0">
+                                        <Hyperlink NavigateUri="https://www.parallaxteam.com/apps/" Click="handle_url_click">
+                                           Kudos to Parallax Team for "Parallax Tabbed Views"
+                                        </Hyperlink>
+                                </TextBlock>
                             </StackPanel>
                         </GroupBox>
                         <DockPanel Margin="0,10,0,10">
