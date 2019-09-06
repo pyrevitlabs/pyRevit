@@ -127,6 +127,13 @@ APP_LOCALES.append(
         lang_name="فارسی",
         lang_dir='RTL'
     ))
+APP_LOCALES.append(
+    AppLocale(
+        lang_type="Arabic",
+        locale_codes=["ar", "arabic"],
+        lang_name="العربیه",
+        lang_dir='RTL'
+    ))
 
 
 def get_applocale_by_local_code(locale_code):
