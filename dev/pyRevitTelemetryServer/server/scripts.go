@@ -10,7 +10,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func dumpAndRespond(logrec interface{}, w http.ResponseWriter, logger *cli.Logger) {
+func respondError(err error, w http.ResponseWriter, logger *cli.Logger) {
+	// write response
+	message := err.Error()
+	logger.Debug("vaidation error: ", message)
+	_, responseErr := w.Write([]byte(message))
+	if responseErr != nil {
+		logger.Debug(responseErr)
+	}
+}
+
+func dumpScriptAndRespond(logrec interface{}, w http.ResponseWriter, logger *cli.Logger) {
 	// dump the telemetry record json data if requested
 	jsonData, responseDataErr := json.Marshal(logrec)
 	if responseDataErr == nil {
@@ -20,6 +30,7 @@ func dumpAndRespond(logrec interface{}, w http.ResponseWriter, logger *cli.Logge
 		}
 
 		// write response
+		w.Header().Set("Content-Type", "application/json")
 		_, responseErr := w.Write([]byte(jsonString))
 		if responseErr != nil {
 			logger.Debug(responseErr)
@@ -42,16 +53,23 @@ func RouteScripts(router *mux.Router, opts *cli.Options, dbConn persistence.Conn
 			return
 		}
 
-		// now write to db
-		_, dbWriteErr := dbConn.WriteScriptTelemetryV1(&logrec, logger)
-		if dbWriteErr != nil {
-			logger.Debug(dbWriteErr)
-			logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", dbWriteErr))
+		err := logrec.Validate()
+		if err != nil {
+			// respond with error
+			w.WriteHeader(http.StatusBadRequest)
+			respondError(err, w, logger)
 		} else {
-			logrec.PrintRecordInfo(logger, OkMessage)
+			// now write to db
+			_, dbWriteErr := dbConn.WriteScriptTelemetryV1(&logrec, logger)
+			if dbWriteErr != nil {
+				logger.Debug(dbWriteErr)
+				logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", dbWriteErr))
+			} else {
+				logrec.PrintRecordInfo(logger, OkMessage)
+			}
+			// respond with the created data
+			dumpScriptAndRespond(logrec, w, logger)
 		}
-
-		dumpAndRespond(logrec, w, logger)
 
 	}).Methods("POST")
 
@@ -64,16 +82,24 @@ func RouteScripts(router *mux.Router, opts *cli.Options, dbConn persistence.Conn
 			return
 		}
 
-		// now write to db
-		_, dbWriteErr := dbConn.WriteScriptTelemetryV2(&logrec, logger)
-		if dbWriteErr != nil {
-			logger.Debug(dbWriteErr)
-			logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", dbWriteErr))
+		// validate
+		err := logrec.Validate()
+		if err != nil {
+			// respond with error
+			w.WriteHeader(http.StatusBadRequest)
+			respondError(err, w, logger)
 		} else {
-			logrec.PrintRecordInfo(logger, OkMessage)
+			// now write to db
+			_, dbWriteErr := dbConn.WriteScriptTelemetryV2(&logrec, logger)
+			if dbWriteErr != nil {
+				logger.Debug(dbWriteErr)
+				logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", dbWriteErr))
+			} else {
+				logrec.PrintRecordInfo(logger, OkMessage)
+			}
+			// respond with the created data
+			dumpScriptAndRespond(logrec, w, logger)
 		}
-
-		dumpAndRespond(logrec, w, logger)
 
 	}).Methods("POST")
 

@@ -4,37 +4,38 @@ import (
 	"fmt"
 
 	"../cli"
+	"github.com/asaskevich/govalidator"
 )
 
 // v1.0
 type EngineInfoV1 struct {
-	Version  string   `json:"version" bson:"version"`
-	SysPaths []string `json:"syspath" bson:"syspath"`
+	Version  string   `json:"version" bson:"version" valid:"-"`
+	SysPaths []string `json:"syspath" bson:"syspath" valid:"-"`
 }
 
 type TraceInfoV1 struct {
-	EngineInfo          EngineInfoV1 `json:"engine" bson:"engine"`
-	IronPythonTraceDump string       `json:"ipy" bson:"ipy"`
-	CLRTraceDump        string       `json:"clr" bson:"clr"`
+	EngineInfo          EngineInfoV1 `json:"engine" bson:"engine" valid:"-"`
+	IronPythonTraceDump string       `json:"ipy" bson:"ipy" valid:"-"`
+	CLRTraceDump        string       `json:"clr" bson:"clr" valid:"-"`
 }
 
 type ScriptTelemetryRecordV1 struct {
-	Date              string            `json:"date" bson:"date"`
-	Time              string            `json:"time" bson:"time"`
-	UserName          string            `json:"username" bson:"username"`
-	RevitVersion      string            `json:"revit" bson:"revit"`
-	RevitBuild        string            `json:"revitbuild" bson:"revitbuild"`
-	SessionId         string            `json:"sessionid" bson:"sessionid"`
-	PyRevitVersion    string            `json:"pyrevit" bson:"pyrevit"`
+	Date              string            `json:"date" bson:"date" valid:"-"`
+	Time              string            `json:"time" bson:"time" valid:"-"`
+	UserName          string            `json:"username" bson:"username" valid:"-"`
+	RevitVersion      string            `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
+	RevitBuild        string            `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
+	SessionId         string            `json:"sessionid" bson:"sessionid" valid:"uuidv4~Invalid session id"`
+	PyRevitVersion    string            `json:"pyrevit" bson:"pyrevit" valid:"-"`
 	IsDebugMode       bool              `json:"debug" bson:"debug"`
 	IsConfigMode      bool              `json:"config" bson:"config"`
-	CommandName       string            `json:"commandname" bson:"commandname"`
-	CommandUniqueName string            `json:"commanduniquename" bson:"commanduniquename"`
-	BundleName        string            `json:"commandbundle" bson:"commandbundle"`
-	ExtensionName     string            `json:"commandextension" bson:"commandextension"`
-	ResultCode        int               `json:"resultcode" bson:"resultcode"`
-	CommandResults    map[string]string `json:"commandresults" bson:"commandresults"`
-	ScriptPath        string            `json:"scriptpath" bson:"scriptpath"`
+	CommandName       string            `json:"commandname" bson:"commandname" valid:"-"`
+	CommandUniqueName string            `json:"commanduniquename" bson:"commanduniquename" valid:"-"`
+	BundleName        string            `json:"commandbundle" bson:"commandbundle" valid:"-"`
+	ExtensionName     string            `json:"commandextension" bson:"commandextension" valid:"-"`
+	ResultCode        int               `json:"resultcode" bson:"resultcode" valid:"numeric~Invalid result code"`
+	CommandResults    map[string]string `json:"commandresults" bson:"commandresults" valid:"-"`
+	ScriptPath        string            `json:"scriptpath" bson:"scriptpath" valid:"-"`
 	TraceInfo         TraceInfoV1       `json:"trace" bson:"trace"`
 }
 
@@ -54,48 +55,53 @@ func (logrec ScriptTelemetryRecordV1) PrintRecordInfo(logger *cli.Logger, messag
 	))
 }
 
-func (logrec ScriptTelemetryRecordV1) Validate() {
+func (logrec ScriptTelemetryRecordV1) Validate() error {
+	// govalidator.SetFieldsRequiredByDefault(true)
+
+	// validate now
+	_, err := govalidator.ValidateStruct(logrec)
+	return err
 }
 
 // v2.0
 type EngineInfoV2 struct {
-	Type     string            `json:"type" bson:"type"`
-	Version  string            `json:"version" bson:"version"`
-	SysPaths []string          `json:"syspath" bson:"syspath"`
-	Configs  map[string]string `json:"configs" bson:"configs"`
+	Type     string                 `json:"type" bson:"type" valid:"engine~Invalid executor engine type"`
+	Version  string                 `json:"version" bson:"version" valid:"-"`
+	SysPaths []string               `json:"syspath" bson:"syspath" valid:"-"`
+	Configs  map[string]interface{} `json:"configs" bson:"configs" valid:"-"`
 }
 
 type TraceInfoV2 struct {
 	EngineInfo EngineInfoV2 `json:"engine" bson:"engine"`
-	Message    string       `json:"message" bson:"message"`
+	Message    string       `json:"message" bson:"message" valid:"-"`
 }
 
 type RecordMetaV2 struct {
-	SchemaVersion string `json:"schema" bson:"schema"`
+	SchemaVersion string `json:"schema" bson:"schema" valid:"schema~Invalid schema version"`
 }
 
 type ScriptTelemetryRecordV2 struct {
-	RecordMeta        RecordMetaV2      `json:"meta" bson:"meta"`           // added in v2.0
-	TimeStamp         string            `json:"timestamp" bson:"timestamp"` // added in v2.0
-	UserName          string            `json:"username" bson:"username"`
-	RevitVersion      string            `json:"revit" bson:"revit"`
-	RevitBuild        string            `json:"revitbuild" bson:"revitbuild"`
-	SessionId         string            `json:"sessionid" bson:"sessionid"`
-	PyRevitVersion    string            `json:"pyrevit" bson:"pyrevit"`
-	Clone             string            `json:"clone" bson:"clone"` // added in v2.0
-	IsDebugMode       bool              `json:"debug" bson:"debug"`
-	IsConfigMode      bool              `json:"config" bson:"config"`
-	IsExecFromGUI     bool              `json:"from_gui" bson:"from_gui"` // added in v2.0
-	CommandName       string            `json:"commandname" bson:"commandname"`
-	CommandUniqueName string            `json:"commanduniquename" bson:"commanduniquename"`
-	BundleName        string            `json:"commandbundle" bson:"commandbundle"`
-	ExtensionName     string            `json:"commandextension" bson:"commandextension"`
-	DocumentName      string            `json:"docname" bson:"docname"` // added in v2.0
-	DocumentPath      string            `json:"docpath" bson:"docpath"` // added in v2.0
-	ResultCode        int               `json:"resultcode" bson:"resultcode"`
-	CommandResults    map[string]string `json:"commandresults" bson:"commandresults"`
-	ScriptPath        string            `json:"scriptpath" bson:"scriptpath"`
-	TraceInfo         TraceInfoV2       `json:"trace" bson:"trace"` // revised in v2.0
+	RecordMeta        RecordMetaV2           `json:"meta" bson:"meta"`                                             // added in v2.0
+	TimeStamp         string                 `json:"timestamp" bson:"timestamp" valid:"rfc3339~Invalid timestamp"` // added in v2.0
+	UserName          string                 `json:"username" bson:"username" valid:"-"`
+	RevitVersion      string                 `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
+	RevitBuild        string                 `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
+	SessionId         string                 `json:"sessionid" bson:"sessionid" valid:"uuidv4~Invalid session id"`
+	PyRevitVersion    string                 `json:"pyrevit" bson:"pyrevit" valid:"-"`
+	Clone             string                 `json:"clone" bson:"clone" valid:"-"` // added in v2.0
+	IsDebugMode       bool                   `json:"debug" bson:"debug"`
+	IsConfigMode      bool                   `json:"config" bson:"config"`
+	IsExecFromGUI     bool                   `json:"from_gui" bson:"from_gui"` // added in v2.0
+	CommandName       string                 `json:"commandname" bson:"commandname" valid:"-"`
+	CommandUniqueName string                 `json:"commanduniquename" bson:"commanduniquename" valid:"-"`
+	BundleName        string                 `json:"commandbundle" bson:"commandbundle" valid:"-"`
+	ExtensionName     string                 `json:"commandextension" bson:"commandextension" valid:"-"`
+	DocumentName      string                 `json:"docname" bson:"docname" valid:"-"` // added in v2.0
+	DocumentPath      string                 `json:"docpath" bson:"docpath" valid:"-"` // added in v2.0
+	ResultCode        int                    `json:"resultcode" bson:"resultcode" valid:"numeric~Invalid result code"`
+	CommandResults    map[string]interface{} `json:"commandresults" bson:"commandresults" valid:"-"`
+	ScriptPath        string                 `json:"scriptpath" bson:"scriptpath" valid:"-"`
+	TraceInfo         TraceInfoV2            `json:"trace" bson:"trace"` // revised in v2.0
 }
 
 func (logrec ScriptTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, message string) {
@@ -114,30 +120,59 @@ func (logrec ScriptTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, messag
 	))
 }
 
-func (logrec ScriptTelemetryRecordV2) Validate() {
+func (logrec ScriptTelemetryRecordV2) Validate() error {
+	// govalidator.SetFieldsRequiredByDefault(true)
+
+	// custom validators
+	govalidator.TagMap["schema"] = govalidator.Validator(func(str string) bool {
+		return str == "2.0"
+	})
+
+	govalidator.TagMap["engine"] = govalidator.Validator(func(str string) bool {
+		switch str {
+		case
+			"unknown",
+			"ironpython",
+			"cpython",
+			"csharp",
+			"invoke",
+			"visualbasic",
+			"ironruby",
+			"dynamobim",
+			"grasshopper",
+			"content",
+			"hyperlink":
+			return true
+		}
+		return false
+	})
+
+	// validate now
+	_, err := govalidator.ValidateStruct(logrec)
+	return err
 }
 
 // introduced with api v2
 type EventTelemetryRecordV2 struct {
 	RecordMeta   RecordMetaV2           `json:"meta" bson:"meta"`
-	TimeStamp    string                 `json:"timestamp" bson:"timestamp"`
-	EventType    string                 `json:"type" bson:"type"`
-	EventArgs    map[string]interface{} `json:"args" bson:"args"`
-	UserName     string                 `json:"username" bson:"username"`
-	HostUserName string                 `json:"host_user" bson:"host_user"`
-	RevitVersion string                 `json:"revit" bson:"revit"`
-	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild"`
+	TimeStamp    string                 `json:"timestamp" bson:"timestamp" valid:"rfc3339~Invalid timestamp"`
+	EventType    string                 `json:"type" bson:"type" valid:"-"`
+	EventArgs    map[string]interface{} `json:"args" bson:"args" valid:"-"`
+	UserName     string                 `json:"username" bson:"username" valid:"-"`
+	HostUserName string                 `json:"host_user" bson:"host_user" valid:"-"`
+	RevitVersion string                 `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
+	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
 
 	// general
 	Cancellable      bool   `json:"cancellable" bson:"cancellable"`
 	Cancelled        bool   `json:"cancelled" bson:"cancelled"`
-	DocumentId       int    `json:"docid" bson:"docid"`
-	DocumentType     string `json:"doctype" bson:"doctype"`
-	DocumentTemplate string `json:"doctemplate" bson:"doctemplate"`
-	DocumentName     string `json:"docname" bson:"docname"`
-	DocumentPath     string `json:"docpath" bson:"docpath"`
-	ProjectNumber    string `json:"projectnum" bson:"projectnum"`
-	ProjectName      string `json:"projectname" bson:"projectname"`
+	DocumentId       int    `json:"docid" bson:"docid" valid:"-"`
+	DocumentType     string `json:"doctype" bson:"doctype" valid:"-"`
+	DocumentTemplate string `json:"doctemplate" bson:"doctemplate" valid:"-"`
+	DocumentName     string `json:"docname" bson:"docname" valid:"-"`
+	DocumentPath     string `json:"docpath" bson:"docpath" valid:"-"`
+	ProjectNumber    string `json:"projectnum" bson:"projectnum" valid:"-"`
+	ProjectName      string `json:"projectname" bson:"projectname" valid:"-"`
 }
 
 func (logrec EventTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, message string) {
@@ -155,8 +190,14 @@ func (logrec EventTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, message
 	}
 }
 
-func (logrec EventTelemetryRecordV2) Validate() {
-	// todo: validate by schema version
-	if logrec.RecordMeta.SchemaVersion == "2.0" {
-	}
+func (logrec EventTelemetryRecordV2) Validate() error {
+	// govalidator.SetFieldsRequiredByDefault(true)
+
+	// custom validators
+	govalidator.TagMap["schema"] = govalidator.Validator(func(str string) bool {
+		return str == "2.0"
+	})
+
+	_, err := govalidator.ValidateStruct(logrec)
+	return err
 }

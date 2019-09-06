@@ -10,6 +10,26 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func dumpEventAndRespond(logrec interface{}, w http.ResponseWriter, logger *cli.Logger) {
+	// dump the telemetry record json data if requested
+	jsonData, responseDataErr := json.Marshal(logrec)
+	if responseDataErr == nil {
+		jsonString := string(jsonData)
+		if logger.PrintTrace {
+			logger.Trace(jsonString)
+		}
+
+		// write response
+		w.Header().Set("Content-Type", "application/json")
+		_, responseErr := w.Write([]byte(jsonString))
+		if responseErr != nil {
+			logger.Debug(responseErr)
+		}
+	} else {
+		logger.Debug(responseDataErr)
+	}
+}
+
 func RouteEvents(router *mux.Router, opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger) {
 	// POST events/
 	// create new script telemetry record
@@ -23,30 +43,22 @@ func RouteEvents(router *mux.Router, opts *cli.Options, dbConn persistence.Conne
 			return
 		}
 
-		// now write to db
-		_, dbWriteErr := dbConn.WriteEventTelemetryV2(&logrec, logger)
-		if dbWriteErr != nil {
-			logger.Debug(dbWriteErr)
-			logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", dbWriteErr))
+		err := logrec.Validate()
+		if err != nil {
+			// respond with error
+			w.WriteHeader(http.StatusBadRequest)
+			respondError(err, w, logger)
 		} else {
-			logrec.PrintRecordInfo(logger, OkMessage)
-		}
-
-		// dump the telemetry record json data if requested
-		jsonData, responseDataErr := json.Marshal(logrec)
-		if responseDataErr == nil {
-			jsonString := string(jsonData)
-			if logger.PrintTrace {
-				logger.Trace(jsonString)
+			// now write to db
+			_, dbWriteErr := dbConn.WriteEventTelemetryV2(&logrec, logger)
+			if dbWriteErr != nil {
+				logger.Debug(dbWriteErr)
+				logrec.PrintRecordInfo(logger, fmt.Sprintf("[ {r}%s{!} ]", dbWriteErr))
+			} else {
+				logrec.PrintRecordInfo(logger, OkMessage)
 			}
-
-			// write response
-			_, responseErr := w.Write([]byte(jsonString))
-			if responseErr != nil {
-				logger.Debug(responseErr)
-			}
-		} else {
-			logger.Debug(responseDataErr)
+			// respond with the created data
+			dumpEventAndRespond(logrec, w, logger)
 		}
 
 	}).Methods("POST")
