@@ -545,7 +545,6 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     Returns:
         results dictionary from the executed script
     """
-    script_name = op.basename(script_path)
     core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
     if sys_paths:
         sys_paths.extend(core_syspaths)
@@ -556,7 +555,7 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     script_data.ScriptPath = script_path
     script_data.ConfigScriptPath = None
     script_data.CommandUniqueId = ''
-    script_data.CommandName = 'Starting {} ({})'.format(ext_name, script_name)
+    script_data.CommandName = 'Starting {}'.format(ext_name)
     script_data.CommandBundle = ''
     script_data.CommandExtension = ext_name
     script_data.HelpSource = ''
