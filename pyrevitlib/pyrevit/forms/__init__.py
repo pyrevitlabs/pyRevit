@@ -1040,11 +1040,13 @@ class ProgressBar(TemplatePromptBar):
 
     def _prepare(self):
         self._hostwnd = revit.ui.get_mainwindow()
-        self._host_task_pbar = System.Windows.Shell.TaskbarItemInfo()
-        self._hostwnd.TaskbarItemInfo = self._host_task_pbar
+        if self._hostwnd:
+            self._host_task_pbar = System.Windows.Shell.TaskbarItemInfo()
+            self._hostwnd.TaskbarItemInfo = self._host_task_pbar
 
     def _cleanup(self):
-        self._hostwnd.TaskbarItemInfo = None
+        if self._hostwnd:
+            self._hostwnd.TaskbarItemInfo = None
 
     def _update_task_pbar(self):
         if self._host_task_pbar is not None:
