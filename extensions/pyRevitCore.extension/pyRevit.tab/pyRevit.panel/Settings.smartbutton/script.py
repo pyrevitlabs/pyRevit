@@ -81,6 +81,7 @@ class SettingsWindow(forms.WPFWindow):
             logger.error('Error setting up a parameter. Please update '
                          'pyRevit again. | {}'.format(setup_params_err))
 
+        self.reload_requested = False
         self._setup_engines()
         self._setup_user_extensions_list()
         self._setup_env_vars_list()
@@ -88,10 +89,7 @@ class SettingsWindow(forms.WPFWindow):
         # check boxes for each version of Revit
         # this could be automated but it pushes me to verify and test
         # before actually adding a new Revit version to the list
-        self._addinfiles_cboxes = {'2013': self.revit2013_cb,
-                                   '2014': self.revit2014_cb,
-                                   '2015': self.revit2015_cb,
-                                   '2016': self.revit2016_cb,
+        self._addinfiles_cboxes = {'2016': self.revit2016_cb,
                                    '2017': self.revit2017_cb,
                                    '2018': self.revit2018_cb,
                                    '2019': self.revit2019_cb,
@@ -482,7 +480,8 @@ class SettingsWindow(forms.WPFWindow):
         engine_cfg = self.cpythonEngines.SelectedItem
         if engine_cfg:
             user_config.set_active_cpython_engine(engine_cfg.engine)
-            if self.active_cpyengine.Version != engine_cfg.engine.Version:
+            if self.active_cpyengine.Version != engine_cfg.engine.Version \
+                    and not self.reload_requested:
                 forms.alert('Active CPython engine has changed. '
                             'Restart Revit for this change to take effect.')
 
@@ -502,7 +501,8 @@ class SettingsWindow(forms.WPFWindow):
             for applocale in applocales.APP_LOCALES:
                 if str(applocale) == self.applocales_cb.SelectedItem:
                     user_config.user_locale = applocale.locale_code
-                    if current_applocale != applocale:
+                    if current_applocale != applocale \
+                            and not self.reload_requested:
                         request_reload = forms.alert(
                             'UI language has changed. Reloading pyRevit is '
                             'required for this change to take effect. Do you '
@@ -552,12 +552,16 @@ class SettingsWindow(forms.WPFWindow):
 
     def save_settings(self, sender, args):
         """Callback method for saving pyRevit settings"""
-        save_reload = False
-        save_reload = self._save_core_options() or save_reload
-        save_reload = self._save_engines() or save_reload
-        save_reload = self._save_user_extensions_list() or save_reload
-        save_reload = self._save_uiux() or save_reload
-        save_reload = self._save_telemetry() or save_reload
+        self.reload_requested = \
+            self._save_core_options() or self.reload_requested
+        self.reload_requested = \
+            self._save_engines() or self.reload_requested
+        self.reload_requested = \
+            self._save_user_extensions_list() or self.reload_requested
+        self.reload_requested = \
+            self._save_uiux() or self.reload_requested
+        self.reload_requested = \
+            self._save_telemetry() or self.reload_requested
 
         # save all new values into config file
         user_config.save_changes()
@@ -566,13 +570,13 @@ class SettingsWindow(forms.WPFWindow):
         self.update_addinfiles()
         self.Close()
         # if reload requested by any of the save methods, then reload
-        if save_reload:
+        if self.reload_requested:
             self._reload()
 
     def save_settings_and_reload(self, sender, args):
         """Callback method for saving pyRevit settings and reloading"""
+        self.reload_requested = True
         self.save_settings(sender, args)
-        self._reload()
 
 
 # decide if the settings should load or not
