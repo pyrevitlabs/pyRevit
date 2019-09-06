@@ -195,9 +195,10 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_uiux(self):
         applocale = applocales.get_current_applocale()
-        self.applocales_cb.ItemsSource = \
+        sorted_applocales = \
             sorted(applocales.APP_LOCALES, key=lambda x: str(x.lang_type))
-        self.applocales_cb.SelectedItem = applocale
+        self.applocales_cb.ItemsSource = [str(x) for x in sorted_applocales]
+        self.applocales_cb.SelectedItem = str(applocale)
         # colorize docs
         self.colordocs_cb.IsChecked = user_config.colorize_docs
         # output settings
@@ -495,9 +496,17 @@ class SettingsWindow(forms.WPFWindow):
             user_config.set_thirdparty_ext_root_dirs([])
 
     def _save_uiux(self):
+        request_reload = False
+        current_applocale = applocales.get_current_applocale()
         if self.applocales_cb.SelectedItem:
-            user_config.user_locale = \
-                self.applocales_cb.SelectedItem.locale_code
+            for applocale in applocales.APP_LOCALES:
+                if str(applocale) == self.applocales_cb.SelectedItem:
+                    user_config.user_locale = applocale.locale_code
+                    if current_applocale != applocale:
+                        request_reload = forms.alert(
+                            'UI language has changed. Reloading pyRevit is '
+                            'required for this change to take effect. Do you '
+                            'want to reload now?', yes=True, no=True,)
         # colorize docs
         user_config.colorize_docs = self.colordocs_cb.IsChecked
         revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
@@ -505,6 +514,8 @@ class SettingsWindow(forms.WPFWindow):
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
         if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():
             user_config.output_stylesheet = self.cur_stylesheet_tb.Text
+
+        return request_reload
 
     def _save_telemetry(self):
         # set telemetry configs
@@ -535,13 +546,18 @@ class SettingsWindow(forms.WPFWindow):
         telemetry.set_apptelemetry_event_flags(event_flags)
         telemetry.setup_telemetry()
 
+    def _reload(self):
+        from pyrevit.loader.sessionmgr import execute_command
+        execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
+
     def save_settings(self, sender, args):
         """Callback method for saving pyRevit settings"""
-        self._save_core_options()
-        self._save_engines()
-        self._save_user_extensions_list()
-        self._save_uiux()
-        self._save_telemetry()
+        save_reload = False
+        save_reload = self._save_core_options() or save_reload
+        save_reload = self._save_engines() or save_reload
+        save_reload = self._save_user_extensions_list() or save_reload
+        save_reload = self._save_uiux() or save_reload
+        save_reload = self._save_telemetry() or save_reload
 
         # save all new values into config file
         user_config.save_changes()
@@ -549,12 +565,14 @@ class SettingsWindow(forms.WPFWindow):
         # update addin files
         self.update_addinfiles()
         self.Close()
+        # if reload requested by any of the save methods, then reload
+        if save_reload:
+            self._reload()
 
     def save_settings_and_reload(self, sender, args):
         """Callback method for saving pyRevit settings and reloading"""
         self.save_settings(sender, args)
-        from pyrevit.loader.sessionmgr import execute_command
-        execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
+        self._reload()
 
 
 # decide if the settings should load or not

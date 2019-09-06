@@ -36,9 +36,6 @@ class AppLocale(object):
     def __repr__(self):
         return str(self)
 
-    def ToString(self):
-        return str(self)
-
 
 DEFAULT_LOCALE = AppLocale(
     lang_type=ApplicationServices.LanguageType.English_USA,
