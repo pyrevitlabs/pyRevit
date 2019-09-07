@@ -311,8 +311,8 @@
                            HorizontalAlignment="Center">
                     <Button Content="Wiki" FontSize="14"
                             Click="openwiki"/>
-                    <Button Content="Credits" FontSize="14"
-                            Click="opencredits"/>
+                    <Button Content="Twitter" FontSize="14"
+                            Click="opentwitter"/>
                     <Button Content="Blog" FontSize="14"
                             Click="openblog"/>
                     <Button Content="Github" FontSize="14"
@@ -325,6 +325,8 @@
                             Click="openlicensepage"/>
                     <Button Content="Support" FontSize="14"
                             Click="opensupportpage"/>
+                    <Button Content="Credits" FontSize="14"
+                            Click="opencredits"/>
                     <Button Content="Release Notes" FontSize="14"
                             Click="openreleasenotes"/>
                 </WrapPanel>

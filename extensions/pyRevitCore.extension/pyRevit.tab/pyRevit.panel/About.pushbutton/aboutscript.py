@@ -73,6 +73,9 @@ class AboutWindow(forms.WPFWindow):
     def openwiki(self, sender, args):
         script.open_url(urls.PYREVIT_WIKI)
 
+    def opentwitter(self, sender, args):
+        script.open_url(urls.PYREVIT_TWITTER)
+
     def openblog(self, sender, args):
         script.open_url(urls.PYREVIT_BLOG)
 
