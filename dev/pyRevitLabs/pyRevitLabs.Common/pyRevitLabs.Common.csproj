@@ -64,6 +64,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\pyRevitCLI\Properties\AssemblyShared.cs">
+      <Link>Properties\AssemblyShared.cs</Link>
+    </Compile>
     <Compile Include="Consts.cs" />
     <Compile Include="Github.cs" />
     <Compile Include="JSONDataSource.cs" />
