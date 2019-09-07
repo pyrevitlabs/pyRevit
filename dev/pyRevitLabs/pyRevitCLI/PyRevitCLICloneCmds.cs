@@ -53,6 +53,7 @@ namespace pyRevitCLI {
             if (cloneName != null) {
                 // report progress
                 GlobalConfigs.ReportProgress = true;
+                Console.CursorVisible = false;
 
                 // if deployment requested or image path is provided
                 if (imagePath != null || deployName != null)
@@ -74,6 +75,7 @@ namespace pyRevitCLI {
                         );
 
                 GlobalConfigs.ReportProgress = false;
+                Console.CursorVisible = true;
             }
         }
 

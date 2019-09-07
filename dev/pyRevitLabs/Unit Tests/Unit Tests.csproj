@@ -52,8 +52,7 @@
       <Link>Properties\AssemblyShared.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="pyRevitLabs.TargetApps.Revit\PyRevitTests.cs" />
-    <Compile Include="pyRevitCLI.cs" />
+    <Compile Include="pyRevitLabs.PyRevit.Tests.cs" />
     <Compile Include="TemplateUnitTest.cs" />
   </ItemGroup>
   <ItemGroup>

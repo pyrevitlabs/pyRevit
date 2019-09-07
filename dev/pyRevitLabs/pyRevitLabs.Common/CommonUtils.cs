@@ -155,8 +155,6 @@ namespace pyRevitLabs.Common {
 
                         // wait until download is complete
                         while (client.IsBusy) ;
-
-                        Console.CursorVisible = true;
                     }
                     else {
                         logger.Debug("Downloading \"{0}\"", url);

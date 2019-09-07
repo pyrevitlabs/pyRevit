@@ -11,11 +11,13 @@ using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.PyRevit;
 
-namespace pyRevitLabs.TargetApps.Revit.Tests {
+namespace pyRevitLabs.PyRevit.Tests {
     [TestClass()]
     public class PyRevitTests: TemplateUnitTest {
         public override string TempPath =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PyRevitLabsTests-TargetApps-Revit");
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "pyRevitLabs-PyRevit-Tests");
 
         private string testCloneName = "TestClone";
 
@@ -108,8 +110,6 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                     repoUrl: null,
                     destPath: TempPath
                     );
-            }
-            catch (NotImplementedException) {
             }
             catch (Exception ex) {
                 Assert.Fail(ex.Message);
