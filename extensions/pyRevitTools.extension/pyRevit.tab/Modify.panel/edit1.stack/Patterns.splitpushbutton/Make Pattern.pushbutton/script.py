@@ -82,6 +82,7 @@ class MakePatternWindow(forms.WPFWindow):
             self.resolver_ops.IsEnabled = False
             self.create_b.IsEnabled = False
             self._export_only = True
+            self.prompt_lb.Content = "Select Pattern to Export"
 
         self.setup_patnames()
         self.setup_export_units()
