@@ -459,8 +459,8 @@
                                     <ComboBox x:Name="applocales_cb"/>
                                 </DockPanel>
                                 <TextBlock Margin="0,10,0,0">
-                                    <Hyperlink NavigateUri="https://www.parallaxteam.com/apps/" Click="handle_url_click">
-                                        Help Translating pyRevit Here
+                                    <Hyperlink NavigateUri="https://www.notion.so/pyrevitlabs/Help-Translate-pyRevit-c26063a6c9824667a07c6a40b28c70d4" Click="handle_url_click">
+                                        Help Translating pyRevit
                                     </Hyperlink>
                                 </TextBlock>
                             </StackPanel>
