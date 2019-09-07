@@ -66,8 +66,9 @@ def _get_app_file(file_id, file_ext,
     if filename_only:
         return full_filename
     else:
-        return coreutils.cleanup_filename(
-            op.join(appdata_folder, full_filename)
+        return op.join(
+            appdata_folder,
+            coreutils.cleanup_filename(full_filename)
             )
 
 
