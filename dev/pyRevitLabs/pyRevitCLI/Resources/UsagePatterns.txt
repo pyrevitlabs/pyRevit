@@ -1,9 +1,8 @@
 Usage:
-	pyrevit help
 	pyrevit (-h | --help)
 	pyrevit (-V | --version)
 	pyrevit --usage
-	pyrevit (blog | docs | source | youtube | support)
+	pyrevit (wiki | blog | docs | source | youtube | support)
 	pyrevit env [--json] [--help] [--log=<log_file>]
 	pyrevit update [--help] [--log=<log_file>]
 	pyrevit clone --help

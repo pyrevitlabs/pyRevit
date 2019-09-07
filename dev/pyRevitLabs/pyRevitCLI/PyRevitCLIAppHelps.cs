@@ -8,27 +8,6 @@ using pyRevitLabs.PyRevit;
 
 namespace pyRevitCLI {
     internal static class PyRevitCLIAppHelps {
-
-        internal static void
-        OpenHelp() {
-            string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
-            if (CommonUtils.VerifyUrl(helpUrl))
-                CommonUtils.OpenUrl(
-                    helpUrl,
-                    logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
-                    );
-
-            else if (CommonUtils.VerifyUrl(PyRevitConsts.CLIHelpUrlDev))
-                CommonUtils.OpenUrl(
-                    PyRevitConsts.CLIHelpUrlDev,
-                    logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
-                    );
-            else
-                throw new PyRevitException(
-                    string.Format("Help page is not reachable for version {0}", PyRevitCLI.CLIVersion.ToString())
-                    );
-        }
-
         internal static void
         PrintHelp(PyRevitCLICommandType commandType) {
             switch (commandType) {
@@ -41,6 +20,7 @@ namespace pyRevitCLI {
                         optionsfirst: true,
                         mgmtCommands: new Dictionary<string, string>() {
                             { "env",                    "Print environment information" },
+                            { "update",                 "Update remote resources used by this utility" },
                             { "clones",                 "Manage pyRevit clones" },
                             { "extensions",             "Manage pyRevit extensions" },
                             { "attached",               "Manage pyRevit attachments to installed Revit" },
@@ -57,10 +37,9 @@ namespace pyRevitCLI {
                             { "detach",                 "Detach pyRevit clone from installed Revit" },
                             { "config",                 "Configure pyRevit for current user" },
                             { "run",                    "Run python script in Revit" },
-                            { "init",                   "Create pyRevit extensions and bundles" },
                         },
                         helpCommands: new Dictionary<string, string>() {
-                            { "help",                   "Open help in default browser" },
+                            { "wiki",                   "Open pyRevit Wiki" },
                             { "blog",                   "Open pyRevit blog" },
                             { "docs",                   "Open pyRevit docs" },
                             { "source",                 "Open pyRevit source repo" },

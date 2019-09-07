@@ -39,7 +39,7 @@ namespace pyRevitCLI {
     internal enum PyRevitCLICommandType {
         Main,
         Version,
-        Help,
+        Wiki,
         Blog,
         Docs,
         Source,
@@ -177,7 +177,7 @@ namespace pyRevitCLI {
 
             else if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion();
 
-            else if (all("help")) PyRevitCLIAppHelps.OpenHelp();
+            else if (all("wiki")) CommonUtils.OpenUrl(PyRevitLabsConsts.WikiUrl);
 
             else if (all("blog")) CommonUtils.OpenUrl(PyRevitLabsConsts.BlogsUrl);
 
