@@ -113,6 +113,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Colors.xaml")
             });
 
+            Resources.MergedDictionaries.Add(new ResourceDictionary() {
+                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/FlatButton.xaml")
+            });
+
             var accentResDict = new ResourceDictionary() {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Accents/Steel.xaml")
             };
