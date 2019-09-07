@@ -214,6 +214,8 @@ class GenericPyRevitUIContainer(object):
         self._sub_pyrvt_components = OrderedDict()
         self.itemdata_mode = False
         self._dirty = False
+        self._visible = None
+        self._enabled = None
 
     def __iter__(self):
         return iter(self._sub_pyrvt_components.values())
@@ -247,7 +249,7 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsVisible'):
             return self._rvtapi_object.IsVisible
         else:
-            raise AttributeError()
+            return self._visible
 
     @visible.setter
     def visible(self, value):
@@ -256,7 +258,7 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsVisible'):
             self._rvtapi_object.IsVisible = value
         else:
-            raise AttributeError()
+            self._visible = value
 
     @property
     def enabled(self):
@@ -266,7 +268,7 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsEnabled'):
             return self._rvtapi_object.IsEnabled
         else:
-            raise AttributeError()
+            return self._enabled
 
     @enabled.setter
     def enabled(self, value):
@@ -275,7 +277,22 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsEnabled'):
             self._rvtapi_object.IsEnabled = value
         else:
-            raise AttributeError()
+            self._enabled = value
+
+    def process_deferred(self):
+        try:
+            if self._visible is not None:
+                self.visible = self._visible
+        except Exception as visible_err:
+            raise PyRevitUIError('Error setting .visible {} | {} '
+                                 .format(self, visible_err))
+
+        try:
+            if self._enabled is not None:
+                self.enabled = self._enabled
+        except Exception as enable_err:
+            raise PyRevitUIError('Error setting .enabled {} | {} '
+                                 .format(self, enable_err))
 
     def get_rvtapi_object(self):
         """Return underlying Revit API object for this container."""
@@ -770,7 +787,9 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
                 adwindows_obj.Highlight = \
                     AdInternal.Windows.HighlightMode.Updated
 
-    def process_deferred_tooltips(self):
+    def process_deferred(self):
+        GenericPyRevitUIContainer.process_deferred(self)
+
         try:
             if self.tooltip_image:
                 self.set_tooltip_image(self.tooltip_image)
@@ -884,7 +903,7 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
                 # extended tooltips (images and videos) can only be applied when
                 # the ui element is created
-                pyrvt_ui_item.process_deferred_tooltips()
+                pyrvt_ui_item.process_deferred()
 
             elif isinstance(pyrvt_ui_item, _PyRevitSeparator):
                 self.get_rvtapi_object().AddSeparator()
@@ -1222,7 +1241,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             # extended tooltips (images and videos) can only be applied when
             # the ui element is created
             if isinstance(pyrvt_ui_item, _PyRevitRibbonButton):
-                pyrvt_ui_item.process_deferred_tooltips()
+                pyrvt_ui_item.process_deferred()
 
             # if pyrvt_ui_item is a group,
             # create children and update group item data
