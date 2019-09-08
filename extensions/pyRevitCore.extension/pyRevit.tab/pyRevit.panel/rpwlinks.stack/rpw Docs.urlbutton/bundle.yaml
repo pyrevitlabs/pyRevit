@@ -1,0 +1,4 @@
+tooltip: Opens the documentation page for RevitPythonWrapper
+author: "{{author}}"
+hyperlink: "http://revitpythonwrapper.readthedocs.io/en/latest/"
+context: zero-doc

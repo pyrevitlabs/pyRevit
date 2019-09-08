@@ -4,7 +4,7 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 def test_forms(forms_func, test_title, filterfuncstr='', *args, **kwargs):

@@ -10,6 +10,7 @@ from pyrevit import DB, UI
 #pylint: disable=W0401
 from pyrevit.revit.db import *
 from pyrevit.revit.db import query
+from pyrevit.revit.db import select
 from pyrevit.revit.db import create
 from pyrevit.revit.db import update
 from pyrevit.revit.db import ensure
@@ -17,7 +18,7 @@ from pyrevit.revit.db import delete
 from pyrevit.revit.db.transaction import *
 from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
-from pyrevit.revit.ui import *
+from pyrevit.revit import ui
 from pyrevit.revit import report
 from pyrevit.revit import files
 from pyrevit.revit import serverutils
@@ -62,11 +63,23 @@ class RevitWrapper(types.ModuleType):
 
     @property
     def activeview(self):
-        return HOST_APP.activeview
+        mlogger.deprecate(
+            "revit.active_view is deprecated. use revit.active_view instead.")
+        return HOST_APP.active_view
 
     @activeview.setter
     def activeview(self, value):
-        HOST_APP.activeview = value
+        mlogger.deprecate(
+            "revit.active_view is deprecated. use revit.active_view instead.")
+        HOST_APP.active_view = value
+
+    @property
+    def active_view(self):
+        return HOST_APP.active_view
+
+    @active_view.setter
+    def active_view(self, value):
+        HOST_APP.active_view = value
 
     @property
     def servers(self):

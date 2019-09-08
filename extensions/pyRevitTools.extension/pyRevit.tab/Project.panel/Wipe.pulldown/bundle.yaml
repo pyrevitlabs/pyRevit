@@ -1,0 +1,10 @@
+layout:
+  - Wipe Model Components
+  - Wipe Attached Constraints
+  - Wipe Site Designer Line Styles
+  - Wipe Unpurgable Viewport Types
+  - Wipe Data Schema
+  - Wipe SubCategories
+  - Wipe Unused Filters
+  - Wipe Unused View Templates
+  - Wipe Empty Elevation Tags

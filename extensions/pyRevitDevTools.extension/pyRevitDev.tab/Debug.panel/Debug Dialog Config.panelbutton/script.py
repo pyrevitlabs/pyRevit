@@ -1,7 +1,7 @@
 """This is the panel pushbutton (Could be used for panel config)."""
 
-from pyrevit.coreutils import logger
-slogger = logger.get_logger(__commandname__)
+from pyrevit import script
+logger = script.get_logger()
 
 
 # panelbutton should discard the __context__
@@ -17,5 +17,5 @@ if __forceddebugmode__:
     print('Ctrl-Clicked button')
 
 
-slogger.debug('Debug message')
+logger.debug('Debug message')
 print('Try different Modifier keys with this button to check results.')

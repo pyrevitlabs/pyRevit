@@ -22,7 +22,7 @@ namespace pyRevitLabs.DeffrelDB {
                     );
 
             // if no existing dstore type is found, create based on input dstore type
-            if (exstDStoreType == null) {
+            if (exstDStoreType is null) {
                 // if file is not empty, throw an exception
                 if (dstore.DataLines.Count > 0)
                     throw new Exception("Datastore is not configured as a flat database and is not empty.");
@@ -42,7 +42,7 @@ namespace pyRevitLabs.DeffrelDB {
             DataStoreType exstDStoreType =
                 dstore.DataFormatter.ReadDataStoreType(dstoreEntries);
 
-            if (exstDStoreType == null)
+            if (exstDStoreType is null)
                 throw new FormatException(string.Format("Datastore does not have a type definition"));
 
             return dstore.DataFormatter.ReadDataStoreType(dstoreEntries); 
@@ -79,7 +79,7 @@ namespace pyRevitLabs.DeffrelDB {
             var dbDef = dstore.DataFormatter.ReadDBDefinition(
                 dstore.DataLines.Select(x => x.Contents).ToList(), dstore.DataStoreType, dbName
                 );
-            if (dbDef == null)
+            if (dbDef is null)
                 throw new Exception(string.Format("Database \"{0}\" does not exist.", dbName));
             return dbDef;
         }
@@ -135,7 +135,7 @@ namespace pyRevitLabs.DeffrelDB {
                 dstore.DataStoreType,
                 existDBDef,
                 tableName);
-            if (tableDef == null)
+            if (tableDef is null)
                 throw new Exception(string.Format("Table \"{1}\" does not exist in database \"{0}\".", dbName, tableName));
 
             return tableDef;
@@ -208,7 +208,7 @@ namespace pyRevitLabs.DeffrelDB {
                 exstTableDef,
                 recordKey);
 
-            if (recordDef == null)
+            if (recordDef is null)
                 throw new Exception(string.Format("Record does not exist in table \"{0}\".", tableName));
 
             return recordDef;

@@ -2,7 +2,6 @@
 
 Example:
     >>> from pyrevit.api import AdWindows
-    >>> from pyrevit.api import NSJson
 """
 
 #pylint: disable=E0401,W0611,W0703,C0413
@@ -22,12 +21,15 @@ import Autodesk.Private as AdPrivate
 import Autodesk.Windows as AdWindows
 
 from Autodesk.Revit import Attributes
+from Autodesk.Revit import ApplicationServices
 from Autodesk.Revit import DB
 from Autodesk.Revit import UI
 
-# try loading some utility modules shipped with revit
-try:
-    clr.AddReference('pyRevitLabs.Json')
-    import pyRevitLabs.Json as NSJson
-except Exception:
-    pass
+
+# grab the interal PanelSetListView type
+PANELLISTVIEW_TYPE = None
+ADPRIVATE_ASSM = clr.GetClrType(AdPrivate.Windows.RibbonTabList).Assembly
+for apt in ADPRIVATE_ASSM.GetTypes():
+    if 'PanelSetListView' in apt.Name:
+        PANELLISTVIEW_TYPE = apt
+        break

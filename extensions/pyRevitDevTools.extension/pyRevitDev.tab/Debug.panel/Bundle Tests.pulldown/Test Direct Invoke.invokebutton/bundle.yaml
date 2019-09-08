@@ -1,0 +1,5 @@
+title: Test Direct Invoke (Custom Title)
+tooltip: Test Direct Invoke Tooltip
+author: "{{author}}"
+assembly: AliTpyRevitConcepts.dll
+command_class:

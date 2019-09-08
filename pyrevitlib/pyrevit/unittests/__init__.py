@@ -5,25 +5,19 @@ different components of pyRevit.
 For example, as the git module grows, new tests will be added to the git test
 suite to test the full functionality of that module, although only a subset of
 functions are used during startup and normal operations of pyRevit.
+
+from unittest import TestCase
+class TestWithIndependentOutput(TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def doCleanups(self):
+        pass
 """
 
 import warnings
-from pyrevit.unittests._testrunner import run_module_tests
+from pyrevit.unittests.runner import run_module_tests
 warnings.filterwarnings("ignore")
-
-
-def perform_engine_tests():
-    """Perform Tests on IronPython Engine."""
-    # Perform enumtests
-    import pyrevit.unittests.ipytests.enumtests as enumtests
-    run_module_tests(enumtests)
-
-    # Perform ipycoretests
-    import pyrevit.unittests.ipytests.ipycoretests as ipycoretests
-    run_module_tests(ipycoretests)
-
-
-def perform_coreutils_tests():
-    """Perform Tests on pyRevit Core Utilities."""
-    import pyrevit.unittests.outputtests as outputtests
-    run_module_tests(outputtests)

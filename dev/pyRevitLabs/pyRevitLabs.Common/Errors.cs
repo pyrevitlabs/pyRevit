@@ -27,7 +27,7 @@ namespace pyRevitLabs.Common {
         public static Errors Instance {
             get {
                 lock (padlock) {
-                    if (instance == null) {
+                    if (instance is null) {
                         instance = new Errors();
                     }
                     return instance;
@@ -42,21 +42,21 @@ namespace pyRevitLabs.Common {
     // exceptions to be used for all breaking, critical errors
 
     // base exception
-    public class pyRevitException : Exception {
-        public pyRevitException() { }
+    public class PyRevitException : Exception {
+        public PyRevitException() { }
 
-        public pyRevitException(string message) : base(message) { }
+        public PyRevitException(string message) : base(message) { }
 
-        public pyRevitException(string message, Exception innerException) : base(message, innerException) { }
+        public PyRevitException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     // resource exceptions
-    public class pyRevitResourceMissingException : pyRevitException {
+    public class pyRevitResourceMissingException : PyRevitException {
         public pyRevitResourceMissingException() { }
 
         public pyRevitResourceMissingException(string resoucePath) { Path = resoucePath; }
 
-        public string Path { get; set; }
+        public string Path { get; private set; }
 
         public override string Message {
             get {
@@ -65,12 +65,25 @@ namespace pyRevitLabs.Common {
         }
     }
 
-    public class pyRevitNoInternetConnectionException : pyRevitException {
+    public class pyRevitNoInternetConnectionException : PyRevitException {
         public pyRevitNoInternetConnectionException() { }
 
         public override string Message {
             get {
                 return "No internet connection detected.";
+            }
+        }
+
+    }
+
+    public class pyRevitInvalidURLException : PyRevitException {
+        public pyRevitInvalidURLException(string url) { URL = url;  }
+
+        public string URL { get; private set; }
+
+        public override string Message {
+            get {
+                return string.Format("Invalid URL {0}", URL);
             }
         }
 

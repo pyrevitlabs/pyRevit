@@ -56,6 +56,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\pyRevitCLI\Properties\AssemblyShared.cs">
+      <Link>Properties\AssemblyShared.cs</Link>
+    </Compile>
     <Compile Include="DataBase.cs" />
     <Compile Include="DataFormatter.cs" />
     <Compile Include="DataFunctions.cs" />
