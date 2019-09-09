@@ -302,7 +302,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Shutdown() {
-            CleanupEngineBuiltins();
+            CleanupBuiltins();
             CleanupStreams();
         }
 
@@ -387,7 +387,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             sysmodule.SetVariable("argv", pythonArgv);
         }
 
-        private void CleanupEngineBuiltins() {
+        private void CleanupBuiltins() {
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
 
             builtin.SetVariable("__cachedengine__", (object)null);
@@ -425,7 +425,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public class CPythonEngine : ExecutionEngine {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private PyObject _sysPaths = null;
+        private List<string> _sysPaths = new List<string>();
         private IntPtr _globals = IntPtr.Zero;
 
         public override void Init(ref ScriptRuntime runtime) {
@@ -444,8 +444,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
 
-            SetupStreams(ref runtime);
             SetupBuiltins(ref runtime);
+            SetupStreams(ref runtime);
+            SetupCaching(ref runtime);
             SetupSearchPaths(ref runtime);
             SetupArguments(ref runtime);
         }
@@ -511,15 +512,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PythonEngine.Shutdown();
         }
 
-        private void SetupStreams(ref ScriptRuntime runtime) {
-            // set output stream
-            PyObject sys = PythonEngine.ImportModule("sys");
-            sys.SetAttr("stdout", PyObject.FromManagedObject(runtime.OutputStream));
-            // dont write bytecode (__pycache__)
-            // https://docs.python.org/3.7/library/sys.html?highlight=pythondontwritebytecode#sys.dont_write_bytecode
-            sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
-        }
-
         private void SetupBuiltins(ref ScriptRuntime runtime) {
             // get globals
             _globals = pyRevitLabs.PythonNet.Runtime.PyEval_GetGlobals();
@@ -576,6 +568,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(_globals, "__file__", fileVarPyObject.Handle);
         }
 
+        private void SetupStreams(ref ScriptRuntime runtime) {
+            // set output stream
+            PyObject sys = PythonEngine.ImportModule("sys");
+            sys.SetAttr("stdout", PyObject.FromManagedObject(runtime.OutputStream));
+        }
+
+        private void SetupCaching(ref ScriptRuntime runtime) {
+            // set output stream
+            PyObject sys = PythonEngine.ImportModule("sys");
+            // dont write bytecode (__pycache__)
+            // https://docs.python.org/3.7/library/sys.html?highlight=pythondontwritebytecode#sys.dont_write_bytecode
+            sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
+        }
+
         private void SetupSearchPaths(ref ScriptRuntime runtime) {
             // set sys paths
             PyObject sys = PythonEngine.ImportModule("sys");
@@ -583,11 +589,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // if this is a new engine, save the syspaths
             if (!RecoveredFromCache) {
-                _sysPaths = CopyPyList(sysPaths.Handle);
+                SaveSearchPaths(sysPaths.Handle);
             }
-            // otherwise reset to defautl before changing
+            // otherwise reset to default before changing
             else {
-                sysPaths = CopyPyList(_sysPaths.Handle);
+                sysPaths = RestoreSearchPaths();
                 sys.SetAttr("path", sysPaths);
             }
 
@@ -625,6 +631,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 pyRevitLabs.PythonNet.Runtime.PyList_Insert(newList.Handle, i, listItem);
             }
             return new PyObject(newList.Handle);
+        }
+
+        private void SaveSearchPaths(IntPtr sourceList) {
+            _sysPaths = new List<string>();
+            long itemsCount = pyRevitLabs.PythonNet.Runtime.PyList_Size(sourceList);
+            for (long i = 0; i < itemsCount; i++) {
+                IntPtr listItem = pyRevitLabs.PythonNet.Runtime.PyList_GetItem(sourceList, i);
+                var value = new PyObject(listItem).As<string>();
+                _sysPaths.Add(value);
+            }
+        }
+
+        private PyObject RestoreSearchPaths() {
+            var newList = new PyList();
+            int i = 0;
+            foreach(var searchPath in _sysPaths) {
+                var searthPathStr = new PyString(searchPath);
+                pyRevitLabs.PythonNet.Runtime.PyList_Insert(newList.Handle, i, searthPathStr.Handle);
+                i++;
+            }
+            return newList;
         }
 
         private static void SetVariable(IntPtr? globals, string key, IntPtr value) {
