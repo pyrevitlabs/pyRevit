@@ -116,3 +116,20 @@ for el in revit.get_selection():
 #           '\n Switch 2 = {}'.format(selected_switch,
 #                                     switches['Switch 1'],
 #                                     switches['Switch 2']))
+
+
+
+from System.Collections.Generic import List
+
+selected_ids = revit.uidoc.Selection.GetElementIds()
+
+selected_ids_list = List[DB.ElementId]()
+for eid in selected_ids:
+    selected_ids_list.Add(eid)
+
+if selected_ids:
+    collector = DB.FilteredElementCollector(revit.doc, selected_ids_list)\
+                .OfClass(DB.Wall)\
+                .WhereElementIsNotElementType()
+    for w in collector:
+        print(w)
