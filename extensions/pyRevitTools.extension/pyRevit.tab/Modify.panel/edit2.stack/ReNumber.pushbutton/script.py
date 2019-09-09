@@ -155,6 +155,9 @@ def _unmark_collected(category_name, renumbered_element_ids):
 
 def pick_and_renumber(category_name, starting_index):
     """Main renumbering routine for elements of given category."""
+    # cleanup input
+    category_name = "Parking" if category_name == "Parkings" else category_name
+
     # all actions under one transaction
     with revit.TransactionGroup("Renumber {}".format(category_name)):
         # make sure target elements are easily selectable
@@ -254,7 +257,9 @@ def door_by_room_renumber():
 # [X] renumber doors by room
 
 if forms.check_modelview(revit.active_view):
-    options = ["Rooms", "Spaces", "Doors", "Doors by Rooms", "Walls", "Windows"]
+    options = ["Rooms", "Spaces",
+               "Doors", "Doors by Rooms",
+               "Walls", "Windows", "Parkings"]
     if revit.active_view.ViewType == DB.ViewType.AreaPlan:
         options.insert(1, "Areas")
 
