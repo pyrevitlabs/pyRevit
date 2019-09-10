@@ -2,6 +2,7 @@ layout:
   - Logs
   - -----
   - Unit Tests
+  - Engine Tests
   - Bundle Tests
   - Misc Tests[title:Third-Party\nUnit Tests]
   - Debug Dialog Config

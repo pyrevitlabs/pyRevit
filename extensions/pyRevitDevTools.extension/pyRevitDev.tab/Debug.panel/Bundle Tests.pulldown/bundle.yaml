@@ -1,14 +1,5 @@
 highlight: new
 layout:
-  - Test Engine Stability
-  - Test Cached Engines
-  - Test FullFrame Engine
-  - Test Persistent Engine
-  - Test IronPython Compile
-  - ---
-  - Test CPython Command
-  - Test CPython Engine
-  - ---
   - Test pyRevit Bundle
   - Test pyRevit Button
   - Test Smart Button
@@ -23,16 +14,3 @@ layout:
   - Test Grasshopper
   - Test Content Bundle
   - Test Hyperlink
-  - ---
-  - Test Output Stream
-  - Test Multiple Outputs
-  - Test UI Button
-  - Test Independent Logging
-  - ---
-  - Test Progressbar
-  - Test Charts
-  - Test D3
-  - Test Vue
-  - Test XML
-  - Test Toast
-  - Test FillPatternViewer
