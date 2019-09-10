@@ -1,27 +1,34 @@
 """Saves current selection memory as a Selection Filter."""
-
-import os
+#pylint: disable=import-error,invalid-name,broad-except
 import os.path as op
 import pickle as pl
 
-from pyrevit.coreutils import timestamp
+from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit import script
 
+logger = script.get_logger()
 
 proj_info = revit.query.get_project_info()
-datafile = script.get_document_data_file("SelList", "pym")
+data_file = script.get_document_data_file("SelList", "pym")
+logger.debug(data_file)
 
-if op.exists(datafile):
+if op.exists(data_file):
     if proj_info.name:
-        filtername = 'SavedSelection_' + proj_info.name + '_' + timestamp()
+        filter_name = \
+            'SavedSelection_' + proj_info.name + '_' + coreutils.timestamp()
     else:
-        filtername = 'SavedSelection_' + timestamp()
+        filter_name = \
+            'SavedSelection_' + coreutils.timestamp()
 
-    with open(datafile, 'r') as f:
+    with open(data_file, 'r') as f:
         cursel = pl.load(f)
 
     with revit.Transaction('pySaveSelection'):
-        selFilter = DB.SelectionFilterElement.Create(revit.doc, filtername)
+        selection_filter = \
+            DB.SelectionFilterElement.Create(
+                revit.doc,
+                coreutils.cleanup_filename(filter_name)
+                )
         for elid in cursel:
-            selFilter.AddSingle(DB.ElementId(int(elid)))
+            selection_filter.AddSingle(DB.ElementId(int(elid)))
