@@ -350,6 +350,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not self._kfile:
             raise Exception('Keynote file is not setup.')
 
+        # if a keynote file is still not set, return
+        if not os.access(self._kfile, os.W_OK):
+            raise Exception('Keynote file is read-only.')
+
         self._conn = None
         try:
             self._conn = kdb.connect(self._kfile)

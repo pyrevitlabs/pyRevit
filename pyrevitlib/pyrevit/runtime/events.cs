@@ -710,14 +710,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static string _txnName = null;
         private static BuiltInParameter _paramToUpdate;
         private static string _paramToUpdateStringValue = null;
-
-        public static UIApplication UIApp { get; private set; }
-        public static List<ElementId> NewElements { get; private set; }
+        private static UIApplication _uiApp = null;
+        private static List<ElementId> _newElements = null;
 
         private static void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
-            if (NewElements == null)
-                NewElements = new List<ElementId>();
-            NewElements.AddRange(e.GetAddedElementIds());
+            if (_newElements == null)
+                _newElements = new List<ElementId>();
+            _newElements.AddRange(e.GetAddedElementIds());
         }
 
         private static void CancelAllDialogs(object sender, DialogBoxShowingEventArgs e) {
@@ -735,7 +734,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static void NewElementPropertyValueUpdater(object sender, IdlingEventArgs e) {
             // cancel if txn is completed
             if (_txnCompleted) {
-                UIApp.Idling -= NewElementPropertyValueUpdater;
+                _uiApp.Idling -= NewElementPropertyValueUpdater;
                 EndCancellingAllDialogs();
                 EndTrackingElements();
             }
@@ -744,7 +743,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             try {
                 var TXN = new Transaction(_doc, _txnName);
                 TXN.Start();
-                foreach (var newElId in NewElements) {
+                foreach (var newElId in _newElements) {
                     var element = _doc.GetElement(newElId);
                     if (element != null) {
                         var parameter = element.get_Parameter(_paramToUpdate);
@@ -760,37 +759,50 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _txnCompleted = true;
         }
 
-        public static void StartTrackingElements() {
-            UIApp.Application.DocumentChanged += OnDocumentChanged;
+        private static void Init() {
+            _txnCompleted = false;
+            _doc = null;
+            _txnName = null;
+            _paramToUpdateStringValue = null;
+            _uiApp = null;
+            _newElements = null;
         }
 
-        public static void EndTrackingElements() {
-            UIApp.Application.DocumentChanged -= OnDocumentChanged;
+        private static void StartTrackingElements() {
+            _uiApp.Application.DocumentChanged += OnDocumentChanged;
         }
 
-        public static void StartCancellingAllDialogs() {
-            UIApp.DialogBoxShowing += CancelAllDialogs;
+        private static void EndTrackingElements() {
+            _uiApp.Application.DocumentChanged -= OnDocumentChanged;
         }
 
-        public static void EndCancellingAllDialogs() {
-            UIApp.DialogBoxShowing -= CancelAllDialogs;
+        private static void StartCancellingAllDialogs() {
+            _uiApp.DialogBoxShowing += CancelAllDialogs;
         }
 
-        public static void PostElementPropertyUpdateRequest(Document doc, string txnName, BuiltInParameter bip, string value) {
+        private static void EndCancellingAllDialogs() {
+            _uiApp.DialogBoxShowing -= CancelAllDialogs;
+        }
+
+        private static void PostElementPropertyUpdateRequest(Document doc, string txnName, BuiltInParameter bip, string value) {
             _doc = doc;
             _txnName = txnName;
             _paramToUpdate = bip;
             _paramToUpdateStringValue = value;
-            UIApp.Idling += NewElementPropertyValueUpdater;
+            _uiApp.Idling += NewElementPropertyValueUpdater;
         }
 
 #if !(REVIT2013)
         public static void PostCommandAndUpdateNewElementProperties(UIApplication uiapp, Document doc, PostableCommand postableCommand, string transactionName, BuiltInParameter bip, string value) {
-            UIApp = uiapp;
+            Init();
+
+            _uiApp = uiapp;
             StartTrackingElements();
             StartCancellingAllDialogs();
+
             var postableCommandId = RevitCommandId.LookupPostableCommandId(postableCommand);
-            UIApp.PostCommand(postableCommandId);
+            _uiApp.PostCommand(postableCommandId);
+
             PostElementPropertyUpdateRequest(doc, transactionName, bip, value);
         }
 #endif
