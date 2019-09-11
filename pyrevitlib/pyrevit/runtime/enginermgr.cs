@@ -322,6 +322,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Get builtin to add custom variables
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
 
+            // Add timestamp and executuin uuid
+            builtin.SetVariable("__execid__", CommonUtils.NewShortUUID());
+            builtin.SetVariable("__timestamp__", CommonUtils.GetISOTimeStampNow());
+
             // Let commands know if they're being run in a cached engine
             builtin.SetVariable("__cachedengine__", RecoveredFromCache);
 
@@ -522,6 +526,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 SetVariable(_globals, "__builtins__", builtins);
             }
 
+            // Add timestamp and executuin uuid
+            SetVariable(builtins, "__execid__", CommonUtils.NewShortUUID());
+            SetVariable(builtins, "__timestamp__", CommonUtils.GetISOTimeStampNow());
+
             // set builtins
             SetVariable(builtins, "__cachedengine__", RecoveredFromCache);
             SetVariable(builtins, "__cachedengineid__", TypeId);
@@ -668,6 +676,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class ExecParams {
+        public string ExecId { get; set; }
+        public string ExecTimeStamp { get; set; }
         public string ScriptPath { get; set; }
         public string ConfigScriptPath { get; set; }
         public string CommandUniqueId { get; set; }
@@ -870,6 +880,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // set properties if available
             // set ExecParams
             var execParams = new ExecParams {
+                ExecId = CommonUtils.NewShortUUID(),
+                ExecTimeStamp = CommonUtils.GetISOTimeStampNow(),
                 ScriptPath = runtime.ScriptData.ScriptPath,
                 ConfigScriptPath = runtime.ScriptData.ConfigScriptPath,
                 CommandUniqueId = runtime.ScriptData.CommandUniqueId,

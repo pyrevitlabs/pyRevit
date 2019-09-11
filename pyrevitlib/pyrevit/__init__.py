@@ -398,6 +398,22 @@ class _ExecutorParams(object):
     """Private Wrapper that provides runtime environment info."""
 
     @property   # read-only
+    def exec_id(self):
+        """Return execution unique id"""
+        try:
+            return __execid__
+        except NameError:
+            raise AttributeError()
+
+    @property   # read-only
+    def exec_timestamp(self):
+        """Return execution timestamp"""
+        try:
+            return __timestamp__
+        except NameError:
+            raise AttributeError()
+
+    @property   # read-only
     def engine_id(self):
         """Return engine id"""
         try:

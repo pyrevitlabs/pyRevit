@@ -7,5 +7,6 @@ layout:
   - Test IronPython Search Paths
   - -----
   - Test CPython Command
+  - Test CPython Namespace
   - Test CPython Engine
   - Test CPython Search Paths

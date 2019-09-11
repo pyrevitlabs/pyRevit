@@ -19,6 +19,8 @@ print('\n## UIApplication: (__revit__)')
 print(__revit__)
 
 print('\n## pyRevit globals:')
+print(__execid__)
+print(__timestamp__)
 print(__cachedengine__)
 print(__cachedengineid__)
 print(__scriptruntime__)
