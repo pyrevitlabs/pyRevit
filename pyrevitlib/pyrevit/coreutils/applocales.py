@@ -136,8 +136,8 @@ APP_LOCALES.append(
     ))
 APP_LOCALES.append(
     AppLocale(
-        lang_type="Ukranian",
-        locale_codes=["uk", "ukranian"],
+        lang_type="Ukrainian",
+        locale_codes=["uk", "ukrainian"],
         lang_name="Українська"
     ))
 
