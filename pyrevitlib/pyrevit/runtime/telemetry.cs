@@ -1068,6 +1068,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 docpath = e.Document != null ? e.Document.PathName : "",
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
+                args = new Dictionary<string, object> {
+                    { "status", e.Status.ToString() },
+                }
             }, sender, e);
         }
 
