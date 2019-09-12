@@ -50,6 +50,22 @@ class ViewSheetListItem(object):
         return self._sheet
 
 
+class PrintSettingListItem(object):
+    def __init__(self, print_setting=None):
+        self._psetting = print_setting
+
+    @property
+    def name(self):
+        if isinstance(self._psetting, DB.InSessionPrintSetting):
+            return "<In Session>"
+        else:
+            return self._psetting.Name
+
+    @property
+    def print_setting(self):
+        return self._psetting
+
+
 class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
@@ -98,7 +114,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     @property
     def selected_print_setting(self):
-        return self.printsettings_cb.SelectedItem
+        return self.printsettings_cb.SelectedItem.print_setting
 
     @property
     def reverse_print(self):
@@ -210,15 +226,21 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.printers_cb.SelectedItem = print_mgr.PrinterName
 
     def _setup_print_settings(self):
-        print_settings = [revit.doc.GetElement(x)
+        print_settings = [PrintSettingListItem(revit.doc.GetElement(x))
                           for x in revit.doc.GetPrintSettingIds()]
-        self.printsettings_cb.ItemsSource = print_settings
         print_mgr = self._get_printmanager()
-        if not isinstance(print_mgr.PrintSetup.CurrentPrintSetting,
-                          DB.InSessionPrintSetting):
+        self.printsettings_cb.ItemsSource = print_settings
+        if isinstance(print_mgr.PrintSetup.CurrentPrintSetting,
+                      DB.InSessionPrintSetting):
+            in_session = PrintSettingListItem(
+                print_mgr.PrintSetup.CurrentPrintSetting
+                )
+            print_settings.append(in_session)
+            self.printsettings_cb.SelectedItem = in_session
+        else:
             cur_psetting_name = print_mgr.PrintSetup.CurrentPrintSetting.Name
             for psetting in print_settings:
-                if psetting.Name == cur_psetting_name:
+                if psetting.name == cur_psetting_name:
                     self.printsettings_cb.SelectedItem = psetting
 
     def _print_combined_sheets_in_order(self):
@@ -317,10 +339,12 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.PrintRange = DB.PrintRange.Current
             for sheet in self.sheet_list:
                 output_fname = \
-                    coreutils.cleanup_filename('{:05} {} - {}.pdf'
-                                            .format(sheet.print_index,
-                                                    sheet.number,
-                                                    sheet.name))
+                    coreutils.cleanup_filename(
+                        '{:05} {} - {}.pdf'.format(sheet.print_index,
+                                                   sheet.number,
+                                                   sheet.name),
+                        windows_safe=True
+                        )
 
                 print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
                 if sheet.printable:
