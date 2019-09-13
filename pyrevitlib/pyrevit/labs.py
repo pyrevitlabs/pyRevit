@@ -20,7 +20,7 @@ clr.AddReference('pyRevitLabs.Language')
 clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 clr.AddReference('pyRevitLabs.PyRevit')
-clr.AddReference('PythonStubsBuilder64')
+clr.AddReference('PythonStubsBuilder')
 import Nett
 import pyRevitLabs.NLog as NLog
 import MadMilkman.Ini
