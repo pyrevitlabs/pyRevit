@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System.Threading.Tasks;
@@ -22,8 +23,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public Dictionary<string, string> meta { get; private set; }
 
         // when?
-        public string timestamp { get; set; }
+        public string timestamp { get; private set; }
         // by who?
+        public string host_user { get; set; }
         public string username { get; set; }
         // on what?
         public string revit { get; set; }
@@ -38,6 +40,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool debug { get; set; }
         public bool config { get; set; }
         public bool from_gui { get; set; }
+        public string exec_id { get; set; }
+        public string exec_timestamp { get; set; }
+        public string exec_duration { get; private set; }
         // which script?
         public string commandname { get; set; }
         public string commandbundle { get; set; }
@@ -68,6 +73,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static ScriptTelemetryRecord MakeTelemetryRecord(ref ScriptRuntime runtime) {
             // setup a new telemetry record
             return new ScriptTelemetryRecord {
+                host_user = UserEnv.GetLoggedInUserName(),
                 username = runtime.App.Username,
                 revit = runtime.App.VersionNumber,
                 revitbuild = runtime.App.VersionBuild,
@@ -77,6 +83,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 debug = runtime.ScriptRuntimeConfigs.DebugMode,
                 config = runtime.ScriptRuntimeConfigs.ConfigMode,
                 from_gui = runtime.ScriptRuntimeConfigs.ExecutedFromUI,
+                exec_id = runtime.ExecId,
+                exec_timestamp = runtime.ExecTimestamp,
                 commandname = runtime.ScriptData.CommandName,
                 commandbundle = runtime.ScriptData.CommandBundle,
                 commandextension = runtime.ScriptData.CommandExtension,

@@ -224,8 +224,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // set properties if available
             // set ExecParams
             var execParams = new ExecParams {
-                ExecId = CommonUtils.NewShortUUID(),
-                ExecTimeStamp = CommonUtils.GetISOTimeStampNow(),
+                ExecId = runtime.ExecId,
+                ExecTimeStamp = runtime.ExecTimestamp,
                 ScriptPath = runtime.ScriptData.ScriptPath,
                 ConfigScriptPath = runtime.ScriptData.ConfigScriptPath,
                 CommandUniqueId = runtime.ScriptData.CommandUniqueId,

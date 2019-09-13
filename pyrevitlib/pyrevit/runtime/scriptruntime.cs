@@ -72,6 +72,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private Dictionary<string, string> _resultsDict = null;
 
         public ScriptRuntime(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg) {
+            // setup a new id and timestamp
+            ExecId = CommonUtils.NewShortUUID();
+            ExecTimestamp = CommonUtils.GetISOTimeStampNow();
+
             // set data
             ScriptData = scriptData;
             ScriptRuntimeConfigs = scriptRuntimeCfg;
@@ -200,7 +204,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
         }
-       
+
         public Autodesk.Windows.RibbonItem UIControl {
             get {
                 return ((UIFramework.RevitRibbonControl)Autodesk.Windows.ComponentManager.Ribbon).findRibbonItem(ScriptData.CommandControlId, false);
@@ -331,6 +335,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         // execution
+        public string ExecId { get; private set; }
+
+        public string ExecTimestamp { get; private set; }
+
         public int ExecutionResult { get; set; }
 
         public string TraceMessage { get; set; }

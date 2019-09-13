@@ -113,8 +113,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // Add timestamp and executuin uuid
-            SetVariable(builtins, "__execid__", CommonUtils.NewShortUUID());
-            SetVariable(builtins, "__timestamp__", CommonUtils.GetISOTimeStampNow());
+            SetVariable(builtins, "__execid__", runtime.ExecId);
+            SetVariable(builtins, "__timestamp__", runtime.ExecTimestamp);
 
             // set builtins
             SetVariable(builtins, "__cachedengine__", RecoveredFromCache);

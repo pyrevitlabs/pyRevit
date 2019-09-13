@@ -190,8 +190,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
 
             // Add timestamp and executuin uuid
-            builtin.SetVariable("__execid__", CommonUtils.NewShortUUID());
-            builtin.SetVariable("__timestamp__", CommonUtils.GetISOTimeStampNow());
+            builtin.SetVariable("__execid__", runtime.ExecId);
+            builtin.SetVariable("__timestamp__", runtime.ExecTimestamp);
 
             // Let commands know if they're being run in a cached engine
             builtin.SetVariable("__cachedengine__", RecoveredFromCache);
