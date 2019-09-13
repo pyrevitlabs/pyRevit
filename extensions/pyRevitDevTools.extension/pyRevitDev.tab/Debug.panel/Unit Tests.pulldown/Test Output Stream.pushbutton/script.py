@@ -2,7 +2,7 @@
 from pyrevit import DB
 from pyrevit import script
 
-from pyrevit.runtime.types import ScriptOutputEmojis
+from pyrevit.runtime.types import ScriptConsoleEmojis
 
 __context__ = 'zero-doc'
 
@@ -29,7 +29,7 @@ print('Clickable element id: {}'
 
 output.print_md('**Testing emojify:**')
 emoji_str = ''
-for e in ScriptOutputEmojis.emojiDict.Keys:
+for e in ScriptConsoleEmojis.emojiDict.Keys:
     emoji_str += ' :{}:'.format(e)
 
 print(emoji_str)

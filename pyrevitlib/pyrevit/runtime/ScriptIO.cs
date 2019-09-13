@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -9,34 +8,34 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// A stream to write output to...
     /// This can be passed into the python interpreter to render all output to.
     /// Only a minimal subset is actually implemented - this is all we really expect to use.
-    public class ScriptOutputStream : Stream, IDisposable {
+    public class ScriptIO : Stream, IDisposable {
         private WeakReference<ScriptRuntime> _runtime;
-        private WeakReference<ScriptOutput> _gui;
+        private WeakReference<ScriptConsole> _gui;
         private string _outputBuffer;
         private bool _errored = false;
-        private EngineType _erroredEngine;
+        private ScriptEngineType _erroredEngine;
 
         public bool PrintDebugInfo = false;
 
-        public ScriptOutputStream(ScriptRuntime runtime) {
+        public ScriptIO(ScriptRuntime runtime) {
             _outputBuffer = string.Empty;
             _runtime = new WeakReference<ScriptRuntime>(runtime);
-            _gui = new WeakReference<ScriptOutput>(null);
+            _gui = new WeakReference<ScriptConsole>(null);
         }
 
-        public ScriptOutputStream(ScriptOutput gui) {
+        public ScriptIO(ScriptConsole gui) {
             _outputBuffer = string.Empty;
             _runtime = new WeakReference<ScriptRuntime>(null);
-            _gui = new WeakReference<ScriptOutput>(gui);
+            _gui = new WeakReference<ScriptConsole>(gui);
         }
 
-        public ScriptOutput GetOutput() {
+        public ScriptConsole GetOutput() {
             ScriptRuntime runtime;
             var re = _runtime.TryGetTarget(out runtime);
             if (re && runtime != null)
                 return runtime.OutputWindow;
 
-            ScriptOutput output;
+            ScriptConsole output;
             re = _gui.TryGetTarget(out output);
             if (re && output != null)
                 return output;
@@ -56,7 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             Write(buffer, 0, buffer.Length);
         }
 
-        public void WriteError(string error_msg, EngineType engineType) {
+        public void WriteError(string error_msg, ScriptEngineType engineType) {
             _errored = true;
             _erroredEngine = engineType;
             foreach (string message_part in error_msg.SplitIntoChunks(1024)) {
@@ -97,12 +96,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     if (PrintDebugInfo)
                         output.AppendText(
                             string.Format("<---- Offset: {0}, Count: {1} ---->", offset, count),
-                            ScriptOutputConfigs.DefaultBlock);
+                            ScriptConsoleConfigs.DefaultBlock);
 
                     if (count < 1024) {
                         // write to output window
                         if (!_errored)
-                            output.AppendText(_outputBuffer, ScriptOutputConfigs.DefaultBlock);
+                            output.AppendText(_outputBuffer, ScriptConsoleConfigs.DefaultBlock);
                         else
                             output.AppendError(_outputBuffer, _erroredEngine);
 

@@ -55,7 +55,7 @@ def _clear_running_engines():
         if my_output:
             my_output.close_others(all_open_outputs=True)
 
-        runtime_types.EngineManager.ClearEngines(
+        runtime_types.ScriptEngineManager.ClearEngines(
             excludeEngine=EXEC_PARAMS.engine_id
             )
     except AttributeError:
@@ -64,7 +64,7 @@ def _clear_running_engines():
 
 def _setup_output():
     # create output window and assign handle
-    out_window = runtime.types.ScriptOutput()
+    out_window = runtime.types.ScriptConsole()
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = '{}:{}:{}'.format(
         runtime_info.pyrevit_version,
@@ -75,7 +75,7 @@ def _setup_output():
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = runtime.types.ScriptOutputStream(out_window)
+    outstr = runtime.types.ScriptIO(out_window)
     sys.stdout = outstr
     # sys.stderr = outstr
     stdout_hndlr = logger.get_stdout_hndlr()
@@ -281,7 +281,7 @@ def load_session():
         timeout = user_config.startuplog_timeout
         if timeout > 0 and not logger.loggers_have_errors():
             if EXEC_PARAMS.first_load:
-                # output_window is of type ScriptOutput
+                # output_window is of type ScriptConsole
                 output_window.SelfDestructTimer(timeout)
             else:
                 # output_window is of type PyRevitOutputWindow

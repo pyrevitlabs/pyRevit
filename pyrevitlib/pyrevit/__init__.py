@@ -452,7 +452,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def output_stream(self):
-        """Return ScriptOutputStream"""
+        """Return ScriptIO"""
         if self.script_runtime:
             return self.script_runtime.OutputStream
 
@@ -549,7 +549,7 @@ class _ExecutorParams(object):
 
     @property   # read
     def window_handle(self):
-        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``:
+        """``PyRevitLabs.PyRevit.Runtime.ScriptConsole``:
                 Return output window. handle
         """
         if self.script_runtime:

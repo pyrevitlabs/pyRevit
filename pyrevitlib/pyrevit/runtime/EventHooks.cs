@@ -47,12 +47,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    public class PyRevitHooks : IEventTypeHandler {
+    public class EventHooks : IEventTypeHandler {
         static Logger logger = LogManager.GetCurrentClassLogger();
 
         public string HandlerId;
 
-        public PyRevitHooks(string handlerId) {
+        public EventHooks(string handlerId) {
             if (handlerId == null)
                 handlerId = Guid.NewGuid().ToString();
             HandlerId = handlerId;
@@ -135,9 +135,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void ActivateEventType(UIApplication uiApp, EventType eventType) {
             try {
                 // remove first
-                EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType, toggle_on: false);
+                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType, toggle_on: false);
                 // then add again
-                EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType);
+                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType);
             }
             catch (NotSupportedFeatureException) {
                 logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",
@@ -150,7 +150,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void DeactivateEventType(UIApplication uiApp, EventType eventType) {
             try {
-                EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType, toggle_on: false);
+                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType, toggle_on: false);
             }
             catch (NotSupportedFeatureException) {
                 logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",

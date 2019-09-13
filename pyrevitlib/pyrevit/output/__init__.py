@@ -27,7 +27,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils import envvars
-from pyrevit.runtime.types import ScriptOutputManager
+from pyrevit.runtime.types import ScriptConsoleManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
 from pyrevit import DB
@@ -42,7 +42,7 @@ DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
 
 def docclosing_eventhandler(sender, args):  #pylint: disable=W0613
     """Close all output window on document closing."""
-    ScriptOutputManager.CloseActiveOutputWindows()
+    ScriptConsoleManager.CloseActiveOutputWindows()
 
 
 def setup_output_closer():
@@ -93,7 +93,7 @@ class PyRevitOutputWindow(object):
 
     @property
     def window(self):
-        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``: Return output window object."""
+        """``PyRevitLabs.PyRevit.Runtime.ScriptConsole``: Return output window object."""
         return EXEC_PARAMS.window_handle
 
     @property
@@ -304,9 +304,9 @@ class PyRevitOutputWindow(object):
             all_open_outputs (bool): Close all any other windows if True
         """
         if all_open_outputs:
-            ScriptOutputManager.CloseActiveOutputWindows(self.window)
+            ScriptConsoleManager.CloseActiveOutputWindows(self.window)
         else:
-            ScriptOutputManager.CloseActiveOutputWindows(self.window,
+            ScriptConsoleManager.CloseActiveOutputWindows(self.window,
                                                          self.output_id)
 
     def hide(self):

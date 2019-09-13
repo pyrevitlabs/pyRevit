@@ -128,44 +128,86 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\baseclasses.cs">
-      <Link>baseclasses.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\CLREngine.cs">
+      <Link>Engines\CLREngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\enginermgr.cs">
-      <Link>enginermgr.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ContentEngine.cs">
+      <Link>Engines\ContentEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\envvars.cs">
-      <Link>envvars.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\CPythonEngine.cs">
+      <Link>Engines\CPythonEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\events.cs">
-      <Link>events.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\DynamoBIMEngine.cs">
+      <Link>Engines\DynamoBIMEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\executor.cs">
-      <Link>executor.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\Exceptions.cs">
+      <Link>Services\Exceptions.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\hooks.cs">
-      <Link>hooks.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\GrasshopperEngine.cs">
+      <Link>Engines\GrasshopperEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\scriptoutput.cs">
-      <Link>scriptoutput.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\HyperlinkEngine.cs">
+      <Link>Engines\HyperlinkEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\scriptoutputemojis.cs">
-      <Link>scriptoutputemojis.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\InvokableDLLEngine.cs">
+      <Link>Engines\InvokableDLLEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\scriptoutputhelpers.cs">
-      <Link>scriptoutputhelpers.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\IronPythonEngine.cs">
+      <Link>Engines\IronPythonEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\scriptoutputmgr.cs">
-      <Link>scriptoutputmgr.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\IronRubyEngine.cs">
+      <Link>Engines\IronRubyEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\scriptoutputstream.cs">
-      <Link>scriptoutputstream.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptCommands.cs">
+      <Link>ScriptCommands.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\scriptruntime.cs">
-      <Link>scriptruntime.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptData.cs">
+      <Link>ScriptData.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\telemetry.cs">
-      <Link>telemetry.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptEngineManager.cs">
+      <Link>ScriptEngineManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptEngines.cs">
+      <Link>ScriptEngines.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\EnvVariables.cs">
+      <Link>Services\EnvVariables.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\Telemetry.cs">
+      <Link>Services\Telemetry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\EventHandling.cs">
+      <Link>EventHandling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptExecutor.cs">
+      <Link>ScriptExecutor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\EventHooks.cs">
+      <Link>EventHooks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptConsole.cs">
+      <Link>ScriptConsole.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptConsoleEmojis.cs">
+      <Link>ScriptConsoleEmojis.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptConsoleUtils.cs">
+      <Link>ScriptConsoleUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptConsoleManager.cs">
+      <Link>ScriptConsoleManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptIO.cs">
+      <Link>ScriptIO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptRuntime.cs">
+      <Link>ScriptRuntime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\EventTelemetry.cs">
+      <Link>EventTelemetry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptTelemetry.cs">
+      <Link>ScriptTelemetry.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

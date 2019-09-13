@@ -4,7 +4,7 @@ using System.Reflection;
 
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public static class ScriptOutputManager
+    public static class ScriptConsoleManager
     {
         public static FieldInfo GetField(Object outputWindow, string fieldName)
         {

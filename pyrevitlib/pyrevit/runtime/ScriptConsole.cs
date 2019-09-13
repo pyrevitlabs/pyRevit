@@ -12,10 +12,9 @@ using System.Diagnostics;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
-using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public static class ScriptOutputConfigs {
+    public static class ScriptConsoleConfigs {
         public static string DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         public static string DOCHead = "<head>" +
                                        "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\" />" +
@@ -71,9 +70,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-
-    public partial class PyRevitTemplateWindow : pyRevitLabs.CommonWPF.Windows.AppWindow {
-        public PyRevitTemplateWindow() {
+    public partial class ScriptConsoleTemplate : pyRevitLabs.CommonWPF.Windows.AppWindow {
+        public ScriptConsoleTemplate() {
             // setup window styles
             SetupDynamicResources();
             EnablePyRevitTemplateWindowStyle();
@@ -157,7 +155,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    public partial class ScriptOutput : PyRevitTemplateWindow, IComponentConnector, IDisposable {
+    public partial class ScriptConsole : ScriptConsoleTemplate, IComponentConnector, IDisposable {
         private bool _contentLoaded;
         private bool _debugMode;
         private bool _frozen = false;
@@ -189,7 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
         public ActivityBar activityBar;
 
-        public ScriptOutput(bool debugMode = false, UIApplication uiApp = null) : base() {
+        public ScriptConsole(bool debugMode = false, UIApplication uiApp = null) : base() {
             _debugMode = debugMode;
             _uiApp = uiApp;
 
@@ -353,7 +351,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public string GetFullHtml() {
             var head = ActiveDocument.GetElementsByTagName("head")[0];
-            return ScriptOutputConfigs.DOCTYPE + head.OuterHtml + ActiveDocument.Body.OuterHtml;
+            return ScriptConsoleConfigs.DOCTYPE + head.OuterHtml + ActiveDocument.Body.OuterHtml;
         }
 
         private void SetupDefaultPage(string styleSheetFilePath = null) {
@@ -365,7 +363,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // create the head with default styling
             var dochead = string.Format(
-                ScriptOutputConfigs.DOCTYPE + ScriptOutputConfigs.DOCHead,
+                ScriptConsoleConfigs.DOCTYPE + ScriptConsoleConfigs.DOCHead,
                 AppVersion,
                 RendererVersion,
                 cssFilePath
@@ -431,13 +429,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             
             // order is important
             // "<"      --->    &lt;
-            contents = ScriptOutputConfigs.EscapeForHtml(contents);
+            contents = ScriptConsoleConfigs.EscapeForHtml(contents);
             // &clt;    --->    ">"
-            contents = ScriptOutputConfigs.FromCustomHtmlTags(contents);
+            contents = ScriptConsoleConfigs.FromCustomHtmlTags(contents);
             // "\n"     --->    <br/>
-            contents = ScriptOutputConfigs.EscapeForOutput(contents);
+            contents = ScriptConsoleConfigs.EscapeForOutput(contents);
             // :heart:  --->    \uFFFF (emoji unicode)
-            contents = ScriptOutputEmojis.Emojize(contents);
+            contents = ScriptConsoleEmojis.Emojize(contents);
 
             var htmlElement = ActiveDocument.CreateElement(HtmlElementType);
             htmlElement.InnerHtml = contents;
@@ -455,39 +453,39 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void AppendError(string OutputText, EngineType engineType) {
+        public void AppendError(string OutputText, ScriptEngineType engineType) {
             Unfreeze();
             string errorHeader = string.Empty;
             switch (engineType) {
-                case EngineType.IronPython:
-                    errorHeader = ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.IPYErrorHeader);
+                case ScriptEngineType.IronPython:
+                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.IPYErrorHeader);
                     break;
-                case EngineType.CPython:
-                    errorHeader = ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CPYErrorHeader);
+                case ScriptEngineType.CPython:
+                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.CPYErrorHeader);
                     break;
-                case EngineType.CSharp:
-                    errorHeader = ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader);
+                case ScriptEngineType.CSharp:
+                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.CLRErrorHeader);
                     break;
-                case EngineType.Invoke:
+                case ScriptEngineType.Invoke:
                     break;
-                case EngineType.VisualBasic:
-                    errorHeader = ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.CLRErrorHeader);
+                case ScriptEngineType.VisualBasic:
+                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.CLRErrorHeader);
                     break;
-                case EngineType.IronRuby:
-                    errorHeader = ScriptOutputConfigs.ToCustomHtmlTags(ScriptOutputConfigs.IRubyErrorHeader);
+                case ScriptEngineType.IronRuby:
+                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.IRubyErrorHeader);
                     break;
-                case EngineType.DynamoBIM:
+                case ScriptEngineType.DynamoBIM:
                     break;
-                case EngineType.Grasshopper:
+                case ScriptEngineType.Grasshopper:
                     break;
-                case EngineType.Content:
+                case ScriptEngineType.Content:
                     break;
             }
             // add new line to header
             if (errorHeader != string.Empty)
                 errorHeader += "\n";
 
-            AppendText(errorHeader + OutputText, ScriptOutputConfigs.ErrorBlock);
+            AppendText(errorHeader + OutputText, ScriptConsoleConfigs.ErrorBlock);
         }
 
         private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e) {
@@ -499,7 +497,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 else if (inputUrl.StartsWith("revit")) {
                     e.Cancel = true;
-                    ScriptOutputHelpers.ProcessUrl(_uiApp, inputUrl);
+                    ScriptConsoleUtils.ProcessUrl(_uiApp, inputUrl);
                     return;
                 }
                 else if (inputUrl.StartsWith("file")) {
@@ -535,7 +533,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             WaitReadyBrowser();
             if (ActiveDocument != null) {
                 var cssdisplay = visibility ? "" : "display: none;";
-                var pbarcontainer = ActiveDocument.GetElementById(ScriptOutputConfigs.ProgressBlockId);
+                var pbarcontainer = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBlockId);
                 if (pbarcontainer.Style != null) {
                     if (pbarcontainer.Style.Contains("display:"))
                         pbarcontainer.Style = Regex.Replace(pbarcontainer.Style, "display:.+?;",
@@ -612,16 +610,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                 }
 
-                var pbargraph = ActiveDocument.GetElementById(ScriptOutputConfigs.ProgressBarId);
+                var pbargraph = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBarId);
                 if (pbargraph == null) {
                     if (ActiveDocument != null) {
-                        var pbar = ActiveDocument.CreateElement(ScriptOutputConfigs.ProgressBlock);
-                        var newpbargraph = ActiveDocument.CreateElement(ScriptOutputConfigs.ProgressBar);
+                        var pbar = ActiveDocument.CreateElement(ScriptConsoleConfigs.ProgressBlock);
+                        var newpbargraph = ActiveDocument.CreateElement(ScriptConsoleConfigs.ProgressBar);
                         pbar.AppendChild(newpbargraph);
                         ActiveDocument.Body.AppendChild(pbar);
                     }
 
-                    pbargraph = ActiveDocument.GetElementById(ScriptOutputConfigs.ProgressBarId);
+                    pbargraph = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBarId);
                 }
 
                 SetProgressBarVisibility(true);
@@ -666,22 +664,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                 }
 
-                var inlinewait = ActiveDocument.GetElementById(ScriptOutputConfigs.InlineWaitBlockId);
+                var inlinewait = ActiveDocument.GetElementById(ScriptConsoleConfigs.InlineWaitBlockId);
                 if (inlinewait == null) {
                     if (ActiveDocument != null) {
-                        inlinewait = ActiveDocument.CreateElement(ScriptOutputConfigs.InlineWaitBlock);
+                        inlinewait = ActiveDocument.CreateElement(ScriptConsoleConfigs.InlineWaitBlock);
                         ActiveDocument.Body.AppendChild(inlinewait);
                     }
 
-                    inlinewait = ActiveDocument.GetElementById(ScriptOutputConfigs.InlineWaitBlockId);
+                    inlinewait = ActiveDocument.GetElementById(ScriptConsoleConfigs.InlineWaitBlockId);
                 }
 
-                SetElementVisibility(true, ScriptOutputConfigs.InlineWaitBlockId);
+                SetElementVisibility(true, ScriptConsoleConfigs.InlineWaitBlockId);
 
-                int idx = ScriptOutputConfigs.InlineWaitSequence.IndexOf(inlinewait.InnerText);
-                if (idx + 1 > ScriptOutputConfigs.InlineWaitSequence.Count - 1)
+                int idx = ScriptConsoleConfigs.InlineWaitSequence.IndexOf(inlinewait.InnerText);
+                if (idx + 1 > ScriptConsoleConfigs.InlineWaitSequence.Count - 1)
                     idx = 0;
-                inlinewait.InnerText = ScriptOutputConfigs.InlineWaitSequence[idx + 1];
+                inlinewait.InnerText = ScriptConsoleConfigs.InlineWaitSequence[idx + 1];
                 ScrollToBottom();
             }
         }
@@ -698,21 +696,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void Window_Loaded(object sender, System.EventArgs e) {
-            var outputWindow = (ScriptOutput)sender;
-            ScriptOutputManager.AppendToOutputWindowList(this);
+            var outputWindow = (ScriptConsole)sender;
+            ScriptConsoleManager.AppendToOutputWindowList(this);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
-            var outputWindow = (ScriptOutput)sender;
+            var outputWindow = (ScriptConsole)sender;
 
-            ScriptOutputManager.RemoveFromOutputList(this);
+            ScriptConsoleManager.RemoveFromOutputList(this);
 
             outputWindow.renderer.Navigating -= _navigateHandler;
             outputWindow._navigateHandler = null;
         }
 
         private void Window_Closed(object sender, System.EventArgs e) {
-            var outputWindow = (ScriptOutput)sender;
+            var outputWindow = (ScriptConsole)sender;
 
             var grid = (Grid)outputWindow.Content;
             grid.Children.Remove(host);

@@ -9,7 +9,7 @@ using Autodesk.Revit.UI.Selection;
 #endif
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public class ScriptOutputHelpers {
+    public class ScriptConsoleUtils {
         public static void ProcessUrl(UIApplication uiApp, string inputUrl) {
             var parsedQuery = HttpUtility.ParseQueryString(inputUrl.Split('?')[1]);
 

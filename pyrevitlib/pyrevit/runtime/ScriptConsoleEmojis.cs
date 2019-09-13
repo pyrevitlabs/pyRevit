@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public static class ScriptOutputEmojis {
+    public static class ScriptConsoleEmojis {
         public const string emojiImageTag = "<span><img src=\"file:///{0}\" class=\"emoji\" title=\"{1}\"></span>";
 
         public static Dictionary<string, string> emojiDict = new Dictionary<string, string>() {

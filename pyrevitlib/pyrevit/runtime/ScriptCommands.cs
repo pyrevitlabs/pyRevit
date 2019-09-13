@@ -7,9 +7,6 @@ using System.Windows.Controls;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
-using System.Windows.Input;
-
-using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class CommandTypeExecConfigs {
@@ -28,14 +25,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
-    public abstract class CommandType : IExternalCommand {
+    public abstract class ScriptCommand : IExternalCommand {
         
         public ScriptData ScriptData;
         public ScriptRuntimeConfigs ScriptRuntimeConfigs;
 
         public CommandTypeExecConfigs ExecConfigs = new CommandTypeExecConfigs();
 
-        public CommandType(
+        public ScriptCommand(
                 string scriptSource,
                 string configScriptSource,
                 string searchPaths,
@@ -261,7 +258,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
 
-    public abstract class CommandExtendedAvail : IExternalCommandAvailability {
+    public abstract class ScriptCommandExtendedAvail : IExternalCommandAvailability {
         // category name separator for comparisons
         const string SEP = "|";
 
@@ -276,7 +273,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // builtin category comparison list
         private HashSet<int> _contextCatIdsHash = new HashSet<int>();
 
-        public CommandExtendedAvail(string contextString) {
+        public ScriptCommandExtendedAvail(string contextString) {
             // NOTE:
             // docs have builtin categories
             // docs might have custom categories with non-english names
@@ -448,10 +445,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
 
-    public abstract class CommandSelectionAvail : IExternalCommandAvailability {
+    public abstract class ScriptCommandSelectionAvail : IExternalCommandAvailability {
         private string _categoryName = "";
 
-        public CommandSelectionAvail(string contextString) {
+        public ScriptCommandSelectionAvail(string contextString) {
             _categoryName = contextString;
         }
 
@@ -464,25 +461,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
 
-    public abstract class CommandZeroDocAvail : IExternalCommandAvailability {
-        public CommandZeroDocAvail() {
+    public abstract class ScriptCommandZeroDocAvail : IExternalCommandAvailability {
+        public ScriptCommandZeroDocAvail() {
         }
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
             return true;
-        }
-    }
-
-
-    public class NotSupportedFeatureException : Exception {
-        public static string NotSupportedMessage = "This feature is not supported under this Revit version.";
-
-        public NotSupportedFeatureException() { }
-
-        public override string Message {
-            get {
-                return NotSupportedMessage;
-            }
         }
     }
 }
