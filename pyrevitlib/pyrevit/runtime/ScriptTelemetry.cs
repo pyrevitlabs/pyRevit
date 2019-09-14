@@ -42,7 +42,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool from_gui { get; set; }
         public string exec_id { get; set; }
         public string exec_timestamp { get; set; }
-        public string exec_duration { get; private set; }
         // which script?
         public string commandname { get; set; }
         public string commandbundle { get; set; }
