@@ -3,7 +3,9 @@
 from pyrevit import EXEC_PARAMS
 from pyrevit import revit, UI
 
+
 print(EXEC_PARAMS.exec_id)
+
 
 class CategoriesFilter(UI.Selection.ISelectionFilter):
     __namespace__ = EXEC_PARAMS.exec_id
