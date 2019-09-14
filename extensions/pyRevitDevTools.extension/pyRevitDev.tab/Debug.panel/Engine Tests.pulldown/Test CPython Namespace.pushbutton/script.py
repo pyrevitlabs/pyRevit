@@ -3,6 +3,7 @@
 from pyrevit import EXEC_PARAMS
 from pyrevit import revit, UI
 
+print(EXEC_PARAMS.exec_id)
 
 class CategoriesFilter(UI.Selection.ISelectionFilter):
     __namespace__ = EXEC_PARAMS.exec_id
@@ -27,22 +28,16 @@ def select_objects_by_category(*names):
     return [revit.doc.GetElement(reference) for reference in references]
 
 
-def select_object_by_category(name):
-    reference = \
-        revit.uidoc.Selection.PickObject(
-            UI.Selection.ObjectType.Element,
-            CategoriesFilter(name),
-            'Pick {}'.format(name)
-            )
-    return revit.doc.GetElement(reference)
+def select_objects():
+    references = \
+        revit.uidoc.Selection.PickObjects(UI.Selection.ObjectType.Element)
+    return [revit.doc.GetElement(reference) for reference in references]
 
 
 def main():
+    # rebars = select_objects()
     rebars = select_objects_by_category('Walls')
     print(rebars)
 
 
-try:
-    main()
-except Exception:
-    pass
+main()

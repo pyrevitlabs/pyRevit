@@ -45,9 +45,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             int result = ScriptExecutorResultCodes.Succeeded;
 
             using (Py.GIL()) {
+                // read script
                 var scriptContents = File.ReadAllText(runtime.ScriptSourceFile, encoding: System.Text.Encoding.UTF8);
+
+                // create new scope and set globals
+                var scope = Py.CreateScope("__main__");
+                scope.Set("__file__", runtime.ScriptSourceFile);
+
+                // execute
                 try {
-                    PythonEngine.ExecUTF8(scriptContents, globals: _globals);
+                    scope.ExecUTF8(scriptContents);
                 }
                 catch (PythonException cpyex) {
                     var traceBackParts = cpyex.StackTrace.Split(']');
@@ -84,6 +91,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     result = ScriptExecutorResultCodes.ExecutionException;
                 }
                 finally {
+                    // remove scope
+                    scope.Dispose();
                 }
             }
 
@@ -94,23 +103,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Shutdown() {
-            using (Py.GIL()) {
-                // deref newly created globals
-                pyRevitLabs.PythonNet.Runtime.XDecref(_globals);
-                _globals = IntPtr.Zero;
-            }
-            PythonEngine.Shutdown();
+            //using (Py.GIL()) {
+            //    // deref newly created globals
+            //    pyRevitLabs.PythonNet.Runtime.XDecref(_globals);
+            //    _globals = IntPtr.Zero;
+            //}
+            //PythonEngine.Shutdown();
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime) {
-            // get globals
-            _globals = pyRevitLabs.PythonNet.Runtime.PyEval_GetGlobals();
             // get builtins
             IntPtr builtins = pyRevitLabs.PythonNet.Runtime.PyEval_GetBuiltins();
-            if (_globals == IntPtr.Zero) {
-                _globals = pyRevitLabs.PythonNet.Runtime.PyDict_New();
-                SetVariable(_globals, "__builtins__", builtins);
-            }
 
             // Add timestamp and executuin uuid
             SetVariable(builtins, "__execid__", runtime.ExecId);
@@ -156,10 +159,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // set event arguments for engine
             SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
-
-            // set globals
-            var fileVarPyObject = new PyString(runtime.ScriptSourceFile);
-            SetVariable(_globals, "__file__", fileVarPyObject.Handle);
         }
 
         private void SetupStreams(ref ScriptRuntime runtime) {

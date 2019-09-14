@@ -14,6 +14,8 @@ print('\n'.join(sys.path))
 # print globals
 print('\n## This file (__file__):')
 print(__file__)
+print('\n## This scope (__name__):')
+print(__name__)
 
 print('\n## UIApplication: (__revit__)')
 print(__revit__)
