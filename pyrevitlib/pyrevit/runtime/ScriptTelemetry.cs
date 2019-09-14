@@ -18,14 +18,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string message { get; set; }
     }
 
-    public class ScriptTelemetryRecord {
-        // schema
-        public Dictionary<string, string> meta { get; private set; }
-
-        // when?
-        public string timestamp { get; private set; }
+    public class ScriptTelemetryRecord: TelemetryRecord {
         // by who?
-        public string host_user { get; set; }
         public string username { get; set; }
         // on what?
         public string revit { get; set; }
@@ -55,17 +49,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // any errors?
         public ScriptTelemetryRecordTraceInfo trace { get; set; }
 
-        public ScriptTelemetryRecord() {
-            meta = new Dictionary<string, string> {
-                { "schema", "2.0"},
-            };
-
-            var env = new EnvDictionary();
-            if (env.TelemetryUTCTimeStamps)
-                timestamp = CommonUtils.GetISOTimeStampNow();
-            else
-                timestamp = CommonUtils.GetISOTimeStampLocalNow();
-        }
+        public ScriptTelemetryRecord(): base() {}
     }
 
     public static class ScriptTelemetry {

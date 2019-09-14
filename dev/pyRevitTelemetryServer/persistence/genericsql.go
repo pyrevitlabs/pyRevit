@@ -264,6 +264,7 @@ func generateEventInsertQueryV2(table string, logrec *EventTelemetryRecordV2, lo
 	record = []string{
 		recordId.String(),
 		logrec.TimeStamp,
+		logrec.HandlerId,
 		logrec.EventType,
 		string(cresults),
 		logrec.UserName,

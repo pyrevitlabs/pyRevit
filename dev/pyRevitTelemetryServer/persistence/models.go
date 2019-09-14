@@ -159,6 +159,7 @@ func (logrec ScriptTelemetryRecordV2) Validate() error {
 type EventTelemetryRecordV2 struct {
 	RecordMeta   RecordMetaV2           `json:"meta" bson:"meta"`
 	TimeStamp    string                 `json:"timestamp" bson:"timestamp" valid:"rfc3339~Invalid timestamp"`
+	HandlerId    string                 `json:"handler_id" bson:"handler_id" valid:"-"`
 	EventType    string                 `json:"type" bson:"type" valid:"-"`
 	EventArgs    map[string]interface{} `json:"args" bson:"args" valid:"-"`
 	UserName     string                 `json:"username" bson:"username" valid:"-"`

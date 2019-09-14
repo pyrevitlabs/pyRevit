@@ -74,7 +74,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public ScriptRuntime(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg) {
             // setup a new id and timestamp
             ExecId = CommonUtils.NewShortUUID();
-            ExecTimestamp = CommonUtils.GetISOTimeStampNow();
+            ExecTimestamp = Telemetry.GetTelemetryTimeStamp();
 
             // set data
             ScriptData = scriptData;

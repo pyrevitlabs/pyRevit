@@ -12,23 +12,16 @@ using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public class EventTelemetryRecord {
-        // schema
-        public Dictionary<string, string> meta { get; private set; }
-
-        public string handlerId { get; set; }
-
+    public class EventTelemetryRecord: TelemetryRecord {
         // which event?
         public string type { get; set; }
         public Dictionary<string, object> args { get; set; }
         public string status { get; set; }
 
-        // when?
-        public string timestamp { get; set; }
         // by who?
-        public string host_user { get; set; }
         public string username { get; set; }
         // on what?
+        public string handler_id { get; set; }
         public string revit { get; set; }
         public string revitbuild { get; set; }
 
@@ -43,18 +36,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string projectnum { get; set; }
         public string projectname { get; set; }
 
-
-        public EventTelemetryRecord() {
-            meta = new Dictionary<string, string> {
-                { "schema", "2.0"},
-            };
-
-            var env = new EnvDictionary();
-            if (env.TelemetryUTCTimeStamps)
-                timestamp = CommonUtils.GetISOTimeStampNow();
-            else
-                timestamp = CommonUtils.GetISOTimeStampLocalNow();
-        }
+        public EventTelemetryRecord(): base() {}
     }
 
     public class EventTelemetry : IEventTypeHandler {
@@ -270,7 +252,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // host info
             SetHostInfo(sender, ref eventTelemetryRecord);
             // set pyrevit info
-            eventTelemetryRecord.handlerId = HandlerId;
+            eventTelemetryRecord.handler_id = HandlerId;
             // event general info
             eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
             eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();

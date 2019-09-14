@@ -6,6 +6,26 @@ using System.IO;
 using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
+    public class TelemetryRecord {
+        // schema
+        public Dictionary<string, string> meta { get; private set; }
+
+        // when?
+        public string timestamp { get; set; }
+        // by who?
+        public string host_user { get; set; }
+
+
+        public TelemetryRecord() {
+            meta = new Dictionary<string, string> {
+                { "schema", "2.0"},
+            };
+
+            timestamp = Telemetry.GetTelemetryTimeStamp();
+            host_user = UserEnv.GetLoggedInUserName();
+        }
+    }
+
     public static class Telemetry {
         public static string SerializeTelemetryRecord(object telemetryRecord) {
             return new JavaScriptSerializer().Serialize(telemetryRecord);
@@ -46,6 +66,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             existingTelemetryData = new JavaScriptSerializer().Serialize(telemetryData);
             File.WriteAllText(telemetryFilePath, existingTelemetryData);
+        }
+
+        public static string GetTelemetryTimeStamp() {
+            var env = new EnvDictionary();
+            if (env.TelemetryUTCTimeStamps)
+                return CommonUtils.GetISOTimeStampNow();
+            else
+                return CommonUtils.GetISOTimeStampLocalNow();
         }
     }
 }
