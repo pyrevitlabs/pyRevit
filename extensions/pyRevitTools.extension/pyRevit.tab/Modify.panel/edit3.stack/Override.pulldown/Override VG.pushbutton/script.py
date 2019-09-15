@@ -2,6 +2,7 @@
 #pylint: disable=E0401,C0103
 from collections import OrderedDict
 
+from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
@@ -29,33 +30,35 @@ def find_solid_fillpat():
 
 def colorvg(r, g, b, projline_only=False, xacn_name=None):
     color = DB.Color(r, g, b)
+    wireframe_color = DB.Color(
+        r-20 if r-20 >=0 else 0,
+        g-20 if g-20 >=0 else 0,
+        b-20 if b-20 >=0 else 0
+        )
     with revit.Transaction(xacn_name or 'Set Color VG override'):
         for el in selection:
             if isinstance(el, DB.Group):
                 for mem in el.GetMemberIds():
                     selection.append(revit.doc.GetElement(mem))
             ogs = DB.OverrideGraphicSettings()
-            ogs.SetProjectionLineColor(color)
-            ogs.SetCutLineColor(color)
+            ogs.SetProjectionLineColor(wireframe_color)
+            ogs.SetCutLineColor(wireframe_color)
             if not projline_only:
-                try:
+                if HOST_APP.is_newer_than(2018):
+                    ogs.SetSurfaceForegroundPatternColor(color)
+                    ogs.SetCutForegroundPatternColor(color)
+                else:
                     ogs.SetProjectionFillColor(color)
                     ogs.SetCutFillColor(color)
-                except AttributeError:
-                    ogs.SetSurfaceBackgroundPatternColor(color)
-                    ogs.SetSurfaceForegroundPatternColor(color)
-                    ogs.SetCutBackgroundPatternColor(color)
-                    ogs.SetCutForegroundPatternColor(color)
+
                 solid_fpattern = find_solid_fillpat()
                 if solid_fpattern:
-                    try:
+                    if HOST_APP.is_newer_than(2018):
+                        ogs.SetCutForegroundPatternId(solid_fpattern.Id)
+                        ogs.SetSurfaceForegroundPatternId(solid_fpattern.Id)
+                    else:
                         ogs.SetProjectionFillPatternId(solid_fpattern.Id)
                         ogs.SetCutFillPatternId(solid_fpattern.Id)
-                    except AttributeError:
-                        ogs.SetCutBackgroundPatternId(solid_fpattern.Id)
-                        ogs.SetCutForegroundPatternId(solid_fpattern.Id)
-                        ogs.SetSurfaceBackgroundPatternId(solid_fpattern.Id)
-                        ogs.SetSurfaceForegroundPatternId(solid_fpattern.Id)
                 else:
                     logger.warning('Can not find solid fill pattern in model'
                                    'to assign as projection/cut pattern.')
