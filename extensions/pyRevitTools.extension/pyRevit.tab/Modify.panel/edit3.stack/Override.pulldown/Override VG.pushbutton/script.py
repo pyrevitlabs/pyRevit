@@ -38,12 +38,24 @@ def colorvg(r, g, b, projline_only=False, xacn_name=None):
             ogs.SetProjectionLineColor(color)
             ogs.SetCutLineColor(color)
             if not projline_only:
-                ogs.SetProjectionFillColor(color)
-                ogs.SetCutFillColor(color)
+                try:
+                    ogs.SetProjectionFillColor(color)
+                    ogs.SetCutFillColor(color)
+                except AttributeError:
+                    ogs.SetSurfaceBackgroundPatternColor(color)
+                    ogs.SetSurfaceForegroundPatternColor(color)
+                    ogs.SetCutBackgroundPatternColor(color)
+                    ogs.SetCutForegroundPatternColor(color)
                 solid_fpattern = find_solid_fillpat()
                 if solid_fpattern:
-                    ogs.SetProjectionFillPatternId(solid_fpattern.Id)
-                    ogs.SetCutFillPatternId(solid_fpattern.Id)
+                    try:
+                        ogs.SetProjectionFillPatternId(solid_fpattern.Id)
+                        ogs.SetCutFillPatternId(solid_fpattern.Id)
+                    except AttributeError:
+                        ogs.SetCutBackgroundPatternId(solid_fpattern.Id)
+                        ogs.SetCutForegroundPatternId(solid_fpattern.Id)
+                        ogs.SetSurfaceBackgroundPatternId(solid_fpattern.Id)
+                        ogs.SetSurfaceForegroundPatternId(solid_fpattern.Id)
                 else:
                     logger.warning('Can not find solid fill pattern in model'
                                    'to assign as projection/cut pattern.')
