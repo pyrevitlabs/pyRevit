@@ -111,5 +111,5 @@ def set_keynote_file(keynote_file, doc=None):
             DB.ExternalResourceTypes.BuiltInExternalResourceTypes.KeynoteTable,
             mpath,
             DB.PathType.Absolute)
-    knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
-    knote_table.LoadFrom(keynote_exres, DB.KeyBasedTreeEntriesLoadResults())
+        knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
+        knote_table.LoadFrom(keynote_exres, DB.KeyBasedTreeEntriesLoadResults())

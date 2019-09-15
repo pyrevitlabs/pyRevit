@@ -63,15 +63,15 @@ RUNTIME_NAMESPACE = 'PyRevitLabs.PyRevit.Runtime'
 
 # template python command class
 CMD_EXECUTOR_TYPE_NAME = '{}.{}'\
-    .format(RUNTIME_NAMESPACE, 'CommandType')
+    .format(RUNTIME_NAMESPACE, 'ScriptCommand')
 
 # template python command availability class
 CMD_AVAIL_TYPE_NAME_EXTENDED = \
-    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'CommandExtendedAvail')
+    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'ScriptCommandExtendedAvail')
 CMD_AVAIL_TYPE_NAME_SELECTION = \
-    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'CommandSelectionAvail')
+    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'ScriptCommandSelectionAvail')
 CMD_AVAIL_TYPE_NAME_ZERODOC = \
-    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'CommandZeroDocAvail')
+    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'ScriptCommandZeroDocAvail')
 
 CMD_AVAIL_NAME_POSTFIX = '-avail'
 
@@ -354,7 +354,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
         ... )
         >>> create_type(
         ...     module_builder,
-        ...     runtime.CommandType,
+        ...     runtime.ScriptCommand,
         ...     "PyRevitSomeCommandUniqueName",
         ...     runtime.create_ext_command_attrs(),
         ...     [scriptpath, atlscriptpath, searchpath, helpurl, name,

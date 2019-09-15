@@ -134,6 +134,12 @@ APP_LOCALES.append(
         lang_name="العربیه",
         lang_dir='RTL'
     ))
+APP_LOCALES.append(
+    AppLocale(
+        lang_type="Ukrainian",
+        locale_codes=["uk", "ukrainian"],
+        lang_name="Українська"
+    ))
 
 
 def get_applocale_by_local_code(locale_code):

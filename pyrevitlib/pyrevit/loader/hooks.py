@@ -7,7 +7,7 @@ from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
-from pyrevit.runtime.types import PyRevitHooks
+from pyrevit.runtime.types import EventHooks
 import pyrevit.extensions as exts
 
 from pyrevit.loader import sessioninfo
@@ -110,6 +110,6 @@ def setup_hooks(session_id=None):
         # deactivate old
         hooks_handler.DeactivateAllEventHooks(uiApp=HOST_APP.uiapp)
     # setup new
-    hooks_handler = PyRevitHooks(session_id)
+    hooks_handler = EventHooks(session_id)
     set_hooks_handler(hooks_handler)
     unregister_all_hooks()

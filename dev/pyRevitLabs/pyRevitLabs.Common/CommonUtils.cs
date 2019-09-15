@@ -141,13 +141,12 @@ namespace pyRevitLabs.Common {
         }
 
         public static string DownloadFile(string url, string destPath, string progressToken = null) {
-            if (VerifyUrl(url)) {
+            try {
                 using (var client = GetWebClient()) {
+                    client.Headers.Add("User-Agent", "pyrevit-cli");
                     if (GlobalConfigs.ReportProgress) {
                         logger.Debug("Downloading (async) \"{0}\"", url);
-                        Console.CursorVisible = false;
 
-                        client.DownloadFileCompleted += Client_DownloadFileCompleted;
                         client.DownloadProgressChanged += Client_DownloadProgressChanged;
 
                         lastReport = 0;
@@ -162,19 +161,12 @@ namespace pyRevitLabs.Common {
                     }
                 }
             }
-            else
-                throw new pyRevitInvalidURLException(url);
+            catch (Exception dlEx) {
+                logger.Debug("Error downloading file. | {0}", dlEx.Message);
+                throw dlEx;
+            }
 
             return destPath;
-        }
-
-        private static void Client_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e) {
-            string message = "";
-            if (e.UserState != null)
-                message = string.Format("\r{0}: Download complete", (string)e.UserState);
-            else
-                message = string.Format("\rDownload complete");
-            Console.WriteLine("{0,-120}", message);
         }
 
         private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {

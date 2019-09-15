@@ -535,38 +535,49 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     def get_current_attachment(self):
         """Return current pyRevit attachment."""
-        hostver = int(HOST_APP.version)
-        return PyRevit.PyRevitAttachments.GetAttached(hostver)
+        return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
 
     def get_active_cpython_engine(self):
         """Return active cpython engine."""
-        # find attached clone
+        engines = []
+        # try ot find attachment and get engines from the clone
         attachment = self.get_current_attachment()
-        if attachment and attachment.Clone:
-            # get all cpython engines
-            cpy_engines_dict = \
-                {x.Version: x for x in attachment.Clone.GetEngines()
-                 if 'cpython' in x.KernelName.lower()}
-            mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
-            if cpy_engines_dict:
-                # find latest cpython engine
-                latest_cpyengine = \
-                    max(cpy_engines_dict.values(), key=lambda x: x.Version)
+        if False:
+            engines = attachment.Clone.GetEngines()
+        # if can not find attachment, instantiate a temp clone
+        else:
+            try:
+                clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
+                engines = clone.GetEngines()
+            except Exception as cEx:
+                mlogger.debug('Can not create clone from path: %s', )
 
-                # grab cpython engine configured to be used by user
-                try:
-                    cpyengine_ver = int(self.cpython_engine_version)
-                except Exception:
-                    cpyengine_ver = 000
+        # find cpython engines
+        cpy_engines_dict = {
+            x.Version: x for x in engines
+            if 'cpython' in x.KernelName.lower()
+            }
+        mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
 
-                # grab the engine by version or default to latest
-                cpyengine = \
-                    cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
-                # return full dll assembly path
-                return cpyengine
-            else:
-                mlogger.error('Can not determine cpython engines for '
-                              'current attachment: %s', attachment)
+        if cpy_engines_dict:
+            # find latest cpython engine
+            latest_cpyengine = \
+                max(cpy_engines_dict.values(), key=lambda x: x.Version)
+
+            # grab cpython engine configured to be used by user
+            try:
+                cpyengine_ver = int(self.cpython_engine_version)
+            except Exception:
+                cpyengine_ver = 000
+
+            # grab the engine by version or default to latest
+            cpyengine = \
+                cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
+            # return full dll assembly path
+            return cpyengine
+        else:
+            mlogger.error('Can not determine cpython engines for '
+                          'current attachment: %s', attachment)
 
     def set_active_cpython_engine(self, pyrevit_engine):
         self.cpython_engine_version = pyrevit_engine.Version

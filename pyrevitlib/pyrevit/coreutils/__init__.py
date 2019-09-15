@@ -650,7 +650,7 @@ def fully_remove_dir(dir_path):
     shutil.rmtree(dir_path, onerror=del_rw)
 
 
-def cleanup_filename(file_name):
+def cleanup_filename(file_name, windows_safe=False):
     """Cleanup file name from special characters.
 
     Args:
@@ -666,7 +666,10 @@ def cleanup_filename(file_name):
         >>> cleanup_filename('Perforations 1/8" (New)')
         "Perforations 18 (New).txt"
     """
-    return re.sub(r'[^\w_.() -#]|["]', '', file_name)
+    if windows_safe:
+        return re.sub(r'[\/:*?"<>|]', '', file_name)
+    else:
+        return re.sub(r'[^\w_.() -#]|["]', '', file_name)
 
 
 def _inc_or_dec_string(str_id, shift):

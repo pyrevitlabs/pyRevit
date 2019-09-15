@@ -398,6 +398,22 @@ class _ExecutorParams(object):
     """Private Wrapper that provides runtime environment info."""
 
     @property   # read-only
+    def exec_id(self):
+        """Return execution unique id"""
+        try:
+            return __execid__
+        except NameError:
+            raise AttributeError()
+
+    @property   # read-only
+    def exec_timestamp(self):
+        """Return execution timestamp"""
+        try:
+            return __timestamp__
+        except NameError:
+            raise AttributeError()
+
+    @property   # read-only
     def engine_id(self):
         """Return engine id"""
         try:
@@ -436,7 +452,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def output_stream(self):
-        """Return ScriptOutputStream"""
+        """Return ScriptIO"""
         if self.script_runtime:
             return self.script_runtime.OutputStream
 
@@ -533,7 +549,7 @@ class _ExecutorParams(object):
 
     @property   # read
     def window_handle(self):
-        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``:
+        """``PyRevitLabs.PyRevit.Runtime.ScriptConsole``:
                 Return output window. handle
         """
         if self.script_runtime:

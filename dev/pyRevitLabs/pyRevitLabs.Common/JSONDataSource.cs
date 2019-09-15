@@ -67,9 +67,6 @@ namespace pyRevitLabs.Common {
         }
 
         public List<T> GetAllData() {
-            if (_cache.Count == 0)
-                UpdateData();
-
             // deserialize
             var dataSourcesPaths = new List<string>() { DataCachePath, DefaultDataFilePath };
             foreach (string dataSourcePath in dataSourcesPaths) {

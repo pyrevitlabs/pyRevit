@@ -1,10 +1,22 @@
 layout:
   - Run All Tests
   - -----
-  - Engine Tests
   - pyRevitLabs Module Tests
   - Output Window Tests
   - Appdata Module Tests
   - Forms Module Tests
   - Revit Module Tests
   - Script Module Tests
+  - -----
+  - Test Output Stream
+  - Test Multiple Outputs
+  - Test UI Button
+  - Test Independent Logging
+  - -----
+  - Test Progressbar
+  - Test Charts
+  - Test D3
+  - Test Vue
+  - Test XML
+  - Test Toast
+  - Test FillPatternViewer

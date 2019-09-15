@@ -60,21 +60,7 @@ namespace pyRevitLabs.PyRevit {
                 Name = string.Format("Unnamed-{0}", ClonePath.GenerateMD5Hash().GetHashShort());
         }
 
-        private PyRevitClone(string clonePath) {
-            // clone path could be any path inside or outside the clonePath
-            // find the clone root first
-            var _clonePath = FindValidClonePathAbove(clonePath);
-            if (_clonePath is null) {
-                _clonePath = FindValidClonePathBelow(clonePath);
-                if (_clonePath is null)
-                    throw new PyRevitException(
-                        string.Format("Path does not point to a valid clone \"{0}\"", clonePath)
-                    );
-            }
-
-            ClonePath = _clonePath.NormalizeAsPath();
-            Name = "Unnamed";
-        }
+        private PyRevitClone(string clonePath) : this(clonePath, null) {}
 
         // properties
         public string Name { get; private set; }

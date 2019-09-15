@@ -10,21 +10,9 @@ using pyRevitLabs.Common;
 using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public enum InterfaceType {
+    public enum ScriptRuntimeType {
         ExternalCommand,
         EventHandler,
-    }
-
-    public class ScriptData {
-        public string ScriptPath { get; set; }
-        public string ConfigScriptPath { get; set; }
-        public string CommandUniqueId { get; set; }
-        public string CommandControlId { get; set; }
-        public string CommandName { get; set; }
-        public string CommandBundle { get; set; }
-        public string CommandExtension { get; set; }
-
-        public string HelpSource { get; set; }
     }
 
     public class ScriptRuntimeConfigs : IDisposable {
@@ -77,13 +65,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private Application _app = null;
 
         // output window and stream
-        private WeakReference<ScriptOutput> _scriptOutput = new WeakReference<ScriptOutput>(null);
-        private WeakReference<ScriptOutputStream> _outputStream = new WeakReference<ScriptOutputStream>(null);
+        private WeakReference<ScriptConsole> _scriptOutput = new WeakReference<ScriptConsole>(null);
+        private WeakReference<ScriptIO> _outputStream = new WeakReference<ScriptIO>(null);
 
         // dict for command result data
         private Dictionary<string, string> _resultsDict = null;
 
         public ScriptRuntime(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg) {
+            // setup a new id and timestamp
+            ExecId = CommonUtils.NewShortUUID();
+            ExecTimestamp = Telemetry.GetTelemetryTimeStamp();
+
             // set data
             ScriptData = scriptData;
             ScriptRuntimeConfigs = scriptRuntimeCfg;
@@ -106,7 +98,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // prepare results
-            ExecutionResult = ExecutionResultCodes.Succeeded;
+            ExecutionResult = ScriptExecutorResultCodes.Succeeded;
             TraceMessage = string.Empty;
         }
 
@@ -129,16 +121,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public InterfaceType InterfaceType {
+        public ScriptRuntimeType RuntimeType {
             get {
                 if (ScriptRuntimeConfigs.EventSender != null || ScriptRuntimeConfigs.EventArgs != null)
-                    return InterfaceType.EventHandler;
+                    return ScriptRuntimeType.EventHandler;
 
-                return InterfaceType.ExternalCommand;
+                return ScriptRuntimeType.ExternalCommand;
             }
         }
 
-        public EngineType EngineType {
+        public ScriptEngineType EngineType {
             get {
                 // determine engine necessary to run this script
 
@@ -149,70 +141,70 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             firstLine = reader.ReadLine();
 
                             if (firstLine != null && (firstLine.Contains("python3") || firstLine.Contains("cpython")))
-                                return EngineType.CPython;
+                                return ScriptEngineType.CPython;
                             else
-                                return EngineType.IronPython;
+                                return ScriptEngineType.IronPython;
                         }
                     }
                 }
 
                 else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.CSharp)) {
-                    return EngineType.CSharp;
+                    return ScriptEngineType.CSharp;
                 }
 
                 else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.VisualBasic)) {
-                    return EngineType.VisualBasic;
+                    return ScriptEngineType.VisualBasic;
                 }
 
                 else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Ruby)) {
-                    return EngineType.IronRuby;
+                    return ScriptEngineType.IronRuby;
                 }
 
                 else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Dynamo)) {
-                    return EngineType.DynamoBIM;
+                    return ScriptEngineType.DynamoBIM;
                 }
 
                 else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Grasshopper)) {
-                    return EngineType.Grasshopper;
+                    return ScriptEngineType.Grasshopper;
                 }
 
                 else if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.RevitFamily)) {
-                    return EngineType.Content;
+                    return ScriptEngineType.Content;
                 }
 
                 if (ScriptData.CommandBundle != null) {
                     if (PyRevitBundle.IsType(ScriptData.CommandBundle, PyRevitBundleTypes.InvokeButton)) {
-                        return EngineType.Invoke;
+                        return ScriptEngineType.Invoke;
                     }
                     else if (PyRevitBundle.IsType(ScriptData.CommandBundle, PyRevitBundleTypes.URLButton)) {
-                        return EngineType.HyperLink;
+                        return ScriptEngineType.HyperLink;
                     }
                 }
 
                 // if the script is deleted during runtime
                 // ScriptSourceFile with be "" and runtime can not determine
                 // the engine type
-                return EngineType.Unknown;
+                return ScriptEngineType.Unknown;
             }
         }
 
         public string EngineVersion {
             get {
                 switch (EngineType) {
-                    case EngineType.IronPython: return EnvDict.PyRevitIPYVersion;
-                    case EngineType.CPython: return EnvDict.PyRevitCPYVersion;
-                    case EngineType.CSharp: return EnvDict.PyRevitVersion;
-                    case EngineType.Invoke: return EnvDict.PyRevitVersion;
-                    case EngineType.VisualBasic: return EnvDict.PyRevitVersion;
-                    case EngineType.IronRuby: return EnvDict.PyRevitVersion;
-                    case EngineType.DynamoBIM: return EnvDict.PyRevitVersion;
-                    case EngineType.Grasshopper: return EnvDict.PyRevitVersion;
-                    case EngineType.Content: return EnvDict.PyRevitVersion;
+                    case ScriptEngineType.IronPython: return EnvDict.PyRevitIPYVersion;
+                    case ScriptEngineType.CPython: return EnvDict.PyRevitCPYVersion;
+                    case ScriptEngineType.CSharp: return EnvDict.PyRevitVersion;
+                    case ScriptEngineType.Invoke: return EnvDict.PyRevitVersion;
+                    case ScriptEngineType.VisualBasic: return EnvDict.PyRevitVersion;
+                    case ScriptEngineType.IronRuby: return EnvDict.PyRevitVersion;
+                    case ScriptEngineType.DynamoBIM: return EnvDict.PyRevitVersion;
+                    case ScriptEngineType.Grasshopper: return EnvDict.PyRevitVersion;
+                    case ScriptEngineType.Content: return EnvDict.PyRevitVersion;
                     default: return EnvDict.PyRevitVersion;
                 }
             }
         }
-       
+
         public Autodesk.Windows.RibbonItem UIControl {
             get {
                 return ((UIFramework.RevitRibbonControl)Autodesk.Windows.ComponentManager.Ribbon).findRibbonItem(ScriptData.CommandControlId, false);
@@ -295,16 +287,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         // output
-        public ScriptOutput OutputWindow {
+        public ScriptConsole OutputWindow {
             get {
                 // get ScriptOutput from the weak reference
-                ScriptOutput output;
+                ScriptConsole output;
                 var re = _scriptOutput.TryGetTarget(out output);
                 if (re && output != null)
                     return output;
                 else {
                     // Stating a new output window
-                    var newOutput = new ScriptOutput(ScriptRuntimeConfigs.DebugMode, UIApp);
+                    var newOutput = new ScriptConsole(ScriptRuntimeConfigs.DebugMode, UIApp);
 
                     // Set output window title to command name
                     newOutput.OutputTitle = ScriptData.CommandName;
@@ -316,33 +308,37 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     newOutput.AppVersion = string.Format(
                         "{0}:{1}:{2}",
                         EnvDict.PyRevitVersion,
-                        EngineType == EngineType.CPython ? EnvDict.PyRevitCPYVersion : EnvDict.PyRevitIPYVersion,
+                        EngineType == ScriptEngineType.CPython ? EnvDict.PyRevitCPYVersion : EnvDict.PyRevitIPYVersion,
                         EnvDict.RevitVersion
                         );
 
-                    _scriptOutput = new WeakReference<ScriptOutput>(newOutput);
+                    _scriptOutput = new WeakReference<ScriptConsole>(newOutput);
                     return newOutput;
                 }
             }
         }
 
-        public ScriptOutputStream OutputStream {
+        public ScriptIO OutputStream {
             get {
                 // get ScriptOutputStream from the weak reference
-                ScriptOutputStream outputStream;
+                ScriptIO outputStream;
                 var re = _outputStream.TryGetTarget(out outputStream);
                 if (re && outputStream != null)
                     return outputStream;
                 else {
                     // Setup the output stream
-                    ScriptOutputStream newStream = new ScriptOutputStream(this);
-                    _outputStream = new WeakReference<ScriptOutputStream>(newStream);
+                    ScriptIO newStream = new ScriptIO(this);
+                    _outputStream = new WeakReference<ScriptIO>(newStream);
                     return newStream;
                 }
             }
         }
 
         // execution
+        public string ExecId { get; private set; }
+
+        public string ExecTimestamp { get; private set; }
+
         public int ExecutionResult { get; set; }
 
         public string TraceMessage { get; set; }

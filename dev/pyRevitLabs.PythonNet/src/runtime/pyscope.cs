@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Text;
 
 namespace pyRevitLabs.PythonNet {
     public class PyScopeException : Exception {
@@ -280,11 +281,21 @@ namespace pyRevitLabs.PythonNet {
             Exec(code, variables, _locals);
         }
 
-        private void Exec(string code, IntPtr _globals, IntPtr _locals) {
+        public void ExecUTF8(string code, PyDict locals = null) {
+            Check();
+            IntPtr _locals = locals == null ? variables : locals.obj;
+            Exec(code, variables, _locals, encoding: Encoding.UTF8);
+        }
+
+        private void Exec(string code, IntPtr _globals, IntPtr _locals, Encoding encoding = null) {
             var flag = (IntPtr)Runtime.Py_file_input;
-            IntPtr ptr = Runtime.PyRun_String(
-                code, flag, _globals, _locals
-            );
+            IntPtr ptr;
+            if (encoding == Encoding.UTF8) {
+                ptr = Runtime.PyRun_StringUTF8(code, flag, _globals, _locals);
+            }
+            else {
+                ptr = Runtime.PyRun_String(code, flag, _globals, _locals);
+            }
             Runtime.CheckExceptionOccurred();
             if (ptr != Runtime.PyNone) {
                 throw new PythonException();
