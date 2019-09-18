@@ -16,7 +16,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private List<string> _sysPaths = new List<string>();
-        private IntPtr _globals = IntPtr.Zero;
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
@@ -103,12 +102,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Shutdown() {
-            //using (Py.GIL()) {
-            //    // deref newly created globals
-            //    pyRevitLabs.PythonNet.Runtime.XDecref(_globals);
-            //    _globals = IntPtr.Zero;
-            //}
-            //PythonEngine.Shutdown();
+            PythonEngine.Shutdown();
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime) {
