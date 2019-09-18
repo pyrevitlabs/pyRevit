@@ -542,7 +542,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         engines = []
         # try ot find attachment and get engines from the clone
         attachment = self.get_current_attachment()
-        if False:
+        if attachment:
             engines = attachment.Clone.GetEngines()
         # if can not find attachment, instantiate a temp clone
         else:
