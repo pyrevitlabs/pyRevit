@@ -14,6 +14,12 @@ import pyrevit.extensions as exts
 from pyrevit.loader import sessioninfo
 
 
+SUPPORTED_LANGUAGES = [
+    exts.PYTHON_SCRIPT_FILE_FORMAT,
+    exts.CSHARP_SCRIPT_FILE_FORMAT,
+    exts.VB_SCRIPT_FILE_FORMAT,
+    ]
+
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
@@ -34,6 +40,10 @@ def get_hooks_handler():
 
 def set_hooks_handler(handler):
     envvars.set_pyrevit_env_var(envvars.HOOKSHANDLER_ENVVAR, handler)
+
+
+def is_valid_hook_script(hook_script):
+    return op.splitext(op.basename(hook_script))[1] in SUPPORTED_LANGUAGES
 
 
 def _get_hook_parts(extension, hook_script):
@@ -62,18 +72,19 @@ def _create_hook_id(extension, hook_script):
 def get_extension_hooks(extension):
     event_hooks = []
     for hook_script in extension.get_hooks():
-        name, target = _get_hook_parts(extension, hook_script)
-        if name:
-            event_hooks.append(
-                ExtensionEventHook(
-                    id=_create_hook_id(extension, hook_script),
-                    name=name,
-                    target=target,
-                    script=hook_script,
-                    syspaths=extension.module_paths,
-                    extension_name=extension.name,
+        if is_valid_hook_script(hook_script):
+            name, target = _get_hook_parts(extension, hook_script)
+            if name:
+                event_hooks.append(
+                    ExtensionEventHook(
+                        id=_create_hook_id(extension, hook_script),
+                        name=name,
+                        target=target,
+                        script=hook_script,
+                        syspaths=extension.module_paths,
+                        extension_name=extension.name,
+                    )
                 )
-            )
     return event_hooks
 
 
