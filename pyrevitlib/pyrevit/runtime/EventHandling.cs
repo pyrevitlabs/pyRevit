@@ -306,6 +306,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return null;
         }
 
+#if (!REVIT2013)
+        public static List<AddInCommandBinding> GetAllCommandBindings(UIApplication uiApp) {
+            var cmdBindings = new List<AddInCommandBinding>();
+            foreach (PostableCommand postableCommand in Enum.GetValues(typeof(PostableCommand))) {
+                try {
+                    RevitCommandId commandId = RevitCommandId.LookupPostableCommandId(postableCommand);
+                    if (commandId != null)
+                        cmdBindings.Add(
+                            uiApp.CreateAddInCommandBinding(commandId)
+                            );
+                }
+                catch { }
+            }
+            return cmdBindings;
+        }
+#endif
+
         public static void ToggleHooks<T>(T hndlr, UIApplication uiApp, EventType eventType, string eventTarget = null, bool toggle_on = true) where T : IEventTypeHandler {
             AddInCommandBinding cmdBinding;
 
@@ -702,7 +719,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 #if !(REVIT2013)
                 case EventType.AddInCommandBinding_BeforeExecuted:
-                    if (eventTarget != null) {
+                    if (eventTarget == null) {
+                        // activate before existing handler on ALL known commands
+                        foreach(AddInCommandBinding addinCmdBinding in GetAllCommandBindings(uiApp))
+                            if (toggle_on)
+                                addinCmdBinding.BeforeExecuted += hndlr.AddInCommandBinding_BeforeExecuted;
+                            else
+                                addinCmdBinding.BeforeExecuted -= hndlr.AddInCommandBinding_BeforeExecuted;
+                    }
+                    else {
                         cmdBinding = GetCommandBinding(uiApp, eventTarget);
                         if (toggle_on)
                             cmdBinding.BeforeExecuted += hndlr.AddInCommandBinding_BeforeExecuted;

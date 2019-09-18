@@ -207,12 +207,22 @@ class SettingsWindow(forms.WPFWindow):
                      if isinstance(x, Controls.CheckBox)])
 
     def _setup_event_telemetry_checkboxes(self):
-        supportedEvents = \
-            EventUtils.GetSupportedEventTypes()
+        supportedEvents = EventUtils.GetSupportedEventTypes()
         for event_type in coreutils.get_enum_values(EventType):
             # verify event type is supported in telemetry system
             if telemetry.supports(event_type):
+                # grab the two parts of the event type name
                 api_name, api_event = str(event_type).split('_')
+                # figure out the namespace
+                api_namespace = 'Autodesk.Revit.ApplicationServices.'
+                if api_name in ['UIApplication', 'AddInCommandBinding']:
+                    api_namespace = 'Autodesk.Revit.UI.'
+                # figure out the ui title
+                api_title = api_event
+                if api_event == 'BeforeExecuted':
+                    api_title = 'CommandExecuted'
+                api_obj = api_name + '.' + api_event
+
                 cbox = Controls.CheckBox()
                 cbox.Margin = Windows.Thickness(0, 10, 0, 0)
                 cbox.FontFamily = Windows.Media.FontFamily("Consolas")
@@ -221,21 +231,18 @@ class SettingsWindow(forms.WPFWindow):
                 tblock = Controls.TextBlock()
                 tblock.Inlines.Add(Documents.Run(
                     "{}\n".format(' '.join(
-                        coreutils.split_words(str(api_event))
+                        coreutils.split_words(str(api_title))
                     ))))
                 tblock.Inlines.Add(Documents.Run(
-                    "API Event Type:      "
+                    "API Event Type:           "
                     ))
-                api_namespace = 'Autodesk.Revit.ApplicationServices.'
-                if api_name in ['UIApplication', 'AddInCommandBinding']:
-                    api_namespace = 'Autodesk.Revit.UI.'
-                hyperlink = Documents.Hyperlink(Documents.Run(api_name + "\n"))
+                hyperlink = Documents.Hyperlink(Documents.Run(api_obj + "\n"))
                 hyperlink.NavigateUri = \
-                    System.Uri(apidocs.make_event_uri(api_namespace + api_name))
+                    System.Uri(apidocs.make_event_uri(api_namespace + api_obj))
                 hyperlink.Click += self.handle_url_click
                 tblock.Inlines.Add(hyperlink)
                 tblock.Inlines.Add(Documents.Run(
-                    "pyRevit Event Name:  {}".format(
+                    "pyRevit Event/Hook Name:  {}".format(
                         EventUtils.GetEventName(event_type)
                     )))
                 if not cbox.IsEnabled:

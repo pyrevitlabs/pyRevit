@@ -255,8 +255,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // set pyrevit info
             eventTelemetryRecord.handler_id = HandlerId;
             // event general info
-            eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
-            eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
+            var apiEventArgs = args as RevitAPIEventArgs;
+            if (apiEventArgs != null) {
+                eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
+                eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
+            } else {
+                var eventArgs = args as RevitEventArgs;
+                if (eventArgs != null) {
+                    eventTelemetryRecord.cancellable = ((RevitEventArgs)args).Cancellable;
+                }
+            }
 
             // now post the telemetry record
             if (envDict.AppTelemetryState) {
@@ -1071,7 +1079,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 #if !(REVIT2013)
         public void AddInCommandBinding_BeforeExecuted(object sender, BeforeExecutedEventArgs e) {
-            throw new NotImplementedException();
+            var doc = e.ActiveDocument;
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.AddInCommandBinding_BeforeExecuted),
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+                projectnum = GetProjectNumber(doc),
+                projectname = GetProjectName(doc),
+                args = new Dictionary<string, object> {
+                    { "command_id",  e.CommandId.Name },
+                }
+            }, sender, e);
         }
 #endif
 

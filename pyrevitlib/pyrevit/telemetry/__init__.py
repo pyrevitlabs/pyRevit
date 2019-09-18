@@ -40,9 +40,6 @@ UNSUPPORTED_EVENT_TYPES = [
     EventType.AddInCommandBinding_Executed
 ]
 
-if HOST_APP.is_newer_than(2013):
-    UNSUPPORTED_EVENT_TYPES.append(EventType.AddInCommandBinding_BeforeExecuted)
-
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
