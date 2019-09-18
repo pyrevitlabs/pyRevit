@@ -10,6 +10,7 @@ using Autodesk.Revit.UI;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
+using Autodesk.Revit.UI.Events;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class EventTelemetryRecord: TelemetryRecord {
@@ -1066,6 +1067,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_ApplicationInitialized),
             }, sender, e);
+        }
+
+#if !(REVIT2013)
+        public void AddInCommandBinding_BeforeExecuted(object sender, BeforeExecutedEventArgs e) {
+            throw new NotImplementedException();
+        }
+#endif
+
+        public void AddInCommandBinding_CanExecute(object sender, CanExecuteEventArgs e) {
+            throw new NotImplementedException();
+        }
+
+        public void AddInCommandBinding_Executed(object sender, ExecutedEventArgs e) {
+            throw new NotImplementedException();
         }
     }
 }

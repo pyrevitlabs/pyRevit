@@ -9,16 +9,19 @@ using Autodesk.Revit.DB;
 using pyRevitLabs.Common;
 
 using pyRevitLabs.NLog;
+using Autodesk.Revit.UI.Events;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class EventHook {
         public const string id_key = "id";
         public const string name_key = "name";
+        public const string target_key = "target";
         public const string script_key = "script";
         public const string syspaths_key = "syspaths";
         public const string extension_name_key = "extension_name";
 
         public string EventName;
+        public string EventTarget;
         public string Script;
         public string[] SearchPaths;
         public string ExtensionName;
@@ -30,9 +33,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public EventHook(string uniqueId, string eventName, string scriptPath, string syspaths, string extension_name) {
+        public EventHook(string uniqueId, string eventName, string eventTarget, string scriptPath, string syspaths, string extension_name) {
             UniqueId = uniqueId;
             EventName = eventName;
+            EventTarget = eventTarget;
             Script = scriptPath;
             SearchPaths = syspaths.Split(Path.PathSeparator);
             ExtensionName = extension_name;
@@ -105,6 +109,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     eventHooks.Add(new EventHook(
                         uniqueId: eventHookInfo.Value[EventHook.id_key],
                         eventName: eventName,
+                        eventTarget: eventHookInfo.Value[EventHook.target_key],
                         scriptPath: eventHookInfo.Value[EventHook.script_key],
                         syspaths: eventHookInfo.Value[EventHook.syspaths_key],
                         extension_name: eventHookInfo.Value[EventHook.extension_name_key]
@@ -114,30 +119,35 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return eventHooks;
         }
 
-        public static List<EventHook> GetEventHooks(EventType eventType) {
+        public static List<EventHook> GetEventHooks(EventType eventType, string eventTarget = null) {
             var eventName = EventUtils.GetEventName(eventType);
-            return GetAllEventHooks().Where(x => x.EventName == eventName).ToList();
+            if (eventTarget != null)
+                return GetAllEventHooks().Where(x => x.EventName == eventName && x.EventTarget == eventTarget).ToList();
+            else
+                return GetAllEventHooks().Where(x => x.EventName == eventName).ToList();
         }
 
-        public void ExecuteEventHooks(EventType eventType, object eventSender, object eventArgs) {
+        public void ExecuteEventHooks(EventType eventType, object eventSender, object eventArgs, string eventTarget = null) {
             try {
                 //var logMsg = string.Format("Executing event hook {0}", eventType.ToString());
-                foreach (EventHook eventHook in GetEventHooks(eventType))
-                    Execute(eventHook: eventHook,
-                            eventSender: eventSender,
-                            eventArgs: eventArgs);
+                foreach (EventHook eventHook in GetEventHooks(eventType, eventTarget))
+                    Execute(
+                        eventHook: eventHook,
+                        eventSender: eventSender,
+                        eventArgs: eventArgs
+                        );
             }
             catch {
                 //var logMsg = string.Join(Environment.NewLine, ex.Message, ex.StackTrace, SessionUUID);
             }
         }
 
-        public void ActivateEventType(UIApplication uiApp, EventType eventType) {
+        public void ActivateEventType(UIApplication uiApp, EventType eventType, string eventTarget = null) {
             try {
                 // remove first
-                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType, toggle_on: false);
+                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType, eventTarget: eventTarget, toggle_on: false);
                 // then add again
-                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType);
+                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType, eventTarget: eventTarget);
             }
             catch (NotSupportedFeatureException) {
                 logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",
@@ -148,9 +158,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void DeactivateEventType(UIApplication uiApp, EventType eventType) {
+        public void DeactivateEventType(UIApplication uiApp, EventType eventType, string eventTarget = null) {
             try {
-                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType, toggle_on: false);
+                EventUtils.ToggleHooks<EventHooks>(this, uiApp, eventType, eventTarget: eventTarget, toggle_on: false);
             }
             catch (NotSupportedFeatureException) {
                 logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",
@@ -161,12 +171,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void RegisterHook(string uniqueId, string eventName, string scriptPath, string[] searchPaths, string extensionName) {
+        public void RegisterHook(string uniqueId, string eventName, string eventTarget, string scriptPath, string[] searchPaths, string extensionName) {
             if (EventHook.IsValid(eventName)) {
                 var env = new EnvDictionary();
                 env.EventHooks[uniqueId] = new Dictionary<string, string> {
                     { EventHook.id_key, uniqueId },
                     { EventHook.name_key, eventName },
+                    { EventHook.target_key, eventTarget },
                     { EventHook.script_key, scriptPath },
                     { EventHook.syspaths_key, string.Join(Path.PathSeparator.ToString(), searchPaths) },
                     { EventHook.extension_name_key, extensionName },
@@ -190,18 +201,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void ActivateEventHooks(UIApplication uiApp) {
             foreach (var eventHook in GetAllEventHooks())
                 if (eventHook.EventType != null)
-                    ActivateEventType(uiApp, (EventType)eventHook.EventType);
+                    ActivateEventType(uiApp, (EventType)eventHook.EventType, eventHook.EventTarget);
         }
 
         public void DeactivateEventHooks(UIApplication uiApp) {
             foreach (var eventHook in GetAllEventHooks())
                 if (eventHook.EventType != null)
-                    DeactivateEventType(uiApp, (EventType)eventHook.EventType);
-        }
-
-        public void DeactivateAllEventHooks(UIApplication uiApp) {
-            foreach (EventType eventType in EventUtils.GetSupportedEventTypes())
-                DeactivateEventType(uiApp, eventType);
+                    DeactivateEventType(uiApp, (EventType)eventHook.EventType, eventHook.EventTarget);
         }
 
         // event handlers --------------------------------------------------------------------------------------------
@@ -404,5 +410,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Application_ApplicationInitialized(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e) {
             ExecuteEventHooks(EventType.Application_ApplicationInitialized, sender, e);
         }
+
+#if !(REVIT2013)
+        public void AddInCommandBinding_BeforeExecuted(object sender, BeforeExecutedEventArgs e) {
+            ExecuteEventHooks(EventType.AddInCommandBinding_BeforeExecuted, sender, e, e.CommandId.Name);
+        }
+#endif
+
+        public void AddInCommandBinding_CanExecute(object sender, CanExecuteEventArgs e) {
+            ExecuteEventHooks(EventType.AddInCommandBinding_CanExecute, sender, e, e.CommandId.Name);
+        }
+
+        public void AddInCommandBinding_Executed(object sender, ExecutedEventArgs e) {
+            ExecuteEventHooks(EventType.AddInCommandBinding_Executed, sender, e, e.CommandId.Name);
+        }
+
     }
 }

@@ -17,7 +17,7 @@ This module manages the telemetry system.
 """
 import os.path as op
 
-from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX
+from pyrevit import HOST_APP, PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX
 from pyrevit.runtime.types import EventType, EventTelemetry
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
@@ -34,6 +34,15 @@ from pyrevit.telemetry import events as telemetry_events
 # templates for telemetry file naming
 FILE_LOG_EXT = 'json'
 FILE_LOG_FILENAME_TEMPLATE = '{}_{}_telemetry.{}'
+
+UNSUPPORTED_EVENT_TYPES = [
+    EventType.AddInCommandBinding_CanExecute,
+    EventType.AddInCommandBinding_Executed
+]
+
+if HOST_APP.is_newer_than(2013):
+    UNSUPPORTED_EVENT_TYPES.append(EventType.AddInCommandBinding_BeforeExecuted)
+
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -175,6 +184,11 @@ def _setup_default_logfile(telemetry_fullpath):
         # if file does not exist, let's write the basic JSON list to it.
         with open(telemetry_fullpath, 'w') as log_file:
             log_file.write('[]')
+
+
+def supports(event_type):
+    # verify event type is supported in telemetry system
+    return event_type not in UNSUPPORTED_EVENT_TYPES
 
 
 def setup_telemetry(session_id=None):

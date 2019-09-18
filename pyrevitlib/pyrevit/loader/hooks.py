@@ -1,5 +1,6 @@
 """Hooks management."""
 import os.path as op
+import re
 from collections import namedtuple
 
 from pyrevit import HOST_APP
@@ -20,6 +21,7 @@ mlogger = get_logger(__name__)
 ExtensionEventHook = namedtuple('ExtensionEventHook', [
     'id',
     'name',
+    'target',
     'script',
     'syspaths',
     'extension_name',
@@ -34,6 +36,20 @@ def set_hooks_handler(handler):
     envvars.set_pyrevit_env_var(envvars.HOOKSHANDLER_ENVVAR, handler)
 
 
+def _get_hook_parts(extension, hook_script):
+    # finds the two parts of the hook script name
+    # e.g command-before-exec[ID_INPLACE_COMPONENT].py
+    # ('command-before-exec', 'ID_INPLACE_COMPONENT')
+    parts = re.findall(
+        r'([a-z -]+)\[?([A-Z _]+)?\]?\..+',
+        op.basename(hook_script)
+        )
+    if parts:
+        return parts[0]
+    else:
+        return '', ''
+
+
 def _create_hook_id(extension, hook_script):
     hook_script_id = op.basename(hook_script)
     pieces = [extension.unique_name, hook_script_id]
@@ -46,15 +62,18 @@ def _create_hook_id(extension, hook_script):
 def get_extension_hooks(extension):
     event_hooks = []
     for hook_script in extension.get_hooks():
-        event_hooks.append(
-            ExtensionEventHook(
-                id=_create_hook_id(extension, hook_script),
-                name=op.splitext(op.basename(hook_script))[0].lower(),
-                script=hook_script,
-                syspaths=extension.module_paths,
-                extension_name=extension.name,
+        name, target = _get_hook_parts(extension, hook_script)
+        if name:
+            event_hooks.append(
+                ExtensionEventHook(
+                    id=_create_hook_id(extension, hook_script),
+                    name=name,
+                    target=target,
+                    script=hook_script,
+                    syspaths=extension.module_paths,
+                    extension_name=extension.name,
+                )
             )
-        )
     return event_hooks
 
 
@@ -70,6 +89,7 @@ def register_hooks(extension):
             hooks_handler.RegisterHook(
                 uniqueId=ext_hook.id,
                 eventName=ext_hook.name,
+                eventTarget=ext_hook.target,
                 scriptPath=ext_hook.script,
                 searchPaths=framework.Array[str](ext_hook.syspaths),
                 extensionName=ext_hook.extension_name,
@@ -108,7 +128,7 @@ def setup_hooks(session_id=None):
     hooks_handler = get_hooks_handler()
     if hooks_handler:
         # deactivate old
-        hooks_handler.DeactivateAllEventHooks(uiApp=HOST_APP.uiapp)
+        hooks_handler.DeactivateEventHooks(uiApp=HOST_APP.uiapp)
     # setup new
     hooks_handler = EventHooks(session_id)
     set_hooks_handler(hooks_handler)

@@ -210,38 +210,40 @@ class SettingsWindow(forms.WPFWindow):
         supportedEvents = \
             EventUtils.GetSupportedEventTypes()
         for event_type in coreutils.get_enum_values(EventType):
-            api_name = str(event_type).replace('_', '.')
-            cbox = Controls.CheckBox()
-            cbox.Margin = Windows.Thickness(0, 10, 0, 0)
-            cbox.FontFamily = Windows.Media.FontFamily("Consolas")
-            cbox.IsChecked = False
-            cbox.IsEnabled = event_type in supportedEvents
-            tblock = Controls.TextBlock()
-            tblock.Inlines.Add(Documents.Run(
-                "{}\n".format(' '.join(
-                    coreutils.split_words(str(event_type))[1:]
-                ))))
-            tblock.Inlines.Add(Documents.Run(
-                "API Event Type:      "
-                ))
-            api_namespace = 'Autodesk.Revit.ApplicationServices.'
-            if api_name.startswith('UIApplication.'):
-                api_namespace = 'Autodesk.Revit.UI.'
-            hyperlink = Documents.Hyperlink(Documents.Run(api_name + "\n"))
-            hyperlink.NavigateUri = \
-                System.Uri(apidocs.make_event_uri(api_namespace + api_name))
-            hyperlink.Click += self.handle_url_click
-            tblock.Inlines.Add(hyperlink)
-            tblock.Inlines.Add(Documents.Run(
-                "pyRevit Event Name:  {}".format(
-                    EventUtils.GetEventName(event_type)
-                )))
-            if not cbox.IsEnabled:
+            # verify event type is supported in telemetry system
+            if telemetry.supports(event_type):
+                api_name, api_event = str(event_type).split('_')
+                cbox = Controls.CheckBox()
+                cbox.Margin = Windows.Thickness(0, 10, 0, 0)
+                cbox.FontFamily = Windows.Media.FontFamily("Consolas")
+                cbox.IsChecked = False
+                cbox.IsEnabled = event_type in supportedEvents
+                tblock = Controls.TextBlock()
                 tblock.Inlines.Add(Documents.Run(
-                    "Not Supported in this Revit Version\n"
-                ))
-            cbox.Content = tblock
-            self.event_telemetry_sp.Children.Add(cbox)
+                    "{}\n".format(' '.join(
+                        coreutils.split_words(str(api_event))
+                    ))))
+                tblock.Inlines.Add(Documents.Run(
+                    "API Event Type:      "
+                    ))
+                api_namespace = 'Autodesk.Revit.ApplicationServices.'
+                if api_name in ['UIApplication', 'AddInCommandBinding']:
+                    api_namespace = 'Autodesk.Revit.UI.'
+                hyperlink = Documents.Hyperlink(Documents.Run(api_name + "\n"))
+                hyperlink.NavigateUri = \
+                    System.Uri(apidocs.make_event_uri(api_namespace + api_name))
+                hyperlink.Click += self.handle_url_click
+                tblock.Inlines.Add(hyperlink)
+                tblock.Inlines.Add(Documents.Run(
+                    "pyRevit Event Name:  {}".format(
+                        EventUtils.GetEventName(event_type)
+                    )))
+                if not cbox.IsEnabled:
+                    tblock.Inlines.Add(Documents.Run(
+                        "Not Supported in this Revit Version\n"
+                    ))
+                cbox.Content = tblock
+                self.event_telemetry_sp.Children.Add(cbox)
 
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""

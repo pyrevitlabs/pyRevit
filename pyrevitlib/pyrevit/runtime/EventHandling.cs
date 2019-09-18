@@ -75,6 +75,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         UIApplication_ViewActivated,
         UIApplication_ViewActivating,
 
+        // Autodesk.Revit.UI.AddInCommandBinding Events
+        AddInCommandBinding_BeforeExecuted,
+        AddInCommandBinding_CanExecute,
+        AddInCommandBinding_Executed
+
         // Autodesk.Revit.ApplicationServices.ControlledApplication Events
         //ControlledApplication_ApplicationInitialized,
         //ControlledApplication_DocumentChanged,
@@ -142,6 +147,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public interface IEventTypeHandler {
 #if !(REVIT2013)
+        void AddInCommandBinding_BeforeExecuted(object sender, BeforeExecutedEventArgs e);
 #endif
 
 #if !(REVIT2013 || REVIT2014)
@@ -205,6 +211,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         void UIApplication_DisplayingOptionsDialog(object sender, DisplayingOptionsDialogEventArgs e);
         void UIApplication_ApplicationClosing(object sender, ApplicationClosingEventArgs e);
         void UIApplication_DialogBoxShowing(object sender, DialogBoxShowingEventArgs e);
+        void AddInCommandBinding_CanExecute(object sender, CanExecuteEventArgs e);
+        void AddInCommandBinding_Executed(object sender, ExecutedEventArgs e);
     }
 
     public static class EventUtils {
@@ -255,6 +263,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             { EventType.Application_ViewPrinted, "view-printed" },
             { EventType.Application_ViewPrinting, "view-printing" },
             { EventType.Application_WorksharedOperationProgressChanged, "worksharing-ops-progress-changed" },
+            { EventType.AddInCommandBinding_BeforeExecuted, "command-before-exec" },
+            { EventType.AddInCommandBinding_CanExecute, "command-can-exec" },
+            { EventType.AddInCommandBinding_Executed, "command-exec" },
         };
 
         public static string GetEventName(EventType eventType) {
@@ -285,7 +296,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return supTypes;
         }
 
-        public static void ToggleHooks<T>(T hndlr, UIApplication uiApp, EventType eventType, bool toggle_on = true) where T : IEventTypeHandler {
+        public static AddInCommandBinding GetCommandBinding(UIApplication uiApp, string commandName) {
+            try {
+                RevitCommandId commandId = RevitCommandId.LookupCommandId(commandName);
+                if (commandId != null)
+                    return uiApp.CreateAddInCommandBinding(commandId);
+            }
+            catch { }
+            return null;
+        }
+
+        public static void ToggleHooks<T>(T hndlr, UIApplication uiApp, EventType eventType, string eventTarget = null, bool toggle_on = true) where T : IEventTypeHandler {
+            AddInCommandBinding cmdBinding;
+
             switch (eventType) {
                 case EventType.Application_ApplicationInitialized:
                     if (toggle_on)
@@ -675,6 +698,40 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         uiApp.ViewActivating += hndlr.UIApplication_ViewActivating;
                     else
                         uiApp.ViewActivating -= hndlr.UIApplication_ViewActivating;
+                    break;
+
+#if !(REVIT2013)
+                case EventType.AddInCommandBinding_BeforeExecuted:
+                    if (eventTarget != null) {
+                        cmdBinding = GetCommandBinding(uiApp, eventTarget);
+                        if (toggle_on)
+                            cmdBinding.BeforeExecuted += hndlr.AddInCommandBinding_BeforeExecuted;
+                        else
+                            cmdBinding.BeforeExecuted -= hndlr.AddInCommandBinding_BeforeExecuted;
+                    }
+                    break;
+#else
+                    throw new NotSupportedFeatureException();
+#endif
+
+                case EventType.AddInCommandBinding_CanExecute:
+                    if (eventTarget != null) {
+                        cmdBinding = GetCommandBinding(uiApp, eventTarget);
+                        if (toggle_on)
+                            cmdBinding.CanExecute += hndlr.AddInCommandBinding_CanExecute;
+                        else
+                            cmdBinding.CanExecute -= hndlr.AddInCommandBinding_CanExecute;
+                    }
+                    break;
+
+                case EventType.AddInCommandBinding_Executed:
+                    if (eventTarget != null) {
+                        cmdBinding = GetCommandBinding(uiApp, eventTarget);
+                        if (toggle_on)
+                            cmdBinding.Executed += hndlr.AddInCommandBinding_Executed;
+                        else
+                            cmdBinding.Executed -= hndlr.AddInCommandBinding_Executed;
+                    }
                     break;
             }
         }
