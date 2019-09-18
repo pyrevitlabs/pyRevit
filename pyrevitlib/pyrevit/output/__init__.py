@@ -572,6 +572,19 @@ class PyRevitOutputWindow(object):
         self.print_md('### {title}'.format(title=title))
         self.print_md(table)
 
+    def print_image(self, image_path):
+        r"""Prints given image to the output.
+
+        Example:
+            >>> output = pyrevit.output.get_output()
+            >>> output.print_image(r'C:\image.gif')
+        """
+        self.print_html(
+            "<span><img src=\"file:///{0}\"></span>".format(
+                image_path
+            )
+        )
+
     def insert_divider(self):
         """Add horizontal rule to the output window."""
         self.print_md('-----')
