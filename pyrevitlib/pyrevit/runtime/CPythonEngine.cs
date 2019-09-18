@@ -102,6 +102,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Shutdown() {
+            CleanupBuiltins();
+            CleanupStreams();
             PythonEngine.Shutdown();
         }
 
@@ -208,6 +210,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             sys.SetAttr("argv", pythonArgv);
+        }
+
+        private void CleanupBuiltins() {
+
+        }
+
+        private void CleanupStreams() {
+
         }
 
         private static PyObject CopyPyList(IntPtr sourceList) {
