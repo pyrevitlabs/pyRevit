@@ -87,11 +87,12 @@ class WPFWindow(framework.Windows.Window):
         >>> w.show()
     """
 
-    def __init__(self, xaml_source, literal_string=False, handle_esc=True):
+    def __init__(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         """Initialize WPF window and resources."""
         # self.Parent = self
         wih = Interop.WindowInteropHelper(self)
-        wih.Owner = AdWindows.ComponentManager.ApplicationWindow
+        if set_owner:
+            wih.Owner = AdWindows.ComponentManager.ApplicationWindow
 
         if not literal_string:
             if not op.exists(xaml_source):
