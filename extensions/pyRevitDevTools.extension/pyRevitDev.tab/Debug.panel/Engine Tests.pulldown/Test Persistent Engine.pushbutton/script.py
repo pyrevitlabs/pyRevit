@@ -4,13 +4,17 @@ Shift-Click:
 Run window as Modal
 """
 # pylint: skip-file
-from pyrevit import HOST_APP, framework
+from pyrevit import HOST_APP, framework, EXEC_PARAMS
 from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit.runtime import types as runtime_types
+from pyrevit import script
 
 
 __context__ = 'zero-doc'
+
+
+logger = script.get_logger()
 
 
 # with non-modal windows, Revit API call to command execute returns after
@@ -21,22 +25,16 @@ __context__ = 'zero-doc'
 # the unsibscribe needs to happen on API context and thus an event handler
 # is necessary. The event handler needs to hold a reference to window so
 # it can unsibscribe the subscribed events
-class EventHandlerRemover(UI.IExternalEventHandler):
-    def __init__(self, window):
-        self.name = 'EventHandlerRemover'
-        self.target_window = window
+class FuncAsEventHandler(UI.IExternalEventHandler):
+    def __init__(self, func):
+        self.name = 'FuncAsEventHandler'
+        self.func = func
 
     def Execute(self, uiapp):
-        if self.target_window:
-            HOST_APP.app.DocumentChanged -= \
-                self.target_window.docchanged_hndlr
-            HOST_APP.app.DocumentClosed -= \
-                self.target_window.docclosed_hndlr
-            HOST_APP.app.DocumentOpened -= \
-                self.target_window.docopened_hndlr
-            HOST_APP.uiapp.ViewActivated -= \
-                self.target_window.viewactivated_hndlr
-            self.target_window = None
+        if self.func:
+            logger.dev_log("exec_func_as_event")
+            self.func()
+            self.func = None
 
     def GetName(self):
         return self.name
@@ -44,7 +42,7 @@ class EventHandlerRemover(UI.IExternalEventHandler):
 
 class NonModalWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name, ext_event_handler):
-        forms.WPFWindow.__init__(self, xaml_file_name, set_owner=False)
+        forms.WPFWindow.__init__(self, xaml_file_name, set_owner=True)
 
         self.ext_event_handler = ext_event_handler
         self.ext_event = \
@@ -71,7 +69,7 @@ class NonModalWindow(forms.WPFWindow):
             )
 
         self.remover = UI.ExternalEvent.Create(
-            EventHandlerRemover(self)
+            FuncAsEventHandler(self.stop_listening)
             )
 
         self.update_ui()
@@ -81,13 +79,18 @@ class NonModalWindow(forms.WPFWindow):
         self.update_ui()
 
     def start_listening(self):
+        logger.dev_log("start_listening")
         HOST_APP.app.DocumentChanged += self.docchanged_hndlr
         HOST_APP.app.DocumentClosed += self.docclosed_hndlr
         HOST_APP.app.DocumentOpened += self.docopened_hndlr
         HOST_APP.uiapp.ViewActivated += self.viewactivated_hndlr
 
     def stop_listening(self):
-        self.remover.Raise()
+        logger.dev_log("stop_listening")
+        HOST_APP.app.DocumentChanged -= self.docchanged_hndlr
+        HOST_APP.app.DocumentClosed -= self.docclosed_hndlr
+        HOST_APP.app.DocumentOpened -= self.docopened_hndlr
+        HOST_APP.uiapp.ViewActivated -= self.viewactivated_hndlr
 
     def action(self, sender, args):
         if __shiftclick__:
@@ -102,6 +105,7 @@ class NonModalWindow(forms.WPFWindow):
         self.Title, self.prev_title = self.prev_title, self.Title
 
     def update_ui(self):
+        logger.dev_log("update_ui")
         if revit.doc:
             self.doc_tb.Text = 'Document: {}'.format(revit.doc.Title)
             elements = revit.query.get_all_elements(doc=revit.doc)
@@ -111,7 +115,7 @@ class NonModalWindow(forms.WPFWindow):
             self.elements_tb.Text = 'N/A'
 
     def window_closing(self, sender, args):
-        self.stop_listening()
+        self.remover.Raise()
 
 
 NonModalWindow(
