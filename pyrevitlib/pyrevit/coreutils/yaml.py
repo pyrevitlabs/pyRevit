@@ -18,8 +18,6 @@ def _convert_yamldotnet_to_dict(ynode, level=0):
                     _convert_yamldotnet_to_dict(child.Value, level=level+1)
             elif hasattr(child, 'Value'):
                 val = child.Value
-                if val and isinstance(val, str):
-                    val = val.decode('utf-8')
                 value_childs.append(val)
         return value_childs or d
     else:
@@ -36,9 +34,12 @@ def load(yaml_file):
     Returns:
         obj`YamlDotNet.RepresentationModel.YamlMappingNode`: yaml node
     """
-    with codecs.open(yaml_file, 'r', 'utf-8') as yamlfile:
+    with open(yaml_file, 'r') as yamlfile:
         yamlstr = libyaml.RepresentationModel.YamlStream()
-        yamlstr.Load(StringReader(yamlfile.read()))
+        yamlstr.Load(
+            StringReader(
+                yamlfile.read().decode('utf-8')
+                ))
         if yamlstr.Documents.Count >= 1:
             return yamlstr.Documents[0].RootNode
 
