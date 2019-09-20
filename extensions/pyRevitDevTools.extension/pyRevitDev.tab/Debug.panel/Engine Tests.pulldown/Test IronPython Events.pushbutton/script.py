@@ -3,6 +3,9 @@ from pyrevit import HOST_APP, framework
 from pyrevit import UI, DB
 
 
+dc = __revit__.Application.GetType().GetEvent("DocumentChanged")
+
+
 def docchanged_eventhandler(sender, args):
     UI.TaskDialog.Show("ironpython", str(sender))
     UI.TaskDialog.Show("ironpython", str(args))
@@ -16,3 +19,6 @@ docchanged_handler = \
 
 HOST_APP.app.DocumentChanged += docchanged_handler
 HOST_APP.app.DocumentChanged -= docchanged_handler
+
+# dc.AddEventHandler(__revit__.Application, docchanged_handler)
+# dc.RemoveEventHandler(__revit__.Application, docchanged_handler)
