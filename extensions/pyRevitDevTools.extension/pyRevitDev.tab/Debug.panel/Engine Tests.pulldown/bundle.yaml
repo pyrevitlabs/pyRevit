@@ -5,8 +5,11 @@ layout:
   - Test Persistent Engine
   - Test IronPython Compile
   - Test IronPython Search Paths
+  - Test IronPython Threading
+  - Test IronPython Events
   - -----
   - Test CPython Command
   - Test CPython Namespace
   - Test CPython Engine
   - Test CPython Search Paths
+  - Test CPython Events
