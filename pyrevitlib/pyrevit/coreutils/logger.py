@@ -1,10 +1,10 @@
 """Core logging module for pyRevit."""
 import sys
-import os.path
+import os.path as op
 import logging
 
 #pylint: disable=W0703,C0302,C0103
-from pyrevit import EXEC_PARAMS
+from pyrevit import EXEC_PARAMS, USER_DESKTOP
 from pyrevit.compat import safe_strtype
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit import coreutils
@@ -75,7 +75,7 @@ if not EXEC_PARAMS.doc_mode:
 
 # Creating default file log name and status
 FILE_LOG_FILENAME = '{}runtime.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
-FILE_LOG_FILEPATH = os.path.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
+FILE_LOG_FILEPATH = op.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
 FILE_LOGGING_DEFAULT_STATE = False
 
 
@@ -122,7 +122,7 @@ class LoggerWrapper(logging.Logger):
             msg_str = safe_strtype(msg)
             # get rid of unicode characters
             msg_str = msg_str.encode('ascii', 'ignore')
-            msg_str = msg_str.replace(os.path.sep, '/')
+            msg_str = msg_str.replace(op.sep, '/')
         else:
             msg_str = msg
         logging.Logger._log(self, level, msg_str, args,
@@ -229,7 +229,18 @@ class LoggerWrapper(logging.Logger):
     def deprecate(self, message, *args, **kws):
         if self.isEnabledFor(DEPRECATE_LOG_LEVEL):
             # Yes, logger takes its '*args' as 'args'.
-            self._log(DEPRECATE_LOG_LEVEL, message, args, **kws) 
+            self._log(DEPRECATE_LOG_LEVEL, message, args, **kws)
+
+    def dev_log(self, source, message=''):
+        devlog_fname = '{}.log'.format(EXEC_PARAMS.command_uniqueid)
+        with open(op.join(USER_DESKTOP, devlog_fname), 'a') as devlog_file:
+            devlog_file.writelines('{tstamp} [{exid}] {src}: {msg}\n'.format(
+                tstamp=EXEC_PARAMS.exec_timestamp,
+                exid=EXEC_PARAMS.exec_id,
+                src=source,
+                msg=message,
+                ))
+
 
 # setting up handlers and formatters -------------------------------------------
 stdout_hndlr = logging.StreamHandler(sys.stdout)
