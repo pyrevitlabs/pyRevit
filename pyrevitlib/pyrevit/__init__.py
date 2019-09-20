@@ -193,27 +193,26 @@ class _HostApplication(object):
         host_uiapp (``UIApplication``): Instance of running host.
 
     Example:
-        >>> hostapp = _HostApplication(__revit__)
+        >>> hostapp = _HostApplication()
         >>> hostapp.is_newer_than(2017)
     """
 
-    def __init__(self, host_uiapp):
-        self.__host__ = host_uiapp
+    def __init__(self):
         self._postable_cmds = []
 
     @property
     def uiapp(self):
         """Return UIApplication provided to the running command."""
-        if isinstance(self.__host__, UI.UIApplication):
-            return self.__host__
+        if isinstance(__revit__, UI.UIApplication):  #pylint: disable=undefined-variable
+            return __revit__  #pylint: disable=undefined-variable
 
     @property
     def app(self):
         """Return Application provided to the running command."""
         if self.uiapp:
             return self.uiapp.Application
-        elif isinstance(self.__host__, ApplicationServices.Application):
-            return self.__host__
+        elif isinstance(__revit__, ApplicationServices.Application):  #pylint: disable=undefined-variable
+            return __revit__  #pylint: disable=undefined-variable
 
     @property
     def uidoc(self):
@@ -385,7 +384,7 @@ class _HostApplication(object):
 try:
     # Create an intance of host application wrapper
     # making sure __revit__ is available
-    HOST_APP = _HostApplication(__revit__)  #pylint: disable=E0602
+    HOST_APP = _HostApplication()
 except Exception:
     raise Exception('Critical Error: Host software is not supported. '
                     '(__revit__ handle is not available)')
