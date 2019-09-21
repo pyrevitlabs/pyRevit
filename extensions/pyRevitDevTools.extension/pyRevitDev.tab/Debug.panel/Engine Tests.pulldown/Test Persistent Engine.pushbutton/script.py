@@ -17,6 +17,7 @@ __context__ = 'zero-doc'
 logger = script.get_logger()
 
 
+# Note on Events in Non-Modal Windows:
 # with non-modal windows, Revit API call to command execute returns after
 # creating the window, and thus, while window is running, Revit is NOT in
 # API context and all the api calls needs be handled through external events.
@@ -25,72 +26,17 @@ logger = script.get_logger()
 # the unsibscribe needs to happen on API context and thus an event handler
 # is necessary. The event handler needs to hold a reference to window so
 # it can unsibscribe the subscribed events
-class FuncAsEventHandler(UI.IExternalEventHandler):
-    def __init__(self, func):
-        self.name = 'FuncAsEventHandler'
-        self.func = func
-
-    def Execute(self, uiapp):
-        if self.func:
-            logger.dev_log("exec_func_as_event")
-            self.func()
-            self.func = None
-
-    def GetName(self):
-        return self.name
 
 
 class NonModalWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name, ext_event_handler):
-        forms.WPFWindow.__init__(self, xaml_file_name, set_owner=True)
-
+    def __init__(self, ext_event_handler):
         self.ext_event_handler = ext_event_handler
         self.ext_event = \
             UI.ExternalEvent.Create(self.ext_event_handler)
 
+    def setup(self):
         self.prev_title = "Title Changed..."
-
-        # activate document updator
-        self.docchanged_hndlr = \
-            framework.EventHandler[DB.Events.DocumentChangedEventArgs](
-                self.uiupdator_eventhandler
-            )
-        self.docclosed_hndlr = \
-            framework.EventHandler[DB.Events.DocumentClosedEventArgs](
-                self.uiupdator_eventhandler
-            )
-        self.docopened_hndlr = \
-            framework.EventHandler[DB.Events.DocumentOpenedEventArgs](
-                self.uiupdator_eventhandler
-            )
-        self.viewactivated_hndlr = \
-            framework.EventHandler[UI.Events.ViewActivatedEventArgs](
-                self.uiupdator_eventhandler
-            )
-
-        self.remover = UI.ExternalEvent.Create(
-            FuncAsEventHandler(self.stop_listening)
-            )
-
         self.update_ui()
-        self.start_listening()
-
-    def uiupdator_eventhandler(self, sender, args):
-        self.update_ui()
-
-    def start_listening(self):
-        logger.dev_log("start_listening")
-        HOST_APP.app.DocumentChanged += self.docchanged_hndlr
-        HOST_APP.app.DocumentClosed += self.docclosed_hndlr
-        HOST_APP.app.DocumentOpened += self.docopened_hndlr
-        HOST_APP.uiapp.ViewActivated += self.viewactivated_hndlr
-
-    def stop_listening(self):
-        logger.dev_log("stop_listening")
-        HOST_APP.app.DocumentChanged -= self.docchanged_hndlr
-        HOST_APP.app.DocumentClosed -= self.docclosed_hndlr
-        HOST_APP.app.DocumentOpened -= self.docopened_hndlr
-        HOST_APP.uiapp.ViewActivated -= self.viewactivated_hndlr
 
     def action(self, sender, args):
         if __shiftclick__:
@@ -105,7 +51,6 @@ class NonModalWindow(forms.WPFWindow):
         self.Title, self.prev_title = self.prev_title, self.Title
 
     def update_ui(self):
-        logger.dev_log("update_ui")
         if revit.doc:
             self.doc_tb.Text = 'Document: {}'.format(revit.doc.Title)
             elements = revit.query.get_all_elements(doc=revit.doc)
@@ -113,12 +58,18 @@ class NonModalWindow(forms.WPFWindow):
         else:
             self.doc_tb.Text = 'No Documents'
             self.elements_tb.Text = 'N/A'
+        logger.dev_log("update_ui", message="{} / {}".format(
+            self.doc_tb.Text,
+            self.elements_tb.Text
+        ))
 
-    def window_closing(self, sender, args):
-        self.remover.Raise()
 
+knote_hndlr = runtime_types.PlaceKeynoteExternalEventHandler()
+ui = script.load_ui(
+    NonModalWindow(ext_event_handler=knote_hndlr)
+    )
+ui.show(modal=__shiftclick__)
 
-NonModalWindow(
-    'NonModalWindow.xaml',
-    ext_event_handler=runtime_types.PlaceKeynoteExternalEventHandler(),
-    ).show(modal=__shiftclick__)
+@revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
+def uiupdator_eventhandler(sender, args):
+    ui.update_ui()
