@@ -215,6 +215,16 @@ class _HostApplication(object):
             return __revit__  #pylint: disable=undefined-variable
 
     @property
+    def addin_id(self):
+        """Return active addin id."""
+        return self.app.ActiveAddInId
+
+    @property
+    def has_api_context(self):
+        """Determine if host application is in API context"""
+        return self.app.ActiveAddInId is not None
+
+    @property
     def uidoc(self):
         """Return active UIDocument."""
         return getattr(self.uiapp, 'ActiveUIDocument', None)
