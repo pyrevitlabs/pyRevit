@@ -171,6 +171,8 @@ class WPFWindow(framework.Windows.Window):
         """Show window."""
         if modal:
             return self.ShowDialog()
+        # else open non-modal
+        self.Closing += self.window_closing #pylint: disable=E1101
         self.Show()
 
     def show_dialog(self):
@@ -256,6 +258,9 @@ class WPFWindow(framework.Windows.Window):
     def handle_url_click(self, sender, args): #pylint: disable=unused-argument
         """Callback for handling click on package website url"""
         return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
+
+    def window_closing(self, sender, args): #pylint: disable=unused-argument
+        revit.events.stop_events()
 
 
 class TemplateUserInputWindow(WPFWindow):
