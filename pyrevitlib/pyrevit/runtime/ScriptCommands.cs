@@ -165,6 +165,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (argumentsText == null || argumentsText == string.Empty)
                     copyArguments.IsEnabled = false;
 
+                // menu item to copy engine configs
+                MenuItem copyEngineConfigs = new MenuItem();
+                string engineCfgs = ScriptRuntimeConfigs.EngineConfigs;
+                copyEngineConfigs.Header = "Copy Engine Configs";
+                copyEngineConfigs.ToolTip = engineCfgs;
+                copyEngineConfigs.Click += delegate { System.Windows.Forms.Clipboard.SetText(engineCfgs); };
+                pyRevitCmdContextMenu.Items.Add(copyEngineConfigs);
+                if (engineCfgs == null || engineCfgs == string.Empty)
+                    copyEngineConfigs.IsEnabled = false;
+
                 // menu item to copy help url
                 MenuItem copyHelpSource = new MenuItem();
                 copyHelpSource.Header = "Copy Help Url";
