@@ -232,7 +232,8 @@ class LoggerWrapper(logging.Logger):
             self._log(DEPRECATE_LOG_LEVEL, message, args, **kws)
 
     def dev_log(self, source, message=''):
-        devlog_fname = '{}.log'.format(EXEC_PARAMS.command_uniqueid)
+        devlog_fname = \
+            '{}.log'.format(EXEC_PARAMS.command_uniqueid or self.name)
         with open(op.join(USER_DESKTOP, devlog_fname), 'a') as devlog_file:
             devlog_file.writelines('{tstamp} [{exid}] {src}: {msg}\n'.format(
                 tstamp=EXEC_PARAMS.exec_timestamp,
