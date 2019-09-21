@@ -12,7 +12,9 @@ from pyrevit import script
 
 
 __context__ = 'zero-doc'
-
+__title__ = "Test Persistent Engine (NonModal)"
+__author__ = "{{author}}"
+__persistentengine__ = True
 
 logger = script.get_logger()
 
@@ -37,6 +39,10 @@ class NonModalWindow(forms.WPFWindow):
     def setup(self):
         self.prev_title = "Title Changed..."
         self.update_ui()
+
+    @revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
+    def uiupdator_eventhandler(sender, args):
+        ui.update_ui()
 
     def action(self, sender, args):
         if __shiftclick__:
@@ -68,11 +74,8 @@ class NonModalWindow(forms.WPFWindow):
 
 knote_hndlr = runtime_types.PlaceKeynoteExternalEventHandler()
 ui = script.load_ui(
-    NonModalWindow(ext_event_handler=knote_hndlr)
+    NonModalWindow(ext_event_handler=knote_hndlr),
+    ui_file='NonModalWindow.xaml'
     )
-
-@revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
-def uiupdator_eventhandler(sender, args):
-    ui.update_ui()
 
 ui.show(modal=__shiftclick__)

@@ -1,4 +1,0 @@
-title: Test Persistent Engine (NonModal)
-author: "{{author}}"
-engine:
-  persistent: true
