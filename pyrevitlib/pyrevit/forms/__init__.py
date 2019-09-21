@@ -89,10 +89,17 @@ class WPFWindow(framework.Windows.Window):
 
     def __init__(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         """Initialize WPF window and resources."""
-        # self.Parent = self
-        wih = Interop.WindowInteropHelper(self)
-        if set_owner:
-            wih.Owner = AdWindows.ComponentManager.ApplicationWindow
+        # load xaml
+        self.load_xaml(
+            xaml_source,
+            literal_string=literal_string,
+            handle_esc=handle_esc,
+            set_owner=set_owner
+            )
+
+    def load_xaml(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
+        # create new id for this window
+        self.window_id = coreutils.new_uuid()
 
         if not literal_string:
             if not op.exists(xaml_source):
@@ -104,11 +111,19 @@ class WPFWindow(framework.Windows.Window):
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
-        if handle_esc:
-            self.PreviewKeyDown += self.handle_input_key    #pylint: disable=E1101
-
+        # set properties
+        if set_owner:
+            self.setup_owner()
         self.setup_icon()
+        self.setup_resources()
+        if handle_esc:
+            self.setup_default_handlers()
 
+    def setup_owner(self):
+        wih = Interop.WindowInteropHelper(self)
+        wih.Owner = AdWindows.ComponentManager.ApplicationWindow
+
+    def setup_resources(self):
         #2c3e50
         self.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
@@ -138,6 +153,9 @@ class WPFWindow(framework.Windows.Window):
 
         self.Resources['pyRevitRecognizesAccessKey'] = \
             DEFAULT_RECOGNIZE_ACCESS_KEY
+
+    def setup_default_handlers(self):
+        self.PreviewKeyDown += self.handle_input_key    #pylint: disable=E1101
 
     def handle_input_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input and close the window on Escape."""

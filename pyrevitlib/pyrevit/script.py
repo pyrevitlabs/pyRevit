@@ -22,6 +22,7 @@ from pyrevit import framework
 from pyrevit import revit
 from pyrevit import output
 from pyrevit import versionmgr
+from pyrevit import forms
 from pyrevit.labs import PyRevit
 
 
@@ -486,6 +487,21 @@ def load_index(index_file='index.html'):
     if not op.isfile(index_file):
         index_file = get_bundle_file(index_file)
     outputwindow.open_page(index_file)
+
+
+def load_ui(ui_instance, ui_file='ui.xaml', set_owner=True):
+    ui_file = get_bundle_file(ui_file)
+    if ui_file:
+        ui_instance.load_xaml(
+            ui_file,
+            literal_string=False,
+            handle_esc=True,
+            set_owner=set_owner
+            )
+        ui_instance.setup()
+        return ui_instance
+    else:
+        raise PyRevitException("Missing bundle ui file: {}".format(ui_file))
 
 
 def get_envvar(envvar):
