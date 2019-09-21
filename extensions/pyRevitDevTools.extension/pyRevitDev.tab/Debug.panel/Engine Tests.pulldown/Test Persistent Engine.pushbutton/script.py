@@ -35,13 +35,16 @@ class NonModalWindow(forms.WPFWindow):
         self.ext_event_handler = ext_event_handler
         self.ext_event = \
             UI.ExternalEvent.Create(self.ext_event_handler)
+        self.prev_title = "Title Changed..."
 
     def setup(self):
-        self.prev_title = "Title Changed..."
         self.update_ui()
 
     @revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
     def uiupdator_eventhandler(sender, args):
+        # the decorator captures the function from the class and not from the
+        # instance. so the capture function is not bound thus no 'self'
+        # ui however is inside the context and still accessible
         ui.update_ui()
 
     def action(self, sender, args):
@@ -72,9 +75,10 @@ class NonModalWindow(forms.WPFWindow):
         revit.events.stop_events()
 
 
-knote_hndlr = runtime_types.PlaceKeynoteExternalEventHandler()
 ui = script.load_ui(
-    NonModalWindow(ext_event_handler=knote_hndlr),
+    NonModalWindow(
+        ext_event_handler=runtime_types.PlaceKeynoteExternalEventHandler()
+        ),
     ui_file='NonModalWindow.xaml'
     )
 
