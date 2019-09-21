@@ -41,11 +41,10 @@ class NonModalWindow(forms.WPFWindow):
     def action(self, sender, args):
         if __shiftclick__:
             self.Close()
-            forms.alert("Stuff")
-        else:
-            self.ext_event_handler.KeynoteKey = "12"
-            self.ext_event_handler.KeynoteType = UI.PostableCommand.UserKeynote
-            self.ext_event.Raise()
+
+        self.ext_event_handler.KeynoteKey = "12"
+        self.ext_event_handler.KeynoteType = UI.PostableCommand.UserKeynote
+        self.ext_event.Raise()
 
     def other_action(self, sender, args):
         self.Title, self.prev_title = self.prev_title, self.Title
@@ -63,13 +62,17 @@ class NonModalWindow(forms.WPFWindow):
             self.elements_tb.Text
         ))
 
+    def window_closing(self, sender, args): #pylint: disable=unused-argument
+        revit.events.stop_events()
+
 
 knote_hndlr = runtime_types.PlaceKeynoteExternalEventHandler()
 ui = script.load_ui(
     NonModalWindow(ext_event_handler=knote_hndlr)
     )
-ui.show(modal=__shiftclick__)
 
 @revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
 def uiupdator_eventhandler(sender, args):
     ui.update_ui()
+
+ui.show(modal=__shiftclick__)
