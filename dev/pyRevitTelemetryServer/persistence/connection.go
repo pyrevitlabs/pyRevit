@@ -15,7 +15,7 @@ type Result struct {
 }
 
 type DatabaseConnection struct {
-	Config *Config
+	Config *Config `json:"db_configs"`
 }
 
 type Connection interface {

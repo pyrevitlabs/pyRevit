@@ -7,13 +7,14 @@ import (
 )
 
 type Options struct {
+	Version      string `json:"version"`
 	Opts         *docopt.Opts
-	ConnString   string
-	ScriptsTable string
-	EventsTable  string
-	Port         int
-	Debug        bool
-	Trace        bool
+	ConnString   string `json:"connection_string"`
+	ScriptsTable string `json:"script_table"`
+	EventsTable  string `json:"events_table"`
+	Port         int    `json:"server_port"`
+	Debug        bool   `json:"debug_mode"`
+	Trace        bool   `json:"trace_mode"`
 }
 
 func NewOptions() *Options {
@@ -34,6 +35,7 @@ func NewOptions() *Options {
 	trace, _ := opts.Bool("--trace")
 
 	return &Options{
+		Version:      version,
 		Opts:         &opts,
 		ConnString:   connString,
 		ScriptsTable: scriptTable,

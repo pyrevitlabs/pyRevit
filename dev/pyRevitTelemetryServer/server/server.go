@@ -25,6 +25,8 @@ func Start(opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger)
 		RouteEvents(router, opts, dbConn, logger)
 	}
 
+	RouteStatus(router, opts, dbConn, logger)
+
 	// start listening now
 	logger.Print(fmt.Sprintf("Server listening on %d...", opts.Port))
 	logger.Fatal(
