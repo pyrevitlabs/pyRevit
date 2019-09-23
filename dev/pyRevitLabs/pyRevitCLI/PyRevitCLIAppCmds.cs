@@ -21,6 +21,11 @@ using pyRevitLabs.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitCLI {
+    public enum TargetCacheType {
+        PyRevitCache,
+        BIM360Cache
+    }
+
     public class JsonVersionConverter : JsonConverter<Version> {
         public override Version ReadJson(JsonReader reader, Type objectType, Version existingValue, bool hasExistingValue, JsonSerializer serializer) {
             throw new NotImplementedException();
@@ -51,13 +56,27 @@ namespace pyRevitCLI {
             GetProcessPath().NormalizeAsPath().Contains(clone.ClonePath.NormalizeAsPath());
 
         internal static void
-        ClearCaches(bool allCaches, string revitYear) {
-            if (allCaches)
-                PyRevitCaches.ClearAllCaches();
-            else {
-                int revitYearNumber = 0;
-                if (int.TryParse(revitYear, out revitYearNumber))
-                    PyRevitCaches.ClearCache(revitYearNumber);
+        ClearCaches(bool allCaches, string revitYear, TargetCacheType cachetype) {
+            switch (cachetype) {
+                case TargetCacheType.PyRevitCache:
+                    if (allCaches)
+                        PyRevitCaches.ClearAllCaches();
+                    else {
+                        int revitYearNumber = 0;
+                        if (int.TryParse(revitYear, out revitYearNumber))
+                            PyRevitCaches.ClearCache(revitYearNumber);
+                    }
+                    break;
+
+                case TargetCacheType.BIM360Cache:
+                    if (allCaches)
+                        RevitCaches.ClearAllCaches(RevitCacheType.BIM360Cache);
+                    else {
+                        int revitYearNumber = 0;
+                        if (int.TryParse(revitYear, out revitYearNumber))
+                            RevitCaches.ClearCache(revitYearNumber, RevitCacheType.BIM360Cache);
+                    }
+                    break;
             }
         }
 

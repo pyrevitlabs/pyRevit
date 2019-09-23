@@ -83,6 +83,7 @@
     </Compile>
     <Compile Include="RevitAddons.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RevitCaches.cs" />
     <Compile Include="RevitController.cs" />
     <Compile Include="RevitModelFile.cs" />
     <Compile Include="RevitProcess.cs" />

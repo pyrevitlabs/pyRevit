@@ -64,7 +64,7 @@ Usage:
 	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit caches --help
-	pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
+	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit config --help
 	pyrevit config --from=<template_config_path> [--log=<log_file>]
 	pyrevit configs --help

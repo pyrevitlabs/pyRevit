@@ -519,10 +519,18 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Caches);
 
+                else if (all("bim360", "clear"))
+                    PyRevitCLIAppCmds.ClearCaches(
+                        allCaches: arguments["--all"].IsTrue,
+                        revitYear: TryGetValue("<revit_year>"),
+                        cachetype: TargetCacheType.BIM360Cache
+                        );
+
                 else if (all("clear"))
                     PyRevitCLIAppCmds.ClearCaches(
                         allCaches: arguments["--all"].IsTrue,
-                        revitYear: TryGetValue("<revit_year>")
+                        revitYear: TryGetValue("<revit_year>"),
+                        cachetype: TargetCacheType.PyRevitCache
                         );
             }
 
