@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const version string = "0.17"
+const version string = "0.18"
 const help string = `Record pyRevit usage logs to database
 
 Usage:
