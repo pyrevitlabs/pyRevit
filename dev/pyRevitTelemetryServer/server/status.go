@@ -1,3 +1,4 @@
+// https://inadarei.github.io/rfc-healthcheck/
 package server
 
 import (
@@ -9,23 +10,24 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type StatusReport struct {
-	Status             string                 `json:"status"`
-	CliOptions         cli.Options            `json:"cli_options"`
-	DBConnetionConfigs persistence.Connection `json:"db_configs"`
-}
-
-func getServerStatus() string {
-	return "healthy"
+type ServerStatus struct {
+	Status    string                                  `json:"status"`
+	Version   string                                  `json:"version"`
+	Output    string                                  `json:"output"`
+	ServiceId string                                  `json:"serviceid"`
+	Checks    map[string]persistence.ConnectionStatus `json:"checks"`
 }
 
 func prepareAndReportStatus(w http.ResponseWriter, opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger) {
 	// create status report data
 	jsonData, responseDataErr := json.Marshal(
-		StatusReport{
-			Status:             getServerStatus(),
-			CliOptions:         *opts,
-			DBConnetionConfigs: dbConn,
+		ServerStatus{
+			Status:    GetStatus(),
+			Version:   opts.Version,
+			ServiceId: ServerId.String(),
+			Checks: map[string]persistence.ConnectionStatus{
+				string(dbConn.GetType()): dbConn.GetStatus(logger),
+			},
 		})
 	if responseDataErr == nil {
 		jsonString := string(jsonData)
@@ -34,7 +36,7 @@ func prepareAndReportStatus(w http.ResponseWriter, opts *cli.Options, dbConn per
 		}
 
 		// write response
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/health+json")
 		_, responseErr := w.Write([]byte(jsonString))
 		if responseErr != nil {
 			logger.Debug(responseErr)

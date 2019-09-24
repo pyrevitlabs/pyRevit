@@ -4,6 +4,12 @@ import (
 	"../cli"
 )
 
+type ConnectionStatus struct {
+	Status  string `json:"status"`
+	Version string `json:"version"`
+	Output  string `json:"output"`
+}
+
 // ErroCodes
 // 0: All OK
 // 1: No data to write
@@ -19,6 +25,9 @@ type DatabaseConnection struct {
 }
 
 type Connection interface {
+	GetType() DBBackend
+	GetVersion(*cli.Logger) string
+	GetStatus(*cli.Logger) ConnectionStatus
 	WriteScriptTelemetryV1(*ScriptTelemetryRecordV1, *cli.Logger) (*Result, error)
 	WriteScriptTelemetryV2(*ScriptTelemetryRecordV2, *cli.Logger) (*Result, error)
 	WriteEventTelemetryV2(*EventTelemetryRecordV2, *cli.Logger) (*Result, error)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,6 +21,33 @@ import (
 
 type GenericSQLConnection struct {
 	DatabaseConnection
+}
+
+func (w GenericSQLConnection) GetType() DBBackend {
+	return w.Config.Backend
+}
+
+func (w GenericSQLConnection) GetVersion(logger *cli.Logger) string {
+	db, err := openConnection(w.Config.Backend, w.Config.ConnString, logger)
+	if err != nil {
+		logger.Debug("error opening connection")
+		return ""
+	}
+	defer db.Close()
+
+	var version string
+	err = db.QueryRow("select version()").Scan(&version)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return version
+}
+
+func (w GenericSQLConnection) GetStatus(logger *cli.Logger) ConnectionStatus {
+	return ConnectionStatus{
+		Status:  "pass",
+		Version: w.GetVersion(logger),
+	}
 }
 
 func (w GenericSQLConnection) WriteScriptTelemetryV1(logrec *ScriptTelemetryRecordV1, logger *cli.Logger) (*Result, error) {
@@ -55,7 +83,7 @@ func (w GenericSQLConnection) WriteEventTelemetryV2(logrec *EventTelemetryRecord
 	return commitSQL(w.Config.Backend, w.Config.ConnString, query, logger)
 }
 
-func commitSQL(backend DBBackendName, connStr string, query string, logger *cli.Logger) (*Result, error) {
+func commitSQL(backend DBBackend, connStr string, query string, logger *cli.Logger) (*Result, error) {
 	// open connection
 	db, err := openConnection(backend, connStr, logger)
 	if err != nil {
@@ -93,7 +121,7 @@ func commitSQL(backend DBBackendName, connStr string, query string, logger *cli.
 	}, nil
 }
 
-func openConnection(backend DBBackendName, connStr string, logger *cli.Logger) (*sql.DB, error) {
+func openConnection(backend DBBackend, connStr string, logger *cli.Logger) (*sql.DB, error) {
 	// open connection
 	logger.Debug(fmt.Sprintf("opening %s connection", backend))
 	cleanConnStr := connStr

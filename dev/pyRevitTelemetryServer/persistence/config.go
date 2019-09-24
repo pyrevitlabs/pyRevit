@@ -7,21 +7,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-type DBBackendName string
+type DBBackend string
 
 const (
-	Postgres DBBackendName = "postgres"
-	MongoDB  DBBackendName = "mongodb"
-	MySql    DBBackendName = "mysql"
-	MSSql    DBBackendName = "sqlserver"
-	Sqlite   DBBackendName = "sqlite3"
+	Postgres DBBackend = "postgres"
+	MongoDB  DBBackend = "mongodb"
+	MySql    DBBackend = "mysql"
+	MSSql    DBBackend = "sqlserver"
+	Sqlite   DBBackend = "sqlite3"
 )
 
 type Config struct {
-	Backend      DBBackendName `json:"backend"`
-	ConnString   string        `json:"connection_string"`
-	ScriptTarget string        `json:"script_target"`
-	EventTarget  string        `json:"event_target"`
+	Backend      DBBackend `json:"backend"`
+	ConnString   string    `json:"connection_string"`
+	ScriptTarget string    `json:"script_target"`
+	EventTarget  string    `json:"event_target"`
 }
 
 func NewConfig(options *cli.Options) (*Config, error) {
@@ -38,7 +38,7 @@ func NewConfig(options *cli.Options) (*Config, error) {
 	}, nil
 }
 
-func parseUri(connString string) (DBBackendName, error) {
+func parseUri(connString string) (DBBackend, error) {
 	if strings.HasPrefix(connString, "postgres:") {
 		return Postgres, nil
 	} else if strings.HasPrefix(connString, "mongodb:") {

@@ -6,12 +6,18 @@ import (
 
 	"../cli"
 	"../persistence"
+	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 )
+
+var ServerId uuid.UUID
 
 var OkMessage = "[ {g}OK{!} ]"
 
 func Start(opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger) {
+	//create new id for this server instance
+	ServerId = uuid.Must(uuid.NewV4())
+
 	// http server router
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -34,4 +40,8 @@ func Start(opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger)
 			fmt.Sprintf(":%d", opts.Port),
 			router,
 		))
+}
+
+func GetStatus() string {
+	return "pass" // "pass", "fail" or "warn"
 }
