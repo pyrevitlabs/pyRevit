@@ -33,3 +33,13 @@ for apt in ADPRIVATE_ASSM.GetTypes():
     if 'PanelSetListView' in apt.Name:
         PANELLISTVIEW_TYPE = apt
         break
+
+
+def get_product_serial_number():
+    """Return serial number of running host instance."""
+    return UIFrameworkServices.InfoCenterService.ProductSerialNumber
+
+
+def is_product_demo():
+    """Determine if product is using demo license"""
+    return get_product_serial_number() == '000-00000000'

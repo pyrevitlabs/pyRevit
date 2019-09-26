@@ -103,6 +103,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
+from pyrevit import api
 from pyrevit.api import DB, UI, ApplicationServices, AdWindows
 
 # -----------------------------------------------------------------------------
@@ -273,6 +274,16 @@ class _HostApplication(object):
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
         return self.app.VersionBuild
+
+    @property
+    def serial_no(self):
+        """str: Return serial number number (e.g. '569-09704828')."""
+        return api.get_product_serial_number()
+
+    @property
+    def is_demo(self):
+        """bool: Determine if product is using demo license."""
+        return api.is_product_demo()
 
     @property
     def language(self):
