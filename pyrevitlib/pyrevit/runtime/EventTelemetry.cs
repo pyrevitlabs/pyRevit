@@ -43,15 +43,37 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public EventTelemetryRecord() : base() { }
     }
 
+    public delegate void EventTelemetryExternalEventDelegate(UIApplication uiapp, object sender, object e);
+
+    public class EventTelemetryExternalEventHandler : IExternalEventHandler {
+        public object Sender;
+        public CommandExecutedArgs CommandExecArgs;
+
+        public EventTelemetryExternalEventDelegate EventTelemetryDelegate;
+
+        public void Execute(UIApplication uiApp) {
+            if (EventTelemetryDelegate != null)
+                EventTelemetryDelegate(uiApp, Sender, CommandExecArgs);
+        }
+
+        public string GetName() {
+            return "EventTelemetryExternalEventHandler";
+        }
+    }
+
     public class EventTelemetry : IEventTypeHandler {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         public string HandlerId;
+        private static EventTelemetryExternalEventHandler extTelemetryEventHandler;
+        private static ExternalEvent extTelemetryEvent;
 
         public EventTelemetry(string handlerId) {
             if (handlerId == null)
                 handlerId = Guid.NewGuid().ToString();
             HandlerId = handlerId;
+            extTelemetryEventHandler = new EventTelemetryExternalEventHandler();
+            extTelemetryEvent = ExternalEvent.Create(extTelemetryEventHandler);
         }
 
         public static void SetHostInfo(object sender, ref EventTelemetryRecord record) {
@@ -72,7 +94,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 app = (Application)sender;
 
             // set the host info based on the sender type
-            record.host_user = UserEnv.GetLoggedInUserName();
+            record.host_user = string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
             record.username = string.Empty;
             record.revit = string.Empty;
             record.revitbuild = string.Empty;
@@ -1115,17 +1137,35 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void Application_JournalCommandExecuted(object sender, CommandExecutedArgs e) {
-            // TODO: get document info. need to use events to run when idle
+            if (extTelemetryEvent != null) {
+                extTelemetryEventHandler.Sender = sender;
+                extTelemetryEventHandler.CommandExecArgs = e;
+                extTelemetryEventHandler.EventTelemetryDelegate = SendJournalCommandExecutedTelemetry;
+
+                extTelemetryEvent.Raise();
+                while (extTelemetryEvent.IsPending);
+            }
+        }
+
+        public void SendJournalCommandExecutedTelemetry (UIApplication uiapp, object sender, object e) {
+            // grab document data
+            var doc = uiapp.ActiveUIDocument != null ? uiapp.ActiveUIDocument.Document : null;
+
+            // get args
+            CommandExecutedArgs args = e as CommandExecutedArgs;
+
+            // send event info
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_JournalCommandExecuted),
-                docname = "",
-                docpath = "",
-                projectnum = "",
-                projectname = "",
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+                projectnum = GetProjectNumber(doc),
+                projectname = GetProjectName(doc),
                 args = new Dictionary<string, object> {
-                    { "command_id",  e.CommandId },
-                }
-            }, sender, e);
+                        { "command_id",  args.CommandId },
+                    }
+            }, sender, args);
+
         }
     }
 }

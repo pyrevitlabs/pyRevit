@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Web.Script.Serialization;
@@ -71,9 +72,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string GetTelemetryTimeStamp() {
             var env = new EnvDictionary();
             if (env.TelemetryUTCTimeStamps)
-                return CommonUtils.GetISOTimeStampNow();
+                return GetISOTimeStamp(DateTime.Now.ToUniversalTime()); // 2019-09-27T23:22:41.1355Z
             else
-                return CommonUtils.GetISOTimeStampLocalNow();
+                return GetISOTimeStamp(DateTime.Now);                   // 2019-09-27T16:15:56.9528-07:00
+        }
+
+        private static string GetISOTimeStamp(DateTime dtimeValue) {
+            // higher resolution timestamp for telemetry
+
+            return dtimeValue.ToString("yyyy-MM-ddTHH:mm:ss.ffffK");
         }
     }
 }
