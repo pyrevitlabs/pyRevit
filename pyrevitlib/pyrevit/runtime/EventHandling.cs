@@ -78,71 +78,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // Autodesk.Revit.UI.AddInCommandBinding Events
         AddInCommandBinding_BeforeExecuted,
         AddInCommandBinding_CanExecute,
-        AddInCommandBinding_Executed
+        AddInCommandBinding_Executed,
 
-        // Autodesk.Revit.ApplicationServices.ControlledApplication Events
-        //ControlledApplication_ApplicationInitialized,
-        //ControlledApplication_DocumentChanged,
-        //ControlledApplication_DocumentClosed,
-        //ControlledApplication_DocumentClosing,
-        //ControlledApplication_DocumentCreated,
-        //ControlledApplication_DocumentCreating,
-        //ControlledApplication_DocumentOpened,
-        //ControlledApplication_DocumentOpening,
-        //ControlledApplication_DocumentPrinted,
-        //ControlledApplication_DocumentPrinting,
-        //ControlledApplication_DocumentSaved,
-        //ControlledApplication_DocumentSaving,
-        //ControlledApplication_DocumentSavedAs,
-        //ControlledApplication_DocumentSavingAs,
-        //ControlledApplication_DocumentSynchronizedWithCentral,
-        //ControlledApplication_DocumentSynchronizingWithCentral,
-        //ControlledApplication_DocumentWorksharingEnabled,
-        //ControlledApplication_ElementTypeDuplicated,
-        //ControlledApplication_ElementTypeDuplicating,
-        //ControlledApplication_FailuresProcessing,
-        //ControlledApplication_FamilyLoadedIntoDocument,
-        //ControlledApplication_FamilyLoadingIntoDocument,
-        //ControlledApplication_FileExported,
-        //ControlledApplication_FileExporting,
-        //ControlledApplication_FileImported,
-        //ControlledApplication_FileImporting,
-        //ControlledApplication_LinkedResourceOpened,
-        //ControlledApplication_LinkedResourceOpening,
-        //ControlledApplication_ProgressChanged,
-        //ControlledApplication_ViewExported,
-        //ControlledApplication_ViewExporting,
-        //ControlledApplication_ViewPrinted,
-        //ControlledApplication_ViewPrinting,
-        //ControlledApplication_WorksharedOperationProgressChanged,
-
-        // Autodesk.Revit.UI.UIControlledApplication Events
-        //UIControlledApplication_ApplicationClosing,
-        //UIControlledApplication_DialogBoxShowing,
-        //UIControlledApplication_DisplayingOptionsDialog,
-        //UIControlledApplication_DockableFrameFocusChanged,
-        //UIControlledApplication_DockableFrameVisibilityChanged,
-        //UIControlledApplication_FabricationPartBrowserChanged,
-        //UIControlledApplication_FormulaEditing,
-        //UIControlledApplication_Idling,
-        //UIControlledApplication_TransferredProjectStandards,
-        //UIControlledApplication_TransferringProjectStandards,
-        //UIControlledApplication_ViewActivated,
-        //UIControlledApplication_ViewActivating,
-
-        // Autodesk.Revit.UI.Macros.ApplicationEntryPoint Events
-        //ApplicationEntryPoint_ApplicationClosing,
-        //ApplicationEntryPoint_DialogBoxShowing,
-        //ApplicationEntryPoint_DisplayingOptionsDialog,
-        //ApplicationEntryPoint_DockableFrameFocusChanged,
-        //ApplicationEntryPoint_DockableFrameVisibilityChanged,
-        //ApplicationEntryPoint_FabricationPartBrowserChanged,
-        //ApplicationEntryPoint_FormulaEditing,
-        //ApplicationEntryPoint_Idling,
-        //ApplicationEntryPoint_TransferredProjectStandards,
-        //ApplicationEntryPoint_TransferringProjectStandards,
-        //ApplicationEntryPoint_ViewActivated,
-        //ApplicationEntryPoint_ViewActivating,
+        // pyRevit-defined events
+        Application_JournalUpdated,
+        Application_JournalCommandExecuted,
     }
 
     public interface IEventTypeHandler {
@@ -213,9 +153,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         void UIApplication_DialogBoxShowing(object sender, DialogBoxShowingEventArgs e);
         void AddInCommandBinding_CanExecute(object sender, CanExecuteEventArgs e);
         void AddInCommandBinding_Executed(object sender, ExecutedEventArgs e);
+
+        // custom events. These are called from a non-main thread
+        void Application_JournalUpdated(object sender, JournalUpdateArgs e);
+        void Application_JournalCommandExecuted(object sender, CommandExecutedArgs e);
     }
 
     public static class EventUtils {
+        private static JournalListener journalListerner = null;
+
         private static Dictionary<EventType, string> eventNames = new Dictionary<EventType, string> {
             { EventType.UIApplication_ApplicationClosing,  "app-closing" },
             { EventType.UIApplication_Idling, "app-idling" },
@@ -266,6 +212,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             { EventType.AddInCommandBinding_BeforeExecuted, "command-before-exec" },
             { EventType.AddInCommandBinding_CanExecute, "command-can-exec" },
             { EventType.AddInCommandBinding_Executed, "command-exec" },
+            { EventType.Application_JournalUpdated, "journal-updated" },
+            { EventType.Application_JournalCommandExecuted, "journal-command-exec" },
         };
 
         public static string GetEventName(EventType eventType) {
@@ -304,6 +252,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             catch { }
             return null;
+        }
+
+        private static void ActivateJournalListener(UIApplication uiapp) {
+            if (journalListerner == null) {
+                journalListerner = new JournalListener(uiapp);
+                journalListerner.Start();
+            }
+        }
+
+        private static void DeactivateJournalListener(UIApplication uiapp) {
+            // shut down the listener only if it is not firing any events
+            if (journalListerner != null && !(journalListerner.JournalUpdateEvents || journalListerner.JournalCommandExecutedEvents)) {
+                journalListerner.Stop();
+                journalListerner = null;
+            }
         }
 
 #if (!REVIT2013)
@@ -721,7 +684,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 case EventType.AddInCommandBinding_BeforeExecuted:
                     if (eventTarget == null) {
                         // activate before existing handler on ALL known commands
-                        foreach(AddInCommandBinding addinCmdBinding in GetAllCommandBindings(uiApp))
+                        foreach (AddInCommandBinding addinCmdBinding in GetAllCommandBindings(uiApp))
                             if (toggle_on)
                                 addinCmdBinding.BeforeExecuted += hndlr.AddInCommandBinding_BeforeExecuted;
                             else
@@ -756,6 +719,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             cmdBinding.Executed += hndlr.AddInCommandBinding_Executed;
                         else
                             cmdBinding.Executed -= hndlr.AddInCommandBinding_Executed;
+                    }
+                    break;
+
+                case EventType.Application_JournalUpdated:
+                    if (toggle_on) {
+                        ActivateJournalListener(uiApp);
+                        journalListerner.OnJournalUpdate += hndlr.Application_JournalUpdated;
+                        journalListerner.JournalUpdateEvents = true;
+                    }
+                    else if (journalListerner != null) {
+                        journalListerner.OnJournalUpdate -= hndlr.Application_JournalUpdated;
+                        journalListerner.JournalUpdateEvents = false;
+                        DeactivateJournalListener(uiApp);
+                    }
+                    break;
+
+                case EventType.Application_JournalCommandExecuted:
+                    if (toggle_on) {
+                        ActivateJournalListener(uiApp);
+                        journalListerner.OnJournalCommandExecuted += hndlr.Application_JournalCommandExecuted;
+                        journalListerner.JournalCommandExecutedEvents = true;
+                    }
+                    else if (journalListerner != null) {
+                        journalListerner.OnJournalCommandExecuted -= hndlr.Application_JournalCommandExecuted;
+                        journalListerner.JournalCommandExecutedEvents = false;
+                        DeactivateJournalListener(uiApp);
                     }
                     break;
             }

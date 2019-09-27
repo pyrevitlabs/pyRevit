@@ -162,6 +162,9 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\IronRubyEngine.cs">
       <Link>Engines\IronRubyEngine.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\JournalListener.cs">
+      <Link>Services\JournalListener.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\runtime\ScriptCommands.cs">
       <Link>ScriptCommands.cs</Link>
     </Compile>

@@ -35,11 +35,6 @@ from pyrevit.telemetry import events as telemetry_events
 FILE_LOG_EXT = 'json'
 FILE_LOG_FILENAME_TEMPLATE = '{}_{}_telemetry.{}'
 
-UNSUPPORTED_EVENT_TYPES = [
-    EventType.AddInCommandBinding_CanExecute,
-    EventType.AddInCommandBinding_Executed
-]
-
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -181,11 +176,6 @@ def _setup_default_logfile(telemetry_fullpath):
         # if file does not exist, let's write the basic JSON list to it.
         with open(telemetry_fullpath, 'w') as log_file:
             log_file.write('[]')
-
-
-def supports(event_type):
-    # verify event type is supported in telemetry system
-    return event_type not in UNSUPPORTED_EVENT_TYPES
 
 
 def setup_telemetry(session_id=None):

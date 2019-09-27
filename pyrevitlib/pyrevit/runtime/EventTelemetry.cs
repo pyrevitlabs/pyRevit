@@ -1,8 +1,11 @@
 using System;
+using System.IO;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
@@ -13,7 +16,7 @@ using pyRevitLabs.Common;
 using Autodesk.Revit.UI.Events;
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public class EventTelemetryRecord: TelemetryRecord {
+    public class EventTelemetryRecord : TelemetryRecord {
         // which event?
         public string type { get; set; }
         public Dictionary<string, object> args { get; set; }
@@ -37,11 +40,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string projectnum { get; set; }
         public string projectname { get; set; }
 
-        public EventTelemetryRecord(): base() {}
+        public EventTelemetryRecord() : base() { }
     }
 
     public class EventTelemetry : IEventTypeHandler {
-        static Logger logger = LogManager.GetCurrentClassLogger();
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
         public string HandlerId;
 
@@ -251,7 +254,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // update general properties on record
             // host info
-            SetHostInfo(sender, ref eventTelemetryRecord);
+            if (sender != null)
+                SetHostInfo(sender, ref eventTelemetryRecord);
+
             // set pyrevit info
             eventTelemetryRecord.handler_id = HandlerId;
             // event general info
@@ -259,7 +264,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (apiEventArgs != null) {
                 eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
                 eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
-            } else {
+            }
+            else {
                 var eventArgs = args as RevitEventArgs;
                 if (eventArgs != null) {
                     eventTelemetryRecord.cancellable = ((RevitEventArgs)args).Cancellable;
@@ -278,7 +284,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void RegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
             foreach (EventType eventType in EventUtils.GetAllEventTypes())
-                if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
+                if ((flags & (new BigInteger(1) << (int)eventType)) > 0) {
                     try {
                         // remove first
                         EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType, toggle_on: false);
@@ -293,6 +299,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     catch {
                         logger.Debug(string.Format("Failed registering event telemetry {0}", eventType.ToString()));
                     }
+                }
+
         }
 
         public void UnRegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
@@ -1094,11 +1102,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #endif
 
         public void AddInCommandBinding_CanExecute(object sender, CanExecuteEventArgs e) {
-            throw new NotImplementedException();
+            // do nothing. no interesting telemetry data
         }
 
         public void AddInCommandBinding_Executed(object sender, ExecutedEventArgs e) {
-            throw new NotImplementedException();
+            // do nothing. no interesting telemetry data
+        }
+
+        // custom events
+        public void Application_JournalUpdated(object sender, JournalUpdateArgs e) {
+            // do nothing. no interesting telemetry data
+        }
+
+        public void Application_JournalCommandExecuted(object sender, CommandExecutedArgs e) {
+            // TODO: get document info. need to use events to run when idle
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_JournalCommandExecuted),
+                docname = "",
+                docpath = "",
+                projectnum = "",
+                projectname = "",
+                args = new Dictionary<string, object> {
+                    { "command_id",  e.CommandId },
+                }
+            }, sender, e);
         }
     }
 }

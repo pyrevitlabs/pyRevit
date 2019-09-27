@@ -210,25 +210,64 @@ class SettingsWindow(forms.WPFWindow):
         supportedEvents = EventUtils.GetSupportedEventTypes()
         for event_type in coreutils.get_enum_values(EventType):
             # verify event type is supported in telemetry system
-            if telemetry.supports(event_type):
-                # grab the two parts of the event type name
-                api_name, api_event = str(event_type).split('_')
-                # figure out the namespace
-                api_namespace = 'Autodesk.Revit.ApplicationServices.'
-                if api_name in ['UIApplication', 'AddInCommandBinding']:
-                    api_namespace = 'Autodesk.Revit.UI.'
-                # figure out the ui title
-                api_title = api_event
-                if api_event == 'BeforeExecuted':
-                    api_title = 'CommandExecuted'
-                api_obj = api_name + '.' + api_event
+            # grab the two parts of the event type name
+            api_name, api_event = str(event_type).split('_')
 
-                cbox = Controls.CheckBox()
-                cbox.Margin = Windows.Thickness(0, 10, 0, 0)
-                cbox.FontFamily = Windows.Media.FontFamily("Consolas")
-                cbox.IsChecked = False
-                cbox.IsEnabled = event_type in supportedEvents
-                tblock = Controls.TextBlock()
+            # figure out the namespace
+            api_namespace = 'Autodesk.Revit.ApplicationServices.'
+            if api_name in ['UIApplication', 'AddInCommandBinding']:
+                api_namespace = 'Autodesk.Revit.UI.'
+
+            # figure out the ui title
+            api_title = api_event
+            api_obj = api_name + '.' + api_event
+
+            cbox = Controls.CheckBox()
+            cbox.Margin = Windows.Thickness(0, 10, 0, 0)
+            cbox.FontFamily = Windows.Media.FontFamily("Consolas")
+            cbox.IsChecked = False
+            tblock = Controls.TextBlock()
+            tblock.Margin = Windows.Thickness(0, 2, 0, 0)
+            # if event does not have interesting telemetry data, hide from user
+            if event_type in [EventType.AddInCommandBinding_BeforeExecuted,
+                              EventType.AddInCommandBinding_CanExecute,
+                              EventType.AddInCommandBinding_Executed,
+                              EventType.Application_JournalUpdated]:
+                cbox.IsEnabled = False
+                cbox.Visibility = Windows.Visibility.Collapsed
+
+            # if the event type is not supported in running revit, inform user
+            elif event_type not in supportedEvents:
+                cbox.IsEnabled = False
+                tblock.Inlines.Add(Documents.Run(
+                    "{}\n".format(' '.join(
+                        coreutils.split_words(str(api_title))
+                    ))))
+                tblock.Inlines.Add(Documents.Run(
+                    "Not Supported in this Revit Version\n"
+                ))
+
+            # if event is JournalCommandExecuted, create better user interface
+            elif event_type == EventType.Application_JournalCommandExecuted:
+                tblock.Inlines.Add(Documents.Run("Command Executed\n"))
+                tblock.Inlines.Add(Documents.Run(
+                    "Event Type:               journal-command-exec\n"
+                    ))
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        "Tracks execution of commands from active journal file. Includes:\n"))
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        "  Builtin Commands (e.g. ID_OBJECTS_WALL)\n"))
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        "  Thirdparty Commands (e.g. CustomCtrl_%CustomCtrl_%Site Designer%Modify%Sidewalk)\n"))
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        "  pyRevit Commands (e.g. CustomCtrl_%CustomCtrl_%pyRevit%pyRevit%Settings)\n"))
+
+            # otherwise prepare the option for the event type
+            elif event_type in supportedEvents:
                 tblock.Inlines.Add(Documents.Run(
                     "{}\n".format(' '.join(
                         coreutils.split_words(str(api_title))
@@ -245,12 +284,8 @@ class SettingsWindow(forms.WPFWindow):
                     "pyRevit Event/Hook Name:  {}".format(
                         EventUtils.GetEventName(event_type)
                     )))
-                if not cbox.IsEnabled:
-                    tblock.Inlines.Add(Documents.Run(
-                        "Not Supported in this Revit Version\n"
-                    ))
-                cbox.Content = tblock
-                self.event_telemetry_sp.Children.Add(cbox)
+            cbox.Content = tblock
+            self.event_telemetry_sp.Children.Add(cbox)
 
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""

@@ -363,9 +363,8 @@
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
-                                    Examples
-                                    <LineBreak/>http://telemetryserver.io:8080
-                                    <LineBreak/>http://telemetry.mycompany.com:8080/api/v1/scripts/
+                                    Example
+                                    <LineBreak/>http://telemetry.mycompany.com:8080/api/v2/scripts/
                                 </TextBlock>
                             </DockPanel>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
@@ -407,9 +406,8 @@
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
-                                    Examples
-                                    <LineBreak/>http://telemetryserver.io:8080
-                                    <LineBreak/>http://telemetry.mycompany.com:8080/api/v1/events/
+                                    Example
+                                    <LineBreak/>http://telemetry.mycompany.com:8080/api/v2/events/
                                 </TextBlock>
                             </DockPanel>
                             <StackPanel x:Name="event_telemetry_sp" Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">

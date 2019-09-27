@@ -425,5 +425,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.AddInCommandBinding_Executed, sender, e, e.CommandId.Name);
         }
 
+        // custom events
+        public void Application_JournalUpdated(object sender, JournalUpdateArgs e) {
+            // TODO: run journal-updated hooks. need to use events to run when idle
+        }
+
+        public void Application_JournalCommandExecuted(object sender, CommandExecutedArgs e) {
+            // TODO: run journal-command-exec hooks. need to use events to run when idle
+        }
     }
 }
