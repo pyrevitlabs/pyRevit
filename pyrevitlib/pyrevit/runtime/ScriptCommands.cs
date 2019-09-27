@@ -231,7 +231,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             #endregion
 
             // 2: ----------------------------------------------------------------------------------------------------
-            #region Setup pyRevit Command Runtime
+            #region Setup pyRevit Command Runtime Configs
             // fill in the rest of runtime info
             ScriptRuntimeConfigs.CommandData = commandData;
             ScriptRuntimeConfigs.SelectedElements = elements;
@@ -240,26 +240,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ScriptRuntimeConfigs.DebugMode = forcedDebugMode;
             ScriptRuntimeConfigs.ExecutedFromUI = ExecConfigs.MimicExecFromUI;
 
-            // create runtime
-            var runtime = new ScriptRuntime(ScriptData, ScriptRuntimeConfigs);
             #endregion
 
             // 3: ----------------------------------------------------------------------------------------------------
             #region Execute and log results
             // Executing the script and logging the results
             // Get script executor and Execute the script
-            runtime.ExecutionResult = ScriptExecutor.ExecuteScript(ref runtime);
-
-            // Log results
-            ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
-
-            // GC cleanups
-            var re = runtime.ExecutionResult;
-            runtime.Dispose();
-            runtime = null;
+            int result = ScriptExecutor.ExecuteScript(
+                ScriptData,
+                ScriptRuntimeConfigs,
+                new ScriptExecutorConfigs {
+                    SendTelemetry = true
+                }
+                );
 
             // Return results to Revit. Don't report errors since we don't want Revit popup with error results
-            if (re == 0)
+            if (result == 0)
                 return Result.Succeeded;
             else
                 return Result.Cancelled;

@@ -121,6 +121,9 @@ def _perform_onsessionload_ops():
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
+    # init executor
+    runtime_types.ScriptExecutor.Initialize()
+
     # asking telemetry module to setup the telemetry system
     # (active or not active)
     telemetry.setup_telemetry(uuid_str)
@@ -576,13 +579,8 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     script_runtime_cfg.DebugMode = False
     script_runtime_cfg.ExecutedFromUI = False
 
-    script_runtime = \
-        runtime.types.ScriptRuntime(script_data, script_runtime_cfg)
-
     runtime.types.ScriptExecutor.ExecuteScript(
-        framework.clr.Reference[runtime.types.ScriptRuntime](
-            script_runtime
-            )
-        )
+        script_data,
+        script_runtime_cfg
+    )
 
-    return script_runtime.GetResultsDictionary()

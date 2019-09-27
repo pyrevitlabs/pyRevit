@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using System.Threading;
 
 using Autodesk.Revit.UI;
 
@@ -17,50 +19,151 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static int NotSupportedFeatureException = 8;
         public static int UnknownException = 9;
         public static int MissingTargetScript = 10;
+        public static int DelayedExecutionRequested = 11;
+        public static int FailedDelayedExecutionRequest = 12;
+        public static int DelayedExecutionException = 13;
+        public static int ExecutorNotInitialized = 14;
+    }
+
+    public class ScriptExecutorExternalEventHandler : IExternalEventHandler {
+        public ScriptData ScriptData;
+        public ScriptRuntimeConfigs ScriptRuntimeConfigs;
+        public int Result = ScriptExecutorResultCodes.DelayedExecutionException;
+
+        public void Execute(UIApplication uiApp) {
+            if (ScriptData != null && ScriptRuntimeConfigs != null) {
+                // provide the given uiapp
+                ScriptRuntimeConfigs.UIApp = uiApp;
+
+                // request execution and set results
+                Result = ScriptExecutor.ExecuteScript(ScriptData, ScriptRuntimeConfigs);
+            }
+        }
+
+        public string GetName() {
+            return "ScriptExecutorExternalEventHandler";
+        }
+    }
+
+    public class ScriptExecutorConfigs {
+        public bool WaitForResult = true;
+        public bool SendTelemetry = false;
     }
 
     /// Executes a script
     public class ScriptExecutor {
+        private static int mainThreadId;
+        private static ScriptExecutorExternalEventHandler extExecEventHandler;
+        private static ExternalEvent extExecEvent;
+
+        public static void Initialize() {
+            mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            extExecEventHandler = new ScriptExecutorExternalEventHandler();
+            extExecEvent = ExternalEvent.Create(extExecEventHandler);
+        }
+
         /// Run the script and print the output to a new output window.
-        public static int ExecuteScript(ref ScriptRuntime runtime) {
+        public static int ExecuteScript(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs = null) {
+            // make sure there is base configs
+            scriptExecConfigs = scriptExecConfigs == null ? new ScriptExecutorConfigs() : scriptExecConfigs;
+
+            if (mainThreadId != 0) {
+                if (Thread.CurrentThread.ManagedThreadId == mainThreadId)
+                    return ExecuteScriptNow(scriptData, scriptRuntimeCfg, scriptExecConfigs);
+                else
+                    return RequestExecuteScript(scriptData, scriptRuntimeCfg, scriptExecConfigs);
+            }
+
+            return ScriptExecutorResultCodes.ExecutorNotInitialized;
+        }
+
+        private static int ExecuteScriptNow(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
+            // create runtime
+            var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
+
+            // determine which engine to use, and execute
             if (EnsureTargetScript(ref runtime)) {
                 switch (runtime.EngineType) {
                     case ScriptEngineType.IronPython:
-                        return ExecuteManagedScript<IronPythonEngine>(ref runtime);
+                        ExecuteManagedScript<IronPythonEngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.CPython:
-                        return ExecuteManagedScript<CPythonEngine>(ref runtime);
+                        ExecuteManagedScript<CPythonEngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.CSharp:
-                        return ExecuteManagedScript<CLREngine>(ref runtime);
+                        ExecuteManagedScript<CLREngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.Invoke:
-                        return ExecuteManagedScript<InvokableDLLEngine>(ref runtime);
+                        ExecuteManagedScript<InvokableDLLEngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.VisualBasic:
-                        return ExecuteManagedScript<CLREngine>(ref runtime);
+                        ExecuteManagedScript<CLREngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.IronRuby:
-                        return ExecuteManagedScript<IronRubyEngine>(ref runtime);
+                        ExecuteManagedScript<IronRubyEngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.DynamoBIM:
-                        return ExecuteManagedScript<DynmoBIMEngine>(ref runtime);
+                        ExecuteManagedScript<DynmoBIMEngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.Grasshopper:
-                        return ExecuteManagedScript<GrasshoppertEngine>(ref runtime);
+                        ExecuteManagedScript<GrasshoppertEngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.Content:
-                        return ExecuteManagedScript<ContentEngine>(ref runtime);
+                        ExecuteManagedScript<ContentEngine>(ref runtime);
+                        break;
 
                     case ScriptEngineType.HyperLink:
-                        return ExecuteManagedScript<HyperlinkEngine>(ref runtime);
+                        ExecuteManagedScript<HyperlinkEngine>(ref runtime);
+                        break;
 
                     default:
                         // should not get here
                         throw new PyRevitException("Unknown engine type.");
                 }
-            } else
-                return ScriptExecutorResultCodes.MissingTargetScript;
+            }
+            else
+                runtime.ExecutionResult = ScriptExecutorResultCodes.MissingTargetScript;
+
+            // Log results
+            int result = runtime.ExecutionResult;
+            if (scriptExecConfigs.SendTelemetry)
+                ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
+
+            // GC cleanups
+            var re = runtime.ExecutionResult;
+            runtime.Dispose();
+            runtime = null;
+
+            // return the result
+            return result;
+        }
+
+        private static int RequestExecuteScript(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
+            if (extExecEventHandler != null) {
+                extExecEventHandler.ScriptData = scriptData;
+                extExecEventHandler.ScriptRuntimeConfigs = scriptRuntimeCfg;
+
+                // request command exec now
+                extExecEvent.Raise();
+
+                // wait until the script is executed
+                if (scriptExecConfigs.WaitForResult) {
+                    while (extExecEvent.IsPending) ;
+                    return extExecEventHandler.Result;
+                }
+                // otherwise
+                return ScriptExecutorResultCodes.DelayedExecutionRequested;
+            }
+
+            return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
         }
 
         public static bool EnsureTargetScript(ref ScriptRuntime runtime) {
@@ -77,7 +180,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return false;
         }
 
-        private static int ExecuteManagedScript<T>(ref ScriptRuntime runtime) where T : ScriptEngine, new() {
+        private static void ExecuteManagedScript<T>(ref ScriptRuntime runtime) where T : ScriptEngine, new() {
             // 1: ----------------------------------------------------------------------------------------------------
             // get new engine manager (EngineManager manages document-specific engines)
             // and ask for an engine (EngineManager return either new engine or an already active one)
@@ -90,7 +193,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // stop and cleanup the engine
             engine.Stop(ref runtime);
 
-            return result;
+            // set result
+            runtime.ExecutionResult = result;
         }
     }
 }

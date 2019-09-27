@@ -18,6 +18,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public class ScriptRuntimeConfigs : IDisposable {
         private object _eventSender = null;
 
+        public ControlledApplication ControlledApp { get; set; }
+        public Application App { get; set; }
+        public UIControlledApplication UIControlledApp { get; set; }
+        public UIApplication UIApp { get; set; }
+
         public ExternalCommandData CommandData { get; set; }
         public ElementSet SelectedElements { get; set; }
 
@@ -83,6 +88,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             //env
             // get the state of variables before command execution; the command could potentially change the values
             EnvDict = new EnvDictionary();
+
+            // apply application override hooks if given
+            if (ScriptRuntimeConfigs.ControlledApp != null)
+                ControlledApp = ScriptRuntimeConfigs.ControlledApp;
+            if (ScriptRuntimeConfigs.App != null)
+                App = ScriptRuntimeConfigs.App;
+            if (ScriptRuntimeConfigs.UIControlledApp != null)
+                UIControlledApp = ScriptRuntimeConfigs.UIControlledApp;
+            if (ScriptRuntimeConfigs.UIApp != null)
+                UIApp = ScriptRuntimeConfigs.UIApp;
 
             // determine event sender type
             if (ScriptRuntimeConfigs.EventSender != null) {

@@ -211,7 +211,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             else if (runtime.App != null)
                 builtin.SetVariable("__revit__", runtime.App);
             else
-                builtin.SetVariable("__revit__", null);
+                builtin.SetVariable("__revit__", (object)null);
 
             // Adding data provided by IExternalCommand.Execute
             builtin.SetVariable("__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);

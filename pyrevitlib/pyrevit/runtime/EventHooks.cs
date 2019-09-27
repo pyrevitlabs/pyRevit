@@ -63,41 +63,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static int Execute(EventHook eventHook, object eventSender, object eventArgs) {
-            // 1: ----------------------------------------------------------------------------------------------------
-            #region Setup pyRevit Command Runtime
-            var runtime =
-                new ScriptRuntime(
-                    //cmdData: null,
-                    //elements: ,
-                    scriptData: new ScriptData {
-                        ScriptPath = eventHook.Script,
-                        ConfigScriptPath = eventHook.Script,
-                        CommandUniqueId = eventHook.UniqueId,
-                        CommandName = string.Format("hooks.{0}", Path.GetFileNameWithoutExtension(eventHook.Script)),
-                        CommandBundle = string.Format("{0}.hooks", eventHook.ExtensionName),
-                        CommandExtension = eventHook.ExtensionName,
-                        HelpSource = "",
-                    },
-                    scriptRuntimeCfg: new ScriptRuntimeConfigs {
-                        CommandData = null,
-                        SelectedElements = new ElementSet(),
-                        SearchPaths = new List<string>(eventHook.SearchPaths),
-                        Arguments = new List<string>(),
-                        EventSender = eventSender,
-                        EventArgs = eventArgs,
-                        EngineConfigs = " { \"full_frame\" : true } ",
-                        RefreshEngine = false,
-                        ConfigMode = false,
-                        DebugMode = false,
-                        ExecutedFromUI = false
-                    }
+            return ScriptExecutor.ExecuteScript(
+                scriptData: new ScriptData {
+                    ScriptPath = eventHook.Script,
+                    ConfigScriptPath = eventHook.Script,
+                    CommandUniqueId = eventHook.UniqueId,
+                    CommandName = string.Format("hooks.{0}", Path.GetFileNameWithoutExtension(eventHook.Script)),
+                    CommandBundle = string.Format("{0}.hooks", eventHook.ExtensionName),
+                    CommandExtension = eventHook.ExtensionName,
+                    HelpSource = "",
+                },
+                scriptRuntimeCfg: new ScriptRuntimeConfigs {
+                    CommandData = null,
+                    SelectedElements = new ElementSet(),
+                    SearchPaths = new List<string>(eventHook.SearchPaths),
+                    Arguments = new List<string>(),
+                    EventSender = eventSender,
+                    EventArgs = eventArgs,
+                    EngineConfigs = " { \"full_frame\" : true } ",
+                    RefreshEngine = false,
+                    ConfigMode = false,
+                    DebugMode = false,
+                    ExecutedFromUI = false
+                },
+                scriptExecConfigs: new ScriptExecutorConfigs {
+                    SendTelemetry = false
+                }
                 );
-            #endregion
-
-            // 2: ----------------------------------------------------------------------------------------------------
-            #region Execute and log results
-            return ScriptExecutor.ExecuteScript(ref runtime);
-            #endregion
         }
 
         public static List<EventHook> GetAllEventHooks() {
@@ -425,13 +417,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.AddInCommandBinding_Executed, sender, e, e.CommandId.Name);
         }
 
-        // custom events
+        // custom events being called from non-main thread
         public void Application_JournalUpdated(object sender, JournalUpdateArgs e) {
-            // TODO: run journal-updated hooks. need to use events to run when idle
+            ExecuteEventHooks(EventType.Application_JournalUpdated, sender, e);
         }
 
         public void Application_JournalCommandExecuted(object sender, CommandExecutedArgs e) {
-            // TODO: run journal-command-exec hooks. need to use events to run when idle
+            ExecuteEventHooks(EventType.Application_JournalCommandExecuted, sender, e);
         }
     }
 }

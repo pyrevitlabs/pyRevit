@@ -1109,7 +1109,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // do nothing. no interesting telemetry data
         }
 
-        // custom events
+        // custom events being called from non-main thread
         public void Application_JournalUpdated(object sender, JournalUpdateArgs e) {
             // do nothing. no interesting telemetry data
         }
