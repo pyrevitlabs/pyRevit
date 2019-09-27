@@ -153,7 +153,7 @@ namespace pyRevitCLI {
             Console.WriteLine(string.Format("Executing User: {0}\\{1}",
                                             Environment.UserDomainName, Environment.UserName));
             Console.WriteLine(string.Format("Active User: {0}", UserEnv.GetLoggedInUserName()));
-            Console.WriteLine(string.Format("Adming Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
+            Console.WriteLine(string.Format("Admin Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
             Console.WriteLine(string.Format("%APPDATA%: \"{0}\"",
                                             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
             Console.WriteLine(string.Format("Latest Installed .Net Framework: {0}",
