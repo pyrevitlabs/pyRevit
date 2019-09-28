@@ -1,9 +1,10 @@
+
 #pylint: disable=E0401,W0703,W0613,C0111,C0103
 import os
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
-from pyrevit.framework import System, Windows, Controls, Documents
+from pyrevit.framework import System, Windows, Controls, Documents, EventHandler
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
@@ -82,6 +83,7 @@ class SettingsWindow(forms.WPFWindow):
                          'pyRevit again. | {}'.format(setup_params_err))
 
         self.reload_requested = False
+        self.textchange_timer = None
         self._setup_engines()
         self._setup_user_extensions_list()
         self._setup_env_vars_list()
@@ -471,6 +473,47 @@ class SettingsWindow(forms.WPFWindow):
         cur_log_folder = op.dirname(self.cur_telemetryfile_tb.Text)
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
+
+    def update_status_lights(self, status, serverbox, servermsg):
+        if status and status["status"] == "pass":
+            self.show_element(serverbox)
+            servermsg.Text = ""
+            for check, check_status in status["checks"].items():
+                servermsg.Text += \
+                    u'\u2713 {} ({})'.format(
+                        check,
+                        check_status["version"]
+                        )
+            return
+        self.hide_element(serverbox)
+        servermsg.Text = ""
+
+    def telemetryserver_updated(self, sender, args):
+        """Check the status of telemetry server"""
+        status = telemetry.get_status_from_url(self.telemetryserver_tb.Text)
+        self.update_status_lights(
+            status,
+            self.telemetryserver_statusbox,
+            self.telemetryserver_statusmsg
+            )
+
+    # def telemetryserver_changed(self, sender, args):
+    #     if not self.textchange_timer:
+    #         self.textchange_timer = Windows.Forms.Timer()
+    #         self.textchange_timer.Interval = 300
+    #         self.textchange_timer.Tick += \
+    #             EventHandler(self.telemetryserver_updated)
+    #     self.textchange_timer.Stop()
+    #     self.textchange_timer.Start()
+
+    def apptelemetryserver_updated(self, sender, args):
+        """Check the status of app telemetry server"""
+        status = telemetry.get_status_from_url(self.apptelemetryserver_tb.Text)
+        self.update_status_lights(
+            status,
+            self.apptelemetryserver_statusbox,
+            self.apptelemetryserver_statusmsg
+            )
 
     def toggle_event_cbs(self, sender, args):
         for event_db in self._get_event_telemetry_checkboxes():

@@ -16,6 +16,8 @@ This module manages the telemetry system.
     script module. See `script.get_results()` for examples
 """
 import os.path as op
+import urllib2
+import json
 
 from pyrevit import HOST_APP, PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX
 from pyrevit.runtime.types import EventType, EventTelemetry
@@ -176,6 +178,26 @@ def _setup_default_logfile(telemetry_fullpath):
         # if file does not exist, let's write the basic JSON list to it.
         with open(telemetry_fullpath, 'w') as log_file:
             log_file.write('[]')
+
+
+def get_status_from_url(server_url):
+    server_url = server_url.lower()
+    if server_url.endswith('scripts/'):
+        server_url = server_url.replace('scripts/', 'status')
+    elif server_url.endswith('events/'):
+        server_url = server_url.replace('events/', 'status')
+
+    try:
+        return json.loads(urllib2.urlopen(server_url).read())
+    except Exception:
+        return None
+
+
+def get_status():
+    return get_status_from_url(
+        get_telemetry_server_url()
+        or get_apptelemetry_server_url()
+        )
 
 
 def setup_telemetry(session_id=None):
