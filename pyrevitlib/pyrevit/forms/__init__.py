@@ -1488,6 +1488,24 @@ class LevelOption(TemplateListItem):
         return revit.query.get_name(self.item)
 
 
+class FamilyParamOption(TemplateListItem):
+    """Level wrapper for :func:`select_family_parameters`."""
+    def __init__(self, fparam, builtin=False, labeled=False):
+        super(FamilyParamOption, self).__init__(fparam)
+        self.isbuiltin = builtin
+        self.islabeled = labeled
+
+    @property
+    def name(self):
+        """Family Parameter name."""
+        return self.item.Definition.Name
+
+    @property
+    def istype(self):
+        """Is type parameter."""
+        return not self.item.IsInstance
+
+
 def select_revisions(title='Select Revision',
                      button_name='Select',
                      width=DEFAULT_INPUTWINDOW_WIDTH,
@@ -2018,13 +2036,13 @@ def select_image(images, title='Select Image', button_name='Select'):
     return bitmap_images.get(selected_image, None)
 
 
-def select_parameter(src_element,
-                     title='Select Parameters',
-                     button_name='Select',
-                     multiple=True,
-                     filterfunc=None,
-                     include_instance=True,
-                     include_type=True):
+def select_parameters(src_element,
+                      title='Select Parameters',
+                      button_name='Select',
+                      multiple=True,
+                      filterfunc=None,
+                      include_instance=True,
+                      include_type=True):
     """Standard form for selecting parameters from given element.
 
     Args:
@@ -2080,6 +2098,90 @@ def select_parameter(src_element,
         param_defs,
         title=title,
         button_name=button_name,
+        width=450,
+        multiselect=multiple,
+        item_template=itemplate
+        )
+
+    return selected_params
+
+
+def select_family_parameters(family_doc,
+                             title='Select Parameters',
+                             button_name='Select',
+                             multiple=True,
+                             filterfunc=None,
+                             include_instance=True,
+                             include_type=True,
+                             include_builtin=True,
+                             include_labeled=True):
+    """Standard form for selecting parameters from given family document.
+
+    Args:
+        family_doc (DB.Document): source family document
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        include_instance (bool, optional): list instance parameters
+        include_type (bool, optional): list type parameters
+        include_builtin (bool, optional): list builtin parameters
+        include_labeled (bool, optional): list parameters used as labels
+
+    Returns:
+        list[:obj:`DB.FamilyParameter`]: list of family parameter objects
+
+    Example:
+        >>> forms.select_family_parameters(
+        ...     family_doc,
+        ...     title='Select Parameters',
+        ...     multiple=True,
+        ...     include_instance=True,
+        ...     include_type=True
+        ... )
+        ... [<DB.FamilyParameter >, <DB.FamilyParameter >]
+    """
+    family_doc = family_doc or HOST_APP.doc
+    family_params = revit.query.get_family_parameters(family_doc)
+    # get all params used in labeles
+    label_param_ids = \
+        [x.Id for x in revit.query.get_family_label_parameters(family_doc)]
+
+    if filterfunc:
+        family_params = filter(filterfunc, family_params)
+
+    param_defs = []
+    for family_param in family_params:
+        if not include_instance and family_param.IsInstance:
+            continue
+        if not include_type and not family_param.IsInstance:
+            continue
+        if not include_builtin and family_param.Id.IntegerValue < 0:
+            continue
+        if not include_labeled and family_param.Id in label_param_ids:
+            continue
+
+        param_defs.append(
+            FamilyParamOption(family_param,
+                              builtin=family_param.Id.IntegerValue < 0,
+                              labeled=family_param.Id in label_param_ids)
+            )
+
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "FamilyParameterItemStyle.xaml")
+        )
+    selected_params = SelectFromList.show(
+        {
+            'All Parameters': param_defs,
+            'Type Parameters': [x for x in param_defs if x.istype],
+            'Built-in Parameters': [x for x in param_defs if x.isbuiltin],
+            'Used as Label': [x for x in param_defs if x.islabeled],
+        },
+        title=title,
+        button_name=button_name,
+        group_selector_title='Parameter Filters:',
         width=450,
         multiselect=multiple,
         item_template=itemplate

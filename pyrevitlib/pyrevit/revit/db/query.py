@@ -1234,6 +1234,7 @@ def get_schema_field_values(element, schema):
 
 
 def get_family_type(type_name, family_doc):
+    family_doc = family_doc or HOST_APP.doc
     if family_doc.IsFamilyDocument:
         for ftype in family_doc.FamilyManager.Types:
             if ftype.Name == type_name:
@@ -1243,10 +1244,38 @@ def get_family_type(type_name, family_doc):
 
 
 def get_family_parameter(param_name, family_doc):
+    family_doc = family_doc or HOST_APP.doc
     if family_doc.IsFamilyDocument:
         for fparam in family_doc.FamilyManager.GetParameters():
             if fparam.Definition.Name == param_name:
                 return fparam
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_parameters(family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        return family_doc.FamilyManager.GetParameters()
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_label_parameters(family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        dims = DB.FilteredElementCollector(family_doc)\
+                .OfClass(DB.Dimension)\
+                .WhereElementIsNotElementType()
+        label_params = set()
+        for dim in dims:
+            try:
+                # throws exception when dimension can not be labeled
+                if isinstance(dim.FamilyLabel, DB.FamilyParameter):
+                    label_params.add(dim.FamilyLabel)
+            except Exception:
+                pass
+        return label_params
     else:
         raise PyRevitException('Document is not a family')
 
