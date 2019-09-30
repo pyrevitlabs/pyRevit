@@ -2472,6 +2472,32 @@ def check_modelview(view, exitscript=False):
     return True
 
 
+def check_viewtype(view, view_type, exitscript=False):
+    """Verify target view is of given type
+
+    Args:
+        view (DB.View): target view
+        view_type (DB.ViewType): type of view
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if view is of given type
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_viewtype(revit.active_view, DB.ViewType.DrawingSheet)
+        ... True
+    """
+    if view.ViewType != view_type:
+        alert(
+            "Active view must be a {}.".format(
+                coreutils.split_words(view_type)),
+            exitscript=exitscript
+            )
+        return False
+    return True
+
+
 def toast(message, title='pyRevit', appid='pyRevit',
           icon=None, click=None, actions=None):
     """Show a Windows 10 notification.
