@@ -2593,7 +2593,7 @@ def check_viewtype(view, view_type, exitscript=False):
     if view.ViewType != view_type:
         alert(
             "Active view must be a {}.".format(
-                coreutils.split_words(view_type)),
+                ' '.join(coreutils.split_words(str(view_type)))),
             exitscript=exitscript
             )
         return False
