@@ -341,7 +341,7 @@
 
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Telemetry" IsExpanded="False" Margin="10px">
+                <Expander Header="Telemetry" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow">
                             Telemetry system, records each use of tools under any of the pyRevit extensions.
@@ -361,9 +361,10 @@
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Script Telemetry Server URL or API Endpoint</TextBlock>
                                 <TextBox x:Name="telemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" 
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
-                                         VerticalContentAlignment="Center" TextChanged="telemetryserver_updated" />
-                                <Border x:Name="telemetryserver_statusbox" Background="{DynamicResource pyRevitAccentBrush}" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
-                                    <TextBlock x:Name="telemetryserver_statusmsg" Text="Postgresql 10.0" Foreground="White"  VerticalAlignment="Center"/>
+                                         VerticalContentAlignment="Center"
+                                         TextChanged="telemetryserver_changed"/>
+                                <Border x:Name="telemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
+                                    <TextBlock x:Name="telemetryserver_statusmsg" Foreground="White"  VerticalAlignment="Center" MouseLeftButtonUp="update_telemetryserver_status_lights"/>
                                 </Border>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
                                     Example
@@ -407,9 +408,10 @@
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Application Telemetry Server URL or API Endpoint (e.g. http://telemetryserver.io):</TextBlock>
                                 <TextBox x:Name="apptelemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" 
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
-                                         VerticalContentAlignment="Center" TextChanged="apptelemetryserver_updated" />
-                                <Border x:Name="apptelemetryserver_statusbox" Background="{DynamicResource pyRevitAccentBrush}" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
-                                    <TextBlock x:Name="apptelemetryserver_statusmsg" Text="Postgresql 10.0" Foreground="White"  VerticalAlignment="Center"/>
+                                         VerticalContentAlignment="Center"
+                                         TextChanged="apptelemetryserver_changed"/>
+                                <Border x:Name="apptelemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
+                                    <TextBlock x:Name="apptelemetryserver_statusmsg" Foreground="White" VerticalAlignment="Center" MouseLeftButtonUp="update_apptelemetryserver_status_lights"/>
                                 </Border>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
                                     Example

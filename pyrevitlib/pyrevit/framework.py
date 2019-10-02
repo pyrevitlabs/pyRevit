@@ -119,3 +119,8 @@ def get_dll_file(assembly_name):
     addin_file = op.join(BIN_DIR, assembly_name + '.dll')
     if op.exists(addin_file):
         return addin_file
+
+
+def get_current_thread_id():
+    """Return manageed thread id of current thread."""
+    return System.Threading.Thread.CurrentThread.ManagedThreadId

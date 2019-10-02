@@ -112,6 +112,7 @@ class WPFWindow(framework.Windows.Window):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
         # set properties
+        self.thread_id = framework.get_current_thread_id()
         if set_owner:
             self.setup_owner()
         self.setup_icon()
@@ -193,6 +194,23 @@ class WPFWindow(framework.Windows.Window):
                     )
         else:
             wpf_element.Source = utils.bitmap_from_file(image_file)
+
+    def dispatch(self, func, *args, **kwargs):
+        if framework.get_current_thread_id() == self.thread_id:
+            t = threading.Thread(
+                target=func,
+                args=args,
+                kwargs=kwargs
+                )
+            t.start()
+        else:
+            # ask ui thread to call the func with args and kwargs
+            self.Dispatcher.Invoke(
+                System.Action(
+                    lambda: func(*args, **kwargs)
+                    ),
+                Threading.DispatcherPriority.Background
+                )
 
     @property
     def pyrevit_version(self):
