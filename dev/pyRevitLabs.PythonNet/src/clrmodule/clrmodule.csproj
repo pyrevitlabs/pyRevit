@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <ProjectGuid>{86E834DE-1139-4511-96CC-69636A56E7AC}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>clr.pyd</AssemblyName>
+    <RootNamespace>clrmodule</RootNamespace>
+    <OutputPath>bin\</OutputPath>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <NoWarn>1591</NoWarn>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <LangVersion>6</LangVersion>
+    <RestorePackages>true</RestorePackages>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ReleaseWinPY36|x64' ">
+    <OutputPath>..\..\bin\36\</OutputPath>
+    <DefineConstants>PYTHON3</DefineConstants>
+    <Optimize>true</Optimize>
+    <PythonBuildDir Condition=" '$(PythonBuildDir)' == '' ">$(SolutionDir)\bin\36\</PythonBuildDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ReleaseWinPY37|x64' ">
+    <OutputPath>..\..\bin\37\</OutputPath>
+    <DefineConstants>PYTHON3</DefineConstants>
+    <PythonBuildDir Condition=" '$(PythonBuildDir)' == '' ">$(SolutionDir)\bin\37\</PythonBuildDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="RGiesecke.DllExport.Metadata">
+      <HintPath>..\..\packages\UnmanagedExports.1.2.7\lib\net\RGiesecke.DllExport.Metadata.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="..\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="ClrModule.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <TargetAssembly>$(TargetPath)</TargetAssembly>
+    <TargetAssemblyPdb>$(TargetDir)$(TargetName).pdb</TargetAssemblyPdb>
+  </PropertyGroup>
+  <Target Name="AfterBuild" DependsOnTargets="RGieseckeDllExport">
+    <Copy SourceFiles="$(TargetAssembly)" DestinationFiles="$(PythonBuildDir)\clr.pyd" />
+    <Copy SourceFiles="$(TargetAssemblyPdb)" Condition="Exists('$(TargetAssemblyPdb)')" DestinationFiles="$(PythonBuildDir)\clr.pdb" />
+  </Target>
+  <Import Project="../../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets" Condition="Exists('../../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets')" />
+</Project>

@@ -114,7 +114,7 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         public static string NullToNA(this string sourceString) {
-            if (sourceString == "" || sourceString == null)
+            if (sourceString == "" || sourceString is null)
                 return "N/A";
             else
                 return sourceString;
@@ -194,7 +194,7 @@ namespace pyRevitLabs.Common.Extensions {
 
         public static string UrlFriendly(this string text, int maxLength = 0) {
             // Return empty value if text is null
-            if (text == null) return "";
+            if (text is null) return "";
             var normalizedString = text
                 // Make lowercase
                 .ToLowerInvariant()
@@ -244,7 +244,7 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         // https://stackoverflow.com/a/24031467/2350244
-        public static string GenerateHash(this string input) {
+        public static string GenerateMD5Hash(this string input) {
             // Use input string to calculate MD5 hash
             using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create()) {
                 byte[] inputBytes = Encoding.ASCII.GetBytes(input);
@@ -252,8 +252,8 @@ namespace pyRevitLabs.Common.Extensions {
 
                 // Convert the byte array to hexadecimal string
                 StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < hashBytes.Length; i++) {
-                    sb.Append(hashBytes[i].ToString("X2"));
+                foreach (byte b in hashBytes) {
+                    sb.Append(b.ToString("X2"));
                 }
                 return sb.ToString();
             }
@@ -315,6 +315,23 @@ namespace pyRevitLabs.Common.Extensions {
 
         public static string PrepareJSONForCSV(this string input) {
             return "\"" + input.Replace("\"", "\"\"") + "\"";
+        }
+
+        public static IEnumerable<string> SplitIntoChunks(this string input, int chunkSize) {
+            if (string.IsNullOrEmpty(input) || chunkSize < 1)
+                throw new ArgumentException("String can not be null or empty and chunk size should be greater than zero.");
+            var chunkCount = input.Length / chunkSize + (input.Length % chunkSize != 0 ? 1 : 0);
+            for (var i = 0; i < chunkCount; i++) {
+                var startIndex = i * chunkSize;
+                if (startIndex + chunkSize >= input.Length)
+                    yield return input.Substring(startIndex);
+                else
+                    yield return input.Substring(startIndex, chunkSize);
+            }
+        }
+
+        public static string NormalizeNewLine(this string input) {
+            return input.Replace("\r\n", "\n");
         }
     }
 

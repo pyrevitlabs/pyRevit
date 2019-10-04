@@ -1,0 +1,6 @@
+title: Test Link Button (Custom Title)
+tooltip: Test Link Button Tooltip
+author: "{{author}}"
+assembly: PyRevitTestLinkCommand.dll
+command_class: PyRevitTestLinkExternalCommand
+highlight: new

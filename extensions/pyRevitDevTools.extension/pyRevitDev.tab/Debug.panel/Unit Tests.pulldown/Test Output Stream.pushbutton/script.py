@@ -2,9 +2,9 @@
 from pyrevit import DB
 from pyrevit import script
 
-from pyrevit.coreutils.loadertypes import ScriptOutputEmojis
+from pyrevit.runtime.types import ScriptConsoleEmojis
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 output = script.get_output()
@@ -13,13 +13,15 @@ logger = script.get_logger()
 output.set_title('Output Tests')
 
 output.print_md('**Testing log levels:**')
-logger.critical('Test Log Level')
-logger.warning('Test Log Level')
-logger.info('Test Log Level :ok_hand_sign:')
-logger.debug('Test Log Level')
+logger.info('Test Info Log Level :OK_hand:')
+logger.success('Test Success Log Level')
+logger.debug('Test Debug Log Level')
+logger.warning('Test Warning Log Level')
+logger.critical('Test Critical Log Level')
+logger.deprecate('Test Deprecate Message')
 
 output.print_md('**Testing large buffer output (>1023 chars):**')
-output.print_html('<div style="background:green">{}</div>'.format('Test '*256))
+output.print_html('<div style="background:green">{} END</div>'.format('Test '*256))
 
 output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'
@@ -27,7 +29,7 @@ print('Clickable element id: {}'
 
 output.print_md('**Testing emojify:**')
 emoji_str = ''
-for e in ScriptOutputEmojis.emojiDict.Keys:
+for e in ScriptConsoleEmojis.emojiDict.Keys:
     emoji_str += ' :{}:'.format(e)
 
 print(emoji_str)

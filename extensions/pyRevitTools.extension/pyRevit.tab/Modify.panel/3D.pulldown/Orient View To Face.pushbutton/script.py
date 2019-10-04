@@ -32,14 +32,14 @@ def reorient():
             sp = DB.SketchPlane.Create(revit.doc, base_plane)
 
             # orient the 3D view looking at the sketchplane
-            revit.activeview.OrientTo(normal_vec.Negate())
+            revit.active_view.OrientTo(normal_vec.Negate())
             # set the sketchplane to active
             revit.uidoc.ActiveView.SketchPlane = sp
 
         revit.uidoc.RefreshActiveView()
 
 
-curview = revit.activeview
+curview = revit.active_view
 
 if isinstance(curview, DB.View3D):
     reorient()

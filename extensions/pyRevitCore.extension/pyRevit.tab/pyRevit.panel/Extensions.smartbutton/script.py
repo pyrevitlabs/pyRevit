@@ -1,5 +1,7 @@
 """Add or remove pyRevit extensions."""
 #pylint: disable=E0401,W0703,W0613,C0103,C0111
+import re
+
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import script
@@ -9,8 +11,10 @@ import pyrevit.extensions.extpackages as extpkgs
 
 from pyrevit.userconfig import user_config
 
+import pyrevitcore_globals
 
-__context__ = 'zerodoc'
+
+__context__ = 'zero-doc'
 
 
 logger = script.get_logger()
@@ -232,10 +236,13 @@ class ExtensionsWindow(forms.WPFWindow):
         else:
             self.ext_toggle_b.Content = \
                 self.ext_toggle_b.Content.replace('En', 'Dis')
-        
+
         if multiple:
             self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content.replace('Extension', 'Extensions')
+                self.ext_toggle_b.Content = \
+                    re.sub("Extensions*",
+                           "Extensions",
+                           self.ext_toggle_b.Content)
         else:
             self.ext_toggle_b.Content = \
                 self.ext_toggle_b.Content.replace('Extensions', 'Extension')
@@ -448,18 +455,15 @@ def open_ext_dirs_in_explorer(ext_dirs_list):
         coreutils.open_folder_in_explorer(ext_dir)
 
 
-PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
-
-
 def call_reload():
     from pyrevit.loader.sessionmgr import execute_command
-    execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
+    execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
 # decide if the settings should load or not
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     # do not load the tool if user should not config
-    if not user_config.core.get_option('usercanextend', True):
+    if not user_config.user_can_extend:
         return False
 
 # handles tool click in Revit interface:

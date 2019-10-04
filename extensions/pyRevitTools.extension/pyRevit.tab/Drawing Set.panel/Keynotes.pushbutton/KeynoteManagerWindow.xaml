@@ -6,7 +6,7 @@
         ResizeMode="CanResizeWithGrip"
         HorizontalContentAlignment="Center"
         WindowStartupLocation="Manual"
-        Title="Manage Keynotes (BETA - USE FOR TESTING ONLY)"
+        Title="Manage Keynotes"
         Closing="window_closing">
     <Window.Resources>
         <Style x:Key="ClearButton" TargetType="Button">

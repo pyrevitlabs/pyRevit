@@ -8,7 +8,7 @@ from pyrevit import forms
 __helpurl__ = '{{docpath}}b050tpp4vCE&t=42s'
 
 
-curview = revit.activeview
+curview = revit.active_view
 
 
 def orientsectionbox(view):

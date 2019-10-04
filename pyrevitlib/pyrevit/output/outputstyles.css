@@ -60,6 +60,11 @@ tr:nth-child(odd) {
 	padding: 6px;
 }
 
+.logsuccess {
+	background: #f7f9f2;
+	color: #618401;
+}
+
 .logerror {
 	background: #f9f2f4;
 	color: #c7254e;
@@ -67,12 +72,25 @@ tr:nth-child(odd) {
 
 .logwarning {
 	background: #F7F3F2;
-	color: #C64325;
+	color: #E17700;
 }
 
 .logcritical {
 	background: #c7254e;
 	color: white;
+}
+
+.logdeprecate {
+	background: #ffd900;
+	color: #974901;
+}
+
+.coreupdatewarn {
+	background: #F7F3F2;
+	color: #E17700;
+	padding: 20px;
+	margin: 10px 0px 10px 0px;
+	border: 1px solid #C64325; 
 }
 
 .inlinewait {

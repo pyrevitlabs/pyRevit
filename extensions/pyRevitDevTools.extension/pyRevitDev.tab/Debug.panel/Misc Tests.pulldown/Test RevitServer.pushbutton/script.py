@@ -2,7 +2,7 @@ from rpws import RevitServer
 
 
 __fullframeengine__ = True
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 rs = RevitServer('rshil02', '2017')

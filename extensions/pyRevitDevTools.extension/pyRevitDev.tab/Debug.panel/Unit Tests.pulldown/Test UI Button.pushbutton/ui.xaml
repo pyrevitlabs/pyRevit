@@ -1,0 +1,12 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center"
+        SizeToContent="Height" Width="500"
+        Title="Easy UI">
+    <StackPanel Margin="20">
+        <TextBlock x:Name="textblock" />
+        <Button x:Name="button" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="50" Margin="0,10,0,0"/>
+    </StackPanel>
+</Window>

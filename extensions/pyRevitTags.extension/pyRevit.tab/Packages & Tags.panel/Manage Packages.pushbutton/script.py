@@ -216,8 +216,8 @@ class ManagePackagesWindow(forms.WPFWindow):
 
         # list all sheets
         self._list_sheets()
-        if isinstance(revit.activeview, DB.ViewSheet):
-            self.search_tb.Text = revit.activeview.SheetNumber
+        if isinstance(revit.active_view, DB.ViewSheet):
+            self.search_tb.Text = revit.active_view.SheetNumber
 
     def _read_resources(self):
         dt_template_file = script.get_bundle_file('PackagesDataTemplate.xaml')

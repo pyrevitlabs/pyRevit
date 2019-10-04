@@ -1,0 +1,16 @@
+highlight: new
+layout:
+  - Test pyRevit Bundle
+  - Test pyRevit Button
+  - Test Smart Button
+  - Test C# Script
+  - Test Direct Invoke
+  - Test Direct Class Invoke
+  - Test Link Button
+  - Test Legacy Link Button
+  - Test VisualBasic
+  - Test Ruby
+  - Test DynamoBIM
+  - Test Grasshopper
+  - Test Content Bundle
+  - Test Hyperlink

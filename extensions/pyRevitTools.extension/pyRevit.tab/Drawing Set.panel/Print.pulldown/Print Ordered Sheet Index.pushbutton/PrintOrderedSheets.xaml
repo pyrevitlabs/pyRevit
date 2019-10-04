@@ -58,7 +58,7 @@
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Name}" />
+                                    <TextBlock Text="{Binding name}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>

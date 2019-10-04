@@ -30,8 +30,8 @@ def pin_viewports(sheet_list):
 
 
 if __shiftclick__:
-    if isinstance(revit.activeview, DB.ViewSheet):
-        sel_sheets = [revit.activeview]
+    if isinstance(revit.active_view, DB.ViewSheet):
+        sel_sheets = [revit.active_view]
     else:
         forms.alert('Active view must be a sheet.')
         script.exit()

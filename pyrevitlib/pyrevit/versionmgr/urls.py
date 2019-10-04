@@ -1,19 +1,21 @@
 """pyRevit related links."""
+from pyrevit.labs import Common
 
-PYREVIT_LICENSE = 'https://choosealicense.com/licenses/gpl-3.0/'
-PYREVIT_CREDITS = 'https://github.com/eirannejad/pyRevit/blob/master/CREDITS.md'
-PYREVIT_DOCS = 'https://pyrevit.readthedocs.io/en/latest/'
-PYREVIT_BLOG = 'https://eirannejad.github.io/pyRevit/'
-PYREVIT_GITHUB = 'https://github.com/eirannejad/pyRevit'
-PYREVIT_GITHUBBRANCH = 'https://github.com/eirannejad/pyRevit/tree/{branch}'
+PYREVIT_LICENSE = Common.PyRevitLabsConsts.LicenseUrl
+PYREVIT_CREDITS = Common.PyRevitLabsConsts.CreditsUrl
+PYREVIT_WIKI = Common.PyRevitLabsConsts.WikiUrl
+PYREVIT_TWITTER = "https://twitter.com/pyrevit"
+PYREVIT_BLOG = Common.PyRevitLabsConsts.BlogsUrl
+PYREVIT_DOCS = Common.PyRevitLabsConsts.DocsUrl
+PYREVIT_GITHUB = Common.PyRevitLabsConsts.OriginalRepoBasePath
+PYREVIT_GITHUBBRANCH = \
+    Common.PyRevitLabsConsts.OriginalRepoBasePath + '/tree/{branch}'
 PYREVIT_GITHUBMASTER_COMMIT = \
-    'https://github.com/eirannejad/pyRevit/commits/master'
+    Common.PyRevitLabsConsts.OriginalRepoBasePath + '/commits/master'
 PYREVIT_GITHUBBRANCH_COMMIT = \
-    'https://github.com/eirannejad/pyRevit/commits/{branch}'
-PYREVIT_GITHUBISSUES = 'https://github.com/eirannejad/pyrevit/issues'
-PYREVIT_YOUTUBE = 'https://www.youtube.com/pyrevit'
-PYREVIT_PATREON = 'https://www.patreon.com/pyrevit'
-PYREVIT_RELEASENOTES = 'https://github.com/eirannejad/pyRevit/releases'
-PROFILE_EIN = 'https://keybase.io/ein'
-PYREVIT_BLOG_SCRIPTANAT = \
-    'https://pyrevit.readthedocs.io/en/latest/articles/scriptanatomy.html'
+    Common.PyRevitLabsConsts.OriginalRepoBasePath + '/commits/{branch}'
+PYREVIT_GITHUBISSUES = Common.PyRevitLabsConsts.IssuesUrl
+PYREVIT_YOUTUBE = Common.PyRevitLabsConsts.YoutubeUrl
+PYREVIT_SUPPORT = Common.PyRevitLabsConsts.SupportUrl
+PYREVIT_RELEASENOTES = Common.PyRevitLabsConsts.ReleasesUrl
+PROFILE_EIN = 'https://ein.sh'

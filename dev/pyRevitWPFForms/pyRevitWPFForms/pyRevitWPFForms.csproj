@@ -67,28 +67,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Engine Tests.pulldown\Test Persistent Engine.pushbutton\NonModalWindow.xaml">
+      <Link>Dev\NonModalWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Logs.pushbutton\LogViewerWindow.xaml">
       <Link>Debug\LogViewerWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test FillPatternViewer.pushbutton\TestFillPatternViewer.xaml">
-      <Link>Dev\TestFillPatternViewer.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Usage Records.pushbutton\UsageRecordsWindow.xaml">
-      <Link>Debug\UsageRecordsWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Developer Tools.panel\WIP Tools.pulldown\Apply Door Hardware Info.pushbutton\DoorHardwareWindow.xaml">
-      <Link>Dev\DoorHardwareWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Developer Tools.panel\WIP Tools.pulldown\Create Linked Views.pushbutton\CreateLinkedViews.xaml">
-      <Link>Dev\CreateLinkedViews.xaml</Link>
+    <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test UI Button.pushbutton\ui.xaml">
+      <Link>Dev\ui.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -147,28 +137,28 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack3\ReValue.pushbutton\ReValueWindow.xaml">
-      <Link>Tools\ReValueWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit2.stack3\Edit.pulldown\Swap Line Styles.pushbutton\ConvertLineStyles.xaml">
-      <Link>Tools\ConvertLineStyles.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\Match.pushbutton\MatchConfigWindow.xaml">
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindow.xaml">
       <Link>Tools\MatchConfigWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\Match.pushbutton\MatchConfigWindowLegacy.xaml">
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindowLegacy.xaml">
       <Link>Tools\MatchConfigWindowLegacy.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Patterns.splitpushbutton\Make Pattern.pushbutton\MakePatternWindow.xaml">
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Patterns.splitpushbutton\Make Pattern.pushbutton\MakePatternWindow.xaml">
       <Link>Tools\MakePatternWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit2.stack\ReValue.pushbutton\ReValueWindow.xaml">
+      <Link>Tools\ReValueWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit3.stack\Edit.pulldown\Convert Line Styles.pushbutton\ConvertLineStyles.xaml">
+      <Link>Tools\ConvertLineStyles.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -18,14 +18,14 @@ namespace pyRevitLabs.CommonWPF.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             var bmp = value as Bitmap;
-            if (bmp == null)
+            if (bmp is null)
             {
                 var defaultBmp = parameter as Bitmap;
                 if (defaultBmp != null)
                     return BitmapSourceConverter.ConvertFromImage(defaultBmp);
             }
 
-            return bmp == null ? null : BitmapSourceConverter.ConvertFromImage(bmp);
+            return bmp is null ? null : BitmapSourceConverter.ConvertFromImage(bmp);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

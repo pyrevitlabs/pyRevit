@@ -510,7 +510,7 @@ namespace pyRevitLabs.DeffrelDB {
         }
 
         private string encodeFieldValue(object fieldValue, FieldType fieldType) {
-            if (fieldValue == null)
+            if (fieldValue is null)
                 return mdataNULL;
 
             string fieldValueString = "";
@@ -557,7 +557,7 @@ namespace pyRevitLabs.DeffrelDB {
         private EntryRange extractRange(List<string> dstoreEntries,
                                                   string itemTag, string itemValue, bool keyvalue = false,
                                                   EntryRange relativeRange = null) {
-            if (relativeRange == null) {
+            if (relativeRange is null) {
                 relativeRange = new EntryRange();
                 relativeRange.First = 0;
                 relativeRange.Last = dstoreEntries.Count() - 1;
