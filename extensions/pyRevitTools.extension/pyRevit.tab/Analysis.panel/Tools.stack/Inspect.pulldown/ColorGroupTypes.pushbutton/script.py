@@ -7,7 +7,7 @@ from pyrevit import script, revit, forms, revit
 from Autodesk.Revit.DB import FilteredElementCollector, Group, OverrideGraphicSettings, Color, View
 
 logger = script.get_logger()
-doc = __revit__.ActiveUIDocument.Document
+doc = revit.doc
 
 def colors(n):
     ret = []
