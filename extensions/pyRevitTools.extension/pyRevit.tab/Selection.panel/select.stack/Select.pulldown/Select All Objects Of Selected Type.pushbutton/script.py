@@ -32,6 +32,8 @@ for selected_element in selection:
     # find type id
     if isinstance(selected_element, DB.CurveElement):
         type_id = selected_element.LineStyle.Id
+    elif isinstance(selected_element, DB.FamilySymbol):
+        type_id = selected_element.Id
     else:
         type_id = selected_element.GetTypeId()
 

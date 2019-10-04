@@ -13,7 +13,10 @@ selection = revit.get_selection()
 
 for el in selection:
     try:
-        family = el.Symbol.Family
+        if isinstance(el, DB.FamilySymbol):
+            family = el.Family
+        else:
+            family = el.Symbol.Family
         symbolIdSet = family.GetFamilySymbolIds()
         for symid in symbolIdSet:
             cl = DB.FilteredElementCollector(revit.doc)\
