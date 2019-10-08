@@ -76,21 +76,34 @@ def get_source_properties(src_element):
 
     src_type = revit.query.get_type(src_element)
 
+    ignore_bi_parameters = []
+    # sheet number cannot be copied
+    if isinstance(src_element, DB.ViewSheet):
+        ignore_bi_parameters.append(int(DB.BuiltInParameter.SHEET_NUMBER))
+    
+    def filter_func(p_def):
+        return p_def.BuiltInParameter and int(p_def.BuiltInParameter) not in ignore_bi_parameters
+
     selected_params = forms.select_parameter(
         src_element,
         title="Select Parameters",
         multiple=True,
+        filterfunc=filter_func,
         include_instance=True,
         include_type=True
     ) or []
 
     logger.debug("Selected parameters: %s", [x.name for x in selected_params])
 
+
     for sparam in selected_params:
         logger.debug("Reading %s", sparam.name)
         target = src_type if sparam.istype else src_element
         tparam = target.LookupParameter(sparam.name)
         if tparam:
+            if tparam.Definition.BuiltInParameter \
+                and int(tparam.Definition.BuiltInParameter) in ignore_bi_parameters:
+                continue
             if tparam.StorageType == DB.StorageType.Integer:
                 value = tparam.AsInteger()
             elif tparam.StorageType == DB.StorageType.Double:

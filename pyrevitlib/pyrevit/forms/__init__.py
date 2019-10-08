@@ -1473,8 +1473,16 @@ class ViewOption(TemplateListItem):
     @property
     def name(self):
         """View name."""
-        return '{} ({})'.format(revit.query.get_name(self.item),
-                                self.item.ViewType)
+        view_name = revit.query.get_name(self.item)
+        if isinstance(self.item, DB.ViewSheet):
+            return '{} - {}{} ({})' \
+            .format(self.item.SheetNumber,
+                    view_name,
+                    ' (placeholder)' if self.item.IsPlaceholder else '',
+                    self.item.ViewType)
+        else:
+            return '{} ({})'.format(view_name,
+                                    self.item.ViewType)
 
 
 class LevelOption(TemplateListItem):
