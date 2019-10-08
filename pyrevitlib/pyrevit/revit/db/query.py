@@ -175,6 +175,7 @@ def get_all_elements_in_view(view):
 
 
 def get_param_value(targetparam):
+    value = None
     if targetparam.StorageType == DB.StorageType.Double:
         value = targetparam.AsDouble()
     elif targetparam.StorageType == DB.StorageType.Integer:

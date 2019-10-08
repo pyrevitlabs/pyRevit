@@ -39,7 +39,10 @@ class PropPair(object):
     def compare(self):
         leftv = revit.query.get_param_value(self.leftp)
         rightv = revit.query.get_param_value(self.rightp)
-        if leftv == rightv:
+        if not leftv and not rightv:
+            print(":white_question_mark: {} ? {}"
+                  .format(self.leftp_name, self.rightp_name))
+        elif leftv == rightv:
             print(":white_heavy_check_mark: {} == {}"
                   .format(self.leftp_name, self.rightp_name))
         else:
