@@ -165,20 +165,30 @@ if __shiftclick__:    #pylint: disable=undefined-variable
 if not source_props:
     source_element = None
 
-    # ask for type of elements to match
-    # some are not selectable in graphical views
-    target_type = \
-        forms.CommandSwitchWindow.show(
-            ["Elements", "Views"],
-            message="Pick type of targets:")
+    # try to get source element from selection
+    selection = revit.get_selection()
+    if selection and len(selection) == 1:
+        source_element = selection.first
+        if isinstance(source_element, DB.View):
+            target_type = "Views"
+        else:
+            target_type = "Elements"
 
-    # determine source element
-    if target_type == "Elements":
-        with forms.WarningBar(title="Pick source object:"):
-            source_element = revit.pick_element()
-    elif target_type == "Views":
-        source_element = \
-            forms.select_views(title="Select Source View", multiple=False)
+    if not source_element:
+        # ask for type of elements to match
+        # some are not selectable in graphical views
+        target_type = \
+            forms.CommandSwitchWindow.show(
+                ["Elements", "Views"],
+                message="Pick type of targets:")
+
+        # determine source element
+        if target_type == "Elements":
+            with forms.WarningBar(title="Pick source object:"):
+                source_element = revit.pick_element()
+        elif target_type == "Views":
+            source_element = \
+                forms.select_views(title="Select Source View", multiple=False)
 
     # grab properties from source element
     if source_element:
