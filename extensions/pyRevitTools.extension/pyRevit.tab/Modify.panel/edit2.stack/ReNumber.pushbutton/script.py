@@ -14,7 +14,7 @@ output = script.get_output()
 
 def toggle_element_selection_handles(target_view, bicat, state=True):
     """Toggle handles for spatial elements"""
-    with revit.Transaction("Toggle {} handles".format(str(bicat).lower())):
+    with revit.Transaction("Toggle {} handles".format(str(bicat)[4:].lower())):
         # if view has template, toggle temp VG overrides
         if state:
             target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
