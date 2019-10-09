@@ -62,8 +62,6 @@ def get_number(target_element):
     """Get target elemnet number (might be from Number or other fields)"""
     if hasattr(target_element, "Number"):
         return target_element.Number
-    print("target_element")
-    print(target_element)
     mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
     if mark_param:
         return mark_param.AsString()
@@ -175,7 +173,6 @@ def pick_and_renumber(bicat, starting_index):
                     message="Select {} in order".format(category_name.lower())):
                 # need nested transactions to push revit to update view
                 # on each renumber task
-                print(picked_element)
                 with revit.Transaction("Renumber {}".format(category_name)):
                     # actual renumber task
                     renumber_element(picked_element,
