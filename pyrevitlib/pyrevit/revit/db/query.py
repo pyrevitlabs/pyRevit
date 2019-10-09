@@ -183,6 +183,7 @@ def get_param_value(targetparam):
         value = targetparam.AsString()
     elif targetparam.StorageType == DB.StorageType.ElementId:
         value = targetparam.AsElementId()
+
     return value
 
 
