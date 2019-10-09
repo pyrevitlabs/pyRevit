@@ -261,22 +261,26 @@ def pick_elements_by_category(cat_name_or_builtin, message=''):
 
 
 def get_picked_elements(message=''):
+    results = []
     picked_element = True
     while picked_element:
         picked_element = pick_element(message=message)
         if not picked_element:
             break
-        yield picked_element
+        results.append(pick_elpicked_elementement)
+    return results
 
 
 def get_picked_elements_by_category(cat_name_or_builtin, message=''):
+    results = []
     picked_element = True
     while picked_element:
         picked_element = pick_element_by_category(cat_name_or_builtin,
                                                   message=message)
         if not picked_element:
             break
-        yield picked_element
+        results.append(picked_element)
+    return results
 
 
 def pick_elementpoints(message='', world=False):
