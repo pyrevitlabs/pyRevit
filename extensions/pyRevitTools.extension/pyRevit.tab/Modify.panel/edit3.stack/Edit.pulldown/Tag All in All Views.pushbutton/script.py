@@ -16,10 +16,11 @@ views = DB.FilteredElementCollector(revit.doc)\
 
 
 def GetElementCenter(el):
-    cen = el.Location.Point
-    z = (el.UpperLimit.Elevation + el.LimitOffset) / 2
-    cen = cen.Add(DB.XYZ(0, 0, z))
-    return cen
+    if el.Location:
+        cen = el.Location.Point
+        z = (el.UpperLimit.Elevation + el.LimitOffset) / 2
+        cen = cen.Add(DB.XYZ(0, 0, z))
+        return cen
 
 
 def tag_all_rooms():
@@ -27,7 +28,7 @@ def tag_all_rooms():
               .OfCategory(DB.BuiltInCategory.OST_Rooms)\
               .WhereElementIsNotElementType()\
               .ToElements()
-
+    tag_ids = []
     with revit.Transaction('Tag All Rooms in All Views'):
         for view in views:
             for el in rooms:
@@ -47,6 +48,8 @@ def tag_all_rooms():
                             )
                     if isinstance(view, DB.ViewSection):
                         room_tag.Location.Move(DB.XYZ(0, 0, room_center.Z))
+                    tag_ids.append(room_tag.Id)
+    return tag_ids
 
 
 def tag_all_spaces():
@@ -54,7 +57,7 @@ def tag_all_spaces():
                .OfCategory(DB.BuiltInCategory.OST_MEPSpaces)\
                .WhereElementIsNotElementType()\
                .ToElements()
-
+    tag_ids = []
     with revit.Transaction('Tag All Spaces in All Views'):
         for view in views:
             for el in spaces:
@@ -74,6 +77,8 @@ def tag_all_spaces():
                             )
                     if isinstance(view, DB.ViewSection):
                         space_tag.Location.Move(DB.XYZ(0, 0, space_center.Z))
+                    tag_ids.append(space_tag.Id)
+    return tag_ids
 
 
 options_dict = {'Tag All Rooms in All Views': tag_all_rooms,
@@ -85,4 +90,6 @@ selected_switch = \
 option_func = options_dict.get(selected_switch, None)
 
 if option_func:
-    option_func()
+    tag_ids = option_func()
+    if tag_ids:
+        revit.get_selection().set_to(tag_ids)
