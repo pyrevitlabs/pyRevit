@@ -42,41 +42,24 @@ class TransformationMatrix:
         self.destmax = None
 
 
-def sheet_to_view_transform(sheetcoord):
-    global transmatrix
+def transform_by_matrix(coord, transmatrix):
     newx = \
         transmatrix.destmin.X \
-        + (((sheetcoord.X - transmatrix.sourcemin.X)
+        + (((coord.X - transmatrix.sourcemin.X)
             * (transmatrix.destmax.X - transmatrix.destmin.X))
            / (transmatrix.sourcemax.X - transmatrix.sourcemin.X))
 
     newy = \
         transmatrix.destmin.Y \
-        + (((sheetcoord.Y - transmatrix.sourcemin.Y)
+        + (((coord.Y - transmatrix.sourcemin.Y)
             * (transmatrix.destmax.Y - transmatrix.destmin.Y))
            / (transmatrix.sourcemax.Y - transmatrix.sourcemin.Y))
 
     return DB.XYZ(newx, newy, 0.0)
 
 
-def view_to_sheet_transform(modelcoord):
-    global revtransmatrix
-    newx = \
-        revtransmatrix.destmin.X \
-        + (((modelcoord.X - revtransmatrix.sourcemin.X)
-            * (revtransmatrix.destmax.X - revtransmatrix.destmin.X))
-           / (revtransmatrix.sourcemax.X - revtransmatrix.sourcemin.X))
-
-    newy = \
-        revtransmatrix.destmin.Y \
-        + (((modelcoord.Y - revtransmatrix.sourcemin.Y)
-            * (revtransmatrix.destmax.Y - revtransmatrix.destmin.Y))
-           / (revtransmatrix.sourcemax.Y - revtransmatrix.sourcemin.Y))
-
-    return DB.XYZ(newx, newy, 0.0)
-
-
-def set_tansform_matrix(selvp, selview, vpboundaryoffset):
+def set_tansform_matrix(selvp, selview, vpboundaryoffset, reverse=False):
+    transmatrix = TransformationMatrix()
     # making sure the cropbox is active.
     cboxactive = selview.CropBoxActive
     cboxvisible = selview.CropBoxVisible
@@ -145,15 +128,10 @@ def set_tansform_matrix(selvp, selview, vpboundaryoffset):
                 vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
                                vptempmax.Y - vpboundaryoffset, 0.0)
 
-                transmatrix.sourcemin = vpmin
-                transmatrix.sourcemax = vpmax
-                transmatrix.destmin = cropmin
-                transmatrix.destmax = cropmax
-
-                revtransmatrix.sourcemin = cropmin
-                revtransmatrix.sourcemax = cropmax
-                revtransmatrix.destmin = vpmin
-                revtransmatrix.destmax = vpmax
+                transmatrix.sourcemin = cropmin if reverse else vpmin
+                transmatrix.sourcemax = cropmax if reverse else vpmax
+                transmatrix.destmin = vpmin if reverse else cropmin
+                transmatrix.destmax = vpmax if reverse else cropmax
 
                 selview.CropBoxActive = cboxactive
                 selview.CropBoxVisible = cboxvisible
@@ -161,19 +139,25 @@ def set_tansform_matrix(selvp, selview, vpboundaryoffset):
 
                 if viewspecificelements:
                     selview.UnhideElements(List[DB.ElementId](viewspecificelements))
-
+    return transmatrix
 
 def select_viewport():
     vport = None
-    selected_ids = revit.get_selection().element_ids
-    if selected_ids:
-        vport_id = selected_ids[0]
-        try:
-            vport = revit.doc.GetElement(vport_id)
-        except:
-            pass
-        if not isinstance(vport_id, DB.Viewport):
-            vport = None
+    selected_els = revit.get_selection().elements
+    if selected_els and isinstance(selected_els[0], DB.Viewport):
+        vport = selected_els[0]
     if not vport:
         forms.alert('Select exactly one viewport.', exitscript=True)
     return vport
+
+
+def get_title_block_placement(sheet):
+    # get all title blocks on the sheet
+    cl = DB.FilteredElementCollector(revit.doc, sheet.Id). \
+         WhereElementIsNotElementType(). \
+         OfCategory(DB.BuiltInCategory.OST_TitleBlocks)
+    title_blocks = cl.ToElements()
+    if len(title_blocks) != 1:
+        return
+
+    return title_blocks[0].Location.Point

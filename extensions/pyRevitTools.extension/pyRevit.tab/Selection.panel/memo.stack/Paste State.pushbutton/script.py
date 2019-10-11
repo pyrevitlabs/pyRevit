@@ -124,8 +124,6 @@ elif selected_switch == 'Viewport Placement on Sheet':
     selview = selvp = None
     vpboundaryoffset = 0.01
     activeSheet = revit.uidoc.ActiveGraphicalView
-    transmatrix = vpu.TransformationMatrix()
-    revtransmatrix = vpu.TransformationMatrix()
 
     datafile = \
         script.get_document_data_file(file_id='SaveViewportLocation',
@@ -135,7 +133,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
     view = revit.doc.GetElement(vport.ViewId)
     if view is not None and isinstance(view, DB.ViewPlan):
         with revit.TransactionGroup('Paste Viewport Location'):
-            vpu.set_tansform_matrix(vport, view, vpboundaryoffset)
+            revtransmatrix = vpu.set_tansform_matrix(vport, view, vpboundaryoffset, reverse=True)
             try:
                 with open(datafile, 'rb') as fp:
                     originalviewtype = pickle.load(fp)
@@ -162,7 +160,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
                 with revit.Transaction('Apply Viewport Placement'):
                     center = vport.GetBoxCenter()
                     centerdiff = \
-                        vpu.view_to_sheet_transform(savedmodel_pt) - center
+                        vpu.transform_by_matrix(savedmodel_pt, revtransmatrix) - center
                     vport.SetBoxCenter(savedcenter_pt - centerdiff)
                     if PINAFTERSET:
                         vport.Pinned = True

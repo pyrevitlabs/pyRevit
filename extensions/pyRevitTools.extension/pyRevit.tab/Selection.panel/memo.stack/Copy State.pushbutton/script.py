@@ -127,8 +127,6 @@ elif selected_option == 'Viewport Placement on Sheet':
     selview = selvp = None
     vpboundaryoffset = 0.01
     activeSheet = revit.active_view
-    transmatrix = vpu.TransformationMatrix()
-    revtransmatrix = vpu.TransformationMatrix()
 
     datafile = \
         script.get_document_data_file(file_id='SaveViewportLocation',
@@ -138,9 +136,9 @@ elif selected_option == 'Viewport Placement on Sheet':
     view = revit.doc.GetElement(vport.ViewId)
     if view is not None and isinstance(view, DB.ViewPlan):
         with revit.TransactionGroup('Copy Viewport Location'):
-            vpu.set_tansform_matrix(vport, view)
+            transmatrix = vpu.set_tansform_matrix(vport, view, vpboundaryoffset)
             center = vport.GetBoxCenter()
-            modelpoint = vpu.sheet_to_view_transform(center)
+            modelpoint = vpu.transform_by_matrix(center, transmatrix)
             center_pt = vpu.Point(center.X, center.Y, center.Z)
             model_pt = vpu.Point(modelpoint.X, modelpoint.Y, modelpoint.Z)
             with open(datafile, 'wb') as fp:
