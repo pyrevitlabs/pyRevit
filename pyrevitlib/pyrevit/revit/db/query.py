@@ -296,13 +296,28 @@ def get_types_by_class(type_class, types=None, doc=None):
 
 
 def get_family(family_name, doc=None):
-    famsyms = \
+    families = \
         DB.FilteredElementCollector(doc or HOST_APP.doc)\
           .WherePasses(
               get_biparam_stringequals_filter(
                   {DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name}
                   )
               )\
+          .WhereElementIsElementType()\
+          .ToElements()
+    return families
+
+
+def get_family_symbol(family_name, symbol_name, doc=None):
+    famsyms = \
+        DB.FilteredElementCollector(doc or HOST_APP.doc)\
+          .WherePasses(
+              get_biparam_stringequals_filter(
+                  {
+                      DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name,
+                      DB.BuiltInParameter.SYMBOL_NAME_PARAM: symbol_name
+                  }
+                ))\
           .WhereElementIsElementType()\
           .ToElements()
     return famsyms
