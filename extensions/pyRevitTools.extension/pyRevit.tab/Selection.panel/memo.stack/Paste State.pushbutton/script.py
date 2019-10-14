@@ -1,6 +1,5 @@
 import pickle
 
-from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
@@ -128,26 +127,35 @@ elif selected_switch == 'Viewport Placement on Sheet':
                                       
     view = revit.doc.GetElement(vport.ViewId)
     if isinstance(view, DB.ViewPlan):
-        with revit.DryTransaction('Activate & Read Cropbox Boundary'):
-            revtransmatrix = vpu.set_tansform_matrix(vport, view, reverse=True)
-        with revit.TransactionGroup('Paste Viewport Location'):
-            try:
-                with open(datafile, 'rb') as fp:
-                    originalviewtype = pickle.load(fp)
-                    if originalviewtype == 'ViewPlan':
-                        savedcen_pt = pickle.load(fp)
-                        savedmdl_pt = pickle.load(fp)
-                    else:
-                        raise OriginalIsViewDrafting
-            except IOError:
-                forms.alert('Could not find saved viewport '
-                            'placement.\n'
-                            'Copy a Viewport Placement first.')
-            except OriginalIsViewDrafting:
-                forms.alert('Viewport placement info is from a '
-                            'drafting view and can not '
-                            'be applied here.')
-            else:
+        try:
+            with open(datafile, 'rb') as fp:
+                originalviewtype = pickle.load(fp)
+                if originalviewtype == 'ViewPlan':
+                    savedcen_pt = pickle.load(fp)
+                    savedmdl_pt = pickle.load(fp)
+                    crop_region_saved = pickle.load(fp)
+                else:
+                    raise OriginalIsViewDrafting
+        except IOError:
+            forms.alert('Could not find saved viewport '
+                        'placement.\n'
+                        'Copy a Viewport Placement first.')
+        except OriginalIsViewDrafting:
+            forms.alert('Viewport placement info is from a '
+                        'drafting view and can not '
+                        'be applied here.')
+        else:
+            with revit.TransactionGroup('Paste Viewport Location'):
+                crop_active_saved = view.CropBoxActive
+                if crop_region_saved:
+                    with revit.Transaction('Temporary set saved crop region'):
+                        view.CropBoxActive = True
+                        crop_region_relevant = vpu.get_crop_region(view)
+                        vpu.set_crop_region(view, unpickle_line_list(crop_region_saved))
+                else:
+                    crop_region_relevant = None
+                with revit.DryTransaction('Activate & Read Cropbox Boundary'):
+                    revtransmatrix = vpu.set_tansform_matrix(vport, view, reverse=True)
                 title_block_pt = vpu.get_title_block_placement_by_vp(vport)
                 savedcenter_pt = DB.XYZ(savedcen_pt.x,
                                         savedcen_pt.y,
@@ -155,6 +163,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
                 savedmodel_pt = DB.XYZ(savedmdl_pt.x,
                                        savedmdl_pt.y,
                                        savedmdl_pt.z)
+
                 with revit.Transaction('Apply Viewport Placement'):
                     # target vp center (sheet UCS)
                     center = vport.GetBoxCenter()
@@ -164,6 +173,10 @@ elif selected_switch == 'Viewport Placement on Sheet':
                     vport.SetBoxCenter(savedcenter_pt)
                     if PINAFTERSET:
                         vport.Pinned = True
+                if crop_region_relevant:
+                    with revit.Transaction('Recover crop region'):
+                        view.CropBoxActive = crop_active_saved
+                        vpu.set_crop_region(view, crop_region_relevant)
 
     elif isinstance(view, DB.ViewDrafting):
         try:
@@ -224,14 +237,8 @@ elif selected_switch == 'Crop Region':
         cloops_data = pickle.load(f)
         f.close()
         with revit.Transaction('Paste Crop Region'):
-            av.CropBoxVisible = True # FIXME
-            crsm = av.GetCropRegionShapeManager() # FIXME
             all_cloops = unpickle_line_list(cloops_data)
-            for cloop in all_cloops:
-                if HOST_APP.is_newer_than(2015):
-                    crsm.SetCropShape(cloop)
-                else:
-                    crsm.SetCropRegionShape(cloop)
+            vpu.set_crop_region(av, all_cloops)
 
         revit.uidoc.RefreshActiveView()
     except Exception:

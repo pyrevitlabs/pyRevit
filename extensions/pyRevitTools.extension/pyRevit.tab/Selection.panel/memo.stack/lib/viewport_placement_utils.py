@@ -1,5 +1,6 @@
 from pyrevit import revit, script, forms, DB
 from pyrevit.framework import List
+from pyrevit import HOST_APP
 
 logger = script.get_logger()
 
@@ -58,12 +59,12 @@ def transform_by_matrix(coord, transmatrix):
     return DB.XYZ(newx, newy, 0.0)
 
 
-def set_tansform_matrix(selvp, selview, vpboundaryoffset=0, reverse=False):
-    # TODO support alignment by project basepoint, not by cropbox
+def set_tansform_matrix(selvp, selview, vpboundaryoffset=0.1, reverse=False):
     # TODO support sections
     # TODO allow to run with view activated instead of viewport selected
     # TODO paste on many views at once
     transmatrix = TransformationMatrix()
+
     # making sure the cropbox is active.
     cboxannoparam = selview.get_Parameter(
         DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
@@ -103,7 +104,6 @@ def set_tansform_matrix(selvp, selview, vpboundaryoffset=0, reverse=False):
         if el.Category\
             and not el.IsHidden(selview) \
             and el.CanBeHidden(selview):
-            print("hide", el.Category.Name)
             viewspecificelements.append(el.Id)
 
 
@@ -135,7 +135,7 @@ def set_tansform_matrix(selvp, selview, vpboundaryoffset=0, reverse=False):
         # get vp min max points in sheetUCS
         ol = selvp.GetBoxOutline()
         vptempmin = ol.MinimumPoint # in viewport units
-        vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset ,
+        vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset,
                        vptempmin.Y + vpboundaryoffset,
                        0.0)
         vptempmax = ol.MaximumPoint
@@ -147,7 +147,6 @@ def set_tansform_matrix(selvp, selview, vpboundaryoffset=0, reverse=False):
         transmatrix.sourcemax = cropmax if reverse else vpmax
         transmatrix.destmin = vpmin if reverse else cropmin
         transmatrix.destmax = vpmax if reverse else cropmax
-
     return transmatrix
 
 def select_viewport():
@@ -184,3 +183,52 @@ def get_title_block_placement(sheet):
         return
 
     return title_blocks[0].Location.Point
+
+
+def get_crop_region(view):
+    crsm = view.GetCropRegionShapeManager()
+    if HOST_APP.is_newer_than(2015):
+        crsm_valid = crsm.CanHaveShape
+    else:
+        crsm_valid = crsm.Valid
+
+    if crsm_valid:
+        if HOST_APP.is_newer_than(2015):
+            curve_loops = list(crsm.GetCropShape())
+        else:
+            curve_loops = [crsm.GetCropRegionShape()]
+
+        if curve_loops:
+            return curve_loops
+
+
+def set_crop_region(view, curve_loops):
+    crop_active_saved = view.CropBoxActive
+    view.CropBoxActive = True
+    crsm = view.GetCropRegionShapeManager() # FIXME
+    for cloop in curve_loops:
+        if HOST_APP.is_newer_than(2015):
+            crsm.SetCropShape(cloop)
+        else:
+            crsm.SetCropRegionShape(cloop)
+    view.CropBoxActive = crop_active_saved
+
+
+def view_plane(view):
+    return DB.Plane.CreateByOriginAndBasis(view.Origin, view.RightDirection, view.UpDirection)
+
+
+def project_to_viewport(xyz, view):
+    plane = view_plane(view)
+    uv, dist = plane.Project(xyz)
+    return uv
+
+
+def project_to_world(uv, view):
+    plane = view_plane(view)
+    trf = DB.Transform.Identity
+    trf.BasisX = plane.XVec
+    trf.BasisY = plane.YVec
+    trf.BasisZ = plane.Normal
+    trf.Origin = plane.Origin
+    return trf.OfPoint(DB.XYZ(uv.U, uv.V, 0))

@@ -1,7 +1,5 @@
 import pickle
 
-from pyrevit import HOST_APP
-
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
@@ -131,8 +129,23 @@ elif selected_option == 'Viewport Placement on Sheet':
 
     view = revit.doc.GetElement(vport.ViewId)
     if isinstance(view, DB.ViewPlan):
+        # TODO ask use to choose a mode
+        #  if SectionBoxes either None
+        #  and CropRegions (and SectionBoxes) are not identical
+        #  and ViewNormal are identical
+        #  (optional) if difference between CropRegions is too big
+        # TODO use LeftTop alignment by default,
+        #  choose CropBox alignment (LeftTop, RightTop etc.)
+        use_base_point = forms.CommandSwitchWindow.show(
+            ['Crop Box','Project Base Point'],
+            message='Select alignment'
+        ) == 'Project Base Point'
         with revit.DryTransaction('Activate & Read Cropbox Boundary'):
             transmatrix = vpu.set_tansform_matrix(vport, view)
+            if use_base_point:
+                crop_region_curves = vpu.get_crop_region(view)
+            else:
+                crop_region_curves = None
         with revit.TransactionGroup('Copy Viewport Location'):
             title_block_pt = vpu.get_title_block_placement_by_vp(vport)
             # Vport center on a sheet (sheet UCS)
@@ -146,6 +159,10 @@ elif selected_option == 'Viewport Placement on Sheet':
                 pickle.dump(originalviewtype, fp)
                 pickle.dump(center_pt, fp)
                 pickle.dump(model_pt, fp)
+                if crop_region_curves:
+                    pickle.dump(make_picklable_list(crop_region_curves), fp)
+                else:
+                    pickle.dump(None, fp)
 
     elif isinstance(view, DB.ViewDrafting):
         center = vport.GetBoxCenter()
@@ -179,22 +196,10 @@ elif selected_option == 'Crop Region':
         av = revit.doc.GetElement(vport.ViewId)
     else:
         av = revit.activeview # FIXME
-    crsm = av.GetCropRegionShapeManager()
+    curve_loops = vpu.get_crop_region(av)
 
-    crsm_valid = False
-    if HOST_APP.is_newer_than(2015):
-        crsm_valid = crsm.CanHaveShape
-    else:
-        crsm_valid = crsm.Valid
-
-    if crsm_valid:
+    if curve_loops:
         with open(datafile, 'w') as f:
-            if HOST_APP.is_newer_than(2015):
-                curve_loops = list(crsm.GetCropShape())
-            else:
-                curve_loops = [crsm.GetCropRegionShape()]
-            
-            if curve_loops:
-                pickle.dump(make_picklable_list(curve_loops), f)
+            pickle.dump(make_picklable_list(curve_loops), f)
     else:
         logger.error("Crop regions is not valid")
