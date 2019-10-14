@@ -58,15 +58,16 @@ def transform_by_matrix(coord, transmatrix):
     return DB.XYZ(newx, newy, 0.0)
 
 
-def set_tansform_matrix(selvp, selview, vpboundaryoffset, reverse=False):
+def set_tansform_matrix(selvp, selview, vpboundaryoffset=0, reverse=False):
+    # TODO support alignment by project basepoint, not by cropbox
+    # TODO support sections
+    # TODO allow to run with view activated instead of viewport selected
+    # TODO paste on many views at once
     transmatrix = TransformationMatrix()
     # making sure the cropbox is active.
-    cboxactive = selview.CropBoxActive
-    cboxvisible = selview.CropBoxVisible
     cboxannoparam = selview.get_Parameter(
         DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
         )
-    cboxannostate = cboxannoparam.AsInteger()
     curviewelements = \
         DB.FilteredElementCollector(revit.doc)\
           .OwnedByView(selview.Id)\
@@ -78,67 +79,75 @@ def set_tansform_matrix(selvp, selview, vpboundaryoffset, reverse=False):
         if el.ViewSpecific \
                 and not el.IsHidden(selview) \
                 and el.CanBeHidden(selview) \
-                and el.Category is not None:
+                and el.Category:
             viewspecificelements.append(el.Id)
 
-    basepoints = DB.FilteredElementCollector(revit.doc)\
-                   .OfClass(DB.BasePoint)\
-                   .WhereElementIsNotElementType()\
+    hide_elements_categories = [
+        DB.BuiltInCategory.OST_SharedBasePoint,
+        DB.BuiltInCategory.OST_ProjectBasePoint,
+        DB.BuiltInCategory.OST_Viewers,
+        DB.BuiltInCategory.OST_ReferenceLines,
+        DB.BuiltInCategory.OST_Grids,
+        DB.BuiltInCategory.OST_Elev
+    ]
+    hide_elements_filters = []
+    for cat in hide_elements_categories:
+        hide_elements_filters.append(DB.ElementCategoryFilter(cat))
+
+    hide_elements_filter = DB.LogicalOrFilter(hide_elements_filters)
+    hide_elements = DB.FilteredElementCollector(revit.doc) \
+                   .WherePasses(hide_elements_filter) \
+                   .WhereElementIsNotElementType() \
                    .ToElements()
-
-    excludecategories = ['Survey Point',
-                         'Project Base Point']
-    for el in basepoints:
-        if el.Category and el.Category.Name in excludecategories:
+    for el in hide_elements:
+        if el.Category\
+            and not el.IsHidden(selview) \
+            and el.CanBeHidden(selview):
+            print("hide", el.Category.Name)
             viewspecificelements.append(el.Id)
 
-    with revit.TransactionGroup('Activate & Read Cropbox Boundary'):
-        with revit.Transaction('Hiding all 2d elements'):
-            if viewspecificelements:
-                try:
-                    selview.HideElements(List[DB.ElementId](viewspecificelements))
-                except Exception as e:
-                    logger.debug(e)
 
-        with revit.Transaction('Activate & Read Cropbox Boundary'):
-            selview.CropBoxActive = True
-            selview.CropBoxVisible = False
-            cboxannoparam.Set(0)
+    if viewspecificelements:
+        try:
+            selview.HideElements(List[DB.ElementId](viewspecificelements))
+        except Exception as e:
+            logger.debug(e)
 
-            # get view min max points in modelUCS.
-            modelucsx = []
-            modelucsy = []
-            crsm = selview.GetCropRegionShapeManager()
+    selview.CropBoxActive = True
+    selview.CropBoxVisible = False
+    if not cboxannoparam.IsReadOnly:
+        cboxannoparam.Set(0)
 
-            cllist = crsm.GetCropShape()
-            if len(cllist) == 1:
-                cl = cllist[0]
-                for l in cl:
-                    modelucsx.append(l.GetEndPoint(0).X)
-                    modelucsy.append(l.GetEndPoint(0).Y)
-                cropmin = DB.XYZ(min(modelucsx), min(modelucsy), 0.0)
-                cropmax = DB.XYZ(max(modelucsx), max(modelucsy), 0.0)
+    # get view min max points in modelUCS.
+    modelucsx = []
+    modelucsy = []
+    crsm = selview.GetCropRegionShapeManager()
 
-                # get vp min max points in sheetUCS
-                ol = selvp.GetBoxOutline()
-                vptempmin = ol.MinimumPoint
-                vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset,
-                               vptempmin.Y + vpboundaryoffset, 0.0)
-                vptempmax = ol.MaximumPoint
-                vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
-                               vptempmax.Y - vpboundaryoffset, 0.0)
+    cllist = crsm.GetCropShape()
+    if len(cllist) == 1:
+        cl = cllist[0]
+        for l in cl:
+            modelucsx.append(l.GetEndPoint(0).X)
+            modelucsy.append(l.GetEndPoint(0).Y)
+        cropmin = DB.XYZ(min(modelucsx), min(modelucsy), 0.0)
+        cropmax = DB.XYZ(max(modelucsx), max(modelucsy), 0.0)
 
-                transmatrix.sourcemin = cropmin if reverse else vpmin
-                transmatrix.sourcemax = cropmax if reverse else vpmax
-                transmatrix.destmin = vpmin if reverse else cropmin
-                transmatrix.destmax = vpmax if reverse else cropmax
+        # get vp min max points in sheetUCS
+        ol = selvp.GetBoxOutline()
+        vptempmin = ol.MinimumPoint # in viewport units
+        vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset ,
+                       vptempmin.Y + vpboundaryoffset,
+                       0.0)
+        vptempmax = ol.MaximumPoint
+        vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
+                       vptempmax.Y - vpboundaryoffset,
+                       0.0)
 
-                selview.CropBoxActive = cboxactive
-                selview.CropBoxVisible = cboxvisible
-                cboxannoparam.Set(cboxannostate)
+        transmatrix.sourcemin = cropmin if reverse else vpmin
+        transmatrix.sourcemax = cropmax if reverse else vpmax
+        transmatrix.destmin = vpmin if reverse else cropmin
+        transmatrix.destmax = vpmax if reverse else cropmax
 
-                if viewspecificelements:
-                    selview.UnhideElements(List[DB.ElementId](viewspecificelements))
     return transmatrix
 
 def select_viewport():
@@ -148,12 +157,26 @@ def select_viewport():
         vport = selected_els[0]
     if not vport:
         forms.alert('Select exactly one viewport.', exitscript=True)
+
+    view = revit.doc.GetElement(vport.ViewId)
+    if not view and not(isinstance(view, DB.ViewPlan) or isinstance(view, DB.ViewDrafting)):
+        forms.alert('This tool only works with Plan, '
+                    'RCP, and Detail views and viewports.', exitscript=True)
     return vport
+
+def get_title_block_placement_by_vp(viewport):
+    title_block_pt = None
+    if viewport.SheetId and viewport.SheetId != DB.ElementId.InvalidElementId:
+        title_block_pt = get_title_block_placement(
+            viewport.Document.GetElement(viewport.SheetId))
+    if not title_block_pt:
+        title_block_pt = DB.XYZ.Zero
+    return title_block_pt
 
 
 def get_title_block_placement(sheet):
     # get all title blocks on the sheet
-    cl = DB.FilteredElementCollector(revit.doc, sheet.Id). \
+    cl = DB.FilteredElementCollector(sheet.Document, sheet.Id). \
          WhereElementIsNotElementType(). \
          OfCategory(DB.BuiltInCategory.OST_TitleBlocks)
     title_blocks = cl.ToElements()

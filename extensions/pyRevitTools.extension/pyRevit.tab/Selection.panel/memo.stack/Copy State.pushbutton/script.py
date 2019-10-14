@@ -112,7 +112,7 @@ elif selected_option == 'Viewport Placement on Sheet':
     """
     Copyright (c) 2016 Gui Talarico
 
-    CopyPasteViewportPlacemenet
+    CopyPasteViewportPlacement
     Copy and paste the placement of viewports across sheets
     github.com/gtalarico
 
@@ -124,20 +124,20 @@ elif selected_option == 'Viewport Placement on Sheet':
 
     originalviewtype = ''
 
-    selview = selvp = None
-    vpboundaryoffset = 0.01
-    activeSheet = revit.active_view
-
     datafile = \
         script.get_document_data_file(file_id='SaveViewportLocation',
                                       file_ext='pym',
                                       add_cmd_name=False)
 
     view = revit.doc.GetElement(vport.ViewId)
-    if view is not None and isinstance(view, DB.ViewPlan):
+    if isinstance(view, DB.ViewPlan):
+        with revit.DryTransaction('Activate & Read Cropbox Boundary'):
+            transmatrix = vpu.set_tansform_matrix(vport, view)
         with revit.TransactionGroup('Copy Viewport Location'):
-            transmatrix = vpu.set_tansform_matrix(vport, view, vpboundaryoffset)
-            center = vport.GetBoxCenter()
+            title_block_pt = vpu.get_title_block_placement_by_vp(vport)
+            # Vport center on a sheet (sheet UCS)
+            center = vport.GetBoxCenter() - title_block_pt
+            # Vport center on a sheet (model UCS)
             modelpoint = vpu.transform_by_matrix(center, transmatrix)
             center_pt = vpu.Point(center.X, center.Y, center.Z)
             model_pt = vpu.Point(modelpoint.X, modelpoint.Y, modelpoint.Z)
@@ -147,16 +147,13 @@ elif selected_option == 'Viewport Placement on Sheet':
                 pickle.dump(center_pt, fp)
                 pickle.dump(model_pt, fp)
 
-    elif view is not None and isinstance(view, DB.ViewDrafting):
+    elif isinstance(view, DB.ViewDrafting):
         center = vport.GetBoxCenter()
         center_pt = vpu.Point(center.X, center.Y, center.Z)
         with open(datafile, 'wb') as fp:
             originalviewtype = 'ViewDrafting'
             pickle.dump(originalviewtype, fp)
             pickle.dump(center_pt, fp)
-    else:
-        forms.alert('This tool only works with Plan, '
-                    'RCP, and Detail views and viewports.')
 
 elif selected_option == 'Visibility Graphics':
     datafile = \
@@ -176,7 +173,12 @@ elif selected_option == 'Crop Region':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.active_view
+    selected_els = revit.get_selection().elements
+    if selected_els and isinstance(selected_els[0], DB.Viewport):
+        vport = selected_els[0]
+        av = revit.doc.GetElement(vport.ViewId)
+    else:
+        av = revit.activeview # FIXME
     crsm = av.GetCropRegionShapeManager()
 
     crsm_valid = False
@@ -194,3 +196,5 @@ elif selected_option == 'Crop Region':
             
             if curve_loops:
                 pickle.dump(make_picklable_list(curve_loops), f)
+    else:
+        logger.error("Crop regions is not valid")

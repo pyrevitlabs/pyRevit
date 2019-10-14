@@ -108,7 +108,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
     """
     Copyright (c) 2016 Gui Talarico
 
-    CopyPasteViewportPlacemenet
+    CopyPasteViewportPlacement
     Copy and paste the placement of viewports across sheets
     github.com/gtalarico
 
@@ -121,19 +121,16 @@ elif selected_switch == 'Viewport Placement on Sheet':
     PINAFTERSET = False
     originalviewtype = ''
 
-    selview = selvp = None
-    vpboundaryoffset = 0.01
-    activeSheet = revit.uidoc.ActiveGraphicalView
-
     datafile = \
         script.get_document_data_file(file_id='SaveViewportLocation',
                                       file_ext='pym',
                                       add_cmd_name=False)
                                       
     view = revit.doc.GetElement(vport.ViewId)
-    if view is not None and isinstance(view, DB.ViewPlan):
+    if isinstance(view, DB.ViewPlan):
+        with revit.DryTransaction('Activate & Read Cropbox Boundary'):
+            revtransmatrix = vpu.set_tansform_matrix(vport, view, reverse=True)
         with revit.TransactionGroup('Paste Viewport Location'):
-            revtransmatrix = vpu.set_tansform_matrix(vport, view, vpboundaryoffset, reverse=True)
             try:
                 with open(datafile, 'rb') as fp:
                     originalviewtype = pickle.load(fp)
@@ -151,21 +148,24 @@ elif selected_switch == 'Viewport Placement on Sheet':
                             'drafting view and can not '
                             'be applied here.')
             else:
+                title_block_pt = vpu.get_title_block_placement_by_vp(vport)
                 savedcenter_pt = DB.XYZ(savedcen_pt.x,
                                         savedcen_pt.y,
-                                        savedcen_pt.z)
+                                        savedcen_pt.z) +  title_block_pt
                 savedmodel_pt = DB.XYZ(savedmdl_pt.x,
                                        savedmdl_pt.y,
                                        savedmdl_pt.z)
                 with revit.Transaction('Apply Viewport Placement'):
+                    # target vp center (sheet UCS)
                     center = vport.GetBoxCenter()
+                    # source vp center (sheet UCS) - target center
                     centerdiff = \
                         vpu.transform_by_matrix(savedmodel_pt, revtransmatrix) - center
-                    vport.SetBoxCenter(savedcenter_pt - centerdiff)
+                    vport.SetBoxCenter(savedcenter_pt)
                     if PINAFTERSET:
                         vport.Pinned = True
 
-    elif view is not None and isinstance(view, DB.ViewDrafting):
+    elif isinstance(view, DB.ViewDrafting):
         try:
             with open(datafile, 'rb') as fp:
                 originalviewtype = pickle.load(fp)
@@ -189,10 +189,6 @@ elif selected_switch == 'Viewport Placement on Sheet':
                 vport.SetBoxCenter(savedcenter_pt)
                 if PINAFTERSET:
                     vport.Pinned = True
-    else:
-        forms.alert('This tool only works with Plan, '
-                    'RCP, and Detail views and viewports.')
-
 
 elif selected_switch == 'Visibility Graphics':
     datafile = \
@@ -217,14 +213,19 @@ elif selected_switch == 'Crop Region':
         script.get_document_data_file(file_id='SaveCropRegionState',
                                       file_ext='pym',
                                       add_cmd_name=False)
-
+    selected_els = revit.get_selection().elements
+    if selected_els and isinstance(selected_els[0], DB.Viewport):
+        vport = selected_els[0]
+        av = revit.doc.GetElement(vport.ViewId)
+    else:
+        av = revit.activeview  # FIXME
     try:
         f = open(datafile, 'r')
         cloops_data = pickle.load(f)
         f.close()
         with revit.Transaction('Paste Crop Region'):
-            revit.active_view.CropBoxVisible = True
-            crsm = revit.active_view.GetCropRegionShapeManager()
+            av.CropBoxVisible = True # FIXME
+            crsm = av.GetCropRegionShapeManager() # FIXME
             all_cloops = unpickle_line_list(cloops_data)
             for cloop in all_cloops:
                 if HOST_APP.is_newer_than(2015):
