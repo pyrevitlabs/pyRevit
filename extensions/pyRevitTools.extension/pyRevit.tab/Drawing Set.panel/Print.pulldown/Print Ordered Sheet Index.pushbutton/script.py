@@ -38,43 +38,80 @@ NPC = u'\u200e'
 
 
 class ViewSheetListItem(object):
-    def __init__(self, view_sheet):
+    def __init__(self, view_sheet, print_settings=None):
         self._sheet = view_sheet
         self.name = self._sheet.Name
         self.number = self._sheet.SheetNumber
         self.printable = self._sheet.CanBePrinted
         self.print_index = 0
+        self.print_settings = \
+            print_settings or self.get_print_settings()
+        self.print_settings_name = \
+            self.print_settings.Name if self.print_settings else '?'
 
     @property
     def revit_sheet(self):
         return self._sheet
 
+    def get_print_settings(self):
+        return revit.query.get_sheet_print_settings(self.revit_sheet)
+
 
 class PrintSettingListItem(object):
-    def __init__(self, print_setting=None):
-        self._psetting = print_setting
+    def __init__(self, print_settings=None):
+        self._psettings = print_settings
 
     @property
     def name(self):
-        if isinstance(self._psetting, DB.InSessionPrintSetting):
+        if isinstance(self._psettings, DB.InSessionPrintSetting):
             return "<In Session>"
         else:
-            return self._psetting.Name
+            return self._psettings.Name
 
     @property
-    def print_setting(self):
-        return self._psetting
+    def print_settings(self):
+        return self._psettings
+
+    @property
+    def print_params(self):
+        if self.print_settings:
+            return self.print_settings.PrintParameters
+
+    @property
+    def paper_size(self):
+        if self.print_params:
+            return self.print_params.PaperSize
+
+    @property
+    def allows_variable_paper(self):
+        return False
+
+
+class VariablePaperPrintSettingListItem(PrintSettingListItem):
+    def __init__(self):
+        PrintSettingListItem.__init__(self, None)
+
+    @property
+    def name(self):
+        return "<Variable Paper Size>"
+
+    @property
+    def allows_variable_paper(self):
+        return True
 
 
 class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
+        self._scheduled_sheets = []
+
         self.sheet_cat_id = \
             revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
         self._setup_printers()
         self._setup_print_settings()
+
         self.schedules_cb.ItemsSource = self._get_sheet_index_list()
         if not self.schedules_cb.ItemsSource:
             forms.alert("No Sheet Lists (Schedules) found in current project",
@@ -114,7 +151,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     @property
     def selected_print_setting(self):
-        return self.printsettings_cb.SelectedItem.print_setting
+        return self.printsettings_cb.SelectedItem
 
     @property
     def reverse_print(self):
@@ -226,8 +263,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.printers_cb.SelectedItem = print_mgr.PrinterName
 
     def _setup_print_settings(self):
-        print_settings = [PrintSettingListItem(revit.doc.GetElement(x))
-                          for x in revit.doc.GetPrintSettingIds()]
+        print_settings = [VariablePaperPrintSettingListItem()]
+        print_settings.extend(
+            [PrintSettingListItem(revit.doc.GetElement(x))
+             for x in revit.doc.GetPrintSettingIds()]
+            )
         print_mgr = self._get_printmanager()
         self.printsettings_cb.ItemsSource = print_settings
         if isinstance(print_mgr.PrintSetup.CurrentPrintSetting,
@@ -251,7 +291,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 return
             with revit.Transaction('Set Printer Settings'):
                 print_mgr.PrintSetup.CurrentPrintSetting = \
-                    self.selected_print_setting
+                    self.selected_print_setting.print_settings
                 print_mgr.SelectNewPrintDriver(self.selected_printer)
                 print_mgr.PrintRange = DB.PrintRange.Select
             # add non-printable char in front of sheet Numbers
@@ -332,12 +372,17 @@ class PrintSheetsWindow(forms.WPFWindow):
         if not print_mgr:
             return
         print_mgr.PrintToFile = True
+        per_sheet_psettings = self.selected_print_setting.allows_variable_paper
         with revit.DryTransaction('Set Printer Settings'):
-            print_mgr.PrintSetup.CurrentPrintSetting = \
-                self.selected_print_setting
+            if not per_sheet_psettings:
+                print_mgr.PrintSetup.CurrentPrintSetting = \
+                    self.selected_print_setting.print_settings
             print_mgr.SelectNewPrintDriver(self.selected_printer)
             print_mgr.PrintRange = DB.PrintRange.Current
             for sheet in self.sheet_list:
+                if per_sheet_psettings:
+                    print_mgr.PrintSetup.CurrentPrintSetting = \
+                        sheet.print_settings
                 output_fname = \
                     coreutils.cleanup_filename(
                         '{:05} {} - {}.pdf'.format(sheet.print_index,
@@ -357,38 +402,54 @@ class PrintSheetsWindow(forms.WPFWindow):
         for idx, sheet in enumerate(sheet_list):
             sheet.print_index = idx
 
+    def options_changed(self, sender, args):
+        # reverse sheet if reverse is set
+        sheet_list = [x for x in self._scheduled_sheets]
+        if self.reverse_print:
+            sheet_list.reverse()
+
+        if not self.show_placeholders:
+            self.indexspace_cb.IsEnabled = True
+            # update print indices with placeholder sheets
+            self._update_print_indices(sheet_list)
+            # remove placeholders if requested
+            printable_sheets = []
+            for sheet in sheet_list:
+                if sheet.printable:
+                    printable_sheets.append(sheet)
+
+            # update print indices without placeholder sheets
+            if not self.include_placeholders:
+                self._update_print_indices(printable_sheets)
+
+            self.sheet_list = printable_sheets
+
+        else:
+            self.indexspace_cb.IsChecked = True
+            self.indexspace_cb.IsEnabled = False
+            # update print indices
+            self._update_print_indices(sheet_list)
+            # Show all sheets
+            self.sheet_list = sheet_list
+
     def selection_changed(self, sender, args):
-        if self.selected_schedule:
-            sheet_list = [ViewSheetListItem(x)
-                          for x in self._get_ordered_schedule_sheets()]
-
-            # reverse sheet if reverse is set
-            if self.reverse_print:
-                sheet_list.reverse()
-
-            if not self.show_placeholders:
-                self.indexspace_cb.IsEnabled = True
-                # update print indices with placeholder sheets
-                self._update_print_indices(sheet_list)
-                # remove placeholders if requested
-                printable_sheets = []
-                for sheet in sheet_list:
-                    if sheet.printable:
-                        printable_sheets.append(sheet)
-
-                # update print indices without placeholder sheets
-                if not self.include_placeholders:
-                    self._update_print_indices(printable_sheets)
-
-                self.sheet_list = printable_sheets
-
+        print_settings = None
+        if self.selected_print_setting:
+            if self.selected_print_setting.allows_variable_paper:
+                print_settings = None
+                self.combine_cb.IsChecked = False
+                self.disable_element(self.combine_cb)
             else:
-                self.indexspace_cb.IsChecked = True
-                self.indexspace_cb.IsEnabled = False
-                # update print indices
-                self._update_print_indices(sheet_list)
-                # Show all sheets
-                self.sheet_list = sheet_list
+                print_settings = self.selected_print_setting.print_settings
+                self.enable_element(self.combine_cb)
+
+        if self.selected_schedule:
+            self._scheduled_sheets = [
+                ViewSheetListItem(view_sheet=x, print_settings=print_settings)
+                for x in self._get_ordered_schedule_sheets()
+                ]
+
+        self.options_changed(None, None)
 
     def print_sheets(self, sender, args):
         if self.sheet_list:
@@ -436,7 +497,7 @@ def cleanup_sheetnumbers():
             sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
 
 
-if __shiftclick__:  # noqa
+if __shiftclick__:
     cleanup_sheetnumbers()
 else:
     PrintSheetsWindow('PrintOrderedSheets.xaml').ShowDialog()

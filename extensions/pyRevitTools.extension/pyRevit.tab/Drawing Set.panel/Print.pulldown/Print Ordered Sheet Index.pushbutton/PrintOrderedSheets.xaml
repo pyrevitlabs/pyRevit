@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Print Sheets from Schedule" Height="700" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="Print Sheets from Schedule" Height="700" Width="800" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
 
@@ -54,7 +54,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="5,0" Orientation="Vertical">
                     <TextBlock Text="Print Setting:" />
-                    <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0" Height="24">
+                    <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0" Height="24" SelectionChanged="selection_changed">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -68,16 +68,10 @@
             </Grid>
             <GroupBox Header="Print Settings:" Margin="0,15,0,15">
                 <WrapPanel>
-                    <CheckBox x:Name="placeholder_cb" Margin="10,10,0,5"
-                                  IsChecked="True" Click="selection_changed">Show Non-Printable Sheets (Grayed out)
-                    </CheckBox>
-                    <CheckBox x:Name="indexspace_cb" Margin="10,10,0,5"
-                                  IsChecked="True" Click="selection_changed">Include Non-Printable Sheets in Indexing
-                    </CheckBox>
+                    <CheckBox x:Name="placeholder_cb" Margin="10,10,0,5" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed out)</CheckBox>
+                    <CheckBox x:Name="indexspace_cb" Margin="10,10,0,5" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
                     <CheckBox x:Name="combine_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="True">Combine into one file</CheckBox>
-                    <CheckBox x:Name="reverse_cb" Margin="10,10,0,5"
-                                  IsChecked="False" Click="selection_changed">Reverse Print Order
-                    </CheckBox>
+                    <CheckBox x:Name="reverse_cb" Margin="10,10,0,5" IsChecked="False" Click="options_changed">Reverse Print Order</CheckBox>
                 </WrapPanel>
             </GroupBox>
             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
@@ -95,8 +89,9 @@
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Print Index" Width="70" CellTemplate="{StaticResource IndexColumnStyle}"/>
-                    <GridViewColumn Header="Sheet Number" Width="90" DisplayMemberBinding="{Binding number}" />
+                    <GridViewColumn Header="Sheet Number" Width="100" DisplayMemberBinding="{Binding number}" />
                     <GridViewColumn Header="Sheet Name" DisplayMemberBinding="{Binding name}" />
+                    <GridViewColumn Header="Print Setting" DisplayMemberBinding="{Binding print_settings_name}" />
                 </GridView>
             </ListView.View>
             <ListView.ItemContainerStyle>
