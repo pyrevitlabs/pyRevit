@@ -31,6 +31,7 @@ from pyrevit.framework import Interop
 from pyrevit.framework import Input
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.framework import CPDialogs
+from pyrevit.framework import ComponentModel
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
@@ -64,6 +65,46 @@ Attributes:
     name (str): parameter name
     istype (bool): true if type parameter, otherwise false
 """
+
+
+# https://gui-at.blogspot.com/2009/11/inotifypropertychanged-in-ironpython.html
+class notify_property(property):
+    """Decorator for WPF bound properties"""
+    def __init__(self, getter):
+        def newgetter(slf):
+            try:
+                return getter(slf)
+            except AttributeError:
+                return None
+        super(notify_property, self).__init__(newgetter)
+
+    def setter(self, setter):
+        def newsetter(slf, newvalue):
+            oldvalue = self.fget(slf)
+            if oldvalue != newvalue:
+                setter(slf, newvalue)
+                slf.on_prop_changed(setter.__name__)
+        return property(
+            fget=self.fget,
+            fset=newsetter,
+            fdel=self.fdel,
+            doc=self.__doc__)
+
+
+class NotifyProperty(ComponentModel.INotifyPropertyChanged):
+    """WPF property updator"""
+    PropertyChanged = None
+
+    def add_PropertyChanged(self, value):
+        self.PropertyChanged = value
+
+    def remove_PropertyChanged(self, value):
+        self.PropertyChanged = None
+
+    def on_prop_changed(self, prop_name):
+        if self.PropertyChanged is not None:
+            args = ComponentModel.PropertyChangedEventArgs(prop_name)
+            self.PropertyChanged.Invoke(self, args)
 
 
 class WPFWindow(framework.Windows.Window):

@@ -1,0 +1,22 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center"
+        SizeToContent="Height" Width="300"
+        ResizeMode="NoResize"
+        Title="XAML Test">
+    <StackPanel x:Name="stackpanel" Margin="15">
+        <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10"/>
+        <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10" TextChanged="update_text"/>
+        <Button x:Name="button"
+                Content="{Binding title}"
+                HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                Height="35"
+                Click="button_click"/>
+        <Button Content="Read Data"
+                HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                Margin="0,10,0,0" Height="35"
+                Click="read_data"/>
+    </StackPanel>
+</Window>
