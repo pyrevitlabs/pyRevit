@@ -1379,6 +1379,8 @@ def get_sheet_print_settings(tblock, doc_psettings):
     page_height_param = tblock.Parameter[DB.BuiltInParameter.SHEET_HEIGHT]
     page_width = int(round(page_width_param.AsDouble() * 12.0))
     page_height = int(round(page_height_param.AsDouble() * 12.0))
+    tform = tblock.GetTotalTransform()
+    is_portrait = (page_width < page_height) or (int(tform.BasisX.Y) == -1)
     paper_sizes = find_paper_sizes_by_dims(
         page_width,
         page_height,
@@ -1387,9 +1389,15 @@ def get_sheet_print_settings(tblock, doc_psettings):
     # names of paper sizes matching the calculated title block size
     paper_size_names = [x.Name for x in paper_sizes]
     # find first print settings that matches any of the paper_size_names
+    page_orient = \
+        DB.PageOrientationType.Portrait if is_portrait \
+            else DB.PageOrientationType.Landscape
+    all_tblock_psettings = set()
     for doc_psetting in doc_psettings:
         pparams = doc_psetting.PrintParameters
         if pparams.PaperSize.Name in paper_size_names \
-                and pparams.ZoomType == DB.ZoomType.Zoom \
-                and pparams.Zoom == 100:
-            return doc_psetting
+                and (pparams.ZoomType == DB.ZoomType.Zoom
+                     and pparams.Zoom == 100) \
+                and pparams.PageOrientation == page_orient:
+            all_tblock_psettings.add(doc_psetting)
+    return sorted(all_tblock_psettings, key=lambda x: x.Name)
