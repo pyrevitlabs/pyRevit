@@ -171,6 +171,10 @@ class PrintSheetsWindow(forms.WPFWindow):
     def printable_sheets(self):
         return [x for x in self.sheet_list if x.printable]
 
+    @property
+    def selected_printable_sheets(self):
+        return [x for x in self.selected_sheets if x.printable]
+
     def _get_schedule_text_data(self, schedule_view):
         schedule_data_file = \
             script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
@@ -457,11 +461,11 @@ class PrintSheetsWindow(forms.WPFWindow):
             self.sheet_list = sheet_list
 
     def set_sheet_printsettings(self, sender, args):
-        if self.selected_sheets:
+        if self.selected_printable_sheets:
             psettings = forms.SelectFromList.show(
                 {
                     'Matching Print Settings':
-                        self.selected_sheets[0].all_print_settings,
+                        self.selected_printable_sheets[0].all_print_settings,
                     'All Print Settings':
                         revit.query.get_all_print_settings(doc=revit.doc)
                 },
@@ -472,18 +476,13 @@ class PrintSheetsWindow(forms.WPFWindow):
                 width=350, height=400
                 )
             if psettings:
-                for sheet in self.selected_sheets:
+                for sheet in self.selected_printable_sheets:
                     sheet.print_settings = psettings
             self.options_changed(None, None)
 
     def selection_changed(self, sender, args):
-        if self.selected_sheets:
+        if self.selected_printable_sheets:
             return self.enable_element(self.sheetopts_wp)
-            # current_settings = \
-            #     set([x.print_settings for x in self.selected_sheets])
-            # if len(current_settings) == 1:
-            #     self.enable_element(self.sheetopts_wp)
-            #     return
         self.disable_element(self.sheetopts_wp)
 
     def sheetlist_changed(self, sender, args):
