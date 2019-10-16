@@ -1,27 +1,34 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Print Sheets from Schedule" Height="700" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="Print Sheets from Schedule" Height="700" Width="800" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
+        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Foreground" Value="Orange"/>
+        </Style>
 
-        <DataTemplate x:Key="IndexColumnStyle">
-            <TextBlock Foreground="Gray" Text="{Binding print_index}"/>
-        </DataTemplate>
+        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="ToolTip" Value="{Binding tooltip}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding printable}" Value="False">
+                    <Setter Property="Foreground" Value="#bdbdbd" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
-        <ControlTemplate x:Key="Default" TargetType='{x:Type ListViewItem}'>
+        <ControlTemplate x:Key="Default" TargetType="{x:Type DataGridCell}">
             <StackPanel Background="White">
                 <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                        Columns="{TemplateBinding GridView.ColumnCollection}"/>
+                                      Columns="{TemplateBinding GridView.ColumnCollection}"/>
             </StackPanel>
         </ControlTemplate>
 
-        <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type ListViewItem}'>
+        <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type DataGridCell}'>
             <StackPanel Background="#f6f6f6">
                 <GridViewRowPresenter Content="{TemplateBinding Content}"
                                           Columns="{TemplateBinding GridView.ColumnCollection}"/>
             </StackPanel>
         </ControlTemplate>
-
         <Style TargetType="{x:Type Hyperlink}">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="TextBlock.TextDecorations" Value="{x:Null}" />
@@ -31,9 +38,9 @@
     <DockPanel>
         <StackPanel Margin="10,10,10,0" DockPanel.Dock="Top">
             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
-                    Select a Sheet Index (Schedule):
+                    Select a Sheet Index (Schedule)
             </TextBlock>
-            <ComboBox x:Name="schedules_cb" SelectionChanged="selection_changed" Height="24">
+            <ComboBox x:Name="schedules_cb" SelectionChanged="sheetlist_changed" Height="24">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
@@ -49,12 +56,12 @@
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <StackPanel Margin="0,0,5,0" Orientation="Vertical">
-                    <TextBlock Text="Printer:" />
+                    <TextBlock Text="Printer" />
                     <ComboBox x:Name="printers_cb" Height="24" Margin="0,5,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="5,0" Orientation="Vertical">
-                    <TextBlock Text="Print Setting:" />
-                    <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0" Height="24">
+                    <TextBlock Text="Print Setting" />
+                    <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0" Height="24" SelectionChanged="sheetlist_changed">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -66,23 +73,23 @@
                 </StackPanel>
                 <Button Grid.Column="2" Content="Print" Margin="5,0,0,0" Click="print_sheets" />
             </Grid>
-            <GroupBox Header="Print Settings:" Margin="0,15,0,15">
+            <GroupBox Header="Print Settings" Margin="0,15,0,15">
                 <WrapPanel>
-                    <CheckBox x:Name="placeholder_cb" Margin="10,10,0,5"
-                                  IsChecked="True" Click="selection_changed">Show Non-Printable Sheets (Grayed out)
-                    </CheckBox>
-                    <CheckBox x:Name="indexspace_cb" Margin="10,10,0,5"
-                                  IsChecked="True" Click="selection_changed">Include Non-Printable Sheets in Indexing
-                    </CheckBox>
+                    <CheckBox x:Name="placeholder_cb" Margin="10,10,0,5" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed out)</CheckBox>
+                    <CheckBox x:Name="indexspace_cb" Margin="10,10,0,5" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
                     <CheckBox x:Name="combine_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="True">Combine into one file</CheckBox>
-                    <CheckBox x:Name="reverse_cb" Margin="10,10,0,5"
-                                  IsChecked="False" Click="selection_changed">Reverse Print Order
-                    </CheckBox>
+                    <CheckBox x:Name="reverse_cb" Margin="10,10,0,5" IsChecked="False" Click="options_changed">Reverse Print Order</CheckBox>
                 </WrapPanel>
             </GroupBox>
-            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
-                    List of the sheets in selected sheet index (Drag to manually reorder):
-            </TextBlock>
+            <DockPanel VerticalAlignment="Center" Margin="0,0,0,10">
+                <TextBlock TextWrapping="WrapWithOverflow" DockPanel.Dock="Left" VerticalAlignment="Bottom">
+                    List of the sheets in selected sheet index
+                </TextBlock>
+                <WrapPanel x:Name="sheetopts_wp" FlowDirection="RightToLeft" DockPanel.Dock="Right" Visibility="Collapsed" IsEnabled="False">
+                    <Button Height="25" Width="120" Content="Set Print Settings" Click="set_sheet_printsettings"/>
+                    <Button Height="25" Width="120" Content="Reset Print Settings " Click="sheetlist_changed" Margin="10,0,0,0"/>
+                </WrapPanel>
+            </DockPanel>
         </StackPanel>
         <StatusBar DockPanel.Dock="Bottom" Height="25" Background="{DynamicResource pyRevitDarkBrush}">
             <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
@@ -91,26 +98,26 @@
                 </Hyperlink>
             </TextBlock>
         </StatusBar>
-        <ListView x:Name="sheets_lb" Margin="10,0,10,10" AllowDrop="True">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Print Index" Width="70" CellTemplate="{StaticResource IndexColumnStyle}"/>
-                    <GridViewColumn Header="Sheet Number" Width="90" DisplayMemberBinding="{Binding number}" />
-                    <GridViewColumn Header="Sheet Name" DisplayMemberBinding="{Binding name}" />
-                </GridView>
-            </ListView.View>
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
-                    <Setter Property="Template" Value="{StaticResource Default}"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding printable}" Value="False">
-                            <Setter Property="Template"
-                                Value="{StaticResource NonPrintableSheet}"/>
-                            <Setter Property="Foreground" Value="#bdbdbd" />
-                        </DataTrigger>
-                    </Style.Triggers>
+        <DataGrid x:Name="sheets_lb"
+                  AutoGenerateColumns="False"
+                  Margin="10,0,10,10"
+                  BorderThickness="1"
+                  RowHeaderWidth="0"
+                  CanUserSortColumns="True"
+                  HorizontalGridLinesBrush="#dedede"
+                  VerticalGridLinesBrush="#dedede"
+                  SelectionChanged="selection_changed">
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell" >
+                    <Setter Property="BorderThickness" Value="0"/>
                 </Style>
-            </ListView.ItemContainerStyle>
-        </ListView>
+            </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Print Index" Binding="{Binding print_index_formatted}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTextColumn x:Name="psettingcol" Header="Print Setting" Binding="{Binding print_settings_name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
+            </DataGrid.Columns>
+        </DataGrid>
     </DockPanel>
 </Window>

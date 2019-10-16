@@ -1339,3 +1339,12 @@ def split_words(input_string):
                 part += c
     parts.append(part)
     return parts
+
+
+def get_paper_sizes():
+    """Get paper sizes defined on this system
+
+    Returns:
+        list[]: list of papersize instances
+    """
+    return list(framework.Drawing.Printing.PrinterSettings().PaperSizes)

@@ -2,6 +2,7 @@
 #pylint: disable=W0703,C0103
 from collections import namedtuple
 
+from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
@@ -1333,3 +1334,70 @@ def get_doors(elements=None, doc=None, room_id=None):
         return room_doors
     else:
         return list(all_doors)
+
+
+def get_all_print_settings(doc=None):
+    doc = doc or HOST_APP.doc
+    return [doc.GetElement(x)for x in doc.GetPrintSettingIds()]
+
+
+def get_used_paper_sizes(doc=None):
+    doc = doc or HOST_APP.doc
+    return [x.PrintParameters.PaperSize
+            for x in get_all_print_settings(doc=doc)]
+
+
+def find_paper_size_by_name(paper_size_name, doc=None):
+    doc = doc or HOST_APP.doc
+    paper_size_name = paper_size_name.lower()
+    for psize in doc.PrintManager.PaperSizes:
+        if psize.Name.lower() == paper_size_name:
+            return psize
+
+
+def find_paper_sizes_by_dims(paper_width, paper_height, doc=None):
+    # paper_width, paper_height must be in inch
+    doc = doc or HOST_APP.doc
+    paper_sizes = []
+    for sys_psize in coreutils.get_paper_sizes():
+        # system paper dims are in inches
+        wxd = paper_width == int(sys_psize.Width / 100.00) \
+                and paper_height == int(sys_psize.Height / 100.00)
+        dxw = paper_width == int(sys_psize.Height / 100.00) \
+                and paper_height == int(sys_psize.Width / 100.00)
+        if wxd or dxw:
+            psize = find_paper_size_by_name(sys_psize.PaperName)
+            if psize:
+                paper_sizes.append(psize)
+    return paper_sizes
+
+
+def get_sheet_print_settings(tblock, doc_psettings):
+    doc = tblock.Document
+    # find paper sizes used in print settings of this doc
+    page_width_param = tblock.Parameter[DB.BuiltInParameter.SHEET_WIDTH]
+    page_height_param = tblock.Parameter[DB.BuiltInParameter.SHEET_HEIGHT]
+    page_width = int(round(page_width_param.AsDouble() * 12.0))
+    page_height = int(round(page_height_param.AsDouble() * 12.0))
+    tform = tblock.GetTotalTransform()
+    is_portrait = (page_width < page_height) or (int(tform.BasisX.Y) == -1)
+    paper_sizes = find_paper_sizes_by_dims(
+        page_width,
+        page_height,
+        doc=doc
+        )
+    # names of paper sizes matching the calculated title block size
+    paper_size_names = [x.Name for x in paper_sizes]
+    # find first print settings that matches any of the paper_size_names
+    page_orient = \
+        DB.PageOrientationType.Portrait if is_portrait \
+            else DB.PageOrientationType.Landscape
+    all_tblock_psettings = set()
+    for doc_psetting in doc_psettings:
+        pparams = doc_psetting.PrintParameters
+        if pparams.PaperSize.Name in paper_size_names \
+                and (pparams.ZoomType == DB.ZoomType.Zoom
+                     and pparams.Zoom == 100) \
+                and pparams.PageOrientation == page_orient:
+            all_tblock_psettings.add(doc_psetting)
+    return sorted(all_tblock_psettings, key=lambda x: x.Name)
