@@ -1372,25 +1372,24 @@ def find_paper_sizes_by_dims(paper_width, paper_height, doc=None):
     return paper_sizes
 
 
-def get_sheet_print_settings(sheet):
-    doc = sheet.Document
+def get_sheet_print_settings(tblock, doc_psettings):
+    doc = tblock.Document
     # find paper sizes used in print settings of this doc
-    doc_psettings = get_all_print_settings(doc=doc)
-    for tblock in get_sheet_tblocks(sheet):
-        bbox = tblock.BoundingBox[sheet]
-        page_width = int(round((bbox.Max.X - bbox.Min.X) * 12.0))
-        page_height = int(round((bbox.Max.Y - bbox.Min.Y) * 12.0))
-        paper_sizes = find_paper_sizes_by_dims(
-            page_width,
-            page_height,
-            doc=doc
-            )
-        # names of paper sizes matching the calculated sheet paper size
-        paper_size_names = [x.Name for x in paper_sizes]
-        # find first print settings that matches any of the paper_size_names
-        for doc_psetting in doc_psettings:
-            pparams = doc_psetting.PrintParameters
-            if pparams.PaperSize.Name in paper_size_names \
-                    and pparams.ZoomType == DB.ZoomType.Zoom \
-                    and pparams.Zoom == 100:
-                return doc_psetting
+    page_width_param = tblock.Parameter[DB.BuiltInParameter.SHEET_WIDTH]
+    page_height_param = tblock.Parameter[DB.BuiltInParameter.SHEET_HEIGHT]
+    page_width = int(round(page_width_param.AsDouble() * 12.0))
+    page_height = int(round(page_height_param.AsDouble() * 12.0))
+    paper_sizes = find_paper_sizes_by_dims(
+        page_width,
+        page_height,
+        doc=doc
+        )
+    # names of paper sizes matching the calculated title block size
+    paper_size_names = [x.Name for x in paper_sizes]
+    # find first print settings that matches any of the paper_size_names
+    for doc_psetting in doc_psettings:
+        pparams = doc_psetting.PrintParameters
+        if pparams.PaperSize.Name in paper_size_names \
+                and pparams.ZoomType == DB.ZoomType.Zoom \
+                and pparams.Zoom == 100:
+            return doc_psetting

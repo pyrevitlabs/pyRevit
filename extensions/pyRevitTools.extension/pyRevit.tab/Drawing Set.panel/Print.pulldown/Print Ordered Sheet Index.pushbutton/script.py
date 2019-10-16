@@ -44,17 +44,13 @@ class ViewSheetListItem(object):
         self.number = self._sheet.SheetNumber
         self.printable = self._sheet.CanBePrinted
         self.print_index = 0
-        self.print_settings = \
-            print_settings or self.get_print_settings()
+        self.print_settings = print_settings
         self.print_settings_name = \
             self.print_settings.Name if self.print_settings else '?'
 
     @property
     def revit_sheet(self):
         return self._sheet
-
-    def get_print_settings(self):
-        return revit.query.get_sheet_print_settings(self.revit_sheet)
 
 
 class PrintSettingListItem(object):
@@ -402,6 +398,26 @@ class PrintSheetsWindow(forms.WPFWindow):
         for idx, sheet in enumerate(sheet_list):
             sheet.print_index = idx
 
+    def _get_sheet_printsettings(self):
+        all_titleblocks = revit.query.get_elements_by_categories(
+            [DB.BuiltInCategory.OST_TitleBlocks]
+            )
+        tblock_printsettings = {}
+        sheet_printsettings = {}
+        doc_printsettings = revit.query.get_all_print_settings(doc=revit.doc)
+        for tblock in all_titleblocks:
+            sheet = revit.doc.GetElement(tblock.OwnerViewId)
+            tblock_tid = tblock.GetTypeId().IntegerValue
+            tblock_psetting = tblock_printsettings.get(tblock_tid, None)
+            if not tblock_psetting:
+                tblock_psetting = \
+                    revit.query.get_sheet_print_settings(tblock,
+                                                         doc_printsettings)
+                tblock_printsettings[tblock_tid] = tblock_psetting
+            if tblock_psetting:
+                sheet_printsettings[sheet.SheetNumber] = tblock_psetting
+        return sheet_printsettings
+
     def options_changed(self, sender, args):
         # reverse sheet if reverse is set
         sheet_list = [x for x in self._scheduled_sheets]
@@ -434,21 +450,28 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def selection_changed(self, sender, args):
         print_settings = None
-        if self.selected_print_setting:
+        if self.selected_schedule and self.selected_print_setting:
             if self.selected_print_setting.allows_variable_paper:
-                print_settings = None
+                sheet_printsettings = self._get_sheet_printsettings()
                 self.combine_cb.IsChecked = False
                 self.disable_element(self.combine_cb)
+                self._scheduled_sheets = [
+                    ViewSheetListItem(
+                        view_sheet=x,
+                        print_settings=sheet_printsettings.get(
+                            x.SheetNumber,
+                            None))
+                    for x in self._get_ordered_schedule_sheets()
+                    ]
             else:
                 print_settings = self.selected_print_setting.print_settings
                 self.enable_element(self.combine_cb)
-
-        if self.selected_schedule:
-            self._scheduled_sheets = [
-                ViewSheetListItem(view_sheet=x, print_settings=print_settings)
-                for x in self._get_ordered_schedule_sheets()
-                ]
-
+                self._scheduled_sheets = [
+                    ViewSheetListItem(
+                        view_sheet=x,
+                        print_settings=print_settings)
+                    for x in self._get_ordered_schedule_sheets()
+                    ]
         self.options_changed(None, None)
 
     def print_sheets(self, sender, args):
