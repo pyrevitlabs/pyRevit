@@ -7,7 +7,7 @@
         ResizeMode="NoResize"
         Title="XAML Test">
     <StackPanel x:Name="stackpanel" Margin="15">
-        <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10"/>
+        <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10" TextWrapping="Wrap"/>
         <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10" TextChanged="update_text"/>
         <Button x:Name="button"
                 Content="{Binding title}"

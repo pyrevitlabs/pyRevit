@@ -10,11 +10,11 @@ logger = script.get_logger()
 output = script.get_output()
 
 
-class NestedObject(forms.NotifyProperty):
+class NestedObject(forms.Reactive):
     def __init__(self, text):
         self._text = text
 
-    @forms.notify_property
+    @forms.reactive
     def text(self):
         return self._text
 
@@ -23,12 +23,12 @@ class NestedObject(forms.NotifyProperty):
         self._text = value
 
 
-class ButtonData(forms.NotifyProperty):
+class ButtonData(forms.Reactive):
     def __init__(self, title, nested):
         self._title = title
         self.nested = nested
 
-    @forms.notify_property
+    @forms.reactive
     def title(self):
         return self._title
 

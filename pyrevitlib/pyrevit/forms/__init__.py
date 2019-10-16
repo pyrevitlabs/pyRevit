@@ -68,7 +68,7 @@ Attributes:
 
 
 # https://gui-at.blogspot.com/2009/11/inotifypropertychanged-in-ironpython.html
-class notify_property(property):
+class reactive(property):
     """Decorator for WPF bound properties"""
     def __init__(self, getter):
         def newgetter(slf):
@@ -76,14 +76,14 @@ class notify_property(property):
                 return getter(slf)
             except AttributeError:
                 return None
-        super(notify_property, self).__init__(newgetter)
+        super(reactive, self).__init__(newgetter)
 
     def setter(self, setter):
         def newsetter(slf, newvalue):
             oldvalue = self.fget(slf)
             if oldvalue != newvalue:
                 setter(slf, newvalue)
-                slf.on_prop_changed(setter.__name__)
+                slf.OnPropertyChanged(setter.__name__)
         return property(
             fget=self.fget,
             fset=newsetter,
@@ -91,8 +91,8 @@ class notify_property(property):
             doc=self.__doc__)
 
 
-class NotifyProperty(ComponentModel.INotifyPropertyChanged):
-    """WPF property updator"""
+class Reactive(ComponentModel.INotifyPropertyChanged):
+    """WPF property updator base mixin"""
     PropertyChanged = None
 
     def add_PropertyChanged(self, value):
@@ -101,7 +101,7 @@ class NotifyProperty(ComponentModel.INotifyPropertyChanged):
     def remove_PropertyChanged(self, value):
         self.PropertyChanged = None
 
-    def on_prop_changed(self, prop_name):
+    def OnPropertyChanged(self, prop_name):
         if self.PropertyChanged is not None:
             args = ComponentModel.PropertyChangedEventArgs(prop_name)
             self.PropertyChanged.Invoke(self, args)
