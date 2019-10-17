@@ -39,17 +39,19 @@ NPC = u'\u200e'
 INDEX_FORMAT = '{:05}'
 
 
-class ViewSheetListItem(object):
+class ViewSheetListItem(forms.Reactive):
     def __init__(self, view_sheet, print_settings=None):
         self._sheet = view_sheet
         self.name = self._sheet.Name
         self.number = self._sheet.SheetNumber
         self.printable = self._sheet.CanBePrinted
         self.print_index = 0
-        self.print_settings = None
+
+        self._print_settings = print_settings
         self.all_print_settings = print_settings
         if self.all_print_settings:
-            self.print_settings = self.all_print_settings[0]
+            self._print_settings = self.all_print_settings[0]
+
         cur_rev = revit.query.get_current_sheet_revision(self._sheet)
         self.revision = ''
         if cur_rev:
@@ -63,11 +65,13 @@ class ViewSheetListItem(object):
     def revit_sheet(self):
         return self._sheet
 
-    @property
-    def print_settings_name(self):
-        if not self.printable:
-            return "N/A"
-        return self.print_settings.Name if self.print_settings else '?'
+    @forms.reactive
+    def print_settings(self):
+        return self._print_settings
+
+    @print_settings.setter
+    def print_settings(self, value):
+        self._print_settings = value
 
     @property
     def print_index_formatted(self):
@@ -487,7 +491,6 @@ class PrintSheetsWindow(forms.WPFWindow):
             if psettings:
                 for sheet in self.selected_printable_sheets:
                     sheet.print_settings = psettings
-            self.options_changed(None, None)
 
     def selection_changed(self, sender, args):
         if self.selected_printable_sheets:
