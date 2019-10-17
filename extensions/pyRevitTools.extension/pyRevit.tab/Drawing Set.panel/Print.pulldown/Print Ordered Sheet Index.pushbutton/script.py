@@ -197,7 +197,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         try:
             with codecs.open(schedule_data_file, 'r', 'utf_16_le') \
                     as sched_data_file:
-                return sched_data_file.readlines()
+                return [x.strip() for x in sched_data_file.readlines()]
         except Exception as open_err:
             logger.error('Error opening sheet index export: %s | %s',
                          schedule_data_file, open_err)
@@ -213,7 +213,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         for sheet in sheet_list:
             logger.debug('finding index for: %s', sheet.SheetNumber)
             for line_no, data_line in enumerate(sched_data):
-                match_pattern = r'(^|.*\t){}\t.*'.format(sheet.SheetNumber)
+                match_pattern = r'(^|.*\t){}(\t.*|$)'.format(sheet.SheetNumber)
                 matches_sheet = re.match(match_pattern, data_line)
                 logger.debug('match: %s', matches_sheet)
                 try:
