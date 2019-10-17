@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Print sheets in order from a sheet index.
 
 Note:
@@ -49,6 +50,14 @@ class ViewSheetListItem(object):
         self.all_print_settings = print_settings
         if self.all_print_settings:
             self.print_settings = self.all_print_settings[0]
+        cur_rev = revit.query.get_current_sheet_revision(self._sheet)
+        self.revision = ''
+        if cur_rev:
+            self.revision = '({num}) {desc} @ {date}'.format(
+                num=revit.query.get_rev_number(cur_rev),
+                date=cur_rev.RevisionDate,
+                desc=cur_rev.Description
+            )
 
     @property
     def revit_sheet(self):
@@ -278,7 +287,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if psetting.name == cur_psetting_name:
                     self.printsettings_cb.SelectedItem = psetting
 
-    def _print_combined_sheets_in_order(self):
+    def _print_combined_sheets_in_order(self, target_sheets):
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         with revit.TransactionGroup('Print Sheets in Order'):
@@ -294,7 +303,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             sheet_set = DB.ViewSet()
             original_sheetnums = []
             with revit.Transaction('Fix Sheet Numbers'):
-                for idx, sheet in enumerate(self.sheet_list):
+                for idx, sheet in enumerate(target_sheets):
                     rvtsheet = sheet.revit_sheet
                     original_sheetnums.append(rvtsheet.SheetNumber)
                     rvtsheet.SheetNumber = \
@@ -356,12 +365,12 @@ class PrintSheetsWindow(forms.WPFWindow):
 
             # now fix the sheet names
             with revit.Transaction('Restore Sheet Numbers'):
-                for sheet, sheetnum in zip(self.sheet_list,
+                for sheet, sheetnum in zip(target_sheets,
                                            original_sheetnums):
                     rvtsheet = sheet.revit_sheet
                     rvtsheet.SheetNumber = sheetnum
 
-    def _print_sheets_in_order(self):
+    def _print_sheets_in_order(self, target_sheets):
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         if not print_mgr:
@@ -374,7 +383,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                     self.selected_print_setting.print_settings
             print_mgr.SelectNewPrintDriver(self.selected_printer)
             print_mgr.PrintRange = DB.PrintRange.Current
-            for sheet in self.sheet_list:
+            for sheet in target_sheets:
                 if sheet.printable:
                     output_fname = \
                         coreutils.cleanup_filename(
@@ -517,8 +526,20 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def print_sheets(self, sender, args):
         if self.sheet_list:
+            selected_only = False
+            if self.selected_sheets:
+                opts = forms.alert(
+                    "You have a series of sheets selected. Do you want to "
+                    "print the selected sheets or all sheets?",
+                    options=["Only Selected Sheets", "All Scheduled Sheets"]
+                    )
+                selected_only = opts == "Only Selected Sheets"
+
+            target_sheets = \
+                self.selected_sheets if selected_only else self.sheet_list
+
             if not self.combine_print:
-                sheet_count = len(self.sheet_list)
+                sheet_count = len(target_sheets)
                 if sheet_count > 5:
                     if not forms.alert('Are you sure you want to print {} '
                                        'sheets individually? The process can '
@@ -527,9 +548,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                         return
             self.Close()
             if self.combine_print:
-                self._print_combined_sheets_in_order()
+                self._print_combined_sheets_in_order(target_sheets)
             else:
-                self._print_sheets_in_order()
+                self._print_sheets_in_order(target_sheets)
             self._reset_psettings()
 
     def preview_mouse_down(self, sender, args):

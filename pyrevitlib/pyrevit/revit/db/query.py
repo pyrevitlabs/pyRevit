@@ -471,9 +471,14 @@ def get_revisions(doc=None):
                 .WhereElementIsNotElementType())
 
 
-def get_sheet_revisions(sheet, doc=None):
-    doc = doc or HOST_APP.doc
+def get_sheet_revisions(sheet):
+    doc = sheet.Document
     return [doc.GetElement(x) for x in sheet.GetAdditionalRevisionIds()]
+
+
+def get_current_sheet_revision(sheet):
+    doc = sheet.Document
+    return doc.GetElement(sheet.GetCurrentRevision())
 
 
 def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
