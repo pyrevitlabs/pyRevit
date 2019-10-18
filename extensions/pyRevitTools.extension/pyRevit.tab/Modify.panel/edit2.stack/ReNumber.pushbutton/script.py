@@ -54,6 +54,10 @@ class EasilySelectableElements(object):
                 )
 
 
+def increment(number):
+    return coreutils.increment_str(number, expand=True)
+
+
 def get_number(target_element):
     """Get target elemnet number (might be from Number or other fields)"""
     if hasattr(target_element, "Number"):
@@ -102,9 +106,9 @@ def get_elements_dict(category_name):
 
 def find_replacement_number(existing_number, elements_dict):
     """Find an appropriate replacement number for conflicting numbers."""
-    replaced_number = coreutils.increment_str(existing_number)
+    replaced_number = increment(existing_number)
     while replaced_number in elements_dict:
-        replaced_number = coreutils.increment_str(replaced_number)
+        replaced_number = increment(replaced_number)
     return replaced_number
 
 
@@ -179,7 +183,7 @@ def pick_and_renumber(category_name, starting_index):
                                      index, existing_elements_data)
                     # record the renumbered element
                     renumbered_element_ids.append(picked_element.Id)
-                index = coreutils.increment_str(index)
+                index = increment(index)
             # unmark all renumbered elements
             _unmark_collected(category_name, renumbered_element_ids)
 
@@ -236,7 +240,7 @@ def door_by_room_renumber():
                         # attempts = 1
                         # max_attempts = len([x for x in room_door_numbers if x])
                         while new_number in room_door_numbers:
-                            new_number = coreutils.increment_str(new_number)
+                            new_number = increment(new_number)
                         renumber_element(picked_door,
                                          new_number,
                                          existing_doors_data)

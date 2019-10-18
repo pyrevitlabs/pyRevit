@@ -672,7 +672,7 @@ def cleanup_filename(file_name, windows_safe=False):
         return re.sub(r'[^\w_.() -#]|["]', '', file_name)
 
 
-def _inc_or_dec_string(str_id, shift):
+def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
     """Increment or decrement identifier.
 
     Args:
@@ -686,54 +686,94 @@ def _inc_or_dec_string(str_id, shift):
         >>> _inc_or_dec_string('A319z')
         'A320a'
     """
+    # if no shift, return given string
+    if shift == 0:
+        return str_id
+
+    # otherwise lets process the shift
     next_str = ""
     index = len(str_id) - 1
     carry = shift
 
     while index >= 0:
-        if str_id[index].isalpha():
-            if str_id[index].islower():
-                reset_a = 'a'
-                reset_z = 'z'
-            else:
-                reset_a = 'A'
-                reset_z = 'Z'
+        # pick chars from right
+        # A1.101a <--
+        this_char = str_id[index]
 
-            curr_digit = (ord(str_id[index]) + carry)
-            if curr_digit < ord(reset_a):
-                curr_digit = ord(reset_z) - ((ord(reset_a) - curr_digit) - 1)
-                carry = shift
-            elif curr_digit > ord(reset_z):
-                curr_digit = ord(reset_a) + ((curr_digit - ord(reset_z)) - 1)
-                carry = shift
-            else:
-                carry = 0
-
-            curr_digit = chr(curr_digit)
-            next_str += curr_digit
-
-        elif str_id[index].isdigit():
-
-            curr_digit = int(str_id[index]) + carry
-            if curr_digit > 9:
-                curr_digit = 0 + ((curr_digit - 9)-1)
-                carry = shift
-            elif curr_digit < 0:
-                curr_digit = 9 - ((0 - curr_digit)-1)
-                carry = shift
-            else:
-                carry = 0
-            next_str += safe_strtype(curr_digit)
-
+        # determine character range (# of chars, starting index)
+        if this_char.isdigit():
+            char_range = ('0', '9')
+        elif this_char.isalpha():
+            # if this_char.isupper()
+            char_range = ('A', 'Z')
+            if this_char.islower():
+                char_range = ('a', 'z')
         else:
-            next_str += str_id[index]
+            next_str += this_char
+            index -= 1
+            continue
 
+        # get character range properties
+        direction = int(carry / abs(carry)) if carry != 0 else 1
+        start_char, end_char = \
+            char_range if direction > 0 else char_range[::-1]
+        char_steps = abs(ord(end_char) - ord(start_char)) + 1
+        # calculate offset
+
+        # positive carry -> start_char=0    end_char=9
+        # +----------++        ++          +  char_steps
+        # +--------+                          dist
+        #          +---------------+          carry (abs)
+        # 01234567[8]9012345678901[2]3456789
+        # ----------------------+==+          offset
+
+        # negative carry -> start_char=9    end_char=0
+        # +----------++        ++          +  char_steps
+        # +-------+                           dist
+        #         +---------------+           carry (abs)
+        # 9876543[2]1098765432109[8]76543210
+        # ----------------------+=+           offset
+
+        dist = abs(ord(this_char) - ord(start_char))
+        offset = (dist + abs(carry)) % char_steps
+        next_char = chr(ord(start_char) + (offset * direction))
+        next_str += next_char
+        carry = int((dist + abs(carry)) / char_steps) * direction
+        if logger:
+            logger.debug(
+                '\"{}\" index={} start_char=\"{}\" end_char=\"{}\" '
+                'next_carry={} direction={} dist={} offset={} next_char=\"{}\"'
+                .format(
+                    this_char,
+                    index,
+                    start_char,
+                    end_char,
+                    carry,
+                    direction,
+                    dist,
+                    offset,
+                    next_char))
         index -= 1
+        # refit the final value
+        # 009 --> 9
+        # ZZA --> ZA
+        if refit and index == -1:
+            if carry > 0:
+                str_id = start_char + str_id
+                if start_char.isalpha():
+                    carry -= 1
+                index = 0
+            elif direction == -1:
+                if next_str.endswith(start_char):
+                    next_str = next_str[:-1]
+                else:
+                    while next_str.endswith(end_char):
+                        next_str = next_str[:-1]
 
     return next_str[::-1]
 
 
-def increment_str(input_str, step=1):
+def increment_str(input_str, step=1, expand=False):
     """Incremenet identifier.
 
     Args:
@@ -747,10 +787,10 @@ def increment_str(input_str, step=1):
         >>> increment_str('A319z')
         'A320a'
     """
-    return _inc_or_dec_string(input_str, abs(step))
+    return _inc_or_dec_string(input_str, abs(step), refit=expand)
 
 
-def decrement_str(input_str, step=1):
+def decrement_str(input_str, step=1, shrink=False):
     """Decrement identifier.
 
     Args:
@@ -764,7 +804,7 @@ def decrement_str(input_str, step=1):
         >>> decrement_str('A310a')
         'A309z'
     """
-    return _inc_or_dec_string(input_str, -abs(step))
+    return _inc_or_dec_string(input_str, -abs(step), refit=shrink)
 
 
 def extend_counter(input_str, upper=True, use_zero=False):

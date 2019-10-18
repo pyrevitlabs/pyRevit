@@ -4,6 +4,7 @@ layout:
   - pyRevitLabs Module Tests
   - Output Window Tests
   - Appdata Module Tests
+  - CoreUtils Module Tests
   - Forms Module Tests
   - Revit Module Tests
   - Script Module Tests
