@@ -15,6 +15,7 @@ import datetime
 import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR, PyRevitCPythonNotSupported
+from pyrevit import PyRevitException, PyRevitCPythonNotSupported
 import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 
@@ -1274,7 +1275,15 @@ class SearchPrompt(WPFWindow):
 
         self.search_tip = kwargs.get('search_tip', '')
 
-        self._search_db = sorted(search_db)
+        if isinstance(search_db, list):
+            self._search_db = None
+            self._search_db_keys = search_db
+        elif isinstance(search_db, dict):
+            self._search_db = search_db
+            self._search_db_keys = sorted(self._search_db.keys())
+        else:
+            raise PyRevitException("Unknown search database type")
+
         self._search_res = None
         self._switches = kwargs.get('switches', [])
         self._setup_response()
@@ -1397,6 +1406,12 @@ class SearchPrompt(WPFWindow):
                     self.wordsmatch_tb.Text = '- {}'.format(cur_res)
                     mlogger.debug('wordsmatch_tb.Text: %s',
                                   self.wordsmatch_tb.Text)
+            tooltip = self._search_db.get(cur_res, None)
+            if tooltip:
+                self.tooltip_tb.Text = tooltip
+                self.show_element(self.tooltip_tb)
+            else:
+                self.hide_element(self.tooltip_tb)
             self._search_res = cur_res
             return True
         return False
@@ -1423,7 +1438,7 @@ class SearchPrompt(WPFWindow):
         """Find direct text matches in search term."""
         results = []
         if input_text:
-            for cmd_name in self._search_db:
+            for cmd_name in self._search_db_keys:
                 if cmd_name.lower().startswith(input_text):
                     results.append(cmd_name)
 
@@ -1434,7 +1449,7 @@ class SearchPrompt(WPFWindow):
         results = []
         if input_text:
             cur_words = input_text.split(' ')
-            for cmd_name in self._search_db:
+            for cmd_name in self._search_db_keys:
                 if all([x in cmd_name.lower() for x in cur_words]):
                     results.append(cmd_name)
 
