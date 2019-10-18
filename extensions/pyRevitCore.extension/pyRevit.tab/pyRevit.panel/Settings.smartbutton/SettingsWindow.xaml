@@ -253,9 +253,9 @@
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <Image x:Name="lognone" Width="100" Height="50" Grid.Column="0" Grid.Row="0" VerticalAlignment="Top"/>
-                        <Image x:Name="logverbose" Width="100" Height="50" Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" Margin="0,10,0,0"/>
-                        <Image x:Name="logdebug" Width="100" Height="50" Grid.Column="0" Grid.Row="2" VerticalAlignment="Top" Margin="0,10,0,0"/>
+                        <Image x:Name="lognone" Width="100" Height="50" Grid.Column="0" Grid.Row="0" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                        <Image x:Name="logverbose" Width="100" Height="50" Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" Margin="0,10,0,0" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        <Image x:Name="logdebug" Width="100" Height="50" Grid.Column="0" Grid.Row="2" VerticalAlignment="Top" Margin="0,10,0,0" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                         <StackPanel Grid.Column="1" Grid.Row="0" Margin="10,0,0,0">
                             <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" IsChecked="True">
                                 No Reporting (logging.WARNING and above)
