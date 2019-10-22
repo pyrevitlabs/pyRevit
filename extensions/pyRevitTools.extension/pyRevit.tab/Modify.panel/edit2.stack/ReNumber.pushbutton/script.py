@@ -19,11 +19,31 @@ def toggle_element_selection_handles(target_view, category_name, state=True):
         if state:
             target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
         rr_cat = revit.query.get_subcategory(category_name, 'Reference')
-        rr_cat.Visible[target_view] = state
+        try:
+            rr_cat.Visible[target_view] = state
+        except Exception as vex:
+            logger.debug(
+                'Failed changing category visibility for \"%s\" '
+                'to \"%s\" on view \"%s\" | %s',
+                category_name,
+                state,
+                target_view.Name,
+                str(vex)
+                )
         rr_int = revit.query.get_subcategory(category_name, 'Interior Fill')
         if not rr_int:
             rr_int = revit.query.get_subcategory(category_name, 'Interior')
-        rr_int.Visible[target_view] = state
+        try:
+            rr_int.Visible[target_view] = state
+        except Exception as vex:
+            logger.debug(
+                'Failed changing interior fill visibility for \"%s\" '
+                'to \"%s\" on view \"%s\" | %s',
+                category_name,
+                state,
+                target_view.Name,
+                str(vex)
+                )
         # disable the temp VG overrides after making changes to categories
         if not state:
             target_view.DisableTemporaryViewMode(
