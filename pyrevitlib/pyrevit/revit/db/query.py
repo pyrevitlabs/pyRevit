@@ -1399,10 +1399,13 @@ def get_sheet_print_settings(tblock, doc_psettings):
             else DB.PageOrientationType.Landscape
     all_tblock_psettings = set()
     for doc_psetting in doc_psettings:
-        pparams = doc_psetting.PrintParameters
-        if pparams.PaperSize.Name in paper_size_names \
-                and (pparams.ZoomType == DB.ZoomType.Zoom
-                     and pparams.Zoom == 100) \
-                and pparams.PageOrientation == page_orient:
-            all_tblock_psettings.add(doc_psetting)
+        try:
+            pparams = doc_psetting.PrintParameters
+            if pparams.PaperSize.Name in paper_size_names \
+                    and (pparams.ZoomType == DB.ZoomType.Zoom
+                        and pparams.Zoom == 100) \
+                    and pparams.PageOrientation == page_orient:
+                all_tblock_psettings.add(doc_psetting)
+        except Exception:
+            pass
     return sorted(all_tblock_psettings, key=lambda x: x.Name)

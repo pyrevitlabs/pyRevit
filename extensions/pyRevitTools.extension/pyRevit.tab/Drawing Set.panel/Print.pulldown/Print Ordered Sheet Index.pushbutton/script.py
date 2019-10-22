@@ -100,8 +100,11 @@ class PrintSettingListItem(object):
 
     @property
     def paper_size(self):
-        if self.print_params:
-            return self.print_params.PaperSize
+        try:
+            if self.print_params:
+                return self.print_params.PaperSize
+        except Exception:
+            pass
 
     @property
     def allows_variable_paper(self):
