@@ -7,6 +7,12 @@
         ResizeMode="NoResize"
         Title="XAML Test">
     <StackPanel x:Name="stackpanel" Margin="15">
+        <GroupBox x:Name="empinfo" Header="Employee Info" Margin="0,0,0,10">
+            <StackPanel Margin="5">
+                <TextBlock Text="{Binding name, StringFormat=Name: {0}}" Margin="0,0,0,10"/>
+                <TextBlock Text="{Binding job}" />
+            </StackPanel>
+        </GroupBox>
         <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10" TextWrapping="Wrap"/>
         <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10" TextChanged="update_text"/>
         <Button x:Name="button"

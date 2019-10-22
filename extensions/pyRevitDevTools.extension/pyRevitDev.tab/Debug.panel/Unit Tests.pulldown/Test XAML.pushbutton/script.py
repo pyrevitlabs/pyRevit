@@ -37,6 +37,20 @@ class ButtonData(forms.Reactive):
         self._title = value
 
 
+class EmployeeInfo(forms.Reactive):
+    def __init__(self, name, job):
+        self._name = name
+        self.job = job
+
+    @forms.reactive
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+
 # code-behind for the window
 class UI(forms.WPFWindow):
     def __init__(self):
@@ -49,6 +63,8 @@ class UI(forms.WPFWindow):
 
     def setup(self):
         self.textbox.DataContext = self.nested_data
+        self.empinfo.DataContext = \
+            EmployeeInfo("Ehsan", "Architect")
         self.textblock.DataContext = self.data
         self.button.DataContext = self.data
 
