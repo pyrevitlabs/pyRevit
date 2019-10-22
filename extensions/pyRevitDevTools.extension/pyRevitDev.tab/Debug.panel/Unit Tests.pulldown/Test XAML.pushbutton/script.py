@@ -1,5 +1,8 @@
 """Test loading XAML in IronPython."""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+import urllib2
+import json
+
 from pyrevit import framework
 from pyrevit import revit, DB
 from pyrevit import forms
@@ -38,9 +41,10 @@ class ButtonData(forms.Reactive):
 
 
 class EmployeeInfo(forms.Reactive):
-    def __init__(self, name, job):
+    def __init__(self, name, job, supports):
         self._name = name
         self.job = job
+        self.supports = supports
 
     @forms.reactive
     def name(self):
@@ -49,6 +53,19 @@ class EmployeeInfo(forms.Reactive):
     @name.setter
     def name(self, value):
         self._name = value
+
+
+class ServerStatus(forms.Reactive):
+    def __init__(self):
+        self._status = False
+
+    @forms.reactive
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
 
 
 # code-behind for the window
@@ -60,13 +77,47 @@ class UI(forms.WPFWindow):
                 title="<bound title>",
                 nested=self.nested_data
                 )
+        self.status = ServerStatus()
 
     def setup(self):
         self.textbox.DataContext = self.nested_data
-        self.empinfo.DataContext = \
-            EmployeeInfo("Ehsan", "Architect")
+        self.empinfo.DataContext = [
+            EmployeeInfo(
+                name="Ehsan",
+                job="Architect",
+                supports=[
+                    "UX",
+                    "CLI",
+                    "Core"
+                ]),
+            EmployeeInfo(
+                name="Gui",
+                job="Programmer",
+                supports=[
+                    "CLI",
+                ]),
+            EmployeeInfo(
+                name="Alex",
+                job="Designer",
+                supports=[
+                    "Core"
+                ]),
+        ]
         self.textblock.DataContext = self.data
         self.button.DataContext = self.data
+        self.statuslight.DataContext = self.status
+
+    def set_status(self, status):
+        print(status)
+        self.status.status = status is not None
+
+    def check_status(self):
+        status_uri = r'https://status.epicgames.com/api/v2/status.json'
+        status = json.loads(urllib2.urlopen(status_uri).read())
+        self.dispatch(self.set_status, status)
+
+    def check_fortnite_status(self, sender, args):
+        self.dispatch(self.check_status)
 
     def update_text(self, sender, args):
         pass

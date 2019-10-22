@@ -6,23 +6,84 @@
         SizeToContent="Height" Width="300"
         ResizeMode="NoResize"
         Title="XAML Test">
+    <Window.Resources>
+
+        <DataTemplate x:Key="SupportsItem">
+            <Border x:Name="itemborder" Height="20" Background="Black" BorderThickness="0" CornerRadius="5" Margin="0">
+                <TextBlock Text="{Binding}" Foreground="Black" VerticalAlignment="Center" Margin="5,0,5,0" FontSize="9"/>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding}" Value="UX">
+                    <Setter TargetName="itemborder" Property="Background" Value="#fcd0a1" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding}" Value="Core">
+                    <Setter TargetName="itemborder" Property="Background" Value="#b1b695" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding}" Value="CLI">
+                    <Setter TargetName="itemborder" Property="Background" Value="#a690a4" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="SupportsList">
+            <WrapPanel IsItemsHost="True"/>
+        </ItemsPanelTemplate>
+
+    </Window.Resources>
     <StackPanel x:Name="stackpanel" Margin="15">
-        <GroupBox x:Name="empinfo" Header="Employee Info" Margin="0,0,0,10">
+        <GroupBox x:Name="empinfo" Header="Employee Info" Margin="0,-5,0,10">
             <StackPanel Margin="5">
-                <TextBlock Text="{Binding name, StringFormat=Name: {0}}" Margin="0,0,0,10"/>
-                <TextBlock Text="{Binding job}" />
+                <Slider x:Name="selector" Minimum="1" Maximum="{Binding Count}" IsSnapToTickEnabled="True" Margin="0,0,0,10" TickPlacement="Both"/>
+                <StackPanel DataContext="{Binding [0]}">
+                    <TextBlock Text="{Binding name, StringFormat=Name: {0}}" Margin="0,0,0,10"/>
+                    <TextBlock Text="{Binding job}" />
+                    <TextBlock Text="Supports" Margin="0,10,0,0"/>
+                    <ItemsControl Margin="0,5,0,0"
+                              BorderThickness="0"
+                              ItemsSource="{Binding supports}"
+                              ItemsPanel="{StaticResource SupportsList}"
+                              ItemTemplate="{StaticResource SupportsItem}">
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="{x:Type ContentPresenter}">
+                                <Setter Property="Margin" Value="0,0,5,0"/>
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                    </ItemsControl>
+                </StackPanel>
             </StackPanel>
         </GroupBox>
-        <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10" TextWrapping="Wrap"/>
-        <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10" TextChanged="update_text"/>
-        <Button x:Name="button"
-                Content="{Binding title}"
-                HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                Height="35"
-                Click="button_click"/>
-        <Button Content="Read Data"
-                HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                Margin="0,10,0,0" Height="35"
-                Click="read_data"/>
+        <GroupBox Header="Reactive Binding">
+            <StackPanel Margin="5">
+                <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10" TextChanged="update_text"/>
+                <Button x:Name="button"
+                        Content="{Binding title}"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                        Height="35"
+                        Click="button_click"/>
+                <Button Content="Read Data"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                        Margin="0,10,0,0" Height="35"
+                        Click="read_data"/>
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Header="Async Task">
+            <StackPanel x:Name="statuslight" Margin="5">
+                <Border Height="30" Margin="0,0,0,10">
+                    <TextBlock Text="{Binding status, StringFormat=Server: {0}}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Border.Style>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="Background" Value="LightGray" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding status}" Value="True">
+                                    <Setter Property="Background" Value="Gold" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+                <Button Content="Check Fortnite Status" Click="check_fortnite_status" Height="35"/>
+            </StackPanel>
+        </GroupBox>
     </StackPanel>
 </Window>
