@@ -55,7 +55,7 @@
         <GroupBox Header="Reactive Binding">
             <StackPanel Margin="5">
                 <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10" TextWrapping="Wrap"/>
-                <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10" TextChanged="update_text"/>
+                <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
                 <Button x:Name="button"
                         Content="{Binding title}"
                         HorizontalAlignment="Stretch" VerticalAlignment="Center"
@@ -70,7 +70,18 @@
         <GroupBox Header="Async Task">
             <StackPanel x:Name="statuslight" Margin="5">
                 <Border Height="30" Margin="0,0,0,10">
-                    <TextBlock Text="{Binding status, StringFormat=Server: {0}}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="Server Unavailable" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding status}" Value="True">
+                                        <Setter Property="Text" Value="Server Available" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <Border.Style>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="Background" Value="LightGray" />

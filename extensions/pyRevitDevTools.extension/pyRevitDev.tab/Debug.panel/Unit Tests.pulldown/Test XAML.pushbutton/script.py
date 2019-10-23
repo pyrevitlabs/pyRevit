@@ -55,8 +55,9 @@ class EmployeeInfo(forms.Reactive):
         self._name = value
 
 
-class ServerStatus(forms.Reactive):
-    def __init__(self):
+class Server(forms.Reactive):
+    def __init__(self, url):
+        self.url = url
         self._status = False
 
     @forms.reactive
@@ -77,7 +78,7 @@ class UI(forms.WPFWindow):
                 title="<bound title>",
                 nested=self.nested_data
                 )
-        self.status = ServerStatus()
+        self.server = Server(r'https://status.epicgames.com/api/v2/status.json')
 
     def setup(self):
         self.textbox.DataContext = self.nested_data
@@ -105,22 +106,17 @@ class UI(forms.WPFWindow):
         ]
         self.textblock.DataContext = self.data
         self.button.DataContext = self.data
-        self.statuslight.DataContext = self.status
+        self.statuslight.DataContext = self.server
 
     def set_status(self, status):
-        print(status)
-        self.status.status = status is not None
+        self.server.status = status is not None
 
     def check_status(self):
-        status_uri = r'https://status.epicgames.com/api/v2/status.json'
-        status = json.loads(urllib2.urlopen(status_uri).read())
+        status = json.loads(urllib2.urlopen(self.server.url).read())
         self.dispatch(self.set_status, status)
 
     def check_fortnite_status(self, sender, args):
         self.dispatch(self.check_status)
-
-    def update_text(self, sender, args):
-        pass
 
     def button_click(self, sender, args):
         self.data.title = "<updated bound title>"
