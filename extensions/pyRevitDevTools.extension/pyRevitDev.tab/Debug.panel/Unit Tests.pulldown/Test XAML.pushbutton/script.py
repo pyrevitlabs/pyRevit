@@ -4,6 +4,9 @@ import urllib2
 import json
 from time import sleep
 
+import os.path as op
+from pyrevit import EXEC_PARAMS
+
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import revit, DB
@@ -79,6 +82,26 @@ class Server(forms.Reactive):
         self._status = value
 
 
+class Mod(object):
+    def __init__(self, abbrev, color):
+        self.abbrev = abbrev
+        self.color = color
+
+
+class Tag(forms.Reactive):
+    def __init__(self, name, modifiers):
+        self._name = name
+        self.modifiers = modifiers
+
+    @forms.reactive
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+
 class DataSelectorConverter(framework.Windows.Data.IMultiValueConverter):
     def Convert(self, values, target_types, parameter, culture):
         return values[0][int(values[1]) - 1]
@@ -111,6 +134,19 @@ class UI(forms.WPFWindow):
                 supports=[
                     "Core"
                 ]),
+            EmployeeInfo(
+                name="Jeremy",
+                job="Designer",
+                supports=[
+                    "Core"
+                ]),
+            EmployeeInfo(
+                name="Petr",
+                job="Manager",
+                supports=[
+                    "Core",
+                    "CLI",
+                ]),
         ]
         self.nested_data = NestedObject(text="Text in Data Object")
         self.data = \
@@ -119,6 +155,12 @@ class UI(forms.WPFWindow):
                 nested=self.nested_data
                 )
         self.server = Server(r'https://status.epicgames.com/api/v2/status.json')
+
+        self.tags = [
+            Tag('Tag 1', [Mod('IFC', '#fc8f1b'), Mod('IFF', '#98af13')]),
+            Tag('Tag 2', [Mod('As-Built', '#a51c9a')]),
+            Tag('Tag 3', []),
+        ]
 
     def setup(self):
         mbinding = framework.Windows.Data.MultiBinding()
@@ -135,6 +177,9 @@ class UI(forms.WPFWindow):
         self.textblock.DataContext = self.data
         self.button.DataContext = self.data
         self.statuslight.DataContext = self.server
+
+        self.set_image_source(self.testimage, 'test.png')
+        self.taglist.ItemsSource = self.tags
 
     def set_status(self, status):
         self.server.status = status is not None
