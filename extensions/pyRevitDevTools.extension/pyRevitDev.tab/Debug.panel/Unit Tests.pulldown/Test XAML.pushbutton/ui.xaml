@@ -34,7 +34,7 @@
         <GroupBox x:Name="empinfo" Header="Employee Info" Margin="0,-5,0,10">
             <StackPanel Margin="5">
                 <Slider x:Name="selector" Minimum="1" Maximum="{Binding Count}" IsSnapToTickEnabled="True" Margin="0,0,0,10" TickPlacement="Both"/>
-                <StackPanel DataContext="{Binding [0]}">
+                <StackPanel x:Name="emppanel">
                     <TextBlock Text="{Binding name, StringFormat=Name: {0}}" Margin="0,0,0,10"/>
                     <TextBlock Text="{Binding job}" />
                     <TextBlock Text="Supports" Margin="0,10,0,0"/>
