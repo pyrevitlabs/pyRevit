@@ -36,7 +36,7 @@ config = script.get_config()
 
 # Non Printable Char
 NPC = u'\u200e'
-INDEX_FORMAT = '{:05}'
+INDEX_FORMAT = '{{:0{digits}}}'
 
 
 class ViewSheetListItem(forms.Reactive):
@@ -45,7 +45,8 @@ class ViewSheetListItem(forms.Reactive):
         self.name = self._sheet.Name
         self.number = self._sheet.SheetNumber
         self.printable = self._sheet.CanBePrinted
-        self.print_index = 0
+
+        self._print_index = 0
 
         self._print_settings = print_settings
         self.all_print_settings = print_settings
@@ -73,9 +74,13 @@ class ViewSheetListItem(forms.Reactive):
     def print_settings(self, value):
         self._print_settings = value
 
-    @property
-    def print_index_formatted(self):
-        return INDEX_FORMAT.format(self.print_index)
+    @forms.reactive
+    def print_index(self):
+        return self._print_index
+
+    @print_index.setter
+    def print_index(self, value):
+        self._print_index = value
 
 
 class PrintSettingListItem(object):
@@ -166,6 +171,10 @@ class PrintSheetsWindow(forms.WPFWindow):
     @property
     def show_placeholders(self):
         return self.placeholder_cb.IsChecked
+
+    @property
+    def index_digits(self):
+        return int(self.index_slider.Value)
 
     @property
     def include_placeholders(self):
@@ -394,7 +403,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if sheet.printable:
                     output_fname = \
                         coreutils.cleanup_filename(
-                            '{} {} - {}.pdf'.format(sheet.print_index_formatted,
+                            '{} {} - {}.pdf'.format(sheet.print_index,
                                                     sheet.number,
                                                     sheet.name),
                             windows_safe=True
@@ -414,7 +423,8 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _update_print_indices(self, sheet_list):
         for idx, sheet in enumerate(sheet_list):
-            sheet.print_index = idx
+            sheet.print_index = \
+                INDEX_FORMAT.format(digits=self.index_digits).format(idx)
 
     def _get_sheet_printsettings(self):
         all_titleblocks = revit.query.get_elements_by_categories(
@@ -446,12 +456,22 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr = self._get_printmanager()
             print_mgr.PrintSetup.CurrentPrintSetting = self._init_psettings
 
+    def update_index_slider(self):
+        index_digits = int(len(str(len(self._scheduled_sheets))))
+        self.index_slider.Minimum = max([index_digits, 2])
+        self.index_slider.Maximum = min([
+            self.index_slider.Minimum + 6,
+            6
+        ])
+        self.index_slider.Value = self.index_slider.Minimum
+
     def options_changed(self, sender, args):
         # reverse sheet if reverse is set
         sheet_list = [x for x in self._scheduled_sheets]
         if self.reverse_print:
             sheet_list.reverse()
 
+        # decide whether to show the placeholders or not
         if not self.show_placeholders:
             self.indexspace_cb.IsEnabled = True
             # update print indices with placeholder sheets
@@ -461,13 +481,10 @@ class PrintSheetsWindow(forms.WPFWindow):
             for sheet in sheet_list:
                 if sheet.printable:
                     printable_sheets.append(sheet)
-
             # update print indices without placeholder sheets
             if not self.include_placeholders:
                 self._update_print_indices(printable_sheets)
-
             self.sheet_list = printable_sheets
-
         else:
             self.indexspace_cb.IsChecked = True
             self.indexspace_cb.IsEnabled = False
@@ -528,6 +545,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                         print_settings=[print_settings])
                     for x in self._get_ordered_schedule_sheets()
                     ]
+        self.update_index_slider()
         self.options_changed(None, None)
 
     def print_sheets(self, sender, args):

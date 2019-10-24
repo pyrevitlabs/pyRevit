@@ -29,67 +29,91 @@
                                           Columns="{TemplateBinding GridView.ColumnCollection}"/>
             </StackPanel>
         </ControlTemplate>
+
         <Style TargetType="{x:Type Hyperlink}">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="TextBlock.TextDecorations" Value="{x:Null}" />
         </Style>
+
+        <Canvas x:Key="printIcon">
+            <Path Canvas.Top="-22" Canvas.Left="-23"
+                  Data="M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z"
+                  Fill="Black">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="2"  ScaleY="2"/>
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
     </Window.Resources>
 
     <DockPanel>
         <StackPanel Margin="10,10,10,0" DockPanel.Dock="Top">
-            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
-                    Select a Sheet Index (Schedule)
-            </TextBlock>
-            <ComboBox x:Name="schedules_cb" SelectionChanged="sheetlist_changed" Height="24">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Name}" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-            <Grid Margin="0,10,0,0">
+            <DockPanel Height="25">
+                <Border VerticalAlignment="Stretch"
+                        BorderThickness="1,1,0,1"
+                        BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+                    <TextBlock Text="Sheet Index (Schedule)" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,10,0"/>
+                </Border>
+                <ComboBox x:Name="schedules_cb" SelectionChanged="sheetlist_changed" VerticalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock Text="{Binding Name}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </DockPanel>
+            <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition />
-                    <ColumnDefinition />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="3*" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Margin="0,0,5,0" Orientation="Vertical">
-                    <TextBlock Text="Printer" />
-                    <ComboBox x:Name="printers_cb" Height="24" Margin="0,5,0,0"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="5,0" Orientation="Vertical">
-                    <TextBlock Text="Print Setting" />
-                    <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0" Height="24" SelectionChanged="sheetlist_changed">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding name}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
-                <Button Grid.Column="2" Content="Print" Margin="5,0,0,0" Click="print_sheets" />
+                <GroupBox Header="Ordering" Grid.Column="0" Margin="0,10,5,0" Padding="8">
+                    <StackPanel>
+                        <CheckBox x:Name="placeholder_cb" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed out)</CheckBox>
+                        <CheckBox x:Name="indexspace_cb" Margin="0,5,0,0" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
+                        <CheckBox x:Name="reverse_cb" Margin="0,5,0,0" IsChecked="False" Click="options_changed">Reverse Print Order</CheckBox>
+                        <StackPanel Margin="0,5,0,0" Orientation="Horizontal" >
+                            <Border BorderBrush="{x:Null}" VerticalAlignment="Stretch">
+                                <TextBlock Text="Index Digits" VerticalAlignment="Center" />
+                            </Border>
+                            <Slider x:Name="index_slider"
+                                    Width="100"  Margin="10,0,0,0"
+                                    Minimum="3" Maximum="6" TickPlacement="TopLeft" IsSnapToTickEnabled="True" IsMoveToPointEnabled="True"
+                                    ValueChanged="options_changed"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="Printer" Grid.Column="1" Margin="0,10,5,0" Padding="8">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Width="90" Content="{StaticResource printIcon}" FontWeight="Medium" FontSize="14" Margin="10,0,0,0" Click="print_sheets"/>
+                        <StackPanel DockPanel.Dock="Left">
+                            <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,0,10" IsChecked="False" IsEnabled="True">Combine into one file</CheckBox>
+                            <ComboBox x:Name="printers_cb" Margin="0,5,0,0" Height="24" />
+                            <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0" Height="24" SelectionChanged="sheetlist_changed">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding name}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </DockPanel>
+                </GroupBox>
             </Grid>
-            <GroupBox Header="Print Settings" Margin="0,15,0,15">
-                <WrapPanel>
-                    <CheckBox x:Name="placeholder_cb" Margin="10,10,0,5" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed out)</CheckBox>
-                    <CheckBox x:Name="indexspace_cb" Margin="10,10,0,5" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
-                    <CheckBox x:Name="combine_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="True">Combine into one file</CheckBox>
-                    <CheckBox x:Name="reverse_cb" Margin="10,10,0,5" IsChecked="False" Click="options_changed">Reverse Print Order</CheckBox>
-                </WrapPanel>
-            </GroupBox>
-            <DockPanel VerticalAlignment="Center" Margin="0,0,0,10">
-                <TextBlock TextWrapping="WrapWithOverflow" DockPanel.Dock="Left" VerticalAlignment="Bottom">
+            <StackPanel VerticalAlignment="Center" Margin="0,10,0,5">
+                <TextBlock TextWrapping="WrapWithOverflow" DockPanel.Dock="Left">
                     List of the sheets in selected sheet index
                 </TextBlock>
-                <WrapPanel x:Name="sheetopts_wp" FlowDirection="RightToLeft" DockPanel.Dock="Right" Visibility="Collapsed" IsEnabled="False">
+                <WrapPanel x:Name="sheetopts_wp" FlowDirection="RightToLeft" DockPanel.Dock="Right" Visibility="Visible" IsEnabled="False">
                     <Button Height="25" Width="120" Content="Set Print Settings" Click="set_sheet_printsettings"/>
                     <Button Height="25" Width="120" Content="Reset Print Settings " Click="sheetlist_changed" Margin="10,0,0,0"/>
                 </WrapPanel>
-            </DockPanel>
+            </StackPanel>
         </StackPanel>
         <StatusBar DockPanel.Dock="Bottom" Height="25" Background="{DynamicResource pyRevitDarkBrush}">
             <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
@@ -113,7 +137,7 @@
                 </Style>
             </DataGrid.CellStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Print Index" Binding="{Binding print_index_formatted}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn Header="Print Index" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Revision" Binding="{Binding revision}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
