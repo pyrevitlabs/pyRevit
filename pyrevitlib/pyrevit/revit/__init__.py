@@ -93,5 +93,72 @@ class RevitWrapper(types.ModuleType):
         return query.get_project_info()
 
 
+class DocumentCorruptionException(Exception):
+    pass
+
+
+class FailureSwallowerContext():
+    """Suppresses warnings during script execution
+
+    >>> with FailureSwallowerContext(force=True) as swallower:
+    >>>     for fam in families:
+    >>>         revit.doc.EditFamily(fam)
+    >>>         if swallower.get_swallowed():
+    >>>             logger.warn("Warnings swallowed")
+    """
+    # static, because the event cannot access non-static class variables
+    failures_swallowed = []
+
+    def __init__(self, force=False):
+        self.force = force
+
+    @staticmethod
+    def suppress_warnings(failure_accesssor, force=False):
+        failures = failure_accesssor.GetFailureMessages()
+        for failure in failures:
+            severity = failure.GetSeverity()
+            if severity == DB.FailureSeverity.Warning:
+                FailureSwallowerContext.failures_swallowed.append(
+                    failure.GetDescriptionText())
+                failure_accesssor.DeleteWarning(failure)
+            elif force:
+                if severity == DB.FailureSeverity.Error:
+                    FailureSwallowerContext.failures_swallowed.append(
+                        failure.GetDescriptionText())
+                    failure_accesssor.ResolveFailure(failure)
+                    
+                elif severity == DB.FailureSeverity.DocumentCorruption:
+                    raise DocumentCorruptionException()
+    
+    @staticmethod
+    def on_failure_processing(sender, event_args):
+        failure_accesssor = event_args.GetFailuresAccessor()
+        FailureSwallowerContext.suppress_warnings(failure_accesssor)
+    
+    @staticmethod
+    def on_failure_processing_force(sender, event_args):
+        failure_accesssor = event_args.GetFailuresAccessor()
+        FailureSwallowerContext.suppress_warnings(failure_accesssor, force=True)
+
+    @staticmethod
+    def get_swallowed():
+        _failures_swallowed_strs = list(FailureSwallowerContext.failures_swallowed)
+        FailureSwallowerContext.failures_swallowed = []
+        return _failures_swallowed_strs 
+
+    def __enter__(self):
+        if self.force:
+            HOST_APP.app.FailuresProcessing += FailureSwallowerContext.on_failure_processing_force 
+        else:
+            HOST_APP.app.FailuresProcessing += FailureSwallowerContext.on_failure_processing
+        return self
+
+    def __exit__(self, *args):
+        if self.force:
+            HOST_APP.app.FailuresProcessing -= FailureSwallowerContext.on_failure_processing_force 
+        else:
+            HOST_APP.app.FailuresProcessing -= FailureSwallowerContext.on_failure_processing
+
+
 if not EXEC_PARAMS.doc_mode:
     sys.modules[__name__] = RevitWrapper()
