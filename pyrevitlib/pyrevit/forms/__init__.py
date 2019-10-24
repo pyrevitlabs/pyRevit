@@ -108,6 +108,17 @@ class Reactive(ComponentModel.INotifyPropertyChanged):
             self.PropertyChanged.Invoke(self, args)
 
 
+class WindowToggler(object):
+    def __init__(self, window):
+        self._window = window
+
+    def __enter__(self):
+        self._window.hide()
+
+    def __exit__(self, exception, exception_value, traceback):
+        self._window.show_dialog()
+
+
 class WPFWindow(framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
@@ -210,6 +221,9 @@ class WPFWindow(framework.Windows.Window):
         iconpath = op.join(BIN_DIR, 'pyrevit_settings.png')
         self.Icon = utils.bitmap_from_file(iconpath)
 
+    def hide(self):
+        self.Hide()
+
     def show(self, modal=False):
         """Show window."""
         if modal:
@@ -253,6 +267,9 @@ class WPFWindow(framework.Windows.Window):
                     ),
                 Threading.DispatcherPriority.Background
                 )
+
+    def conceal(self):
+        return WindowToggler(self)
 
     @property
     def pyrevit_version(self):
@@ -1169,15 +1186,6 @@ class ProgressBar(TemplatePromptBar):
         self.pbar.Dispatcher.Invoke(System.Action(self._donothing),
                                     Threading.DispatcherPriority.Background)
 
-    @staticmethod
-    def _make_return_getter(f, ret):
-        # FIXME: WIP, cleanup docs
-        @wraps(f)
-        def wrapped_f(*args, **kwargs):
-            """Whatever this is"""
-            ret.append(f(*args, **kwargs))
-        return wrapped_f
-
     @property
     def title(self):
         """Progress bar title."""
@@ -1201,18 +1209,6 @@ class ProgressBar(TemplatePromptBar):
         """Handler for cancel button clicked event."""
         self.cancel_b.Content = 'Cancelling...'
         self.cancelled = True    #pylint: disable=W0201
-
-    def wait_async(self, func, args=()):
-        """Call a method asynchronosely and show progress."""
-        returns = []
-        self.indeterminate = True
-        rgfunc = self._make_return_getter(func, returns)
-        t = threading.Thread(target=rgfunc, args=args)
-        t.start()
-        while t.is_alive():
-            self._dispatch_updater()
-
-        return returns[0] if returns else None
 
     def reset(self):
         """Reset progress value to 0."""

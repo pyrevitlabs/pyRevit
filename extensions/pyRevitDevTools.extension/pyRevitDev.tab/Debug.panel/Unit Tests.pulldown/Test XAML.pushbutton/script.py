@@ -3,6 +3,8 @@
 import urllib2
 import json
 from time import sleep
+import sys
+import threading
 
 import os.path as op
 from pyrevit import EXEC_PARAMS
@@ -186,7 +188,7 @@ class UI(forms.WPFWindow):
 
     def check_status(self):
         status = json.loads(coreutils.read_url(self.server.url))
-        sleep(2)    # fake slow io
+        sleep(4)    # fake slow io
         self.dispatch(self.set_status, status)
 
     def check_fortnite_status(self, sender, args):
@@ -200,6 +202,24 @@ class UI(forms.WPFWindow):
 
     def read_data(self, sender, args):
         forms.alert(self.nested_data.text)
+
+    def delete_stuff(self, pbar):
+        try:
+            walls = revit.query.get_elements_by_class(DB.Wall)
+            with revit.Transaction('Delete Walls'):
+                for idx, wall in enumerate(walls):
+                    revit.delete.delete_elements(wall)
+                    pbar.update_progress(idx + 1, len(walls))
+                    sleep(0.5)
+        except Exception as derr:
+            logger.dev_log('delete_stuff', str(derr))
+
+    def do_revit_work(self, sender, args):
+        # self.dispatch(self.delete_stuff)
+        with self.conceal():
+            with forms.ProgressBar() as pbar:
+                self.delete_stuff(pbar)
+
 
 # init ui
 ui = script.load_ui(UI(), 'ui.xaml')

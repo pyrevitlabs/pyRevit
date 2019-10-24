@@ -181,6 +181,9 @@
                     </ListBox.ItemContainerStyle>
                 </ListBox>
             </GroupBox>
+            <GroupBox Header="Heavy Revit Work" Padding="10">
+                <Button Content="Do Revit Work" Height="30" Click="do_revit_work"/>
+            </GroupBox>
         </StackPanel>   
     </Grid>
 </Window>
