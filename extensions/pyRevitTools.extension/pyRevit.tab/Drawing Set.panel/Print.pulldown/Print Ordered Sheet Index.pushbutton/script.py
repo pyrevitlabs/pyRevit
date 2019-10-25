@@ -20,6 +20,7 @@ to remain.
 import re
 import os.path as op
 import codecs
+from collections import namedtuple
 
 from pyrevit import USER_DESKTOP
 from pyrevit import framework
@@ -37,6 +38,13 @@ config = script.get_config()
 # Non Printable Char
 NPC = u'\u200e'
 INDEX_FORMAT = '{{:0{digits}}}'
+
+
+NamingParts = namedtuple(
+    'NamingParts',
+    ['index', 'index_spacer', 'number', 'number_spacer', 'name', 'ext']
+    )
+NamingFormat = namedtuple('NamingFormat', ['parts', 'template', 'space'])
 
 
 class ViewSheetListItem(forms.Reactive):
@@ -139,6 +147,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.sheet_cat_id = \
             revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
+        self._setup_naming_formats()
         self._setup_printers()
         self._setup_print_settings()
 
@@ -151,6 +160,10 @@ class PrintSheetsWindow(forms.WPFWindow):
     @property
     def selected_schedule(self):
         return self.schedules_cb.SelectedItem
+
+    @property
+    def selected_naming_format(self):
+        return self.namingformat_cb.SelectedItem
 
     @property
     def selected_printer(self):
@@ -274,6 +287,100 @@ class PrintSheetsWindow(forms.WPFWindow):
                             'Most probably there is not a printer defined '
                             'on your system. | %s', printerr)
             return None
+
+    def _setup_naming_formats(self):
+        self.namingformat_cb.ItemsSource = [
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer=' ',
+                                           number='A1.00',
+                                           number_spacer=' ',
+                                           name='1ST FLOOR PLAN',
+                                           ext='.pdf'),
+                         template='{index} {number} {name}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer='_',
+                                           number='A1.00',
+                                           number_spacer=' ',
+                                           name='1ST FLOOR PLAN',
+                                           ext='.pdf'),
+                         template='{index}_{number} {name}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer=' ',
+                                           number='A1.00',
+                                           number_spacer='_',
+                                           name='1ST FLOOR PLAN',
+                                           ext='.pdf'),
+                         template='{index} {number}_{name}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer='_',
+                                           number='A1.00',
+                                           number_spacer='_',
+                                           name='1ST FLOOR PLAN',
+                                           ext='.pdf'),
+                         template='{index}_{number}_{name}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer='_',
+                                           number='A1.00',
+                                           number_spacer='_',
+                                           name='1ST_FLOOR_PLAN',
+                                           ext='.pdf'),
+                         template='{index}_{number}_{name}.pdf',
+                         space='_'),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer=' ',
+                                           number='A1.00',
+                                           number_spacer='',
+                                           name='',
+                                           ext='.pdf'),
+                         template='{index} {number}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer='_',
+                                           number='A1.00',
+                                           number_spacer='',
+                                           name='',
+                                           ext='.pdf'),
+                         template='{index}_{number}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer=' ',
+                                           number='',
+                                           number_spacer='',
+                                           name='1ST FLOOR PLAN',
+                                           ext='.pdf'),
+                         template='{index} {name}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer='_',
+                                           number='',
+                                           number_spacer='',
+                                           name='1ST FLOOR PLAN',
+                                           ext='.pdf'),
+                         template='{index}_{name}.pdf',
+                         space=' '),
+
+            NamingFormat(parts=NamingParts(index='0001',
+                                           index_spacer='_',
+                                           number='',
+                                           number_spacer='',
+                                           name='1ST_FLOOR_PLAN',
+                                           ext='.pdf'),
+                         template='{index}_{name}.pdf',
+                         space='_'),
+        ]
+        self.namingformat_cb.SelectedIndex = 0
 
     def _setup_printers(self):
         printers = list(Drawing.Printing.PrinterSettings.InstalledPrinters)
@@ -399,13 +506,15 @@ class PrintSheetsWindow(forms.WPFWindow):
                     self.selected_print_setting.print_settings
             print_mgr.SelectNewPrintDriver(self.selected_printer)
             print_mgr.PrintRange = DB.PrintRange.Current
+            naming_fmt = self.selected_naming_format
             for sheet in target_sheets:
                 if sheet.printable:
                     output_fname = \
                         coreutils.cleanup_filename(
-                            '{} {} - {}.pdf'.format(sheet.print_index,
-                                                    sheet.number,
-                                                    sheet.name),
+                            naming_fmt.template.format(
+                                index=sheet.print_index,
+                                number=sheet.number,
+                                name=sheet.name.replace(' ', naming_fmt.space)),
                             windows_safe=True
                             )
                     print_mgr.PrintToFileName = \
@@ -470,6 +579,13 @@ class PrintSheetsWindow(forms.WPFWindow):
         sheet_list = [x for x in self._scheduled_sheets]
         if self.reverse_print:
             sheet_list.reverse()
+
+        if self.combine_cb.IsChecked:
+            self.hide_element(self.order_sp)
+            self.hide_element(self.namingformat_dp)
+        else:
+            self.show_element(self.order_sp)
+            self.show_element(self.namingformat_dp)
 
         # decide whether to show the placeholders or not
         if not self.show_placeholders:
