@@ -2,7 +2,7 @@
 #pylint: disable=W0703,C0103
 from collections import namedtuple
 
-from pyrevit.coreutils import logger
+from pyrevit.coreutils import logger, get_enum_none
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
 import pyrevit.compat as compat
@@ -68,6 +68,25 @@ SheetRefInfo = namedtuple('SheetRefInfo',
 
 ElementHistory = namedtuple('ElementHistory',
                             ['creator', 'owner', 'last_changed_by'])
+
+ParamDef = namedtuple('ParamDef', ['name', 'istype'])
+"""Parameter definition tuple.
+
+Attributes:
+    name (str): parameter name
+    istype (bool): true if type parameter, otherwise false
+"""
+
+class PropKeyValue(object):
+    """Storage class for matched property info and value."""
+    def __init__(self, name, datatype, value, istype):
+        self.name = name
+        self.datatype = datatype
+        self.value = value
+        self.istype = istype
+
+    def __repr__(self):
+        return str(self.__dict__)
 
 
 def get_name(element, title_on_sheet=False):
@@ -185,6 +204,57 @@ def get_param_value(targetparam):
         value = targetparam.AsElementId()
 
     return value
+
+
+def get_param_by_def(element, param_def):
+    """Returns Type or Instance parameter Element by ParamDef"""
+    src_type = get_type(element)
+    mlogger.debug("Reading %s", param_def.name)
+    target = src_type if param_def.istype else element
+    targetparam = target.LookupParameter(param_def.name)
+    return targetparam
+
+
+def get_prop_value_by_def(element, param_def):
+    """Returns PropKeyValue of Type or Instance element parameter by ParamDef"""
+    param = get_param_by_def(element, param_def)
+    if param:
+        value = get_param_value(param)
+        return PropKeyValue(
+            name=param_def.name,
+            datatype=param.StorageType,
+            value=value,
+            istype=param_def.istype
+            )
+
+
+def get_param_defs(element,
+                   include_instance=True,
+                   include_type=True,
+                   filterfunc=None):
+    param_defs = []
+    non_storage_type = get_enum_none(DB.StorageType)
+    if include_instance:
+        # collect instance parameters
+        param_defs.extend(
+            [ParamDef(name=x.Definition.Name, istype=False)
+             for x in element.Parameters
+             if not x.IsReadOnly
+             and x.StorageType != non_storage_type
+             and (not filterfunc or filterfunc(x))]
+        )
+
+    if include_type:
+        # collect type parameters
+        src_type = get_type(element)
+        param_defs.extend(
+            [ParamDef(name=x.Definition.Name, istype=True)
+             for x in src_type.Parameters
+             if not x.IsReadOnly 
+                and x.StorageType != non_storage_type
+                and (not filterfunc or not filterfunc(x))]
+        )
+    return param_defs
 
 
 def get_value_range(param_name, doc=None):

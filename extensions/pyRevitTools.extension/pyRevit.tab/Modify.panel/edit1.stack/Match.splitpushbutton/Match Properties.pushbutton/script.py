@@ -17,23 +17,26 @@ logger = script.get_logger()
 output = script.get_output()
 
 
-class PropKeyValue(object):
-    """Storage class for matched property info and value."""
-    def __init__(self, name, datatype, value, istype):
-        self.name = name
-        self.datatype = datatype
-        self.value = value
-        self.istype = istype
-
-    def __repr__(self):
-        return str(self.__dict__)
-
-
 MEMFILE = script.get_document_data_file(
     file_id='MatchSelectedProperties',
     file_ext='pym',
     add_cmd_name=False
     )
+
+def make_properties_picklable(param_defs):
+    for param_def in param_defs:
+        if param_def.datatype == DB.StorageType.ElementId \
+                and isinstance(param_def.value, DB.ElementId):
+            param_def.value = param_def.value.IntegerValue
+    return param_defs
+
+
+def make_properties_unpicklable(param_defs):
+    for param_def in param_defs:
+        if param_def.datatype == DB.StorageType.ElementId \
+                and isinstance(param_def.value, int):
+            param_def.value = DB.ElementId(param_def.value)
+    return param_defs
 
 
 def match_prop(dest_inst, dest_type, src_props):
@@ -53,14 +56,7 @@ def match_prop(dest_inst, dest_type, src_props):
         dparam = target.LookupParameter(pkv.name)
         if dparam and pkv.datatype == dparam.StorageType:
             try:
-                if dparam.StorageType == DB.StorageType.Integer:
-                    dparam.Set(pkv.value or 0)
-                elif dparam.StorageType == DB.StorageType.Double:
-                    dparam.Set(pkv.value or 0.0)
-                elif dparam.StorageType == DB.StorageType.ElementId:
-                    dparam.Set(DB.ElementId(pkv.value))
-                else:
-                    dparam.Set(pkv.value or "")
+                revit.update.update_param_by_prop(dparam, pkv)
             except Exception as setex:
                 logger.warning(
                     "Error applying value to: %s | %s",
@@ -74,8 +70,6 @@ def get_source_properties(src_element):
     """Return info on selected properties."""
     props = []
 
-    src_type = revit.query.get_type(src_element)
-
     selected_params = forms.select_parameter(
         src_element,
         title="Select Parameters",
@@ -87,27 +81,8 @@ def get_source_properties(src_element):
     logger.debug("Selected parameters: %s", [x.name for x in selected_params])
 
     for sparam in selected_params:
-        logger.debug("Reading %s", sparam.name)
-        target = src_type if sparam.istype else src_element
-        tparam = target.LookupParameter(sparam.name)
-        if tparam:
-            if tparam.StorageType == DB.StorageType.Integer:
-                value = tparam.AsInteger()
-            elif tparam.StorageType == DB.StorageType.Double:
-                value = tparam.AsDouble()
-            elif tparam.StorageType == DB.StorageType.ElementId:
-                value = tparam.AsElementId().IntegerValue
-            else:
-                value = tparam.AsString()
-
-            props.append(
-                PropKeyValue(
-                    name=sparam.name,
-                    datatype=tparam.StorageType,
-                    value=value,
-                    istype=sparam.istype
-                    ))
-
+        props.append(revit.query.get_prop_value_by_def(src_element,
+                                                       sparam))
     return props
 
 
@@ -146,8 +121,11 @@ def remember(src_props):
 # main
 source_props = []
 if __shiftclick__:    #pylint: disable=undefined-variable
-    target_type, source_props = recall()
-    logger.debug("Recalled data: %s", source_props)
+    recalled_data = recall()
+    if recalled_data:
+        target_type, source_props = recalled_data
+        source_props = make_properties_unpicklable(source_props)
+        logger.debug("Recalled data: %s", source_props)
 
 if not source_props:
     source_element = None
@@ -171,7 +149,7 @@ if not source_props:
     if source_element:
         if not source_props:
             source_props = get_source_properties(source_element)
-            remember((target_type, source_props))
+            remember((target_type, make_properties_picklable(source_props)))
 
 # apply values
 if source_props:

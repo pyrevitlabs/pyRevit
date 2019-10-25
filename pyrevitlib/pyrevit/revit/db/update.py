@@ -78,6 +78,17 @@ def update_param_value(rvt_param, value):
             rvt_param.SetValueString(str(value))
 
 
+def update_param_by_prop(rvt_param, prop_key_value):
+    if rvt_param.StorageType == DB.StorageType.Integer:
+        rvt_param.Set(prop_key_value.value or 0)
+    elif rvt_param.StorageType == DB.StorageType.Double:
+        rvt_param.Set(prop_key_value.value or 0.0)
+    elif rvt_param.StorageType == DB.StorageType.ElementId:
+        rvt_param.Set(prop_key_value.value)
+    else:
+        rvt_param.Set(prop_key_value.value or "")
+
+
 def toggle_category_visibility(view, subcat, hidden=None):
     if HOST_APP.is_older_than(2018):
         if hidden is None:

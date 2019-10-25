@@ -57,15 +57,6 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple('ParamDef', ['name', 'istype'])
-"""Parameter definition tuple.
-
-Attributes:
-    name (str): parameter name
-    istype (bool): true if type parameter, otherwise false
-"""
-
-
 class WPFWindow(framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
@@ -2066,27 +2057,10 @@ def select_parameter(src_element,
         ... )
         ... [<ParamDef >, <ParamDef >]
     """
-    param_defs = []
-    non_storage_type = coreutils.get_enum_none(DB.StorageType)
-    if include_instance:
-        # collect instance parameters
-        param_defs.extend(
-            [ParamDef(name=x.Definition.Name, istype=False)
-             for x in src_element.Parameters
-             if not x.IsReadOnly and x.StorageType != non_storage_type]
-        )
-
-    if include_type:
-        # collect type parameters
-        src_type = revit.query.get_type(src_element)
-        param_defs.extend(
-            [ParamDef(name=x.Definition.Name, istype=True)
-             for x in src_type.Parameters
-             if not x.IsReadOnly and x.StorageType != non_storage_type]
-        )
-
-    if filterfunc:
-        param_defs = filter(filterfunc, param_defs)
+    param_defs = revit.query.get_param_defs(src_element,
+                                            include_instance,
+                                            include_type,
+                                            filterfunc)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
