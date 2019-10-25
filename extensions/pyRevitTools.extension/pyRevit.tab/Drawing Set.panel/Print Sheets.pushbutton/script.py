@@ -31,6 +31,8 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
+__title__ = 'Print\nSheets'
+
 logger = script.get_logger()
 config = script.get_config()
 
@@ -39,6 +41,8 @@ config = script.get_config()
 NPC = u'\u200e'
 INDEX_FORMAT = '{{:0{digits}}}'
 
+
+AvailableDoc = namedtuple('AvailableDoc', ['name', 'hash', 'linked'])
 
 NamingParts = namedtuple(
     'NamingParts',
@@ -147,32 +151,22 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.sheet_cat_id = \
             revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
+        self._setup_docs_list()
         self._setup_naming_formats()
-        self._setup_printers()
-        self._setup_print_settings()
 
-        self.schedules_cb.ItemsSource = self._get_sheet_index_list()
-        if not self.schedules_cb.ItemsSource:
-            forms.alert("No Sheet Lists (Schedules) found in current project",
-                        exitscript=True)
-        self.schedules_cb.SelectedIndex = 0
+    # doc and schedule
+    @property
+    def selected_doc(self):
+        selected_doc = self.documents_cb.SelectedItem
+        for open_doc in revit.docs:
+            if open_doc.GetHashCode() == selected_doc.hash:
+                return open_doc
 
     @property
     def selected_schedule(self):
         return self.schedules_cb.SelectedItem
 
-    @property
-    def selected_naming_format(self):
-        return self.namingformat_cb.SelectedItem
-
-    @property
-    def selected_printer(self):
-        return self.printers_cb.SelectedItem
-
-    @property
-    def selected_print_setting(self):
-        return self.printsettings_cb.SelectedItem
-
+    # ordering configs
     @property
     def reverse_print(self):
         return self.reverse_cb.IsChecked
@@ -193,6 +187,20 @@ class PrintSheetsWindow(forms.WPFWindow):
     def include_placeholders(self):
         return self.indexspace_cb.IsChecked
 
+    # print settings
+    @property
+    def selected_naming_format(self):
+        return self.namingformat_cb.SelectedItem
+
+    @property
+    def selected_printer(self):
+        return self.printers_cb.SelectedItem
+
+    @property
+    def selected_print_setting(self):
+        return self.printsettings_cb.SelectedItem
+
+    # sheet list
     @property
     def sheet_list(self):
         return self.sheets_lb.ItemsSource
@@ -213,6 +221,7 @@ class PrintSheetsWindow(forms.WPFWindow):
     def selected_printable_sheets(self):
         return [x for x in self.selected_sheets if x.printable]
 
+    # private utils
     def _get_schedule_text_data(self, schedule_view):
         schedule_data_file = \
             script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
@@ -259,34 +268,50 @@ class PrintSheetsWindow(forms.WPFWindow):
         return [ordered_sheets_dict[x] for x in sorted_keys]
 
     def _get_ordered_schedule_sheets(self):
-        schedule_view = self.selected_schedule
-        cl_sheets = DB.FilteredElementCollector(revit.doc, schedule_view.Id)
-        sheets = cl_sheets.OfClass(framework.get_type(DB.ViewSheet))\
-                          .WhereElementIsNotElementType()\
-                          .ToElements()
+        if self.selected_doc == self.selected_schedule.Document:
+            sheets = DB.FilteredElementCollector(self.selected_doc,
+                                                 self.selected_schedule.Id)\
+                    .OfClass(framework.get_type(DB.ViewSheet))\
+                    .WhereElementIsNotElementType()\
+                    .ToElements()
 
-        return self._order_sheets_by_schedule_data(schedule_view, sheets)
+            return self._order_sheets_by_schedule_data(
+                self.selected_schedule,
+                sheets
+                )
+        return []
 
     def _is_sheet_index(self, schedule_view):
         return self.sheet_cat_id == schedule_view.Definition.CategoryId \
                and not schedule_view.IsTemplate
 
     def _get_sheet_index_list(self):
-        cl_schedules = DB.FilteredElementCollector(revit.doc)
-        schedules = cl_schedules.OfClass(framework.get_type(DB.ViewSchedule))\
-                                .WhereElementIsNotElementType()\
-                                .ToElements()
+        schedules = DB.FilteredElementCollector(self.selected_doc)\
+                      .OfClass(framework.get_type(DB.ViewSchedule))\
+                      .WhereElementIsNotElementType()\
+                      .ToElements()
 
         return [sched for sched in schedules if self._is_sheet_index(sched)]
 
     def _get_printmanager(self):
         try:
-            return revit.doc.PrintManager
+            return self.selected_doc.PrintManager
         except Exception as printerr:
             logger.critical('Error getting printer manager from document. '
                             'Most probably there is not a printer defined '
                             'on your system. | %s', printerr)
             return None
+
+    def _setup_docs_list(self):
+        docs = [AvailableDoc(name=revit.doc.Title,
+                             hash=revit.doc.GetHashCode(),
+                             linked=False)]
+        docs.extend([
+            AvailableDoc(name=x.Title, hash=x.GetHashCode(), linked=True)
+            for x in revit.query.get_all_linkeddocs(doc=revit.doc)
+        ])
+        self.documents_cb.ItemsSource = docs
+        self.documents_cb.SelectedIndex = 0
 
     def _setup_naming_formats(self):
         self.namingformat_cb.ItemsSource = [
@@ -389,13 +414,18 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.printers_cb.SelectedItem = print_mgr.PrinterName
 
     def _setup_print_settings(self):
-        print_settings = [VariablePaperPrintSettingListItem()]
+        if not self.selected_doc.IsLinked:
+            print_settings = [VariablePaperPrintSettingListItem()]
+        else:
+            print_settings = []
+
         print_settings.extend(
-            [PrintSettingListItem(revit.doc.GetElement(x))
-             for x in revit.doc.GetPrintSettingIds()]
+            [PrintSettingListItem(self.selected_doc.GetElement(x))
+             for x in self.selected_doc.GetPrintSettingIds()]
             )
-        print_mgr = self._get_printmanager()
         self.printsettings_cb.ItemsSource = print_settings
+
+        print_mgr = self._get_printmanager()
         if isinstance(print_mgr.PrintSetup.CurrentPrintSetting,
                       DB.InSessionPrintSetting):
             in_session = PrintSettingListItem(
@@ -410,13 +440,38 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if psetting.name == cur_psetting_name:
                     self.printsettings_cb.SelectedItem = psetting
 
+        if self.selected_doc.IsLinked:
+            self.disable_element(self.printsettings_cb)
+        else:
+            self.enable_element(self.printsettings_cb)
+
+        self._update_combine_option()
+
+    def _update_combine_option(self):
+        self.enable_element(self.combine_cb)
+        if self.selected_doc.IsLinked \
+                or ((self.selected_schedule and self.selected_print_setting) 
+                    and self.selected_print_setting.allows_variable_paper):
+            self.disable_element(self.combine_cb)
+            self.combine_cb.IsChecked = False
+
+    def _setup_sheet_list(self):
+        self.schedules_cb.ItemsSource = self._get_sheet_index_list()
+        self.schedules_cb.SelectedIndex = 0
+        if self.schedules_cb.ItemsSource:
+            self.enable_element(self.schedules_cb)
+        else:
+            self.disable_element(self.schedules_cb)
+
     def _print_combined_sheets_in_order(self, target_sheets):
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
-        with revit.TransactionGroup('Print Sheets in Order'):
+        with revit.TransactionGroup('Print Sheets in Order',
+                                    doc=self.selected_doc):
             if not print_mgr:
                 return
-            with revit.Transaction('Set Printer Settings'):
+            with revit.Transaction('Set Printer Settings',
+                                   doc=self.selected_doc):
                 print_mgr.PrintSetup.CurrentPrintSetting = \
                     self.selected_print_setting.print_settings
                 print_mgr.SelectNewPrintDriver(self.selected_printer)
@@ -425,7 +480,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             # to push revit to sort them per user
             sheet_set = DB.ViewSet()
             original_sheetnums = []
-            with revit.Transaction('Fix Sheet Numbers'):
+            with revit.Transaction('Fix Sheet Numbers',
+                                   doc=self.selected_doc):
                 for idx, sheet in enumerate(target_sheets):
                     rvtsheet = sheet.revit_sheet
                     original_sheetnums.append(rvtsheet.SheetNumber)
@@ -435,7 +491,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                         sheet_set.Insert(rvtsheet)
 
             # Collect existing sheet sets
-            cl = DB.FilteredElementCollector(revit.doc)
+            cl = DB.FilteredElementCollector(self.selected_doc)
             viewsheetsets = cl.OfClass(framework.get_type(DB.ViewSheetSet))\
                               .WhereElementIsNotElementType()\
                               .ToElements()
@@ -443,14 +499,16 @@ class PrintSheetsWindow(forms.WPFWindow):
 
             sheetsetname = 'OrderedPrintSet'
 
-            with revit.Transaction('Remove Previous Print Set'):
+            with revit.Transaction('Remove Previous Print Set',
+                                   doc=self.selected_doc):
                 # Delete existing matching sheet set
                 if sheetsetname in all_viewsheetsets:
                     print_mgr.ViewSheetSetting.CurrentViewSheetSet = \
                         all_viewsheetsets[sheetsetname]
                     print_mgr.ViewSheetSetting.Delete()
 
-            with revit.Transaction('Update Ordered Print Set'):
+            with revit.Transaction('Update Ordered Print Set',
+                                   doc=self.selected_doc):
                 try:
                     viewsheet_settings = print_mgr.ViewSheetSetting
                     viewsheet_settings.CurrentViewSheetSet.Views = \
@@ -487,7 +545,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.SubmitPrint()
 
             # now fix the sheet names
-            with revit.Transaction('Restore Sheet Numbers'):
+            with revit.Transaction('Restore Sheet Numbers',
+                                   doc=self.selected_doc):
                 for sheet, sheetnum in zip(target_sheets,
                                            original_sheetnums):
                     rvtsheet = sheet.revit_sheet
@@ -500,7 +559,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             return
         print_mgr.PrintToFile = True
         per_sheet_psettings = self.selected_print_setting.allows_variable_paper
-        with revit.DryTransaction('Set Printer Settings'):
+        with revit.DryTransaction('Set Printer Settings',
+                                  doc=self.selected_doc):
             if not per_sheet_psettings:
                 print_mgr.PrintSetup.CurrentPrintSetting = \
                     self.selected_print_setting.print_settings
@@ -530,6 +590,37 @@ class PrintSheetsWindow(forms.WPFWindow):
                     logger.debug('Sheet %s is not printable. Skipping print.',
                                 sheet.number)
 
+    def _print_linked_sheets_in_order(self, target_sheets):
+        # make sure we can access the print config
+        print_mgr = self._get_printmanager()
+        if not print_mgr:
+            return
+        print_mgr.PrintToFile = True
+        print_mgr.SelectNewPrintDriver(self.selected_printer)
+        print_mgr.PrintRange = DB.PrintRange.Current
+        # setting print settings needs a transaction
+        # can not be done on linked docs
+        # print_mgr.PrintSetup.CurrentPrintSetting =
+        naming_fmt = self.selected_naming_format
+        for sheet in target_sheets:
+            if sheet.printable:
+                output_fname = \
+                    coreutils.cleanup_filename(
+                        naming_fmt.template.format(
+                            index=sheet.print_index,
+                            number=sheet.number,
+                            name=sheet.name.replace(' ', naming_fmt.space)),
+                        windows_safe=True
+                        )
+                print_mgr.PrintToFileName = \
+                    op.join(USER_DESKTOP, output_fname)
+                print_mgr.SubmitPrint(sheet.revit_sheet)
+            else:
+                logger.debug(
+                    'Linked sheet %s is not printable. Skipping print.',
+                    sheet.number
+                    )
+
     def _update_print_indices(self, sheet_list):
         for idx, sheet in enumerate(sheet_list):
             sheet.print_index = \
@@ -537,13 +628,15 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _get_sheet_printsettings(self):
         all_titleblocks = revit.query.get_elements_by_categories(
-            [DB.BuiltInCategory.OST_TitleBlocks]
+            [DB.BuiltInCategory.OST_TitleBlocks],
+            doc=self.selected_doc
             )
         tblock_printsettings = {}
         sheet_printsettings = {}
-        doc_printsettings = revit.query.get_all_print_settings(doc=revit.doc)
+        doc_printsettings = \
+            revit.query.get_all_print_settings(doc=self.selected_doc)
         for tblock in all_titleblocks:
-            sheet = revit.doc.GetElement(tblock.OwnerViewId)
+            sheet = self.selected_doc.GetElement(tblock.OwnerViewId)
             # build a unique id for this tblock
             tblock_tform = tblock.GetTotalTransform()
             tblock_tid = tblock.GetTypeId().IntegerValue
@@ -565,7 +658,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr = self._get_printmanager()
             print_mgr.PrintSetup.CurrentPrintSetting = self._init_psettings
 
-    def update_index_slider(self):
+    def _update_index_slider(self):
         index_digits = int(len(str(len(self._scheduled_sheets))))
         self.index_slider.Minimum = max([index_digits, 2])
         self.index_slider.Maximum = min([
@@ -573,6 +666,41 @@ class PrintSheetsWindow(forms.WPFWindow):
             6
         ])
         self.index_slider.Value = self.index_slider.Minimum
+
+    # event handlers
+    def doclist_changed(self, sender, args):
+        self._setup_printers()
+        self._setup_print_settings()
+        self._setup_sheet_list()
+
+    def sheetlist_changed(self, sender, args):
+        print_settings = None
+        if self.selected_schedule and self.selected_print_setting:
+            if self.selected_print_setting.allows_variable_paper:
+                sheet_printsettings = self._get_sheet_printsettings()
+                self.show_element(self.sheetopts_wp)
+                self.show_element(self.psettingcol)
+                self._scheduled_sheets = [
+                    ViewSheetListItem(
+                        view_sheet=x,
+                        print_settings=sheet_printsettings.get(
+                            x.SheetNumber,
+                            None))
+                    for x in self._get_ordered_schedule_sheets()
+                    ]
+            else:
+                print_settings = self.selected_print_setting.print_settings
+                self.hide_element(self.sheetopts_wp)
+                self.hide_element(self.psettingcol)
+                self._scheduled_sheets = [
+                    ViewSheetListItem(
+                        view_sheet=x,
+                        print_settings=[print_settings])
+                    for x in self._get_ordered_schedule_sheets()
+                    ]
+        self._update_combine_option()
+        self._update_index_slider()
+        self.options_changed(None, None)
 
     def options_changed(self, sender, args):
         # reverse sheet if reverse is set
@@ -616,7 +744,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                     'Matching Print Settings':
                         self.selected_printable_sheets[0].all_print_settings,
                     'All Print Settings':
-                        revit.query.get_all_print_settings(doc=revit.doc)
+                        revit.query.get_all_print_settings(
+                            doc=self.selected_doc
+                            )
                 },
                 name_attr='Name',
                 group_selector_title='Print Settings:',
@@ -628,41 +758,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                 for sheet in self.selected_printable_sheets:
                     sheet.print_settings = psettings
 
-    def selection_changed(self, sender, args):
+    def sheet_selection_changed(self, sender, args):
         if self.selected_printable_sheets:
             return self.enable_element(self.sheetopts_wp)
         self.disable_element(self.sheetopts_wp)
-
-    def sheetlist_changed(self, sender, args):
-        print_settings = None
-        if self.selected_schedule and self.selected_print_setting:
-            if self.selected_print_setting.allows_variable_paper:
-                sheet_printsettings = self._get_sheet_printsettings()
-                self.combine_cb.IsChecked = False
-                self.disable_element(self.combine_cb)
-                self.show_element(self.sheetopts_wp)
-                self.show_element(self.psettingcol)
-                self._scheduled_sheets = [
-                    ViewSheetListItem(
-                        view_sheet=x,
-                        print_settings=sheet_printsettings.get(
-                            x.SheetNumber,
-                            None))
-                    for x in self._get_ordered_schedule_sheets()
-                    ]
-            else:
-                print_settings = self.selected_print_setting.print_settings
-                self.enable_element(self.combine_cb)
-                self.hide_element(self.sheetopts_wp)
-                self.hide_element(self.psettingcol)
-                self._scheduled_sheets = [
-                    ViewSheetListItem(
-                        view_sheet=x,
-                        print_settings=[print_settings])
-                    for x in self._get_ordered_schedule_sheets()
-                    ]
-        self.update_index_slider()
-        self.options_changed(None, None)
 
     def print_sheets(self, sender, args):
         if self.sheet_list:
@@ -690,40 +789,23 @@ class PrintSheetsWindow(forms.WPFWindow):
             if self.combine_print:
                 self._print_combined_sheets_in_order(target_sheets)
             else:
-                self._print_sheets_in_order(target_sheets)
+                if self.selected_doc.IsLinked:
+                    self._print_linked_sheets_in_order(target_sheets)
+                else:
+                    self._print_sheets_in_order(target_sheets)
             self._reset_psettings()
 
-    def preview_mouse_down(self, sender, args):
-        if isinstance(sender, Windows.Controls.ListViewItem):
-            if sender.DataContext.printable:
-                Windows.DragDrop.DoDragDrop(sender,
-                                            sender.DataContext,
-                                            Windows.DragDropEffects.Move)
 
-            sender.IsSelected = False
-
-    def drop_sheet(self, sender, args):
-        dropped_data = args.Data.GetData(ViewSheetListItem)
-        target = sender.DataContext
-
-        dropped_idx = self.sheets_lb.Items.IndexOf(dropped_data)
-        target_idx = self.sheets_lb.Items.IndexOf(target)
-
-        sheet_list = self.sheet_list
-        sheet_list.remove(dropped_data)
-        sheet_list.insert(target_idx, dropped_data)
-        self._update_print_indices(sheet_list)
-        self.sheets_lb.Items.Refresh()
-
-
-def cleanup_sheetnumbers():
-    sheets = revit.query.get_sheets(doc=revit.doc)
-    with revit.Transaction('Cleanup Sheet Numbers'):
+def cleanup_sheetnumbers(doc):
+    sheets = revit.query.get_sheets(doc=doc)
+    with revit.Transaction('Cleanup Sheet Numbers', doc=doc):
         for sheet in sheets:
             sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
 
 
-if __shiftclick__:
-    cleanup_sheetnumbers()
+if __shiftclick__:  #pylint: disable=E0602
+    docs = forms.select_open_docs()
+    for doc in docs:
+        cleanup_sheetnumbers(doc)
 else:
-    PrintSheetsWindow('PrintOrderedSheets.xaml').ShowDialog()
+    PrintSheetsWindow('PrintSheets.xaml').ShowDialog()

@@ -72,11 +72,15 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def symbol_name(self):
-        return Element.Name.GetValue(self._wrapped.Symbol)
+        symbol = getattr(self._wrapped, 'Symbol', None)
+        if symbol:
+            return Element.Name.GetValue(symbol)
 
     @property
     def family_name(self):
-        return Element.Name.GetValue(self._wrapped.Symbol.Family)
+        symbol = getattr(self._wrapped, 'Symbol', None)
+        if symbol:
+            return Element.Name.GetValue(symbol.Family)
 
     @property
     def id(self):
@@ -97,8 +101,10 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def location(self):
-        locp = self._wrapped.Location.Point
-        return (locp.X, locp.Y, locp.Z)
+        locp = getattr(self._wrapped.Location, 'Point', None)
+        if locp:
+            return (locp.X, locp.Y, locp.Z)
+        return (None, None, None)
 
     @property
     def x(self):

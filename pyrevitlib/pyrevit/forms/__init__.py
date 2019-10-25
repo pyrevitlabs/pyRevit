@@ -216,10 +216,13 @@ class WPFWindow(framework.Windows.Window):
         if args.Key == Input.Key.Escape:
             self.Close()
 
+    def set_icon(self, icon_path):
+        """Set window icon to given icon path."""
+        self.Icon = utils.bitmap_from_file(icon_path)
+
     def setup_icon(self):
         """Setup default window icon."""
-        iconpath = op.join(BIN_DIR, 'pyrevit_settings.png')
-        self.Icon = utils.bitmap_from_file(iconpath)
+        self.set_icon(op.join(BIN_DIR, 'pyrevit_settings.png'))
 
     def hide(self):
         self.Hide()
