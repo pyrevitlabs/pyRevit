@@ -1,6 +1,6 @@
-"""Duplicates selected sheet N-times. 
-Takes Sheet parameters, TitleBlock with parameters, Legends and Detail views,
-increments sheet number. Selects newly created sheets in the end."""
+"""Duplicates selected sheet N-times.
+Takes Sheet and TitleBlock with parameters, Legends and Detail views.
+Increments sheet number"""
 #pylint: disable=import-error,invalid-name,broad-except,missing-docstring
 from pyrevit import coreutils
 from pyrevit import revit, DB
@@ -158,7 +158,7 @@ with revit.Transaction('Duplicate Sheet'):
 
 # select or activate sheets
 if len(created_sheets) == 1:
-    revit.uidoc.active_view = created_sheets[0]
+    revit.active_view = created_sheets[0]
 elif len(created_sheets) > 1:
     revit.get_selection().set_to([s.Id for s in created_sheets])
 forms.alert("{} sheets created.".format(len(created_sheets)))
