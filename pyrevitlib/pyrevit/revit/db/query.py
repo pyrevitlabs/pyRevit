@@ -797,8 +797,8 @@ def get_all_linkeddocs(doc=None):
     linkinstances = DB.FilteredElementCollector(doc)\
                       .OfClass(DB.RevitLinkInstance)\
                       .ToElements()
-    return {x.GetLinkDocument() for x in linkinstances}
-
+    docs = [x.GetLinkDocument() for x in linkinstances]
+    return [x for x in docs if x]
 
 def get_all_grids(group_by_direction=False,
                   include_linked_models=False, doc=None):

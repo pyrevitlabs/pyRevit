@@ -107,15 +107,20 @@
                         <StackPanel x:Name="order_sp" Margin="0,5,0,0">
                             <CheckBox x:Name="placeholder_cb" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed Out)</CheckBox>
                             <CheckBox x:Name="indexspace_cb" Margin="0,5,0,0" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
-                            <StackPanel Margin="0,5,0,0" Orientation="Horizontal" >
-                                <Border BorderBrush="{x:Null}" VerticalAlignment="Stretch">
-                                    <TextBlock Text="Index Digits" VerticalAlignment="Center" />
-                                </Border>
-                                <Slider x:Name="index_slider"
-                                    Width="100"  Margin="10,0,0,0"
-                                    Minimum="3" Maximum="6" TickPlacement="TopLeft" IsSnapToTickEnabled="True" IsMoveToPointEnabled="True"
-                                    ValueChanged="options_changed"/>
-                            </StackPanel>
+                            <DockPanel Margin="0,5,0,0" Height="24" >
+                                <TextBlock Text="Index Digits" Width="80" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                                <Slider x:Name="index_slider" Margin="10,0,0,0"
+                                        Minimum="3" Maximum="6" TickPlacement="TopLeft" IsSnapToTickEnabled="True" IsMoveToPointEnabled="True"
+                                        ValueChanged="options_changed"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5,0,0" Height="24">
+                                <TextBlock Text="Index Start" Width="80"  VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                <Button Content="Reset" Width="50" DockPanel.Dock="Right"
+                                        BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                        Click="rest_index" />
+                                <TextBox x:Name="indexstart_tb" Text="0" Margin="10,0,0,0" VerticalContentAlignment="Center" Padding="5,0,0,0"
+                                         PreviewTextInput="validate_index_start" TextChanged="options_changed"/>
+                            </DockPanel>
                         </StackPanel>
                     </StackPanel>
                 </GroupBox>

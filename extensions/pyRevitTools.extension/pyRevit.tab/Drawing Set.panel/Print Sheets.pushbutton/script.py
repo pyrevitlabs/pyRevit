@@ -184,6 +184,10 @@ class PrintSheetsWindow(forms.WPFWindow):
         return int(self.index_slider.Value)
 
     @property
+    def index_start(self):
+        return int(self.indexstart_tb.Text or 0) 
+
+    @property
     def include_placeholders(self):
         return self.indexspace_cb.IsChecked
 
@@ -622,9 +626,11 @@ class PrintSheetsWindow(forms.WPFWindow):
                     )
 
     def _update_print_indices(self, sheet_list):
+        start_idx = self.index_start
         for idx, sheet in enumerate(sheet_list):
-            sheet.print_index = \
-                INDEX_FORMAT.format(digits=self.index_digits).format(idx)
+            sheet.print_index = INDEX_FORMAT\
+                .format(digits=self.index_digits)\
+                .format(idx + start_idx)
 
     def _get_sheet_printsettings(self):
         all_titleblocks = revit.query.get_elements_by_categories(
@@ -659,13 +665,10 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.PrintSetup.CurrentPrintSetting = self._init_psettings
 
     def _update_index_slider(self):
-        index_digits = int(len(str(len(self._scheduled_sheets))))
+        index_digits = \
+            int(len(str(len(self._scheduled_sheets) + self.index_start)))
         self.index_slider.Minimum = max([index_digits, 2])
-        self.index_slider.Maximum = min([
-            self.index_slider.Minimum + 6,
-            6
-        ])
-        self.index_slider.Value = self.index_slider.Minimum
+        self.index_slider.Maximum = self.index_slider.Minimum + 3
 
     # event handlers
     def doclist_changed(self, sender, args):
@@ -699,10 +702,13 @@ class PrintSheetsWindow(forms.WPFWindow):
                     for x in self._get_ordered_schedule_sheets()
                     ]
         self._update_combine_option()
-        self._update_index_slider()
+        # self._update_index_slider()
         self.options_changed(None, None)
 
     def options_changed(self, sender, args):
+        # update index digit range
+        self._update_index_slider()
+
         # reverse sheet if reverse is set
         sheet_list = [x for x in self._scheduled_sheets]
         if self.reverse_print:
@@ -762,6 +768,12 @@ class PrintSheetsWindow(forms.WPFWindow):
         if self.selected_printable_sheets:
             return self.enable_element(self.sheetopts_wp)
         self.disable_element(self.sheetopts_wp)
+
+    def validate_index_start(self, sender, args):
+        args.Handled = re.match(r'[^0-9]+', args.Text)
+
+    def rest_index(self, sender, args):
+        self.indexstart_tb.Text = '0'
 
     def print_sheets(self, sender, args):
         if self.sheet_list:
