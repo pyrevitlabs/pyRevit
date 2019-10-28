@@ -25,7 +25,7 @@ import keynotesdb as kdb
 
 __title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
-__context__ = ""
+__helpurl__ = "https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
 __min_revit_ver__ = 2014
 
 
@@ -388,7 +388,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 elif res == "Select a different keynote file":
                     self._change_kfile()
                 elif res == "Give me more info":
-                    script.open_url('https://eirannejad.github.io/pyRevit')
+                    script.open_url(__helpurl__)
                     script.exit()
             else:
                 forms.alert("Keynote file is not yet converted.",
@@ -621,6 +621,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 with revit.Transaction("Set Keynote File"):
                     revit.update.set_keynote_file(kfile, doc=revit.doc)
                 self._kfile = revit.query.get_keynote_file(doc=revit.doc)
+
+                # attempt at opening the selected file.
+                try:
+                    self._conn = kdb.connect(self._kfile)
+                except Exception as ckf_ex:
+                    forms.alert(
+                        "Error opening seleced keynote file.",
+                        sub_msg=str(ckf_ex)
+                    )
+
                 return self._kfile
             except Exception as skex:
                 forms.alert(str(skex))
