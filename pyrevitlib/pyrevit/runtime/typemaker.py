@@ -7,6 +7,7 @@ import pyrevit.extensions as exts
 from pyrevit import runtime
 from pyrevit.runtime import bundletypemaker
 from pyrevit.runtime import pythontypemaker
+from pyrevit.runtime import dynamotypemaker
 from pyrevit.runtime import invoketypemaker
 from pyrevit.runtime import urltypemaker
 
@@ -86,6 +87,13 @@ def create_exec_types(extension, cmd_component, module_builder=None):
         # if python
         elif cmd_component.script_language == exts.PYTHON_LANG:
             pythontypemaker.create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
+        # if dynamo
+        elif cmd_component.script_language == exts.DYNAMO_LANG:
+            dynamotypemaker.create_executor_type(
                 extension,
                 module_builder,
                 cmd_component
