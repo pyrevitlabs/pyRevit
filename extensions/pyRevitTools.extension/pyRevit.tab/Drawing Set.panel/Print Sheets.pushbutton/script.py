@@ -50,6 +50,8 @@ NamingParts = namedtuple(
     )
 NamingFormat = namedtuple('NamingFormat', ['parts', 'template', 'space'])
 
+SheetRevision = namedtuple('SheetRevision', ['number', 'desc', 'date'])
+
 
 class ViewSheetListItem(forms.Reactive):
     def __init__(self, view_sheet, print_settings=None):
@@ -68,10 +70,10 @@ class ViewSheetListItem(forms.Reactive):
         cur_rev = revit.query.get_current_sheet_revision(self._sheet)
         self.revision = ''
         if cur_rev:
-            self.revision = '({num}) {desc} @ {date}'.format(
-                num=revit.query.get_rev_number(cur_rev),
-                date=cur_rev.RevisionDate,
-                desc=cur_rev.Description
+            self.revision = SheetRevision(
+                number=revit.query.get_rev_number(cur_rev),
+                desc=cur_rev.Description,
+                date=cur_rev.RevisionDate
             )
 
     @property

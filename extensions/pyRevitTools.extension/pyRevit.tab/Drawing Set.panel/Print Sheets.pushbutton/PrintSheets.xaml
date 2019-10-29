@@ -3,6 +3,7 @@
         Title="Print Sheets" Height="800" Width="900" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
+        <SolidColorBrush x:Key="RevBGColor" Color="#FFEEEEEE"/>
 
         <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}">
             <Setter Property="Foreground" Value="{DynamicResource pyRevitAccentBrush}"/>
@@ -22,6 +23,7 @@
                 <GridViewRowPresenter Content="{TemplateBinding Content}"
                                       Columns="{TemplateBinding GridView.ColumnCollection}"/>
             </StackPanel>
+
         </ControlTemplate>
 
         <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type DataGridCell}'>
@@ -30,6 +32,25 @@
                                           Columns="{TemplateBinding GridView.ColumnCollection}"/>
             </StackPanel>
         </ControlTemplate>
+
+        <DataTemplate x:Key="RevisionCell">
+            <WrapPanel x:Name="revinfo" VerticalAlignment="Center">
+                <Border Background="{StaticResource RevBGColor}" CornerRadius="3,0,0,3" MinWidth="16" Margin="2,2,0,2" Padding="5,0,5,0">
+                    <TextBlock Text="{Binding revision.number}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+                <Border Background="{StaticResource RevBGColor}" MinWidth="16" Margin="0,2,0,2" Padding="5,0,5,0" BorderBrush="LightGray" BorderThickness="1,0,1,0">
+                    <TextBlock Text="{Binding revision.desc}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                </Border>
+                <Border Background="{StaticResource RevBGColor}" CornerRadius="0,3,3,0" MinWidth="16" Padding="5,0,5,0" Margin="0,2,0,2">
+                    <TextBlock Text="{Binding revision.date}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                </Border>
+            </WrapPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding revision}" Value="">
+                    <Setter TargetName="revinfo" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
 
         <Style TargetType="{x:Type Hyperlink}">
             <Setter Property="Foreground" Value="White" />
@@ -222,7 +243,8 @@
                 <DataGridTextColumn Header="Print Index" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
-                <DataGridTextColumn Header="Sheet Revision" Binding="{Binding revision}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTemplateColumn Header="Sheet Revision" MinWidth="50" Width="*" IsReadOnly="True"
+                                        CellTemplate="{StaticResource RevisionCell}" SortMemberPath="revision.number" />
                 <DataGridTextColumn x:Name="psettingcol" Header="Print Setting" Binding="{Binding print_settings.Name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
             </DataGrid.Columns>
         </DataGrid>
