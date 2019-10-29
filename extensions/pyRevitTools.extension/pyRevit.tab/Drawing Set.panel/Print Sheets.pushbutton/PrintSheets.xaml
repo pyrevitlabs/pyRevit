@@ -36,13 +36,13 @@
         <DataTemplate x:Key="RevisionCell">
             <WrapPanel x:Name="revinfo" VerticalAlignment="Center">
                 <Border Background="{StaticResource RevBGColor}" CornerRadius="3,0,0,3" MinWidth="16" Margin="2,2,0,2" Padding="5,0,5,0">
-                    <TextBlock Text="{Binding revision.number}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding revision.number}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Border>
                 <Border Background="{StaticResource RevBGColor}" MinWidth="16" Margin="0,2,0,2" Padding="5,0,5,0" BorderBrush="LightGray" BorderThickness="1,0,1,0">
-                    <TextBlock Text="{Binding revision.desc}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                    <TextBlock Text="{Binding revision.desc}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                 </Border>
                 <Border Background="{StaticResource RevBGColor}" CornerRadius="0,3,3,0" MinWidth="16" Padding="5,0,5,0" Margin="0,2,0,2">
-                    <TextBlock Text="{Binding revision.date}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                    <TextBlock Text="{Binding revision.date}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                 </Border>
             </WrapPanel>
             <DataTemplate.Triggers>
