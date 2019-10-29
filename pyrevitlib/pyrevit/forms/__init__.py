@@ -39,6 +39,8 @@ from pyrevit.forms import utils
 from pyrevit.forms import toaster
 from pyrevit import versionmgr
 
+import pyevent
+
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -72,19 +74,19 @@ Attributes:
 class reactive(property):
     """Decorator for WPF bound properties"""
     def __init__(self, getter):
-        def newgetter(slf):
+        def newgetter(ui_control):
             try:
-                return getter(slf)
+                return getter(ui_control)
             except AttributeError:
                 return None
         super(reactive, self).__init__(newgetter)
 
     def setter(self, setter):
-        def newsetter(slf, newvalue):
-            oldvalue = self.fget(slf)
+        def newsetter(ui_control, newvalue):
+            oldvalue = self.fget(ui_control)
             if oldvalue != newvalue:
-                setter(slf, newvalue)
-                slf.OnPropertyChanged(setter.__name__)
+                setter(ui_control, newvalue)
+                ui_control.OnPropertyChanged(setter.__name__)
         return property(
             fget=self.fget,
             fset=newsetter,
@@ -94,18 +96,18 @@ class reactive(property):
 
 class Reactive(ComponentModel.INotifyPropertyChanged):
     """WPF property updator base mixin"""
-    PropertyChanged = None
+    PropertyChanged, _propertyChangedCaller = pyevent.make_event()
 
     def add_PropertyChanged(self, value):
-        self.PropertyChanged = value
+        self.PropertyChanged += value
 
     def remove_PropertyChanged(self, value):
-        self.PropertyChanged = None
+        self.PropertyChanged -= value
 
     def OnPropertyChanged(self, prop_name):
-        if self.PropertyChanged is not None:
+        if self._propertyChangedCaller:
             args = ComponentModel.PropertyChangedEventArgs(prop_name)
-            self.PropertyChanged.Invoke(self, args)
+            self._propertyChangedCaller(self, args)
 
 
 class WindowToggler(object):
@@ -126,6 +128,7 @@ class WPFWindow(framework.Windows.Window):
         xaml_source (str): xaml source filepath or xaml content
         literal_string (bool): xaml_source contains xaml content, not filepath
         handle_esc (bool): handle Escape button and close the window
+        set_owner (bool): set the owner of window to host app window
 
     Example:
         >>> from pyrevit import forms

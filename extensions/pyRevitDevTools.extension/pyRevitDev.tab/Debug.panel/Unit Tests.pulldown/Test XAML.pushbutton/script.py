@@ -112,9 +112,10 @@ class DataSelectorConverter(framework.Windows.Data.IMultiValueConverter):
         pass
 
 
-# code-behind for the window
-class UI(forms.WPFWindow):
+class ViewModel(forms.Reactive):
     def __init__(self):
+        self._title = "Title"
+
         self.employee_data = [
             EmployeeInfo(
                 name="Ehsan",
@@ -150,12 +151,14 @@ class UI(forms.WPFWindow):
                     "CLI",
                 ]),
         ]
+
         self.nested_data = NestedObject(text="Text in Data Object")
         self.data = \
             ButtonData(
                 title="Title in Data Object",
                 nested=self.nested_data
                 )
+
         self.server = Server(r'https://status.epicgames.com/api/v2/status.json')
 
         self.tags = [
@@ -163,6 +166,20 @@ class UI(forms.WPFWindow):
             Tag('Tag 2', [Mod('As-Built', '#a51c9a')]),
             Tag('Tag 3', []),
         ]
+
+    @forms.reactive
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+
+
+# code-behind for the window
+class UI(forms.WPFWindow, forms.Reactive):
+    def __init__(self):
+        self.vm = ViewModel()
 
     def setup(self):
         mbinding = framework.Windows.Data.MultiBinding()
@@ -173,21 +190,21 @@ class UI(forms.WPFWindow):
         mbinding.Bindings.Add(binding)
         # mbinding.NotifyOnSourceUpdated = True
 
-        self.textbox.DataContext = self.nested_data
+        self.textbox.DataContext = self.vm.nested_data
         self.emppanel.SetBinding(self.emppanel.DataContextProperty, mbinding)
-        self.empinfo.DataContext = self.employee_data
-        self.textblock.DataContext = self.data
-        self.button.DataContext = self.data
-        self.statuslight.DataContext = self.server
+        self.empinfo.DataContext = self.vm.employee_data
+        self.textblock.DataContext = self.vm.data
+        self.button.DataContext = self.vm.data
+        self.statuslight.DataContext = self.vm.server
 
         self.set_image_source(self.testimage, 'test.png')
-        self.taglist.ItemsSource = self.tags
+        self.taglist.ItemsSource = self.vm.tags
 
     def set_status(self, status):
-        self.server.status = status is not None
+        self.vm.server.status = status is not None
 
     def check_status(self):
-        status = json.loads(coreutils.read_url(self.server.url))
+        status = json.loads(coreutils.read_url(self.vm.server.url))
         sleep(4)    # fake slow io
         self.dispatch(self.set_status, status)
 
@@ -195,13 +212,13 @@ class UI(forms.WPFWindow):
         self.dispatch(self.check_status)
 
     def button_click(self, sender, args):
-        self.data.title = "Title in Data Object (Updated)"
-        self.nested_data.text = "Text in Data Object (Updated)"
-        for emp in self.employee_data:
+        self.vm.data.title = "Title in Data Object (Updated)"
+        self.vm.nested_data.text = "Text in Data Object (Updated)"
+        for emp in self.vm.employee_data:
             emp.job = emp.job.replace(" (Updated)", "") + " (Updated)"
 
     def read_data(self, sender, args):
-        forms.alert(self.nested_data.text)
+        forms.alert(self.vm.nested_data.text)
 
     def delete_stuff(self, pbar):
         try:
