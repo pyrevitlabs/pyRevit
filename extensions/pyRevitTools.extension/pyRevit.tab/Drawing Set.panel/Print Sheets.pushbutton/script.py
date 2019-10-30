@@ -44,13 +44,32 @@ INDEX_FORMAT = '{{:0{digits}}}'
 
 AvailableDoc = namedtuple('AvailableDoc', ['name', 'hash', 'linked'])
 
-NamingParts = namedtuple(
-    'NamingParts',
-    ['index', 'index_spacer', 'number', 'number_spacer', 'name', 'ext']
-    )
-NamingFormat = namedtuple('NamingFormat', ['parts', 'template', 'space'])
+NamingFormatter = namedtuple('NamingFormatter', ['template', 'desc'])
 
 SheetRevision = namedtuple('SheetRevision', ['number', 'desc', 'date'])
+
+
+class NamingFormat(forms.Reactive):
+    def __init__(self, name, template, builtin=False):
+        self._name = name
+        self._template = template
+        self.builtin = builtin
+
+    @forms.reactive
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @forms.reactive
+    def template(self):
+        return self._template
+
+    @template.setter
+    def template(self, value):
+        self._template = value
 
 
 class ViewSheetListItem(forms.Reactive):
@@ -58,9 +77,13 @@ class ViewSheetListItem(forms.Reactive):
         self._sheet = view_sheet
         self.name = self._sheet.Name
         self.number = self._sheet.SheetNumber
+        self.issue_date = \
+            self._sheet.Parameter[
+                DB.BuiltInParameter.SHEET_ISSUE_DATE].AsString()
         self.printable = self._sheet.CanBePrinted
 
         self._print_index = 0
+        self._print_filename = ''
 
         self._print_settings = print_settings
         self.all_print_settings = print_settings
@@ -95,6 +118,14 @@ class ViewSheetListItem(forms.Reactive):
     @print_index.setter
     def print_index(self, value):
         self._print_index = value
+
+    @forms.reactive
+    def print_filename(self):
+        return self._print_filename
+
+    @print_filename.setter
+    def print_filename(self, value):
+        self._print_filename = value
 
 
 class PrintSettingListItem(object):
@@ -141,6 +172,119 @@ class VariablePaperPrintSettingListItem(PrintSettingListItem):
     @property
     def allows_variable_paper(self):
         return True
+
+
+class EditNamingFormatsWindow(forms.WPFWindow):
+    def __init__(self, xaml_file_name):
+        forms.WPFWindow.__init__(self, xaml_file_name)
+        self.formats_lb.ItemsSource = \
+            EditNamingFormatsWindow.get_naming_formats()
+        self.formatters_wp.ItemsSource = [
+            NamingFormatter(
+                template='{index}',
+                desc='Print Index Number e.g. "0001"'
+            ),
+            NamingFormatter(
+                template='{number}',
+                desc='Sheet Number e.g. "A1.00"'
+            ),
+            NamingFormatter(
+                template='{name}',
+                desc='Sheet Name e.g. "1ST FLOOR PLAN"'
+            ),
+            NamingFormatter(
+                template='{name_dash}',
+                desc='Sheet Name (with - for space) e.g. "1ST-FLOOR-PLAN"'
+            ),
+            NamingFormatter(
+                template='{name_underline}',
+                desc='Sheet Name (with _ for space) e.g. "1ST_FLOOR_PLAN"'
+            ),
+            NamingFormatter(
+                template='{issue_date}',
+                desc='Sheet Issue Date e.g. "2019-10-12"'
+            ),
+            NamingFormatter(
+                template='{rev_number}',
+                desc='Revision Number e.g. "01"'
+            ),
+            NamingFormatter(
+                template='{rev_desc}',
+                desc='Revision Description e.g. "ASI01"'
+            ),
+            NamingFormatter(
+                template='{rev_date}',
+                desc='Revision Date e.g. "2019-10-12"'
+            ),
+            NamingFormatter(
+                template='{proj_number}',
+                desc='Project Number e.g. "PR0012.12"'
+            ),
+        ]
+
+    @staticmethod
+    def get_default_naming_formats():
+        return [
+            NamingFormat(
+                name='0001 A1.00 1ST FLOOR PLAN.pdf',
+                template='{index} {number} {name}.pdf',
+                builtin=True
+            ),
+            NamingFormat(
+                name='0001_A1.00_1ST FLOOR PLAN.pdf',
+                template='{index}_{number}_{name}.pdf',
+                builtin=True
+            ),
+            NamingFormat(
+                name='0001-A1.00-1ST FLOOR PLAN.pdf',
+                template='{index}-{number}-{name}.pdf',
+                builtin=True
+            ),
+        ]
+
+    @staticmethod
+    def get_naming_formats():
+        naming_formats = EditNamingFormatsWindow.get_default_naming_formats()
+        # TODO: add read from configs
+        # naming_formats.extend
+        return naming_formats
+
+    @property
+    def naming_formats(self):
+        return self.formats_lb.ItemsSource
+
+    # https://www.wpftutorial.net/DragAndDrop.html
+    def start_drag(self, sender, args):
+        name_formatter = args.OriginalSource.DataContext
+        Windows.DragDrop.DoDragDrop(
+            self.formatters_wp,
+            Windows.DataObject("name_formatter", name_formatter),
+            Windows.DragDropEffects.Copy
+            )
+
+    # https://social.msdn.microsoft.com/Forums/vstudio/en-US/941f6bf2-a321-459e-85c9-501ec1e13204/how-do-you-get-a-drag-and-drop-event-for-a-wpf-textbox-hosted-in-a-windows-form
+    def preview_drag(self, sender, args):
+        args.Effects = Windows.DragDropEffects.All
+        args.Handled = True
+
+    def stop_drag(self, sender, args):
+        name_formatter = args.Data.GetData("name_formatter")
+        if name_formatter:
+            new_template = self.template_tb.Text + name_formatter.template
+            self.template_tb.Text = new_template
+            self.template_tb.Focus()
+            self.template_tb.CaretIndex = len(new_template)
+
+    def save_formats(self, sender, args):
+        self.Close()
+
+    def namingformat_changed(self, sender, args):
+        naming_format = self.formats_lb.SelectedItem
+        self.namingformat_edit.DataContext = naming_format
+
+    def show_dialog(self):
+        self.ShowDialog()
+        return self.naming_formats
 
 
 class PrintSheetsWindow(forms.WPFWindow):
@@ -320,97 +464,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.documents_cb.SelectedIndex = 0
 
     def _setup_naming_formats(self):
-        self.namingformat_cb.ItemsSource = [
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer=' ',
-                                           number='A1.00',
-                                           number_spacer=' ',
-                                           name='1ST FLOOR PLAN',
-                                           ext='.pdf'),
-                         template='{index} {number} {name}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer='_',
-                                           number='A1.00',
-                                           number_spacer=' ',
-                                           name='1ST FLOOR PLAN',
-                                           ext='.pdf'),
-                         template='{index}_{number} {name}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer=' ',
-                                           number='A1.00',
-                                           number_spacer='_',
-                                           name='1ST FLOOR PLAN',
-                                           ext='.pdf'),
-                         template='{index} {number}_{name}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer='_',
-                                           number='A1.00',
-                                           number_spacer='_',
-                                           name='1ST FLOOR PLAN',
-                                           ext='.pdf'),
-                         template='{index}_{number}_{name}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer='_',
-                                           number='A1.00',
-                                           number_spacer='_',
-                                           name='1ST_FLOOR_PLAN',
-                                           ext='.pdf'),
-                         template='{index}_{number}_{name}.pdf',
-                         space='_'),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer=' ',
-                                           number='A1.00',
-                                           number_spacer='',
-                                           name='',
-                                           ext='.pdf'),
-                         template='{index} {number}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer='_',
-                                           number='A1.00',
-                                           number_spacer='',
-                                           name='',
-                                           ext='.pdf'),
-                         template='{index}_{number}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer=' ',
-                                           number='',
-                                           number_spacer='',
-                                           name='1ST FLOOR PLAN',
-                                           ext='.pdf'),
-                         template='{index} {name}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer='_',
-                                           number='',
-                                           number_spacer='',
-                                           name='1ST FLOOR PLAN',
-                                           ext='.pdf'),
-                         template='{index}_{name}.pdf',
-                         space=' '),
-
-            NamingFormat(parts=NamingParts(index='0001',
-                                           index_spacer='_',
-                                           number='',
-                                           number_spacer='',
-                                           name='1ST_FLOOR_PLAN',
-                                           ext='.pdf'),
-                         template='{index}_{name}.pdf',
-                         space='_'),
-        ]
+        self.namingformat_cb.ItemsSource = \
+            EditNamingFormatsWindow.get_naming_formats()
         self.namingformat_cb.SelectedIndex = 0
 
     def _setup_printers(self):
@@ -575,16 +630,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             naming_fmt = self.selected_naming_format
             for sheet in target_sheets:
                 if sheet.printable:
-                    output_fname = \
-                        coreutils.cleanup_filename(
-                            naming_fmt.template.format(
-                                index=sheet.print_index,
-                                number=sheet.number,
-                                name=sheet.name.replace(' ', naming_fmt.space)),
-                            windows_safe=True
-                            )
                     print_mgr.PrintToFileName = \
-                        op.join(USER_DESKTOP, output_fname)
+                        op.join(USER_DESKTOP, sheet.print_filename)
 
                     # set the per-sheet print settings if required
                     if per_sheet_psettings:
@@ -607,19 +654,10 @@ class PrintSheetsWindow(forms.WPFWindow):
         # setting print settings needs a transaction
         # can not be done on linked docs
         # print_mgr.PrintSetup.CurrentPrintSetting =
-        naming_fmt = self.selected_naming_format
         for sheet in target_sheets:
             if sheet.printable:
-                output_fname = \
-                    coreutils.cleanup_filename(
-                        naming_fmt.template.format(
-                            index=sheet.print_index,
-                            number=sheet.number,
-                            name=sheet.name.replace(' ', naming_fmt.space)),
-                        windows_safe=True
-                        )
                 print_mgr.PrintToFileName = \
-                    op.join(USER_DESKTOP, output_fname)
+                    op.join(USER_DESKTOP, sheet.print_filename)
                 print_mgr.SubmitPrint(sheet.revit_sheet)
             else:
                 logger.debug(
@@ -633,6 +671,28 @@ class PrintSheetsWindow(forms.WPFWindow):
             sheet.print_index = INDEX_FORMAT\
                 .format(digits=self.index_digits)\
                 .format(idx + start_idx)
+
+    def _update_print_filenames(self, sheet_list):
+        naming_fmt = self.selected_naming_format
+        if naming_fmt:
+            for sheet in sheet_list:
+                output_fname = \
+                    coreutils.cleanup_filename(
+                        naming_fmt.template.format(
+                            index=sheet.print_index,
+                            number=sheet.number,
+                            name=sheet.name,
+                            name_dash=sheet.name.replace(' ', '-'),
+                            name_underline=sheet.name.replace(' ', '_'),
+                            issue_date=sheet.issue_date,
+                            rev_number=sheet.revision.number if sheet.revision else '',
+                            rev_desc=sheet.revision.desc if sheet.revision else '',
+                            rev_date=sheet.revision.date if sheet.revision else '',
+                            proj_number=''
+                            ),
+                        windows_safe=True
+                        )
+                sheet.print_filename = output_fname
 
     def _get_sheet_printsettings(self):
         all_titleblocks = revit.query.get_elements_by_categories(
@@ -719,9 +779,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         if self.combine_cb.IsChecked:
             self.hide_element(self.order_sp)
             self.hide_element(self.namingformat_dp)
+            self.hide_element(self.pfilename)
         else:
             self.show_element(self.order_sp)
             self.show_element(self.namingformat_dp)
+            self.show_element(self.pfilename)
 
         # decide whether to show the placeholders or not
         if not self.show_placeholders:
@@ -744,6 +806,9 @@ class PrintSheetsWindow(forms.WPFWindow):
             self._update_print_indices(sheet_list)
             # Show all sheets
             self.sheet_list = sheet_list
+
+        # update sheet naming formats
+        self._update_print_filenames(sheet_list)
 
     def set_sheet_printsettings(self, sender, args):
         if self.selected_printable_sheets:
@@ -776,6 +841,12 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def rest_index(self, sender, args):
         self.indexstart_tb.Text = '0'
+
+    def edit_formats(self, sender, args):
+        new_formats = \
+            EditNamingFormatsWindow('EditNamingFormats.xaml').show_dialog()
+        self.namingformat_cb.ItemsSource = new_formats
+        self.namingformat_cb.SelectedIndex = 0
 
     def print_sheets(self, sender, args):
         if self.sheet_list:
@@ -816,7 +887,7 @@ def cleanup_sheetnumbers(doc):
         for sheet in sheets:
             sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
 
-
+# TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602
     docs = forms.select_open_docs()
     for doc in docs:

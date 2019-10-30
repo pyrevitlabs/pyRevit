@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Print Sheets" Height="800" Width="900" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="Print Sheets" Height="800" Width="1000" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
         <SolidColorBrush x:Key="RevBGColor" Color="#FFEEEEEE"/>
@@ -34,7 +34,7 @@
         </ControlTemplate>
 
         <DataTemplate x:Key="RevisionCell">
-            <WrapPanel x:Name="revinfo" VerticalAlignment="Center">
+            <StackPanel x:Name="revinfo" VerticalAlignment="Center" Orientation="Horizontal">
                 <Border Background="{StaticResource RevBGColor}" CornerRadius="3,0,0,3" MinWidth="16" Margin="2,2,0,2" Padding="5,0,5,0">
                     <TextBlock Text="{Binding revision.number}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Border>
@@ -44,7 +44,7 @@
                 <Border Background="{StaticResource RevBGColor}" CornerRadius="0,3,3,0" MinWidth="16" Padding="5,0,5,0" Margin="0,2,0,2">
                     <TextBlock Text="{Binding revision.date}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                 </Border>
-            </WrapPanel>
+            </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding revision}" Value="">
                     <Setter TargetName="revinfo" Property="Visibility" Value="Collapsed" />
@@ -151,39 +151,15 @@
                             <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,0,10" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Combine Into One PDF</CheckBox>
                             <DockPanel x:Name="namingformat_dp" Margin="0,5,0,0" Height="24" >
                                 <TextBlock Text="Naming Format" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox x:Name="namingformat_cb" FontFamily="Consolas" VerticalContentAlignment="Center">
+                                <Button Content="Edit Formats" DockPanel.Dock="Right" Width="100" BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Click="edit_formats"/>
+                                <ComboBox x:Name="namingformat_cb" FontFamily="Consolas" VerticalContentAlignment="Center" SelectionChanged="options_changed" >
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
-                                                <Border Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3,0,0,3" Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding parts.index}" Foreground="White"/>
-                                                </Border>
-                                                <Border Background="LightGray" Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding parts.index_spacer}" Foreground="Black"/>
-                                                </Border>
-                                                <Border x:Name="numblock" Background="{DynamicResource pyRevitDarkBrush}" CornerRadius="0" Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding parts.number}" Foreground="White"/>
-                                                </Border>
-                                                <Border x:Name="numspacerblock" Background="LightGray" Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding parts.number_spacer}" Foreground="Black"/>
-                                                </Border>
-                                                <Border x:Name="nameblock" Background="DarkGray" CornerRadius="0" Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding parts.name}" Foreground="White"/>
-                                                </Border>
-                                                <Border Background="LightGray" CornerRadius="0,3,3,0" Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding parts.ext}" Foreground="Black"/>
+                                                <Border Padding="5,1,5,1">
+                                                    <TextBlock Text="{Binding name}"/>
                                                 </Border>
                                             </StackPanel>
-                                            <DataTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding parts.name}" Value="">
-                                                    <Setter TargetName="numspacerblock" Property="Visibility" Value="Collapsed" />
-                                                    <Setter TargetName="nameblock" Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding parts.number}" Value="">
-                                                    <Setter TargetName="numspacerblock" Property="Visibility" Value="Collapsed" />
-                                                    <Setter TargetName="numblock" Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </DataTemplate.Triggers>
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
@@ -233,6 +209,10 @@
                   CanUserSortColumns="True"
                   HorizontalGridLinesBrush="#dedede"
                   VerticalGridLinesBrush="#dedede"
+                  EnableColumnVirtualization="True"
+                  EnableRowVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
                   SelectionChanged="sheet_selection_changed">
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell" >
@@ -242,10 +222,11 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Print Index" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
-                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
-                <DataGridTemplateColumn Header="Sheet Revision" MinWidth="50" Width="*" IsReadOnly="True"
+                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTemplateColumn Header="Sheet Revision" MinWidth="50" Width="1*" IsReadOnly="True"
                                         CellTemplate="{StaticResource RevisionCell}" SortMemberPath="revision.number" />
                 <DataGridTextColumn x:Name="psettingcol" Header="Print Setting" Binding="{Binding print_settings.Name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
+                <DataGridTextColumn x:Name="pfilename" Header="File Name" FontFamily="Consolas" Binding="{Binding print_filename}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>
