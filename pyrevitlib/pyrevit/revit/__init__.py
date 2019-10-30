@@ -25,6 +25,7 @@ from pyrevit.revit import files
 from pyrevit.revit import serverutils
 from pyrevit.revit import geom
 from pyrevit.revit import units
+from pyrevit.revit import features
 
 
 #pylint: disable=W0703,C0302,C0103

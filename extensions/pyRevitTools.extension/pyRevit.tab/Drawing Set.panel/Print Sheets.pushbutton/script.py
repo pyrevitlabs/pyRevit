@@ -17,14 +17,16 @@ non-printable characters from the sheet numbers,
 in case an error in the tool causes these characters
 to remain.
 """
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
 import os.path as op
 import codecs
 from collections import namedtuple
 
+from pyrevit import HOST_APP
 from pyrevit import USER_DESKTOP
 from pyrevit import framework
-from pyrevit.framework import Windows, Drawing
+from pyrevit.framework import Windows, Drawing, ObjectModel
 from pyrevit import coreutils
 from pyrevit import forms
 from pyrevit import revit, DB
@@ -73,8 +75,9 @@ class NamingFormat(forms.Reactive):
 
 
 class ViewSheetListItem(forms.Reactive):
-    def __init__(self, view_sheet, print_settings=None):
+    def __init__(self, view_sheet, view_tblock, print_settings=None):
         self._sheet = view_sheet
+        self._tblock = view_tblock
         self.name = self._sheet.Name
         self.number = self._sheet.SheetNumber
         self.issue_date = \
@@ -103,6 +106,10 @@ class ViewSheetListItem(forms.Reactive):
     def revit_sheet(self):
         return self._sheet
 
+    @property
+    def revit_tblock(self):
+        return self._tblock
+
     @forms.reactive
     def print_settings(self):
         return self._print_settings
@@ -125,7 +132,8 @@ class ViewSheetListItem(forms.Reactive):
 
     @print_filename.setter
     def print_filename(self, value):
-        self._print_filename = value
+        self._print_filename = \
+            coreutils.cleanup_filename(value, windows_safe=True)
 
 
 class PrintSettingListItem(object):
@@ -175,10 +183,20 @@ class VariablePaperPrintSettingListItem(PrintSettingListItem):
 
 
 class EditNamingFormatsWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name):
+    def __init__(self, xaml_file_name, start_with=None):
         forms.WPFWindow.__init__(self, xaml_file_name)
+
         self.formats_lb.ItemsSource = \
-            EditNamingFormatsWindow.get_naming_formats()
+            ObjectModel.ObservableCollection[object](
+                EditNamingFormatsWindow.get_naming_formats()
+            )
+
+        if isinstance(start_with, NamingFormat):
+            for item in self.formats_lb.ItemsSource:
+                if item.name == start_with.name:
+                    self.selected_naming_format = item
+                    break
+
         self.formatters_wp.ItemsSource = [
             NamingFormatter(
                 template='{index}',
@@ -217,8 +235,56 @@ class EditNamingFormatsWindow(forms.WPFWindow):
                 desc='Revision Date e.g. "2019-10-12"'
             ),
             NamingFormatter(
+                template='{proj_name}',
+                desc='Project Name e.g. "MY_PROJECT"'
+            ),
+            NamingFormatter(
                 template='{proj_number}',
-                desc='Project Number e.g. "PR0012.12"'
+                desc='Project Number e.g. "PR2019.12"'
+            ),
+            NamingFormatter(
+                template='{proj_building_name}',
+                desc='Project Building Name e.g. "BLDG01"'
+            ),
+            NamingFormatter(
+                template='{proj_issue_date}',
+                desc='Project Issue Date e.g. "2019-10-12"'
+            ),
+            NamingFormatter(
+                template='{proj_org_name}',
+                desc='Project Organization Name e.g. "MYCOMP"'
+            ),
+            NamingFormatter(
+                template='{proj_status}',
+                desc='Project Status e.g. "CD100"'
+            ),
+            NamingFormatter(
+                template='{username}',
+                desc='Active User e.g. "eirannejad"'
+            ),
+            NamingFormatter(
+                template='{revit_version}',
+                desc='Active Revit Version e.g. "2019"'
+            ),
+            NamingFormatter(
+                template='{sheet_param:PARAM_NAME}',
+                desc='Value of Given Sheet Parameter e.g. '
+                     'Replace PARAM_NAME with target parameter name'
+            ),
+            NamingFormatter(
+                template='{tblock_param:PARAM_NAME}',
+                desc='Value of Given TitleBlock Parameter e.g. '
+                     'Replace PARAM_NAME with target parameter name'
+            ),
+            NamingFormatter(
+                template='{proj_param:PARAM_NAME}',
+                desc='Value of Given Project Information Parameter e.g. '
+                     'Replace PARAM_NAME with target parameter name'
+            ),
+            NamingFormatter(
+                template='{glob_param:PARAM_NAME}',
+                desc='Value of Given Global Parameter. '
+                     'Replace PARAM_NAME with target parameter name'
             ),
         ]
 
@@ -245,13 +311,31 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     @staticmethod
     def get_naming_formats():
         naming_formats = EditNamingFormatsWindow.get_default_naming_formats()
-        # TODO: add read from configs
-        # naming_formats.extend
+        naming_formats_dict = config.get_option('namingformats', {})
+        for name, template in naming_formats_dict.items():
+            naming_formats.append(NamingFormat(name=name, template=template))
         return naming_formats
+
+    @staticmethod
+    def set_naming_formats(naming_formats):
+        naming_formats_dict = {
+            x.name:x.template for x in naming_formats if not x.builtin
+        }
+        config.namingformats = naming_formats_dict
+        script.save_config()
 
     @property
     def naming_formats(self):
         return self.formats_lb.ItemsSource
+
+    @property
+    def selected_naming_format(self):
+        return self.formats_lb.SelectedItem
+
+    @selected_naming_format.setter
+    def selected_naming_format(self, value):
+        self.formats_lb.SelectedItem = value
+        self.namingformat_edit.DataContext = value
 
     # https://www.wpftutorial.net/DragAndDrop.html
     def start_drag(self, sender, args):
@@ -277,14 +361,30 @@ class EditNamingFormatsWindow(forms.WPFWindow):
 
     def save_formats(self, sender, args):
         self.Close()
+        EditNamingFormatsWindow.set_naming_formats(self.naming_formats)
 
     def namingformat_changed(self, sender, args):
-        naming_format = self.formats_lb.SelectedItem
+        naming_format = self.selected_naming_format
         self.namingformat_edit.DataContext = naming_format
+
+    def duplicate_namingformat(self, sender, args):
+        naming_format = self.selected_naming_format
+        new_naming_format = NamingFormat(
+            name='<unnamed>',
+            template=naming_format.template
+            )
+        self.naming_formats.Add(new_naming_format)
+        self.selected_naming_format = new_naming_format
+
+    def delete_namingformat(self, sender, args):
+        naming_format = self.selected_naming_format
+        item_index = self.naming_formats.IndexOf(naming_format)
+        self.naming_formats.Remove(naming_format)
+        next_index = min([item_index, self.naming_formats.Count-1])
+        self.selected_naming_format = self.naming_formats[next_index]
 
     def show_dialog(self):
         self.ShowDialog()
-        return self.naming_formats
 
 
 class PrintSheetsWindow(forms.WPFWindow):
@@ -294,6 +394,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         self._init_psettings = None
         self._scheduled_sheets = []
 
+        self.project_info = revit.query.get_project_info(doc=revit.doc)
         self.sheet_cat_id = \
             revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
@@ -311,6 +412,11 @@ class PrintSheetsWindow(forms.WPFWindow):
     @property
     def selected_schedule(self):
         return self.schedules_cb.SelectedItem
+
+    # misc
+    @property
+    def has_errors(self):
+        return self.errormsg_tb.Text != ''
 
     # ordering configs
     @property
@@ -453,15 +559,16 @@ class PrintSheetsWindow(forms.WPFWindow):
             return None
 
     def _setup_docs_list(self):
-        docs = [AvailableDoc(name=revit.doc.Title,
-                             hash=revit.doc.GetHashCode(),
-                             linked=False)]
-        docs.extend([
-            AvailableDoc(name=x.Title, hash=x.GetHashCode(), linked=True)
-            for x in revit.query.get_all_linkeddocs(doc=revit.doc)
-        ])
-        self.documents_cb.ItemsSource = docs
-        self.documents_cb.SelectedIndex = 0
+        if not revit.doc.IsFamilyDocument:
+            docs = [AvailableDoc(name=revit.doc.Title,
+                                 hash=revit.doc.GetHashCode(),
+                                 linked=False)]
+            docs.extend([
+                AvailableDoc(name=x.Title, hash=x.GetHashCode(), linked=True)
+                for x in revit.query.get_all_linkeddocs(doc=revit.doc)
+            ])
+            self.documents_cb.ItemsSource = docs
+            self.documents_cb.SelectedIndex = 0
 
     def _setup_naming_formats(self):
         self.namingformat_cb.ItemsSource = \
@@ -627,21 +734,25 @@ class PrintSheetsWindow(forms.WPFWindow):
                     self.selected_print_setting.print_settings
             print_mgr.SelectNewPrintDriver(self.selected_printer)
             print_mgr.PrintRange = DB.PrintRange.Current
-            naming_fmt = self.selected_naming_format
             for sheet in target_sheets:
                 if sheet.printable:
-                    print_mgr.PrintToFileName = \
-                        op.join(USER_DESKTOP, sheet.print_filename)
+                    if sheet.print_filename:
+                        print_mgr.PrintToFileName = \
+                            op.join(USER_DESKTOP, sheet.print_filename)
 
-                    # set the per-sheet print settings if required
-                    if per_sheet_psettings:
-                        print_mgr.PrintSetup.CurrentPrintSetting = \
-                            sheet.print_settings
+                        # set the per-sheet print settings if required
+                        if per_sheet_psettings:
+                            print_mgr.PrintSetup.CurrentPrintSetting = \
+                                sheet.print_settings
 
-                    print_mgr.SubmitPrint(sheet.revit_sheet)
+                        print_mgr.SubmitPrint(sheet.revit_sheet)
+                    else:
+                        logger.debug(
+                            'Sheet %s does not have a valid file name.',
+                            sheet.number)
                 else:
                     logger.debug('Sheet %s is not printable. Skipping print.',
-                                sheet.number)
+                                 sheet.number)
 
     def _print_linked_sheets_in_order(self, target_sheets):
         # make sure we can access the print config
@@ -665,6 +776,17 @@ class PrintSheetsWindow(forms.WPFWindow):
                     sheet.number
                     )
 
+    def _reset_error(self):
+        self.enable_element(self.print_b)
+        self.hide_element(self.errormsg_block)
+        self.errormsg_tb.Text = ''
+
+    def _set_error(self, err_msg):
+        if self.errormsg_tb.Text != err_msg:
+            self.disable_element(self.print_b)
+            self.show_element(self.errormsg_block)
+            self.errormsg_tb.Text = err_msg
+
     def _update_print_indices(self, sheet_list):
         start_idx = self.index_start
         for idx, sheet in enumerate(sheet_list):
@@ -672,38 +794,104 @@ class PrintSheetsWindow(forms.WPFWindow):
                 .format(digits=self.index_digits)\
                 .format(idx + start_idx)
 
+    def _update_filename_template(self, template, value_type, value_getter):
+        finder_pattern = r'{' + value_type + r':(.*?)}'
+        for param_name in re.findall(finder_pattern, template):
+            param_value = value_getter(param_name)
+            repl_pattern = r'{' + value_type + ':' + param_name + r'}'
+            if param_value:
+                template = re.sub(repl_pattern, str(param_value), template)
+            template = re.sub(repl_pattern, '', template)
+        return template
+
+    def _update_print_filename(self, template, sheet):
+        # resolve sheet-level custom param values
+        ## get titleblock param values
+        template = self._update_filename_template(
+            template=template,
+            value_type='tblock_param',
+            value_getter=lambda x: revit.query.get_param_value(
+                revit.query.get_param(sheet.revit_tblock, x)
+                )
+        )
+
+        ## get sheet param values
+        template = self._update_filename_template(
+            template=template,
+            value_type='sheet_param',
+            value_getter=lambda x: revit.query.get_param_value(
+                revit.query.get_param(sheet.revit_sheet, x)
+                )
+        )
+
+        # resolved the fixed formatters
+        try:
+            output_fname = \
+                template.format(
+                    index=sheet.print_index,
+                    number=sheet.number,
+                    name=sheet.name,
+                    name_dash=sheet.name.replace(' ', '-'),
+                    name_underline=sheet.name.replace(' ', '_'),
+                    issue_date=sheet.issue_date,
+                    rev_number=sheet.revision.number if sheet.revision else '',
+                    rev_desc=sheet.revision.desc if sheet.revision else '',
+                    rev_date=sheet.revision.date if sheet.revision else '',
+                    proj_name=self.project_info.name,
+                    proj_number=self.project_info.number,
+                    proj_building_name=self.project_info.building_name,
+                    proj_issue_date=self.project_info.issue_date,
+                    proj_org_name=self.project_info.org_name,
+                    proj_status=self.project_info.status,
+                    username=HOST_APP.username,
+                    revit_version=HOST_APP.version,
+                )
+        except Exception as ferr:
+            output_fname = ''
+            if isinstance(ferr, KeyError):
+                self._set_error('Unknown key in selected naming format')
+        # and set the sheet file name
+        sheet.print_filename = output_fname
+
     def _update_print_filenames(self, sheet_list):
+        doc = self.selected_doc
         naming_fmt = self.selected_naming_format
         if naming_fmt:
-            for sheet in sheet_list:
-                output_fname = \
-                    coreutils.cleanup_filename(
-                        naming_fmt.template.format(
-                            index=sheet.print_index,
-                            number=sheet.number,
-                            name=sheet.name,
-                            name_dash=sheet.name.replace(' ', '-'),
-                            name_underline=sheet.name.replace(' ', '_'),
-                            issue_date=sheet.issue_date,
-                            rev_number=sheet.revision.number if sheet.revision else '',
-                            rev_desc=sheet.revision.desc if sheet.revision else '',
-                            rev_date=sheet.revision.date if sheet.revision else '',
-                            proj_number=''
-                            ),
-                        windows_safe=True
-                        )
-                sheet.print_filename = output_fname
-
-    def _get_sheet_printsettings(self):
-        all_titleblocks = revit.query.get_elements_by_categories(
-            [DB.BuiltInCategory.OST_TitleBlocks],
-            doc=self.selected_doc
+            template = naming_fmt.template
+            # resolve project-level custom param values
+            ## project info param values
+            template = self._update_filename_template(
+                template=template,
+                value_type='proj_param',
+                value_getter=lambda x: revit.query.get_param_value(
+                    doc.ProjectInformation.LookupParameter(x)
+                    )
             )
+
+            ## global param values
+            template = self._update_filename_template(
+                template=template,
+                value_type='glob_param',
+                value_getter=lambda x: revit.query.get_param_value(
+                    revit.query.get_global_parameter(x, doc=doc)
+                    )
+            )
+
+            for sheet in sheet_list:
+                self._update_print_filename(template, sheet)
+
+    def _find_sheet_tblock(self, revit_sheet, tblocks):
+        for tblock in tblocks:
+            view_sheet = revit_sheet.Document.GetElement(tblock.OwnerViewId)
+            if view_sheet.Id == revit_sheet.Id:
+                return tblock
+
+    def _get_sheet_printsettings(self, tblocks):
         tblock_printsettings = {}
         sheet_printsettings = {}
         doc_printsettings = \
             revit.query.get_all_print_settings(doc=self.selected_doc)
-        for tblock in all_titleblocks:
+        for tblock in tblocks:
             sheet = self.selected_doc.GetElement(tblock.OwnerViewId)
             # build a unique id for this tblock
             tblock_tform = tblock.GetTotalTransform()
@@ -734,20 +922,26 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     # event handlers
     def doclist_changed(self, sender, args):
+        self.project_info = revit.query.get_project_info(doc=self.selected_doc)
         self._setup_printers()
         self._setup_print_settings()
         self._setup_sheet_list()
 
     def sheetlist_changed(self, sender, args):
         print_settings = None
+        tblocks = revit.query.get_elements_by_categories(
+            [DB.BuiltInCategory.OST_TitleBlocks],
+            doc=self.selected_doc
+        )
         if self.selected_schedule and self.selected_print_setting:
             if self.selected_print_setting.allows_variable_paper:
-                sheet_printsettings = self._get_sheet_printsettings()
+                sheet_printsettings = self._get_sheet_printsettings(tblocks)
                 self.show_element(self.sheetopts_wp)
                 self.show_element(self.psettingcol)
                 self._scheduled_sheets = [
                     ViewSheetListItem(
                         view_sheet=x,
+                        view_tblock=self._find_sheet_tblock(x, tblocks),
                         print_settings=sheet_printsettings.get(
                             x.SheetNumber,
                             None))
@@ -760,6 +954,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 self._scheduled_sheets = [
                     ViewSheetListItem(
                         view_sheet=x,
+                        view_tblock=self._find_sheet_tblock(x, tblocks),
                         print_settings=[print_settings])
                     for x in self._get_ordered_schedule_sheets()
                     ]
@@ -768,6 +963,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.options_changed(None, None)
 
     def options_changed(self, sender, args):
+        self._reset_error()
+
         # update index digit range
         self._update_index_slider()
 
@@ -843,10 +1040,14 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.indexstart_tb.Text = '0'
 
     def edit_formats(self, sender, args):
-        new_formats = \
-            EditNamingFormatsWindow('EditNamingFormats.xaml').show_dialog()
-        self.namingformat_cb.ItemsSource = new_formats
-        self.namingformat_cb.SelectedIndex = 0
+        editfmt_wnd = \
+            EditNamingFormatsWindow(
+                'EditNamingFormats.xaml',
+                start_with=self.selected_naming_format
+                )
+        editfmt_wnd.show_dialog()
+        self.namingformat_cb.ItemsSource = editfmt_wnd.naming_formats
+        self.namingformat_cb.SelectedItem = editfmt_wnd.selected_naming_format
 
     def print_sheets(self, sender, args):
         if self.sheet_list:
@@ -889,8 +1090,8 @@ def cleanup_sheetnumbers(doc):
 
 # TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602
-    docs = forms.select_open_docs()
-    for doc in docs:
-        cleanup_sheetnumbers(doc)
+    open_docs = forms.select_open_docs()
+    for open_doc in open_docs:
+        cleanup_sheetnumbers(open_doc)
 else:
     PrintSheetsWindow('PrintSheets.xaml').ShowDialog()

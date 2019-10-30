@@ -10,6 +10,7 @@ import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
+from pyrevit.revit import features
 
 from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 
@@ -126,10 +127,6 @@ def get_param(element, param_name, default=None):
             return default
 
 
-def get_assoc_doc(element):
-    return element.Document
-
-
 def get_mark(element):
     mparam = element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
     return mparam.AsString() if mparam else ''
@@ -176,15 +173,18 @@ def get_all_elements_in_view(view):
 
 
 def get_param_value(targetparam):
-    if targetparam.StorageType == DB.StorageType.Double:
-        value = targetparam.AsDouble()
-    elif targetparam.StorageType == DB.StorageType.Integer:
-        value = targetparam.AsInteger()
-    elif targetparam.StorageType == DB.StorageType.String:
-        value = targetparam.AsString()
-    elif targetparam.StorageType == DB.StorageType.ElementId:
-        value = targetparam.AsElementId()
-
+    value = None
+    if isinstance(targetparam, DB.Parameter):
+        if targetparam.StorageType == DB.StorageType.Double:
+            value = targetparam.AsDouble()
+        elif targetparam.StorageType == DB.StorageType.Integer:
+            value = targetparam.AsInteger()
+        elif targetparam.StorageType == DB.StorageType.String:
+            value = targetparam.AsString()
+        elif targetparam.StorageType == DB.StorageType.ElementId:
+            value = targetparam.AsElementId()
+    elif isinstance(targetparam, DB.GlobalParameter):
+        return targetparam.GetValue().Value
     return value
 
 
@@ -459,6 +459,20 @@ def get_project_parameter(param_id_or_name, doc=None):
 
 def model_has_parameter(param_id_or_name, doc=None):
     return get_project_parameter(param_id_or_name, doc=doc)
+
+
+def get_global_parameters(doc=None):
+    doc = doc or HOST_APP.doc
+    return [doc.GetElement(x)
+            for x in DB.GlobalParametersManager.GetAllGlobalParameters(doc)]
+
+
+def get_global_parameter(param_name, doc=None):
+    doc = doc or HOST_APP.doc
+    if features.GLOBAL_PARAMS:
+        param_id = DB.GlobalParametersManager.FindByName(doc, param_name)
+        if param_id != DB.ElementId.InvalidElementId:
+            return doc.GetElement(param_id)
 
 
 def get_project_info(doc=None):

@@ -117,8 +117,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print Sheets.pushbutton\EditNamingFormats.xaml">
+      <Link>Tools\Print Sheets\EditNamingFormats.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print Sheets.pushbutton\PrintSheets.xaml">
-      <Link>Tools\PrintSheets.xaml</Link>
+      <Link>Tools\Print Sheets\PrintSheets.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

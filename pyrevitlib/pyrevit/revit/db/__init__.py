@@ -206,6 +206,69 @@ class ProjectInfo(BaseWrapper):
             return ''
 
     @property
+    def number(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Number
+        else:
+            return ''
+
+    @property
+    def address(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Address
+        else:
+            return ''
+
+    @property
+    def author(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Author
+        else:
+            return ''
+
+    @property
+    def building_name(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.BuildingName
+        else:
+            return ''
+
+    @property
+    def client_name(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.ClientName
+        else:
+            return ''
+
+    @property
+    def issue_date(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.IssueDate
+        else:
+            return ''
+
+    @property
+    def org_name(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.OrganizationName
+        else:
+            return ''
+
+    @property
+    def org_desc(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.OrganizationDescription
+        else:
+            return ''
+
+    @property
+    def status(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Status
+        else:
+            return ''
+
+    @property
     def location(self):
         return op.dirname(self._doc.PathName)
 

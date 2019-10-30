@@ -115,7 +115,7 @@
                         </ComboBox>
                     </DockPanel>
                 </StackPanel>
-                <Button Grid.Column="1" Content="{StaticResource printIcon}" Margin="10,0,0,0" Click="print_sheets"/>
+                <Button x:Name="print_b" Grid.Column="1" Content="{StaticResource printIcon}" Margin="10,0,0,0" Click="print_sheets"/>
             </Grid>
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -188,6 +188,9 @@
                 <TextBlock TextWrapping="WrapWithOverflow" DockPanel.Dock="Left">
                     List of the sheets in selected sheet index
                 </TextBlock>
+                <Border x:Name="errormsg_block" Background="Red" Padding="5" Margin="0,5,0,5" Visibility="Collapsed">
+                    <TextBlock x:Name="errormsg_tb" Foreground="White" VerticalAlignment="Center" />
+                </Border>
                 <WrapPanel x:Name="sheetopts_wp" FlowDirection="RightToLeft" DockPanel.Dock="Right" Visibility="Visible" IsEnabled="False">
                     <Button Height="25" Width="120" Content="Set Print Settings" Click="set_sheet_printsettings"/>
                     <Button Height="25" Width="120" Content="Reset Print Settings " Click="sheetlist_changed" Margin="10,0,0,0"/>
