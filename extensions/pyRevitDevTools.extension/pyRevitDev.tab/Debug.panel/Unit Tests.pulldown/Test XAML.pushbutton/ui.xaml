@@ -96,10 +96,10 @@
                                 <TextBlock Text="{Binding job, StringFormat=Position: {0}}"/>
                                 <TextBlock Text="Supports"/>
                                 <ItemsControl Margin="0,5,0,0"
-                              BorderThickness="0"
-                              ItemsSource="{Binding supports}"
-                              ItemsPanel="{StaticResource SupportsList}"
-                              ItemTemplate="{StaticResource SupportsItem}">
+                                              BorderThickness="0"
+                                              ItemsSource="{Binding supports}"
+                                              ItemsPanel="{StaticResource SupportsList}"
+                                              ItemTemplate="{StaticResource SupportsItem}">
                                     <ItemsControl.ItemContainerStyle>
                                         <Style TargetType="{x:Type ContentPresenter}">
                                             <Setter Property="Margin" Value="0,0,5,0"/>
