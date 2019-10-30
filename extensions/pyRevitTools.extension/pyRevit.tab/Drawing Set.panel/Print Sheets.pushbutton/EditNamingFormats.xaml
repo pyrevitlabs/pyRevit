@@ -4,7 +4,7 @@
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
         ResizeMode="CanResizeWithGrip" SizeToContent="Height" Width="950" MinHeight="500"
-        Title="Naming Formats">
+        Title="Naming Formats" Closing="cancelled">
     <Window.Resources>
         <Style x:Key="FormatterTextBox" TargetType="{x:Type TextBox}">
             <Setter Property="FontFamily" Value="Consolas" />
@@ -63,7 +63,7 @@
             <TextBox x:Name="template_tb"
                      Text="{Binding template, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource FormatterTextBox}"
-                     AllowDrop="True" PreviewDrop="stop_drag" PreviewDragOver="preview_drag" />
+                     AllowDrop="True" PreviewDrop="stop_drag" PreviewDragOver="preview_drag"/>
 
             <TextBlock Text="Drag and drop from formatters below. Hover over the formatter for description" Margin="0,5,0,0"/>
             <ItemsControl x:Name="formatters_wp" Margin="0,5,0,0">
@@ -75,7 +75,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border x:Name="formatter_box" Height="20" Margin="5,5,0,0" Background="DarkGray" BorderThickness="0" CornerRadius="5" ToolTip="{Binding desc}">
-                            <TextBlock Text="{Binding template}" Foreground="White" VerticalAlignment="Center" Margin="5,0,5,0" />
+                            <TextBlock Text="{Binding template}" FontFamily="Consolas" Foreground="White" VerticalAlignment="Center" Margin="5,0,5,0" Padding="0,0,0,1" />
                         </Border>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding template}" Value="{}{index}">

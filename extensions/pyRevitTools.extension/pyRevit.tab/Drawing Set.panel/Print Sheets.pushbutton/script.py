@@ -26,7 +26,7 @@ from collections import namedtuple
 from pyrevit import HOST_APP
 from pyrevit import USER_DESKTOP
 from pyrevit import framework
-from pyrevit.framework import Windows, Drawing, ObjectModel
+from pyrevit.framework import Windows, Drawing, ObjectModel, Forms
 from pyrevit import coreutils
 from pyrevit import forms
 from pyrevit import revit, DB
@@ -186,18 +186,16 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name, start_with=None):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        self.formats_lb.ItemsSource = \
-            ObjectModel.ObservableCollection[object](
-                EditNamingFormatsWindow.get_naming_formats()
-            )
+        self._drop_pos = 0
+        self._starting_item = start_with
+        self._saved = False
 
-        if isinstance(start_with, NamingFormat):
-            for item in self.formats_lb.ItemsSource:
-                if item.name == start_with.name:
-                    self.selected_naming_format = item
-                    break
+        self.reset_naming_formats()
+        self.reset_formatters()
 
-        self.formatters_wp.ItemsSource = [
+    @staticmethod
+    def get_default_formatters():
+        return [
             NamingFormatter(
                 template='{index}',
                 desc='Print Index Number e.g. "0001"'
@@ -337,6 +335,21 @@ class EditNamingFormatsWindow(forms.WPFWindow):
         self.formats_lb.SelectedItem = value
         self.namingformat_edit.DataContext = value
 
+    def reset_formatters(self):
+        self.formatters_wp.ItemsSource = \
+            EditNamingFormatsWindow.get_default_formatters()
+
+    def reset_naming_formats(self):
+        self.formats_lb.ItemsSource = \
+                ObjectModel.ObservableCollection[object](
+                    EditNamingFormatsWindow.get_naming_formats()
+                )
+        if isinstance(self._starting_item, NamingFormat):
+            for item in self.formats_lb.ItemsSource:
+                if item.name == self._starting_item.name:
+                    self.selected_naming_format = item
+                    break
+
     # https://www.wpftutorial.net/DragAndDrop.html
     def start_drag(self, sender, args):
         name_formatter = args.OriginalSource.DataContext
@@ -348,20 +361,28 @@ class EditNamingFormatsWindow(forms.WPFWindow):
 
     # https://social.msdn.microsoft.com/Forums/vstudio/en-US/941f6bf2-a321-459e-85c9-501ec1e13204/how-do-you-get-a-drag-and-drop-event-for-a-wpf-textbox-hosted-in-a-windows-form
     def preview_drag(self, sender, args):
-        args.Effects = Windows.DragDropEffects.All
+        mouse_pos = Forms.Cursor.Position
+        mouse_po_pt = Windows.Point(mouse_pos.X, mouse_pos.Y)
+        self._drop_pos = \
+            self.template_tb.GetCharacterIndexFromPoint(
+                point=self.template_tb.PointFromScreen(mouse_po_pt),
+                snapToText=True
+                )
+        self.template_tb.SelectionStart = self._drop_pos
+        self.template_tb.SelectionLength = 0
+        self.template_tb.Focus()
+        args.Effects = Windows.DragDropEffects.Copy
         args.Handled = True
 
     def stop_drag(self, sender, args):
         name_formatter = args.Data.GetData("name_formatter")
         if name_formatter:
-            new_template = self.template_tb.Text + name_formatter.template
+            new_template = \
+                str(self.template_tb.Text)[:self._drop_pos] \
+                + name_formatter.template \
+                + str(self.template_tb.Text)[self._drop_pos:]
             self.template_tb.Text = new_template
             self.template_tb.Focus()
-            self.template_tb.CaretIndex = len(new_template)
-
-    def save_formats(self, sender, args):
-        self.Close()
-        EditNamingFormatsWindow.set_naming_formats(self.naming_formats)
 
     def namingformat_changed(self, sender, args):
         naming_format = self.selected_naming_format
@@ -382,6 +403,15 @@ class EditNamingFormatsWindow(forms.WPFWindow):
         self.naming_formats.Remove(naming_format)
         next_index = min([item_index, self.naming_formats.Count-1])
         self.selected_naming_format = self.naming_formats[next_index]
+
+    def save_formats(self, sender, args):
+        EditNamingFormatsWindow.set_naming_formats(self.naming_formats)
+        self._saved = True
+        self.Close()
+
+    def cancelled(self, sender, args):
+        if not self._saved:
+            self.reset_naming_formats()
 
     def show_dialog(self):
         self.ShowDialog()
