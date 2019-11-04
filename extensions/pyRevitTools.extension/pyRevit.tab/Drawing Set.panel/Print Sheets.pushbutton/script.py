@@ -1094,11 +1094,17 @@ class PrintSheetsWindow(forms.WPFWindow):
                 self.selected_sheets if selected_only else self.sheet_list
 
             if not self.combine_print:
-                sheet_count = len(target_sheets)
-                if sheet_count > 5:
+                printable_count = len([x for x in target_sheets if x.printable])
+                if printable_count > 5:
+                    # prepare warning message
+                    sheet_count = len(target_sheets)
+                    message = str(printable_count)
+                    if printable_count != sheet_count:
+                        message += ' (out of {} total)'.format(sheet_count)
+
                     if not forms.alert('Are you sure you want to print {} '
                                        'sheets individually? The process can '
-                                       'not be cancelled.'.format(sheet_count),
+                                       'not be cancelled.'.format(message),
                                        ok=False, yes=True, no=True):
                         return
             self.Close()

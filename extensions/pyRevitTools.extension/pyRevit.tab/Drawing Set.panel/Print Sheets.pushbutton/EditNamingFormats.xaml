@@ -55,17 +55,26 @@
 
         <StackPanel x:Name="namingformat_edit" Grid.Column="2" Margin="5,0,0,0">
             <TextBlock Text="Format Title" FontWeight="Medium" />
+            <TextBlock TextWrapping="Wrap" Foreground="DimGray">
+                This is the name of this specific naming format. Give the format a descriptive
+                name that is easy to understand and find. For example: "City of Portland ePermit"
+            </TextBlock>
             <TextBox x:Name="template_name_tb"
                      Text="{Binding name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource FormatterTextBox}"/>
 
             <TextBlock Text="Template" FontWeight="Medium" Margin="0,10,0,0" />
+            <TextBlock TextWrapping="Wrap" Foreground="DimGray">
+                This is the actual naming format template. Each "{}" (tag) represents a value that will be
+                filled when creating the name for a PDF file. Pick an choose from the tags listed
+                below and drag them to this box.
+            </TextBlock>
             <TextBox x:Name="template_tb"
                      Text="{Binding template, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource FormatterTextBox}"
                      AllowDrop="True" PreviewDrop="stop_drag" PreviewDragOver="preview_drag"/>
 
-            <TextBlock Text="Drag and drop from formatters below. Hover over the formatter for description" Margin="0,5,0,0"/>
+            <TextBlock Text="Drag and drop from formatters below. Hover over the formatter for description" Foreground="DimGray" Margin="0,5,0,0"/>
             <ItemsControl x:Name="formatters_wp" Margin="0,5,0,0">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
