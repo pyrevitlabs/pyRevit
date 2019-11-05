@@ -99,11 +99,11 @@ class PyRevitOutputChart(object):
         chart_type (str): chart type name
     
     """
-    def __init__(self, output, chart_type=LINE_CHART, version='2.8.0'):
+    def __init__(self, output, chart_type=LINE_CHART, version=None):
         self._output = output
         self._style = None
         self._width = self._height = None
-        self._version = version
+        self._version = version or '2.8.0'
 
         self.type = chart_type
         self.data = PyRevitOutputChartData()
