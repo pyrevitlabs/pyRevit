@@ -540,6 +540,10 @@ class SelectFromList(TemplateUserInputWindow):
 
     xaml_source = 'SelectFromList.xaml'
 
+    @property
+    def use_regex(self):
+        return self.regexToggle_b.IsChecked
+
     def _setup(self, **kwargs):
         # custom button name?
         button_name = kwargs.get('button_name', 'Select')
@@ -651,7 +655,11 @@ class SelectFromList(TemplateUserInputWindow):
             self.toggleall_b.Content = 'Toggle'
             # get a match score for every item and sort high to low
             fuzzy_matches = sorted(
-                [(x, coreutils.fuzzy_search_ratio(x.name, option_filter))
+                [(x,
+                  coreutils.fuzzy_search_ratio(
+                      target_string=x.name,
+                      sfilter=option_filter,
+                      regex=self.use_regex))
                  for x in self._get_active_ctx()],
                 key=lambda x: x[1],
                 reverse=True
@@ -736,6 +744,13 @@ class SelectFromList(TemplateUserInputWindow):
             self.show_element(self.clrsearch_b)
 
         self._list_options(option_filter=self.search_tb.Text)
+
+    def toggle_regex(self, sender, args):
+        self.regexToggle_b.Content = \
+            self.Resources['regexIcon'] if self.use_regex \
+                else self.Resources['filterIcon']
+        self.search_txt_changed(sender, args)
+        self.search_tb.Focus()
 
     def clear_search(self, sender, args):    #pylint: disable=W0613
         """Clear search box."""

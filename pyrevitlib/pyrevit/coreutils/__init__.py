@@ -1242,17 +1242,28 @@ def is_box_visible_on_screens(left, top, width, height):
     return False
 
 
-def fuzzy_search_ratio(target_string, sfilter):
+def fuzzy_search_ratio(target_string, sfilter, regex=False):
     """Match target string against the filter and return a match ratio.
 
     Args:
         target_string (str): target string
         sfilter (str): search term
+        regex (bool): treat the sfilter as regular expression pattern
 
     Returns:
         int: integer between 0 to 100, with 100 being the exact match
     """
     tstring = target_string
+
+    # process regex here. It's a yes no situation (100 or 0)
+    if regex:
+        try:
+            if re.search(sfilter, tstring):
+                return 100
+        except Exception:
+            pass
+        return 0
+
     # 100 for identical matches
     if sfilter == tstring:
         return 100
