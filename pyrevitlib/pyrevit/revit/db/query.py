@@ -710,13 +710,14 @@ def is_sheet_empty(viewsheet):
     return True
 
 
-def get_doc_categories(doc=None):
+def get_doc_categories(doc=None, include_subcats=True):
     doc = doc or HOST_APP.doc
     all_cats = []
     cats = doc.Settings.Categories
     all_cats.extend(cats)
-    for cat in cats:
-        all_cats.extend([x for x in cat.SubCategories])
+    if include_subcats:
+        for cat in cats:
+            all_cats.extend([x for x in cat.SubCategories])
     return all_cats
 
 
