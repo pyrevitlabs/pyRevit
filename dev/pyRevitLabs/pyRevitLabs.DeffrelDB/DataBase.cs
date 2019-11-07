@@ -143,7 +143,7 @@ namespace pyRevitLabs.DeffrelDB {
                               object recordKey,
                               string lockId = null) {
             // use exisitng or generate new lock uuid
-            if (lockId == null)
+            if (lockId is null)
                 LockId = CommonUtils.NewShortUUID();
             else
                 LockId = lockId;
@@ -157,12 +157,12 @@ namespace pyRevitLabs.DeffrelDB {
             LockTargetDB = dbName;
 
             // make sure db is specified when locking a table
-            if (tableName != null && dbName == null)
+            if (tableName != null && dbName is null)
                 throw new Exception("DB must be specified when locking a table.");
             LockTargetTable = tableName;
 
             // make sure db:table is specified when locking a record
-            if (recordKey != null && (tableName == null || dbName == null))
+            if (recordKey != null && (tableName is null || dbName is null))
                 throw new Exception("DB and Table must be specified when locking a record.");
             LockTargetRecordKey = recordKey;
         }
@@ -178,15 +178,15 @@ namespace pyRevitLabs.DeffrelDB {
         public object LockTargetRecordKey { get; private set; }
 
         public bool IsDataStoreLock {
-            get { return LockTargetDB == null && LockTargetTable == null && LockTargetRecordKey == null; }
+            get { return LockTargetDB is null && LockTargetTable is null && LockTargetRecordKey is null; }
         }
 
         public bool IsDBLock {
-            get { return LockTargetDB != null && LockTargetTable == null && LockTargetRecordKey == null; }
+            get { return LockTargetDB != null && LockTargetTable is null && LockTargetRecordKey is null; }
         }
 
         public bool IsTableLock {
-            get { return LockTargetDB != null && LockTargetTable != null && LockTargetRecordKey == null; }
+            get { return LockTargetDB != null && LockTargetTable != null && LockTargetRecordKey is null; }
         }
 
         public bool IsRecordLock {
@@ -523,6 +523,7 @@ namespace pyRevitLabs.DeffrelDB {
         private const string connDbLockRecordKeyField = "lock_recordkey";
 
         private DataStore activeDStore = null;
+        private ConnectionLock activeConnLock = null;
         private bool blockTxn = false;
 
         private DataBase(string filePath, string requester, Version sourceVersion, Encoding sourceEncoding) {
@@ -562,19 +563,27 @@ namespace pyRevitLabs.DeffrelDB {
             // validate input
             // db might be null
             // make sure db is specified when locking a table
-            if (tableName != null && dbName == null)
+            if (tableName != null && dbName is null)
                 throw new Exception("DB must be specified when opening a table-level transaction.");
             // make sure db:table is specified when locking a record
-            if (recordKey != null && (tableName == null || dbName == null))
+            if (recordKey != null && (tableName is null || dbName is null))
                 throw new Exception("DB and Table must be specified when opening a record-level transaction.");
 
             // write the lock
-            AcquireLocks(new ConnectionLock(ConnectionSource, ConnectionRequester, ConnectionId,
-                                            dbName, tableName, recordKey));
+            ConnectionLock newLock = new ConnectionLock(ConnectionSource, ConnectionRequester, ConnectionId, dbName, tableName, recordKey);
+            if (activeConnLock != null) {
+                logger.Debug("Active lock exists: {0}", activeConnLock);
+                ConnectionLock txnLock = DetermineHigherLock(activeConnLock, newLock);
+                if (txnLock != activeConnLock)
+                    activeConnLock = AcquireLocks(newLock);
+                logger.Debug("Using lock: {0}", activeConnLock);
+            }
+            else
+                activeConnLock = AcquireLocks(newLock);
 
             // if no active datastore (means that this is the first BEGIN in a txn chain,
             // then set the active datastore
-            if (activeDStore == null) {
+            if (activeDStore is null) {
                 activeDStore = new DataStore(ActiveDataStoreType);
             }
         }
@@ -606,9 +615,41 @@ namespace pyRevitLabs.DeffrelDB {
                     finally {
                         // drop all new locks created by this connection
                         ReleaseLocks();
+                        activeConnLock = null;
                     }
                 }
             }
+        }
+
+        private ConnectionLock DetermineHigherLock(ConnectionLock exstLock, ConnectionLock newLock) {
+            ConnectionLock txnLock = newLock;
+
+            // is existing lock restricting access?
+            if (newLock.IsRestrictedBy(exstLock)) {
+                //  does restricting lock belong to this connection?
+                //  if yes and it is a higher-level lock, use that
+                if (exstLock.BelongsTo(this) && exstLock.LockType <= newLock.LockType) {
+                    logger.Debug("Existing lock {0} is higher than new {1}", exstLock, newLock);
+                    txnLock = exstLock;
+                }
+                //  does the lock not belong to this connection in which case reject
+                //  or is trying to acquire a higher level lock that active lock
+                else {
+                    logger.Debug("New lock {0} is restricted by {1}", newLock, exstLock);
+                    throw new AccessRestrictedException(newLock, exstLock);
+                }
+            }
+            // if not restricting, does this connection already have a txn block lock of equal level
+            // reject again since the connection need to close its block lock first and then
+            // work on another entry
+            else {
+                if (exstLock.BelongsTo(this)) {
+                    logger.Debug("New lock {0} not on the same path as existing {1}", newLock, exstLock);
+                    throw new AccessRestrictedByExistingLockException(newLock, exstLock);
+                }
+            }
+
+            return txnLock;
         }
 
         private List<ConnectionLock> ReadActiveLocks(DataStore dstore) {
@@ -637,40 +678,19 @@ namespace pyRevitLabs.DeffrelDB {
             return lockList;
         }
 
-        private void AcquireLocks(ConnectionLock newLock) {
+        private ConnectionLock AcquireLocks(ConnectionLock newLock) {
             logger.Debug("RECORD LOCK");
+
+            ConnectionLock txnLock = newLock;
 
             // open datastore for exclusive access
             using (var dstore = new DataStore(ActiveDataStoreType, exclusive: true)) {
                 // get all existing locks
                 // check access, find the highest-level compatible lock
-                ConnectionLock txnLock = newLock;
+                logger.Debug("Reading existing locks");
                 foreach (ConnectionLock activeLock in ReadActiveLocks(dstore)) {
                     logger.Debug("Lock Found: {0}", activeLock);
-                    // is existing lock restricting access?
-                    if (newLock.IsRestrictedBy(activeLock)) {
-                        //  does restricting lock belong to this connection?
-                        //  if yes and it is a higher-level lock, use that
-                        if (activeLock.BelongsTo(this) && activeLock.LockType <= newLock.LockType) {
-                            logger.Debug("Existing lock {0} is higher than new {1}", activeLock, newLock);
-                            txnLock = activeLock;
-                        }
-                        //  does the lock not belong to this connection in which case reject
-                        //  or is trying to acquire a higher level lock that active lock
-                        else {
-                            logger.Debug("New lock {0} is restricted by {1}", newLock, activeLock);
-                            throw new AccessRestrictedException(newLock, activeLock);
-                        }
-                    }
-                    // if not restricting, does this connection already have a txn block lock of equal level
-                    // reject again since the connection need to close its block lock first and then
-                    // work on another entry
-                    else {
-                        if (activeLock.BelongsTo(this)) {
-                            logger.Debug("New lock {0} not on the same path as existing {1}", newLock, activeLock);
-                            throw new AccessRestrictedByExistingLockException(newLock, activeLock);
-                        }
-                    }
+                    txnLock = DetermineHigherLock(activeLock, newLock);
                 }
 
                 logger.Debug("Using lock: {0}", txnLock);
@@ -714,6 +734,8 @@ namespace pyRevitLabs.DeffrelDB {
                     }
                 }
             }
+
+            return txnLock;
         }
 
         private void ReleaseLocks() {

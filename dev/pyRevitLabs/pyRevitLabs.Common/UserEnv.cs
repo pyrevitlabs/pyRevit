@@ -138,7 +138,7 @@ namespace pyRevitLabs.Common {
         }
 
         private static string GetPath(KnownFolder knownFolder, KnownFolderFlags flags, bool defaultUser) {
-            int result = SHGetKnownFolderPath(new Guid(_knownFolderGuids[(int)knownFolder]),
+            int result = Shell32.SHGetKnownFolderPath(new Guid(_knownFolderGuids[(int)knownFolder]),
                 (uint)flags, new IntPtr(defaultUser ? -1 : 0), out IntPtr outPath);
             if (result >= 0) {
                 string path = Marshal.PtrToStringUni(outPath);
@@ -149,25 +149,6 @@ namespace pyRevitLabs.Common {
                 throw new ExternalException("Unable to retrieve the known folder path. It may not "
                     + "be available on this system.", result);
             }
-        }
-
-        [DllImport("Shell32.dll")]
-        private static extern int SHGetKnownFolderPath(
-            [MarshalAs(UnmanagedType.LPStruct)]Guid rfid, uint dwFlags, IntPtr hToken,
-            out IntPtr ppszPath);
-
-        [Flags]
-        private enum KnownFolderFlags : uint {
-            SimpleIDList = 0x00000100,
-            NotParentRelative = 0x00000200,
-            DefaultPath = 0x00000400,
-            Init = 0x00000800,
-            NoAlias = 0x00001000,
-            DontUnexpand = 0x00002000,
-            DontVerify = 0x00004000,
-            Create = 0x00008000,
-            NoAppcontainerRedirection = 0x00010000,
-            AliasOnly = 0x80000000
         }
     }
 }

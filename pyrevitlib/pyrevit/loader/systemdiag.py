@@ -12,9 +12,7 @@ mlogger = get_logger(__name__)
 
 def check_min_host_version():
     # get required version and build from user config
-    req_build = user_config.core.get_option('requiredhostbuild',
-                                            default_value="")
-
+    req_build = user_config.required_host_build
     if req_build:
         if HOST_APP.build != req_build:
             mlogger.warning('You are not using the required host build: %s',
@@ -23,9 +21,7 @@ def check_min_host_version():
 
 def check_host_drive_freespace():
     # get min free space from user config
-    min_freespace = user_config.core.get_option('minhostdrivefreespace',
-                                                default_value=0)
-
+    min_freespace = user_config.min_host_drivefreespace
     if min_freespace:
         # find host drive and check free space
         host_drive = Path.GetPathRoot(HOST_APP.proc_path)

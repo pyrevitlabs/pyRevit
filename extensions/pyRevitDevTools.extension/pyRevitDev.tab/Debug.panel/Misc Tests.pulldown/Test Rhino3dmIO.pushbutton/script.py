@@ -1,4 +1,4 @@
-from winterops.rhino import Rhino
+from pyrevit.interop.rhino import Rhino
 
 
 pt1 = Rhino.Geometry.Point3d(0, 0, 0)

@@ -64,9 +64,9 @@ namespace pyRevitLabs.CommonWPF.Controls {
 
         public void ConsoleLog(string logEntry) { _consoleLog(logEntry); }
 
-        public void ConsoleLogOK(string logEntry) { _consoleLog(logEntry, indicate: Brushes.Green); }
+        public void ConsoleLogOK(string logEntry) { _consoleLog(logEntry, indicate: Brushes.YellowGreen); }
 
-        public void ConsoleLogInfo(string logEntry) { _consoleLog(logEntry, indicate: Brushes.Transparent); }
+        public void ConsoleLogInfo(string logEntry) { _consoleLog(logEntry, indicate: Brushes.Gray); }
 
         public void ConsoleLogError(string logEntry) { _consoleLog(logEntry, indicate: Brushes.Red); }
 

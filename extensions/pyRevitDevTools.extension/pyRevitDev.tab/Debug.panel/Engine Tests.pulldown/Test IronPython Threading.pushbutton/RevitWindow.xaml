@@ -1,0 +1,11 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Revit"
+        Width="250"
+        SizeToContent="Height"
+        Closing="window_closing">
+    <StackPanel>
+        <TextBlock x:Name="ThreadId_TextBlock" Text="Thread Id: 0" Padding="5"/>
+        <Button Content="Do Long Process" Click="button_click" Padding="5"/>
+    </StackPanel>
+</Window>

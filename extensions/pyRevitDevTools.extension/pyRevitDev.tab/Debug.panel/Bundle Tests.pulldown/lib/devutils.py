@@ -1,0 +1,13 @@
+def printbuiltins():
+    print('__ipyengine__: %s' % __ipyengine__)
+    print('__window__: %s' % __window__)
+    print('__output__: %s' % __output__)
+    print('__outputstream__: %s' % __outputstream__)
+    print('__revit__: %s' % __revit__)
+    print('__activeuidoc__: %s' % __activeuidoc__)
+    print('__activedoc__: %s' % __activedoc__)
+    print('__zerodoc__: %s' % __zerodoc__)
+    print('__scriptruntime__: %s' % __scriptruntime__)
+    print('__commanddata__: %s' % __commanddata__)
+    print('__commandpath__: %s' % __commandpath__)
+    print('__result__: %s' % __result__)

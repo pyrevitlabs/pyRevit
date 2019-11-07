@@ -10,7 +10,7 @@ from pyrevit import script
 logger = script.get_logger()
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 __doc__ = 'Downloads updates from the remote git repositories ' \
           '(e.g github, bitbucket).'
@@ -18,19 +18,19 @@ __doc__ = 'Downloads updates from the remote git repositories ' \
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     # do not load the tool if user should not update
-    if not user_config.core.get_option('usercanupdate', True):
+    if not user_config.user_can_update:
         return False
     # otherwise set icon depending on if updates are available
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-        if user_config.core.get_option('checkupdates', False) \
-                and not user_config.core.get_option('autoupdate', False) \
+        if user_config.check_updates \
+                and not user_config.auto_update \
                 and updater.check_for_updates():
             ui_button_cmp.set_icon(has_update_icon,
                                    icon_size=ribbon.ICON_LARGE)
         return True
-    except Exception as e:
-        logger.error('Error in checking updates: {}'.format(e))
+    except Exception as ex:
+        logger.error('Error in checking updates: {}'.format(ex))
         return False
 
 

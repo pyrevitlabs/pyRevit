@@ -2,6 +2,7 @@
 extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitDevTools.extension/
+!extensions/pyRevitDevHooks.extension/
 !extensions/pyRevitRun.run/
 !extensions/pyRevitTemplates.extension/
 !extensions/pyRevitTags.extension/
@@ -33,9 +34,10 @@ __py*
 # ignore local config file
 *.ini
 
-# Release files
-release/pyRevit-cache
-release/pyRevit-SetupFiles
-release/pyRevit\ CLI-cache
-release/pyRevit\ CLI-SetupFiles
-release/pyrevit-cli/*.nupkg
+# Release and installer files
+release/pyrevit*cache
+dist/
+
+# ignore linter configs
+.vscode/.ropeproject/*
+!.vscode/.ropeproject/config.py

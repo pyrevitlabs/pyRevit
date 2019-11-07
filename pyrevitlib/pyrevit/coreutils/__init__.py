@@ -18,11 +18,12 @@ import stat
 import codecs
 import math
 from collections import defaultdict
-import _winreg as wr     #pylint: disable=import-error
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit import compat
 from pyrevit.compat import safe_strtype
+from pyrevit.compat import winreg as wr
 from pyrevit import framework
 from pyrevit import api
 
@@ -30,10 +31,8 @@ from pyrevit import api
 # import uuid
 from System import Guid
 
-
 #pylint: disable=W0703,C0302
 DEFAULT_SEPARATOR = ';'
-
 
 # extracted from
 # https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
@@ -93,10 +92,31 @@ class ScriptFileParser(object):
         """
         self.ast_tree = None
         self.file_addr = file_address
-        with open(file_address, 'r') as source_file:
+        with codecs.open(file_address, 'r', 'utf-8') as source_file:
             contents = source_file.read()
-            if contents and not '#! python3' in contents:
+            if contents:
                 self.ast_tree = ast.parse(contents)
+
+    def extract_node_value(self, node):
+        """Manual extraction of values from node"""
+        if isinstance(node, ast.Assign):
+            node_value = node.value
+        else:
+            node_value = node
+
+        if isinstance(node_value, ast.Num):
+            return node_value.n
+        elif compat.PY2 and isinstance(node_value, ast.Name):
+            return node_value.id
+        elif compat.PY3 and isinstance(node_value, ast.NameConstant):
+            return node_value.value
+        elif isinstance(node_value, ast.Str):
+            return node_value.s
+        elif isinstance(node_value, ast.List):
+            return node_value.elts
+        elif isinstance(node_value, ast.Dict):
+            return {self.extract_node_value(k):self.extract_node_value(v)
+                    for k, v in zip(node_value.keys, node_value.values)}
 
     def get_docstring(self):
         """Get global docstring."""
@@ -118,15 +138,12 @@ class ScriptFileParser(object):
         """
         if self.ast_tree:
             try:
-                for child in ast.iter_child_nodes(self.ast_tree):
-                    if hasattr(child, 'targets'):
-                        for target in child.targets:
+                for node in ast.iter_child_nodes(self.ast_tree):
+                    if isinstance(node, ast.Assign):
+                        for target in node.targets:
                             if hasattr(target, 'id') \
                                     and target.id == param_name:
-                                param_value = ast.literal_eval(child.value)
-                                if isinstance(param_value, str):
-                                    param_value = param_value.decode('utf-8')
-                                return param_value
+                                return ast.literal_eval(node.value)
             except Exception as err:
                 raise PyRevitException('Error parsing parameter: {} '
                                        'in script file for : {} | {}'
@@ -284,7 +301,7 @@ SPECIAL_CHARS = {' ': '',
                  r'\/': '', '\\': ''}
 
 
-def cleanup_string(input_str):
+def cleanup_string(input_str, skip=None):
     """Replace special characters in string with another string.
 
     This function was created to help cleanup pyRevit command unique names from
@@ -303,6 +320,8 @@ def cleanup_string(input_str):
     """
     # remove spaces and special characters from strings
     for char, repl in SPECIAL_CHARS.items():
+        if skip and char in skip:
+            continue
         input_str = input_str.replace(char, repl)
 
     return input_str
@@ -367,87 +386,6 @@ def inspect_calling_scope_global_var(variable_name):
         if frame is None:
             return None
     return frame.f_locals[variable_name]
-
-
-def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
-    """Find loaded assembly based on name, partial name, or location.
-
-    Args:
-        asm_info (str): name or location of the assembly
-        by_partial_name (bool): returns all assemblies that has the asm_info
-        by_location (bool): returns all assemblies matching location
-
-    Returns:
-        list: List of all loaded assemblies matching the provided info
-        If only one assembly has been found, it returns the assembly.
-        :obj:`None` will be returned if assembly is not loaded.
-    """
-    loaded_asm_list = []
-    for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
-        if by_partial_name:
-            if asm_info.lower() in \
-                    safe_strtype(loaded_assembly.GetName().Name).lower():
-                loaded_asm_list.append(loaded_assembly)
-        elif by_location:
-            try:
-                if op.normpath(loaded_assembly.Location) == \
-                        op.normpath(asm_info):
-                    loaded_asm_list.append(loaded_assembly)
-            except Exception:
-                continue
-        elif asm_info.lower() == \
-                safe_strtype(loaded_assembly.GetName().Name).lower():
-            loaded_asm_list.append(loaded_assembly)
-
-    return loaded_asm_list
-
-
-def load_asm(asm_name):
-    """Load assembly by name into current domain.
-
-    Args:
-        asm_name (str): assembly name
-
-    Returns:
-        returns the loaded assembly, None if not loaded.
-    """
-    return framework.AppDomain.CurrentDomain.Load(asm_name)
-
-
-def load_asm_file(asm_file):
-    """Load assembly by file into current domain.
-
-    Args:
-        asm_file (str): assembly file path
-
-    Returns:
-        returns the loaded assembly, None if not loaded.
-    """
-    try:
-        return framework.Assembly.LoadFrom(asm_file)
-    except Exception:
-        return None
-
-
-def find_type_by_name(assembly, type_name):
-    """Find type by name in assembly.
-
-    Args:
-        assembly (:obj:`Assembly`): assembly to find the type in
-        type_name (str): type name
-
-    Returns:
-        returns the type if found.
-
-    Raises:
-        :obj:`PyRevitException` if type not found.
-    """
-    base_class = assembly.GetType(type_name)
-    if base_class is not None:
-        return base_class
-    else:
-        raise PyRevitException('Can not find base class type: {}'
-                               .format(type_name))
 
 
 def make_canonical_name(*args):
@@ -539,7 +477,7 @@ def prepare_html_str(input_string):
     as html tags. To avoid this, all <> characters that are defining
     html content need to be replaced with special phrases. pyRevit output
     later translates these phrases back in to < and >. That is how pyRevit
-    ditinquishes between <> printed from python and <> that define html.
+    distinquishes between <> printed from python and <> that define html.
 
     Args:
         input_string (str): input html string
@@ -559,7 +497,7 @@ def reverse_html(input_html):
     as html tags. To avoid this, all <> characters that are defining
     html content need to be replaced with special phrases. pyRevit output
     later translates these phrases back in to < and >. That is how pyRevit
-    ditinquishes between <> printed from python and <> that define html.
+    distinquishes between <> printed from python and <> that define html.
 
     Args:
         input_html (str): input codified html string
@@ -571,14 +509,8 @@ def reverse_html(input_html):
     return input_html.replace('&clt;', '<').replace('&cgt;', '>')
 
 
-# def check_internet_connection():
-#     client = framework.WebClient()
-#     try:
-#         client.OpenRead("http://www.google.com")
-#         return True
-#     except:
-#         return False
-#
+def escape_for_html(input_string):
+    return input_string.replace('<', '&lt;').replace('>', '&gt;')
 
 
 # def check_internet_connection():
@@ -612,6 +544,16 @@ def can_access_url(url_to_open, timeout=1000):
         return True
     except Exception:
         return False
+
+
+def read_url(url_to_open):
+    """Get the url and return response.
+
+    Args:
+        url_to_open (str): url to check access for
+    """
+    client = framework.WebClient()
+    return client.DownloadString(url_to_open)
 
 
 def check_internet_connection(timeout=1000):
@@ -672,133 +614,6 @@ def read_source_file(source_file_path):
                                .format(source_file_path, read_err))
 
 
-def create_ext_command_attrs():
-    """Create dotnet attributes for Revit extenrnal commads.
-
-    This method is used in creating custom dotnet types for pyRevit commands
-    and compiling them into a DLL assembly. Current implementation sets
-    ``RegenerationOption.Manual`` and ``TransactionMode.Manual``
-
-    Returns:
-        list: list of :obj:`CustomAttributeBuilder` for
-        :obj:`RegenerationOption` and :obj:`TransactionMode` attributes.
-    """
-    regen_const_info = \
-        framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
-        .GetConstructor(
-            framework.Array[framework.Type](
-                (api.Attributes.RegenerationOption,)
-                ))
-
-    regen_attr_builder = \
-        framework.CustomAttributeBuilder(
-            regen_const_info,
-            framework.Array[object](
-                (api.Attributes.RegenerationOption.Manual,)
-                ))
-
-    # add TransactionAttribute to framework.Type
-    trans_constructor_info = \
-        framework.clr.GetClrType(api.Attributes.TransactionAttribute) \
-        .GetConstructor(
-            framework.Array[framework.Type](
-                (api.Attributes.TransactionMode,)
-                )
-            )
-
-    trans_attrib_builder = \
-        framework.CustomAttributeBuilder(
-            trans_constructor_info,
-            framework.Array[object](
-                (api.Attributes.TransactionMode.Manual,)
-                )
-            )
-
-    return [regen_attr_builder, trans_attrib_builder]
-
-
-def create_type(modulebuilder,
-                type_class, class_name, custom_attr_list, *args):
-    """Create a dotnet type for a pyRevit command.
-
-    See ``baseclasses.cs`` code for the template pyRevit command dotnet type
-    and its constructor default arguments that must be provided here.
-
-    Args:
-        modulebuilder (:obj:`ModuleBuilder`): dotnet module builder
-        type_class (type): source dotnet type for the command
-        class_name (str): name for the new type
-        custom_attr_list (:obj:`list`): list of dotnet attributes for the type
-        *args: list of arguments to be used with type constructor
-
-    Returns:
-        type: returns created dotnet type
-
-    Example:
-        >>> asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(
-        ... win_asm_name, AssemblyBuilderAccess.RunAndSave, filepath
-        ... )
-        >>> module_builder = asm_builder.DefineDynamicModule(
-        ... ext_asm_file_name, ext_asm_full_file_name
-        ... )
-        >>> create_type(
-        ... module_builder,
-        ... PyRevitCommand,
-        ... "PyRevitSomeCommandUniqueName",
-        ... coreutils.create_ext_command_attrs(),
-        ... [scriptpath, atlscriptpath, searchpath, helpurl, name,
-        ... bundle, extension, uniquename, False, False])
-        <type PyRevitSomeCommandUniqueName>
-    """
-    # create type builder
-    type_builder = \
-        modulebuilder.DefineType(
-            class_name,
-            framework.TypeAttributes.Class | framework.TypeAttributes.Public,
-            type_class
-            )
-
-    for custom_attr in custom_attr_list:
-        type_builder.SetCustomAttribute(custom_attr)
-
-    # prepare a list of input param types to find the matching constructor
-    type_list = []
-    param_list = []
-    for param in args:
-        if isinstance(param, str) \
-                or isinstance(param, int):
-            type_list.append(type(param))
-            param_list.append(param)
-
-    # call base constructor
-    constructor = \
-        type_class.GetConstructor(framework.Array[framework.Type](type_list))
-    # create class constructor builder
-    const_builder = \
-        type_builder.DefineConstructor(framework.MethodAttributes.Public,
-                                       framework.CallingConventions.Standard,
-                                       framework.Array[framework.Type](()))
-    # add constructor parameters to stack
-    gen = const_builder.GetILGenerator()
-    gen.Emit(framework.OpCodes.Ldarg_0)  # Load "this" onto eval stack
-
-    # add constructor input params to the stack
-    for param_type, param in zip(type_list, param_list):
-        if param_type == str:
-            gen.Emit(framework.OpCodes.Ldstr, param)
-        elif param_type == int:
-            gen.Emit(framework.OpCodes.Ldc_I4, param)
-
-    # call base constructor (consumes "this" and the created stack)
-    gen.Emit(framework.OpCodes.Call, constructor)
-    # Fill some space - this is how it is generated for equivalent C# code
-    gen.Emit(framework.OpCodes.Nop)
-    gen.Emit(framework.OpCodes.Nop)
-    gen.Emit(framework.OpCodes.Nop)
-    gen.Emit(framework.OpCodes.Ret)
-    return type_builder.CreateType()
-
-
 def open_folder_in_explorer(folder_path):
     """Open given folder in Windows Explorer.
 
@@ -835,7 +650,7 @@ def fully_remove_dir(dir_path):
     shutil.rmtree(dir_path, onerror=del_rw)
 
 
-def cleanup_filename(file_name):
+def cleanup_filename(file_name, windows_safe=False):
     """Cleanup file name from special characters.
 
     Args:
@@ -851,10 +666,13 @@ def cleanup_filename(file_name):
         >>> cleanup_filename('Perforations 1/8" (New)')
         "Perforations 18 (New).txt"
     """
-    return re.sub(r'[^\w_.() -#]|["]', '', file_name)
+    if windows_safe:
+        return re.sub(r'[\/:*?"<>|]', '', file_name)
+    else:
+        return re.sub(r'[^\w_.() -#]|["]', '', file_name)
 
 
-def _inc_or_dec_string(str_id, shift):
+def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
     """Increment or decrement identifier.
 
     Args:
@@ -868,54 +686,94 @@ def _inc_or_dec_string(str_id, shift):
         >>> _inc_or_dec_string('A319z')
         'A320a'
     """
+    # if no shift, return given string
+    if shift == 0:
+        return str_id
+
+    # otherwise lets process the shift
     next_str = ""
     index = len(str_id) - 1
     carry = shift
 
     while index >= 0:
-        if str_id[index].isalpha():
-            if str_id[index].islower():
-                reset_a = 'a'
-                reset_z = 'z'
-            else:
-                reset_a = 'A'
-                reset_z = 'Z'
+        # pick chars from right
+        # A1.101a <--
+        this_char = str_id[index]
 
-            curr_digit = (ord(str_id[index]) + carry)
-            if curr_digit < ord(reset_a):
-                curr_digit = ord(reset_z) - ((ord(reset_a) - curr_digit) - 1)
-                carry = shift
-            elif curr_digit > ord(reset_z):
-                curr_digit = ord(reset_a) + ((curr_digit - ord(reset_z)) - 1)
-                carry = shift
-            else:
-                carry = 0
-
-            curr_digit = chr(curr_digit)
-            next_str += curr_digit
-
-        elif str_id[index].isdigit():
-
-            curr_digit = int(str_id[index]) + carry
-            if curr_digit > 9:
-                curr_digit = 0 + ((curr_digit - 9)-1)
-                carry = shift
-            elif curr_digit < 0:
-                curr_digit = 9 - ((0 - curr_digit)-1)
-                carry = shift
-            else:
-                carry = 0
-            next_str += safe_strtype(curr_digit)
-
+        # determine character range (# of chars, starting index)
+        if this_char.isdigit():
+            char_range = ('0', '9')
+        elif this_char.isalpha():
+            # if this_char.isupper()
+            char_range = ('A', 'Z')
+            if this_char.islower():
+                char_range = ('a', 'z')
         else:
-            next_str += str_id[index]
+            next_str += this_char
+            index -= 1
+            continue
 
+        # get character range properties
+        direction = int(carry / abs(carry)) if carry != 0 else 1
+        start_char, end_char = \
+            char_range if direction > 0 else char_range[::-1]
+        char_steps = abs(ord(end_char) - ord(start_char)) + 1
+        # calculate offset
+
+        # positive carry -> start_char=0    end_char=9
+        # +----------++        ++          +  char_steps
+        # +--------+                          dist
+        #          +---------------+          carry (abs)
+        # 01234567[8]9012345678901[2]3456789
+        # ----------------------+==+          offset
+
+        # negative carry -> start_char=9    end_char=0
+        # +----------++        ++          +  char_steps
+        # +-------+                           dist
+        #         +---------------+           carry (abs)
+        # 9876543[2]1098765432109[8]76543210
+        # ----------------------+=+           offset
+
+        dist = abs(ord(this_char) - ord(start_char))
+        offset = (dist + abs(carry)) % char_steps
+        next_char = chr(ord(start_char) + (offset * direction))
+        next_str += next_char
+        carry = int((dist + abs(carry)) / char_steps) * direction
+        if logger:
+            logger.debug(
+                '\"{}\" index={} start_char=\"{}\" end_char=\"{}\" '
+                'next_carry={} direction={} dist={} offset={} next_char=\"{}\"'
+                .format(
+                    this_char,
+                    index,
+                    start_char,
+                    end_char,
+                    carry,
+                    direction,
+                    dist,
+                    offset,
+                    next_char))
         index -= 1
+        # refit the final value
+        # 009 --> 9
+        # ZZA --> ZA
+        if refit and index == -1:
+            if carry > 0:
+                str_id = start_char + str_id
+                if start_char.isalpha():
+                    carry -= 1
+                index = 0
+            elif direction == -1:
+                if next_str.endswith(start_char):
+                    next_str = next_str[:-1]
+                else:
+                    while next_str.endswith(end_char):
+                        next_str = next_str[:-1]
 
     return next_str[::-1]
 
 
-def increment_str(input_str, step):
+def increment_str(input_str, step=1, expand=False):
     """Incremenet identifier.
 
     Args:
@@ -929,10 +787,10 @@ def increment_str(input_str, step):
         >>> increment_str('A319z')
         'A320a'
     """
-    return _inc_or_dec_string(input_str, abs(step))
+    return _inc_or_dec_string(input_str, abs(step), refit=expand)
 
 
-def decrement_str(input_str, step):
+def decrement_str(input_str, step=1, shrink=False):
     """Decrement identifier.
 
     Args:
@@ -946,7 +804,30 @@ def decrement_str(input_str, step):
         >>> decrement_str('A310a')
         'A309z'
     """
-    return _inc_or_dec_string(input_str, -abs(step))
+    return _inc_or_dec_string(input_str, -abs(step), refit=shrink)
+
+
+def extend_counter(input_str, upper=True, use_zero=False):
+    """Add a new level to identifier. e.g. A310 -> A310A
+
+    Args:
+        input_str (str): identifier e.g. A310
+        upper (bool): use UPPERCASE characters for extension
+        use_zero (bool): start from 0 for numeric extension
+
+    Returns:
+        str: extended identifier
+
+    Example:
+        >>> extend_counter('A310')
+        'A310A'
+        >>> extend_counter('A310A', use_zero=True)
+        'A310A0'
+    """
+    if input_str[-1].isdigit():
+        return input_str + ("A" if upper else "a")
+    else:
+        return input_str + ("0" if use_zero else "1")
 
 
 def filter_null_items(src_list):
@@ -1361,17 +1242,28 @@ def is_box_visible_on_screens(left, top, width, height):
     return False
 
 
-def fuzzy_search_ratio(target_string, sfilter):
+def fuzzy_search_ratio(target_string, sfilter, regex=False):
     """Match target string against the filter and return a match ratio.
 
     Args:
         target_string (str): target string
         sfilter (str): search term
+        regex (bool): treat the sfilter as regular expression pattern
 
     Returns:
         int: integer between 0 to 100, with 100 being the exact match
     """
     tstring = target_string
+
+    # process regex here. It's a yes no situation (100 or 0)
+    if regex:
+        try:
+            if re.search(sfilter, tstring):
+                return 100
+        except Exception:
+            pass
+        return 0
+
     # 100 for identical matches
     if sfilter == tstring:
         return 100
@@ -1458,3 +1350,52 @@ def kill_tasks(task_name):
         >>> kill_tasks('Revit.exe')
     """
     os.system("taskkill /f /im %s" % task_name)
+
+
+def int2hex_long(number):
+    """Integer to hexadecimal string."""
+    # python 2 fix of addin 'L' to long integers
+    return hex(number).replace('L', '')
+
+
+def hex2int_long(hex_string):
+    """Hexadecimal string to Integer."""
+    # python 2 fix of addin 'L' to long integers
+    hex_string.replace('L', '')
+    return int(hex_string, 16)
+
+
+def split_words(input_string):
+    """Splits given string by uppercase characters
+
+    Args:
+        input_string (str): input string
+
+    Returns:
+        list[str]: split string
+
+    Example:
+        >>> split_words("UIApplication_ApplicationClosing")
+        ... ['UIApplication', 'Application', 'Closing']
+    """
+    parts = []
+    part = ""
+    for c in input_string:
+        if c.isalpha():
+            if c.isupper() and part and part[-1].islower():
+                if part:
+                    parts.append(part.strip())
+                part = c
+            else:
+                part += c
+    parts.append(part)
+    return parts
+
+
+def get_paper_sizes():
+    """Get paper sizes defined on this system
+
+    Returns:
+        list[]: list of papersize instances
+    """
+    return list(framework.Drawing.Printing.PrinterSettings().PaperSizes)

@@ -1,0 +1,4 @@
+tooltip: Opens RegExr website that is used to create and test regular expressions
+author: "{{author}}"
+hyperlink: "http://regexr.com/"
+context: zero-doc

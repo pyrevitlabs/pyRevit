@@ -1,13 +1,13 @@
 from pyrevit.output import charts
 from pyrevit import script
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 output = script.get_output()
 
 
-output.set_width(600)
+output.set_width(900)
 
 
 test1_types = [charts.LINE_CHART,
@@ -23,7 +23,7 @@ test4_types = [charts.PIE_CHART,
 
 
 def get_test_chart(chart_type):
-    chart = output.make_chart()
+    chart = output.make_chart(version='2.8.0')
     chart.type = chart_type
     # chart.set_style('height:150px')
 

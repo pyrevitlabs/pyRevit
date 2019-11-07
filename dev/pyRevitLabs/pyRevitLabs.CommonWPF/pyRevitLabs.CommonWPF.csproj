@@ -62,6 +62,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\pyRevitCLI\Properties\AssemblyShared.cs">
+      <Link>Properties\AssemblyShared.cs</Link>
+    </Compile>
     <Compile Include="Convertors\BitmapSourceConverter.cs" />
     <Compile Include="Convertors\BitmapToImageSourceConverter.cs" />
     <Compile Include="Windows\AppWindow.cs" />

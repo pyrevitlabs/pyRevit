@@ -1,8 +1,7 @@
 """Base module for pyRevit config parsing."""
 import json
 import codecs
-import ConfigParser
-from ConfigParser import NoOptionError, NoSectionError
+from pyrevit.compat import configparser
 
 from pyrevit import PyRevitException, PyRevitIOError
 from pyrevit import coreutils
@@ -60,7 +59,7 @@ class PyRevitConfigSectionParser(object):
                         return json.loads(value)  #pylint: disable=W0123
             except Exception:
                 return value
-        except (NoOptionError, NoSectionError):
+        except (configparser.NoOptionError, configparser.NoSectionError):
             raise AttributeError('Parameter does not exist in config file: {}'
                                  .format(param_name))
 
@@ -143,7 +142,7 @@ class PyRevitConfigParser(object):
     """Config parser object. Handle config sections and io."""
     def __init__(self, cfg_file_path=None):
         self._cfg_file_path = cfg_file_path
-        self._parser = ConfigParser.ConfigParser()
+        self._parser = configparser.ConfigParser()
         if self._cfg_file_path:
             try:
                 with codecs.open(self._cfg_file_path, 'r', 'utf-8') as cfg_file:
@@ -161,7 +160,9 @@ class PyRevitConfigParser(object):
             # build a section parser object and return
             return PyRevitConfigSectionParser(self._parser, section_name)
         else:
-            raise AttributeError('Section does not exist in config file.')
+            raise AttributeError(
+                'Section \"{}\" does not exist in config file.'
+                .format(section_name))
 
     def get_config_file_hash(self):
         """Get calculated unique hash for this config."""

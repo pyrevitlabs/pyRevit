@@ -10,7 +10,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 slogger = script.get_logger()
@@ -18,7 +18,7 @@ slogger = script.get_logger()
 
 log_entry_parser = re.compile('(\d{4}-\d{2}-\d{2})\s'
                               '{1}(\d{2}:\d{2}:\d{2},\d{3})\s'
-                              '{1}(.*)\:\s'
+                              '{1}(.*)\s'
                               '{1}\[(.*?)\]\s'
                               '{1}(.+)')
 
@@ -164,8 +164,8 @@ class LogViewerWindow(forms.WPFWindow):
                         prev_entry.message += log_entry
                         log_file_line += 1
         except Exception as read_err:
-            logger.error('Error reading log file: {} | {}'
-                         .format(file_path, read_err))
+            slogger.error('Error reading log file: {} | {}'
+                          .format(file_path, read_err))
 
         return entry_list
 

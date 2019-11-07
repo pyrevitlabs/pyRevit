@@ -1,8 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
-  <Costura>
-    <Unmanaged64Assemblies>
-      git2-572e4d8
-    </Unmanaged64Assemblies>
-  </Costura>
-</Weavers>

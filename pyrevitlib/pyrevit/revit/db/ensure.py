@@ -63,7 +63,7 @@ def ensure_family(family_name, family_file, doc=None):
 def ensure_element_ids(mixed_list):
     element_id_list = []
 
-    if not isinstance(mixed_list, list):
+    if not hasattr(mixed_list, '__iter__'):
         mixed_list = [mixed_list]
 
     for item in mixed_list:
