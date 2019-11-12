@@ -1,42 +1,42 @@
-"""
-Get a total count and types of In Place Family in the current document.
+"""Get a total count and types of In Place Family in the current document.
+
 Copyright (c) 2019 Jean-Marc Couffin
 https://github.com/jmcouffin
---------------------------------------------------------
-PyRevit Notice:
-Copyright (c) 2014-2019 Ehsan Iran-Nejad
-pyRevit: repository at https://github.com/eirannejad/pyRevit
 """
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+from pyrevit import revit, DB
+from pyrevit import script
 
-__title__ = 'Get In Place Family count'
+
 __author__ = 'Jean-Marc Couffin'
 __contact__ = 'https://github.com/jmcouffin'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = 'Get a total count and types of In Place Family in the current document.'
 
 
-from pyrevit.framework import List
-from pyrevit import revit, DB
+output = script.get_output()
 
-famInstE = DB.FilteredElementCollector(revit.doc)\
-             .OfClass(DB.FamilyInstance)\
-             .WhereElementIsNotElementType()\
-             .ToElements()
-             
-famInstInPlace = [e for e in famInstE if e.Symbol.Family.IsInPlace]
 
-print('In Place Families count : {0}'.format(len(list(famInstInPlace))))
+familyinstance_collector = DB.FilteredElementCollector(revit.doc)\
+                             .OfClass(DB.FamilyInstance)\
+                             .WhereElementIsNotElementType()\
+                             .ToElements()
 
-elist = []
+inplace_families = [
+    x for x in familyinstance_collector
+    if x.Symbol and x.Symbol.Family and x.Symbol.Family.IsInPlace
+    ]
+
+print('Found {} in-place families'.format(len(inplace_families)))
 
 print('\nCATEGORY & FAMILY NAME')
-
-for e in famInstInPlace:
-    ptcategory = revit.doc.GetElement(revit.doc.GetElement(e.Id).GetTypeId()).Category.Name
-    ename = e.Symbol.Family.Name
-    l = ptcategory +' | '+ ename
-    elist.append(l)
-    
-a = sorted(elist)
-print((str('\n'.join(a))))
-
+report = []
+for inplace_family in inplace_families:
+    inplace_family_type = revit.doc.GetElement(inplace_family.GetTypeId())
+    if inplace_family_type:
+        category_name = inplace_family_type.Category.Name
+        family_name = inplace_family.Symbol.Family.Name
+        print(
+            '{} category:\"{}\"  name:\"{}\"'.format(
+                output.linkify(inplace_family.Id),
+                category_name,
+                family_name
+            ))
