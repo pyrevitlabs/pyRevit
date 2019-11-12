@@ -19,6 +19,7 @@ output = script.get_output()
 DEFAULT_LOCAL_KEY = applocales.DEFAULT_LOCALE.locale_codes[0]
 DEFAULT_BUNDLE_FILENAME = 'bundle.yaml'
 
+
 def localize_property(mdata, prop_name, default_key):
     value = mdata.get(prop_name, {})
     if isinstance(value, str):
@@ -26,6 +27,11 @@ def localize_property(mdata, prop_name, default_key):
     else:
         mdata[prop_name] = value
     return mdata
+
+
+def get_prop_from_comp(prop_name, bcomp):
+    if prop_name == 'title':
+        return getattr(bcomp, 'ui_title')
 
 
 def update_bundle_property(bdata, bcomp, prop_name):
@@ -40,7 +46,7 @@ def update_bundle_property(bdata, bcomp, prop_name):
             meta_file = op.join(bcomp.directory, DEFAULT_BUNDLE_FILENAME)
             yaml.dump_dict({
                 prop_name: {
-                    DEFAULT_LOCAL_KEY: bcomp.name
+                    DEFAULT_LOCAL_KEY: get_prop_from_comp(prop_name, bcomp)
                 }}, meta_file)
 
         meta = yaml.load_as_dict(meta_file)
@@ -70,7 +76,7 @@ if not csv_file:
     script.exit()
 
 # load, parse and prepare the bundle local data
-bundle_local_data = {}
+title_locales_data = {}
 csv_data = script.load_csv(csv_file)
 # translate language names in csv header to language codes
 locale_code_fields = []
@@ -88,11 +94,16 @@ for csv_record in csv_data[1:]:
     locales = {}
     for field_idx, field_value in enumerate(csv_record[1:]):
         locales[locale_code_fields[field_idx]] = field_value
-    bundle_local_data[name] = locales
+    title_locales_data[name] = locales
 
-if bundle_local_data:
-    for ui_ext in extensionmgr.get_installed_ui_extensions():
+if title_locales_data:
+    selected_extensions = forms.SelectFromList.show(
+        extensionmgr.get_installed_ui_extensions(),
+        title='Select Extention',
+        multiselect=True
+    )
+    for ui_ext in selected_extensions:
         print('updating bundle locale data for ext \"%s\"' % ui_ext.name)
-        update_bundle_property(bundle_local_data, ui_ext, 'title')
+        update_bundle_property(title_locales_data, ui_ext, 'title')
 
 print('done...')
