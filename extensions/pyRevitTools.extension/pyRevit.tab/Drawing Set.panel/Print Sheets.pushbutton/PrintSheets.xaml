@@ -11,6 +11,7 @@
 
         <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}">
             <Setter Property="ToolTip" Value="{Binding tooltip}"/>
+            <Setter Property="ContextMenu" Value="{DynamicResource ItemContextMenu}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding printable}" Value="False">
                     <Setter Property="Foreground" Value="#bdbdbd" />
@@ -217,11 +218,12 @@
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling"
                   SelectionChanged="sheet_selection_changed">
-            <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell" >
-                    <Setter Property="BorderThickness" Value="0"/>
-                </Style>
-            </DataGrid.CellStyle>
+            <DataGrid.Resources>
+                <ContextMenu x:Key="ItemContextMenu">
+                    <MenuItem  Header="Copy Sheet File Name(s)" Click="copy_filenames" />
+                </ContextMenu>
+            </DataGrid.Resources>
+
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Print Index" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>

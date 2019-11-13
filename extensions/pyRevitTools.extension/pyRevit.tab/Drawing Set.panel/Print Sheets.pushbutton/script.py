@@ -946,7 +946,9 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _update_index_slider(self):
         index_digits = \
-            int(len(str(len(self._scheduled_sheets) + self.index_start)))
+            coreutils.get_integer_length(
+                len(self._scheduled_sheets) + self.index_start
+                )
         self.index_slider.Minimum = max([index_digits, 2])
         self.index_slider.Maximum = self.index_slider.Minimum + 3
 
@@ -1079,6 +1081,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.namingformat_cb.ItemsSource = editfmt_wnd.naming_formats
         self.namingformat_cb.SelectedItem = editfmt_wnd.selected_naming_format
 
+    def copy_filenames(self, sender, args):
+        if self.selected_sheets:
+            filenames = [x.print_filename for x in self.selected_sheets]
+            script.clipboard_copy('\n'.join(filenames))
+
     def print_sheets(self, sender, args):
         if self.sheet_list:
             selected_only = False
@@ -1123,6 +1130,10 @@ def cleanup_sheetnumbers(doc):
     with revit.Transaction('Cleanup Sheet Numbers', doc=doc):
         for sheet in sheets:
             sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
+
+
+# verify model is printable
+forms.check_modeldoc(exitscript=True)
 
 # TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602
