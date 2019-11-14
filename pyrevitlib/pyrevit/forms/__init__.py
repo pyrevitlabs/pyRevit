@@ -1530,18 +1530,21 @@ def select_revisions(title='Select Revision',
 
     if filterfunc:
         revisions = filter(filterfunc, revisions)
+    
+    if revisions:
+        # ask user for revisions
+        selected_revs = SelectFromList.show(
+            [RevisionOption(x) for x in revisions],
+            title=title,
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True
+            )
 
-    # ask user for revisions
-    selected_revs = SelectFromList.show(
-        [RevisionOption(x) for x in revisions],
-        title=title,
-        button_name=button_name,
-        width=width,
-        multiselect=multiple,
-        checked_only=True
-        )
-
-    return selected_revs
+        return selected_revs
+    else:
+        inform_no_elements_found('revisions', filterfunc)
 
 
 def select_sheets(title='Select Sheets',
@@ -1583,14 +1586,14 @@ def select_sheets(title='Select Sheets',
     if use_selection:
         current_selected_sheets = []
         current_selected_sheets = revit.get_selection().include(DB.ViewSheet)
+        if filterfunc:
+            current_selected_sheets = \
+                filter(filterfunc, current_selected_sheets)
+        if not include_placeholder:
+            current_selected_sheets = \
+                [x for x in current_selected_sheets if not x.IsPlaceholder]
         if current_selected_sheets \
                 and ask_to_use_selected("sheets"):
-            if filterfunc:
-                current_selected_sheets = \
-                    filter(filterfunc, current_selected_sheets)
-            if not include_placeholder:
-                current_selected_sheets = \
-                    [x for x in current_selected_sheets if not x.IsPlaceholder]
             return current_selected_sheets
 
     all_ops = {}
@@ -1604,34 +1607,37 @@ def select_sheets(title='Select Sheets',
 
     if not include_placeholder:
         all_sheets = [x for x in all_sheets if not x.IsPlaceholder]
+    # warn if no suitable sheets found
+    if all_sheets:
+        all_sheets_ops = sorted([SheetOption(x) for x in all_sheets],
+                                key=lambda x: x.number)
+        all_ops['All Sheets'] = all_sheets_ops
 
-    all_sheets_ops = sorted([SheetOption(x) for x in all_sheets],
-                            key=lambda x: x.number)
-    all_ops['All Sheets'] = all_sheets_ops
+        sheetsets = revit.query.get_sheet_sets(doc)
+        for sheetset in sheetsets:
+            sheetset_sheets = \
+                [x for x in sheetset.Views if isinstance(x, DB.ViewSheet)]
+            if filterfunc:
+                sheetset_sheets = filter(filterfunc, sheetset_sheets)
+            sheetset_ops = sorted([SheetOption(x) for x in sheetset_sheets],
+                                key=lambda x: x.number)
+            all_ops[sheetset.Name] = sheetset_ops
 
-    sheetsets = revit.query.get_sheet_sets(doc)
-    for sheetset in sheetsets:
-        sheetset_sheets = \
-            [x for x in sheetset.Views if isinstance(x, DB.ViewSheet)]
-        if filterfunc:
-            sheetset_sheets = filter(filterfunc, sheetset_sheets)
-        sheetset_ops = sorted([SheetOption(x) for x in sheetset_sheets],
-                              key=lambda x: x.number)
-        all_ops[sheetset.Name] = sheetset_ops
+        # ask user for multiple sheets
+        selected_sheets = SelectFromList.show(
+            all_ops,
+            title=title,
+            group_selector_title='Sheet Sets:',
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True,
+            default_group='All Sheets'
+            )
 
-    # ask user for multiple sheets
-    selected_sheets = SelectFromList.show(
-        all_ops,
-        title=title,
-        group_selector_title='Sheet Sets:',
-        button_name=button_name,
-        width=width,
-        multiselect=multiple,
-        checked_only=True,
-        default_group='All Sheets'
-        )
-
-    return selected_sheets
+        return selected_sheets
+    else:
+        inform_no_elements_found('sheets', filterfunc)
 
 
 def select_views(title='Select Views',
@@ -1669,29 +1675,31 @@ def select_views(title='Select Views',
     if use_selection:
         current_selected_views = []
         current_selected_views = revit.get_selection().include(DB.View)
+        if filterfunc:
+            current_selected_views = \
+                filter(filterfunc, current_selected_views)
         if current_selected_views \
                 and ask_to_use_selected("views"):
-            if filterfunc:
-                current_selected_views = \
-                    filter(filterfunc, current_selected_views)
             return current_selected_views
 
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
         all_graphviews = filter(filterfunc, all_graphviews)
+    if all_graphviews:
+        selected_views = SelectFromList.show(
+            sorted([ViewOption(x) for x in all_graphviews],
+                key=lambda x: x.name),
+            title=title,
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True
+            )
 
-    selected_views = SelectFromList.show(
-        sorted([ViewOption(x) for x in all_graphviews],
-               key=lambda x: x.name),
-        title=title,
-        button_name=button_name,
-        width=width,
-        multiselect=multiple,
-        checked_only=True
-        )
-
-    return selected_views
+        return selected_views
+    else:
+        inform_no_elements_found('views', filterfunc)
 
 
 def select_levels(title='Select Levels',
@@ -1727,13 +1735,12 @@ def select_levels(title='Select Levels',
     doc = doc or HOST_APP.doc
 
     if use_selection:
-        current_selected_levels = []
         current_selected_levels = revit.get_selection().include(DB.Level)
+        if filterfunc:
+            current_selected_levels = \
+                filter(filterfunc, current_selected_levels)
         if current_selected_levels \
                 and ask_to_use_selected("levels"):
-            if filterfunc:
-                current_selected_levels = \
-                    filter(filterfunc, current_selected_levels)
             return current_selected_levels
 
     all_levels = \
@@ -1742,18 +1749,19 @@ def select_levels(title='Select Levels',
 
     if filterfunc:
         all_levels = filter(filterfunc, all_levels)
-
-    selected_levels = SelectFromList.show(
-        sorted([LevelOption(x) for x in all_levels],
-               key=lambda x: x.Elevation),
-        title=title,
-        button_name=button_name,
-        width=width,
-        multiselect=multiple,
-        checked_only=True,
-        )
-    return selected_levels
-
+    if all_levels:
+        selected_levels = SelectFromList.show(
+            sorted([LevelOption(x) for x in all_levels],
+                key=lambda x: x.Elevation),
+            title=title,
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True,
+            )
+        return selected_levels
+    else:
+        inform_no_elements_found('levels', filterfunc)
 
 def select_viewtemplates(title='Select View Templates',
                          button_name='Select',
@@ -1788,18 +1796,20 @@ def select_viewtemplates(title='Select View Templates',
 
     if filterfunc:
         all_viewtemplates = filter(filterfunc, all_viewtemplates)
+    if all_viewtemplates:
+        selected_viewtemplates = SelectFromList.show(
+            sorted([ViewOption(x) for x in all_viewtemplates],
+                key=lambda x: x.name),
+            title=title,
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True
+            )
 
-    selected_viewtemplates = SelectFromList.show(
-        sorted([ViewOption(x) for x in all_viewtemplates],
-               key=lambda x: x.name),
-        title=title,
-        button_name=button_name,
-        width=width,
-        multiselect=multiple,
-        checked_only=True
-        )
-
-    return selected_viewtemplates
+        return selected_viewtemplates
+    else:
+        inform_no_elements_found('view templates', filterfunc)
 
 
 def select_schedules(title='Select Schedules',
@@ -1835,20 +1845,21 @@ def select_schedules(title='Select Schedules',
 
     if filterfunc:
         all_schedules = filter(filterfunc, all_schedules)
+    if all_schedules:
+        selected_schedules = \
+            SelectFromList.show(
+                sorted([ViewOption(x) for x in all_schedules],
+                    key=lambda x: x.name),
+                title=title,
+                button_name=button_name,
+                width=width,
+                multiselect=multiple,
+                checked_only=True
+            )
 
-    selected_schedules = \
-        SelectFromList.show(
-            sorted([ViewOption(x) for x in all_schedules],
-                   key=lambda x: x.name),
-            title=title,
-            button_name=button_name,
-            width=width,
-            multiselect=multiple,
-            checked_only=True
-        )
-
-    return selected_schedules
-
+        return selected_schedules
+    else:
+        inform_no_elements_found('schedules', filterfunc)
 
 def select_open_docs(title='Select Open Documents',
                      button_name='OK',
@@ -1929,22 +1940,24 @@ def select_titleblocks(title='Select Titleblock',
                     .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
                     .WhereElementIsElementType()\
                     .ToElements()
-
-    tblock_dict = {'{}: {}'.format(tb.FamilyName,
-                                   revit.query.get_name(tb)): tb.Id
-                   for tb in titleblocks}
-    tblock_dict[no_tb_option] = DB.ElementId.InvalidElementId
-    selected_titleblocks = SelectFromList.show(sorted(tblock_dict.keys()),
-                                               title=title,
-                                               button_name=button_name,
-                                               width=width,
-                                               multiselect=multiple,
-                                               filterfunc=filterfunc)
-    if selected_titleblocks:
-        if multiple:
-            return [tblock_dict[x] for x in selected_titleblocks]
-        else:
-            return tblock_dict[selected_titleblocks]
+    if titleblocks:
+        tblock_dict = {'{}: {}'.format(tb.FamilyName,
+                                       revit.query.get_name(tb)): tb.Id
+                       for tb in titleblocks}
+        tblock_dict[no_tb_option] = DB.ElementId.InvalidElementId
+        selected_titleblocks = SelectFromList.show(sorted(tblock_dict.keys()),
+                                                   title=title,
+                                                   button_name=button_name,
+                                                   width=width,
+                                                   multiselect=multiple,
+                                                   filterfunc=filterfunc)
+        if selected_titleblocks:
+            if multiple:
+                return [tblock_dict[x] for x in selected_titleblocks]
+            else:
+                return tblock_dict[selected_titleblocks]
+    else:
+        inform_no_elements_found('titleblocks')
 
 
 def select_swatch(title='Select Color Swatch', button_name='Select'):
@@ -2080,20 +2093,23 @@ def select_parameter(src_element,
 
     if filterfunc:
         param_defs = filter(filterfunc, param_defs)
+    if param_defs:
+        itemplate = utils.load_ctrl_template(
+            os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
+            )
+        selected_params = SelectFromList.show(
+            param_defs,
+            title=title,
+            button_name=button_name,
+            width=450,
+            multiselect=multiple,
+            item_template=itemplate
+            )
 
-    itemplate = utils.load_ctrl_template(
-        os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
-        )
-    selected_params = SelectFromList.show(
-        param_defs,
-        title=title,
-        button_name=button_name,
-        width=450,
-        multiselect=multiple,
-        item_template=itemplate
-        )
+        return selected_params
+    else:
+        inform_no_elements_found('parameters', filterfunc)
 
-    return selected_params
 
 
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
@@ -2657,6 +2673,17 @@ def ask_to_use_selected(type_name):
     return alert("You currently have %s selected. "
                  "Do you want to use them?" % type_name.lower(),
                  yes=True, no=True)
+
+
+def inform_no_elements_found(type_name, is_filtered=False, exitscript=False):
+    """Warn user if no elements were found (e.g. 'No suitable views found')
+
+    Args:
+        type_name (str): Element type of expected selected elements
+        is_filtered (bool): adds 'suitable' word
+    """
+    alert('No {}{} found'.format('suitable ' if is_filtered else '', type_name),
+          exitscript=exitscript)
 
 
 def inform_wip():
