@@ -1,3 +1,4 @@
+#pylint: disable=import-error,invalid-name,attribute-defined-outside-init
 import os
 import os.path as op
 import pickle
@@ -7,7 +8,6 @@ from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
-
 
 __doc__ = 'Copies the state of desired parameter of the active'\
           ' view to memory. e.g. Visibility Graphics settings or'\
@@ -27,29 +27,8 @@ class BasePoint:
     def __init__(self):
         self.x = 0
         self.y = 0
+        self.z = 0
 
-
-class BBox:
-    def __init__(self):
-        self.minx = 0
-        self.miny = 0
-        self.minz = 0
-        self.maxx = 0
-        self.maxy = 0
-        self.maxz = 0
-
-
-class ViewOrient:
-    def __init__(self):
-        self.eyex = 0
-        self.eyey = 0
-        self.eyez = 0
-        self.forwardx = 0
-        self.forwardy = 0
-        self.forwardz = 0
-        self.upx = 0
-        self.upy = 0
-        self.upz = 0
 
 
 class TransformationMatrix:
@@ -92,19 +71,13 @@ if selected_option == 'View Zoom/Pan State':
 
     av = revit.uidoc.GetOpenUIViews()[0]
     cornerlist = av.GetZoomCorners()
-
-    vc1 = cornerlist[0]
-    vc2 = cornerlist[1]
-    p1 = BasePoint()
-    p2 = BasePoint()
-    p1.x = vc1.X
-    p1.y = vc1.Y
-    p2.x = vc2.X
-    p2.y = vc2.Y
-
     f = open(datafile, 'w')
-    pickle.dump(p1, f)
-    pickle.dump(p2, f)
+    pickle.dump(revit.serializable.serialize_list(cornerlist), f)
+    # dump ViewOrientation3D
+    if isinstance(revit.active_view, DB.View3D):
+        orientation = revit.active_view.GetOrientation()
+        pickle.dump(revit.serializable.ViewOrientation3D(orientation), f)
+
     f.close()
 
 elif selected_option == '3D Section Box State':
@@ -117,31 +90,11 @@ elif selected_option == '3D Section Box State':
     avui = revit.uidoc.GetOpenUIViews()[0]
 
     if isinstance(av, DB.View3D):
-        sb = av.GetSectionBox()
-        viewOrientation = av.GetOrientation()
-
-        sbox = BBox()
-        sbox.minx = sb.Min.X
-        sbox.miny = sb.Min.Y
-        sbox.minz = sb.Min.Z
-        sbox.maxx = sb.Max.X
-        sbox.maxy = sb.Max.Y
-        sbox.maxz = sb.Max.Z
-
-        vo = ViewOrient()
-        vo.eyex = viewOrientation.EyePosition.X
-        vo.eyey = viewOrientation.EyePosition.Y
-        vo.eyez = viewOrientation.EyePosition.Z
-        vo.forwardx = viewOrientation.ForwardDirection.X
-        vo.forwardy = viewOrientation.ForwardDirection.Y
-        vo.forwardz = viewOrientation.ForwardDirection.Z
-        vo.upx = viewOrientation.UpDirection.X
-        vo.upy = viewOrientation.UpDirection.Y
-        vo.upz = viewOrientation.UpDirection.Z
-
+        section_box = av.GetSectionBox()
+        view_orientation = av.GetOrientation()
         f = open(datafile, 'w')
-        pickle.dump(sbox, f)
-        pickle.dump(vo, f)
+        pickle.dump(revit.serializable.BoundingBoxXYZ(section_box), f)
+        pickle.dump(revit.serializable.ViewOrientation3D(view_orientation), f)
         f.close()
     else:
         forms.alert('You must be on a 3D view to copy Section Box settings.')

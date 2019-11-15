@@ -1,3 +1,4 @@
+#pylint: disable=import-error,invalid-name,attribute-defined-outside-init
 import os
 import os.path as op
 import pickle
@@ -13,42 +14,6 @@ __doc__ = 'Applies the copied state to the active view. '\
           'This works in conjunction with the Copy State tool.'
 
 logger = script.get_logger()
-
-
-class Point:
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-
-
-class BasePoint:
-    def __init__(self):
-        self.x = 0
-        self.y = 0
-
-
-class BBox:
-    def __init__(self):
-        self.minx = 0
-        self.miny = 0
-        self.minz = 0
-        self.maxx = 0
-        self.maxy = 0
-        self.maxz = 0
-
-
-class ViewOrient:
-    def __init__(self):
-        self.eyex = 0
-        self.eyey = 0
-        self.eyez = 0
-        self.forwardx = 0
-        self.forwardy = 0
-        self.forwardz = 0
-        self.upx = 0
-        self.upy = 0
-        self.upz = 0
 
 
 class OriginalIsViewDrafting(Exception):
@@ -92,6 +57,7 @@ selected_switch = \
         )
 
 
+
 if selected_switch == 'View Zoom/Pan State':
     datafile = \
         script.get_document_data_file(file_id='SaveRevitActiveViewZoomState',
@@ -100,15 +66,27 @@ if selected_switch == 'View Zoom/Pan State':
 
     try:
         f = open(datafile, 'r')
-        p2 = pickle.load(f)
-        p1 = pickle.load(f)
-        f.close()
-        vc1 = DB.XYZ(p1.x, p1.y, 0)
-        vc2 = DB.XYZ(p2.x, p2.y, 0)
-        av = revit.uidoc.GetOpenUIViews()[0]
-        av.ZoomAndCenterRectangle(vc1, vc2)
     except Exception:
         logger.error('CAN NOT FIND ZOOM STATE FILE:\n{0}'.format(datafile))
+    else:
+        try:
+            vc1, vc2 = pickle.load(f)
+            view_orientation = None
+            # load ViewOrientation3D
+            if isinstance(revit.active_view, DB.View3D) and \
+                    not revit.active_view.IsLocked:
+                try:
+                    view_orientation = pickle.load(f)
+                except EOFError:
+                    pass
+            f.close()
+
+            if view_orientation and not revit.active_view.IsLocked:
+                revit.active_view.SetOrientation(view_orientation.deserialize())
+            av = revit.uidoc.GetOpenUIViews()[0]
+            av.ZoomAndCenterRectangle(vc1.deserialize(), vc2.deserialize())
+        except Exception as exc:
+            logger.error('ERROR OCCURED:\n{}'.format(exc))
 
 elif selected_switch == '3D Section Box State':
     datafile = \
@@ -118,38 +96,25 @@ elif selected_switch == '3D Section Box State':
 
     try:
         f = open(datafile, 'r')
-        sbox = pickle.load(f)
-        vo = pickle.load(f)
+        section_box = pickle.load(f)
+        view_orientation = pickle.load(f)
         f.close()
-
-        sb = DB.BoundingBoxXYZ()
-        sb.Min = DB.XYZ(sbox.minx, sbox.miny, sbox.minz)
-        sb.Max = DB.XYZ(sbox.maxx, sbox.maxy, sbox.maxz)
-
-        vor = DB.ViewOrientation3D(DB.XYZ(vo.eyex,
-                                          vo.eyey,
-                                          vo.eyez),
-                                   DB.XYZ(vo.upx,
-                                          vo.upy,
-                                          vo.upz),
-                                   DB.XYZ(vo.forwardx,
-                                          vo.forwardy,
-                                          vo.forwardz))
-
+    except Exception:
+        forms.alert('Can not find any section box '
+                    'settings in memory:\n{0}'.format(datafile))
+    else:
         av = revit.active_view
         avui = revit.uidoc.GetOpenUIViews()[0]
         if isinstance(av, DB.View3D):
             with revit.Transaction('Paste Section Box Settings'):
-                av.SetSectionBox(sb)
-                av.SetOrientation(vor)
+                av.SetSectionBox(section_box.deserialize())
+                av.SetOrientation(view_orientation.deserialize())
 
             avui.ZoomToFit()
         else:
             forms.alert('You must be on a 3D view to paste '
                         'Section Box settings.')
-    except Exception:
-        forms.alert('Can not find any section box '
-                    'settings in memory:\n{0}'.format(datafile))
+
 
 elif selected_switch == 'Viewport Placement on Sheet':
     """
