@@ -4,6 +4,7 @@ import os
 import os.path as op
 import pickle as pl
 import clr
+import math
 
 from pyrevit import framework
 from pyrevit import script, revit
@@ -16,9 +17,15 @@ __doc__ = 'Keep views synchronized. This means that as you pan and zoom and '\
           'area without the need to zoom and pan again.\n'\
           'This tool works best when the views are maximized.'
 
-
 SYNC_VIEW_ENV_VAR = 'SYNCVIEWACTIVE'
 
+SUPPORTED_VIEW_TYPES = (
+    DB.ViewPlan,
+    DB.ViewSection,
+    DB.View3D,
+    DB.ViewSheet,
+    DB.ViewDrafting
+)
 
 def get_data_filename(document):
     project_name = op.splitext(op.basename(document.PathName))[0]
@@ -29,72 +36,92 @@ def get_datafile(document):
     data_filename = get_data_filename(document)
     return script.get_instance_data_file(data_filename)
 
+def is_close(a, b, rnd=5):
+    return a == b or int(a*10**rnd) == int(b*10**rnd)
 
 def copyzoomstate(sender, args):
     try:
-        if script.get_envvar(SYNC_VIEW_ENV_VAR):
+        if script.get_envvar(SYNC_VIEW_ENV_VAR) and \
+                isinstance(args.CurrentActiveView, SUPPORTED_VIEW_TYPES):
             event_uidoc = sender.ActiveUIDocument
             event_doc = sender.ActiveUIDocument.Document
             active_ui_views = event_uidoc.GetOpenUIViews()
-            current_ui_view = None
 
+            current_ui_view = None
             for active_ui_view in active_ui_views:
                 if active_ui_view.ViewId == args.CurrentActiveView.Id:
                     current_ui_view = active_ui_view
+            if not current_ui_view:
+                return
 
-            is_view3d = isinstance(args.CurrentActiveView, DB.View3D)
-            is_viewplan = isinstance(args.CurrentActiveView, DB.ViewPlan)
-            if current_ui_view and (is_view3d or is_viewplan):
-                cornerlist = current_ui_view.GetZoomCorners()
+            cornerlist = current_ui_view.GetZoomCorners()
 
-                f = open(get_datafile(event_doc), 'w')
+            f = open(get_datafile(event_doc), 'w')
+            try:
+                pl.dump(type(args.CurrentActiveView).__name__, f)
                 # dump zoom and center
                 pl.dump(revit.serializable.serialize_list(cornerlist), f)
                 # dump ViewOrientation3D
-                if is_view3d:
+                if isinstance(args.CurrentActiveView, DB.View3D):
                     orientation = args.CurrentActiveView.GetOrientation()
                     pl.dump(revit.serializable.ViewOrientation3D(orientation),
                             f)
+                elif isinstance(args.CurrentActiveView, DB.ViewSection):
+                    direction = args.CurrentActiveView.ViewDirection
+                    pl.dump(revit.serializable.XYZ(direction), f)
+            except Exception:
+                pass
+            finally:
                 f.close()
-    except Exception as exc:
+    except Exception:
         pass
-
+    
 
 def applyzoomstate(sender, args):
     try:
-        if script.get_envvar(SYNC_VIEW_ENV_VAR):
+        if script.get_envvar(SYNC_VIEW_ENV_VAR) and \
+                isinstance(args.CurrentActiveView, SUPPORTED_VIEW_TYPES):
             event_uidoc = sender.ActiveUIDocument
             event_doc = sender.ActiveUIDocument.Document
             active_ui_views = event_uidoc.GetOpenUIViews()
+
             current_ui_view = None
             for active_ui_view in active_ui_views:
                 if active_ui_view.ViewId == args.CurrentActiveView.Id:
                     current_ui_view = active_ui_view
-
-            is_view3d = isinstance(args.CurrentActiveView, DB.View3D)
-            is_viewplan = isinstance(args.CurrentActiveView, DB.ViewPlan)
-            if current_ui_view and (is_view3d or is_viewplan):
-                f = open(get_datafile(event_doc), 'r')
+            if not current_ui_view:
+                return
+            f = open(get_datafile(event_doc), 'r')
+            
+            try:
+                view_type_saved = pl.load(f)
+                if view_type_saved != type(args.CurrentActiveView).__name__:
+                    raise Exception()
                 vc1, vc2 = pl.load(f)
-                view_orientation = None
                 # load ViewOrientation3D
-                if is_view3d and not args.CurrentActiveView.IsLocked:
-                    try:
-                        view_orientation = pl.load(f)
-                    except EOFError:
-                        pass
-                f.close()
-                # apply view orientation
-                if view_orientation:
+                if isinstance(args.CurrentActiveView, DB.View3D):
+                    if args.CurrentActiveView.IsLocked:
+                        raise Exception()
+                    view_orientation = pl.load(f)
                     args.CurrentActiveView.SetOrientation(
                         view_orientation.deserialize())
+                elif isinstance(args.CurrentActiveView, DB.ViewSection):
+                    direction = pl.load(f)
+                    angle = direction.deserialize().AngleTo(
+                                args.CurrentActiveView.ViewDirection)
+                    if not is_close(angle, math.pi) and not is_close(angle, 0):
+                        raise Exception()
+
+            except Exception:
+                pass
+            else:
                 # apply zoom and center
-                if (is_viewplan and not view_orientation) or \
-                        (is_view3d and view_orientation):
-                    current_ui_view.ZoomAndCenterRectangle(vc1.deserialize(),
-                                                           vc2.deserialize())
-    except Exception as exc:
+                current_ui_view.ZoomAndCenterRectangle(vc1.deserialize(), vc2.deserialize())
+            finally:
+                f.close()            
+    except Exception:
         pass
+    
 
 
 def togglestate():

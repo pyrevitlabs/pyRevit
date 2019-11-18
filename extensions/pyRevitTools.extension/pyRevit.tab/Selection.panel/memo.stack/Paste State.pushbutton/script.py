@@ -1,7 +1,8 @@
-#pylint: disable=import-error,invalid-name,attribute-defined-outside-init
+# pylint: disable=import-error,invalid-name,attribute-defined-outside-init
 import os
 import os.path as op
 import pickle
+import math
 
 from pyrevit import HOST_APP
 from pyrevit.framework import List
@@ -24,6 +25,10 @@ class OriginalIsViewPlan(Exception):
     pass
 
 
+def is_close(a, b, rnd=5):
+    return a == b or int(a*10**rnd) == int(b*10**rnd)
+
+
 class TransformationMatrix:
     def __init__(self):
         self.sourcemin = None
@@ -40,7 +45,7 @@ def unpickle_line_list(all_cloops_data):
             p1 = DB.XYZ(line[0][0], line[0][1], 0)
             p2 = DB.XYZ(line[1][0], line[1][1], 0)
             curveloop.Append(DB.Line.CreateBound(p1, p2))
-        
+
         all_cloops.append(curveloop)
 
     return all_cloops
@@ -54,8 +59,7 @@ selected_switch = \
          'Visibility Graphics',
          'Crop Region'],
         message='Select property to be applied to current view:'
-        )
-
+    )
 
 
 if selected_switch == 'View Zoom/Pan State':
@@ -70,20 +74,28 @@ if selected_switch == 'View Zoom/Pan State':
         logger.error('CAN NOT FIND ZOOM STATE FILE:\n{0}'.format(datafile))
     else:
         try:
-            vc1, vc2 = pickle.load(f)
-            view_orientation = None
-            # load ViewOrientation3D
-            if isinstance(revit.active_view, DB.View3D) and \
-                    not revit.active_view.IsLocked:
-                try:
-                    view_orientation = pickle.load(f)
-                except EOFError:
-                    pass
-            f.close()
-
-            if view_orientation and not revit.active_view.IsLocked:
-                revit.active_view.SetOrientation(view_orientation.deserialize())
             av = revit.uidoc.GetOpenUIViews()[0]
+            view_type_saved = pickle.load(f)
+            if view_type_saved != type(revit.active_view).__name__:
+                forms.alert('Saved view type is different from active view',
+                            exitscript=True)
+            vc1, vc2 = pickle.load(f)
+            # load ViewOrientation3D
+            if isinstance(revit.active_view, DB.View3D):
+                if revit.active_view.IsLocked:
+                    f.close()
+                    forms.alert('Current view orientation is locked', 
+                                exitscript=True)
+                view_orientation = pickle.load(f)
+                revit.active_view.SetOrientation(view_orientation.deserialize())
+            elif isinstance(revit.active_view, DB.ViewSection):
+                direction = pickle.load(f)
+                angle = direction.deserialize().AngleTo(
+                            revit.active_view.ViewDirection)
+                if not is_close(angle, math.pi) and not is_close(angle, 0):
+                    f.close()
+                    forms.alert("Views are not parallel", exitscript=True)
+            f.close()
             av.ZoomAndCenterRectangle(vc1.deserialize(), vc2.deserialize())
         except Exception as exc:
             logger.error('ERROR OCCURED:\n{}'.format(exc))
@@ -175,7 +187,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
         cboxvisible = selview.CropBoxVisible
         cboxannoparam = selview.get_Parameter(
             DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
-            )
+        )
         cboxannostate = cboxannoparam.AsInteger()
         curviewelements = \
             DB.FilteredElementCollector(revit.doc)\
@@ -206,7 +218,8 @@ elif selected_switch == 'Viewport Placement on Sheet':
             with revit.Transaction('Hiding all 2d elements'):
                 if viewspecificelements:
                     try:
-                        selview.HideElements(List[DB.ElementId](viewspecificelements))
+                        selview.HideElements(
+                            List[DB.ElementId](viewspecificelements))
                     except Exception as e:
                         logger.debug(e)
 
@@ -255,7 +268,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
                     if viewspecificelements:
                         selview.UnhideElements(
                             List[DB.ElementId](viewspecificelements)
-                            )
+                        )
 
     datafile = \
         script.get_document_data_file(file_id='SaveViewportLocation',
@@ -351,7 +364,7 @@ elif selected_switch == 'Visibility Graphics':
         with revit.Transaction('Paste Visibility Graphics'):
             revit.active_view.ApplyViewTemplateParameters(
                 revit.doc.GetElement(DB.ElementId(id))
-                )
+            )
     except Exception:
         logger.error('CAN NOT FIND ANY VISIBILITY GRAPHICS '
                      'SETTINGS IN MEMORY:\n{0}'.format(datafile))

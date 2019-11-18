@@ -15,6 +15,8 @@ __doc__ = 'Copies the state of desired parameter of the active'\
 
 __authors__ = ['Gui Talarico', '{{author}}']
 
+logger = script.get_logger()
+
 
 class Point:
     def __init__(self, x, y, z):
@@ -47,7 +49,7 @@ def make_picklable_list(curve_loops):
             p1 = (rvt_line.GetEndPoint(0).X, rvt_line.GetEndPoint(0).Y)
             p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
             cloop_lines.append((p1, p2))
-        
+
         all_cloops.append(cloop_lines)
     return all_cloops
 
@@ -64,20 +66,35 @@ selected_option = \
 
 
 if selected_option == 'View Zoom/Pan State':
+    SUPPORTED_VIEW_TYPES = (
+        DB.ViewPlan,
+        DB.ViewSection,
+        DB.View3D,
+        DB.ViewSheet,
+        DB.ViewDrafting
+    )
+    if not isinstance(revit.active_view, SUPPORTED_VIEW_TYPES):
+        forms.alert("Type of active view is not supported", exitscript=True)
     datafile = \
         script.get_document_data_file(file_id='SaveRevitActiveViewZoomState',
                                       file_ext='pym',
                                       add_cmd_name=False)
-
+    
     av = revit.uidoc.GetOpenUIViews()[0]
     cornerlist = av.GetZoomCorners()
     f = open(datafile, 'w')
-    pickle.dump(revit.serializable.serialize_list(cornerlist), f)
+    pickle.dump(type(revit.active_view).__name__, f)
+    cornerlist_picklable = revit.serializable.serialize_list(cornerlist)
+    pickle.dump(cornerlist_picklable, f)
+
     # dump ViewOrientation3D
     if isinstance(revit.active_view, DB.View3D):
         orientation = revit.active_view.GetOrientation()
-        pickle.dump(revit.serializable.ViewOrientation3D(orientation), f)
-
+        orientation_picklable = revit.serializable.ViewOrientation3D(orientation)
+        pickle.dump(orientation_picklable, f)
+    elif isinstance(revit.active_view, DB.ViewSection):
+        direction = revit.active_view.ViewDirection
+        pickle.dump(revit.serializable.XYZ(direction), f)
     f.close()
 
 elif selected_option == '3D Section Box State':
