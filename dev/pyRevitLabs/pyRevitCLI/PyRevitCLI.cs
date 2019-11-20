@@ -411,7 +411,6 @@ namespace pyRevitCLI {
                     );
 
                 else if (all("sources")) {
-                    Console.WriteLine("dfsdfsd");
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
 

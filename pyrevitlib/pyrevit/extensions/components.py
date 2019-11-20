@@ -78,10 +78,10 @@ class NoScriptButton(GenericUICommand):
         else:
             mlogger.debug("%s does not specify target assembly::class.", self)
 
-        if not self.assembly:
+        if self.directory and not self.assembly:
             mlogger.error("%s does not specify target assembly.", self)
 
-        if needs_commandclass and not self.command_class:
+        if self.directory and needs_commandclass and not self.command_class:
             mlogger.error("%s does not specify target command class.", self)
 
         mlogger.debug('%s assembly.class: %s.%s',
@@ -152,7 +152,7 @@ class ContentButton(GenericUICommand):
                     exts.CONTENT_POSTFIX,
                     ])
         # requires at least one bundles
-        if not self.script_file:
+        if self.directory and not self.script_file:
             mlogger.error('Command %s: Does not have content file.', self)
             self.script_file = ''
 
@@ -190,7 +190,7 @@ class URLButton(GenericUICommand):
         else:
             mlogger.debug("%s does not specify target assembly::class.", self)
 
-        if not self.target_url:
+        if self.directory and not self.target_url:
             mlogger.error("%s does not specify target url.", self)
 
         mlogger.debug('%s target url: %s', self, self.target_url)

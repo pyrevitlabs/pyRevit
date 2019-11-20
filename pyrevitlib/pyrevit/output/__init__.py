@@ -130,6 +130,10 @@ class PyRevitOutputWindow(object):
             return self.window.OutputUniqueId
 
     @property
+    def is_closed_by_user(self):
+        return self.window.ClosedByUser
+
+    @property
     def debug_mode(self):
         """Set debug mode on output window and stream.
 
