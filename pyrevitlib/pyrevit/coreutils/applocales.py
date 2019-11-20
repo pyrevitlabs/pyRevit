@@ -167,6 +167,10 @@ def get_current_applocale():
     return get_applocale_by_lang_type(HOST_APP.language)
 
 
+def get_host_applocale():
+    return get_applocale_by_lang_type(HOST_APP.language)
+
+
 def get_locale_string(string_dict):
     """Returns the correct string from given dict based on host language
 
