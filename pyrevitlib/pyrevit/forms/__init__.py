@@ -1662,7 +1662,7 @@ def select_sheets(title='Select Sheets',
         title (str, optional): list window title
         button_name (str, optional): list window button caption
         width (int, optional): width of list window
-        multiselect (bool, optional):
+        multiple (bool, optional):
             allow multi-selection (uses check boxes). defaults to True
         filterfunc (function):
             filter function to be applied to context items.
@@ -1682,17 +1682,22 @@ def select_sheets(title='Select Sheets',
     doc = doc or HOST_APP.doc
 
     if use_selection:
-        current_selected_sheets = []
-        current_selected_sheets = revit.get_selection().include(DB.ViewSheet)
+        current_selected_sheets = revit.get_selection() \
+                                       .include(DB.ViewSheet) \
+                                       .elements
+        if filterfunc:
+            current_selected_sheets = \
+                filter(filterfunc, current_selected_sheets)
+        if not include_placeholder:
+            current_selected_sheets = \
+                [x for x in current_selected_sheets if not x.IsPlaceholder]
         if current_selected_sheets \
+                and (multiple or len(current_selected_sheets) == 1) \
                 and ask_to_use_selected("sheets"):
-            if filterfunc:
-                current_selected_sheets = \
-                    filter(filterfunc, current_selected_sheets)
-            if not include_placeholder:
-                current_selected_sheets = \
-                    [x for x in current_selected_sheets if not x.IsPlaceholder]
-            return current_selected_sheets
+            if multiple:
+                return current_selected_sheets 
+            else:
+                return current_selected_sheets[0]
 
     all_ops = {}
     all_sheets = DB.FilteredElementCollector(doc) \
@@ -1748,7 +1753,7 @@ def select_views(title='Select Views',
         title (str, optional): list window title
         button_name (str, optional): list window button caption
         width (int, optional): width of list window
-        multiselect (bool, optional):
+        multiple (bool, optional):
             allow multi-selection (uses check boxes). defaults to True
         filterfunc (function):
             filter function to be applied to context items.
@@ -1768,14 +1773,19 @@ def select_views(title='Select Views',
     doc = doc or HOST_APP.doc
 
     if use_selection:
-        current_selected_views = []
-        current_selected_views = revit.get_selection().include(DB.View)
+        current_selected_views = revit.get_selection() \
+                                      .include(DB.View) \
+                                      .elements
+        if filterfunc:
+            current_selected_views = \
+                filter(filterfunc, current_selected_views)
         if current_selected_views \
+                and (multiple or len(current_selected_views) == 1) \
                 and ask_to_use_selected("views"):
-            if filterfunc:
-                current_selected_views = \
-                    filter(filterfunc, current_selected_views)
-            return current_selected_views
+            if multiple:
+                return current_selected_views
+            else:
+                return current_selected_views[0]
 
     all_graphviews = revit.query.get_all_views(doc=doc)
 
@@ -1808,7 +1818,7 @@ def select_levels(title='Select Levels',
         title (str, optional): list window title
         button_name (str, optional): list window button caption
         width (int, optional): width of list window
-        multiselect (bool, optional):
+        multiple (bool, optional):
             allow multi-selection (uses check boxes). defaults to True
         filterfunc (function):
             filter function to be applied to context items.
@@ -1828,14 +1838,19 @@ def select_levels(title='Select Levels',
     doc = doc or HOST_APP.doc
 
     if use_selection:
-        current_selected_levels = []
-        current_selected_levels = revit.get_selection().include(DB.Level)
+        current_selected_levels = revit.get_selection() \
+                                       .include(DB.Level) \
+                                       .elements
+        if filterfunc:
+            current_selected_levels = \
+                filter(filterfunc, current_selected_levels)
         if current_selected_levels \
+                and (multiple or len(current_selected_levels) == 1) \
                 and ask_to_use_selected("levels"):
-            if filterfunc:
-                current_selected_levels = \
-                    filter(filterfunc, current_selected_levels)
-            return current_selected_levels
+            if multiple:
+                return current_selected_levels
+            else:
+                return current_selected_levels[0]
 
     all_levels = \
         revit.query.get_elements_by_categories(

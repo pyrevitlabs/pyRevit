@@ -25,9 +25,11 @@ all_options.extend(graphic_styles)
 all_options.extend(['Fill Patterns', 'Area Schemes', 'Line Styles'])
 selected_option = \
     forms.CommandSwitchWindow.show(all_options,
-                                   message='Pick type category:')
+                                   message='Pick type category:',
+                                   recognize_access_key=False)
 
 if selected_option:
+    logger.debug(selected_option)
     selection = revit.get_selection()
     if selected_option == 'Fill Patterns':
         fill_patterns = revit.query.get_types_by_class(DB.FillPatternElement,
