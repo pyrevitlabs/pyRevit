@@ -12,12 +12,13 @@ logger = script.get_logger()
 output = script.get_output()
 
 
-def toggle_element_selection_handles(target_view, category_name, state=True):
+def toggle_element_selection_handles(target_view, bicat, state=True):
     """Toggle handles for spatial elements"""
-    with revit.Transaction("Toggle {} handles".format(category_name.lower())):
+    with revit.Transaction("Toggle {} handles".format(str(bicat)[4:].lower())):
         # if view has template, toggle temp VG overrides
         if state:
             target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
+
         rr_cat = revit.query.get_subcategory(category_name, 'Reference')
         try:
             rr_cat.Visible[target_view] = state
@@ -52,24 +53,24 @@ def toggle_element_selection_handles(target_view, category_name, state=True):
 
 class EasilySelectableElements(object):
     """Toggle spatial element handles for easy selection."""
-    def __init__(self, target_view, category_name):
-        self.supported_categories = ["Rooms", "Areas", "Spaces"]
+    def __init__(self, target_view, bicat):
+        self.supported_categories = [DB.BuiltInCategory.OST_Rooms, DB.BuiltInCategory.OST_Areas, DB.BuiltInCategory.OST_MEPSpaces]
         self.target_view = target_view
-        self.category_name = category_name
+        self.bicat = bicat
 
     def __enter__(self):
-        if self.category_name in self.supported_categories:
+        if self.bicat in self.supported_categories:
             toggle_element_selection_handles(
                 self.target_view,
-                self.category_name
+                self.bicat
                 )
         return self
 
     def __exit__(self, exception, exception_value, traceback):
-        if self.category_name in self.supported_categories:
+        if self.bicat in self.supported_categories:
             toggle_element_selection_handles(
                 self.target_view,
-                self.category_name,
+                self.bicat,
                 state=False
                 )
 
@@ -82,7 +83,6 @@ def get_number(target_element):
     """Get target elemnet number (might be from Number or other fields)"""
     if hasattr(target_element, "Number"):
         return target_element.Number
-
     mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
     if mark_param:
         return mark_param.AsString()
@@ -116,9 +116,8 @@ def unmark_renamed_elements(target_view, marked_element_ids):
         target_view.SetElementOverrides(marked_element_id, ogs)
 
 
-def get_elements_dict(category_name):
+def get_elements_dict(builtin_cat):
     """Collect number:id information about target elements."""
-    builtin_cat = revit.query.get_builtincategory(category_name)
     all_elements = \
         revit.query.get_elements_by_categories([builtin_cat])
     return {get_number(x):x.Id for x in all_elements}
@@ -177,23 +176,21 @@ def _unmark_collected(category_name, renumbered_element_ids):
         unmark_renamed_elements(revit.active_view, renumbered_element_ids)
 
 
-def pick_and_renumber(category_name, starting_index):
+def pick_and_renumber(bicat, starting_index):
     """Main renumbering routine for elements of given category."""
-    # cleanup input
-    category_name = "Parking" if category_name == "Parkings" else category_name
-
+    category_name = str(bicat)[4:]
     # all actions under one transaction
     with revit.TransactionGroup("Renumber {}".format(category_name)):
         # make sure target elements are easily selectable
-        with EasilySelectableElements(revit.active_view, category_name):
+        with EasilySelectableElements(revit.active_view, bicat):
             index = starting_index
             # collect existing elements number:id data
-            existing_elements_data = get_elements_dict(category_name)
+            existing_elements_data = get_elements_dict(bicat)
             # list to collect renumbered elements
             renumbered_element_ids = []
             # ask user to pick elements and renumber them
             for picked_element in revit.get_picked_elements_by_category(
-                    category_name,
+                    bicat,
                     message="Select {} in order".format(category_name.lower())):
                 # need nested transactions to push revit to update view
                 # on each renumber task
@@ -213,15 +210,15 @@ def door_by_room_renumber():
     # all actions under one transaction
     with revit.TransactionGroup("Renumber Doors by Room"):
         # collect existing elements number:id data
-        existing_doors_data = get_elements_dict("Doors")
+        existing_doors_data = get_elements_dict(DB.BuiltInCategory.OST_Doors)
         renumbered_door_ids = []
         # make sure target elements are easily selectable
-        with EasilySelectableElements(revit.active_view, "Doors") \
-                and EasilySelectableElements(revit.active_view, "Rooms"):
+        with EasilySelectableElements(revit.active_view, DB.BuiltInCategory.OST_Doors) \
+                and EasilySelectableElements(revit.active_view, DB.BuiltInCategory.OST_Rooms):
             while True:
                 # pick door
                 picked_door = \
-                    revit.pick_element_by_category("Doors",
+                    revit.pick_element_by_category(DB.BuiltInCategory.OST_Doors,
                                                    message="Select a door")
                 if not picked_door:
                     # user cancelled
@@ -233,11 +230,11 @@ def door_by_room_renumber():
                 if all([from_room, to_room]) or not any([from_room, to_room]):
                     # pick room
                     picked_room = \
-                        revit.pick_element_by_category("Rooms",
+                        revit.pick_element_by_category(DB.BuiltInCategory.OST_Rooms,
                                                        message="Select a room")
                     if not picked_room:
                         # user cancelled
-                        return _unmark_collected("Doors", renumbered_door_ids)
+                        return _unmark_collected("Rooms", renumbered_door_ids)
                 else:
                     picked_room = from_room or to_room
 
@@ -281,27 +278,32 @@ def door_by_room_renumber():
 # [X] renumber doors by room
 
 if forms.check_modelview(revit.active_view):
-    options = ["Rooms", "Spaces",
-               "Doors", "Doors by Rooms",
-               "Walls", "Windows", "Parkings"]
+    options = [('Rooms', DB.BuiltInCategory.OST_Rooms), 
+               ('Spaces', DB.BuiltInCategory.OST_MEPSpaces),
+               ('Doors', DB.BuiltInCategory.OST_Doors), 
+               ('Doors by Rooms', (DB.BuiltInCategory.OST_Doors, DB.BuiltInCategory.OST_Rooms)),
+               ('Walls', DB.BuiltInCategory.OST_Walls), 
+               ('Windows', DB.BuiltInCategory.OST_Windows), 
+               ('Parking', DB.BuiltInCategory.OST_Parking)]
     if revit.active_view.ViewType == DB.ViewType.AreaPlan:
-        options.insert(1, "Areas")
+        options.insert(1, ('Areas', DB.BuiltInCategory.OST_Areas))
 
-    selected_category = \
+    selected_category_name = \
         forms.CommandSwitchWindow.show(
-            options,
+            map(lambda o: o[0], options),
             message='Pick element type to renumber:'
         )
 
-    if selected_category:
-        if selected_category == "Doors by Rooms":
+    if selected_category_name:
+        selected_category = filter(lambda o: o[0] == selected_category_name, options)[0][1]
+        if selected_category == (DB.BuiltInCategory.OST_Doors, DB.BuiltInCategory.OST_Rooms):
             with forms.WarningBar(
                 title='Pick Pairs of Door and Room. ESCAPE to end.'):
                 door_by_room_renumber()
         else:
-            starting_number = ask_for_starting_number(selected_category)
+            starting_number = ask_for_starting_number(selected_category_name)
             if starting_number:
                 with forms.WarningBar(
                     title='Pick {} One by One. ESCAPE to end.'.format(
-                        selected_category)):
+                        selected_category_name)):
                     pick_and_renumber(selected_category, starting_number)
