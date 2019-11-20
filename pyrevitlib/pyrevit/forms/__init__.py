@@ -1838,8 +1838,10 @@ def select_levels(title='Select Levels',
             return current_selected_levels
 
     all_levels = \
-        revit.query.get_elements_by_categories([DB.BuiltInCategory.OST_Levels],
-                                             doc=doc)
+        revit.query.get_elements_by_categories(
+            [DB.BuiltInCategory.OST_Levels],
+            doc=doc
+            )
 
     if filterfunc:
         all_levels = filter(filterfunc, all_levels)
