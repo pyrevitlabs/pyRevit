@@ -4,6 +4,7 @@ layout:
   - pyRevitLabs Module Tests
   - Output Window Tests
   - Appdata Module Tests
+  - CoreUtils Module Tests
   - Forms Module Tests
   - Revit Module Tests
   - Script Module Tests
@@ -13,6 +14,8 @@ layout:
   - Test UI Button
   - Test Independent Logging
   - -----
+  - Test XAML
+  - Test Sensors
   - Test Progressbar
   - Test Charts
   - Test D3

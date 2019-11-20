@@ -4,7 +4,7 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
-from pyrevit.framework import System, Windows, Controls, Documents, EventHandler
+from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
@@ -475,8 +475,9 @@ class SettingsWindow(forms.WPFWindow):
             coreutils.open_folder_in_explorer(cur_log_folder)
 
     def update_status_lights(self, status, serverbox, servermsg):
+        """Update given status light by given status"""
         if status and status["status"] == "pass":
-            self.show_element(serverbox)
+            serverbox.Background = self.Resources['pyRevitAccentBrush']
             servermsg.Text = ""
             for check, check_status in status["checks"].items():
                 servermsg.Text += \
@@ -485,35 +486,69 @@ class SettingsWindow(forms.WPFWindow):
                         check_status["version"]
                         )
             return
-        self.hide_element(serverbox)
-        servermsg.Text = ""
+        serverbox.Background = self.Resources['pyRevitDarkBrush']
+        servermsg.Text = "Unknown Status. Click Here to Test"
 
-    def telemetryserver_updated(self, sender, args):
-        """Check the status of telemetry server"""
-        status = telemetry.get_status_from_url(self.telemetryserver_tb.Text)
+    def telemetryserver_changed(self, sender, args):
+        """Reset telemetry server status light"""
+        self.update_status_lights(
+            None,
+            self.telemetryserver_statusbox,
+            self.telemetryserver_statusmsg
+            )
+
+    def apptelemetryserver_changed(self, sender, args):
+        """Reset app telemetry server status light"""
+        self.update_status_lights(
+            None,
+            self.apptelemetryserver_statusbox,
+            self.apptelemetryserver_statusmsg
+        )
+
+    def update_telemetry_status(self, status):
+        """Update telemetry server status light"""
         self.update_status_lights(
             status,
             self.telemetryserver_statusbox,
             self.telemetryserver_statusmsg
             )
 
-    # def telemetryserver_changed(self, sender, args):
-    #     if not self.textchange_timer:
-    #         self.textchange_timer = Windows.Forms.Timer()
-    #         self.textchange_timer.Interval = 300
-    #         self.textchange_timer.Tick += \
-    #             EventHandler(self.telemetryserver_updated)
-    #     self.textchange_timer.Stop()
-    #     self.textchange_timer.Start()
-
-    def apptelemetryserver_updated(self, sender, args):
-        """Check the status of app telemetry server"""
-        status = telemetry.get_status_from_url(self.apptelemetryserver_tb.Text)
+    def update_apptelemetry_status(self, status):
+        """Update app telemetry server status light"""
         self.update_status_lights(
             status,
             self.apptelemetryserver_statusbox,
             self.apptelemetryserver_statusmsg
             )
+
+    def update_all_telemetry_status_lights(self):
+        """Check the status of all telemetry servers and update status lights"""
+        # test telemetry server status
+        server_stat = \
+            telemetry.get_status_from_url(
+                telemetry.get_telemetry_server_url()
+                )
+        self.dispatch(self.update_telemetry_status, server_stat)
+        # test telemetry app-server status
+        appserver_status = \
+            telemetry.get_status_from_url(
+                telemetry.get_apptelemetry_server_url()
+            )
+        self.dispatch(self.update_apptelemetry_status, appserver_status)
+
+    def update_telemetry_status_lights(self, sender, args):
+        """Check the status of all telemetry servers"""
+        self.dispatch(self.update_all_telemetry_status_lights)
+
+    def update_telemetryserver_status_lights(self, sender, args):
+        """Check the status of telemetry server"""
+        status = telemetry.get_status_from_url(self.telemetryserver_tb.Text)
+        self.update_telemetry_status(status)
+
+    def update_apptelemetryserver_status_lights(self, sender, args):
+        """Check the status of app telemetry server"""
+        status = telemetry.get_status_from_url(self.apptelemetryserver_tb.Text)
+        self.update_apptelemetry_status(status)
 
     def toggle_event_cbs(self, sender, args):
         for event_db in self._get_event_telemetry_checkboxes():
@@ -676,7 +711,6 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 # if Shift-Click on the tool, opens the pyRevit config file in
 # windows explorer
 # otherwise, will show the Settings user interface
-
 if __name__ == '__main__':
     if __shiftclick__:  #pylint: disable=E0602
         script.show_file_in_explorer(user_config.config_file)

@@ -3,16 +3,33 @@ using System.IO;
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Reflection;
+using System.Web.Script.Serialization;
+
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
-    public class DynmoBIMEngine : ScriptEngine {
+    public class DynamoBIMEngineConfigs : ScriptEngineConfigs {
+        public bool clean;
+    }
+
+    public class DynamoBIMEngine : ScriptEngine {
+        public DynamoBIMEngineConfigs ExecEngineConfigs = new DynamoBIMEngineConfigs();
+
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
             // this is not a cachable engine; always use new engines
             UseNewEngine = true;
+
+            // extract engine configuration from runtime data
+            try {
+                ExecEngineConfigs = new JavaScriptSerializer().Deserialize<DynamoBIMEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
+            }
+            catch {
+                // if any errors switch to defaults
+                ExecEngineConfigs.clean = false;
+            }
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
@@ -38,7 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // needs to be shutdown before performing any action.
                 // per comments on https://github.com/eirannejad/pyRevit/issues/570
                 // Setting this to True slows down Dynamo by a factor of 3
-                { "dynModelShutDown",  "True" },
+                { "dynModelShutDown",  ExecEngineConfigs.clean ? "True" : "False" },
 
                 // The journal file can specify the values of Dynamo nodes.
                 //{ "dynModelNodesInfo",  "" }

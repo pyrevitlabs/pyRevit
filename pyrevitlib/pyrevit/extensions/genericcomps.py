@@ -18,7 +18,9 @@ mlogger = coreutils.logger.get_logger(__name__)
 
 
 EXT_DIR_KEY = 'directory'
-SUB_CMP_KEY = 'sub_components'
+SUB_CMP_KEY = 'components'
+LAYOUT_ITEM_KEY = 'layout_items'
+LAYOUT_DIR_KEY = 'directive'
 TYPE_ID_KEY = 'type_id'
 NAME_KEY = 'name'
 
@@ -30,8 +32,8 @@ class TypedComponent(object):
 class CachableComponent(TypedComponent):
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
-        if TYPE_ID_KEY in cache_dict:
-            cache_dict[TYPE_ID_KEY] = self.type_id
+        if hasattr(self, TYPE_ID_KEY):
+            cache_dict[TYPE_ID_KEY] = getattr(self, TYPE_ID_KEY)
         return cache_dict
 
     def load_cache_data(self, cache_dict):
@@ -40,13 +42,13 @@ class CachableComponent(TypedComponent):
 
 
 class LayoutDirective(CachableComponent):
-    def __init__(self, directive_type, target):
+    def __init__(self, directive_type=None, target=None):
         self.directive_type = directive_type
         self.target = target
 
 
 class LayoutItem(CachableComponent):
-    def __init__(self, name, directive):
+    def __init__(self, name=None, directive=None):
         self.name = name
         self.directive = directive
 
@@ -76,6 +78,7 @@ class GenericUIComponent(GenericComponent):
         self.min_revit_ver = self.max_revit_ver = None
         self.is_beta = False
         self.highlight_type = None
+        self.collapsed = False
         self.version = None
 
         self.meta = {}
@@ -212,6 +215,9 @@ class GenericUIComponent(GenericComponent):
         if highlight and isinstance(highlight, str):
             self.highlight_type = highlight.lower()
 
+        self.collapsed = \
+            self.meta.get(exts.MDATA_COLLAPSED_KEY, 'false').lower() == 'true'
+
         self.modules = \
             self.meta.get(exts.MDATA_LINK_BUTTON_MODULES, self.modules)
 
@@ -265,25 +271,26 @@ class GenericUIComponent(GenericComponent):
             return self.module_paths.remove(path)
 
     def get_bundle_file(self, file_name):
-        if file_name:
+        if self.directory and file_name:
             file_addr = op.join(self.directory, file_name)
             return file_addr if op.exists(file_addr) else None
 
     def find_bundle_file(self, patterns,
                          as_name=False, as_postfix=True, as_regex=False):
-        for bundle_file in os.listdir(self.directory):
-            if as_name:
-                for file_name in patterns:
-                    if op.splitext(bundle_file)[0] == file_name:
-                        return op.join(self.directory, bundle_file)
-            elif as_postfix:
-                for file_postfix in patterns:
-                    if bundle_file.endswith(file_postfix):
-                        return op.join(self.directory, bundle_file)
-            elif as_regex:
-                for regex_pattern in patterns:
-                    if re.match(regex_pattern, bundle_file):
-                        return op.join(self.directory, bundle_file)
+        if self.directory:
+            for bundle_file in os.listdir(self.directory):
+                if as_name:
+                    for file_name in patterns:
+                        if op.splitext(bundle_file)[0] == file_name:
+                            return op.join(self.directory, bundle_file)
+                elif as_postfix:
+                    for file_postfix in patterns:
+                        if bundle_file.endswith(file_postfix):
+                            return op.join(self.directory, bundle_file)
+                elif as_regex:
+                    for regex_pattern in patterns:
+                        if re.match(regex_pattern, bundle_file):
+                            return op.join(self.directory, bundle_file)
         return None
 
     def find_bundle_module(self, module):

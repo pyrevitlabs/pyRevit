@@ -14,6 +14,7 @@ __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
 
 output = script.get_output()
+
 all_elements = DB.FilteredElementCollector(revit.doc)\
                  .WhereElementIsNotElementType()\
                  .ToElements()

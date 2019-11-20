@@ -1,0 +1,189 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center"
+        SizeToContent="Height" Width="900"
+        ResizeMode="NoResize"
+        Title="XAML Tests">
+    <Window.Resources>
+
+        <DataTemplate x:Key="SupportsItem">
+            <Border x:Name="itemborder" Height="20" Background="Black" BorderThickness="0" CornerRadius="5" Margin="0">
+                <TextBlock Text="{Binding}" Foreground="Black" VerticalAlignment="Center" Margin="5,0,5,0" FontSize="9"/>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding}" Value="UX">
+                    <Setter TargetName="itemborder" Property="Background" Value="#fcd0a1" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding}" Value="Core">
+                    <Setter TargetName="itemborder" Property="Background" Value="#b1b695" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding}" Value="CLI">
+                    <Setter TargetName="itemborder" Property="Background" Value="#a690a4" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="SupportsList">
+            <WrapPanel IsItemsHost="True"/>
+        </ItemsPanelTemplate>
+
+        <ControlTemplate x:Key="ModifierListItemControlTemplate">
+            <WrapPanel>
+                <Polygon Points="0,0 8,0 8,18 0,18 8,9" Fill="{Binding color}" />
+                <Border Background="{Binding color}" Height="18">
+                    <TextBlock x:Name="ModifierTitle"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Text="{Binding abbrev}"
+                               Foreground="White"
+                               FontSize="10"
+                               Margin="4,0,2,0"/>
+                </Border>
+                <Polygon Points="0,0 0,18 8,9" Fill="{Binding color}" />
+            </WrapPanel>
+        </ControlTemplate>
+
+        <DataTemplate x:Key="ModifierListItemTemplate">
+            <Control Template="{StaticResource ModifierListItemControlTemplate}" Margin="-8,0,0,0"/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="TagListItemTemplate">
+            <WrapPanel>
+                <Border Background="#f3f3f3"  Height="18">
+                    <TextBlock HorizontalAlignment="Left"
+                               Padding="5"
+                               Text="{Binding name}"
+                               FontSize="12"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <Polygon Points="0,0 0,18 8,9" Fill="#f3f3f3" />
+                <ItemsControl ItemsSource="{Binding modifiers}"
+                              ItemTemplate="{StaticResource ModifierListItemTemplate}"
+                              VerticalAlignment="Center"
+                              VerticalContentAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel IsItemsHost="True"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </WrapPanel>
+        </DataTemplate>
+
+    </Window.Resources>
+    <Grid x:Name="stackpanel" Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        
+        <StackPanel Grid.Column="0">
+            <GroupBox x:Name="empinfo" Header="Muti-Value Data Binding" Margin="0,0,0,10">
+                <StackPanel Margin="5">
+                    <Slider x:Name="selector" Minimum="1" Maximum="{Binding Count}" IsSnapToTickEnabled="True" Margin="0,0,0,10" TickPlacement="Both"/>
+                    <Border x:Name="emppanel" Margin="10" Height="120" Background="White" BorderBrush="Gray" BorderThickness="1">
+                        <Border.Effect>
+                            <DropShadowEffect Color="LightGray" />
+                        </Border.Effect>
+                        <StackPanel>
+                            <Border Height="40" Background="#cc3232" Padding="10,10,10,0" >
+                                <TextBlock Text="{Binding name}" Foreground="White" FontWeight="Medium" FontSize="14"/>
+                            </Border>
+                            <StackPanel Margin="10">
+                                <TextBlock Text="{Binding job, StringFormat=Position: {0}}"/>
+                                <TextBlock Text="Supports"/>
+                                <ItemsControl Margin="0,5,0,0"
+                                              BorderThickness="0"
+                                              ItemsSource="{Binding supports}"
+                                              ItemsPanel="{StaticResource SupportsList}"
+                                              ItemTemplate="{StaticResource SupportsItem}">
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="{x:Type ContentPresenter}">
+                                            <Setter Property="Margin" Value="0,0,5,0"/>
+                                        </Style>
+                                    </ItemsControl.ItemContainerStyle>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Header="Reactive Binding" Margin="0,0,0,10">
+                <StackPanel Margin="5">
+                    <TextBlock x:Name="textblock" Text="{Binding nested.text}" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                    <TextBox x:Name="textbox" Text="{Binding text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
+                    <Button x:Name="button"
+                        Content="{Binding title}"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                        Height="35"
+                        Click="button_click"/>
+                    <Button Content="Read Data"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                        Margin="0,10,0,0" Height="35"
+                        Click="read_data"/>
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Header="Async Task">
+                <StackPanel x:Name="statuslight" Margin="5">
+                    <Border Height="30" Margin="0,0,0,10">
+                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Server Unavailable" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding status}" Value="True">
+                                            <Setter Property="Text" Value="Server Available" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Background" Value="LightGray" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding status}" Value="True">
+                                        <Setter Property="Background" Value="Gold" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                    </Border>
+                    <Button Content="Check Fortnite Status" Click="check_fortnite_status" Height="35"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1">
+            <GroupBox Header="Image Source Test">
+                <Image x:Name="testimage"/>
+            </GroupBox>
+            <GroupBox Header="List Item Template">
+                <ListBox x:Name="taglist"
+                     Margin="0,10,10,0"
+                     Grid.Column="0"
+                     SelectionMode="Extended"
+                     ItemTemplate="{StaticResource TagListItemTemplate}">
+                    <ListBox.Resources>
+                        <ContextMenu x:Key="ItemContextMenu">
+                            <MenuItem x:Name="menuItem_CopyValue" Header="Copy Tag">
+                            </MenuItem>
+                        </ContextMenu>
+                    </ListBox.Resources>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListBoxItem}">
+                            <Setter Property="ContextMenu"
+                             Value="{StaticResource ItemContextMenu}"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </GroupBox>
+            <GroupBox Header="Heavy Revit Work" Padding="10">
+                <Button Content="Do Revit Work" Height="30" Click="do_revit_work"/>
+            </GroupBox>
+        </StackPanel>   
+    </Grid>
+</Window>

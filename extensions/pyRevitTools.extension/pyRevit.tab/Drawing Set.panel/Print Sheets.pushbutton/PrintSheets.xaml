@@ -1,0 +1,238 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Print Sheets" Height="800" Width="1000" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+    <Window.Resources>
+        <SolidColorBrush x:Key="RevBGColor" Color="#FFEEEEEE"/>
+
+        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitAccentBrush}"/>
+        </Style>
+
+        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="ToolTip" Value="{Binding tooltip}"/>
+            <Setter Property="ContextMenu" Value="{DynamicResource ItemContextMenu}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding printable}" Value="False">
+                    <Setter Property="Foreground" Value="#bdbdbd" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <ControlTemplate x:Key="Default" TargetType="{x:Type DataGridCell}">
+            <StackPanel Background="White">
+                <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                      Columns="{TemplateBinding GridView.ColumnCollection}"/>
+            </StackPanel>
+
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type DataGridCell}'>
+            <StackPanel Background="#f6f6f6">
+                <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                          Columns="{TemplateBinding GridView.ColumnCollection}"/>
+            </StackPanel>
+        </ControlTemplate>
+
+        <DataTemplate x:Key="RevisionCell">
+            <StackPanel x:Name="revinfo" VerticalAlignment="Center" Orientation="Horizontal">
+                <Border Background="{StaticResource RevBGColor}" CornerRadius="3,0,0,3" MinWidth="16" Margin="2,2,0,2" Padding="5,0,5,0">
+                    <TextBlock Text="{Binding revision.number}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+                <Border Background="{StaticResource RevBGColor}" MinWidth="16" Margin="0,2,0,2" Padding="5,0,5,0" BorderBrush="LightGray" BorderThickness="1,0,1,0">
+                    <TextBlock Text="{Binding revision.desc}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                </Border>
+                <Border Background="{StaticResource RevBGColor}" CornerRadius="0,3,3,0" MinWidth="16" Padding="5,0,5,0" Margin="0,2,0,2">
+                    <TextBlock Text="{Binding revision.date}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                </Border>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding revision}" Value="">
+                    <Setter TargetName="revinfo" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <Style TargetType="{x:Type Hyperlink}">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="TextBlock.TextDecorations" Value="{x:Null}" />
+        </Style>
+
+        <Canvas x:Key="printIcon">
+            <Path Canvas.Top="-18" Canvas.Left="-18"
+                  Data="M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z"
+                  Fill="Black">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="1.5"  ScaleY="1.5"/>
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+    </Window.Resources>
+
+    <DockPanel>
+        <StackPanel Margin="10,10,10,0" DockPanel.Dock="Top">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="70" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <DockPanel Height="24">
+                        <Grid Margin="0,0,10,0">
+                            <Polygon Points="0,0 140,0 150,12 140,24 0,24"  Fill="{DynamicResource pyRevitDarkBrush}" SnapsToDevicePixels="True"/>
+                            <TextBlock Text="Model" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,10,0" Foreground="White"/>
+                        </Grid>
+                        <ComboBox x:Name="documents_cb" SelectionChanged="doclist_changed" VerticalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <TextBlock x:Name="docname" Text="{Binding name}" />
+                                        <TextBlock x:Name="docname_linked" Text="{Binding name, StringFormat=Linked: {0}}" Visibility="Collapsed" />
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding linked}" Value="True">
+                                            <Setter TargetName="docname" Property="Visibility" Value="Hidden" />
+                                            <Setter TargetName="docname_linked" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </DockPanel>
+                    <DockPanel Height="24" Margin="0,5,0,0">
+                        <Grid Margin="0,0,10,0">
+                            <Polygon Points="0,0 140,0 150,12 140,24 0,24" Fill="{DynamicResource pyRevitDarkBrush}" SnapsToDevicePixels="True" />
+                            <TextBlock Text="Sheet Index (Schedule)" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,10,0" Foreground="White"/>
+                        </Grid>
+                        <ComboBox x:Name="schedules_cb" SelectionChanged="sheetlist_changed" VerticalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </DockPanel>
+                </StackPanel>
+                <Button x:Name="print_b" Grid.Column="1" Content="{StaticResource printIcon}" Margin="10,0,0,0" Click="print_sheets"/>
+            </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="3*" />
+                </Grid.ColumnDefinitions>
+                <GroupBox Header="Sheet Ordering" Grid.Column="0" Margin="0,10,5,0" Padding="8">
+                    <StackPanel>
+                        <CheckBox x:Name="reverse_cb" IsChecked="False" Click="options_changed">Reverse Print Order</CheckBox>
+                        <StackPanel x:Name="order_sp" Margin="0,5,0,0">
+                            <CheckBox x:Name="placeholder_cb" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed Out)</CheckBox>
+                            <CheckBox x:Name="indexspace_cb" Margin="0,5,0,0" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
+                            <DockPanel Margin="0,5,0,0" Height="24" >
+                                <TextBlock Text="Index Digits" Width="80" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                                <Slider x:Name="index_slider" Margin="10,0,0,0"
+                                        Minimum="3" Maximum="6" TickPlacement="TopLeft" IsSnapToTickEnabled="True" IsMoveToPointEnabled="True"
+                                        ValueChanged="options_changed"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5,0,0" Height="24">
+                                <TextBlock Text="Index Start" Width="80"  VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                <Button Content="Reset" Width="50" DockPanel.Dock="Right"
+                                        BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                        Click="rest_index" />
+                                <TextBox x:Name="indexstart_tb" Text="0" Margin="10,0,0,0" VerticalContentAlignment="Center" Padding="5,0,0,0"
+                                         PreviewTextInput="validate_index_start" TextChanged="options_changed"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="Sheet Printing" Grid.Column="1" Margin="0,10,5,0" Padding="8">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Left">
+                            <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,0,10" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Combine Into One PDF</CheckBox>
+                            <DockPanel x:Name="namingformat_dp" Margin="0,5,0,0" Height="24" >
+                                <TextBlock Text="Naming Format" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Button Content="Edit Formats" DockPanel.Dock="Right" Width="100" BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Click="edit_formats"/>
+                                <ComboBox x:Name="namingformat_cb" FontFamily="Consolas" VerticalContentAlignment="Center" SelectionChanged="options_changed" >
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Padding="5,1,5,1">
+                                                    <TextBlock Text="{Binding name}"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DockPanel>
+                            <DockPanel Margin="0,5,0,0" Height="24" >
+                                <TextBlock Text="Printer" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <ComboBox x:Name="printers_cb"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,5,0,0" Height="24" >
+                                <TextBlock Text="Page Settings" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <ComboBox x:Name="printsettings_cb" SelectionChanged="sheetlist_changed">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding name}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DockPanel>
+                        </StackPanel>
+                    </DockPanel>
+                </GroupBox>
+            </Grid>
+            <StackPanel VerticalAlignment="Center" Margin="0,10,0,5">
+                <TextBlock TextWrapping="WrapWithOverflow" DockPanel.Dock="Left">
+                    List of the sheets in selected sheet index
+                </TextBlock>
+                <Border x:Name="errormsg_block" Background="Red" Padding="5" Margin="0,5,0,5" Visibility="Collapsed">
+                    <TextBlock x:Name="errormsg_tb" Foreground="White" VerticalAlignment="Center" />
+                </Border>
+                <WrapPanel x:Name="sheetopts_wp" FlowDirection="RightToLeft" DockPanel.Dock="Right" Visibility="Visible" IsEnabled="False">
+                    <Button Height="25" Width="120" Content="Set Print Settings" Click="set_sheet_printsettings"/>
+                    <Button Height="25" Width="120" Content="Reset Print Settings " Click="sheetlist_changed" Margin="10,0,0,0"/>
+                </WrapPanel>
+            </StackPanel>
+        </StackPanel>
+        <StatusBar DockPanel.Dock="Bottom" Height="25" Background="{DynamicResource pyRevitDarkBrush}">
+            <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
+                <Hyperlink NavigateUri="https://github.com/McCulloughRT/PrintFromIndex" Click="handle_url_click">
+                    Kudos to Ryan McCullough for PrintFromIndex
+                </Hyperlink>
+            </TextBlock>
+        </StatusBar>
+        <DataGrid x:Name="sheets_lb"
+                  AutoGenerateColumns="False"
+                  Margin="10,0,10,10"
+                  BorderThickness="1"
+                  RowHeaderWidth="0"
+                  CanUserSortColumns="True"
+                  HorizontalGridLinesBrush="#dedede"
+                  VerticalGridLinesBrush="#dedede"
+                  EnableColumnVirtualization="True"
+                  EnableRowVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  SelectionChanged="sheet_selection_changed">
+            <DataGrid.Resources>
+                <ContextMenu x:Key="ItemContextMenu">
+                    <MenuItem  Header="Copy Sheet File Name(s)" Click="copy_filenames" />
+                </ContextMenu>
+            </DataGrid.Resources>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Print Index" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTemplateColumn Header="Sheet Revision" MinWidth="50" Width="1*" IsReadOnly="True"
+                                        CellTemplate="{StaticResource RevisionCell}" SortMemberPath="revision.number" />
+                <DataGridTextColumn x:Name="psettingcol" Header="Print Setting" Binding="{Binding print_settings.Name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
+                <DataGridTextColumn x:Name="pfilename" Header="File Name" FontFamily="Consolas" Binding="{Binding print_filename}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

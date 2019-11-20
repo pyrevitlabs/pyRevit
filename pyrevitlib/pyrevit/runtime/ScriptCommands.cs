@@ -38,6 +38,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 string searchPaths,
                 string arguments,
                 string helpSource,
+                string tooltip,
                 string cmdName,
                 string cmdBundle,
                 string cmdExtension,
@@ -53,6 +54,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 CommandBundle = cmdBundle,
                 CommandExtension = cmdExtension,
                 HelpSource = helpSource,
+                Tooltip = tooltip,
             };
 
             // build search paths

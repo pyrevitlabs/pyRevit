@@ -17,7 +17,9 @@ def bitmap_from_file(bitmap_file):
     bitmap.BeginInit()
     bitmap.UriSource = framework.Uri(bitmap_file)
     bitmap.CacheOption = Imaging.BitmapCacheOption.OnLoad
+    bitmap.CreateOptions = Imaging.BitmapCreateOptions.IgnoreImageCache
     bitmap.EndInit()
+    bitmap.Freeze()
     return bitmap
 
 

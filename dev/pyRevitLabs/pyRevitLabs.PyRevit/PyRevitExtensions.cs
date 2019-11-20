@@ -254,9 +254,6 @@ namespace pyRevitLabs.PyRevit {
             ToggleExtension(extName, false);
         }
 
-        public static void SaveExtensionLookupSources(IEnumerable<string> sourcesList) {
-        }
-
         // get list of registered extension search paths
         // @handled @logs
         public static List<string> GetRegisteredExtensionSearchPaths() {
@@ -448,5 +445,11 @@ namespace pyRevitLabs.PyRevit {
             return pyrevtExts;
         }
 
+
+        // save list of source exensio
+        private static void SaveExtensionLookupSources(IEnumerable<string> sources) {
+            var cfg = PyRevitConfigs.GetConfigFile();
+            cfg.SetValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsExtensionLookupSourcesKey, sources);
+        }
     }
 }
