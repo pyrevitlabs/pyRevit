@@ -929,13 +929,18 @@ class PrintSheetsWindow(forms.WPFWindow):
             tblock_tid = tblock_tid * 100 \
                          + tblock_tform.BasisX.X * 10 \
                          + tblock_tform.BasisX.Y
-            tblock_psetting = tblock_printsettings.get(tblock_tid, None)
-            if not tblock_psetting:
+            # can not use None as default. see notes below
+            tblock_psetting = tblock_printsettings.get(tblock_tid, 'not-set')
+            # if found a tblock print settings, assign that to sheet
+            if tblock_psetting != 'not-set':
+                sheet_printsettings[sheet.SheetNumber] = tblock_psetting
+            # otherwise, analyse the tblock and determine print settings
+            else:
                 tblock_psetting = \
                     revit.query.get_sheet_print_settings(tblock,
                                                          doc_printsettings)
+                # the analysis result might be None
                 tblock_printsettings[tblock_tid] = tblock_psetting
-            if tblock_psetting:
                 sheet_printsettings[sheet.SheetNumber] = tblock_psetting
         return sheet_printsettings
 
@@ -946,7 +951,9 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _update_index_slider(self):
         index_digits = \
-            int(len(str(len(self._scheduled_sheets) + self.index_start)))
+            coreutils.get_integer_length(
+                len(self._scheduled_sheets) + self.index_start
+                )
         self.index_slider.Minimum = max([index_digits, 2])
         self.index_slider.Maximum = self.index_slider.Minimum + 3
 
@@ -1039,24 +1046,32 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def set_sheet_printsettings(self, sender, args):
         if self.selected_printable_sheets:
-            psettings = forms.SelectFromList.show(
-                {
-                    'Matching Print Settings':
-                        self.selected_printable_sheets[0].all_print_settings,
-                    'All Print Settings':
-                        revit.query.get_all_print_settings(
-                            doc=self.selected_doc
-                            )
-                },
-                name_attr='Name',
-                group_selector_title='Print Settings:',
-                default_group='Matching Print Settings',
-                title='Select Print Setting',
-                width=350, height=400
-                )
-            if psettings:
-                for sheet in self.selected_printable_sheets:
-                    sheet.print_settings = psettings
+            sheet_psettings = \
+                self.selected_printable_sheets[0].all_print_settings
+            all_psettings = \
+                revit.query.get_all_print_settings(doc=self.selected_doc)
+            if sheet_psettings:
+                options = {'Matching Print Settings': sheet_psettings,
+                           'All Print Settings': all_psettings}
+            elif all_psettings:
+                options = all_psettings
+            else:
+                options = []
+
+            if options:
+                psettings = forms.SelectFromList.show(
+                    options,
+                    name_attr='Name',
+                    group_selector_title='Print Settings:',
+                    default_group='Matching Print Settings',
+                    title='Select Print Setting',
+                    width=350, height=400
+                    )
+                if psettings:
+                    for sheet in self.selected_printable_sheets:
+                        sheet.print_settings = psettings
+            else:
+                forms.alert('There are no print settings in this model.')
 
     def sheet_selection_changed(self, sender, args):
         if self.selected_printable_sheets:
@@ -1079,6 +1094,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.namingformat_cb.ItemsSource = editfmt_wnd.naming_formats
         self.namingformat_cb.SelectedItem = editfmt_wnd.selected_naming_format
 
+    def copy_filenames(self, sender, args):
+        if self.selected_sheets:
+            filenames = [x.print_filename for x in self.selected_sheets]
+            script.clipboard_copy('\n'.join(filenames))
+
     def print_sheets(self, sender, args):
         if self.sheet_list:
             selected_only = False
@@ -1094,6 +1114,14 @@ class PrintSheetsWindow(forms.WPFWindow):
                 self.selected_sheets if selected_only else self.sheet_list
 
             if not self.combine_print:
+                # verify all sheets have print settings
+                if self.selected_print_setting.allows_variable_paper \
+                    and not all(x.print_settings for x in target_sheets):
+                    forms.alert(
+                        'Not all sheets have a print setting assigned to them. '
+                        'Select sheets and assign print settings.')
+                    return
+                # confirm print if a lot of sheets are going to be printed
                 printable_count = len([x for x in target_sheets if x.printable])
                 if printable_count > 5:
                     # prepare warning message
@@ -1107,6 +1135,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                        'not be cancelled.'.format(message),
                                        ok=False, yes=True, no=True):
                         return
+            # close window and submit print
             self.Close()
             if self.combine_print:
                 self._print_combined_sheets_in_order(target_sheets)
@@ -1123,6 +1152,10 @@ def cleanup_sheetnumbers(doc):
     with revit.Transaction('Cleanup Sheet Numbers', doc=doc):
         for sheet in sheets:
             sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
+
+
+# verify model is printable
+forms.check_modeldoc(exitscript=True)
 
 # TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602

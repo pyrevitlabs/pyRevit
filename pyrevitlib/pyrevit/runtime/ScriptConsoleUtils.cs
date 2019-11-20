@@ -70,23 +70,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             }
 
                             elementIdsToIsolate.AddRange(elementIds);
-                            view.IsolateElementsTemporary(elementIdsToIsolate);
-#if (REVIT2013 || REVIT2014)
-                            uidoc.Selection.Elements = SelElementSet.Create();
-#else
-                            uidoc.Selection.SetElementIds(new List<ElementId>());
-#endif
-
-#if !(REVIT2013)
-                            // Revit 2013 API does not have zoom to fit option
-                            foreach (var uiview in openUIViews)
-                                if (uiview.ViewId == view.Id)
-                                    uiview.ZoomToFit();
-#endif
-
-
-                            // set the view back to normal
-                            view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+                            // islolate the element, deselect, and zoom fit
+                            uidoc.ShowElements(elementIdsToIsolate);
                         }
                     }
                     // if element is a 3D element and does not have an owner view
@@ -96,21 +81,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         View view = (View)uidoc.ActiveView;
 
                         // islolate the element, deselect, and zoom fit
-                        view.IsolateElementsTemporary(elementIds);
-#if (REVIT2013 || REVIT2014)
-                        uidoc.Selection.Elements = SelElementSet.Create();
-#else
-                            uidoc.Selection.SetElementIds(new List<ElementId>());
-#endif
-
-#if !(REVIT2013)
-                            // Revit 2013 API does not have zoom to fit option
-                            foreach (var uiview in openUIViews)
-                                if (uiview.ViewId == view.Id)
-                                    uiview.ZoomToFit();
-#endif
-                        // set the view back to normal
-                        view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+                        uidoc.ShowElements(elementIds);
                     }
 
                 }
