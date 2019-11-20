@@ -1,14 +1,15 @@
-from pyrevit.framework import List
-from pyrevit import revit, script, forms, DB
+"""Selects elements similar to the currently
+selected elements in the active view."""
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+from pyrevit import revit, DB
+from pyrevit import forms
 
 
 __context__ = 'selection'
-__doc__ = 'Selects elements similar to the currently '\
-          'selected elements in the active view .'
 
-if not revit.active_view.Category:
-    forms.alert("Error. Active view is not a grahical view")
-    script.exit()
+
+# ensure active view is a graphical view
+forms.check_graphicalview(revit.active_view, exit_script=True)
 
 cl = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
        .WhereElementIsNotElementType()\

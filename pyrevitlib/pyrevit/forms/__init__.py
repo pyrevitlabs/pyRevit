@@ -2715,6 +2715,30 @@ def check_viewtype(view, view_type, exitscript=False):
     return True
 
 
+def check_graphicalview(view, exitscript=False):
+    """Verify target view is a graphical view
+
+    Args:
+        view (DB.View): target view
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if view is a graphical view
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_graphicalview(revit.active_view)
+        ... True
+    """
+    if not view.Category:
+        alert(
+            "Active view must be a grahical view.",
+            exitscript=exitscript
+            )
+        return False
+    return True
+
+
 def toast(message, title='pyRevit', appid='pyRevit',
           icon=None, click=None, actions=None):
     """Show a Windows 10 notification.
