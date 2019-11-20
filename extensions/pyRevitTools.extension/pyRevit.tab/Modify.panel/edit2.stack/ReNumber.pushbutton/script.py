@@ -18,16 +18,33 @@ def toggle_element_selection_handles(target_view, bicat, state=True):
         # if view has template, toggle temp VG overrides
         if state:
             target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
+
+        rr_cat = revit.query.get_subcategory(category_name, 'Reference')
         try:
-            # subcategories names (e.g. OST_MEPSpaceReferenceVisibility, reduce s)
-            bicat_reference = DB.BuiltInCategory[str(bicat)[:-1] + "ReferenceVisibility"]
-            rr_cat = revit.query.get_category(bicat_reference)
             rr_cat.Visible[target_view] = state
-            bicat_interior = DB.BuiltInCategory[str(bicat)[:-1] + "InteriorFillVisibility"]
-            rr_int = revit.query.get_category(bicat_interior) 
+        except Exception as vex:
+            logger.debug(
+                'Failed changing category visibility for \"%s\" '
+                'to \"%s\" on view \"%s\" | %s',
+                category_name,
+                state,
+                target_view.Name,
+                str(vex)
+                )
+        rr_int = revit.query.get_subcategory(category_name, 'Interior Fill')
+        if not rr_int:
+            rr_int = revit.query.get_subcategory(category_name, 'Interior')
+        try:
             rr_int.Visible[target_view] = state
-        except Exception as exc:
-            logger.warn("Cannot set temporary view settings: {}".format(exc))
+        except Exception as vex:
+            logger.debug(
+                'Failed changing interior fill visibility for \"%s\" '
+                'to \"%s\" on view \"%s\" | %s',
+                category_name,
+                state,
+                target_view.Name,
+                str(vex)
+                )
         # disable the temp VG overrides after making changes to categories
         if not state:
             target_view.DisableTemporaryViewMode(
@@ -56,6 +73,10 @@ class EasilySelectableElements(object):
                 self.bicat,
                 state=False
                 )
+
+
+def increment(number):
+    return coreutils.increment_str(number, expand=True)
 
 
 def get_number(target_element):
@@ -104,9 +125,9 @@ def get_elements_dict(builtin_cat):
 
 def find_replacement_number(existing_number, elements_dict):
     """Find an appropriate replacement number for conflicting numbers."""
-    replaced_number = coreutils.increment_str(existing_number)
+    replaced_number = increment(existing_number)
     while replaced_number in elements_dict:
-        replaced_number = coreutils.increment_str(replaced_number)
+        replaced_number = increment(replaced_number)
     return replaced_number
 
 
@@ -179,7 +200,7 @@ def pick_and_renumber(bicat, starting_index):
                                      index, existing_elements_data)
                     # record the renumbered element
                     renumbered_element_ids.append(picked_element.Id)
-                index = coreutils.increment_str(index)
+                index = increment(index)
             # unmark all renumbered elements
             _unmark_collected(category_name, renumbered_element_ids)
 
@@ -236,7 +257,7 @@ def door_by_room_renumber():
                         # attempts = 1
                         # max_attempts = len([x for x in room_door_numbers if x])
                         while new_number in room_door_numbers:
-                            new_number = coreutils.increment_str(new_number)
+                            new_number = increment(new_number)
                         renumber_element(picked_door,
                                          new_number,
                                          existing_doors_data)

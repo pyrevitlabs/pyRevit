@@ -124,7 +124,7 @@
                 </Style>
             </DataGrid.CellStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Index" Binding="{Binding order_index}" MinWidth="40" Width="40" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn Header="Order Index" Binding="{Binding order_index}" MinWidth="80" Width="80" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
                 <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
             </DataGrid.Columns>

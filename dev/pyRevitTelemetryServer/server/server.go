@@ -35,11 +35,22 @@ func Start(opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger)
 
 	// start listening now
 	logger.Print(fmt.Sprintf("Server listening on %d...", opts.Port))
-	logger.Fatal(
-		http.ListenAndServe(
-			fmt.Sprintf(":%d", opts.Port),
-			router,
-		))
+	if opts.Https {
+		logger.Fatal(
+			http.ListenAndServeTLS(
+				fmt.Sprintf(":%d", opts.Port),
+				fmt.Sprintf("%s.crt", opts.ExeName),
+				fmt.Sprintf("%s.key", opts.ExeName),
+				router,
+			))
+
+	} else {
+		logger.Fatal(
+			http.ListenAndServe(
+				fmt.Sprintf(":%d", opts.Port),
+				router,
+			))
+	}
 }
 
 func GetStatus() string {

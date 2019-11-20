@@ -18,6 +18,7 @@ def create_bundle_type(
         bundle_search_paths,
         bundle_arguments,
         bundle_help_url,
+        bundle_tooltip,
         bundle_name,
         bundle_full_name,
         bundle_extension_name,
@@ -35,6 +36,7 @@ def create_bundle_type(
         coreutils.join_strings(bundle_search_paths),
         coreutils.join_strings(bundle_arguments),
         bundle_help_url,
+        bundle_tooltip,
         bundle_name,
         bundle_full_name,
         bundle_extension_name,
@@ -43,7 +45,7 @@ def create_bundle_type(
         engine_cfgs)
 
 
-def create_executor_type(extension, module_builder, cmd_component):
+def create_executor_type(extension, module_builder, cmd_component, eng_cfgs=''):
     mlogger.debug('Creating executor type for: %s', cmd_component)
     mlogger.debug('%s uses clean engine: %s',
                   cmd_component.name, cmd_component.requires_clean_engine)
@@ -51,14 +53,6 @@ def create_executor_type(extension, module_builder, cmd_component):
                   cmd_component.name, cmd_component.requires_fullframe_engine)
     mlogger.debug('%s requires Fullframe engine: %s',
                   cmd_component.name, cmd_component.requires_fullframe_engine)
-
-    engine_configs = ''
-    if cmd_component.script_language == exts.PYTHON_LANG:
-        engine_configs = runtime.create_ipyengine_configs(
-            clean=cmd_component.requires_clean_engine,
-            full_frame=cmd_component.requires_fullframe_engine,
-            persistent=cmd_component.requires_persistent_engine,
-        )
 
     create_bundle_type(
         module_builder=module_builder,
@@ -68,12 +62,13 @@ def create_executor_type(extension, module_builder, cmd_component):
         bundle_search_paths=cmd_component.module_paths,
         bundle_arguments=cmd_component.arguments,
         bundle_help_url=cmd_component.help_url or "",
+        bundle_tooltip=cmd_component.tooltip or "",
         bundle_name=cmd_component.name,
         bundle_full_name=cmd_component.get_full_bundle_name(),
         bundle_extension_name=extension.name,
         bundle_unique_name=cmd_component.unique_name,
         bundle_control_id=cmd_component.control_id,
-        engine_cfgs=engine_configs
+        engine_cfgs=eng_cfgs
         )
 
     mlogger.debug('Successfully created executor type for: %s', cmd_component)

@@ -368,6 +368,10 @@ class PyRevitExternalCommandType(object):
         return getattr(self._extcmd.ScriptData, 'HelpSource', None)
 
     @property
+    def tooltip(self):
+        return getattr(self._extcmd.ScriptData, 'Tooltip', None)
+
+    @property
     def name(self):
         return getattr(self._extcmd.ScriptData, 'CommandName', None)
 

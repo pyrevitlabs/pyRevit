@@ -76,7 +76,7 @@ def get_source_properties(src_element):
 
     src_type = revit.query.get_type(src_element)
 
-    selected_params = forms.select_parameter(
+    selected_params = forms.select_parameters(
         src_element,
         title="Select Parameters",
         multiple=True,
