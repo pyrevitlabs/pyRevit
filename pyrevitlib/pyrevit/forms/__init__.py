@@ -1681,6 +1681,7 @@ def select_sheets(title='Select Sheets',
     """
     doc = doc or HOST_APP.doc
 
+    # check for previously selected sheets
     if use_selection:
         current_selected_sheets = revit.get_selection() \
                                        .include(DB.ViewSheet) \
@@ -1688,17 +1689,19 @@ def select_sheets(title='Select Sheets',
         if filterfunc:
             current_selected_sheets = \
                 filter(filterfunc, current_selected_sheets)
+
         if not include_placeholder:
             current_selected_sheets = \
                 [x for x in current_selected_sheets if not x.IsPlaceholder]
-        if current_selected_sheets \
-                and (multiple or len(current_selected_sheets) == 1) \
-                and ask_to_use_selected("sheets"):
-            if multiple:
-                return current_selected_sheets 
-            else:
-                return current_selected_sheets[0]
 
+        if current_selected_sheets \
+                and ask_to_use_selected("sheets",
+                                        count=len(current_selected_sheets),
+                                        multiple=multiple):
+            return current_selected_sheets \
+                if multiple else current_selected_sheets[0]
+
+    # otherwise get all sheets and prompt for selection
     all_ops = {}
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
@@ -1772,6 +1775,7 @@ def select_views(title='Select Views',
     """
     doc = doc or HOST_APP.doc
 
+    # check for previously selected sheets
     if use_selection:
         current_selected_views = revit.get_selection() \
                                       .include(DB.View) \
@@ -1779,14 +1783,15 @@ def select_views(title='Select Views',
         if filterfunc:
             current_selected_views = \
                 filter(filterfunc, current_selected_views)
-        if current_selected_views \
-                and (multiple or len(current_selected_views) == 1) \
-                and ask_to_use_selected("views"):
-            if multiple:
-                return current_selected_views
-            else:
-                return current_selected_views[0]
 
+        if current_selected_views \
+                and ask_to_use_selected("views",
+                                        count=len(current_selected_views),
+                                        multiple=multiple):
+            return current_selected_views \
+                if multiple else current_selected_views[0]
+
+    # otherwise get all sheets and prompt for selection
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
@@ -1837,20 +1842,22 @@ def select_levels(title='Select Levels',
     """
     doc = doc or HOST_APP.doc
 
+    # check for previously selected sheets
     if use_selection:
         current_selected_levels = revit.get_selection() \
                                        .include(DB.Level) \
                                        .elements
+
         if filterfunc:
             current_selected_levels = \
                 filter(filterfunc, current_selected_levels)
+
         if current_selected_levels \
-                and (multiple or len(current_selected_levels) == 1) \
-                and ask_to_use_selected("levels"):
-            if multiple:
-                return current_selected_levels
-            else:
-                return current_selected_levels[0]
+                and ask_to_use_selected("levels",
+                                        count=len(current_selected_levels),
+                                        multiple=multiple):
+            return current_selected_levels \
+                if multiple else current_selected_levels[0]
 
     all_levels = \
         revit.query.get_elements_by_categories(
@@ -2876,15 +2883,30 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         )
 
 
-def ask_to_use_selected(type_name):
+def ask_to_use_selected(type_name, count=None, multiple=True):
     """Ask user if wants to use currently selected elements.
 
     Args:
         type_name (str): Element type of expected selected elements
+        count (int): Number of selected items
+        multiple (bool): Whether multiple selected items are allowed
     """
-    return alert("You currently have %s selected. "
-                 "Do you want to use them?" % type_name.lower(),
-                 yes=True, no=True)
+    report = type_name.lower()
+    # multiple = True
+    message = \
+        "You currently have %s selected. Do you want to proceed with "\
+        "currently selected item(s)?"
+    # check is selecting multiple is allowd
+    if not multiple:
+        # multiple = False
+        message = \
+            "You currently have %s selected and only one is required. "\
+            "Do you want to use the first selected item?"
+
+    # check if count is provided
+    if count is not None:
+        report = '{} {}'.format(count, report)
+    return alert(message % report, yes=True, no=True)
 
 
 def inform_wip():
