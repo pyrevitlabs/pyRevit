@@ -265,9 +265,11 @@ class StackTwoButtonGroup(GenericStack):
 
     def __init__(self, cmp_path=None):
         GenericStack.__init__(self, cmp_path=cmp_path)
-        mlogger.deprecate(
-            ".stack2 and .stack3 bundles are deprecated and will be removed "
-            "in the next major release. use .stack bundles instead | %s", self)
+        if cmp_path:
+            mlogger.deprecate(
+                ".stack2 and .stack3 bundles are deprecated and "
+                "will be removed in the next major release. "
+                "use .stack bundles instead | %s", self)
 
 
 class StackThreeButtonGroup(GenericStack):
@@ -275,9 +277,11 @@ class StackThreeButtonGroup(GenericStack):
 
     def __init__(self, cmp_path=None):
         GenericStack.__init__(self, cmp_path=cmp_path)
-        mlogger.deprecate(
-            ".stack2 and .stack3 bundles are deprecated and will be removed "
-            "in the next major release. use .stack bundles instead | %s", self)
+        if cmp_path:
+            mlogger.deprecate(
+                ".stack2 and .stack3 bundles are deprecated and "
+                "will be removed in the next major release. "
+                "use .stack bundles instead | %s", self)
 
 
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
