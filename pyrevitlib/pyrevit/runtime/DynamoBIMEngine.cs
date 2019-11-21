@@ -45,7 +45,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 { "dynAutomation",  "True" },
 
                 // The journal file can specify if the Dynamo workspace opened
-                //{ "dynForceManualRun",  "True" }
+                { "dynForceManualRun",  "False" },
 
                 // The journal file can specify if the Dynamo workspace opened from DynPathKey will be executed or not. 
                 // If we are in automation mode the workspace will be executed regardless of this key.
