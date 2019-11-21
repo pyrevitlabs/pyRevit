@@ -22,7 +22,26 @@ def create_executor_type(extension, module_builder, cmd_component):
 
     """
     engine_configs = json.dumps({
-        exts.MDATA_ENGINE_CLEAN: cmd_component.requires_clean_engine,
+        exts.MDATA_ENGINE_CLEAN:
+            cmd_component.requires_clean_engine,
+
+        exts.MDATA_ENGINE_DYNAMO_AUTOMATE:
+            cmd_component.requires_mainthread_engine,
+
+        exts.MDATA_ENGINE_DYNAMO_PATH:
+            cmd_component.dynamo_path,
+
+        # exts.MDATA_ENGINE_DYNAMO_PATH_EXEC:
+        #     cmd_component.dynamo_path_exec,
+
+        exts.MDATA_ENGINE_DYNAMO_PATH_CHECK_EXIST:
+            cmd_component.dynamo_path_check_existing,
+
+        exts.MDATA_ENGINE_DYNAMO_FORCE_MANUAL_RUN:
+            cmd_component.dynamo_force_manual_run,
+
+        exts.MDATA_ENGINE_DYNAMO_MODEL_NODES_INFO:
+            cmd_component.dynamo_model_nodes_info,
     })
 
     bundletypemaker.create_executor_type(

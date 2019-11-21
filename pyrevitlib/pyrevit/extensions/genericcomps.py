@@ -510,6 +510,13 @@ class GenericUICommand(GenericUIComponent):
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
         self.requires_persistent_engine = False
+        self.requires_mainthread_engine = False
+        # engine options specific to dynamo
+        self.dynamo_path = None
+        # self.dynamo_path_exec = False
+        self.dynamo_path_check_existing = False
+        self.dynamo_force_manual_run = False
+        self.dynamo_model_nodes_info = None
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent.__init__(self, cmp_path=cmp_path)
 
@@ -571,6 +578,7 @@ class GenericUICommand(GenericUIComponent):
     def _read_bundle_metadata(self):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent._read_bundle_metadata(self)
+        # determine engine configs
         if exts.MDATA_ENGINE in self.meta:
             self.requires_clean_engine = \
                 self.meta[exts.MDATA_ENGINE].get(
@@ -581,6 +589,34 @@ class GenericUICommand(GenericUIComponent):
             self.requires_persistent_engine = \
                 self.meta[exts.MDATA_ENGINE].get(
                     exts.MDATA_ENGINE_PERSISTENT, 'false').lower() == 'true'
+
+            # determine if engine is required to run on main thread
+            # MDATA_ENGINE_MAINTHREAD is the generic option
+            rme = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_MAINTHREAD, 'false') == 'true'
+            # MDATA_ENGINE_DYNAMO_AUTOMATE is specific naming for dynamo
+            automate = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_DYNAMO_AUTOMATE, 'false') == 'true'
+            self.requires_mainthread_engine = rme or automate
+
+            # process engine options specific to dynamo
+            self.dynamo_path = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH, None)
+            # self.dynamo_path_exec = \
+            #     self.meta[exts.MDATA_ENGINE].get(
+            #         exts.MDATA_ENGINE_DYNAMO_PATH_EXEC, 'true') == 'true'
+            self.dynamo_path_check_existing = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH_CHECK_EXIST,
+                    'false') == 'true'
+            self.dynamo_force_manual_run = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_FORCE_MANUAL_RUN,
+                    'false') == 'true'
+            self.dynamo_model_nodes_info = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_MODEL_NODES_INFO, None)
 
         # panel buttons should be active always
         if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:

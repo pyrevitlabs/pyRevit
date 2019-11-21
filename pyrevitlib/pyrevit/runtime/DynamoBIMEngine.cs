@@ -11,7 +11,13 @@ using pyRevitLabs.Common;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class DynamoBIMEngineConfigs : ScriptEngineConfigs {
-        public bool clean;
+        public bool clean = false;
+        public bool automate = true;
+        public string dynamo_path = string.Empty;
+        public bool dynamo_path_exec = true;
+        public bool dynamo_path_check_existing = false;
+        public bool dynamo_force_manual_run = false;
+        public string dynamo_model_nodes_info = string.Empty;
     }
 
     public class DynamoBIMEngine : ScriptEngine {
@@ -25,11 +31,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // extract engine configuration from runtime data
             try {
                 ExecEngineConfigs = new JavaScriptSerializer().Deserialize<DynamoBIMEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
-            }
-            catch {
-                // if any errors switch to defaults
-                ExecEngineConfigs.clean = false;
-            }
+            } catch {}
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
@@ -42,24 +44,38 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // If the journal file specifies automation mode
                 // Dynamo will run on the main thread without the idle loop.
-                { "dynAutomation",  "True" },
+                { "dynAutomation",  ExecEngineConfigs.automate ? "True" : "False" },
 
-                // The journal file can specify if the Dynamo workspace opened
-                { "dynForceManualRun",  "False" },
-
-                // The journal file can specify if the Dynamo workspace opened from DynPathKey will be executed or not. 
+                 // The journal file can specify if the Dynamo workspace opened 
+                // from DynPathKey will be executed or not. 
                 // If we are in automation mode the workspace will be executed regardless of this key.
-                { "dynPathExecute",  "True" },
+                { "dynPathExecute",  ExecEngineConfigs.dynamo_path_exec ? "True" : "False" },
 
                 // The journal file can specify if the existing UIless RevitDynamoModel
                 // needs to be shutdown before performing any action.
                 // per comments on https://github.com/eirannejad/pyRevit/issues/570
                 // Setting this to True slows down Dynamo by a factor of 3
                 { "dynModelShutDown",  ExecEngineConfigs.clean ? "True" : "False" },
+            };
 
+            if (ExecEngineConfigs.dynamo_path != null && ExecEngineConfigs.dynamo_path != string.Empty) {
+                // The journal file can specify a Dynamo workspace to be opened 
+                // (and executed if we are in automation mode) at run time.
+                journalData["dynPath"] = ExecEngineConfigs.dynamo_path;
+                // The journal file can specify if a check should be performed to see if the
+                // current workspaceModel already points to the Dynamo file we want to 
+                // run (or perform other tasks). If that's the case, we want to use the
+                // current workspaceModel.
+                journalData["dynPathCheckExisting "] = ExecEngineConfigs.dynamo_path_check_existing ? "True" : "False";
+                // The journal file can specify if the Dynamo workspace opened
+                // from DynPathKey will be forced in manual mode.
+                journalData["dynForceManualRun "] = ExecEngineConfigs.dynamo_force_manual_run ? "True" : "False";
+            }
+
+            if (ExecEngineConfigs.dynamo_model_nodes_info != null && ExecEngineConfigs.dynamo_model_nodes_info != string.Empty) {
                 // The journal file can specify the values of Dynamo nodes.
-                //{ "dynModelNodesInfo",  "" }
-                };
+                journalData["dynModelNodesInfo"] = ExecEngineConfigs.dynamo_model_nodes_info;
+            }
 
             //return new DynamoRevit().ExecuteCommand(new DynamoRevitCommandData() {
             //    JournalData = journalData,
