@@ -1,6 +1,9 @@
 """Methods and Classes to convert Revit types to serializable"""
 from pyrevit import DB
+from pyrevit.framework import List
+import sys, inspect
 
+__all__ = ('XYZ', 'ViewOrientation3D', 'Transform', 'BoundingBoxXYZ')
 
 class XYZ:
     def __init__(self, xyz):
@@ -56,6 +59,32 @@ class BoundingBoxXYZ:
         bbox_xyz.Transform = self.transform.deserialize()
         return bbox_xyz
 
+def serialize(value):
+    if isinstance(value, list) or value.__class__.__name__.startswith('List['):
+        result_list = []
+        for value_item in value:
+            result_list.append(serialize(value_item))
+        return result_list
+    elif value.__class__.__name__ in __all__:
+        for mem in inspect.getmembers(sys.modules[__name__]):
+            moduleobject = mem[1]
+            if inspect.isclass(moduleobject) \
+                    and hasattr(moduleobject, 'deserialize'):
+                if moduleobject.__name__ == value.__class__.__name__:
+                    return moduleobject(value)
+    else:
+        return value
+
+def deserialize(value):
+    if isinstance(value, list):
+        result_list = []
+        for value_item in value:
+            result_list.append(deserialize(value_item))
+        return result_list
+    elif value.__class__.__name__ in __all__:
+        if callable(getattr(value, "deserialize", None)):
+            return value.deserialize()
+    return value
 
 def serialize_list(input_list):
     result = []

@@ -2,12 +2,13 @@
 import os
 import os.path as op
 import pickle
-
+import inspect
 from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
+import copy_paste_state_actions
 
 __doc__ = 'Copies the state of desired parameter of the active'\
           ' view to memory. e.g. Visibility Graphics settings or'\
@@ -17,6 +18,24 @@ __authors__ = ['Gui Talarico', '{{author}}']
 
 logger = script.get_logger()
 
+available_actions = {}
+for mem in inspect.getmembers(copy_paste_state_actions):
+    moduleobject = mem[1]
+    if inspect.isclass(moduleobject) \
+            and hasattr(moduleobject, 'is_copy_paste_action'):
+        if hasattr(moduleobject, 'validate_context') \
+                and not moduleobject.validate_context():
+            available_actions[moduleobject.name] = moduleobject
+
+selected_option = \
+    forms.CommandSwitchWindow.show(available_actions.keys(),
+        message='Select property to be copied to memory:'
+        )
+if selected_option:
+    action = available_actions[selected_option]()
+    action.copy_wrapper()
+
+script.exit()
 
 class Point:
     def __init__(self, x, y, z):
@@ -66,13 +85,7 @@ selected_option = \
 
 
 if selected_option == 'View Zoom/Pan State':
-    SUPPORTED_VIEW_TYPES = (
-        DB.ViewPlan,
-        DB.ViewSection,
-        DB.View3D,
-        DB.ViewSheet,
-        DB.ViewDrafting
-    )
+    
     if not isinstance(revit.active_view, SUPPORTED_VIEW_TYPES):
         forms.alert("Type of active view is not supported", exitscript=True)
     datafile = \
