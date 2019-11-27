@@ -18,6 +18,8 @@ __authors__ = ['Gui Talarico', '{{author}}']
 
 logger = script.get_logger()
 
+LAST_ACTION_VAR = "COPYPASTESTATE"
+
 available_actions = {}
 for mem in inspect.getmembers(copy_paste_state_actions):
     moduleobject = mem[1]
@@ -29,305 +31,174 @@ for mem in inspect.getmembers(copy_paste_state_actions):
 
 selected_option = \
     forms.CommandSwitchWindow.show(available_actions.keys(),
-        message='Select property to be copied to memory:'
-        )
+        message='Select property to be copied to memory:')
 if selected_option:
     action = available_actions[selected_option]()
     action.copy_wrapper()
+    script.set_envvar(LAST_ACTION_VAR, selected_option)
 
-script.exit()
+# elif selected_option == 'Viewport Placement on Sheet':
+#     """
+#     Copyright (c) 2016 Gui Talarico
 
-class Point:
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
+#     CopyPasteViewportPlacemenet
+#     Copy and paste the placement of viewports across sheets
+#     github.com/gtalarico
 
+#     --------------------------------------------------------
+#     pyrevit Notice:
+#     pyrevit: repository at https://github.com/eirannejad/pyrevit
+#     """
+#     originalviewtype = ''
 
-class BasePoint:
-    def __init__(self):
-        self.x = 0
-        self.y = 0
-        self.z = 0
+#     selview = selvp = None
+#     vpboundaryoffset = 0.01
+#     activeSheet = revit.active_view
+#     transmatrix = TransformationMatrix()
+#     revtransmatrix = TransformationMatrix()
 
+#     def sheet_to_view_transform(sheetcoord):
+#         global transmatrix
+#         newx = \
+#             transmatrix.destmin.X \
+#             + (((sheetcoord.X - transmatrix.sourcemin.X)
+#                 * (transmatrix.destmax.X - transmatrix.destmin.X))
+#                / (transmatrix.sourcemax.X - transmatrix.sourcemin.X))
 
+#         newy = \
+#             transmatrix.destmin.Y \
+#             + (((sheetcoord.Y - transmatrix.sourcemin.Y)
+#                 * (transmatrix.destmax.Y - transmatrix.destmin.Y))
+#                / (transmatrix.sourcemax.Y - transmatrix.sourcemin.Y))
 
-class TransformationMatrix:
-    def __init__(self):
-        self.sourcemin = None
-        self.sourcemax = None
-        self.destmin = None
-        self.destmax = None
+#         return DB.XYZ(newx, newy, 0.0)
 
+#     def set_tansform_matrix(selvp, selview):
+#         # making sure the cropbox is active.
+#         cboxactive = selview.CropBoxActive
+#         cboxvisible = selview.CropBoxVisible
+#         cboxannoparam = selview.get_Parameter(
+#             DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
+#             )
 
-def make_picklable_list(curve_loops):
-    all_cloops = []
-    for curve_loop in curve_loops:
-        cloop_lines = []
-        for rvt_line in curve_loop:
-            p1 = (rvt_line.GetEndPoint(0).X, rvt_line.GetEndPoint(0).Y)
-            p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
-            cloop_lines.append((p1, p2))
+#         cboxannostate = cboxannoparam.AsInteger()
+#         curviewelements = DB.FilteredElementCollector(revit.doc)\
+#                             .OwnedByView(selview.Id)\
+#                             .WhereElementIsNotElementType()\
+#                             .ToElements()
 
-        all_cloops.append(cloop_lines)
-    return all_cloops
+#         viewspecificelements = []
+#         for el in curviewelements:
+#             if el.ViewSpecific \
+#                     and not el.IsHidden(selview) \
+#                     and el.CanBeHidden(selview) \
+#                     and el.Category is not None:
+#                 viewspecificelements.append(el.Id)
 
+#         basepoints = DB.FilteredElementCollector(revit.doc)\
+#                        .OfClass(DB.BasePoint)\
+#                        .WhereElementIsNotElementType()\
+#                        .ToElements()
 
-selected_option = \
-    forms.CommandSwitchWindow.show(
-        ['View Zoom/Pan State',
-         '3D Section Box State',
-         'Viewport Placement on Sheet',
-         'Visibility Graphics',
-         'Crop Region'],
-        message='Select property to be copied to memory:'
-        )
+#         excludecategories = ['Survey Point',
+#                              'Project Base Point']
+#         for el in basepoints:
+#             if el.Category and el.Category.Name in excludecategories:
+#                 viewspecificelements.append(el.Id)
 
+#         with revit.TransactionGroup('Activate & Read Cropbox Boundary'):
+#             with revit.Transaction('Hiding all 2d elements'):
+#                 if viewspecificelements:
+#                     try:
+#                         selview.HideElements(List[DB.ElementId](viewspecificelements))
+#                     except Exception as e:
+#                         logger.debug(e)
 
-if selected_option == 'View Zoom/Pan State':
-    
-    if not isinstance(revit.active_view, SUPPORTED_VIEW_TYPES):
-        forms.alert("Type of active view is not supported", exitscript=True)
-    datafile = \
-        script.get_document_data_file(file_id='SaveRevitActiveViewZoomState',
-                                      file_ext='pym',
-                                      add_cmd_name=False)
-    
-    av = revit.uidoc.GetOpenUIViews()[0]
-    cornerlist = av.GetZoomCorners()
-    f = open(datafile, 'w')
-    pickle.dump(type(revit.active_view).__name__, f)
-    cornerlist_picklable = revit.serializable.serialize_list(cornerlist)
-    pickle.dump(cornerlist_picklable, f)
+#             with revit.Transaction('Activate & Read Cropbox Boundary'):
+#                 selview.CropBoxActive = True
+#                 selview.CropBoxVisible = False
+#                 cboxannoparam.Set(0)
 
-    # dump ViewOrientation3D
-    if isinstance(revit.active_view, DB.View3D):
-        orientation = revit.active_view.GetOrientation()
-        orientation_picklable = revit.serializable.ViewOrientation3D(orientation)
-        pickle.dump(orientation_picklable, f)
-    elif isinstance(revit.active_view, DB.ViewSection):
-        direction = revit.active_view.ViewDirection
-        pickle.dump(revit.serializable.XYZ(direction), f)
-    f.close()
+#                 # get view min max points in modelUCS.
+#                 modelucsx = []
+#                 modelucsy = []
+#                 crsm = selview.GetCropRegionShapeManager()
 
-elif selected_option == '3D Section Box State':
-    datafile = \
-        script.get_document_data_file(file_id='SaveSectionBoxState',
-                                      file_ext='pym',
-                                      add_cmd_name=False)
+#                 cllist = crsm.GetCropShape()
+#                 if len(cllist) == 1:
+#                     cl = cllist[0]
+#                     for l in cl:
+#                         modelucsx.append(l.GetEndPoint(0).X)
+#                         modelucsy.append(l.GetEndPoint(0).Y)
+#                     cropmin = DB.XYZ(min(modelucsx), min(modelucsy), 0.0)
+#                     cropmax = DB.XYZ(max(modelucsx), max(modelucsy), 0.0)
 
-    av = revit.active_view
-    avui = revit.uidoc.GetOpenUIViews()[0]
+#                     # get vp min max points in sheetUCS
+#                     ol = selvp.GetBoxOutline()
+#                     vptempmin = ol.MinimumPoint
+#                     vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset,
+#                                    vptempmin.Y + vpboundaryoffset, 0.0)
+#                     vptempmax = ol.MaximumPoint
+#                     vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
+#                                    vptempmax.Y - vpboundaryoffset, 0.0)
 
-    if isinstance(av, DB.View3D):
-        section_box = av.GetSectionBox()
-        view_orientation = av.GetOrientation()
-        f = open(datafile, 'w')
-        pickle.dump(revit.serializable.BoundingBoxXYZ(section_box), f)
-        pickle.dump(revit.serializable.ViewOrientation3D(view_orientation), f)
-        f.close()
-    else:
-        forms.alert('You must be on a 3D view to copy Section Box settings.')
+#                     transmatrix.sourcemin = vpmin
+#                     transmatrix.sourcemax = vpmax
+#                     transmatrix.destmin = cropmin
+#                     transmatrix.destmax = cropmax
 
-elif selected_option == 'Viewport Placement on Sheet':
-    """
-    Copyright (c) 2016 Gui Talarico
+#                     revtransmatrix.sourcemin = cropmin
+#                     revtransmatrix.sourcemax = cropmax
+#                     revtransmatrix.destmin = vpmin
+#                     revtransmatrix.destmax = vpmax
 
-    CopyPasteViewportPlacemenet
-    Copy and paste the placement of viewports across sheets
-    github.com/gtalarico
+#                     selview.CropBoxActive = cboxactive
+#                     selview.CropBoxVisible = cboxvisible
+#                     cboxannoparam.Set(cboxannostate)
 
-    --------------------------------------------------------
-    pyrevit Notice:
-    pyrevit: repository at https://github.com/eirannejad/pyrevit
-    """
-    originalviewtype = ''
+#                     if viewspecificelements:
+#                         selview.UnhideElements(
+#                             List[DB.ElementId](viewspecificelements)
+#                             )
 
-    selview = selvp = None
-    vpboundaryoffset = 0.01
-    activeSheet = revit.active_view
-    transmatrix = TransformationMatrix()
-    revtransmatrix = TransformationMatrix()
+#     datafile = \
+#         script.get_document_data_file(file_id='SaveViewportLocation',
+#                                       file_ext='pym',
+#                                       add_cmd_name=False)
 
-    def sheet_to_view_transform(sheetcoord):
-        global transmatrix
-        newx = \
-            transmatrix.destmin.X \
-            + (((sheetcoord.X - transmatrix.sourcemin.X)
-                * (transmatrix.destmax.X - transmatrix.destmin.X))
-               / (transmatrix.sourcemax.X - transmatrix.sourcemin.X))
+#     selected_ids = revit.get_selection().element_ids
 
-        newy = \
-            transmatrix.destmin.Y \
-            + (((sheetcoord.Y - transmatrix.sourcemin.Y)
-                * (transmatrix.destmax.Y - transmatrix.destmin.Y))
-               / (transmatrix.sourcemax.Y - transmatrix.sourcemin.Y))
+#     if len(selected_ids) == 1:
+#         vport_id = selected_ids[0]
+#         try:
+#             vport = revit.doc.GetElement(vport_id)
+#         except Exception:
+#             forms.alert('Select exactly one viewport.')
 
-        return DB.XYZ(newx, newy, 0.0)
+#         if isinstance(vport, DB.Viewport):
+#             view = revit.doc.GetElement(vport.ViewId)
+#             if view is not None and isinstance(view, DB.ViewPlan):
+#                 with revit.TransactionGroup('Copy Viewport Location'):
+#                     set_tansform_matrix(vport, view)
+#                     center = vport.GetBoxCenter()
+#                     modelpoint = sheet_to_view_transform(center)
+#                     center_pt = Point(center.X, center.Y, center.Z)
+#                     model_pt = Point(modelpoint.X, modelpoint.Y, modelpoint.Z)
+#                     with open(datafile, 'wb') as fp:
+#                         originalviewtype = 'ViewPlan'
+#                         pickle.dump(originalviewtype, fp)
+#                         pickle.dump(center_pt, fp)
+#                         pickle.dump(model_pt, fp)
 
-    def set_tansform_matrix(selvp, selview):
-        # making sure the cropbox is active.
-        cboxactive = selview.CropBoxActive
-        cboxvisible = selview.CropBoxVisible
-        cboxannoparam = selview.get_Parameter(
-            DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
-            )
-
-        cboxannostate = cboxannoparam.AsInteger()
-        curviewelements = DB.FilteredElementCollector(revit.doc)\
-                            .OwnedByView(selview.Id)\
-                            .WhereElementIsNotElementType()\
-                            .ToElements()
-
-        viewspecificelements = []
-        for el in curviewelements:
-            if el.ViewSpecific \
-                    and not el.IsHidden(selview) \
-                    and el.CanBeHidden(selview) \
-                    and el.Category is not None:
-                viewspecificelements.append(el.Id)
-
-        basepoints = DB.FilteredElementCollector(revit.doc)\
-                       .OfClass(DB.BasePoint)\
-                       .WhereElementIsNotElementType()\
-                       .ToElements()
-
-        excludecategories = ['Survey Point',
-                             'Project Base Point']
-        for el in basepoints:
-            if el.Category and el.Category.Name in excludecategories:
-                viewspecificelements.append(el.Id)
-
-        with revit.TransactionGroup('Activate & Read Cropbox Boundary'):
-            with revit.Transaction('Hiding all 2d elements'):
-                if viewspecificelements:
-                    try:
-                        selview.HideElements(List[DB.ElementId](viewspecificelements))
-                    except Exception as e:
-                        logger.debug(e)
-
-            with revit.Transaction('Activate & Read Cropbox Boundary'):
-                selview.CropBoxActive = True
-                selview.CropBoxVisible = False
-                cboxannoparam.Set(0)
-
-                # get view min max points in modelUCS.
-                modelucsx = []
-                modelucsy = []
-                crsm = selview.GetCropRegionShapeManager()
-
-                cllist = crsm.GetCropShape()
-                if len(cllist) == 1:
-                    cl = cllist[0]
-                    for l in cl:
-                        modelucsx.append(l.GetEndPoint(0).X)
-                        modelucsy.append(l.GetEndPoint(0).Y)
-                    cropmin = DB.XYZ(min(modelucsx), min(modelucsy), 0.0)
-                    cropmax = DB.XYZ(max(modelucsx), max(modelucsy), 0.0)
-
-                    # get vp min max points in sheetUCS
-                    ol = selvp.GetBoxOutline()
-                    vptempmin = ol.MinimumPoint
-                    vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset,
-                                   vptempmin.Y + vpboundaryoffset, 0.0)
-                    vptempmax = ol.MaximumPoint
-                    vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
-                                   vptempmax.Y - vpboundaryoffset, 0.0)
-
-                    transmatrix.sourcemin = vpmin
-                    transmatrix.sourcemax = vpmax
-                    transmatrix.destmin = cropmin
-                    transmatrix.destmax = cropmax
-
-                    revtransmatrix.sourcemin = cropmin
-                    revtransmatrix.sourcemax = cropmax
-                    revtransmatrix.destmin = vpmin
-                    revtransmatrix.destmax = vpmax
-
-                    selview.CropBoxActive = cboxactive
-                    selview.CropBoxVisible = cboxvisible
-                    cboxannoparam.Set(cboxannostate)
-
-                    if viewspecificelements:
-                        selview.UnhideElements(
-                            List[DB.ElementId](viewspecificelements)
-                            )
-
-    datafile = \
-        script.get_document_data_file(file_id='SaveViewportLocation',
-                                      file_ext='pym',
-                                      add_cmd_name=False)
-
-    selected_ids = revit.get_selection().element_ids
-
-    if len(selected_ids) == 1:
-        vport_id = selected_ids[0]
-        try:
-            vport = revit.doc.GetElement(vport_id)
-        except Exception:
-            forms.alert('Select exactly one viewport.')
-
-        if isinstance(vport, DB.Viewport):
-            view = revit.doc.GetElement(vport.ViewId)
-            if view is not None and isinstance(view, DB.ViewPlan):
-                with revit.TransactionGroup('Copy Viewport Location'):
-                    set_tansform_matrix(vport, view)
-                    center = vport.GetBoxCenter()
-                    modelpoint = sheet_to_view_transform(center)
-                    center_pt = Point(center.X, center.Y, center.Z)
-                    model_pt = Point(modelpoint.X, modelpoint.Y, modelpoint.Z)
-                    with open(datafile, 'wb') as fp:
-                        originalviewtype = 'ViewPlan'
-                        pickle.dump(originalviewtype, fp)
-                        pickle.dump(center_pt, fp)
-                        pickle.dump(model_pt, fp)
-
-            elif view is not None and isinstance(view, DB.ViewDrafting):
-                center = vport.GetBoxCenter()
-                center_pt = Point(center.X, center.Y, center.Z)
-                with open(datafile, 'wb') as fp:
-                    originalviewtype = 'ViewDrafting'
-                    pickle.dump(originalviewtype, fp)
-                    pickle.dump(center_pt, fp)
-            else:
-                forms.alert('This tool only works with Plan, '
-                            'RCP, and Detail views and viewports.')
-    else:
-        forms.alert('Select exactly one viewport.')
-
-elif selected_option == 'Visibility Graphics':
-    datafile = \
-        script.get_document_data_file(file_id='SaveVisibilityGraphicsState',
-                                      file_ext='pym',
-                                      add_cmd_name=False)
-
-    av = revit.active_view
-
-    f = open(datafile, 'w')
-    pickle.dump(int(av.Id.IntegerValue), f)
-    f.close()
-
-elif selected_option == 'Crop Region':
-    datafile = \
-        script.get_document_data_file(file_id='SaveCropRegionState',
-                                      file_ext='pym',
-                                      add_cmd_name=False)
-
-    av = revit.active_view
-    crsm = av.GetCropRegionShapeManager()
-
-    crsm_valid = False
-    if HOST_APP.is_newer_than(2015):
-        crsm_valid = crsm.CanHaveShape
-    else:
-        crsm_valid = crsm.Valid
-
-    if crsm_valid:
-        with open(datafile, 'w') as f:
-            if HOST_APP.is_newer_than(2015):
-                curve_loops = list(crsm.GetCropShape())
-            else:
-                curve_loops = [crsm.GetCropRegionShape()]
-            
-            if curve_loops:
-                pickle.dump(make_picklable_list(curve_loops), f)
+#             elif view is not None and isinstance(view, DB.ViewDrafting):
+#                 center = vport.GetBoxCenter()
+#                 center_pt = Point(center.X, center.Y, center.Z)
+#                 with open(datafile, 'wb') as fp:
+#                     originalviewtype = 'ViewDrafting'
+#                     pickle.dump(originalviewtype, fp)
+#                     pickle.dump(center_pt, fp)
+#             else:
+#                 forms.alert('This tool only works with Plan, '
+#                             'RCP, and Detail views and viewports.')
+#     else:
+#         forms.alert('Select exactly one viewport.')

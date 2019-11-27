@@ -1,5 +1,6 @@
 # pylint: disable=import-error,invalid-name,attribute-defined-outside-init
 from pyrevit import revit, script, forms, DB
+from pyrevit import HOST_APP
 import pickle
 import math
 
@@ -13,7 +14,7 @@ def copy_paste_action(func):
     return func
 
 
-class DataFile:
+class DataFile(object):
     def __init__(self, action_name, mode='r'):
         self.datafile = script.get_document_data_file(
             file_id='CopyPasteState_' + action_name,
@@ -27,6 +28,7 @@ class DataFile:
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.file.close()
+        print('exit', exception_type, exception_value, traceback)
         if exception_value:
             forms.alert(str(exception_value))
 
@@ -41,7 +43,7 @@ class DataFile:
         return revit.serializable.deserialize(value_serialized)
 
 
-class CopyPasteStateAction:
+class CopyPasteStateAction(object):
     name = '-'
 
     def copy(self, datafile):
@@ -52,6 +54,7 @@ class CopyPasteStateAction:
 
     @staticmethod
     def validate_context():
+        print("validate_context empty")
         return
 
     def copy_wrapper(self):
@@ -111,6 +114,7 @@ class ViewZoomPanState(CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
+        print("validate_context ViewZoomPanState")
         if not isinstance(revit.active_view, (
                 DB.ViewPlan,
                 DB.ViewSection,
@@ -135,11 +139,59 @@ class SectionBox3DState(CopyPasteStateAction):
         view_orientation = datafile.load()
         active_ui_view = revit.uidoc.GetOpenUIViews()[0]
         with revit.Transaction('Paste Section Box Settings'):
-            revit.active_view.SetSectionBox(section_box.deserialize())
-            revit.active_view.SetOrientation(view_orientation.deserialize())
+            revit.active_view.SetSectionBox(section_box)
+            revit.active_view.SetOrientation(view_orientation)
         active_ui_view.ZoomToFit()
 
     @staticmethod
     def validate_context():
+        print("validate_context SectionBox3DState")
         if not isinstance(revit.active_view, DB.View3D):
             return "You must be on a 3D view to copy and paste 3D section box."
+
+
+@copy_paste_action
+class VisibilityGraphics(CopyPasteStateAction):
+    name = 'Visibility Graphics'
+
+    def copy(self, datafile):
+        datafile.dump(int(revit.active_view.Id))
+
+    def paste(self, datafile):
+        e_id = datafile.load()
+        with revit.Transaction('Paste Visibility Graphics'):
+            revit.active_view.ApplyViewTemplateParameters(
+                revit.doc.GetElement(e_id))
+
+@copy_paste_action
+class CropRegion(CopyPasteStateAction):
+    name = 'Crop Region'
+
+    def copy(self, datafile):
+        crsm = revit.active_view.GetCropRegionShapeManager()
+        crsm_valid = False
+        if HOST_APP.is_newer_than(2015):
+            crsm_valid = crsm.CanHaveShape
+        else:
+            crsm_valid = crsm.Valid
+
+        if crsm_valid:
+            if HOST_APP.is_newer_than(2015):
+                curve_loops = list(crsm.GetCropShape())
+            else:
+                curve_loops = [crsm.GetCropRegionShape()]
+            if curve_loops:
+                datafile.dump(curve_loops)
+
+    def paste(self, datafile):
+        crv_loops = datafile.load()
+        with revit.Transaction():
+            revit.active_view.CropBoxVisible = True
+            crsm = revit.active_view.GetCropRegionShapeManager()
+            for crv_loop in crv_loops:
+                if HOST_APP.is_newer_than(2015):
+                    crsm.SetCropShape(crv_loop)
+                else:
+                    crsm.SetCropRegionShape(crv_loop)
+
+        revit.uidoc.RefreshActiveView()

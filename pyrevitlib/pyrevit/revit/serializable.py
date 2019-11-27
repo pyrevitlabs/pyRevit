@@ -3,7 +3,16 @@ from pyrevit import DB
 from pyrevit.framework import List
 import sys, inspect
 
-__all__ = ('XYZ', 'ViewOrientation3D', 'Transform', 'BoundingBoxXYZ')
+__all__ = ('ElementId', 'Line', 'CurveLoop', 'XYZ', 'ViewOrientation3D', 'Transform', 'BoundingBoxXYZ')
+
+
+class ElementId:
+    def __init__(self, element_id):
+        self.integer_value = element_id.IntegerValue
+
+    def deserialize(self):
+        return DB.ElementId(self.integer_value)
+
 
 class XYZ:
     def __init__(self, xyz):
@@ -14,6 +23,28 @@ class XYZ:
     def deserialize(self):
         return DB.XYZ(self.x, self.y, self.z)
 
+
+class Line:
+    def __init__(self, line):
+        self.start = XYZ(line.GetEndPoint(0))
+        self.end = XYZ(line.GetEndPoint(1))
+
+    def deserialize(self):
+        return DB.Line.CreateBound(self.start.deserialize(), 
+                                   self.end.deserialize())
+
+
+class CurveLoop:
+    def __init__(self, crv_loop):
+        self.curves = []
+        for crv in crv_loop:
+            self.curves.append(serialize(crv))
+    
+    def deserialize(self):
+        crv_loop = DB.CurveLoop()
+        for crv in self.curves:
+            crv_loop.Append(crv.deserialize())
+        return crv_loop
 
 
 class ViewOrientation3D:
