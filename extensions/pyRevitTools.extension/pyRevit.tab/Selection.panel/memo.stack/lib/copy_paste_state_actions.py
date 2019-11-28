@@ -28,7 +28,6 @@ class DataFile(object):
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.file.close()
-        print('exit', exception_type, exception_value, traceback)
         if exception_value:
             forms.alert(str(exception_value))
 
@@ -54,7 +53,6 @@ class CopyPasteStateAction(object):
 
     @staticmethod
     def validate_context():
-        print("validate_context empty")
         return
 
     def copy_wrapper(self):
@@ -114,7 +112,6 @@ class ViewZoomPanState(CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        print("validate_context ViewZoomPanState")
         if not isinstance(revit.active_view, (
                 DB.ViewPlan,
                 DB.ViewSection,
@@ -145,7 +142,6 @@ class SectionBox3DState(CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        print("validate_context SectionBox3DState")
         if not isinstance(revit.active_view, DB.View3D):
             return "You must be on a 3D view to copy and paste 3D section box."
 
@@ -185,7 +181,7 @@ class CropRegion(CopyPasteStateAction):
 
     def paste(self, datafile):
         crv_loops = datafile.load()
-        with revit.Transaction():
+        with revit.Transaction('Paste Crop Region'):
             revit.active_view.CropBoxVisible = True
             crsm = revit.active_view.GetCropRegionShapeManager()
             for crv_loop in crv_loops:
