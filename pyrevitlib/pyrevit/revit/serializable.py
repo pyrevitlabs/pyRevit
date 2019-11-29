@@ -3,7 +3,8 @@ from pyrevit import DB
 from pyrevit.framework import List
 import sys, inspect
 
-__all__ = ('ElementId', 'Line', 'CurveLoop', 'XYZ', 'ViewOrientation3D', 'Transform', 'BoundingBoxXYZ')
+__all__ = ('ElementId', 'XYZ', 'UV', 'Line', 'CurveLoop', 'ViewOrientation3D', 
+           'Transform', 'BoundingBoxXYZ')
 
 
 class ElementId:
@@ -22,6 +23,15 @@ class XYZ:
 
     def deserialize(self):
         return DB.XYZ(self.x, self.y, self.z)
+
+
+class UV:
+    def __init__(self, uv):
+        self.u = uv.U
+        self.v = uv.V
+
+    def deserialize(self):
+        return DB.UV(self.u, self.v)
 
 
 class Line:

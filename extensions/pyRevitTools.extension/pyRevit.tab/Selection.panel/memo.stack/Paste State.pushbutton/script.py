@@ -18,14 +18,35 @@ logger = script.get_logger()
 
 LAST_ACTION_VAR = "COPYPASTESTATE"
 
-ALIGNMENT_CENTER = 'Center'
 ALIGNMENT_CROPBOX = 'Crop Box'
 ALIGNMENT_BASEPOINT = 'Project Base Point'
 
+ALIGNMENT_BOTTOM_LEFT = 'Bottom Left'
+ALIGNMENT_BOTTOM_RIGHT = 'Bottom Right'
+ALIGNMENT_TOP_LEFT = 'Top Left'
+ALIGNMENT_TOP_RIGHT = 'Top Right'
+ALIGNMENT_CENTER = 'Center'
 
 @copy_paste_state_actions.copy_paste_action
 class ViewportPlacement(copy_paste_state_actions.CopyPasteStateAction):
     name = 'Viewport Placement on Sheet'
+
+    @staticmethod
+    def calculate_offset(view, saved_offset, alignment):
+        if alignment == ALIGNMENT_CENTER:
+            return DB.XYZ.Zero
+        else:
+            outline = view.Outline
+            current_offset = (outline.Max - outline.Min) / 2
+            offset_uv = saved_offset - current_offset
+            if alignment == ALIGNMENT_TOP_LEFT:
+                return DB.XYZ(-offset_uv.U, offset_uv.V, 0)
+            elif alignment == ALIGNMENT_TOP_RIGHT:
+                return DB.XYZ(offset_uv.U, offset_uv.V, 0)
+            elif alignment == ALIGNMENT_BOTTOM_RIGHT:
+                return DB.XYZ(offset_uv.U, -offset_uv.V, 0)
+            elif alignment == ALIGNMENT_BOTTOM_LEFT:
+                return DB.XYZ(-offset_uv.U, -offset_uv.V, 0)
 
     def paste(self, datafile):
         viewport = vpu.select_viewport()
@@ -40,6 +61,12 @@ class ViewportPlacement(copy_paste_state_actions.CopyPasteStateAction):
         cropbox_values_current = None
         hidden_elements = None
 
+        if saved_alignment == ALIGNMENT_CROPBOX:
+            alignment = forms.CommandSwitchWindow.show(
+                [ALIGNMENT_CENTER, ALIGNMENT_TOP_LEFT, ALIGNMENT_TOP_RIGHT,
+                 ALIGNMENT_BOTTOM_RIGHT, ALIGNMENT_BOTTOM_LEFT],
+                message='Select alignment') or ALIGNMENT_CENTER
+
         with revit.TransactionGroup('Paste Viewport Location'):
             if saved_alignment == ALIGNMENT_BASEPOINT or view.CropBoxActive:
                 with revit.Transaction('Temporary settings'):
@@ -51,7 +78,12 @@ class ViewportPlacement(copy_paste_state_actions.CopyPasteStateAction):
 
             with revit.Transaction('Apply Viewport Placement'):
                 if saved_alignment == ALIGNMENT_CROPBOX:
-                    pass
+                    saved_offset = datafile.load()
+                    offset_xyz = ViewportPlacement.calculate_offset(
+                        view, saved_offset, alignment)
+                    viewport.SetBoxCenter(saved_center \
+                        + offset_xyz \
+                        + title_block_pt)
                 else:
                     viewport.SetBoxCenter(saved_center + title_block_pt)
 

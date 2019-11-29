@@ -48,60 +48,17 @@ def recover_cropbox(view, saved_values):
         cboxannoparam.Set(saved_annotations)
 
 
-def set_tansform_matrix(selvp, selview, vpboundaryoffset=0.1, reverse=False):
-    # TODO support sections
-    # TODO allow to run with view activated instead of viewport selected
-    # TODO paste on many views at once
-    transmatrix = TransformationMatrix()
-
-    hide_all_elements(selview)
-    activate_cropbox(selview)
-
-    # get view min max points in modelUCS.
-    modelucsx = []
-    modelucsy = []
-    crsm = selview.GetCropRegionShapeManager()
-
-    cllist = crsm.GetCropShape()
-    if len(cllist) == 1:
-        cl = cllist[0]
-        for l in cl:
-            modelucsx.append(l.GetEndPoint(0).X)
-            modelucsy.append(l.GetEndPoint(0).Y)
-        cropmin = DB.XYZ(min(modelucsx), min(modelucsy), 0.0)
-        cropmax = DB.XYZ(max(modelucsx), max(modelucsy), 0.0)
-
-        # get vp min max points in sheetUCS
-        ol = selvp.GetBoxOutline()
-        vptempmin = ol.MinimumPoint # in viewport units
-        vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset,
-                       vptempmin.Y + vpboundaryoffset,
-                       0.0)
-        vptempmax = ol.MaximumPoint
-        vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
-                       vptempmax.Y - vpboundaryoffset,
-                       0.0)
-
-        transmatrix.sourcemin = cropmin if reverse else vpmin
-        transmatrix.sourcemax = cropmax if reverse else vpmax
-        transmatrix.destmin = vpmin if reverse else cropmin
-        transmatrix.destmax = vpmax if reverse else cropmax
-    return transmatrix
-
-
 def select_viewport():
-    vport = None
+    viewports = None
     selected_els = revit.get_selection().elements
     if selected_els and isinstance(selected_els[0], DB.Viewport):
-        vport = selected_els[0]
-    if not vport:
-        forms.alert('Select exactly one viewport.', exitscript=True)
+        viewports = [e for e in selected_els if isinstance(e, DB.Viewport)]
 
-    view = revit.doc.GetElement(vport.ViewId)
-    if not view and not(isinstance(view, DB.ViewPlan) or isinstance(view, DB.ViewDrafting)):
-        forms.alert('This tool only works with Plan, '
-                    'RCP, and Detail views and viewports.', exitscript=True)
-    return vport
+    if not viewports:
+        forms.alert('Select at least one viewport.')
+        return
+
+    return viewports
 
 def get_title_block_placement_by_vp(viewport):
     title_block_pt = None

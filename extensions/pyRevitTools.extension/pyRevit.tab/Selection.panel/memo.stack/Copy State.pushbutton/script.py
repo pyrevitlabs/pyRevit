@@ -21,7 +21,6 @@ logger = script.get_logger()
 
 LAST_ACTION_VAR = "COPYPASTESTATE"
 
-ALIGNMENT_CENTER = 'Center'
 ALIGNMENT_CROPBOX = 'Crop Box'
 ALIGNMENT_BASEPOINT = 'Project Base Point'
 
@@ -37,10 +36,10 @@ class ViewportPlacement(copy_paste_state_actions.CopyPasteStateAction):
         title_block_pt = vpu.get_title_block_placement_by_vp(viewport)
 
         if view.ViewType in [DB.ViewType.DraftingView, DB.ViewType.Legend]:
-            alignment = ALIGNMENT_CENTER
+            alignment = ALIGNMENT_CROPBOX
         else:
             alignment = forms.CommandSwitchWindow.show(
-                [ALIGNMENT_CENTER, ALIGNMENT_CROPBOX, ALIGNMENT_BASEPOINT],
+                [ALIGNMENT_CROPBOX, ALIGNMENT_BASEPOINT],
                 message='Select alignment')
 
         if not alignment:
@@ -56,12 +55,15 @@ class ViewportPlacement(copy_paste_state_actions.CopyPasteStateAction):
                 vpu.activate_cropbox(view)
                 vpu.hide_all_elements(view)
                 revit.doc.Regenerate()
+            
+            if alignment == ALIGNMENT_CROPBOX:
+                outline = view.Outline
+                offset_uv = (outline.Max - outline.Min) / 2
             center = viewport.GetBoxCenter() - title_block_pt
 
         datafile.dump(center)
         if alignment == ALIGNMENT_CROPBOX:
-            # TODO save left top corner offset
-            pass
+            datafile.dump(offset_uv)
 
 # main logic
 
