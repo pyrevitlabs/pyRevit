@@ -18,105 +18,54 @@ logger = script.get_logger()
 
 LAST_ACTION_VAR = "COPYPASTESTATE"
 
+ALIGNMENT_CENTER = 'Center'
+ALIGNMENT_CROPBOX = 'Crop Box'
+ALIGNMENT_BASEPOINT = 'Project Base Point'
+
+
 @copy_paste_state_actions.copy_paste_action
 class ViewportPlacement(copy_paste_state_actions.CopyPasteStateAction):
     name = 'Viewport Placement on Sheet'
 
     def paste(self, datafile):
-        """
-        Copyright (c) 2016 Gui Talarico
-        CopyPasteViewportPlacement
-        Copy and paste the placement of viewports across sheets
-        github.com/gtalarico
-        --------------------------------------------------------
-        pyrevit Notice:
-        pyrevit: repository at https://github.com/eirannejad/pyrevit
-        """
-        vport = vpu.select_viewport()
+        viewport = vpu.select_viewport()
 
-        originalviewtype = ''
-                                        
-        view = revit.doc.GetElement(vport.ViewId)
-        if isinstance(view, DB.ViewPlan):
-            try:
-                originalviewtype = datafile.load()
-                if originalviewtype == 'ViewPlan':
-                    savedcen_pt = datafile.load()
-                    savedmdl_pt = datafile.load()
-                    crop_region_saved = datafile.load()
+        view = revit.doc.GetElement(viewport.ViewId)
+        saved_alignment = datafile.load()
+
+        saved_center = datafile.load()
+        title_block_pt = vpu.get_title_block_placement_by_vp(viewport)
+
+        crop_region_current = None
+        cropbox_values_current = None
+        hidden_elements = None
+
+        with revit.TransactionGroup('Paste Viewport Location'):
+            if saved_alignment == ALIGNMENT_BASEPOINT or view.CropBoxActive:
+                with revit.Transaction('Temporary settings'):
+                    if saved_alignment == ALIGNMENT_BASEPOINT:
+                        crop_region_current = vpu.get_crop_region(view)
+                        vpu.set_crop_region(view, vpu.zero_cropbox(view))
+                    cropbox_values_current = vpu.activate_cropbox(view)
+                    hidden_elements = vpu.hide_all_elements(view)
+
+            with revit.Transaction('Apply Viewport Placement'):
+                if saved_alignment == ALIGNMENT_CROPBOX:
+                    pass
                 else:
-                    raise OriginalIsViewDrafting
-            except IOError:
-                forms.alert('Could not find saved viewport '
-                            'placement.\n'
-                            'Copy a Viewport Placement first.')
-            except OriginalIsViewDrafting:
-                forms.alert('Viewport placement info is from a '
-                            'drafting view and can not '
-                            'be applied here.')
-            else:
-                with revit.TransactionGroup('Paste Viewport Location'):
-                    crop_active_saved = view.CropBoxActive
-                    if crop_region_saved:
-                        cboxannoparam = view.get_Parameter(
-                                DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE)
-                        cropbox_active_current = view.CropBoxActive
-                        cropbox_visible_current = view.CropBoxVisible
-                        cropbox_annotations_current = cboxannoparam.AsInteger()
-                        with revit.Transaction('Temporary set saved crop region'):
-                            view.CropBoxActive = True
-                            crop_region_relevant = vpu.get_crop_region(view)
-                            vpu.set_crop_region(view, crop_region_saved)
-                            # making sure the cropbox is active.
-                            view.CropBoxActive = True
-                            view.CropBoxVisible = False
-                            
-                            if not cboxannoparam.IsReadOnly:
-                                cboxannoparam.Set(0)
-                    else:
-                        crop_region_relevant = None
-                        
+                    viewport.SetBoxCenter(saved_center + title_block_pt)
 
-                    with revit.DryTransaction('Activate & Read Cropbox Boundary'):
-                        revtransmatrix = vpu.set_tansform_matrix(vport, view, reverse=True)
-                    title_block_pt = vpu.get_title_block_placement_by_vp(vport)
-                    savedcenter_pt = savedcen_pt + title_block_pt
+            if crop_region_current:
+                with revit.Transaction('Recover crop region form'):
+                    vpu.set_crop_region(view, crop_region_current)
+            if cropbox_values_current:
+                with revit.Transaction('Recover crop region values'):
+                    vpu.recover_cropbox(view, cropbox_values_current)
+            if hidden_elements:
+                with revit.Transaction('Recover hidden elements'):
+                    vpu.unhide_all_elements(view, hidden_elements)
 
-                    with revit.Transaction('Apply Viewport Placement'):
-                        # target vp center (sheet UCS)
-                        center = vport.GetBoxCenter()
-                        # source vp center (sheet UCS) - target center
-                        centerdiff = vpu.transform_by_matrix(savedmdl_pt, revtransmatrix) - center
-                        vport.SetBoxCenter(savedcenter_pt)
-
-                    if crop_region_relevant:
-                        with revit.Transaction('Recover crop region'):
-                            view.CropBoxActive = crop_active_saved
-                            vpu.set_crop_region(view, crop_region_relevant)
-                            view.CropBoxActive = cropbox_active_current
-                            view.CropBoxVisible = cropbox_visible_current
-                            if not cboxannoparam.IsReadOnly:
-                                cboxannoparam.Set(cropbox_annotations_current)
-
-        elif isinstance(view, DB.ViewDrafting):
-            try:
-                originalviewtype = datafile.load()
-                if originalviewtype == 'ViewDrafting':
-                    savedcen_pt = datafile.load()
-                else:
-                    raise OriginalIsViewPlan
-            except IOError:
-                forms.alert('Could not find saved viewport '
-                            'placement.\n'
-                            'Copy a Viewport Placement first.')
-            except OriginalIsViewPlan:
-                forms.alert('Viewport placement info is from '
-                            'a model view and can not be '
-                            'applied here.')
-            else:
-                with revit.Transaction('Apply Viewport Placement'):
-                    vport.SetBoxCenter(savedcen_pt)
-
+        
 # main logic
 
 available_actions = {'Viewport Placement on Sheet': ViewportPlacement}

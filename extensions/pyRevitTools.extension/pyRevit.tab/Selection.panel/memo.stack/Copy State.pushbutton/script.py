@@ -1,4 +1,4 @@
-#pylint: disable=import-error,invalid-name,attribute-defined-outside-init
+# pylint: disable=import-error,invalid-name,attribute-defined-outside-init
 import os
 import os.path as op
 import pickle
@@ -21,68 +21,50 @@ logger = script.get_logger()
 
 LAST_ACTION_VAR = "COPYPASTESTATE"
 
+ALIGNMENT_CENTER = 'Center'
+ALIGNMENT_CROPBOX = 'Crop Box'
+ALIGNMENT_BASEPOINT = 'Project Base Point'
+
+
 @copy_paste_state_actions.copy_paste_action
 class ViewportPlacement(copy_paste_state_actions.CopyPasteStateAction):
     name = 'Viewport Placement on Sheet'
 
     def copy(self, datafile):
-        """
-        Copyright (c) 2016 Gui Talarico
+        viewport = vpu.select_viewport()
+        view = revit.doc.GetElement(viewport.ViewId)
 
-        CopyPasteViewportPlacement
-        Copy and paste the placement of viewports across sheets
-        github.com/gtalarico
+        title_block_pt = vpu.get_title_block_placement_by_vp(viewport)
 
-        --------------------------------------------------------
-        pyrevit Notice:
-        pyrevit: repository at https://github.com/eirannejad/pyrevit
-        """
-        vport = vpu.select_viewport()
+        if view.ViewType in [DB.ViewType.DraftingView, DB.ViewType.Legend]:
+            alignment = ALIGNMENT_CENTER
+        else:
+            alignment = forms.CommandSwitchWindow.show(
+                [ALIGNMENT_CENTER, ALIGNMENT_CROPBOX, ALIGNMENT_BASEPOINT],
+                message='Select alignment')
 
-        originalviewtype = ''
+        if not alignment:
+            return
 
-        view = revit.doc.GetElement(vport.ViewId)
-        if isinstance(view, DB.ViewPlan):
-            # TODO ask use to choose a mode
-            #  if SectionBoxes either None
-            #  and CropRegions (and SectionBoxes) are not identical
-            #  and ViewNormal are identical
-            #  (optional) if difference between CropRegions is too big
-            # TODO use LeftTop alignment by default,
-            #  choose CropBox alignment (LeftTop, RightTop etc.)
-            use_base_point = forms.CommandSwitchWindow.show(
-                ['Crop Box','Project Base Point'],
-                message='Select alignment'
-            ) == 'Project Base Point'
-            with revit.DryTransaction('Activate & Read Cropbox Boundary'):
-                transmatrix = vpu.set_tansform_matrix(vport, view)
-                if use_base_point:
-                    crop_region_curves = vpu.get_crop_region(view)
-                else:
-                    crop_region_curves = None
-            with revit.TransactionGroup('Copy Viewport Location'):
-                title_block_pt = vpu.get_title_block_placement_by_vp(vport)
-                # Vport center on a sheet (sheet UCS)
-                center = vport.GetBoxCenter() - title_block_pt
-                # Vport center on a sheet (model UCS)
-                modelpoint = vpu.transform_by_matrix(center, transmatrix)
+        datafile.dump(alignment)
 
-                originalviewtype = 'ViewPlan'
-                datafile.dump(originalviewtype)
-                datafile.dump(center)
-                datafile.dump(modelpoint)
-                if crop_region_curves:
-                    datafile.dump(crop_region_curves)
-                else:
-                    datafile.dump(None)
+        with revit.DryTransaction('Activate & Read Cropbox, Copy Center'):
+            if alignment == ALIGNMENT_BASEPOINT:
+                vpu.set_crop_region(view, vpu.zero_cropbox(view))
+            # use cropbox as alignment if it active
+            if alignment == ALIGNMENT_BASEPOINT or view.CropBoxActive:
+                vpu.activate_cropbox(view)
+                vpu.hide_all_elements(view)
+                revit.doc.Regenerate()
+            center = viewport.GetBoxCenter() - title_block_pt
 
-        elif isinstance(view, DB.ViewDrafting):
-            center = vport.GetBoxCenter()
-            originalviewtype = 'ViewDrafting'
-            datafile.dump(originalviewtype)
-            datafile.dump(center)
+        datafile.dump(center)
+        if alignment == ALIGNMENT_CROPBOX:
+            # TODO save left top corner offset
+            pass
 
 # main logic
+
 
 available_actions = {'Viewport Placement on Sheet': ViewportPlacement}
 for mem in inspect.getmembers(copy_paste_state_actions):
@@ -95,7 +77,7 @@ for mem in inspect.getmembers(copy_paste_state_actions):
 
 selected_option = \
     forms.CommandSwitchWindow.show(available_actions.keys(),
-        message='Select property to be copied to memory:')
+                                   message='Select property to be copied to memory:')
 if selected_option:
     action = available_actions[selected_option]()
     action.copy_wrapper()
