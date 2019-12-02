@@ -8,7 +8,7 @@ from pyrevit import forms
 from pyrevit import script
 import copy_paste_state_actions
 
-__authors__ = ['Gui Talarico', '{{author}}']
+__authors__ = ['Gui Talarico', '{{author}}', 'Alex Melnikov']
 
 logger = script.get_logger()
 
@@ -25,13 +25,13 @@ for mem in inspect.getmembers(copy_paste_state_actions):
         if hasattr(moduleobject, 'validate_context') \
                 and not moduleobject.validate_context():
             available_actions[moduleobject.name] = moduleobject
+if available_actions:
+    selected_option = \
+        forms.CommandSwitchWindow.show(
+            available_actions.keys(),
+            message='Select property to be copied to memory:')
 
-selected_option = \
-    forms.CommandSwitchWindow.show(
-        available_actions.keys(),
-        message='Select property to be copied to memory:')
-        
-if selected_option:
-    action = available_actions[selected_option]()
-    action.copy_wrapper()
-    script.set_envvar(LAST_ACTION_VAR, selected_option)
+    if selected_option:
+        action = available_actions[selected_option]()
+        action.copy_wrapper()
+        script.set_envvar(LAST_ACTION_VAR, selected_option)

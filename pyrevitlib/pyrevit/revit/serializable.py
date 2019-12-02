@@ -1,13 +1,15 @@
+# pylint: disable=missing-docstring,invalid-name,too-few-public-methods
 """Methods and Classes to convert Revit types to serializable"""
+import sys
+import inspect
 from pyrevit import DB
-from pyrevit.framework import List
-import sys, inspect
 
-__all__ = ('ElementId', 'XYZ', 'UV', 'Line', 'CurveLoop', 'ViewOrientation3D', 
+
+__all__ = ('ElementId', 'XYZ', 'UV', 'Line', 'CurveLoop', 'ViewOrientation3D',
            'Transform', 'BoundingBoxXYZ')
 
 
-class ElementId:
+class ElementId(object):
     def __init__(self, element_id):
         self.integer_value = element_id.IntegerValue
 
@@ -15,7 +17,7 @@ class ElementId:
         return DB.ElementId(self.integer_value)
 
 
-class XYZ:
+class XYZ(object):
     def __init__(self, xyz):
         self.x = xyz.X
         self.y = xyz.Y
@@ -25,7 +27,7 @@ class XYZ:
         return DB.XYZ(self.x, self.y, self.z)
 
 
-class UV:
+class UV(object):
     def __init__(self, uv):
         self.u = uv.U
         self.v = uv.V
@@ -34,22 +36,22 @@ class UV:
         return DB.UV(self.u, self.v)
 
 
-class Line:
+class Line(object):
     def __init__(self, line):
         self.start = XYZ(line.GetEndPoint(0))
         self.end = XYZ(line.GetEndPoint(1))
 
     def deserialize(self):
-        return DB.Line.CreateBound(self.start.deserialize(), 
+        return DB.Line.CreateBound(self.start.deserialize(),
                                    self.end.deserialize())
 
 
-class CurveLoop:
+class CurveLoop(object):
     def __init__(self, crv_loop):
         self.curves = []
         for crv in crv_loop:
             self.curves.append(serialize(crv))
-    
+
     def deserialize(self):
         crv_loop = DB.CurveLoop()
         for crv in self.curves:
@@ -57,7 +59,7 @@ class CurveLoop:
         return crv_loop
 
 
-class ViewOrientation3D:
+class ViewOrientation3D(object):
     def __init__(self, view_orientation_3d):
         self.eye = XYZ(view_orientation_3d.EyePosition)
         self.forward = XYZ(view_orientation_3d.ForwardDirection)
@@ -69,7 +71,7 @@ class ViewOrientation3D:
                                     self.forward.deserialize())
 
 
-class Transform:
+class Transform(object):
     def __init__(self, transform):
         self.basis_x = XYZ(transform.BasisX)
         self.basis_y = XYZ(transform.BasisY)
@@ -87,7 +89,7 @@ class Transform:
         return transform
 
 
-class BoundingBoxXYZ:
+class BoundingBoxXYZ(object):
     def __init__(self, bbox_xyz):
         self.min = XYZ(bbox_xyz.Min)
         self.max = XYZ(bbox_xyz.Max)
@@ -99,6 +101,7 @@ class BoundingBoxXYZ:
         bbox_xyz.Max = self.max.deserialize()
         bbox_xyz.Transform = self.transform.deserialize()
         return bbox_xyz
+
 
 def serialize(value):
     if isinstance(value, list) or value.__class__.__name__.startswith('List['):
@@ -116,6 +119,7 @@ def serialize(value):
     else:
         return value
 
+
 def deserialize(value):
     if isinstance(value, list):
         result_list = []
@@ -126,27 +130,3 @@ def deserialize(value):
         if callable(getattr(value, "deserialize", None)):
             return value.deserialize()
     return value
-
-def serialize_list(input_list):
-    result = []
-    for item in input_list:
-        item_serialized = None
-        if isinstance(item, list):
-            item_serialized = serialize_list(item)
-        elif isinstance(item, DB.XYZ):
-            item_serialized = XYZ(item)
-        elif isinstance(item, DB.Transform):
-            item_serialized = Transform(item)
-        result.append(item_serialized)
-    return result
-
-
-def deserialize_list(input_list):
-    for item in input_list:
-        if isinstance(item, list):
-            yield deserialize_list(item)
-        else:
-            if callable(getattr(item, "deserialize", None)):
-                yield item.deserialize()
-            else:
-                yield item
