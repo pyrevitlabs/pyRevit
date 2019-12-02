@@ -59,6 +59,30 @@ def get_selected_views():
             if isinstance(e, DB.View)]
 
 
+def get_views(allow_viewports=True, filter_func=None):
+    """Takes either active view or selected view(s) (cropable only)
+
+    Returns:
+        list: list of views
+    """
+    # try to use active view
+    # pylint: disable=no-else-return
+    if not filter_func or filter_func(revit.active_view):
+        return [revit.active_view]
+    # try to use selected viewports
+    else:
+        selected_views = []
+        if allow_viewports:
+            selected_viewports = get_selected_viewports()
+            selected_views.extend([revit.doc.GetElement(viewport.ViewId)
+                                   for viewport in selected_viewports])
+        selected_views.extend(get_selected_views())
+        if filter_func:
+            return [view for view in selected_views if filter_func(view)]
+        else:
+            return selected_views
+
+
 def get_crop_region(view):
     """Takes crop region of a view
 
@@ -431,28 +455,8 @@ class CropRegion(CopyPasteStateAction):
             and view.ViewType not in (DB.ViewType.Legend,
                                       DB.ViewType.DraftingView)
 
-    @staticmethod
-    def get_views():
-        """Takes either active view or selected view(s) (cropable only)
-
-        Returns:
-            list: list of views
-        """
-        # try to use active view
-        # pylint: disable=no-else-return
-        if CropRegion.is_cropable(revit.active_view):
-            return [revit.active_view]
-        # try to use selected viewports
-        else:
-            selected_viewports = get_selected_viewports()
-            selected_views = [revit.doc.GetElement(viewport.ViewId)
-                              for viewport in selected_viewports]
-            selected_views.extend(get_selected_views())
-            return [view for view in selected_views
-                    if CropRegion.is_cropable(view)]
-
     def copy(self, datafile):
-        view = CropRegion.get_views()[0]
+        view = get_views(filter_func=CropRegion.is_cropable)[0]
         curve_loops = get_crop_region(view)
         if curve_loops:
             datafile.dump(curve_loops)
@@ -469,7 +473,7 @@ class CropRegion(CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        if not CropRegion.get_views():
+        if not get_views(filter_func=CropRegion.is_cropable):
             return "Activate a view or select at least one cropable viewport"
 
 
@@ -768,3 +772,87 @@ class ViewportPlacement(CopyPasteStateAction):
     def validate_context():
         if not get_selected_viewports():
             return 'At least one viewport must be selected'
+
+
+@copy_paste_action
+class FilterOverrides(CopyPasteStateAction):
+    name = 'Filter Overrides'
+
+    @staticmethod
+    def get_view_filters(view):
+        view_filters = []
+        for filter_id in view.GetFilters():
+            filter_element = view.Document.GetElement(filter_id)
+            view_filters.append(filter_element)
+        return view_filters
+
+    @staticmethod
+    def controlled_by_template(view):
+        if view.ViewTemplateId != DB.ElementId.InvalidElementId:
+            view_template = view.Document.GetElement(view.ViewTemplateId)
+            non_controlled_params = view_template \
+                .GetNonControlledTemplateParameterIds()
+            # check if filters are controlled by template
+            if DB.ElementId(int(DB.BuiltInParameter.VIS_GRAPHICS_FILTERS)) \
+                    not in non_controlled_params:
+                return True
+        return False
+
+    def copy(self, datafile):
+        view = get_views()[0]
+        view_filters = FilterOverrides.get_view_filters(view)
+        if not view_filters:
+            raise Exception('Active view has no fitlers applied')
+        selected_filters = forms.SelectFromList.show(
+            view_filters,
+            name_attr='Name',
+            title='Select filters to copy',
+            button_name='Select filters',
+            multiselect=True
+        )
+        if not selected_filters:
+            raise 'No filters selected. Cancelled.'        
+        datafile.dump(view.Id)
+        filter_ids = [f.Id for f in view_filters]
+        datafile.dump(filter_ids)
+
+    def paste(self, datafile):
+        source_view_id = datafile.load()
+        source_view = revit.doc.GetElement(source_view_id)
+        source_filter_ids = datafile.load()
+        # to view template or to selected view
+        mode_templates = forms.CommandSwitchWindow.show(
+            ['Active/selected Views', 'Select Templates'],
+            message='Where do you want to paste filters?') == 'Select Templates'
+        if mode_templates:
+            views = forms.select_viewtemplates()
+        else:
+            views = get_views()
+            views_controlled_by_template = [view for view in views
+                                            if FilterOverrides\
+                                                .controlled_by_template(view)]
+            if views_controlled_by_template:
+                forms.alert('You have selected views with template applied.'\
+                    ' They will be skipped')
+        if not views:
+            raise Exception('Nothing selected')
+
+        # check if there are views controlled by template
+        with revit.TransactionGroup('Paste Filter Overrides'):
+            for view in views:
+                with revit.Transaction('Paste filter'):
+                    # check if filters are controlled by template
+                    if FilterOverrides.controlled_by_template(view):
+                        mlogger.warn('Skip view \'{}\''.format(
+                            revit.query.get_name(view)))
+                        continue
+
+                    view_filters_ids = view.GetFilters()
+                    for filter_id in source_filter_ids:
+                        # remove filter override if exists
+                        if filter_id in view_filters_ids:
+                            view.RemoveFilter(filter_id)
+                        # add new fitler override
+                        filter_overrides = source_view.GetFilterOverrides(
+                            filter_id)
+                        view.SetFilterOverrides(filter_id, filter_overrides)
