@@ -11,6 +11,7 @@ import os.path as op
 from collections import OrderedDict
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
+import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit.framework import clr
@@ -28,9 +29,13 @@ if not EXEC_PARAMS.doc_mode:
     mlogger.debug('Loading dll: %s', LIBGIT_DLL)
 
     try:
-        clr.AddReferenceToFileAndPath(LIBGIT_DLL)
-        # public libgit module
-        libgit = importlib.import_module(GIT_LIB)   #pylint: disable=C0103
+        if compat.PY3:
+            clr.AddReference(LIBGIT_DLL)
+        else:
+            clr.AddReferenceToFileAndPath(LIBGIT_DLL)
+
+        import LibGit2Sharp as libgit   #pylint: disable=import-error
+
     except Exception as load_err:
         mlogger.error('Can not load %s module. '
                       'This module is necessary for getting pyRevit version '

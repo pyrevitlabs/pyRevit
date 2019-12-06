@@ -78,7 +78,8 @@ def get_dest_docs():
 
 
 def get_source_sheets():
-    sheet_elements = forms.select_sheets(button_name='Copy Sheets', use_selection=True, use_active_view=True)
+    sheet_elements = forms.select_sheets(button_name='Copy Sheets',
+                                         use_selection=True)
 
     if not sheet_elements:
         sys.exit(0)

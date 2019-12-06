@@ -2,7 +2,7 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 # @output.route('/selectall')

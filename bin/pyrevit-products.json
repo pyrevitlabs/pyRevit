@@ -1,5 +1,20 @@
 [{
     "product": "pyRevit",
+    "release": "4.7 Final",
+    "version": "4.7.4",
+    "key": "{8A28EE04-5F33-409A-A3B2-7B38FFF2ADF1}"
+}, {
+    "product": "pyRevit",
+    "release": "4.7-beta4",
+    "version": "4.7.3",
+    "key": "{4D75C52D-F32E-486A-ADED-C7E77E3A8687}"
+}, {
+    "product": "pyRevit",
+    "release": "4.7-beta3",
+    "version": "4.7.2",
+    "key": "{83110B68-9131-4D58-95AB-D05D785A22E1}"
+}, {
+    "product": "pyRevit",
     "release": "4.7-beta2",
     "version": "4.7.1",
     "key": "{D719552C-6D81-4436-BF06-5F024C83313A}"
@@ -87,47 +102,62 @@
     "product": "pyRevit",
     "release": "4.6.9",
     "version": "4.6.9",
-    "key": "  {26F3AF6F-DC19-41BF-98BE-C39C56C413D2}"
+    "key": "{26F3AF6F-DC19-41BF-98BE-C39C56C413D2}"
 }, {
     "product": "pyRevit",
     "release": "4.6.8",
     "version": "4.6.8",
-    "key": "  {C433FE4C-BE21-405D-8D7B-043392763FC7}"
+    "key": "{C433FE4C-BE21-405D-8D7B-043392763FC7}"
 }, {
     "product": "pyRevit",
     "release": "4.6.7",
     "version": "4.6.7",
-    "key": "  {B105FB5A-0ACF-4A07-9A14-057886D5E25D}"
+    "key": "{B105FB5A-0ACF-4A07-9A14-057886D5E25D}"
 }, {
     "product": "pyRevit",
     "release": "4.6.6",
     "version": "4.6.6",
-    "key": "  {E119DE40-5871-479A-96E9-C2AE4F9C424B}"
+    "key": "{E119DE40-5871-479A-96E9-C2AE4F9C424B}"
 }, {
     "product": "pyRevit",
     "release": "4.6.5",
     "version": "4.6.5",
-    "key": "  {FC761B9E-3699-419C-A5DE-DEC361C1F6A7}"
+    "key": "{FC761B9E-3699-419C-A5DE-DEC361C1F6A7}"
 }, {
     "product": "pyRevit",
     "release": "4.6.4",
     "version": "4.6.4",
-    "key": "  {37CFAD58-51D0-4248-90E0-893058455ED1}"
+    "key": "{37CFAD58-51D0-4248-90E0-893058455ED1}"
 }, {
     "product": "pyRevit",
     "release": "4.6.3",
     "version": "4.6.3",
-    "key": "  {63160AFE-5B53-49AF-B46B-527BCBA0AC6E}"
+    "key": "{63160AFE-5B53-49AF-B46B-527BCBA0AC6E}"
 }, {
     "product": "pyRevit",
     "release": "4.6.2",
     "version": "4.6.2",
-    "key": "  {31A23489-A61B-4786-A857-F95DEB45573C}"
+    "key": "{31A23489-A61B-4786-A857-F95DEB45573C}"
 }, {
     "product": "pyRevit",
     "release": "4.6.1",
     "version": "4.6.1",
-    "key": "  {EF91A585-DC0C-43B8-B88B-4C130F430E84}"
+    "key": "{EF91A585-DC0C-43B8-B88B-4C130F430E84}"
+}, {
+    "product": "pyRevit CLI",
+    "release": "0.17.0",
+    "version": "0.17.0",
+    "key": "{4D1CD2D8-BDCD-4B44-A71B-1775AF4A4EA9}"
+}, {
+    "product": "pyRevit CLI",
+    "release": "0.16.0",
+    "version": "0.16.0",
+    "key": "{835919B1-5715-4E3C-8112-BB941FA435E8}"
+}, {
+    "product": "pyRevit CLI",
+    "release": "0.15.0",
+    "version": "0.15.0",
+    "key": "{A90B8942-A3EB-4AA5-96BE-2EE2606C69A6}"
 }, {
     "product": "pyRevit CLI",
     "release": "0.14.0",
@@ -157,25 +187,25 @@
     "product": "pyRevit CLI",
     "release": "0.9.8",
     "version": "0.9.8",
-    "key": "  {D5505166-C49A-436F-B25A-9FBD0632F6F0}"
+    "key": "{D5505166-C49A-436F-B25A-9FBD0632F6F0}"
 }, {
     "product": "pyRevit CLI",
     "release": "0.9.7",
     "version": "0.9.7",
-    "key": "  {D5505166-C49A-436F-B25A-9FBD0632F6F0}"
+    "key": "{D5505166-C49A-436F-B25A-9FBD0632F6F0}"
 }, {
     "product": "pyRevit CLI",
     "release": "0.9.6",
     "version": "0.9.6",
-    "key": "  {A72CCEB0-FD16-472D-8FF1-5215981985F3}"
+    "key": "{A72CCEB0-FD16-472D-8FF1-5215981985F3}"
 }, {
     "product": "pyRevit CLI",
     "release": "0.9.0",
     "version": "0.9.0",
-    "key": "  {4F364726-0CD9-4E0C-A2F6-1FC42DE4CF7C}"
+    "key": "{4F364726-0CD9-4E0C-A2F6-1FC42DE4CF7C}"
 }, {
     "product": "pyRevit CLI",
     "release": "0.6.0",
     "version": "0.6.0",
-    "key": "  {00C758B9-116B-4E07-8A65-1428643331C8}"
+    "key": "{00C758B9-116B-4E07-8A65-1428643331C8}"
 }]

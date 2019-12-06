@@ -17,7 +17,7 @@ mlogger = get_logger(__name__)  #pylint: disable=C0103
 
 def get_toaster():
     """Return full file path of the toast binary utility."""
-    return op.join(BIN_DIR, 'toast64.exe')
+    return op.join(BIN_DIR, 'pyrevit-toast.exe')
 
 
 def send_toast(message,

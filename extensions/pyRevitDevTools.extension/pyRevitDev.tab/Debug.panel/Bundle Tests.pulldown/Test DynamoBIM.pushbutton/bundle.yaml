@@ -1,0 +1,9 @@
+title: Test Dynamo BIM (Custom Title)
+tooltip: Test Dynamo BIM Tooltip
+author: "{{author}}"
+context:
+  - OST_Walls
+  - OST_TextNotes
+references:
+engine:
+  clean: false

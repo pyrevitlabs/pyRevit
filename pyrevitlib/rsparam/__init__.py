@@ -4,11 +4,14 @@ import re
 
 import codecs
 import csv
+import locale
 from collections import namedtuple, defaultdict
 
 
+# pylama:ignore=D105
+
 # rsparam version
-__version__ = '0.1.12'
+__version__ = '0.1.14'
 __sparamversion__ = (2, 1)
 
 
@@ -119,17 +122,26 @@ def write_entries(entries, out_file, encoding=None):
 
         # write groups referenced by SharedParam instances and in entries
         spf.write("*GROUP\tID\tNAME\r\n")
-        refgroups = {x.group for x in entries if isinstance(x, SharedParam)}
-        spgroups = {x for x in entries if isinstance(x, SharedParamGroup)}
+        if isinstance(entries, SharedParamEntries):
+            refgroups = {x.group for x in entries.params}
+            spgroups = {x for x in entries.groups}
+        else:
+            refgroups = {x.group for x in entries if isinstance(x, SharedParam)}
+            spgroups = {x for x in entries if isinstance(x, SharedParamGroup)}
         spgroups = spgroups.union(refgroups)
-        for spg in sorted(spgroups, key=lambda x: x.name):
+        sys_language = locale.getdefaultlocale(locale.LC_ALL)[0]
+        locale.setlocale(locale.LC_ALL, "{}.UTF-8".format(sys_language))
+        for spg in sorted(spgroups, key=lambda x: locale.strxfrm(x.name)):
             sparamwriter.writerow(['GROUP', spg.guid, spg.name])
 
         # write SharedParam in entries
         spf.write("*PARAM\tGUID\tNAME\tDATATYPE\tDATACATEGORY\tGROUP\t"
                   "VISIBLE\tDESCRIPTION\tUSERMODIFIABLE\r\n")
-        sparams = {x for x in entries if isinstance(x, SharedParam)}
-        for sp in sorted(sparams, key=lambda x: x.name):
+        if isinstance(entries, SharedParamEntries):
+            sparams = {x for x in entries.params}
+        else:
+            sparams = {x for x in entries if isinstance(x, SharedParam)}
+        for sp in sorted(sparams, key=lambda x: locale.strxfrm(x.name)):
             sparamwriter.writerow(
                 ['PARAM', sp.guid, sp.name, sp.datatype, sp.datacategory,
                  sp.group.guid, sp.visible, sp.desc, sp.usermod]

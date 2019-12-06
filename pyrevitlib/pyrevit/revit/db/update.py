@@ -73,7 +73,7 @@ def update_revision_numbering(per_sheet=False, doc=None):
 def update_param_value(rvt_param, value):
     if not rvt_param.IsReadOnly:
         if rvt_param.StorageType == DB.StorageType.String:
-            rvt_param.Set(str(value))
+            rvt_param.Set(str(value) if value else "")
         else:
             rvt_param.SetValueString(str(value))
 
@@ -111,5 +111,5 @@ def set_keynote_file(keynote_file, doc=None):
             DB.ExternalResourceTypes.BuiltInExternalResourceTypes.KeynoteTable,
             mpath,
             DB.PathType.Absolute)
-    knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
-    knote_table.LoadFrom(keynote_exres, DB.KeyBasedTreeEntriesLoadResults())
+        knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
+        knote_table.LoadFrom(keynote_exres, DB.KeyBasedTreeEntriesLoadResults())

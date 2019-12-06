@@ -9,7 +9,7 @@ using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.Common {
     // git exceptions
-    public class pyRevitInvalidGitCloneException : pyRevitException {
+    public class pyRevitInvalidGitCloneException : PyRevitException {
         public pyRevitInvalidGitCloneException() { }
 
         public pyRevitInvalidGitCloneException(string invalidClonePath) { Path = invalidClonePath; }
@@ -56,7 +56,7 @@ namespace pyRevitLabs.Common {
                 return new Repository(destPath);
             }
             catch (Exception ex) {
-                throw new pyRevitException(ex.Message, ex);
+                throw new PyRevitException(ex.Message, ex);
             }
         }
 
@@ -68,7 +68,7 @@ namespace pyRevitLabs.Common {
 
                 // get local branch, or make one (and fetch from remote) if doesn't exist
                 Branch targetBranch = repo.Branches[branchName];
-                if (targetBranch == null) {
+                if (targetBranch is null) {
                     logger.Debug(string.Format("Branch \"{0}\" does not exist in local clone. " +
                                                "Attemping to checkout from remotes...", branchName));
                     // lookup remotes for the branch otherwise
@@ -88,7 +88,7 @@ namespace pyRevitLabs.Common {
                 Commands.Checkout(repo, branchName);
             }
             catch (Exception ex) {
-                throw new pyRevitException(ex.Message, ex);
+                throw new PyRevitException(ex.Message, ex);
             }
         }
 
@@ -133,7 +133,7 @@ namespace pyRevitLabs.Common {
                 return UpdateStatus.UpToDate;
             }
             catch (Exception ex) {
-                throw new pyRevitException(ex.Message, ex);
+                throw new PyRevitException(ex.Message, ex);
             }
         }
 
@@ -154,12 +154,12 @@ namespace pyRevitLabs.Common {
                 }
             }
             catch (Exception ex) {
-                throw new pyRevitException(ex.Message, ex);
+                throw new PyRevitException(ex.Message, ex);
             }
 
             // if it gets here with no errors, it means commit could not be found
             // I'm avoiding throwing an exception inside my own try:catch
-            throw new pyRevitException(String.Format("Can not find commit with hash \"{0}\"", commitHash));
+            throw new PyRevitException(String.Format("Can not find commit with hash \"{0}\"", commitHash));
         }
 
         // rebase current branch to a specific tag
@@ -180,12 +180,12 @@ namespace pyRevitLabs.Common {
                 }
             }
             catch (Exception ex) {
-                throw new pyRevitException(ex.Message, ex);
+                throw new PyRevitException(ex.Message, ex);
             }
 
             // if it gets here with no errors, it means commit could not be found
             // I'm avoiding throwing an exception inside my own try:catch
-            throw new pyRevitException(String.Format("Can not find commit targetted by tag \"{0}\"", tagName));
+            throw new PyRevitException(String.Format("Can not find commit targetted by tag \"{0}\"", tagName));
         }
 
         // change origin url to the provided url
@@ -198,7 +198,7 @@ namespace pyRevitLabs.Common {
                 repo.Network.Remotes.Update(remoteName, r => r.Url = remoteUrl); ;
             }
             catch (Exception ex) {
-                throw new pyRevitException(ex.Message, ex);
+                throw new PyRevitException(ex.Message, ex);
             }
         }
 
@@ -236,7 +236,7 @@ namespace pyRevitLabs.Common {
                 }
                 catch (Exception ex) {
                     logger.Debug("Can not determine remote \"{0}\" url for \"{1}\"", remoteName, repoPath);
-                    throw new pyRevitException(ex.Message, ex);
+                    throw new PyRevitException(ex.Message, ex);
                 }
             }
             return null;

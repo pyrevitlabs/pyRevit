@@ -18,14 +18,16 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
 
-from pyrevit.coreutils.loadertypes import UIDocUtils
+from pyrevit.runtime.types import DocumentEventUtils
 
 import keynotesdb as kdb
 
 
 __title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
-__context__ = ""
+__helpurl__ = "https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
+__min_revit_ver__ = 2014
+
 
 logger = script.get_logger()
 output = script.get_output()
@@ -348,6 +350,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not self._kfile:
             raise Exception('Keynote file is not setup.')
 
+        # if a keynote file is still not set, return
+        if not os.access(self._kfile, os.W_OK):
+            raise Exception('Keynote file is read-only.')
+
         self._conn = None
         try:
             self._conn = kdb.connect(self._kfile)
@@ -382,7 +388,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 elif res == "Select a different keynote file":
                     self._change_kfile()
                 elif res == "Give me more info":
-                    script.open_url('https://eirannejad.github.io/pyRevit')
+                    script.open_url(__helpurl__)
                     script.exit()
             else:
                 forms.alert("Keynote file is not yet converted.",
@@ -615,6 +621,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 with revit.Transaction("Set Keynote File"):
                     revit.update.set_keynote_file(kfile, doc=revit.doc)
                 self._kfile = revit.query.get_keynote_file(doc=revit.doc)
+
+                # attempt at opening the selected file.
+                try:
+                    self._conn = kdb.connect(self._kfile)
+                except Exception as ckf_ex:
+                    forms.alert(
+                        "Error opening seleced keynote file.",
+                        sub_msg=str(ckf_ex)
+                    )
+
                 return self._kfile
             except Exception as skex:
                 forms.alert(str(skex))
@@ -643,7 +659,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 and kdb.RKeynoteFilters.ViewOnly.code in keynote_filter:
             visible_keys = \
                 [x.TagText for x in
-                 revit.query.get_visible_keynotes(revit.activeview)]
+                 revit.query.get_visible_keynotes(revit.active_view)]
             kdb.RKeynoteFilters.ViewOnly.set_keys(visible_keys)
 
         if fast and keynote_filter:
@@ -975,10 +991,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             def_kn_typeid = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
             kn_type = revit.doc.GetElement(def_kn_typeid)
             if kn_type:
-                uidoc_utils = UIDocUtils(HOST_APP.uiapp)
-                # place keynotes and get placed keynote elements
                 try:
-                    uidoc_utils.PostCommandAndUpdateNewElementProperties(
+                    # place keynotes and get placed keynote elements
+                    DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
+                        HOST_APP.uiapp,
                         revit.doc,
                         self.postable_keynote_command,
                         "Update Keynotes",

@@ -4,24 +4,26 @@ Example:
     >>> from pyrevit.framework import Assembly, Windows
 """
 
-#pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
+#pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
+import pyrevit.compat as compat
 
 import clr
 import System
 
 
-clr.AddReference("System.Core")
+clr.AddReference('System.Core')
 clr.AddReference('System.Management')
-clr.AddReferenceByPartialName('System.Windows.Forms')
-clr.AddReferenceByPartialName('System.Drawing')
+clr.AddReference('System.Windows.Forms')
+clr.AddReference('System.Drawing')
 clr.AddReference('PresentationCore')
 clr.AddReference('PresentationFramework')
 clr.AddReference('System.Xml.Linq')
-clr.AddReferenceByPartialName('WindowsBase')
+clr.AddReference('WindowsBase')
 
 # add linq extensions?
-clr.ImportExtensions(System.Linq)
+if compat.PY2:
+    clr.ImportExtensions(System.Linq)
 
 from System import AppDomain, Version
 from System import Type
@@ -30,6 +32,7 @@ from System import EventHandler
 from System import Array, IntPtr, Enum
 from System import Convert
 from System.Text import Encoding
+from System.Collections import ObjectModel
 from System.Collections import IEnumerator, IEnumerable
 from System.Collections.Generic import List, Dictionary
 from System.Collections.Generic import IList, IDictionary
@@ -59,6 +62,7 @@ from System import Windows
 from System.Windows import Forms
 from System.Windows.Forms import Clipboard
 from System.Windows import Controls
+from System.Windows import Documents
 from System.Windows import Media
 from System.Windows import Threading
 from System.Windows import Interop
@@ -69,20 +73,41 @@ from System.CodeDom import Compiler
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
 
+from System.Linq import Enumerable
+
 from Microsoft.CSharp import CSharpCodeProvider
 
+wpf = None
 clr.AddReference('IronPython.Wpf')
-import wpf
+if compat.PY3:
+    import IronPython
+    wpf = IronPython.Modules.Wpf
+else:
+    import wpf
 
+CPDialogs = None
 try:
-    # clr.AddReference('Microsoft.WindowsAPICodePack')
+    clr.AddReference('Microsoft.WindowsAPICodePack')
     clr.AddReference('Microsoft.WindowsAPICodePack.Shell')
     import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs #pylint: disable=ungrouped-imports
 except Exception:
-    CPDialogs = None
+    pass
 
 
+# try loading some utility modules shipped with revit
+NSJson = None
+try:
+    clr.AddReference('pyRevitLabs.Json')
+    import pyRevitLabs.Json as NSJson
+except Exception:
+    pass
+
+
+# do not import anything from pyrevit before this
 from pyrevit import BIN_DIR
+
+
+ASSEMBLY_FILE_TYPE = 'dll'
 
 
 def get_type(fw_object):
@@ -95,3 +120,8 @@ def get_dll_file(assembly_name):
     addin_file = op.join(BIN_DIR, assembly_name + '.dll')
     if op.exists(addin_file):
         return addin_file
+
+
+def get_current_thread_id():
+    """Return manageed thread id of current thread."""
+    return System.Threading.Thread.CurrentThread.ManagedThreadId

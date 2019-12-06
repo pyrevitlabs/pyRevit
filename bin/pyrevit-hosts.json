@@ -1028,4 +1028,26 @@
     "build": "20190725_1135",
     "target": "x64",
     "notes": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_2020_1_html"
+}, {
+    "meta": {
+        "schema": "1.0",
+        "source": "https://knowledge.autodesk.com/support/revit-products/learn-explore/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+    },
+    "product": "Autodesk Revit",
+    "release": "2020.1 New Install",
+    "version": "20.1.1.1",
+    "build": "20190731_1515",
+    "target": "x64",
+    "notes": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_2020_1_html"
+}, {
+    "meta": {
+        "schema": "1.0",
+        "source": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_html"
+    },
+    "product": "Autodesk Revit",
+    "release": "2020.2",
+    "version": "20.2.0.48",
+    "build": "20191031_1115",
+    "target": "x64",
+    "notes": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_html"
 }]

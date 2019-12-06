@@ -2,7 +2,6 @@
 import os
 import os.path as op
 
-from pyrevit import PyRevitException
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
 
@@ -11,40 +10,33 @@ from pyrevit.coreutils.logger import get_logger
 mlogger = get_logger(__name__)
 
 
-def _get_discovered_comps(comp_path, component_types_list):
+def _get_discovered_comps(comp_path, cmp_types_list):
     discovered_cmps = []
     mlogger.debug('Testing _get_component(s) on: %s ', comp_path)
     # comp_path might be a file or a dir,
     # but its name should not start with . or _:
-    for component_type in component_types_list:
-        mlogger.debug('Testing sub_directory %s for %s',
-                      comp_path, component_type)
-        try:
-            # if cmp_class can be created for this sub-dir, the add to list
-            # cmp_class will raise error if comp_path is not of cmp_class type.
-            component = component_type()
-            component.__init_from_dir__(comp_path)
+    for cmp_type in cmp_types_list:
+        mlogger.debug('Testing sub_directory %s for %s', comp_path, cmp_type)
+        # if cmp_class can be created for this sub-dir, the add to list
+        if cmp_type.matches(comp_path):
+            component = cmp_type(cmp_path=comp_path)
             discovered_cmps.append(component)
             mlogger.debug('Successfuly created component: %s from: %s',
                           component, comp_path)
-            break
-        except PyRevitException:
-            mlogger.debug('Can not create component of type: %s from: %s',
-                          component_type, comp_path)
 
     return discovered_cmps
 
 
 def _create_subcomponents(search_dir,
-                          component_types_list,
+                          cmp_types_list,
                           create_from_search_dir=False):
     """
     Parses the provided directory and returns a list of objects of the
-    types in component_types_list.
+    types in cmp_types_list.
 
     Arguments:
         search_dir: directory to parse
-        component_types_list: This methods checks the subfolders in search_dir
+        cmp_types_list: This methods checks the subfolders in search_dir
                               against the _get_component types provided
         in this list.
 
@@ -56,26 +48,31 @@ def _create_subcomponents(search_dir,
         identifiers in their names. (e.g. "folder.LINK_BUTTON_POSTFIX")
 
     Returns:
-        list of created classes of types provided in component_types_list
+        list of created classes of types provided in cmp_types_list
     """
     sub_cmp_list = []
 
     if not create_from_search_dir:
         mlogger.debug('Searching directory: %s for components of type: %s',
-                      search_dir, component_types_list)
+                      search_dir, cmp_types_list)
         for file_or_dir in os.listdir(search_dir):
             full_path = op.join(search_dir, file_or_dir)
             if not file_or_dir.startswith(('.', '_')):
                 sub_cmp_list.extend(_get_discovered_comps(full_path,
-                                                          component_types_list))
+                                                          cmp_types_list))
             else:
                 mlogger.debug('Skipping _get_component. '
                               'Name can not start with . or _: %s', full_path)
     else:
         sub_cmp_list.extend(_get_discovered_comps(search_dir,
-                                                  component_types_list))
+                                                  cmp_types_list))
 
     return sub_cmp_list
+
+
+def _get_subcomponents_classes(parent_classes):
+    """Find available subcomponents for given parent types."""
+    return [x for x in get_all_subclasses(parent_classes) if x.type_id]
 
 
 def _parse_for_components(component):
@@ -89,7 +86,7 @@ def _parse_for_components(component):
     """
     for new_cmp in _create_subcomponents(
             component.directory,
-            get_all_subclasses(component.allowed_sub_cmps)):
+            _get_subcomponents_classes(component.allowed_sub_cmps)):
         # add the successfulyl created _get_component to the
         # parent _get_component
         component.add_component(new_cmp)
@@ -100,8 +97,11 @@ def _parse_for_components(component):
 
 
 def parse_comp_dir(comp_path, comp_class):
-    return _create_subcomponents(comp_path, get_all_subclasses([comp_class]),
-                                 create_from_search_dir=True)
+    return _create_subcomponents(
+        comp_path,
+        _get_subcomponents_classes([comp_class]),
+        create_from_search_dir=True
+        )
 
 
 def get_parsed_extension(extension):
