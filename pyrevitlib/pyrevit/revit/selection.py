@@ -184,6 +184,13 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
                 return_values = [ref.GlobalPoint for ref in refs]
             else:
                 return_values = [ref.UVPoint for ref in refs]
+        elif obj_type == UI.Selection.ObjectType.LinkedElement:
+            return_values = []
+            for ref in refs:
+                ref_link_id = ref.ElementId
+                doc_linked = HOST_APP.doc.GetElement(ref_link_id)\
+                    .GetLinkDocument()
+                return_values.append(doc_linked.GetElement(ref.LinkedElementId))
         else:
             return_values = \
                 [HOST_APP.doc.GetElement(ref)
