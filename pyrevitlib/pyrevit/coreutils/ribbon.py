@@ -1167,6 +1167,10 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         # no highlighting options for panels
         pass
 
+    def set_collapse(self, state):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.IsCollapsed = state
+
     def open_stack(self):
         self.itemdata_mode = True
 

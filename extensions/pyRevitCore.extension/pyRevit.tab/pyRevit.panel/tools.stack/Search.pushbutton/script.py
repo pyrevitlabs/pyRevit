@@ -137,9 +137,12 @@ for cmd in sessionmgr.find_all_available_commands():
 
 
 # build the search database
-search_db = []
-search_db.extend(pyrevit_cmds.keys())
-search_db.extend(postable_cmds.keys())
+search_db = {}
+for cmd in pyrevit_cmds.values():
+    search_db[cmd.name] = cmd.tooltip
+
+for postcmd in postable_cmds.values():
+    search_db[postcmd.name] = ""
 
 # search
 matched_cmdname, matched_cmdargs, switches = \

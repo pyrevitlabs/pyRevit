@@ -76,15 +76,8 @@ def get_source_properties(src_element):
 
     src_type = revit.query.get_type(src_element)
 
-    ignore_bi_parameters = []
-    # sheet number cannot be copied
-    if isinstance(src_element, DB.ViewSheet):
-        ignore_bi_parameters.append(int(DB.BuiltInParameter.SHEET_NUMBER))
-    
-    def filter_func(p_def):
-        return p_def.BuiltInParameter and int(p_def.BuiltInParameter) not in ignore_bi_parameters
 
-    selected_params = forms.select_parameter(
+    selected_params = forms.select_parameters(
         src_element,
         title="Select Parameters",
         multiple=True,

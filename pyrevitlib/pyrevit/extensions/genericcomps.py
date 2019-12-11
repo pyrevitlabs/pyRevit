@@ -76,6 +76,7 @@ class GenericUIComponent(GenericComponent):
         self.min_revit_ver = self.max_revit_ver = None
         self.is_beta = False
         self.highlight_type = None
+        self.collapsed = False
         self.version = None
 
         self.meta = {}
@@ -211,6 +212,9 @@ class GenericUIComponent(GenericComponent):
             self.meta.get(exts.MDATA_HIGHLIGHT_KEY, None)
         if highlight and isinstance(highlight, str):
             self.highlight_type = highlight.lower()
+
+        self.collapsed = \
+            self.meta.get(exts.MDATA_COLLAPSED_KEY, 'false').lower() == 'true'
 
         self.modules = \
             self.meta.get(exts.MDATA_LINK_BUTTON_MODULES, self.modules)

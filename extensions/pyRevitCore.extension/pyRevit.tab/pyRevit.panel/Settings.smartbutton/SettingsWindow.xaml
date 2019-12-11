@@ -253,9 +253,9 @@
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <Image x:Name="lognone" Width="100" Height="50" Grid.Column="0" Grid.Row="0" VerticalAlignment="Top"/>
-                        <Image x:Name="logverbose" Width="100" Height="50" Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" Margin="0,10,0,0"/>
-                        <Image x:Name="logdebug" Width="100" Height="50" Grid.Column="0" Grid.Row="2" VerticalAlignment="Top" Margin="0,10,0,0"/>
+                        <Image x:Name="lognone" Width="100" Height="50" Grid.Column="0" Grid.Row="0" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                        <Image x:Name="logverbose" Width="100" Height="50" Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" Margin="0,10,0,0" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        <Image x:Name="logdebug" Width="100" Height="50" Grid.Column="0" Grid.Row="2" VerticalAlignment="Top" Margin="0,10,0,0" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                         <StackPanel Grid.Column="1" Grid.Row="0" Margin="10,0,0,0">
                             <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" IsChecked="True">
                                 No Reporting (logging.WARNING and above)
@@ -341,7 +341,7 @@
 
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Telemetry" IsExpanded="False" Margin="10px">
+                <Expander Header="Telemetry" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow">
                             Telemetry system, records each use of tools under any of the pyRevit extensions.
@@ -361,9 +361,10 @@
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Script Telemetry Server URL or API Endpoint</TextBlock>
                                 <TextBox x:Name="telemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" 
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
-                                         VerticalContentAlignment="Center" TextChanged="telemetryserver_updated" />
-                                <Border x:Name="telemetryserver_statusbox" Background="{DynamicResource pyRevitAccentBrush}" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
-                                    <TextBlock x:Name="telemetryserver_statusmsg" Text="Postgresql 10.0" Foreground="White"  VerticalAlignment="Center"/>
+                                         VerticalContentAlignment="Center"
+                                         TextChanged="telemetryserver_changed"/>
+                                <Border x:Name="telemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
+                                    <TextBlock x:Name="telemetryserver_statusmsg" Foreground="White"  VerticalAlignment="Center" MouseLeftButtonUp="update_telemetryserver_status_lights"/>
                                 </Border>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
                                     Example
@@ -407,9 +408,10 @@
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Application Telemetry Server URL or API Endpoint (e.g. http://telemetryserver.io):</TextBlock>
                                 <TextBox x:Name="apptelemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" 
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
-                                         VerticalContentAlignment="Center" TextChanged="apptelemetryserver_updated" />
-                                <Border x:Name="apptelemetryserver_statusbox" Background="{DynamicResource pyRevitAccentBrush}" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
-                                    <TextBlock x:Name="apptelemetryserver_statusmsg" Text="Postgresql 10.0" Foreground="White"  VerticalAlignment="Center"/>
+                                         VerticalContentAlignment="Center"
+                                         TextChanged="apptelemetryserver_changed"/>
+                                <Border x:Name="apptelemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
+                                    <TextBlock x:Name="apptelemetryserver_statusmsg" Foreground="White" VerticalAlignment="Center" MouseLeftButtonUp="update_apptelemetryserver_status_lights"/>
                                 </Border>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
                                     Example
@@ -487,22 +489,24 @@
                                 </TextBlock>
                             </StackPanel>
                         </GroupBox>
-                        <DockPanel Margin="0,10,0,10">
-                            <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Output Styling (CSS Stylesheet)</TextBlock>
-                            <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
-                                <Button Content="&#x25CF;&#x25CF;&#x25CF;"
+                        <GroupBox Header="pyRevit GUI Settings" Margin="0,10,0,0" Padding="10">
+                            <DockPanel Margin="0,10,0,10">
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Output Styling (CSS Stylesheet)</TextBlock>
+                                <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
+                                    <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                                     Width="48" Margin="6,0,3,0" Height="24" Padding="0,0,0,2"
                                     Click="pick_stylesheet"
                                     ToolTip="Pick a CSS style sheet to override the default."/>
-                                <Button Content="Reset"
+                                    <Button Content="Reset"
                                     Width="48" Margin="3,0,0,0" Height="24"
                                     Click="reset_stylesheet"
                                     ToolTip="Reset CSS style sheet back to default"/>
-                            </WrapPanel>
-                            <TextBox x:Name="cur_stylesheet_tb" FontFamily="Consolas" 
+                                </WrapPanel>
+                                <TextBox x:Name="cur_stylesheet_tb" FontFamily="Consolas" 
                                  Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
                                  VerticalContentAlignment="Center"/>
-                        </DockPanel>
+                            </DockPanel>
+                        </GroupBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>

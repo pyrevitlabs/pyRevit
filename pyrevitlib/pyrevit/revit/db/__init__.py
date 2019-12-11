@@ -10,7 +10,7 @@ from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 #pylint: disable=W0703,C0302,C0103
 __all__ = ('BaseWrapper', 'ElementWrapper',
            'ExternalRef', 'ProjectParameter', 'ProjectInfo',
-           'XYZPoint')
+           'XYZPoint', 'open_doc', 'close_doc')
 
 
 class BaseWrapper(object):
@@ -72,11 +72,15 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def symbol_name(self):
-        return Element.Name.GetValue(self._wrapped.Symbol)
+        symbol = getattr(self._wrapped, 'Symbol', None)
+        if symbol:
+            return Element.Name.GetValue(symbol)
 
     @property
     def family_name(self):
-        return Element.Name.GetValue(self._wrapped.Symbol.Family)
+        symbol = getattr(self._wrapped, 'Symbol', None)
+        if symbol:
+            return Element.Name.GetValue(symbol.Family)
 
     @property
     def id(self):
@@ -97,8 +101,10 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def location(self):
-        locp = self._wrapped.Location.Point
-        return (locp.X, locp.Y, locp.Z)
+        locp = getattr(self._wrapped.Location, 'Point', None)
+        if locp:
+            return (locp.X, locp.Y, locp.Z)
+        return (None, None, None)
 
     @property
     def x(self):
@@ -200,6 +206,69 @@ class ProjectInfo(BaseWrapper):
             return ''
 
     @property
+    def number(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Number
+        else:
+            return ''
+
+    @property
+    def address(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Address
+        else:
+            return ''
+
+    @property
+    def author(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Author
+        else:
+            return ''
+
+    @property
+    def building_name(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.BuildingName
+        else:
+            return ''
+
+    @property
+    def client_name(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.ClientName
+        else:
+            return ''
+
+    @property
+    def issue_date(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.IssueDate
+        else:
+            return ''
+
+    @property
+    def org_name(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.OrganizationName
+        else:
+            return ''
+
+    @property
+    def org_desc(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.OrganizationDescription
+        else:
+            return ''
+
+    @property
+    def status(self):
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Status
+        else:
+            return ''
+
+    @property
     def location(self):
         return op.dirname(self._doc.PathName)
 
@@ -243,3 +312,24 @@ class XYZPoint(BaseWrapper):
                     and self.y == other.y \
                     and self.z == other.z
         return False
+
+
+def open_doc(doc_path):
+    """Open document at given path.
+
+    Args:
+        doc_path (str): document file path
+
+    Returns:
+        DB.Document: opened document
+    """
+    return HOST_APP.app.OpenDocumentFile(doc_path)
+
+
+def close_doc(doc):
+    """Close given document.
+
+    Args:
+        doc (DB.Document): document
+    """
+    return doc.Close()

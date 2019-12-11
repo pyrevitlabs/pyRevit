@@ -39,14 +39,14 @@ def calc_and_print(items, item_type, type_name, match_name):
     if match_name not in processed_items[item_type]:
         print("{} TYPE IS: {}".format(type_name, match_name))
         for item in items:
+            item_name = \
+                item.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+            item_number = \
+                item.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString()
+            item_level = \
+                item.Parameter[
+                    DB.BuiltInParameter.ROOM_LEVEL_ID].AsValueString()
             if revit.query.is_placed(item):
-                item_name = \
-                    item.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
-                item_number = \
-                    item.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString()
-                item_level = \
-                    item.Parameter[
-                        DB.BuiltInParameter.ROOM_LEVEL_ID].AsValueString()
                 if match_name == item_name:
                     area_value = \
                         item.Parameter[DB.BuiltInParameter.ROOM_AREA].AsDouble()

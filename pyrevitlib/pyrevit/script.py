@@ -12,6 +12,8 @@ import os
 import os.path as op
 import warnings
 import re
+import codecs
+import json
 
 from pyrevit import EXEC_PARAMS, PyRevitException
 from pyrevit import coreutils
@@ -543,3 +545,28 @@ def set_envvar(envvar, value):
         False
     """
     return envvars.set_pyrevit_env_var(envvar, value)
+
+
+def dump_json(data, filepath):
+    """Dumps given data into given json file.
+
+    Args:
+        data (object): serializable data to be dumped
+        filepath (str): json file path
+    """
+    json_repr = json.dumps(data, indent=4, ensure_ascii=False)
+    with codecs.open(filepath, 'w', "utf-8") as json_file:
+        json_file.write(json_repr)
+
+
+def load_json(filepath):
+    """Loads data from given json file.
+
+    Args:
+        filepath (str): json file path
+
+    Returns:
+        object: deserialized data
+    """
+    with codecs.open(filepath, 'r', "utf-8") as json_file:
+        return json_file.read()

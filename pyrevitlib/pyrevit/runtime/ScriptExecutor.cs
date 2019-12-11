@@ -109,7 +109,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         break;
 
                     case ScriptEngineType.DynamoBIM:
-                        ExecuteManagedScript<DynmoBIMEngine>(ref runtime);
+                        ExecuteManagedScript<DynamoBIMEngine>(ref runtime);
                         break;
 
                     case ScriptEngineType.Grasshopper:
