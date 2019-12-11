@@ -1,5 +1,6 @@
 """Helper functions to query info and elements from Revit."""
 #pylint: disable=W0703,C0103
+import os
 from collections import namedtuple
 
 from pyrevit.coreutils import logger
@@ -524,7 +525,7 @@ def get_linked_model_doc(linked_model):
 
     if lmodel:
         for open_doc in HOST_APP.docs:
-            if open_doc.Title == lmodel.name:
+            if os.path.split(open_doc.PathName)[1] == lmodel.name:
                 return open_doc
 
 
