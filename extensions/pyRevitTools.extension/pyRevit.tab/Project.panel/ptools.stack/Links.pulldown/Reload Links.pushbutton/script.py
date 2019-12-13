@@ -1,4 +1,5 @@
-"""Reloads all linked Revit models."""
+"""Reloads choosen Revit, CAD and DWG Links.
+Can reload links "locally" for workshared models"""
 
 from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
@@ -35,6 +36,18 @@ def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
             elif refcount == 1:
                 selected_extrefs = extrefs
 
+            if revit.doc.IsWorkshared\
+                    and linktype == DB.ExternalFileReferenceType.RevitLink:
+                reload_locally = forms.alert(
+                    'Reload links locally, without taking '\
+                    'ownership and with no effect on the other users?\n\n'\
+                    '(In the other case your colleagues get the '\
+                    'links reloaded after sync)',
+                    title='Reload locally?',
+                    yes=True, no=True)
+            else:
+                reload_locally = False
+
             for extref in selected_extrefs:
                 print("Reloading...\n\t{0}{1}"
                       .format(str(extref.linktype) + ':', extref.path))
@@ -42,7 +55,12 @@ def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
                     with revit.Transaction('Reload Links'):
                         extref.reload()
                 else:
-                    extref.reload()
+                    if reload_locally:
+                        if not extref.link.LocallyUnloaded:
+                            extref.link.UnloadLocally(None)
+                        extref.link.RevertLocalUnloadStatus()
+                    else:
+                        extref.reload()  
     except Exception as load_err:
         logger.debug('Load error: %s' % load_err)
         forms.alert('Model is not saved yet. Can not acquire location.')
