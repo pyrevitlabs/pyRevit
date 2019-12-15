@@ -1,8 +1,9 @@
 """Reloads choosen Revit, CAD and DWG Links.
 Can reload links "locally" for workshared models"""
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 
 from pyrevit import HOST_APP
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit.revit import query
 from pyrevit import forms
 from pyrevit import script
@@ -15,6 +16,7 @@ need_tsaxn_dict = [DB.ExternalFileReferenceType.CADLink]
 
 
 def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
+    """Reload links of selected type"""
     try:
         extrefs = query.get_links(linktype)
         for ref in extrefs:
@@ -39,10 +41,9 @@ def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
             if revit.doc.IsWorkshared\
                     and linktype == DB.ExternalFileReferenceType.RevitLink:
                 reload_locally = forms.alert(
-                    'Reload links locally, without taking '\
-                    'ownership and with no effect on the other users?\n\n'\
-                    '(In the other case your colleagues get the '\
-                    'links reloaded after sync)',
+                    'Do you want to reload links locally, without taking '\
+                    'ownership and without affecting other users?\n'\
+                    'Clicking "No" will reload for all users.',
                     title='Reload locally?',
                     yes=True, no=True)
             else:
@@ -54,15 +55,23 @@ def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
                 if linktype in need_tsaxn_dict:
                     with revit.Transaction('Reload Links'):
                         extref.reload()
-                else:
+                elif linktype \
+                        and linktype == DB.ExternalFileReferenceType.RevitLink:
                     if reload_locally:
-                        if not extref.link.LocallyUnloaded:
-                            extref.link.UnloadLocally(None)
-                        extref.link.RevertLocalUnloadStatus()
+                        try:
+                            if not extref.link.LocallyUnloaded:
+                                extref.link.UnloadLocally(None)
+                            extref.link.RevertLocalUnloadStatus()
+                        except Exception as local_reload_err:
+                            logger.debug(
+                                'Error while locally reloading '
+                                'linked model: %s' % local_reload_err)
                     else:
-                        extref.reload()  
-    except Exception as load_err:
-        logger.debug('Load error: %s' % load_err)
+                        extref.reload()
+                else:
+                    extref.reload()
+    except Exception as reload_err:
+        logger.debug('Load error: %s' % reload_err)
         forms.alert('Model is not saved yet. Can not acquire location.')
 
 
