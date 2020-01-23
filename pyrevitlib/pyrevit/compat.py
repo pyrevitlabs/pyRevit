@@ -31,3 +31,5 @@ safe_strtype = str
 if PY2:
     # https://gist.github.com/gornostal/1f123aaf838506038710
     safe_strtype = lambda x: unicode(x)  #pylint: disable=E0602,unnecessary-lambda
+
+configparser.optionxform = safe_strtype
