@@ -104,6 +104,9 @@
     <PackageReference Include="NETStandard.Library">
       <Version>2.0.3</Version>
     </PackageReference>
+    <PackageReference Include="NLog">
+      <Version>4.6.4</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

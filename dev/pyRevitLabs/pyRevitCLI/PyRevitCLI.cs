@@ -349,7 +349,9 @@ namespace pyRevitCLI {
                         extName: TryGetValue("<extension_name>"),
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
-                        branchName: TryGetValue("--branch")
+                        branchName: TryGetValue("--branch"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
                         );
 
                 else

@@ -13,12 +13,15 @@ using MadMilkman.Ini;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
-namespace pyRevitLabs.PyRevit {
-    public static class PyRevitExtensions {
+namespace pyRevitLabs.PyRevit
+{
+    public static class PyRevitExtensions
+    {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // managing extensions =======================================================================================
-        private static bool CompareExtensionNames(string extName, string searchTerm) {
+        private static bool CompareExtensionNames(string extName, string searchTerm)
+        {
             var extMatcher = new Regex(searchTerm,
                                        RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
             return extMatcher.IsMatch(extName);
@@ -26,16 +29,19 @@ namespace pyRevitLabs.PyRevit {
 
         // list registered extensions based on search pattern if provided, if not list all
         // @handled @logs
-        public static List<PyRevitExtensionDefinition> LookupRegisteredExtensions(string searchPattern = null) {
+        public static List<PyRevitExtensionDefinition> LookupRegisteredExtensions(string searchPattern = null)
+        {
             var matchedExtensions = new List<PyRevitExtensionDefinition>();
 
             // attemp to find the extension in default ext file
-            try {
+            try
+            {
                 matchedExtensions =
                     LookupExtensionInDefinitionFile(GetDefaultExtensionLookupSource(),
                                                     searchPattern);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 logger.Error(
                     string.Format(
                         "Error looking up extension with pattern \"{0}\" in default extension source."
@@ -45,14 +51,17 @@ namespace pyRevitLabs.PyRevit {
 
             // if not found in downloaded file or downlod failed, try the additional sources
             if (matchedExtensions.Count == 0)
-                foreach (var extLookupSrc in GetRegisteredExtensionLookupSources()) {
-                    try {
+                foreach (var extLookupSrc in GetRegisteredExtensionLookupSources())
+                {
+                    try
+                    {
                         // attemp to find the extension in ext lookup source
                         matchedExtensions = LookupExtensionInDefinitionFile(extLookupSrc, searchPattern);
                         if (matchedExtensions.Count > 0)
                             return matchedExtensions;
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         logger.Error(
                             string.Format(
                                 "Error looking up extension with pattern \"{0}\" in extension lookup source \"{1}\""
@@ -67,7 +76,8 @@ namespace pyRevitLabs.PyRevit {
 
         // return a list of installed extensions found under registered search paths
         // @handled @logs
-        public static List<PyRevitExtension> GetInstalledExtensions(string searchPath = null) {
+        public static List<PyRevitExtension> GetInstalledExtensions(string searchPath = null)
+        {
             List<string> searchPaths;
             if (searchPath is null)
                 searchPaths = GetRegisteredExtensionSearchPaths();
@@ -83,10 +93,12 @@ namespace pyRevitLabs.PyRevit {
 
         // find extension installed under registered search paths
         // @handled @logs
-        public static PyRevitExtension GetInstalledExtension(string extensionName) {
+        public static PyRevitExtension GetInstalledExtension(string extensionName)
+        {
             logger.Debug("Looking up installed extension \"{0}\"...", extensionName);
             foreach (var ext in GetInstalledExtensions())
-                if (CompareExtensionNames(ext.Name, extensionName)) {
+                if (CompareExtensionNames(ext.Name, extensionName))
+                {
                     logger.Debug(string.Format("\"{0}\" Matched installed extension \"{1}\"",
                                                extensionName, ext.Name));
                     return ext;
@@ -97,13 +109,16 @@ namespace pyRevitLabs.PyRevit {
 
         // lookup registered extension by name
         // @handled @logs
-        public static PyRevitExtensionDefinition FindRegisteredExtension(string extensionName) {
+        public static PyRevitExtensionDefinition FindRegisteredExtension(string extensionName)
+        {
             logger.Debug("Looking up registered extension \"{0}\"...", extensionName);
             var matchingExts = LookupRegisteredExtensions(extensionName);
-            if (matchingExts.Count == 0) {
+            if (matchingExts.Count == 0)
+            {
                 throw new PyRevitException(string.Format("Can not find extension \"{0}\"", extensionName));
             }
-            else if (matchingExts.Count == 1) {
+            else if (matchingExts.Count == 1)
+            {
                 logger.Debug("Extension found \"{0}\"...", matchingExts[0].Name);
                 return matchingExts[0];
             }
@@ -116,15 +131,19 @@ namespace pyRevitLabs.PyRevit {
         // installs extension from repo url
         // @handled @logs
         public static void InstallExtension(string extensionName, PyRevitExtensionTypes extensionType,
-                                            string repoPath, string destPath = null, string branchName = null) {
+                                            string repoPath, string destPath = null, string branchName = null,
+                                            string username = null, string password = null)
+        {
             // make sure extension is not installed already
-            try {
+            try
+            {
                 var existExt = GetInstalledExtension(extensionName);
                 if (existExt != null)
                     throw new PyRevitException(string.Format("Extension \"{0}\" is already installed under \"{1}\"",
                                                              existExt.Name, existExt.InstallPath));
             }
-            catch {
+            catch
+            {
                 // extension is not installed so everything is fine
             }
 
@@ -144,22 +163,27 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Installing extension into \"{0}\"", finalExtRepoPath);
 
             // start the clone process
-            var repo = GitInstaller.Clone(repoPath, branchName, finalExtRepoPath);
+            var repo = GitInstaller.Clone(repoPath, branchName, finalExtRepoPath, username, password);
 
             // Check installation
-            if (repo != null) {
+            if (repo != null)
+            {
                 // make sure to delete the repo if error occured after cloning
                 var clonedPath = repo.Info.WorkingDirectory;
-                if (GitInstaller.IsValidRepo(clonedPath)) {
+                if (GitInstaller.IsValidRepo(clonedPath))
+                {
                     logger.Debug("Clone successful \"{0}\"", clonedPath);
                     RegisterExtensionSearchPath(destPath.NormalizeAsPath());
                 }
-                else {
+                else
+                {
                     logger.Debug("Invalid repo after cloning. Deleting clone \"{0}\"", repoPath);
-                    try {
+                    try
+                    {
                         CommonUtils.DeleteDirectory(repoPath);
                     }
-                    catch (Exception delEx) {
+                    catch (Exception delEx)
+                    {
                         logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
                                                    repoPath, delEx.Message));
                     }
@@ -174,15 +198,18 @@ namespace pyRevitLabs.PyRevit {
         // installs extension
         // @handled @logs
         public static void InstallExtension(PyRevitExtensionDefinition extDef,
-                                            string destPath = null, string branchName = null) {
+                                            string destPath = null, string branchName = null)
+        {
             logger.Debug("Installing extension \"{0}\"", extDef.Name);
             InstallExtension(extDef.Name, extDef.Type, extDef.Url, destPath, branchName);
         }
 
         // uninstalls an extension by repo
         // @handled @logs
-        public static void RemoveExtension(string repoPath, bool removeSearchPath = false) {
-            if (repoPath != null) {
+        public static void RemoveExtension(string repoPath, bool removeSearchPath = false)
+        {
+            if (repoPath != null)
+            {
                 logger.Debug("Uninstalling extension at \"{0}\"", repoPath);
                 CommonUtils.DeleteDirectory(repoPath);
                 // remove search path if requested
@@ -195,13 +222,15 @@ namespace pyRevitLabs.PyRevit {
 
         // uninstalls an extension
         // @handled @logs
-        public static void UninstallExtension(PyRevitExtension ext, bool removeSearchPath = false) {
+        public static void UninstallExtension(PyRevitExtension ext, bool removeSearchPath = false)
+        {
             RemoveExtension(ext.InstallPath, removeSearchPath: removeSearchPath);
         }
 
         // uninstalls an extension by name
         // @handled @logs
-        public static void UninstallExtension(string extensionName, bool removeSearchPath = false) {
+        public static void UninstallExtension(string extensionName, bool removeSearchPath = false)
+        {
             logger.Debug("Uninstalling extension \"{0}\"", extensionName);
             var ext = GetInstalledExtension(extensionName);
             RemoveExtension(ext.InstallPath, removeSearchPath: removeSearchPath);
@@ -209,7 +238,8 @@ namespace pyRevitLabs.PyRevit {
 
         // force update extension
         // @handled @logs
-        public static void UpdateExtension(PyRevitExtension ext) {
+        public static void UpdateExtension(PyRevitExtension ext)
+        {
             logger.Debug("Updating extension \"{0}\"", ext.Name);
             logger.Debug("Updating extension repo at \"{0}\"", ext.InstallPath);
             var res = GitInstaller.ForcedUpdate(ext.InstallPath);
@@ -219,14 +249,16 @@ namespace pyRevitLabs.PyRevit {
                     );
         }
 
-        public static void UpdateExtension(string extName) {
+        public static void UpdateExtension(string extName)
+        {
             var ext = GetInstalledExtension(extName);
             UpdateExtension(ext);
         }
 
         // force update all extensions
         // @handled @logs
-        public static void UpdateAllInstalledExtensions() {
+        public static void UpdateAllInstalledExtensions()
+        {
             logger.Debug("Updating all installed extensions.");
             // update all installed extensions
             foreach (var ext in GetInstalledExtensions())
@@ -235,7 +267,8 @@ namespace pyRevitLabs.PyRevit {
 
         // enable extension in config
         // @handled @logs
-        private static void ToggleExtension(string extName, bool state) {
+        private static void ToggleExtension(string extName, bool state)
+        {
             var ext = GetInstalledExtension(extName);
             logger.Debug("{0} extension \"{1}\"", state ? "Enabling" : "Disabling", ext.Name);
             var cfg = PyRevitConfigs.GetConfigFile();
@@ -244,27 +277,33 @@ namespace pyRevitLabs.PyRevit {
 
         // disable extension in config
         // @handled @logs
-        public static void EnableExtension(string extName) {
+        public static void EnableExtension(string extName)
+        {
             ToggleExtension(extName, true);
         }
 
         // disable extension in config
         // @handled @logs
-        public static void DisableExtension(string extName) {
+        public static void DisableExtension(string extName)
+        {
             ToggleExtension(extName, false);
         }
 
         // get list of registered extension search paths
         // @handled @logs
-        public static List<string> GetRegisteredExtensionSearchPaths() {
+        public static List<string> GetRegisteredExtensionSearchPaths()
+        {
             var validatedPaths = new List<string>();
             var cfg = PyRevitConfigs.GetConfigFile();
             var searchPaths = cfg.GetListValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserExtensionsKey);
-            if (searchPaths != null) {
+            if (searchPaths != null)
+            {
                 // make sure paths exist
-                foreach (var path in searchPaths) {
+                foreach (var path in searchPaths)
+                {
                     var normPath = path.NormalizeAsPath();
-                    if (CommonUtils.VerifyPath(path) && !validatedPaths.Contains(normPath)) {
+                    if (CommonUtils.VerifyPath(path) && !validatedPaths.Contains(normPath))
+                    {
                         logger.Debug("Verified extension search path \"{0}\"", normPath);
                         validatedPaths.Add(normPath);
                     }
@@ -278,9 +317,11 @@ namespace pyRevitLabs.PyRevit {
 
         // add extension search path
         // @handled @logs
-        public static void RegisterExtensionSearchPath(string searchPath) {
+        public static void RegisterExtensionSearchPath(string searchPath)
+        {
             var cfg = PyRevitConfigs.GetConfigFile();
-            if (CommonUtils.VerifyPath(searchPath)) {
+            if (CommonUtils.VerifyPath(searchPath))
+            {
                 logger.Debug("Adding extension search path \"{0}\"", searchPath);
                 var searchPaths = GetRegisteredExtensionSearchPaths();
                 searchPaths.Add(searchPath.NormalizeAsPath());
@@ -292,7 +333,8 @@ namespace pyRevitLabs.PyRevit {
 
         // remove extension search path
         // @handled @logs
-        public static void UnregisterExtensionSearchPath(string searchPath) {
+        public static void UnregisterExtensionSearchPath(string searchPath)
+        {
             var cfg = PyRevitConfigs.GetConfigFile();
             var normPath = searchPath.NormalizeAsPath();
             logger.Debug("Removing extension search path \"{0}\"", normPath);
@@ -304,18 +346,22 @@ namespace pyRevitLabs.PyRevit {
         // managing extension sources ================================================================================
         // get default extension lookup source
         // @handled @logs
-        public static string GetDefaultExtensionLookupSource() {
+        public static string GetDefaultExtensionLookupSource()
+        {
             return PyRevitConsts.ExtensionsDefinitionFileUri;
         }
 
         // get extension lookup sources
         // @handled @logs
-        public static List<string> GetRegisteredExtensionLookupSources() {
+        public static List<string> GetRegisteredExtensionLookupSources()
+        {
             var cfg = PyRevitConfigs.GetConfigFile();
             var normSources = new List<string>();
             var sources = cfg.GetListValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsExtensionLookupSourcesKey);
-            if (sources != null) {
-                foreach (var src in sources) {
+            if (sources != null)
+            {
+                foreach (var src in sources)
+                {
                     var normSrc = src.NormalizeAsPath();
                     logger.Debug("Extension lookup source \"{0}\"", normSrc);
                     normSources.Add(normSrc);
@@ -327,10 +373,12 @@ namespace pyRevitLabs.PyRevit {
 
         // register new extension lookup source
         // @handled @logs
-        public static void RegisterExtensionLookupSource(string extLookupSource) {
+        public static void RegisterExtensionLookupSource(string extLookupSource)
+        {
             var normSource = extLookupSource.NormalizeAsPath();
             var sources = GetRegisteredExtensionLookupSources();
-            if (!sources.Contains(normSource)) {
+            if (!sources.Contains(normSource))
+            {
                 logger.Debug("Registering extension lookup source \"{0}\"", normSource);
                 sources.Add(normSource);
                 SaveExtensionLookupSources(sources);
@@ -341,10 +389,12 @@ namespace pyRevitLabs.PyRevit {
 
         // unregister extension lookup source
         // @handled @logs
-        public static void UnregisterExtensionLookupSource(string extLookupSource) {
+        public static void UnregisterExtensionLookupSource(string extLookupSource)
+        {
             var normSource = extLookupSource.NormalizeAsPath();
             var sources = GetRegisteredExtensionLookupSources();
-            if (sources.Contains(normSource)) {
+            if (sources.Contains(normSource))
+            {
                 logger.Debug("Unregistering extension lookup source \"{0}\"", normSource);
                 sources.Remove(normSource);
                 SaveExtensionLookupSources(sources);
@@ -355,7 +405,8 @@ namespace pyRevitLabs.PyRevit {
 
         // unregister all extension lookup sources
         // @handled @logs
-        public static void UnregisterAllExtensionLookupSources() {
+        public static void UnregisterAllExtensionLookupSources()
+        {
             foreach (var src in GetRegisteredExtensionLookupSources())
                 UnregisterExtensionLookupSource(src);
         }
@@ -365,7 +416,8 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         private static List<PyRevitExtensionDefinition> LookupExtensionInDefinitionFile(
                 string fileOrUri,
-                string searchPattern = null) {
+                string searchPattern = null)
+        {
 
             var pyrevtExts = new List<PyRevitExtensionDefinition>();
             string filePath = null;
@@ -374,26 +426,31 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Determining file or remote source \"{0}\"", fileOrUri);
             Uri uriResult;
             var validPath = Uri.TryCreate(fileOrUri, UriKind.Absolute, out uriResult);
-            if (validPath) {
-                if (uriResult.IsFile) {
+            if (validPath)
+            {
+                if (uriResult.IsFile)
+                {
                     filePath = fileOrUri;
                     logger.Debug("Source is a file \"{0}\"", filePath);
                 }
                 else if (uriResult.HostNameType == UriHostNameType.Dns
                             || uriResult.HostNameType == UriHostNameType.IPv4
-                            || uriResult.HostNameType == UriHostNameType.IPv6) {
+                            || uriResult.HostNameType == UriHostNameType.IPv6)
+                {
 
                     logger.Debug("Source is a remote resource \"{0}\"", fileOrUri);
                     logger.Debug("Downloading remote resource \"{0}\"...", fileOrUri);
                     // download the resource into TEMP
-                    try {
+                    try
+                    {
                         filePath =
                             CommonUtils.DownloadFile(fileOrUri,
                                                      Path.Combine(Environment.GetEnvironmentVariable("TEMP"),
                                                                   PyRevitConsts.EnvConfigsExtensionDBFileName)
                             );
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         throw new PyRevitException(
                             string.Format("Error downloading extension metadata file. | {0}", ex.Message)
                             );
@@ -406,26 +463,34 @@ namespace pyRevitLabs.PyRevit {
                     );
 
             // process file now
-            if (filePath != null) {
-                if (Path.GetExtension(filePath).ToLower() == ".json") {
+            if (filePath != null)
+            {
+                if (Path.GetExtension(filePath).ToLower() == ".json")
+                {
                     logger.Debug("Parsing extension metadata file...");
 
                     dynamic extensionsObj;
-                    if (filePath != null) {
-                        try {
+                    if (filePath != null)
+                    {
+                        try
+                        {
                             extensionsObj = JObject.Parse(File.ReadAllText(filePath));
                         }
-                        catch (Exception ex) {
+                        catch (Exception ex)
+                        {
                             throw new PyRevitException(string.Format("Error parsing extension metadata. | {0}", ex.Message));
                         }
 
                         // make extension list
-                        foreach (JObject extObj in extensionsObj.extensions) {
+                        foreach (JObject extObj in extensionsObj.extensions)
+                        {
                             var extDef = new PyRevitExtensionDefinition(extObj);
 
                             logger.Debug("Registered extension \"{0}\"", extDef.Name);
-                            if (searchPattern != null) {
-                                if (CompareExtensionNames(extDef.Name, searchPattern)) {
+                            if (searchPattern != null)
+                            {
+                                if (CompareExtensionNames(extDef.Name, searchPattern))
+                                {
                                     logger.Debug(string.Format("\"{0}\" Matched registered extension \"{1}\"",
                                                                searchPattern, extDef.Name));
                                     pyrevtExts.Add(extDef);
@@ -447,7 +512,8 @@ namespace pyRevitLabs.PyRevit {
 
 
         // save list of source exensio
-        private static void SaveExtensionLookupSources(IEnumerable<string> sources) {
+        private static void SaveExtensionLookupSources(IEnumerable<string> sources)
+        {
             var cfg = PyRevitConfigs.GetConfigFile();
             cfg.SetValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsExtensionLookupSourcesKey, sources);
         }
