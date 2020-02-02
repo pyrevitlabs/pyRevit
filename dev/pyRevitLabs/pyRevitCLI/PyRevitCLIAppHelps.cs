@@ -180,6 +180,8 @@ namespace pyRevitCLI {
                             { "ui | lib | run",         "Type of custom extension to install" },
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
+                            { "--username=<username>",  "Username to access the private repo" },
+                            { "--password=<password>",  "Password to access the private repo" }
                         }
                     );
                     break;

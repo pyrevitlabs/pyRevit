@@ -342,6 +342,7 @@ namespace pyRevitCLI {
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extend);
 
                 else if (any("ui", "lib", "run"))
+                {
                     PyRevitCLIExtensionCmds.Extend(
                         ui: arguments["ui"].IsTrue,
                         lib: arguments["lib"].IsTrue,
@@ -352,7 +353,8 @@ namespace pyRevitCLI {
                         branchName: TryGetValue("--branch"),
                         username: TryGetValue("--username"),
                         password: TryGetValue("--password")
-                        );
+                    );
+                }
 
                 else
                     PyRevitCLIExtensionCmds.Extend(
