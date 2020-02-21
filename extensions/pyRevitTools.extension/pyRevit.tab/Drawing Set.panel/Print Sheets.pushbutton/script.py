@@ -1160,7 +1160,8 @@ forms.check_modeldoc(exitscript=True)
 # TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602
     open_docs = forms.select_open_docs()
-    for open_doc in open_docs:
-        cleanup_sheetnumbers(open_doc)
+    if open_docs:
+        for open_doc in open_docs:
+            cleanup_sheetnumbers(open_doc)
 else:
     PrintSheetsWindow('PrintSheets.xaml').ShowDialog()
