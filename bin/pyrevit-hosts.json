@@ -1072,4 +1072,15 @@
     "build": "20200206_0915",
     "target": "x64",
     "notes": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_html"
+}, {
+    "meta": {
+        "schema": "1.0",
+        "source": "https://up.autodesk.com/2019/RVT/Autodesk_Revit_2019_2_2_Readme.html"
+    },
+    "product": "Autodesk Revit",
+    "release": "2019.2.2 Hotfix",
+    "version": "19.2.20.24",
+    "build": "20190808_0900",
+    "target": "x64",
+    "notes": "https://up.autodesk.com/2019/RVT/Autodesk_Revit_2019_2_2_Readme.html"
 }]
