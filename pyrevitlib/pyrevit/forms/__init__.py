@@ -2466,7 +2466,7 @@ def pick_folder(title=None):
             return fb_dlg.SelectedPath
 
 
-def pick_file(file_ext='', files_filter='', init_dir='',
+def pick_file(file_ext='*', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
     r"""Pick file dialog to select a destination file.
 
@@ -2565,8 +2565,7 @@ def pick_excel_file(save=False):
     """
     if save:
         return save_file(file_ext='xlsx')
-    return pick_file(files_filter='All Files (*.*)|*.*|'
-                     'Excel Workbook (*.xlsx)|*.xlsx|'
+    return pick_file(files_filter='Excel Workbook (*.xlsx)|*.xlsx|'
                      'Excel 97-2003 Workbook|*.xls')
 
 
