@@ -203,6 +203,8 @@ class SettingsWindow(forms.WPFWindow):
         self.colordocs_cb.IsChecked = user_config.colorize_docs
         # output settings
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
+        # pyrevit gui settings
+        self.loadtooltipex_cb.IsChecked = user_config.tooltip_debug_info
 
     def _get_event_telemetry_checkboxes(self):
         return list([x for x in self.event_telemetry_sp.Children
@@ -636,6 +638,14 @@ class SettingsWindow(forms.WPFWindow):
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
         if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():
             user_config.output_stylesheet = self.cur_stylesheet_tb.Text
+        # pyrevit gui settings
+        if self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info \
+                and not self.reload_requested:
+            request_reload = forms.alert(
+                'pyRevit UI Configuration has changed. Reloading pyRevit is '
+                'required for this change to take effect. Do you '
+                'want to reload now?', yes=True, no=True,)
+        user_config.tooltip_debug_info = self.loadtooltipex_cb.IsChecked
 
         return request_reload
 

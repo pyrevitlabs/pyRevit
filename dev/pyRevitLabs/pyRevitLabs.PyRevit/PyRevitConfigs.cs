@@ -419,6 +419,17 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey, state);
         }
 
+        public static bool GetAppendTooltipEx() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAppendTooltipExDefault;
+        }
+
+        public static void SetAppendTooltipEx(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey, state);
+        }
+
         // configurations private access methods  ====================================================================
         private static void InitConfigFile() {
             // get allusers seed config file

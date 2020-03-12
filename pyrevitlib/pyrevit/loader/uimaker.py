@@ -13,6 +13,7 @@ if not EXEC_PARAMS.doc_mode:
 #pylint: disable=W0703,C0302,C0103,C0413
 import pyrevit.extensions as exts
 from pyrevit.extensions import components
+from pyrevit.userconfig import user_config
 
 
 mlogger = get_logger(__name__)
@@ -76,6 +77,11 @@ def _make_button_tooltip_ext(button, asm_name):
             .format(button.control_id)
 
     return tooltip_ext
+
+
+def _make_tooltip_ext_if_requested(button, asm_name):
+    if user_config.tooltip_debug_info:
+        return _make_button_tooltip_ext(button, asm_name)
 
 
 def _make_ui_title(button):
@@ -184,8 +190,8 @@ def _produce_ui_smartbutton(ui_maker_params):
             class_name=_get_effective_classname(smartbutton),
             icon_path=smartbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(smartbutton),
-            tooltip_ext=_make_button_tooltip_ext(smartbutton,
-                                                 ext_asm_info.name),
+            tooltip_ext=_make_tooltip_ext_if_requested(smartbutton,
+                                                       ext_asm_info.name),
             tooltip_media=smartbutton.media_file,
             ctxhelpurl=smartbutton.help_url,
             avail_class_name=smartbutton.avail_class_name,
@@ -313,8 +319,8 @@ def _produce_ui_linkbutton(ui_maker_params):
                 ),
             icon_path=linkbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(linkbutton),
-            tooltip_ext=_make_button_tooltip_ext(linkbutton,
-                                                 ext_asm_info.name),
+            tooltip_ext=_make_tooltip_ext_if_requested(linkbutton,
+                                                       ext_asm_info.name),
             tooltip_media=linkbutton.media_file,
             ctxhelpurl=linkbutton.help_url,
             avail_class_name=linkbutton.avail_class_name,
@@ -355,8 +361,8 @@ def _produce_ui_pushbutton(ui_maker_params):
             class_name=_get_effective_classname(pushbutton),
             icon_path=pushbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(pushbutton),
-            tooltip_ext=_make_button_tooltip_ext(pushbutton,
-                                                 ext_asm_info.name),
+            tooltip_ext=_make_tooltip_ext_if_requested(pushbutton,
+                                                       ext_asm_info.name),
             tooltip_media=pushbutton.media_file,
             ctxhelpurl=pushbutton.help_url,
             avail_class_name=pushbutton.avail_class_name,
@@ -518,8 +524,8 @@ def _produce_ui_panelpushbutton(ui_maker_params):
             asm_location=ext_asm_info.location,
             class_name=_get_effective_classname(panelpushbutton),
             tooltip=_make_button_tooltip(panelpushbutton),
-            tooltip_ext=_make_button_tooltip_ext(panelpushbutton,
-                                                 ext_asm_info.name),
+            tooltip_ext=_make_tooltip_ext_if_requested(panelpushbutton,
+                                                       ext_asm_info.name),
             tooltip_media=panelpushbutton.media_file,
             ctxhelpurl=panelpushbutton.help_url,
             avail_class_name=panelpushbutton.avail_class_name,

@@ -469,6 +469,21 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
+    def tooltip_debug_info(self):
+        return self.core.get_option(
+            CONSTS.ConfigsAppendTooltipExKey,
+            default_value=CONSTS.ConfigsAppendTooltipExDefault,
+        )
+
+    @tooltip_debug_info.setter
+    def tooltip_debug_info(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsAppendTooltipExKey,
+            value=state
+        )
+
+
+    @property
     def respect_language_direction(self):
         return False
 

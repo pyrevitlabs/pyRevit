@@ -660,8 +660,16 @@ namespace pyRevitCLI {
                     else
                         Console.WriteLine(string.Format("Doc Colorizer is {0}",
                                                         PyRevitConfigs.GetColorizeDocs() ? "Enabled" : "Disabled"));
-                } 
-                
+                }
+
+                else if (all("tooltipdebuginfo")) {
+                    if (any("enable", "disable"))
+                        PyRevitConfigs.SetAppendTooltipEx(arguments["enable"].IsTrue);
+                    else
+                        Console.WriteLine(string.Format("Doc Colorizer is {0}",
+                                                        PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
+                }
+
                 else if (all("telemetry")) {
                     if (all("utc")) {
                         if (any("yes", "no"))
