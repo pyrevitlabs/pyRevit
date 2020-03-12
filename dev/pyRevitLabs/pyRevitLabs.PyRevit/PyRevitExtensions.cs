@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -116,7 +116,8 @@ namespace pyRevitLabs.PyRevit {
         // installs extension from repo url
         // @handled @logs
         public static void InstallExtension(string extensionName, PyRevitExtensionTypes extensionType,
-                                            string repoPath, string destPath = null, string branchName = null) {
+                                            string repoPath, string destPath = null, string branchName = null,
+                                            string username = null, string password = null) {
             // make sure extension is not installed already
             try {
                 var existExt = GetInstalledExtension(extensionName);
@@ -144,7 +145,7 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Installing extension into \"{0}\"", finalExtRepoPath);
 
             // start the clone process
-            var repo = GitInstaller.Clone(repoPath, branchName, finalExtRepoPath);
+            var repo = GitInstaller.Clone(repoPath, branchName, finalExtRepoPath, username, password);
 
             // Check installation
             if (repo != null) {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -80,7 +80,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        Extend(bool ui, bool lib, bool run, string extName, string destPath, string repoUrl, string branchName) {
+        Extend(bool ui, bool lib, bool run, string extName, string destPath, string repoUrl, string branchName, string username, string password) {
             PyRevitExtensionTypes extType = PyRevitExtensionTypes.Unknown;
             if (ui)
                 extType = PyRevitExtensionTypes.UIExtension;
@@ -89,7 +89,7 @@ namespace pyRevitCLI {
             else if (run)
                 extType = PyRevitExtensionTypes.RunnerExtension;
 
-            PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName);
+            PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName, username, password);
         }
 
         internal static void

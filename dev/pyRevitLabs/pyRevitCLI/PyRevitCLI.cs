@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -213,7 +213,9 @@ namespace pyRevitCLI {
                         branchName: TryGetValue("--branch"),
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
-                        destPath: TryGetValue("--dest")
+                        destPath: TryGetValue("--dest"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
                     );
             }
 
@@ -341,7 +343,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extend);
 
-                else if (any("ui", "lib", "run"))
+                else if (any("ui", "lib", "run")) {
                     PyRevitCLIExtensionCmds.Extend(
                         ui: arguments["ui"].IsTrue,
                         lib: arguments["lib"].IsTrue,
@@ -349,8 +351,11 @@ namespace pyRevitCLI {
                         extName: TryGetValue("<extension_name>"),
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
-                        branchName: TryGetValue("--branch")
-                        );
+                        branchName: TryGetValue("--branch"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
+                    );
+                }
 
                 else
                     PyRevitCLIExtensionCmds.Extend(

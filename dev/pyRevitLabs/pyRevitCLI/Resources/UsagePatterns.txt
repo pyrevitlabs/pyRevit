@@ -8,7 +8,7 @@ Usage:
 	pyrevit clone --help
 	pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
 	pyrevit clone <clone_name> --image=<image_url> [--dest=<dest_path>] [--log=<log_file>]
-	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit clones [--help]
 	pyrevit clones (info | open) <clone_name>
 	pyrevit clones add <clone_name> <clone_path> [--force] [--log=<log_file>]
@@ -32,7 +32,7 @@ Usage:
 	pyrevit detach (--all | <revit_year>) [--log=<log_file>]
 	pyrevit extend --help
 	pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit extensions [--help]
 	pyrevit extensions search <search_pattern>
 	pyrevit extensions (info | help | open) <extension_name>

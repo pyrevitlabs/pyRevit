@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -186,7 +186,9 @@ namespace pyRevitLabs.PyRevit {
                                           string deploymentName = null,
                                           string branchName = null,
                                           string repoUrl = null,
-                                          string destPath = null) {
+                                          string destPath = null,
+                                          string username = null,
+                                          string password = null) {
             string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoGitPath;
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TragetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
@@ -214,7 +216,7 @@ namespace pyRevitLabs.PyRevit {
                 throw new NotImplementedException("Deployment with git clones not implemented yet.");
             }
             else {
-                repo = GitInstaller.Clone(repoSourcePath, repoBranch, destPath);
+                repo = GitInstaller.Clone(repoSourcePath, repoBranch, destPath, username, password);
             }
 
             // Check installation
