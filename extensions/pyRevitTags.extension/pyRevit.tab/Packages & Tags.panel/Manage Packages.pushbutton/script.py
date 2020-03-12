@@ -148,7 +148,7 @@ class SheetItem(object):
 
     @staticmethod
     def build_commit_sort_param(commit_point):
-        return 'sort_{}{}'.format(commit_point.cptype, commit_point.name)
+        return 'sort_{}{}'.format(commit_point.cptype, commit_point.idx)
 
     def get_order(self, param_name):
         return self._csheet.revit_sheet.LookupParameter(param_name).AsInteger()
@@ -236,6 +236,7 @@ class ManagePackagesWindow(forms.WPFWindow):
             commit_column = Windows.Controls.DataGridTemplateColumn()
             commit_column.Header = commit_point.name
             commit_column.CanUserSort = True
+            commit_column.MinWidth = 50
             commit_column.SortMemberPath = sort_param
             # commit_column.SortDirection = \
             #     ComponentModel.ListSortDirection.Descending
