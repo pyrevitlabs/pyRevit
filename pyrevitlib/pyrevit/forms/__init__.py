@@ -2566,7 +2566,7 @@ def pick_excel_file(save=False):
     if save:
         return save_file(file_ext='xlsx')
     return pick_file(files_filter='Excel Workbook (*.xlsx)|*.xlsx|'
-                     'Excel 97-2003 Workbook|*.xls')
+                                  'Excel 97-2003 Workbook|*.xls')
 
 
 def save_excel_file():
