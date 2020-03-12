@@ -175,7 +175,7 @@ def get_commit_points():
                         target=docpkg.param_name,
                         idx=idx,
                         name=docpkg.pkg_name,
-                        desc=''))
+                        desc='Bound to "{}" Project Parameter'.format(docpkg.param_name)))
     # grab revisions
     docrevs = sorted(revit.query.get_revisions(),
                      key=lambda x: x.SequenceNumber)
