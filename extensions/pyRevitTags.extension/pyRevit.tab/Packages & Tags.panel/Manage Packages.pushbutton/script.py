@@ -187,6 +187,8 @@ class ManagePackagesWindow(forms.WPFWindow):
 
         # prepare wpf resources
         self.dt_template = None
+        self.column_header_template = \
+            self.sheets_dg.Resources['ColumnHeaderTemplate']
         self.package_column_cell_style = \
             self.sheets_dg.Resources['PackageCellStyle']
         self.revision_column_cell_style = \
@@ -234,8 +236,12 @@ class ManagePackagesWindow(forms.WPFWindow):
             param = SheetItem.build_commit_param(commit_point)
             sort_param = SheetItem.build_commit_sort_param(commit_point)
             commit_column = Windows.Controls.DataGridTemplateColumn()
-            commit_column.Header = commit_point.name
+            commit_column.Header = commit_point
+            commit_column.HeaderTemplate = self.column_header_template
             commit_column.CanUserSort = True
+            # disable resize on revision columns
+            if commit_point.cptype == CommitPointTypes.Revision:
+                commit_column.CanUserResize = False
             commit_column.SortMemberPath = sort_param
             # commit_column.SortDirection = \
             #     ComponentModel.ListSortDirection.Descending

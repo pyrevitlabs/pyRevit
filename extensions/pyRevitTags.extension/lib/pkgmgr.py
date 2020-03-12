@@ -174,24 +174,21 @@ def get_commit_points():
             CommitPoint(cptype=CommitPointTypes.Package,
                         target=docpkg.param_name,
                         idx=idx,
-                        name=docpkg.pkg_name))
+                        name=docpkg.pkg_name,
+                        desc=''))
     # grab revisions
-    # added x.SequenceNumber instead of x.Description
-    docrevs = revit.query.get_revisions()
-    docrevsFiltered = []
-    for i, x in enumerate(docrevs):
-        # filter just Alphanumeric revisions
-        # if str(x.NumberType) == 'Alphanumeric':
-        #     docrevsFiltered.append(x)
-        docrevsFiltered.append(x)
-    sortedDocrevsFiltered = sorted(docrevsFiltered, key=lambda x: x.SequenceNumber)
-
+    docrevs = sorted(revit.query.get_revisions(),
+                     key=lambda x: x.SequenceNumber)
     commit_points.extend([
         CommitPoint(cptype=CommitPointTypes.Revision,
                     target=x.Id.IntegerValue,
                     idx=last_docpkg_idx + i + 1,
-                    name=x.SequenceNumber)
-        for i, x in enumerate(sortedDocrevsFiltered)
+                    name='R{}'.format(
+                        x.SequenceNumber),
+                    desc='{} (Sequence #{})'.format(
+                        x.Description,
+                        x.SequenceNumber))
+        for i, x in enumerate(docrevs)
         ])
 
     sorted_cpoints = sorted(commit_points, key=lambda x: x.idx)
