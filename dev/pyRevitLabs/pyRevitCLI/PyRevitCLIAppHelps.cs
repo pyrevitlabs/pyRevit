@@ -341,6 +341,7 @@ namespace pyRevitCLI {
                             { "usercanextend",          "Enable/Disable Extensions button in pyRevit" },
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
                             { "colordocs",              "Enable/Disable Document Colorizer" },
+                            { "tooltipdebuginfo",       "Enable/Disable showing tool debug info in extended tooltips" },
                             { "telemetry",              "Telemetry" },
                             { "apptelemetry",           "Application Telemetry" },
                             { "outputcss",              "Output window styling" },
