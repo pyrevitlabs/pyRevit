@@ -384,6 +384,7 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.CONTENT_BUTTON_POSTFIX + ')'
         # tnteresting directories
         pat += '|(\\' + exts.COMP_LIBRARY_DIR_NAME + ')'
+        pat += '|(\\' + exts.COMP_HOOKS_DIR_NAME + ')'
         # search for scripts, setting files (future support), and layout files
         patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
