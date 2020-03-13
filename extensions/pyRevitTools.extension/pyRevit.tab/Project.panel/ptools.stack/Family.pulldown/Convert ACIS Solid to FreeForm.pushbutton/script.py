@@ -8,23 +8,25 @@ easily and get access to its shape handles.
 Copyright (c) 2019 Frederic Beaupere
 github.com/hdm-dt-fb
 """
-
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit.framework import Stopwatch
 from pyrevit import forms
 from pyrevit import revit, DB
+from pyrevit import script
+
+logger = script.get_logger()
 
 
 def verify_selection(selected_elems, doc):
     if doc.IsFamilyDocument:
-        if len(selected_elems) == 1 \
-                and selected_elems[0].GetType() is DB.DirectShape:
+        if all([isinstance(x, DB.DirectShape) for x in selected_elems]):
             return True
         else:
-            forms.alert('More than one element is selected or selected '
-                        'element is not an ACIS Solid.', exitscript=True)
+            forms.alert("More than one element is selected or selected "
+                        "element is not an ACIS Solid.", exitscript=True)
     else:
-        forms.alert('Please select one imported ACIS SAT DirectShape '
-                    'while in Family Editor.', exitscript=True)
+        forms.alert("Please select one imported ACIS SAT DirectShape "
+                    "while in Family Editor.", exitscript=True)
     return False
 
 
@@ -33,16 +35,18 @@ selection = revit.get_selection()
 
 if verify_selection(selection, revit.doc):
     stopwatch.Start()
-    sat_import = selection.first
-    geo_elem = sat_import.get_Geometry(DB.Options())
-    solids = []
-    for geo in geo_elem:
-        if isinstance(geo, DB.Solid):
-            if geo.Volume > 0.0:
-                solids.append(geo)
-    # create freeform from solids
-    with revit.Transaction("Convert ACIS to FreeFrom"):
-        for solid in solids:
-            DB.FreeFormElement.Create(revit.doc, solid)
+    for sat_import in selection:
+        geom_opts = DB.Options()
+        geom_opts.IncludeNonVisibleObjects = True
+        logger.debug('Converting: %s', sat_import)
+        solids = []
+        for geo in sat_import.Geometry[geom_opts]:
+            if isinstance(geo, DB.Solid):
+                if geo.Volume > 0.0:
+                    solids.append(geo)
+        # create freeform from solids
+        with revit.Transaction("Convert ACIS to FreeFrom"):
+            for solid in solids:
+                DB.FreeFormElement.Create(revit.doc, solid)
 
-print("Conversion completed in: {}".format(stopwatch.Elapsed))
+logger.debug('Conversion completed in: %s', stopwatch.Elapsed)
