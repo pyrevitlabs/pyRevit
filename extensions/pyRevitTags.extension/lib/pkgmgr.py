@@ -3,6 +3,7 @@
 import re
 from collections import namedtuple
 
+from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import revit, DB
 
@@ -175,17 +176,23 @@ def get_commit_points():
                         target=docpkg.param_name,
                         idx=idx,
                         name=docpkg.pkg_name,
-                        desc='Bound to "{}" Project Parameter'.format(docpkg.param_name)))
+                        desc='Bound to "{}" Project Parameter'.format(
+                            docpkg.param_name
+                            )))
     # grab revisions
+    none_numtype = coreutils.get_enum_none(DB.RevisionNumberType)
     docrevs = sorted(revit.query.get_revisions(),
                      key=lambda x: x.SequenceNumber)
     commit_points.extend([
         CommitPoint(cptype=CommitPointTypes.Revision,
                     target=x.Id.IntegerValue,
                     idx=last_docpkg_idx + i + 1,
-                    name='R{}'.format(
-                        x.SequenceNumber),
-                    desc='{} (Sequence #{})'.format(
+                    name='R{}'.format(x.SequenceNumber),
+                    desc='{}{} (Sequence #{})'.format(
+                        '{} - '.format(x.RevisionNumber)
+                        if hasattr(x, 'RevisionNumber')
+                        and x.NumberType != none_numtype
+                        else '',
                         x.Description,
                         x.SequenceNumber))
         for i, x in enumerate(docrevs)
