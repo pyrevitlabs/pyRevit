@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Generates a report from all revisions in current project."""
-
+"""tooltip."""
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit import script
@@ -58,7 +59,7 @@ rev_table_header = "| Number        | Date           | Description  |\n" \
 rev_table_template = "|{number}|{date}|{desc}|\n"
 rev_table = rev_table_header
 for rev in all_revisions:
-    revnum = revit.query.get_param(rev, 'RevisionNumber', rev.SequenceNumber)
+    revnum = revit.query.get_rev_number(rev)
     rev_table += rev_table_template.format(number=revnum,
                                            date=rev.RevisionDate,
                                            desc=rev.Description)
