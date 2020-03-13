@@ -372,12 +372,17 @@ namespace pyRevitCLI {
                         headerPrefix: "Matched"
                     );
 
-                else if (any("info", "help", "open"))
+                else if (any("info", "help"))
                     PyRevitCLIExtensionCmds.ProcessExtensionInfoCommands(
                         extName: TryGetValue("<extension_name>"),
                         info: arguments["info"].IsTrue,
-                        help: arguments["help"].IsTrue,
-                        open: arguments["open"].IsTrue
+                        help: arguments["help"].IsTrue
+                    );
+
+                else if (all("open"))
+                    PyRevitCLIExtensionCmds.ProcessExtensionOpenCommand(
+                        cloneName: TryGetValue("<clone_name>"),
+                        extName: TryGetValue("<extension_name>")
                     );
 
                 else if (all("delete"))
@@ -412,6 +417,7 @@ namespace pyRevitCLI {
                 else if (any("enable", "disable"))
                     PyRevitCLIExtensionCmds.ToggleExtension(
                         enable: arguments["enable"].IsTrue,
+                        cloneName: TryGetValue("<clone_name>"),
                         extName: TryGetValue("<extension_name>")
                     );
 

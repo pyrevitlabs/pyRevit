@@ -35,7 +35,9 @@ Usage:
 	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit extensions [--help]
 	pyrevit extensions search <search_pattern>
-	pyrevit extensions (info | help | open) <extension_name>
+	pyrevit extensions (info | help ) <extension_name>
+	pyrevit extensions open <extension_name>
+	pyrevit extensions open <clone_name> <extension_name>
 	pyrevit extensions delete <extension_name> [--log=<log_file>]
 	pyrevit extensions origin <extension_name> --reset [--log=<log_file>]
 	pyrevit extensions origin <extension_name> [<origin_url>] [--log=<log_file>]
@@ -43,6 +45,7 @@ Usage:
 	pyrevit extensions paths forget --all [--log=<log_file>]
 	pyrevit extensions paths (add | forget) <extensions_path> [--log=<log_file>]
 	pyrevit extensions (enable | disable) <extension_name> [--log=<log_file>]
+	pyrevit extensions (enable | disable) <clone_name> <extension_name> [--log=<log_file>]
 	pyrevit extensions sources [--help]
 	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
