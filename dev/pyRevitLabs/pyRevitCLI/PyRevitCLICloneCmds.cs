@@ -320,7 +320,7 @@ namespace pyRevitCLI {
             if (revitYear != null) {
                 int revitYearNumber = 0;
                 if (int.TryParse(revitYear, out revitYearNumber))
-                    PyRevitAttachments.Detach(revitYearNumber);
+                    PyRevitAttachments.Detach(revitYearNumber, currentAndAllUsers: true);
                 else
                     throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
             }
