@@ -1,5 +1,10 @@
 [{
     "product": "pyRevit",
+    "release": "4.7.5",
+    "version": "4.7.5",
+    "key": "{40BE31F6-E27A-49D0-ABF5-67778407DD6F}"
+},{
+    "product": "pyRevit",
     "release": "4.7 Final",
     "version": "4.7.4",
     "key": "{8A28EE04-5F33-409A-A3B2-7B38FFF2ADF1}"

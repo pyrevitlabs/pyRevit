@@ -104,7 +104,7 @@
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
-    <ROW File="pyrevit.exe" Component_="pyrevit.exe" FileName="pyrevit.exe" Attributes="512" SourcePath="..\bin\pyrevit.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="pyrevit.exe" Component_="pyrevit.exe" FileName="pyrevit.exe" Attributes="512" SourcePath="..\bin\pyrevit.exe" SelfReg="false"/>
     <ROW File="pyRevitLabs.CommonCLI.dll" Component_="pyRevitLabs.CommonCLI.dll" FileName="PYREVI~1.DLL|pyRevitLabs.CommonCLI.dll" Attributes="512" SourcePath="..\bin\pyRevitLabs.CommonCLI.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.TargetApps.Revit.dll" Component_="pyRevitLabs.TargetApps.Revit.dll" FileName="PYREVI~2.DLL|pyRevitLabs.TargetApps.Revit.dll" Attributes="512" SourcePath="..\bin\pyRevitLabs.TargetApps.Revit.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.Language.dll" Component_="pyRevitLabs.Language.dll" FileName="PYREVI~3.DLL|pyRevitLabs.Language.dll" Attributes="512" SourcePath="..\bin\pyRevitLabs.Language.dll" SelfReg="false"/>
