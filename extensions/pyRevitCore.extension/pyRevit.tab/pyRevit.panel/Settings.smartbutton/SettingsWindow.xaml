@@ -490,22 +490,17 @@
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="pyRevit GUI Settings" Margin="0,10,0,0" Padding="10">
-                            <DockPanel Margin="0,10,0,10">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Output Styling (CSS Stylesheet)</TextBlock>
-                                <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
-                                    <Button Content="&#x25CF;&#x25CF;&#x25CF;"
-                                    Width="48" Margin="6,0,3,0" Height="24" Padding="0,0,0,2"
-                                    Click="pick_stylesheet"
-                                    ToolTip="Pick a CSS style sheet to override the default."/>
-                                    <Button Content="Reset"
-                                    Width="48" Margin="3,0,0,0" Height="24"
-                                    Click="reset_stylesheet"
-                                    ToolTip="Reset CSS style sheet back to default"/>
-                                </WrapPanel>
-                                <TextBox x:Name="cur_stylesheet_tb" FontFamily="Consolas" 
-                                 Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
-                                 VerticalContentAlignment="Center"/>
-                            </DockPanel>
+                            <StackPanel>
+                                <DockPanel Margin="0,10,0,10">
+                                    <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Output Styling (CSS Stylesheet)</TextBlock>
+                                    <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
+                                        <Button Content="&#x25CF;&#x25CF;&#x25CF;" Width="48" Margin="6,0,3,0" Height="24" Padding="0,0,0,2" Click="pick_stylesheet" ToolTip="Pick a CSS style sheet to override the default."/>
+                                        <Button Content="Reset" Width="48" Margin="3,0,0,0" Height="24" Click="reset_stylesheet" ToolTip="Reset CSS style sheet back to default"/>
+                                    </WrapPanel>
+                                    <TextBox x:Name="cur_stylesheet_tb" FontFamily="Consolas"  Margin="0,10,0,0" Height="24" Padding="5,0,0,0" VerticalContentAlignment="Center"/>
+                                </DockPanel>
+                                <CheckBox x:Name="loadtooltipex_cb" Content="Add Tool Debug Info toTooltips e.g. Class and Assembly Names" IsChecked="False" IsEnabled="True"/>
+                            </StackPanel>
                         </GroupBox>
                     </StackPanel>
                 </Expander>

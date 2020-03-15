@@ -1399,3 +1399,8 @@ def get_paper_sizes():
         list[]: list of papersize instances
     """
     return list(framework.Drawing.Printing.PrinterSettings().PaperSizes)
+
+
+def get_integer_length(number):
+    """Return digit length of given number."""
+    return 1 if number == 0 else (math.floor(math.log10(number)) + 1)

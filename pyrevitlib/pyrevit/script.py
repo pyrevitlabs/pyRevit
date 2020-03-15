@@ -14,6 +14,7 @@ import warnings
 import re
 import codecs
 import json
+import csv
 
 from pyrevit import EXEC_PARAMS, PyRevitException
 from pyrevit import coreutils
@@ -570,3 +571,28 @@ def load_json(filepath):
     """
     with codecs.open(filepath, 'r', "utf-8") as json_file:
         return json_file.read()
+
+
+def dump_csv(data, filepath):
+    """Dumps given data into given csv file.
+
+    Args:
+        data (list[list[str]]): data to be dumped
+        filepath (str): csv file path
+    """
+    with codecs.open(filepath, 'wb', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',', quotechar='\"')
+        writer.writerows(data)
+
+
+def load_csv(filepath):
+    """Read lines from given csv file
+
+    Args:
+        filepath (str): csv file path
+
+    Returns:
+        list[list[str]]: csv data
+    """
+    with codecs.open(filepath, 'rb', encoding='utf-8') as csvfile:
+        return list(csv.reader(csvfile, delimiter=',', quotechar='\"'))

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -213,7 +213,9 @@ namespace pyRevitCLI {
                         branchName: TryGetValue("--branch"),
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
-                        destPath: TryGetValue("--dest")
+                        destPath: TryGetValue("--dest"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
                     );
             }
 
@@ -341,7 +343,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extend);
 
-                else if (any("ui", "lib", "run"))
+                else if (any("ui", "lib", "run")) {
                     PyRevitCLIExtensionCmds.Extend(
                         ui: arguments["ui"].IsTrue,
                         lib: arguments["lib"].IsTrue,
@@ -349,8 +351,11 @@ namespace pyRevitCLI {
                         extName: TryGetValue("<extension_name>"),
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
-                        branchName: TryGetValue("--branch")
-                        );
+                        branchName: TryGetValue("--branch"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
+                    );
+                }
 
                 else
                     PyRevitCLIExtensionCmds.Extend(
@@ -367,12 +372,17 @@ namespace pyRevitCLI {
                         headerPrefix: "Matched"
                     );
 
-                else if (any("info", "help", "open"))
+                else if (any("info", "help"))
                     PyRevitCLIExtensionCmds.ProcessExtensionInfoCommands(
                         extName: TryGetValue("<extension_name>"),
                         info: arguments["info"].IsTrue,
-                        help: arguments["help"].IsTrue,
-                        open: arguments["open"].IsTrue
+                        help: arguments["help"].IsTrue
+                    );
+
+                else if (all("open"))
+                    PyRevitCLIExtensionCmds.ProcessExtensionOpenCommand(
+                        cloneName: TryGetValue("<clone_name>"),
+                        extName: TryGetValue("<extension_name>")
                     );
 
                 else if (all("delete"))
@@ -407,11 +417,11 @@ namespace pyRevitCLI {
                 else if (any("enable", "disable"))
                     PyRevitCLIExtensionCmds.ToggleExtension(
                         enable: arguments["enable"].IsTrue,
+                        cloneName: TryGetValue("<clone_name>"),
                         extName: TryGetValue("<extension_name>")
                     );
 
                 else if (all("sources")) {
-                    Console.WriteLine("dfsdfsd");
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
 
@@ -656,8 +666,16 @@ namespace pyRevitCLI {
                     else
                         Console.WriteLine(string.Format("Doc Colorizer is {0}",
                                                         PyRevitConfigs.GetColorizeDocs() ? "Enabled" : "Disabled"));
-                } 
-                
+                }
+
+                else if (all("tooltipdebuginfo")) {
+                    if (any("enable", "disable"))
+                        PyRevitConfigs.SetAppendTooltipEx(arguments["enable"].IsTrue);
+                    else
+                        Console.WriteLine(string.Format("Doc Colorizer is {0}",
+                                                        PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
+                }
+
                 else if (all("telemetry")) {
                     if (all("utc")) {
                         if (any("yes", "no"))

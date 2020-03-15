@@ -16,9 +16,9 @@ using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class IronPythonEngineConfigs : ScriptEngineConfigs {
-        public bool clean;
-        public bool full_frame;
-        public bool persistent;
+        public bool clean = false;
+        public bool full_frame = false;
+        public bool persistent = false;
     }
 
     public class IronPythonEngine : ScriptEngine {
@@ -43,13 +43,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // extract engine configuration from runtime data
             try {
                 ExecEngineConfigs = new JavaScriptSerializer().Deserialize<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
-            }
-            catch {
-                // if any errors switch to defaults
-                ExecEngineConfigs.clean = false;
-                ExecEngineConfigs.full_frame = false;
-                ExecEngineConfigs.persistent = false;
-            }
+            } catch {}
 
             // If the command required a fullframe engine
             // or if the command required a clean engine

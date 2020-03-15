@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Text.RegularExpressions;
 using System.Security.Principal;
 using System.Text;
+using System.Linq;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -30,16 +31,23 @@ namespace pyRevitLabs.PyRevit {
             var engine = clone.GetEngine(engineVer);
 
             if (engine.Runtime) {
-                logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}",
-                                            clone.Name, clone.ClonePath, revitYear));
-                RevitAddons.CreateManifestFile(revitYear,
-                                          PyRevitConsts.AddinFileName,
-                                          PyRevitConsts.AddinName,
-                                          engine.AssemblyPath,
-                                          PyRevitConsts.AddinId,
-                                          PyRevitConsts.AddinClassName,
-                                          PyRevitConsts.VendorId,
-                                          allusers: allUsers);
+                logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}", clone.Name, clone.ClonePath, revitYear));
+
+                // remove existing attachments first
+                // this is critical as there might be invalid attachments to expired clones
+                Detach(revitYear, currentAndAllUsers: true);
+
+                // now recreate attachment
+                RevitAddons.CreateManifestFile(
+                    revitYear,
+                    PyRevitConsts.AddinFileName,
+                    PyRevitConsts.AddinName,
+                    engine.AssemblyPath,
+                    PyRevitConsts.AddinId,
+                    PyRevitConsts.AddinClassName,
+                    PyRevitConsts.VendorId,
+                    allusers: allUsers
+                    );
             }
             else
                 throw new PyRevitException(string.Format("Engine {0} can not be used as runtime.", engineVer));
@@ -54,9 +62,9 @@ namespace pyRevitLabs.PyRevit {
 
         // detach from revit version
         // @handled @logs
-        public static void Detach(int revitYear) {
+        public static void Detach(int revitYear, bool currentAndAllUsers = false) {
             logger.Debug("Detaching from Revit {0}", revitYear);
-            RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName);
+            RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName, currentAndAllUsers: currentAndAllUsers);
         }
 
         // detach pyrevit attachment
@@ -114,15 +122,19 @@ namespace pyRevitLabs.PyRevit {
             return attachments;
         }
 
+        // get all attachments for a revit version
+        // @handled @logs
+        public static List<PyRevitAttachment> GetAllAttached(int revitYear) =>
+            GetAttachments().Where(x => x.Product.ProductYear == revitYear).ToList<PyRevitAttachment>();
+
         // get attachment for a revit version
         // @handled @logs
-        public static PyRevitAttachment GetAttached(int revitYear) {
-            foreach (var attachment in GetAttachments())
-                if (attachment.Product.ProductYear == revitYear)
+        public static PyRevitAttachment GetAttached(int revitYear, bool allUsers = false) {
+            foreach (PyRevitAttachment attachment in GetAllAttached(revitYear))
+                if (attachment.AllUsers == allUsers)
                     return attachment;
             return null;
         }
-
 
     }
 }

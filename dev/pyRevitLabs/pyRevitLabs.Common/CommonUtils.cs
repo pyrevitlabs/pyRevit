@@ -130,6 +130,7 @@ namespace pyRevitLabs.Common {
         }
 
         public static HttpWebRequest GetHttpWebRequest(string url) {
+            logger.Debug("Building HTTP request for: \"{0}\"", url);
             if (CheckInternetConnection()) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);

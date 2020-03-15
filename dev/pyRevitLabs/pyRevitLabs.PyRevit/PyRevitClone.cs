@@ -168,6 +168,8 @@ namespace pyRevitLabs.PyRevit {
 
         public List<PyRevitExtension> GetExtensions() => GetExtensions(ClonePath);
 
+        public PyRevitExtension GetExtension(string searchPattern) => GetExtension(ClonePath, searchPattern);
+
         // static methods ============================================================================================
         // determine if this is a git repo
         public static bool IsDeployedWithRepo(string clonePath) {
@@ -422,7 +424,14 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static List<PyRevitExtension> GetExtensions(string clonePath) {
             VerifyCloneValidity(clonePath);
-            return PyRevitExtension.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
+            return PyRevitExtensions.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
+        }
+
+        // get a specific builtin extension
+        // @handled @logs
+        public static PyRevitExtension GetExtension(string clonePath, string searchPattern) {
+            VerifyCloneValidity(clonePath);
+            return PyRevitExtensions.FindExtension(PyRevitClone.GetExtensionsPath(clonePath), searchPattern);
         }
 
         // check if given assembly belongs to pyrevit
