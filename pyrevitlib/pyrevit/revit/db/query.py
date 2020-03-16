@@ -989,7 +989,11 @@ def get_sheet_sets(doc=None):
     return list(viewsheetsets)
 
 
-def get_rev_number(revision):
+def get_rev_number(revision, sheet=None):
+    # if sheet is provided, get number on sheet
+    if sheet and isinstance(sheet, DB.ViewSheet):
+        return sheet.GetRevisionNumberOnSheet(revision.Id)
+    # otherwise get number from revision
     revnum = revision.SequenceNumber
     if hasattr(revision, 'RevisionNumber'):
         revnum = revision.RevisionNumber

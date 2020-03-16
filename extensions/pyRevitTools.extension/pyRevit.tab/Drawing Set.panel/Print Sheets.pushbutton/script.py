@@ -75,7 +75,8 @@ class NamingFormat(forms.Reactive):
 
 
 class ViewSheetListItem(forms.Reactive):
-    def __init__(self, view_sheet, view_tblock, print_settings=None):
+    def __init__(self, view_sheet, view_tblock,
+                 print_settings=None, rev_settings=None):
         self._sheet = view_sheet
         self._tblock = view_tblock
         self.name = self._sheet.Name
@@ -93,11 +94,15 @@ class ViewSheetListItem(forms.Reactive):
         if self.all_print_settings:
             self._print_settings = self.all_print_settings[0]
 
+        per_sheet_revisions = \
+            rev_settings.RevisionNumbering == DB.RevisionNumbering.PerSheet \
+            if rev_settings else False
         cur_rev = revit.query.get_current_sheet_revision(self._sheet)
         self.revision = ''
         if cur_rev:
+            on_sheet = self._sheet if per_sheet_revisions else None
             self.revision = SheetRevision(
-                number=revit.query.get_rev_number(cur_rev),
+                number=revit.query.get_rev_number(cur_rev, sheet=on_sheet),
                 desc=cur_rev.Description,
                 date=cur_rev.RevisionDate
             )
@@ -971,6 +976,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             doc=self.selected_doc
         )
         if self.selected_schedule and self.selected_print_setting:
+            rev_cfg = DB.RevisionSettings.GetRevisionSettings(revit.doc)
             if self.selected_print_setting.allows_variable_paper:
                 sheet_printsettings = self._get_sheet_printsettings(tblocks)
                 self.show_element(self.sheetopts_wp)
@@ -981,7 +987,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                         view_tblock=self._find_sheet_tblock(x, tblocks),
                         print_settings=sheet_printsettings.get(
                             x.SheetNumber,
-                            None))
+                            None),
+                        rev_settings=rev_cfg)
                     for x in self._get_ordered_schedule_sheets()
                     ]
             else:
@@ -992,7 +999,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                     ViewSheetListItem(
                         view_sheet=x,
                         view_tblock=self._find_sheet_tblock(x, tblocks),
-                        print_settings=[print_settings])
+                        print_settings=[print_settings],
+                        rev_settings=rev_cfg)
                     for x in self._get_ordered_schedule_sheets()
                     ]
         self._update_combine_option()
