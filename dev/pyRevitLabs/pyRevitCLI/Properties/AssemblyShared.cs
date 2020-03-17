@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-[assembly: AssemblyCopyright("Copyright © 2014-2019")]
+[assembly: AssemblyCopyright("Copyright © 2014-2020")]
 [assembly: AssemblyCompany("pyRevitLabs.io")]
 
 // Version information for an assembly consists of the following four values:

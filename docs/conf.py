@@ -174,7 +174,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRevit'
-copyright = u'2014-2019, eirannejad'
+copyright = u'2014-2020, eirannejad'
 author = u'eirannejad'
 
 # The version info for the project you're documenting, acts as replacement for
