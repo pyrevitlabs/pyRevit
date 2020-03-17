@@ -723,7 +723,12 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
 
     def set_tooltip(self, tooltip):
         try:
-            self.get_rvtapi_object().ToolTip = tooltip
+            if tooltip:
+                self.get_rvtapi_object().ToolTip = tooltip
+            else:
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and adwindows_obj.ToolTip:
+                    adwindows_obj.ToolTip.Content = None
             self._dirty = True
         except Exception as tooltip_err:
             raise PyRevitUIError('Item does not have tooltip property: {}'
@@ -731,7 +736,12 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
 
     def set_tooltip_ext(self, tooltip_ext):
         try:
-            self.get_rvtapi_object().LongDescription = tooltip_ext
+            if tooltip_ext:
+                self.get_rvtapi_object().LongDescription = tooltip_ext
+            else:
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and adwindows_obj.ToolTip:
+                    adwindows_obj.ToolTip.ExpandedContent = None
             self._dirty = True
         except Exception as tooltip_err:
             raise PyRevitUIError('Item does not have extended '

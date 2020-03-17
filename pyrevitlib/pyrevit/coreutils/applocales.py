@@ -154,9 +154,20 @@ def get_applocale_by_lang_type(lang_type):
             return applocale
 
 
+def get_applocale_by_lang_name(lang_name):
+    for applocale in APP_LOCALES:
+        if lang_name == applocale.lang_name \
+                or lang_name == str(applocale.lang_type):
+            return applocale
+
+
 def get_current_applocale():
     if user_config.user_locale:
         return get_applocale_by_local_code(user_config.user_locale)
+    return get_applocale_by_lang_type(HOST_APP.language)
+
+
+def get_host_applocale():
     return get_applocale_by_lang_type(HOST_APP.language)
 
 

@@ -22,6 +22,9 @@ output = script.get_output()
 selection = revit.get_selection()
 
 
+VIEW_TOS_PARAM = DB.BuiltInParameter.VIEW_DESCRIPTION
+
+
 class Option(forms.TemplateListItem):
     def __init__(self, op_name, default_state=False):
         super(Option, self).__init__(op_name)
@@ -206,6 +209,13 @@ def copy_view_contents(activedoc, source_view, dest_doc, dest_view,
     return True
 
 
+def copy_view_props(source_view, dest_view):
+    dest_view.Scale = source_view.Scale
+    dest_view.Parameter[VIEW_TOS_PARAM].Set(
+        source_view.Parameter[VIEW_TOS_PARAM].AsString()
+    )
+
+
 def copy_view(activedoc, source_view, dest_doc):
     matching_view = find_matching_view(dest_doc, source_view)
     if matching_view:
@@ -259,7 +269,7 @@ def copy_view(activedoc, source_view, dest_doc):
                 )
                 revit.update.set_name(new_view,
                                       revit.query.get_name(source_view))
-                new_view.Scale = source_view.Scale
+                copy_view_props(source_view, new_view)
         except Exception as sheet_err:
             logger.error('Error creating drafting view. | {}'
                          .format(sheet_err))
@@ -279,7 +289,7 @@ def copy_view(activedoc, source_view, dest_doc):
                             )
                     revit.update.set_name(new_view,
                                         revit.query.get_name(source_view))
-                    new_view.Scale = source_view.Scale
+                    copy_view_props(source_view, new_view)
             else:
                 logger.error('Destination document must have at least one '
                              'Legend view. Skipping legend.')

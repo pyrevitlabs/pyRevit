@@ -231,19 +231,5 @@ namespace pyRevitLabs.PyRevit {
                     return extType;
             return PyRevitExtensionTypes.Unknown;
         }
-
-        public static List<PyRevitExtension> FindExtensions(string searchPath) {
-            var installedExtensions = new List<PyRevitExtension>();
-
-            logger.Debug("Looking for installed extensions under \"{0}\"...", searchPath);
-            foreach (var subdir in Directory.GetDirectories(searchPath)) {
-                if (IsExtensionDirectory(subdir)) {
-                    logger.Debug("Found installed extension \"{0}\"...", subdir);
-                    installedExtensions.Add(new PyRevitExtension(subdir));
-                }
-            }
-
-            return installedExtensions;
-        }
     }
 }

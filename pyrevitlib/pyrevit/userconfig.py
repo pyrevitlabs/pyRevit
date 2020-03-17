@@ -469,6 +469,21 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
+    def tooltip_debug_info(self):
+        return self.core.get_option(
+            CONSTS.ConfigsAppendTooltipExKey,
+            default_value=CONSTS.ConfigsAppendTooltipExDefault,
+        )
+
+    @tooltip_debug_info.setter
+    def tooltip_debug_info(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsAppendTooltipExKey,
+            value=state
+        )
+
+
+    @property
     def respect_language_direction(self):
         return False
 
@@ -542,7 +557,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         engines = []
         # try ot find attachment and get engines from the clone
         attachment = self.get_current_attachment()
-        if attachment:
+        if attachment and attachment.Clone:
             engines = attachment.Clone.GetEngines()
         # if can not find attachment, instantiate a temp clone
         else:

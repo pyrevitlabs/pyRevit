@@ -728,7 +728,10 @@ def create_tag_filter(tags, name_format=None, exclude=False):
     param_id = _get_tag_paramid()
 
     # create filter rule
-    rules = framework.List[DB.FilterRule]()
+    if HOST_APP.is_newer_than(2019, or_equal=True):
+        rules = None
+    else:
+        rules = framework.List[DB.FilterRule]()
     param_prov = DB.ParameterValueProvider(param_id)
     param_contains = DB.FilterStringContains()
     for tag in tags:
@@ -738,7 +741,15 @@ def create_tag_filter(tags, name_format=None, exclude=False):
                                    False)
         if exclude:
             rule = DB.FilterInverseRule(rule)
-        rules.Add(rule)
+
+        if HOST_APP.is_newer_than(2019, or_equal=True):
+            if rules:
+                rules = DB.LogicalOrFilter(rules,
+                                           DB.ElementParameterFilter(rule))
+            else:
+                rules = DB.ElementParameterFilter(rule)
+        else:
+            rules.Add(rule)
 
     # collect applicable categories
     cats = []

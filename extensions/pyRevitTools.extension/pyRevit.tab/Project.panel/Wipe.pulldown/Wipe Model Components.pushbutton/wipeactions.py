@@ -499,7 +499,7 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
 
 @dependent
 def remove_all_views():
-    """Remove All Views (of any kind, except open views and sheets)"""
+    """Remove All Views (of any kind, except open views)"""
 
     # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
     _purge_all_views(DB.View, None,
@@ -509,7 +509,7 @@ def remove_all_views():
 
 @dependent
 def remove_all_unreferenced_views():
-    """Remove All Unreferenced Views (of any kind, except open views and sheets)"""
+    """Remove All Unreferenced Views (of any kind, except open views)"""
 
     # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
     _purge_all_views(DB.View, None, 

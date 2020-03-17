@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,11 +43,17 @@ namespace pyRevitLabs.Common {
         // public methods
         // clone a repo to given destination
         // @handled @logs
-        public static Repository Clone(string repoPath, string branchName, string destPath, bool checkout = true) {
+        public static Repository Clone(string repoPath, string branchName, string destPath, string username, string password, bool checkout = true) {
             // build options and clone
             var cloneOps = new CloneOptions() { Checkout = checkout, BranchName = branchName };
 
-            try {
+            // add username and password to clone options, if provided by user
+            if (username != null && password != null)
+                cloneOps.CredentialsProvider =
+                    (_url, _usernameFromUrl, _credTypes) => new UsernamePasswordCredentials { Username = username, Password = password };
+
+            try
+            {
                 // attempt at cloning the repo
                 logger.Debug("Cloning \"{0}:{1}\" to \"{2}\"", repoPath, branchName, destPath);
                 Repository.Clone(repoPath, destPath, cloneOps);
@@ -56,7 +62,13 @@ namespace pyRevitLabs.Common {
                 return new Repository(destPath);
             }
             catch (Exception ex) {
-                throw new PyRevitException(ex.Message, ex);
+                // .Clone method does not return any specific exceptions for authentication failures
+                // so let's translate the cryptic exception messages to something meaninful for the user
+                if (ex.Message.Contains("401") || ex.Message.Contains("too many redirects or authentication replays"))
+                    throw new PyRevitException("Access denied to the repository. Try providing --username and --password");
+                // otherwise, wrap and return the original message
+                else
+                    throw new PyRevitException(ex.Message, ex);
             }
         }
 

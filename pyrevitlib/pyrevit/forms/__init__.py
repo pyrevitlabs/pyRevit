@@ -1662,7 +1662,7 @@ def select_sheets(title='Select Sheets',
         title (str, optional): list window title
         button_name (str, optional): list window button caption
         width (int, optional): width of list window
-        multiselect (bool, optional):
+        multiple (bool, optional):
             allow multi-selection (uses check boxes). defaults to True
         filterfunc (function):
             filter function to be applied to context items.
@@ -1681,19 +1681,27 @@ def select_sheets(title='Select Sheets',
     """
     doc = doc or HOST_APP.doc
 
+    # check for previously selected sheets
     if use_selection:
-        current_selected_sheets = []
-        current_selected_sheets = revit.get_selection().include(DB.ViewSheet)
-        if current_selected_sheets \
-                and ask_to_use_selected("sheets"):
-            if filterfunc:
-                current_selected_sheets = \
-                    filter(filterfunc, current_selected_sheets)
-            if not include_placeholder:
-                current_selected_sheets = \
-                    [x for x in current_selected_sheets if not x.IsPlaceholder]
-            return current_selected_sheets
+        current_selected_sheets = revit.get_selection() \
+                                       .include(DB.ViewSheet) \
+                                       .elements
+        if filterfunc:
+            current_selected_sheets = \
+                filter(filterfunc, current_selected_sheets)
 
+        if not include_placeholder:
+            current_selected_sheets = \
+                [x for x in current_selected_sheets if not x.IsPlaceholder]
+
+        if current_selected_sheets \
+                and ask_to_use_selected("sheets",
+                                        count=len(current_selected_sheets),
+                                        multiple=multiple):
+            return current_selected_sheets \
+                if multiple else current_selected_sheets[0]
+
+    # otherwise get all sheets and prompt for selection
     all_ops = {}
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
@@ -1748,7 +1756,7 @@ def select_views(title='Select Views',
         title (str, optional): list window title
         button_name (str, optional): list window button caption
         width (int, optional): width of list window
-        multiselect (bool, optional):
+        multiple (bool, optional):
             allow multi-selection (uses check boxes). defaults to True
         filterfunc (function):
             filter function to be applied to context items.
@@ -1767,16 +1775,23 @@ def select_views(title='Select Views',
     """
     doc = doc or HOST_APP.doc
 
+    # check for previously selected sheets
     if use_selection:
-        current_selected_views = []
-        current_selected_views = revit.get_selection().include(DB.View)
-        if current_selected_views \
-                and ask_to_use_selected("views"):
-            if filterfunc:
-                current_selected_views = \
-                    filter(filterfunc, current_selected_views)
-            return current_selected_views
+        current_selected_views = revit.get_selection() \
+                                      .include(DB.View) \
+                                      .elements
+        if filterfunc:
+            current_selected_views = \
+                filter(filterfunc, current_selected_views)
 
+        if current_selected_views \
+                and ask_to_use_selected("views",
+                                        count=len(current_selected_views),
+                                        multiple=multiple):
+            return current_selected_views \
+                if multiple else current_selected_views[0]
+
+    # otherwise get all sheets and prompt for selection
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
@@ -1808,7 +1823,7 @@ def select_levels(title='Select Levels',
         title (str, optional): list window title
         button_name (str, optional): list window button caption
         width (int, optional): width of list window
-        multiselect (bool, optional):
+        multiple (bool, optional):
             allow multi-selection (uses check boxes). defaults to True
         filterfunc (function):
             filter function to be applied to context items.
@@ -1827,19 +1842,28 @@ def select_levels(title='Select Levels',
     """
     doc = doc or HOST_APP.doc
 
+    # check for previously selected sheets
     if use_selection:
-        current_selected_levels = []
-        current_selected_levels = revit.get_selection().include(DB.Level)
+        current_selected_levels = revit.get_selection() \
+                                       .include(DB.Level) \
+                                       .elements
+
+        if filterfunc:
+            current_selected_levels = \
+                filter(filterfunc, current_selected_levels)
+
         if current_selected_levels \
-                and ask_to_use_selected("levels"):
-            if filterfunc:
-                current_selected_levels = \
-                    filter(filterfunc, current_selected_levels)
-            return current_selected_levels
+                and ask_to_use_selected("levels",
+                                        count=len(current_selected_levels),
+                                        multiple=multiple):
+            return current_selected_levels \
+                if multiple else current_selected_levels[0]
 
     all_levels = \
-        revit.query.get_elements_by_category([DB.BuiltInCategory.OST_Levels],
-                                             doc=doc)
+        revit.query.get_elements_by_categories(
+            [DB.BuiltInCategory.OST_Levels],
+            doc=doc
+            )
 
     if filterfunc:
         all_levels = filter(filterfunc, all_levels)
@@ -2442,7 +2466,7 @@ def pick_folder(title=None):
             return fb_dlg.SelectedPath
 
 
-def pick_file(file_ext='', files_filter='', init_dir='',
+def pick_file(file_ext='*', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
     r"""Pick file dialog to select a destination file.
 
@@ -2541,9 +2565,8 @@ def pick_excel_file(save=False):
     """
     if save:
         return save_file(file_ext='xlsx')
-    return pick_file(files_filter='All Files (*.*)|*.*|'
-                     'Excel Workbook (*.xlsx)|*.xlsx|'
-                     'Excel 97-2003 Workbook|*.xls')
+    return pick_file(files_filter='Excel Workbook (*.xlsx)|*.xlsx|'
+                                  'Excel 97-2003 Workbook|*.xls')
 
 
 def save_excel_file():
@@ -2685,6 +2708,30 @@ def check_viewtype(view, view_type, exitscript=False):
         alert(
             "Active view must be a {}.".format(
                 ' '.join(coreutils.split_words(str(view_type)))),
+            exitscript=exitscript
+            )
+        return False
+    return True
+
+
+def check_graphicalview(view, exitscript=False):
+    """Verify target view is a graphical view
+
+    Args:
+        view (DB.View): target view
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if view is a graphical view
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_graphicalview(revit.active_view)
+        ... True
+    """
+    if not view.Category:
+        alert(
+            "Active view must be a grahical view.",
             exitscript=exitscript
             )
         return False
@@ -2859,15 +2906,30 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         )
 
 
-def ask_to_use_selected(type_name):
+def ask_to_use_selected(type_name, count=None, multiple=True):
     """Ask user if wants to use currently selected elements.
 
     Args:
         type_name (str): Element type of expected selected elements
+        count (int): Number of selected items
+        multiple (bool): Whether multiple selected items are allowed
     """
-    return alert("You currently have %s selected. "
-                 "Do you want to use them?" % type_name.lower(),
-                 yes=True, no=True)
+    report = type_name.lower()
+    # multiple = True
+    message = \
+        "You currently have %s selected. Do you want to proceed with "\
+        "currently selected item(s)?"
+    # check is selecting multiple is allowd
+    if not multiple:
+        # multiple = False
+        message = \
+            "You currently have %s selected and only one is required. "\
+            "Do you want to use the first selected item?"
+
+    # check if count is provided
+    if count is not None:
+        report = '{} {}'.format(count, report)
+    return alert(message % report, yes=True, no=True)
 
 
 def inform_wip():

@@ -82,13 +82,11 @@ namespace pyRevitLabs.Common {
         public const string ArchiveInternalBranchPath = @"{0}-{1}";
         public const string APIArchiveURL = @"https://github.com/{0}/archive/{1}" + ArchiveFileExtension;
 
-        public static IEnumerable<T> GetReleasesFromAPI<T>(string repoId, out string nextendpoint) {
-            var endpoint = GetReleaseEndPoint(repoId);
-            logger.Debug("Getting releases from {0}", endpoint);
-
+        public static IEnumerable<T> GetReleasesFromAPI<T>(string endpoint, out string nextendpoint) {
             // make github api call and get a list of releases
             // https://developer.github.com/v3/repos/releases/
             HttpWebRequest request = CommonUtils.GetHttpWebRequest(endpoint);
+            //request.Headers.Add(HttpRequestHeader.Authorization, "token ???");
             var response = request.GetResponse();
 
             // extract list of  PyRevitRelease from json
@@ -98,9 +96,8 @@ namespace pyRevitLabs.Common {
             }
 
             var m = Regex.Match(response.Headers["Link"], "\\<(?<next>.+?)\\>;\\srel=\"next\"");
-            if (m.Success) {
+            if (m.Success)
                 nextendpoint = m.Groups["next"].Value;
-            }
             else
                 nextendpoint = null;
 
@@ -112,15 +109,22 @@ namespace pyRevitLabs.Common {
         public static List<T> GetReleases<T>(string repoId) {
             string nextendpoint;
             var releases = new List<T>();
-            releases.AddRange(GetReleasesFromAPI<T>(repoId, out nextendpoint));
 
+            // prepare API endpoint
+            var endpoint = GetReleaseEndPoint(repoId);
+            logger.Debug("Getting releases from {0}", endpoint);
+
+            // make the first call and collect releases alongside the link to the next batch
+            releases.AddRange(GetReleasesFromAPI<T>(endpoint, out nextendpoint));
+
+            // while there is a link to the next batch, continue getting releases and adding to list
             while (nextendpoint != null && nextendpoint != string.Empty) {
-                releases.AddRange(GetReleasesFromAPI<T>(repoId, out nextendpoint));
+                endpoint = nextendpoint;
+                releases.AddRange(GetReleasesFromAPI<T>(endpoint, out nextendpoint));
             }
 
             return releases;
         }
-
 
         public static string GetReleaseEndPoint(string repoId) => string.Format(APIReleasesURL, repoId);
 

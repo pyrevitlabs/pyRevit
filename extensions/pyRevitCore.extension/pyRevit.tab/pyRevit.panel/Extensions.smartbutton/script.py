@@ -325,10 +325,10 @@ class ExtensionsWindow(forms.WPFWindow):
 
                 # Set current username and pass for the private repo
                 self.repousername_tb.Text = ext_pkg_item.ext_pkg.config.username
-                self.repopassword_tb.Text = ext_pkg_item.ext_pkg.config.password
+                self.repopassword_pb.Password = ext_pkg_item.ext_pkg.config.password
             except Exception:
                 self.privaterepo_cb.IsChecked = False
-                self.repopassword_tb.Text = self.repousername_tb.Text = ''
+                self.repopassword_pb.Password = self.repousername_tb.Text = ''
 
     def _list_options(self, option_filter=None):
         if option_filter:
@@ -398,7 +398,7 @@ class ExtensionsWindow(forms.WPFWindow):
             self.selected_pkg.ext_pkg.config.username = \
                 self.repousername_tb.Text
             self.selected_pkg.ext_pkg.config.password = \
-                self.repopassword_tb.Text
+                self.repopassword_pb.Password
             user_config.save_changes()
             self.Close()
         except Exception as pkg_sett_save_err:

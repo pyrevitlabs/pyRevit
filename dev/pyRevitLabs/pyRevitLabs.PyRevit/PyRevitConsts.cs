@@ -96,6 +96,8 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsUserCanConfigDefault = true;
         public const string ConfigsColorizeDocsKey = "colorize_docs";
         public const bool ConfigsColorizeDocsDefault = false;
+        public const string ConfigsAppendTooltipExKey = "tooltip_debug_info";
+        public const bool ConfigsAppendTooltipExDefault = false;
 
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";

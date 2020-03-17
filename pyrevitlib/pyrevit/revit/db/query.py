@@ -258,7 +258,7 @@ def get_elements_by_categories(element_bicats, elements=None, doc=None):
                 in element_bicats]
 
     # otherwise collect from model
-    cat_filters = [DB.ElementCategoryFilter(x) for x in element_bicats]
+    cat_filters = [DB.ElementCategoryFilter(x) for x in element_bicats if x]
     elcats_filter = \
         DB.LogicalOrFilter(framework.List[DB.ElementFilter](cat_filters))
     return DB.FilteredElementCollector(doc or HOST_APP.doc)\
@@ -781,6 +781,32 @@ def get_builtincategory(cat_name_or_id, doc=None):
                 return bicat
 
 
+def get_subcategories(doc=None, purgable=False, filterfunc=None):
+    doc = doc or HOST_APP.doc
+    # collect custom categories
+    subcategories = []
+    for cat in doc.Settings.Categories:
+        for subcat in cat.SubCategories:
+            if purgable:
+                if subcat.Id.IntegerValue > 1:
+                    subcategories.append(subcat)
+            else:
+                subcategories.append(subcat)
+    if filterfunc:
+        subcategories = filter(filterfunc, subcategories)
+
+    return subcategories
+
+
+def get_subcategory(cat_name_or_builtin, subcategory_name, doc=None):
+    doc = doc or HOST_APP.doc
+    cat = get_category(cat_name_or_builtin)
+    if cat:
+        for subcat in cat.SubCategories:
+            if subcat.Name == subcategory_name:
+                return subcat
+
+
 def get_builtinparameter(element, param_name, doc=None):
     doc = doc or HOST_APP.doc
     eparam = element.LookupParameter(param_name)
@@ -814,6 +840,7 @@ def get_all_linkeddocs(doc=None):
                       .ToElements()
     docs = [x.GetLinkDocument() for x in linkinstances]
     return [x for x in docs if x]
+
 
 def get_all_grids(group_by_direction=False,
                   include_linked_models=False, doc=None):
@@ -962,7 +989,11 @@ def get_sheet_sets(doc=None):
     return list(viewsheetsets)
 
 
-def get_rev_number(revision):
+def get_rev_number(revision, sheet=None):
+    # if sheet is provided, get number on sheet
+    if sheet and isinstance(sheet, DB.ViewSheet):
+        return sheet.GetRevisionNumberOnSheet(revision.Id)
+    # otherwise get number from revision
     revnum = revision.SequenceNumber
     if hasattr(revision, 'RevisionNumber'):
         revnum = revision.RevisionNumber
@@ -1013,32 +1044,6 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
 
     return [x for x in existing_fp_elements
             if x.GetFillPattern().Target == fillpattern_target]
-
-
-def get_subcategories(doc=None, purgable=False, filterfunc=None):
-    doc = doc or HOST_APP.doc
-    # collect custom categories
-    subcategories = []
-    for cat in doc.Settings.Categories:
-        for subcat in cat.SubCategories:
-            if purgable:
-                if subcat.Id.IntegerValue > 1:
-                    subcategories.append(subcat)
-            else:
-                subcategories.append(subcat)
-    if filterfunc:
-        subcategories = filter(filterfunc, subcategories)
-
-    return subcategories
-
-
-def get_subcategory(category_name, subcategory_name, doc=None):
-    doc = doc or HOST_APP.doc
-    for cat in doc.Settings.Categories:
-        if cat.Name == category_name:
-            for subcat in cat.SubCategories:
-                if subcat.Name == subcategory_name:
-                    return subcat
 
 
 def get_keynote_file(doc=None):
