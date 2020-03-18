@@ -943,6 +943,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             else:
                 tblock_psetting = \
                     revit.query.get_sheet_print_settings(tblock,
+                                                         self.selected_printer,
                                                          doc_printsettings)
                 # the analysis result might be None
                 tblock_printsettings[tblock_tid] = tblock_psetting
