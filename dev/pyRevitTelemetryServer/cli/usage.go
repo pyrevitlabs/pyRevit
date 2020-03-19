@@ -5,11 +5,11 @@ import (
 	"os"
 )
 
-const version string = "0.18"
+const version string = "0.19"
 const help string = `Record pyRevit usage logs to database
 
 Usage:
-	pyrevit-telemetryserver <db_uri> [--scripts=<script_table>] [--events=<event_table>] --port=<port> [--debug] [--trace]
+	pyrevit-telemetryserver <db_uri> [--scripts=<script_table>] [--events=<event_table>] --port=<port> [--https] [--debug] [--trace]
 
 Options:
 	-h --help                    show this screen
@@ -17,6 +17,7 @@ Options:
 	--scripts=<script_table>     target table or collection for script logs
 	--events=<event_table>       target table or collection for app event logs
 	--port=<port>                server port number to listen on
+	--https                      secure connection, expects ./pyrevit-telemetryserver.key and ./pyrevit-telemetryserver.crt
 	--debug                      print debug info
 	--trace                      print trace info e.g. full json logs and sql queries
 

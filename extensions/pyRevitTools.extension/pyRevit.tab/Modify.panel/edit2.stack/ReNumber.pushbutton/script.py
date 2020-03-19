@@ -19,11 +19,31 @@ def toggle_element_selection_handles(target_view, category_name, state=True):
         if state:
             target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
         rr_cat = revit.query.get_subcategory(category_name, 'Reference')
-        rr_cat.Visible[target_view] = state
+        try:
+            rr_cat.Visible[target_view] = state
+        except Exception as vex:
+            logger.debug(
+                'Failed changing category visibility for \"%s\" '
+                'to \"%s\" on view \"%s\" | %s',
+                category_name,
+                state,
+                target_view.Name,
+                str(vex)
+                )
         rr_int = revit.query.get_subcategory(category_name, 'Interior Fill')
         if not rr_int:
             rr_int = revit.query.get_subcategory(category_name, 'Interior')
-        rr_int.Visible[target_view] = state
+        try:
+            rr_int.Visible[target_view] = state
+        except Exception as vex:
+            logger.debug(
+                'Failed changing interior fill visibility for \"%s\" '
+                'to \"%s\" on view \"%s\" | %s',
+                category_name,
+                state,
+                target_view.Name,
+                str(vex)
+                )
         # disable the temp VG overrides after making changes to categories
         if not state:
             target_view.DisableTemporaryViewMode(
@@ -52,6 +72,10 @@ class EasilySelectableElements(object):
                 self.category_name,
                 state=False
                 )
+
+
+def increment(number):
+    return coreutils.increment_str(number, expand=True)
 
 
 def get_number(target_element):
@@ -102,9 +126,9 @@ def get_elements_dict(category_name):
 
 def find_replacement_number(existing_number, elements_dict):
     """Find an appropriate replacement number for conflicting numbers."""
-    replaced_number = coreutils.increment_str(existing_number)
+    replaced_number = increment(existing_number)
     while replaced_number in elements_dict:
-        replaced_number = coreutils.increment_str(replaced_number)
+        replaced_number = increment(replaced_number)
     return replaced_number
 
 
@@ -179,7 +203,7 @@ def pick_and_renumber(category_name, starting_index):
                                      index, existing_elements_data)
                     # record the renumbered element
                     renumbered_element_ids.append(picked_element.Id)
-                index = coreutils.increment_str(index)
+                index = increment(index)
             # unmark all renumbered elements
             _unmark_collected(category_name, renumbered_element_ids)
 
@@ -236,7 +260,7 @@ def door_by_room_renumber():
                         # attempts = 1
                         # max_attempts = len([x for x in room_door_numbers if x])
                         while new_number in room_door_numbers:
-                            new_number = coreutils.increment_str(new_number)
+                            new_number = increment(new_number)
                         renumber_element(picked_door,
                                          new_number,
                                          existing_doors_data)

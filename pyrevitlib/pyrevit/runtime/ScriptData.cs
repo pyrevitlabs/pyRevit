@@ -9,5 +9,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string CommandExtension { get; set; }
 
         public string HelpSource { get; set; }
+        public string Tooltip { get; set; }
     }
 }

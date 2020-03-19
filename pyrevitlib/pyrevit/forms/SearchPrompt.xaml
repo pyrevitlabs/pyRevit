@@ -16,6 +16,7 @@
                 <ScaleTransform ScaleX="1.8" ScaleY="1.8"/>
             </Canvas.LayoutTransform>
         </Canvas>
+
         <Canvas x:Key="TabIcon">
             <Path Data="M20,18H22V6H20M11.59,7.41L15.17,11H1V13H15.17L11.59,16.58L13,18L19,12L13,6L11.59,7.41Z"
                   Fill="LightGray" />
@@ -23,6 +24,7 @@
                 <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
             </Canvas.LayoutTransform>
         </Canvas>
+
         <Canvas x:Key="ReturnIcon">
             <Path Data="M19,7V11H5.83L9.41,7.41L8,6L2,12L8,18L9.41,16.58L5.83,13H21V7H19Z"
                   Fill="LightGray" />
@@ -30,6 +32,7 @@
                 <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
             </Canvas.LayoutTransform>
         </Canvas>
+
         <Style TargetType="{x:Type TextBox}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
@@ -58,45 +61,53 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
     </Window.Resources>
-    <Border CornerRadius="15" Height="64" Background="#f323303d">
-        <DockPanel Margin="10,10,10,10">
-            <ContentControl DockPanel.Dock="Left"
-                            Height="44" Width="44"
-                            Content="{StaticResource SearchIcon}"
-                            KeyboardNavigation.IsTabStop="False"/>
-            <Grid DockPanel.Dock="Right">
-            <ContentControl x:Name="tab_icon"
-                            Visibility="Visible"
-                            Margin="5,0,10,0"
-                            Height="28" Width="28"
-                            Content="{StaticResource TabIcon}"
-                            KeyboardNavigation.IsTabStop="False"/>
-            <ContentControl x:Name="return_icon"
-                            Visibility="Visible"
-                            Margin="5,0,10,0"
-                            Height="28" Width="28"
-                            Content="{StaticResource ReturnIcon}"
-                            KeyboardNavigation.IsTabStop="False"/>
-            </Grid>
-            <Grid>
-                <TextBox x:Name="directmatch_tb"
-                         IsEnabled="False"
-                         Foreground="LightGray"
-                         Margin="10,0,0,0"
-                         KeyboardNavigation.IsTabStop="False"/>
-                <StackPanel Orientation="Horizontal">
-                    <TextBox x:Name="search_tb"
-                             Margin="10,0,0,0"
-                             Text="matc"
-                             TextChanged="search_txt_changed"/>
-                    <TextBox x:Name="wordsmatch_tb"
-                             IsEnabled="False"
-                             Foreground="LightGray"
-                             Text="- Example Match"
-                             KeyboardNavigation.IsTabStop="False"/>
-                </StackPanel>
-            </Grid>
-        </DockPanel>
+    <Border CornerRadius="15" MinHeight="64" MaxWidth="600" Background="#f323303d">
+        <StackPanel>
+            <DockPanel Margin="10,10,10,10">
+                <ContentControl DockPanel.Dock="Left"
+                                Height="44" Width="44"
+                                Content="{StaticResource SearchIcon}"
+                                KeyboardNavigation.IsTabStop="False"/>
+                <Grid DockPanel.Dock="Right">
+                    <ContentControl x:Name="tab_icon"
+                                    Visibility="Visible"
+                                    Margin="5,0,10,0"
+                                    Height="28" Width="28"
+                                    Content="{StaticResource TabIcon}"
+                                    KeyboardNavigation.IsTabStop="False"/>
+                    <ContentControl x:Name="return_icon"
+                                    Visibility="Visible"
+                                    Margin="5,0,10,0"
+                                    Height="28" Width="28"
+                                    Content="{StaticResource ReturnIcon}"
+                                    KeyboardNavigation.IsTabStop="False"/>
+                </Grid>
+                <Grid>
+                    <TextBox x:Name="directmatch_tb"
+                                IsEnabled="False"
+                                Foreground="LightGray"
+                                Margin="10,0,0,0"
+                                KeyboardNavigation.IsTabStop="False"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="search_tb"
+                                 Margin="10,0,0,0"
+                                 Text="matc"
+                                 TextChanged="search_txt_changed"/>
+                        <TextBox x:Name="wordsmatch_tb"
+                                 IsEnabled="False"
+                                 Foreground="LightGray"
+                                 Text="- Example Match"
+                                 KeyboardNavigation.IsTabStop="False"/>
+                    </StackPanel>
+                </Grid>
+            </DockPanel>
+            <TextBlock x:Name="tooltip_tb" Visibility="Collapsed" Margin="20" Text="Tooltip" TextWrapping="Wrap"/>
+        </StackPanel>
     </Border>
 </Window>

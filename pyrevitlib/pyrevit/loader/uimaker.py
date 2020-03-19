@@ -562,6 +562,8 @@ def _produce_ui_panels(ui_maker_params):
 
         _set_highlights(panel, panel_ui)
 
+        panel_ui.set_collapse(panel.collapsed)
+
         return panel_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)

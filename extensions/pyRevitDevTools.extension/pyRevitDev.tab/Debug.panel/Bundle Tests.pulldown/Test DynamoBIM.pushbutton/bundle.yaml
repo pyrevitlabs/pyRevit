@@ -5,3 +5,5 @@ context:
   - OST_Walls
   - OST_TextNotes
 references:
+engine:
+  clean: false

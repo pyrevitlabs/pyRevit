@@ -8,7 +8,6 @@ layout:
   - Export Family Config
   - Import Family Config
   - -----
-  - Wipe All Family Parameters
-  - Wipe Unused Family Parameters
+  - Wipe Family Parameters
   - -----
   - Save Families

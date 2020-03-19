@@ -110,6 +110,7 @@ MDATA_BACKGROUND_SLIDEOUT_KEY = 'slideout'
 MDATA_HIGHLIGHT_KEY = 'highlight'
 MDATA_HIGHLIGHT_TYPE_NEW = 'new'
 MDATA_HIGHLIGHT_TYPE_UPDATED = 'updated'
+MDATA_COLLAPSED_KEY = 'collapsed'
 
 # metadata schema: Bundles | legacy
 UI_TITLE_PARAM = '__title__'

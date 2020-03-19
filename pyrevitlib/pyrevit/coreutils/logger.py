@@ -56,12 +56,13 @@ LOG_REC_FORMAT_DEPRECATE = \
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 
 # add deprecate logging level
+DEPRECATE_LOG_LEVEL = 25
+logging.addLevelName(DEPRECATE_LOG_LEVEL, "DEPRECATE")
+
+# add success logging level
 SUCCESS_LOG_LEVEL = 80
 logging.addLevelName(SUCCESS_LOG_LEVEL, "SUCCESS")
 
-# add deprecate logging level
-DEPRECATE_LOG_LEVEL = 90
-logging.addLevelName(DEPRECATE_LOG_LEVEL, "DEPRECATE")
 
 # must be the same in this file and pyrevit/loader/runtime/envdict.cs
 # this is because the csharp code hasn't been compiled when the

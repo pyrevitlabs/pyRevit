@@ -10,7 +10,7 @@ from System import EventHandler
 from System import Threading
 
 try:
-    from pyrevit.frawework import wpf
+    from pyrevit.framework import wpf
 except Exception:
     clr.AddReference('IronPython.Wpf')
     import IronPython

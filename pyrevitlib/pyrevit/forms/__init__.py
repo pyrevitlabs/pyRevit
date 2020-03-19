@@ -15,6 +15,7 @@ import datetime
 import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR, PyRevitCPythonNotSupported
+from pyrevit import PyRevitException, PyRevitCPythonNotSupported
 import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 
@@ -31,11 +32,14 @@ from pyrevit.framework import Interop
 from pyrevit.framework import Input
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.framework import CPDialogs
+from pyrevit.framework import ComponentModel
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
 from pyrevit import versionmgr
+
+import pyevent
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -46,7 +50,7 @@ DEFAULT_CMDSWITCHWND_WIDTH = 600
 DEFAULT_SEARCHWND_WIDTH = 600
 DEFAULT_SEARCHWND_HEIGHT = 100
 DEFAULT_INPUTWINDOW_WIDTH = 500
-DEFAULT_INPUTWINDOW_HEIGHT = 400
+DEFAULT_INPUTWINDOW_HEIGHT = 600
 DEFAULT_RECOGNIZE_ACCESS_KEY = False
 
 WPF_HIDDEN = framework.Windows.Visibility.Hidden
@@ -57,6 +61,66 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
+ParamDef = namedtuple('ParamDef', ['name', 'istype'])
+"""Parameter definition tuple.
+
+Attributes:
+    name (str): parameter name
+    istype (bool): true if type parameter, otherwise false
+"""
+
+
+# https://gui-at.blogspot.com/2009/11/inotifypropertychanged-in-ironpython.html
+class reactive(property):
+    """Decorator for WPF bound properties"""
+    def __init__(self, getter):
+        def newgetter(ui_control):
+            try:
+                return getter(ui_control)
+            except AttributeError:
+                return None
+        super(reactive, self).__init__(newgetter)
+
+    def setter(self, setter):
+        def newsetter(ui_control, newvalue):
+            oldvalue = self.fget(ui_control)
+            if oldvalue != newvalue:
+                setter(ui_control, newvalue)
+                ui_control.OnPropertyChanged(setter.__name__)
+        return property(
+            fget=self.fget,
+            fset=newsetter,
+            fdel=self.fdel,
+            doc=self.__doc__)
+
+
+class Reactive(ComponentModel.INotifyPropertyChanged):
+    """WPF property updator base mixin"""
+    PropertyChanged, _propertyChangedCaller = pyevent.make_event()
+
+    def add_PropertyChanged(self, value):
+        self.PropertyChanged += value
+
+    def remove_PropertyChanged(self, value):
+        self.PropertyChanged -= value
+
+    def OnPropertyChanged(self, prop_name):
+        if self._propertyChangedCaller:
+            args = ComponentModel.PropertyChangedEventArgs(prop_name)
+            self._propertyChangedCaller(self, args)
+
+
+class WindowToggler(object):
+    def __init__(self, window):
+        self._window = window
+
+    def __enter__(self):
+        self._window.hide()
+
+    def __exit__(self, exception, exception_value, traceback):
+        self._window.show_dialog()
+
+
 class WPFWindow(framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
@@ -64,6 +128,7 @@ class WPFWindow(framework.Windows.Window):
         xaml_source (str): xaml source filepath or xaml content
         literal_string (bool): xaml_source contains xaml content, not filepath
         handle_esc (bool): handle Escape button and close the window
+        set_owner (bool): set the owner of window to host app window
 
     Example:
         >>> from pyrevit import forms
@@ -103,6 +168,7 @@ class WPFWindow(framework.Windows.Window):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
         # set properties
+        self.thread_id = framework.get_current_thread_id()
         if set_owner:
             self.setup_owner()
         self.setup_icon()
@@ -153,10 +219,16 @@ class WPFWindow(framework.Windows.Window):
         if args.Key == Input.Key.Escape:
             self.Close()
 
+    def set_icon(self, icon_path):
+        """Set window icon to given icon path."""
+        self.Icon = utils.bitmap_from_file(icon_path)
+
     def setup_icon(self):
         """Setup default window icon."""
-        iconpath = op.join(BIN_DIR, 'pyrevit_settings.png')
-        self.Icon = utils.bitmap_from_file(iconpath)
+        self.set_icon(op.join(BIN_DIR, 'pyrevit_settings.png'))
+
+    def hide(self):
+        self.Hide()
 
     def show(self, modal=False):
         """Show window."""
@@ -184,6 +256,26 @@ class WPFWindow(framework.Windows.Window):
                     )
         else:
             wpf_element.Source = utils.bitmap_from_file(image_file)
+
+    def dispatch(self, func, *args, **kwargs):
+        if framework.get_current_thread_id() == self.thread_id:
+            t = threading.Thread(
+                target=func,
+                args=args,
+                kwargs=kwargs
+                )
+            t.start()
+        else:
+            # ask ui thread to call the func with args and kwargs
+            self.Dispatcher.Invoke(
+                System.Action(
+                    lambda: func(*args, **kwargs)
+                    ),
+                Threading.DispatcherPriority.Background
+                )
+
+    def conceal(self):
+        return WindowToggler(self)
 
     @property
     def pyrevit_version(self):
@@ -448,6 +540,10 @@ class SelectFromList(TemplateUserInputWindow):
 
     xaml_source = 'SelectFromList.xaml'
 
+    @property
+    def use_regex(self):
+        return self.regexToggle_b.IsChecked
+
     def _setup(self, **kwargs):
         # custom button name?
         button_name = kwargs.get('button_name', 'Select')
@@ -559,7 +655,11 @@ class SelectFromList(TemplateUserInputWindow):
             self.toggleall_b.Content = 'Toggle'
             # get a match score for every item and sort high to low
             fuzzy_matches = sorted(
-                [(x, coreutils.fuzzy_search_ratio(x.name, option_filter))
+                [(x,
+                  coreutils.fuzzy_search_ratio(
+                      target_string=x.name,
+                      sfilter=option_filter,
+                      regex=self.use_regex))
                  for x in self._get_active_ctx()],
                 key=lambda x: x[1],
                 reverse=True
@@ -644,6 +744,13 @@ class SelectFromList(TemplateUserInputWindow):
             self.show_element(self.clrsearch_b)
 
         self._list_options(option_filter=self.search_tb.Text)
+
+    def toggle_regex(self, sender, args):
+        self.regexToggle_b.Content = \
+            self.Resources['regexIcon'] if self.use_regex \
+                else self.Resources['filterIcon']
+        self.search_txt_changed(sender, args)
+        self.search_tb.Focus()
 
     def clear_search(self, sender, args):    #pylint: disable=W0613
         """Clear search box."""
@@ -1100,15 +1207,6 @@ class ProgressBar(TemplatePromptBar):
         self.pbar.Dispatcher.Invoke(System.Action(self._donothing),
                                     Threading.DispatcherPriority.Background)
 
-    @staticmethod
-    def _make_return_getter(f, ret):
-        # FIXME: WIP, cleanup docs
-        @wraps(f)
-        def wrapped_f(*args, **kwargs):
-            """Whatever this is"""
-            ret.append(f(*args, **kwargs))
-        return wrapped_f
-
     @property
     def title(self):
         """Progress bar title."""
@@ -1132,18 +1230,6 @@ class ProgressBar(TemplatePromptBar):
         """Handler for cancel button clicked event."""
         self.cancel_b.Content = 'Cancelling...'
         self.cancelled = True    #pylint: disable=W0201
-
-    def wait_async(self, func, args=()):
-        """Call a method asynchronosely and show progress."""
-        returns = []
-        self.indeterminate = True
-        rgfunc = self._make_return_getter(func, returns)
-        t = threading.Thread(target=rgfunc, args=args)
-        t.start()
-        while t.is_alive():
-            self._dispatch_updater()
-
-        return returns[0] if returns else None
 
     def reset(self):
         """Reset progress value to 0."""
@@ -1206,7 +1292,15 @@ class SearchPrompt(WPFWindow):
 
         self.search_tip = kwargs.get('search_tip', '')
 
-        self._search_db = sorted(search_db)
+        if isinstance(search_db, list):
+            self._search_db = None
+            self._search_db_keys = search_db
+        elif isinstance(search_db, dict):
+            self._search_db = search_db
+            self._search_db_keys = sorted(self._search_db.keys())
+        else:
+            raise PyRevitException("Unknown search database type")
+
         self._search_res = None
         self._switches = kwargs.get('switches', [])
         self._setup_response()
@@ -1329,6 +1423,12 @@ class SearchPrompt(WPFWindow):
                     self.wordsmatch_tb.Text = '- {}'.format(cur_res)
                     mlogger.debug('wordsmatch_tb.Text: %s',
                                   self.wordsmatch_tb.Text)
+            tooltip = self._search_db.get(cur_res, None)
+            if tooltip:
+                self.tooltip_tb.Text = tooltip
+                self.show_element(self.tooltip_tb)
+            else:
+                self.hide_element(self.tooltip_tb)
             self._search_res = cur_res
             return True
         return False
@@ -1355,7 +1455,7 @@ class SearchPrompt(WPFWindow):
         """Find direct text matches in search term."""
         results = []
         if input_text:
-            for cmd_name in self._search_db:
+            for cmd_name in self._search_db_keys:
                 if cmd_name.lower().startswith(input_text):
                     results.append(cmd_name)
 
@@ -1366,7 +1466,7 @@ class SearchPrompt(WPFWindow):
         results = []
         if input_text:
             cur_words = input_text.split(' ')
-            for cmd_name in self._search_db:
+            for cmd_name in self._search_db_keys:
                 if all([x in cmd_name.lower() for x in cur_words]):
                     results.append(cmd_name)
 
@@ -1477,6 +1577,24 @@ class LevelOption(TemplateListItem):
     def name(self):
         """Level name."""
         return revit.query.get_name(self.item)
+
+
+class FamilyParamOption(TemplateListItem):
+    """Level wrapper for :func:`select_family_parameters`."""
+    def __init__(self, fparam, builtin=False, labeled=False):
+        super(FamilyParamOption, self).__init__(fparam)
+        self.isbuiltin = builtin
+        self.islabeled = labeled
+
+    @property
+    def name(self):
+        """Family Parameter name."""
+        return self.item.Definition.Name
+
+    @property
+    def istype(self):
+        """Is type parameter."""
+        return not self.item.IsInstance
 
 
 def select_revisions(title='Select Revision',
@@ -2024,13 +2142,13 @@ def select_image(images, title='Select Image', button_name='Select'):
     return bitmap_images.get(selected_image, None)
 
 
-def select_parameter(src_element,
-                     title='Select Parameters',
-                     button_name='Select',
-                     multiple=True,
-                     filterfunc=None,
-                     include_instance=True,
-                     include_type=True):
+def select_parameters(src_element,
+                      title='Select Parameters',
+                      button_name='Select',
+                      multiple=True,
+                      filterfunc=None,
+                      include_instance=True,
+                      include_type=True):
     """Standard form for selecting parameters from given element.
 
     Args:
@@ -2069,6 +2187,90 @@ def select_parameter(src_element,
         param_defs,
         title=title,
         button_name=button_name,
+        width=450,
+        multiselect=multiple,
+        item_template=itemplate
+        )
+
+    return selected_params
+
+
+def select_family_parameters(family_doc,
+                             title='Select Parameters',
+                             button_name='Select',
+                             multiple=True,
+                             filterfunc=None,
+                             include_instance=True,
+                             include_type=True,
+                             include_builtin=True,
+                             include_labeled=True):
+    """Standard form for selecting parameters from given family document.
+
+    Args:
+        family_doc (DB.Document): source family document
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        include_instance (bool, optional): list instance parameters
+        include_type (bool, optional): list type parameters
+        include_builtin (bool, optional): list builtin parameters
+        include_labeled (bool, optional): list parameters used as labels
+
+    Returns:
+        list[:obj:`DB.FamilyParameter`]: list of family parameter objects
+
+    Example:
+        >>> forms.select_family_parameters(
+        ...     family_doc,
+        ...     title='Select Parameters',
+        ...     multiple=True,
+        ...     include_instance=True,
+        ...     include_type=True
+        ... )
+        ... [<DB.FamilyParameter >, <DB.FamilyParameter >]
+    """
+    family_doc = family_doc or HOST_APP.doc
+    family_params = revit.query.get_family_parameters(family_doc)
+    # get all params used in labeles
+    label_param_ids = \
+        [x.Id for x in revit.query.get_family_label_parameters(family_doc)]
+
+    if filterfunc:
+        family_params = filter(filterfunc, family_params)
+
+    param_defs = []
+    for family_param in family_params:
+        if not include_instance and family_param.IsInstance:
+            continue
+        if not include_type and not family_param.IsInstance:
+            continue
+        if not include_builtin and family_param.Id.IntegerValue < 0:
+            continue
+        if not include_labeled and family_param.Id in label_param_ids:
+            continue
+
+        param_defs.append(
+            FamilyParamOption(family_param,
+                              builtin=family_param.Id.IntegerValue < 0,
+                              labeled=family_param.Id in label_param_ids)
+            )
+
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "FamilyParameterItemStyle.xaml")
+        )
+    selected_params = SelectFromList.show(
+        {
+            'All Parameters': param_defs,
+            'Type Parameters': [x for x in param_defs if x.istype],
+            'Built-in Parameters': [x for x in param_defs if x.isbuiltin],
+            'Used as Label': [x for x in param_defs if x.islabeled],
+        },
+        title=title,
+        button_name=button_name,
+        group_selector_title='Parameter Filters:',
         width=450,
         multiselect=multiple,
         item_template=itemplate
@@ -2457,6 +2659,32 @@ def check_modelview(view, exitscript=False):
     """
     if not isinstance(view, (DB.View3D, DB.ViewPlan, DB.ViewSection)):
         alert("Active view must be a model view.", exitscript=exitscript)
+        return False
+    return True
+
+
+def check_viewtype(view, view_type, exitscript=False):
+    """Verify target view is of given type
+
+    Args:
+        view (DB.View): target view
+        view_type (DB.ViewType): type of view
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if view is of given type
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_viewtype(revit.active_view, DB.ViewType.DrawingSheet)
+        ... True
+    """
+    if view.ViewType != view_type:
+        alert(
+            "Active view must be a {}.".format(
+                ' '.join(coreutils.split_words(str(view_type)))),
+            exitscript=exitscript
+            )
         return False
     return True
 
