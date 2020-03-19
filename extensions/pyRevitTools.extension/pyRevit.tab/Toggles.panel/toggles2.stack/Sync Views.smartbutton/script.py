@@ -1,10 +1,13 @@
+# pylint: disable=import-error,invalid-name,attribute-defined-outside-init
+# pylint: disable=broad-except,missing-docstring
 import os
 import os.path as op
 import pickle as pl
 import clr
+import math
 
 from pyrevit import framework
-from pyrevit import script
+from pyrevit import script, revit
 from pyrevit import DB, UI
 
 
@@ -14,74 +17,123 @@ __doc__ = 'Keep views synchronized. This means that as you pan and zoom and '\
           'area without the need to zoom and pan again.\n'\
           'This tool works best when the views are maximized.'
 
-
-class Point:
-    def __init__(self, x=0, y=0):
-        self.x = x
-        self.y = y
-
-
 SYNC_VIEW_ENV_VAR = 'SYNCVIEWACTIVE'
-# todo: sync views - 3D
 
+SUPPORTED_VIEW_TYPES = (
+    DB.ViewPlan,
+    DB.ViewSection,
+    DB.View3D,
+    DB.ViewSheet,
+    DB.ViewDrafting
+)
+
+def get_data_filename(document):
+    project_name = op.splitext(op.basename(document.PathName))[0]
+    return project_name + '_pySyncRevitActiveViewZoomState'
+
+
+def get_datafile(document):
+    data_filename = get_data_filename(document)
+    return script.get_instance_data_file(data_filename)
+
+def is_close(a, b, rnd=5):
+    return a == b or int(a*10**rnd) == int(b*10**rnd)
 
 def copyzoomstate(sender, args):
-    if script.get_envvar(SYNC_VIEW_ENV_VAR):
-        event_uidoc = sender.ActiveUIDocument
-        event_doc = sender.ActiveUIDocument.Document
-        active_ui_views = event_uidoc.GetOpenUIViews()
-        current_ui_view = None
-        for active_ui_view in active_ui_views:
-            if active_ui_view.ViewId == args.CurrentActiveView.Id:
-                current_ui_view = active_ui_view
+    try:
+        if script.get_envvar(SYNC_VIEW_ENV_VAR) and \
+                isinstance(args.CurrentActiveView, SUPPORTED_VIEW_TYPES):
+            event_uidoc = sender.ActiveUIDocument
+            event_doc = sender.ActiveUIDocument.Document
+            active_ui_views = event_uidoc.GetOpenUIViews()
 
-        if isinstance(args.CurrentActiveView, DB.ViewPlan):
-            project_name = op.splitext(op.basename(event_doc.PathName))[0]
-            data_filename = project_name + '_pySyncRevitActiveViewZoomState'
-            data_file = script.get_instance_data_file(data_filename)
+            current_ui_view = None
+            for active_ui_view in active_ui_views:
+                if active_ui_view.ViewId == args.CurrentActiveView.Id:
+                    current_ui_view = active_ui_view
+            if not current_ui_view:
+                return
 
             cornerlist = current_ui_view.GetZoomCorners()
 
-            vc1 = cornerlist[0]
-            vc2 = cornerlist[1]
-            p1 = Point()
-            p2 = Point()
-            p1.x = vc1.X
-            p1.y = vc1.Y
-            p2.x = vc2.X
-            p2.y = vc2.Y
-
-            f = open(data_file, 'w')
-            pl.dump(p1, f)
-            pl.dump(p2, f)
-            f.close()
-
+            f = open(get_datafile(event_doc), 'w')
+            try:
+                pl.dump(type(args.CurrentActiveView).__name__, f)
+                # dump zoom and center
+                pl.dump(revit.serializable.serialize_list(cornerlist), f)
+                # dump ViewOrientation3D
+                if isinstance(args.CurrentActiveView, DB.View3D):
+                    orientation = args.CurrentActiveView.GetOrientation()
+                    pl.dump(revit.serializable.ViewOrientation3D(orientation),
+                            f)
+                elif isinstance(args.CurrentActiveView, DB.ViewSection):
+                    direction = args.CurrentActiveView.ViewDirection
+                    pl.dump(revit.serializable.XYZ(direction), f)
+            except Exception:
+                pass
+            finally:
+                f.close()
+    except Exception:
+        pass
+    
 
 def applyzoomstate(sender, args):
-    if script.get_envvar(SYNC_VIEW_ENV_VAR):
-        event_uidoc = sender.ActiveUIDocument
-        event_doc = sender.ActiveUIDocument.Document
-        active_ui_views = event_uidoc.GetOpenUIViews()
-        current_ui_view = None
-        for active_ui_view in active_ui_views:
-            if active_ui_view.ViewId == args.CurrentActiveView.Id:
-                current_ui_view = active_ui_view
+    try:
+        if script.get_envvar(SYNC_VIEW_ENV_VAR) and \
+                isinstance(args.CurrentActiveView, SUPPORTED_VIEW_TYPES):
+            event_uidoc = sender.ActiveUIDocument
+            event_doc = sender.ActiveUIDocument.Document
+            active_ui_views = event_uidoc.GetOpenUIViews()
 
-        if isinstance(args.CurrentActiveView, DB.ViewPlan):
-            project_name = op.splitext(op.basename(event_doc.PathName))[0]
-            data_filename = project_name + '_pySyncRevitActiveViewZoomState'
-            data_file = script.get_instance_data_file(data_filename)
-            f = open(data_file, 'r')
-            p2 = pl.load(f)
-            p1 = pl.load(f)
-            f.close()
-            vc1 = DB.XYZ(p1.x, p1.y, 0)
-            vc2 = DB.XYZ(p2.x, p2.y, 0)
-            current_ui_view.ZoomAndCenterRectangle(vc1, vc2)
+            current_ui_view = None
+            for active_ui_view in active_ui_views:
+                if active_ui_view.ViewId == args.CurrentActiveView.Id:
+                    current_ui_view = active_ui_view
+            if not current_ui_view:
+                return
+            f = open(get_datafile(event_doc), 'r')
+            
+            try:
+                view_type_saved = pl.load(f)
+                if view_type_saved != type(args.CurrentActiveView).__name__:
+                    raise Exception()
+                vc1, vc2 = pl.load(f)
+                # load ViewOrientation3D
+                if isinstance(args.CurrentActiveView, DB.View3D):
+                    if args.CurrentActiveView.IsLocked:
+                        raise Exception()
+                    view_orientation = pl.load(f)
+                    args.CurrentActiveView.SetOrientation(
+                        view_orientation.deserialize())
+                elif isinstance(args.CurrentActiveView, DB.ViewSection):
+                    direction = pl.load(f)
+                    angle = direction.deserialize().AngleTo(
+                                args.CurrentActiveView.ViewDirection)
+                    if not is_close(angle, math.pi) and not is_close(angle, 0):
+                        raise Exception()
+
+            except Exception:
+                pass
+            else:
+                # apply zoom and center
+                current_ui_view.ZoomAndCenterRectangle(vc1.deserialize(), vc2.deserialize())
+            finally:
+                f.close()            
+    except Exception:
+        pass
+    
 
 
 def togglestate():
     new_state = not script.get_envvar(SYNC_VIEW_ENV_VAR)
+    # remove last datafile on start
+    if new_state:
+        # try:
+        data_filename = get_data_filename(revit.doc)
+        if os.path.exists(data_filename):
+            os.remove(data_filename)
+        # except Exception:
+        #     pass
     script.set_envvar(SYNC_VIEW_ENV_VAR, new_state)
     script.toggle_icon(new_state)
 
@@ -97,7 +149,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
                 UI.Events.ViewActivatedEventArgs](applyzoomstate)
         return True
     except Exception:
-            return False
+        return False
 
 
 if __name__ == '__main__':
