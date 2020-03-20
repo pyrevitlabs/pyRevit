@@ -15,6 +15,7 @@ import re
 import codecs
 import json
 import csv
+import pickle
 
 from pyrevit import EXEC_PARAMS, PyRevitException
 from pyrevit import coreutils
@@ -25,7 +26,6 @@ from pyrevit import framework
 from pyrevit import revit
 from pyrevit import output
 from pyrevit import versionmgr
-from pyrevit import forms
 from pyrevit.labs import PyRevit
 
 
@@ -34,6 +34,9 @@ warnings.filterwarnings("ignore")
 
 #pylint: disable=W0703,C0302,C0103,W0614
 mlogger = logger.get_logger(__name__)
+
+
+DATAFEXT = 'pym'
 
 
 def get_info():
@@ -596,3 +599,19 @@ def load_csv(filepath):
     """
     with codecs.open(filepath, 'rb', encoding='utf-8') as csvfile:
         return list(csv.reader(csvfile, delimiter=',', quotechar='\"'))
+
+
+def memorize(slot_name, data):
+    data_file = get_document_data_file(file_id=slot_name,
+                                       file_ext=DATAFEXT,
+                                       add_cmd_name=False)
+    with open(data_file, 'w') as dfile:
+        pickle.dump(data, dfile)
+
+
+def remember(slot_name):
+    data_file = get_document_data_file(file_id=slot_name,
+                                       file_ext=DATAFEXT,
+                                       add_cmd_name=False)
+    with open(data_file, 'r') as dfile:
+        return pickle.load(dfile)
