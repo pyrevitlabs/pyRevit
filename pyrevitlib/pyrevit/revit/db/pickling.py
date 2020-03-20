@@ -1,15 +1,37 @@
 # pylint: disable=missing-docstring,invalid-name,too-few-public-methods
 """Methods and Classes to convert Revit types to serializable"""
-import sys
-import inspect
+from pyrevit import PyRevitException, api
 from pyrevit import DB
+from pyrevit.compat import Iterable
+from pyrevit import coreutils
 
 
-__all__ = ('ElementId', 'XYZ', 'UV', 'Line', 'CurveLoop', 'ViewOrientation3D',
-           'Transform', 'BoundingBoxXYZ')
+__all__ = ('serialize', 'deserialize')
 
 
-class ElementId(object):
+class Serializable(object):
+    def __init__(self):
+        pass
+
+    def deserialize(self):
+        return None
+
+
+class EnumSerializable(Serializable):
+    enum_type = None
+
+    def __init__(self, enum_value):
+        self.value = str(enum_value)
+
+    def deserialize(self):
+        return coreutils.get_enum_value(self.enum_type, self.value)
+
+
+class NoneSerializer(Serializable):
+    pass
+
+
+class ElementId(Serializable):
     def __init__(self, element_id):
         self.integer_value = element_id.IntegerValue
 
@@ -17,7 +39,7 @@ class ElementId(object):
         return DB.ElementId(self.integer_value)
 
 
-class XYZ(object):
+class XYZ(Serializable):
     def __init__(self, xyz):
         self.x = xyz.X
         self.y = xyz.Y
@@ -27,7 +49,7 @@ class XYZ(object):
         return DB.XYZ(self.x, self.y, self.z)
 
 
-class UV(object):
+class UV(Serializable):
     def __init__(self, uv):
         self.u = uv.U
         self.v = uv.V
@@ -36,7 +58,7 @@ class UV(object):
         return DB.UV(self.u, self.v)
 
 
-class Line(object):
+class Line(Serializable):
     def __init__(self, line):
         self.start = XYZ(line.GetEndPoint(0))
         self.end = XYZ(line.GetEndPoint(1))
@@ -46,7 +68,7 @@ class Line(object):
                                    self.end.deserialize())
 
 
-class CurveLoop(object):
+class CurveLoop(Serializable):
     def __init__(self, crv_loop):
         self.curves = []
         for crv in crv_loop:
@@ -59,7 +81,7 @@ class CurveLoop(object):
         return crv_loop
 
 
-class ViewOrientation3D(object):
+class ViewOrientation3D(Serializable):
     def __init__(self, view_orientation_3d):
         self.eye = XYZ(view_orientation_3d.EyePosition)
         self.forward = XYZ(view_orientation_3d.ForwardDirection)
@@ -71,7 +93,7 @@ class ViewOrientation3D(object):
                                     self.forward.deserialize())
 
 
-class Transform(object):
+class Transform(Serializable):
     def __init__(self, transform):
         self.basis_x = XYZ(transform.BasisX)
         self.basis_y = XYZ(transform.BasisY)
@@ -89,7 +111,7 @@ class Transform(object):
         return transform
 
 
-class BoundingBoxXYZ(object):
+class BoundingBoxXYZ(Serializable):
     def __init__(self, bbox_xyz):
         self.min = XYZ(bbox_xyz.Min)
         self.max = XYZ(bbox_xyz.Max)
@@ -103,30 +125,43 @@ class BoundingBoxXYZ(object):
         return bbox_xyz
 
 
-def serialize(value):
-    if isinstance(value, list) or value.__class__.__name__.startswith('List['):
-        result_list = []
-        for value_item in value:
-            result_list.append(serialize(value_item))
-        return result_list
-    elif value.__class__.__name__ in __all__:
-        for mem in inspect.getmembers(sys.modules[__name__]):
-            moduleobject = mem[1]
-            if inspect.isclass(moduleobject) \
-                    and hasattr(moduleobject, 'deserialize'):
-                if moduleobject.__name__ == value.__class__.__name__:
-                    return moduleobject(value)
-    else:
-        return value
+class ViewType(EnumSerializable):
+    enum_type = DB.ViewType
 
 
-def deserialize(value):
-    if isinstance(value, list):
+def serialize(api_object):
+    if api_object is None:
+        return NoneSerializer()
+
+    if isinstance(api_object, Iterable):
         result_list = []
-        for value_item in value:
-            result_list.append(deserialize(value_item))
+        for api_item in api_object:
+            result_list.append(serialize(api_item))
         return result_list
-    elif value.__class__.__name__ in __all__:
-        if callable(getattr(value, "deserialize", None)):
-            return value.deserialize()
-    return value
+
+    serializers = coreutils.get_all_subclasses(
+        [Serializable, EnumSerializable]
+        )
+
+    try:
+        compatible_serializer = \
+            next(
+                x for x in serializers
+                if x.__name__ == api_object.GetType().Name
+                )
+        return compatible_serializer(api_object)
+    except StopIteration:
+        raise PyRevitException(
+            "No serializers have been implemented for \"%s\"" % repr(api_object)
+            )
+
+
+def deserialize(python_object):
+    if isinstance(python_object, Iterable):
+        result_list = []
+        for python_item in python_object:
+            result_list.append(deserialize(python_item))
+        return result_list
+
+    if isinstance(python_object, Serializable):
+        return python_object.deserialize()

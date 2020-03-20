@@ -1,45 +1,36 @@
 # pylint: disable=import-error,invalid-name,attribute-defined-outside-init
-'Applies the copied state to the active view. '\
-'This works in conjunction with the Copy State tool.'\
-''\
-'Shift-Click:'\
-'Show additional options'
+"""Applies the copied state to the active view.
+This works in conjunction with the Copy State tool.
 
-import inspect
-import copy_paste_state_actions
+Shift-Click:
+Show additional options
+"""
+from pyrevit import PyRevitException
 from pyrevit import forms
-from pyrevit import script
+
+import copypastestate
+
 
 __authors__ = ['Gui Talarico', '{{author}}', 'Alex Melnikov']
 
-logger = script.get_logger()
 
-LAST_ACTION_VAR = "COPYPASTESTATE"
+# collect actions that are valid in this context
+available_actions = [
+    x for x in copypastestate.get_actions() if x.validate_context()
+]
 
-# main logic
-
-available_actions = {}
-# get available actions from copy_paste_state_actions
-for mem in inspect.getmembers(copy_paste_state_actions):
-    moduleobject = mem[1]
-    if inspect.isclass(moduleobject) \
-            and hasattr(moduleobject, 'is_copy_paste_action'):
-        if hasattr(moduleobject, 'validate_context') \
-                and not moduleobject.validate_context():
-            available_actions[moduleobject.name] = moduleobject
 if available_actions:
-    # read last saved action from env var
-    last_action = script.get_envvar(LAST_ACTION_VAR)
+    action_options = {x.name: x for x in available_actions}
+    selected_action = \
+        forms.CommandSwitchWindow.show(
+            action_options.keys(),
+            message='Select property to be pasted:',
+            name_attr='name'
+            )
 
-    # pylint: disable=undefined-variable
-    if last_action not in available_actions.keys() or __shiftclick__:
-        selected_option = \
-            forms.CommandSwitchWindow.show(
-                available_actions.keys(),
-                message='Select property to be pasted:')
-    else:
-        selected_option = last_action
-
-    if selected_option:
-        action = available_actions[selected_option]()
-        action.paste_wrapper()
+    if selected_action:
+        action = action_options[selected_action]
+        try:
+            action().paste()
+        except PyRevitException as ex:
+            forms.alert(ex.msg)

@@ -17,6 +17,7 @@ from pyrevit.revit.db import ensure
 from pyrevit.revit.db import delete
 from pyrevit.revit.db.transaction import *
 from pyrevit.revit.db import failure
+from pyrevit.revit.db.pickling import *
 from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
 from pyrevit.revit import ui
@@ -27,7 +28,6 @@ from pyrevit.revit import serverutils
 from pyrevit.revit import geom
 from pyrevit.revit import units
 from pyrevit.revit import features
-from pyrevit.revit import serializable
 
 
 #pylint: disable=W0703,C0302,C0103

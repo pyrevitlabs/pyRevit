@@ -1,37 +1,34 @@
-# pylint: disable=import-error,invalid-name,attribute-defined-outside-init
-'Copies the state of desired parameter of the active'\
-' view to memory. e.g. Visibility Graphics settings or'\
-' Zoom state. Run it and see how it works.'
-
-import inspect
+# pylint: disable=import-error,invalid-name,attribute-defined-outside-init,broad-except
+"""Copies the state of desired parameter of the active
+view to memory. e.g. Visibility Graphics settings or
+Zoom state. Run it and see how it works.
+"""
+from pyrevit import PyRevitException
 from pyrevit import forms
-from pyrevit import script
-import copy_paste_state_actions
+
+import copypastestate
+
 
 __authors__ = ['Gui Talarico', '{{author}}', 'Alex Melnikov']
 
-logger = script.get_logger()
 
-LAST_ACTION_VAR = "COPYPASTESTATE"
+# collect actions that are valid in this context
+available_actions = [
+    x for x in copypastestate.get_actions() if x.validate_context()
+]
 
-# main logic
-
-available_actions = {}
-# get available actions from copy_paste_state_actions
-for mem in inspect.getmembers(copy_paste_state_actions):
-    moduleobject = mem[1]
-    if inspect.isclass(moduleobject) \
-            and hasattr(moduleobject, 'is_copy_paste_action'):
-        if hasattr(moduleobject, 'validate_context') \
-                and not moduleobject.validate_context():
-            available_actions[moduleobject.name] = moduleobject
 if available_actions:
-    selected_option = \
+    action_options = {x.name: x for x in available_actions}
+    selected_action = \
         forms.CommandSwitchWindow.show(
-            available_actions.keys(),
-            message='Select property to be copied to memory:')
+            action_options.keys(),
+            message='Select property to be copied to memory:',
+            name_attr='name'
+            )
 
-    if selected_option:
-        action = available_actions[selected_option]()
-        action.copy_wrapper()
-        script.set_envvar(LAST_ACTION_VAR, selected_option)
+    if selected_action:
+        action = action_options[selected_action]
+        try:
+            action().copy()
+        except PyRevitException as ex:
+            forms.alert(ex.msg)
