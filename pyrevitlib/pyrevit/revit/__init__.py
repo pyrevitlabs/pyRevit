@@ -95,6 +95,27 @@ class RevitWrapper(types.ModuleType):
                           'Use revit.query.get_project_info() instead.')
         return query.get_project_info()
 
+    @staticmethod
+    def open_doc(doc_path):
+        """Open document at given path.
+
+        Args:
+            doc_path (str): document file path
+
+        Returns:
+            DB.Document: opened document
+        """
+        return HOST_APP.app.OpenDocumentFile(doc_path)
+
+    @staticmethod
+    def close_doc(doc):
+        """Close given document.
+
+        Args:
+            doc (DB.Document): document
+        """
+        return doc.Close()
+
 
 class ErrorSwallower():
     """Suppresses warnings during script execution
