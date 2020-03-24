@@ -193,13 +193,18 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
 
 
 class CropRegionData(object):
-    def __init__(self, cropregion_curveloop, is_active):
+    def __init__(self, cropregion_curveloop, crop_bbox, is_active):
         self._cropregion_curveloop = revit.serialize(cropregion_curveloop)
+        self._crop_bbox = revit.serialize(crop_bbox)
         self._is_active = is_active
 
     @property
     def cropregion_curveloop(self):
         return self._cropregion_curveloop.deserialize()
+
+    @property
+    def crop_bbox(self):
+        return self._crop_bbox.deserialize()
 
     @property
     def is_active(self):
@@ -232,12 +237,20 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
     def copy(self):
         view = CropRegionAction.get_first_cropable_view()
 
-        cropregion_curve_loops = revit.query.get_crop_region(view)
-        if cropregion_curve_loops:
+        crop_bbox = cropregion_curve_loop = None
+        if isinstance(view, DB.View3D):
+            crop_bbox = view.CropBox
+        else:
+            cropregion_curve_loops = revit.query.get_crop_region(view)
+            if cropregion_curve_loops:
+                cropregion_curve_loop = cropregion_curve_loops[0]
+
+        if crop_bbox or cropregion_curve_loop:
             script.store_data(
                 slot_name=self.__class__.__name__,
                 data=CropRegionData(
-                    cropregion_curveloop=cropregion_curve_loops[0],
+                    cropregion_curveloop=cropregion_curve_loop,
+                    crop_bbox=crop_bbox,
                     is_active=view.CropBoxActive
                 )
             )
@@ -251,7 +264,11 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
         crv_loop = cr_data.cropregion_curveloop
         with revit.Transaction('Paste Crop Region'):
             for view in CropRegionAction.get_cropable_views():
-                revit.update.set_crop_region(view, crv_loop)
+                if isinstance(view, DB.View3D):
+                    if cr_data.crop_bbox:
+                        view.CropBox = cr_data.crop_bbox
+                else:
+                    revit.update.set_crop_region(view, crv_loop)
                 view.CropBoxActive = cr_data.is_active
         revit.uidoc.RefreshActiveView()
 
