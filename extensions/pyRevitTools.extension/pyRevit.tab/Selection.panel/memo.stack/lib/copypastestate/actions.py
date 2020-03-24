@@ -18,6 +18,9 @@ from copypastestate import utils
 mlogger = logger.get_logger(__name__)
 
 
+# =============================================================================
+
+
 class ViewZoomPanStateData(object):
     def __init__(self, view_type, corner_pts, dir_orient):
         self._view_type = revit.serialize(view_type)
@@ -52,7 +55,7 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
         elif isinstance(revit.active_view, DB.ViewSection):
             dir_orient = revit.active_view.ViewDirection
 
-        script.memorize(
+        script.save_data(
             slot_name=self.__class__.__name__,
             data=ViewZoomPanStateData(
                 view_type=active_view.ViewType,
@@ -63,7 +66,7 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
 
     def paste(self):
         # load data
-        vzps_data = script.remember(slot_name=self.__class__.__name__)
+        vzps_data = script.load_data(slot_name=self.__class__.__name__)
 
         view_type = vzps_data.view_type
         vc1, vc2 = vzps_data.corner_pts
@@ -99,6 +102,9 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
             ))
 
 
+# =============================================================================
+
+
 class SectionBox3DStateData(object):
     def __init__(self, section_box, view_orientation):
         self._section_box = revit.serialize(section_box)
@@ -123,7 +129,7 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
         section_box = revit.active_view.GetSectionBox()
         view_orientation = revit.active_view.GetOrientation()
 
-        script.memorize(
+        script.save_data(
             slot_name=self.__class__.__name__,
             data=SectionBox3DStateData(
                 section_box=section_box,
@@ -132,7 +138,7 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
         )
 
     def paste(self):
-        sb3d_data = script.remember(slot_name=self.__class__.__name__)
+        sb3d_data = script.load_data(slot_name=self.__class__.__name__)
 
         active_ui_view = revit.uidoc.GetOpenUIViews()[0]
         with revit.Transaction('Paste Section Box Settings'):
@@ -143,6 +149,9 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
     @staticmethod
     def validate_context():
         return isinstance(revit.active_view, DB.View3D)
+
+
+# =============================================================================
 
 
 class VisibilityGraphicsData(object):
@@ -160,7 +169,7 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
     invalid_context_msg = "View does not support Visibility Graphics settings"
 
     def copy(self):
-        script.memorize(
+        script.save_data(
             slot_name=self.__class__.__name__,
             data=VisibilityGraphicsData(
                 source_viewid=revit.active_view.Id,
@@ -168,7 +177,7 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
         )
 
     def paste(self):
-        vg_data = script.remember(slot_name=self.__class__.__name__)
+        vg_data = script.load_data(slot_name=self.__class__.__name__)
         with revit.Transaction('Paste Visibility Graphics'):
             revit.active_view.ApplyViewTemplateParameters(
                 revit.doc.GetElement(vg_data.source_viewid))
@@ -179,6 +188,9 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
             revit.active_view,
             (DB.ViewSheet, DB.ViewSchedule)
             )
+
+
+# =============================================================================
 
 
 class CropRegionData(object):
@@ -213,7 +225,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
         view = utils.get_views(filter_func=CropRegionAction.is_cropable)[0]
         cropregion_curve_loops = utils.get_crop_region(view)
         if cropregion_curve_loops:
-            script.memorize(
+            script.save_data(
                 slot_name=self.__class__.__name__,
                 data=CropRegionData(
                     cropregion_curveloop=cropregion_curve_loops[0],
@@ -226,7 +238,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
                 )
 
     def paste(self):
-        cr_data = script.remember(slot_name=self.__class__.__name__)
+        cr_data = script.load_data(slot_name=self.__class__.__name__)
         crv_loop = cr_data.cropregion_curveloop
         with revit.Transaction('Paste Crop Region'):
             for view in utils.get_views():
@@ -237,6 +249,9 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
     @staticmethod
     def validate_context():
         return utils.get_views(filter_func=CropRegionAction.is_cropable)
+
+
+# =============================================================================
 
 
 ALIGNMENT_CROPBOX = 'Align to CROP BOX CORNER on Paste'
@@ -505,7 +520,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                 offset_uv = (outline.Max - outline.Min) / 2
             center = viewport.GetBoxCenter() - title_block_pt
 
-        script.memorize(
+        script.save_data(
             slot_name=self.__class__.__name__,
             data=ViewportPlacementData(
                 alignment=alignment,
@@ -515,7 +530,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         )
 
     def paste(self):
-        vp_data = script.remember(slot_name=self.__class__.__name__) # type: ViewportPlacementData
+        vp_data = script.load_data(slot_name=self.__class__.__name__)
 
         viewports = utils.get_selected_viewports()
         align_axis = None
@@ -591,6 +606,9 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         return utils.get_selected_viewports()
 
 
+# =============================================================================
+
+
 class FilterOverridesData(object):
     def __init__(self, source_viewid, filter_ids):
         self._source_viewid = revit.serialize(source_viewid)
@@ -647,7 +665,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         if not selected_filters:
             raise PyRevitException('No filters selected. Cancelled.')
 
-        script.memorize(
+        script.save_data(
             slot_name=self.__class__.__name__,
             data=FilterOverridesData(
                 source_viewid=view.Id,
@@ -656,7 +674,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         )
 
     def paste(self):
-        fo_data = script.remember(slot_name=self.__class__.__name__)
+        fo_data = script.load_data(slot_name=self.__class__.__name__)
 
         source_view = revit.doc.GetElement(fo_data.source_viewid)
         source_filter_ids = fo_data.filter_ids
