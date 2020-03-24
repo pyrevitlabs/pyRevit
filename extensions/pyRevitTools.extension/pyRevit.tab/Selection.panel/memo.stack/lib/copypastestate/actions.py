@@ -55,7 +55,7 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
         elif isinstance(revit.active_view, DB.ViewSection):
             dir_orient = revit.active_view.ViewDirection
 
-        script.save_data(
+        script.store_data(
             slot_name=self.__class__.__name__,
             data=ViewZoomPanStateData(
                 view_type=active_view.ViewType,
@@ -129,7 +129,7 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
         section_box = revit.active_view.GetSectionBox()
         view_orientation = revit.active_view.GetOrientation()
 
-        script.save_data(
+        script.store_data(
             slot_name=self.__class__.__name__,
             data=SectionBox3DStateData(
                 section_box=section_box,
@@ -169,7 +169,7 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
     invalid_context_msg = "View does not support Visibility Graphics settings"
 
     def copy(self):
-        script.save_data(
+        script.store_data(
             slot_name=self.__class__.__name__,
             data=VisibilityGraphicsData(
                 source_viewid=revit.active_view.Id,
@@ -225,7 +225,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
         view = utils.get_views(filter_func=CropRegionAction.is_cropable)[0]
         cropregion_curve_loops = revit.query.get_crop_region(view)
         if cropregion_curve_loops:
-            script.save_data(
+            script.store_data(
                 slot_name=self.__class__.__name__,
                 data=CropRegionData(
                     cropregion_curveloop=cropregion_curve_loops[0],
@@ -520,7 +520,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                 offset_uv = (outline.Max - outline.Min) / 2
             center = viewport.GetBoxCenter() - title_block_pt
 
-        script.save_data(
+        script.store_data(
             slot_name=self.__class__.__name__,
             data=ViewportPlacementData(
                 alignment=alignment,
@@ -665,7 +665,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         if not selected_filters:
             raise PyRevitException('No filters selected. Cancelled.')
 
-        script.save_data(
+        script.store_data(
             slot_name=self.__class__.__name__,
             data=FilterOverridesData(
                 source_viewid=view.Id,
