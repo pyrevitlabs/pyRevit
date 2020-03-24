@@ -47,4 +47,5 @@ def is_product_demo():
 
 def is_api_object(data_type):
     """Check if given object belongs to Revit API"""
-    return 'Autodesk.Revit.' in str(data_type)
+    if hasattr(data_type, 'GetType'):
+        return 'Autodesk.Revit.' in data_type.GetType().Namespace
