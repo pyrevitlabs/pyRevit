@@ -50,52 +50,6 @@ def get_views(allow_viewports=True, filter_func=None):
             return selected_views
 
 
-def get_crop_region(view):
-    """Takes crop region of a view
-
-    Args:
-        view (DB.View): view to get crop region from
-
-    Returns:
-        list[DB.CurveLoop]: list of curve loops
-    """
-    crsm = view.GetCropRegionShapeManager()
-    if HOST_APP.is_newer_than(2015):
-        crsm_valid = crsm.CanHaveShape
-    else:
-        crsm_valid = crsm.Valid
-
-    if crsm_valid:
-        if HOST_APP.is_newer_than(2015):
-            curve_loops = list(crsm.GetCropShape())
-        else:
-            curve_loops = [crsm.GetCropRegionShape()]
-
-        if curve_loops:
-            return curve_loops
-
-
-def set_crop_region(view, curve_loops):
-    """Sets crop region to a view
-
-    Args:
-        view (DB.View): view to change
-        curve_loops (list[DB.CurveLoop]): list of curve loops
-    """
-    if not isinstance(curve_loops, list):
-        curve_loops = [curve_loops]
-
-    crop_active_saved = view.CropBoxActive
-    view.CropBoxActive = True
-    crsm = view.GetCropRegionShapeManager()
-    for cloop in curve_loops:
-        if HOST_APP.is_newer_than(2015):
-            crsm.SetCropShape(cloop)
-        else:
-            crsm.SetCropRegionShape(cloop)
-    view.CropBoxActive = crop_active_saved
-
-
 def view_plane(view):
     """Get a plane parallel to a view
     Args:

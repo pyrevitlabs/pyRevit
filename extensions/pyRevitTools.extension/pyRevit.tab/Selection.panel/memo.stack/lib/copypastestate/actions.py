@@ -223,7 +223,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
 
     def copy(self):
         view = utils.get_views(filter_func=CropRegionAction.is_cropable)[0]
-        cropregion_curve_loops = utils.get_crop_region(view)
+        cropregion_curve_loops = revit.query.get_crop_region(view)
         if cropregion_curve_loops:
             script.save_data(
                 slot_name=self.__class__.__name__,
@@ -242,7 +242,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
         crv_loop = cr_data.cropregion_curveloop
         with revit.Transaction('Paste Crop Region'):
             for view in utils.get_views():
-                utils.set_crop_region(view, crv_loop)
+                revit.update.set_crop_region(view, crv_loop)
                 view.CropBoxActive = cr_data.is_active
         revit.uidoc.RefreshActiveView()
 
@@ -505,7 +505,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
 
         with revit.DryTransaction('Activate & Read Cropbox, Copy Center'):
             if alignment == ALIGNMENT_BASEPOINT:
-                utils.set_crop_region(
+                revit.update.set_crop_region(
                     view,
                     ViewportPlacementAction.zero_cropbox(view)
                     )
@@ -562,8 +562,8 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                     with revit.Transaction('Temporary settings'):
                         # 'base point' mode - set cropbox to 'zero' temporary
                         if alignment == ALIGNMENT_BASEPOINT:
-                            crop_region_current = utils.get_crop_region(view)
-                            utils.set_crop_region(
+                            crop_region_current = revit.query.get_crop_region(view)
+                            revit.update.set_crop_region(
                                 view, ViewportPlacementAction.zero_cropbox(view)
                                 )
                         cropbox_values_current = \
@@ -587,7 +587,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                 # unset temporary values
                 if crop_region_current:
                     with revit.Transaction('Recover crop region form'):
-                        utils.set_crop_region(view, crop_region_current)
+                        revit.update.set_crop_region(view, crop_region_current)
                 if cropbox_values_current:
                     with revit.Transaction('Recover crop region values'):
                         ViewportPlacementAction.recover_cropbox(
