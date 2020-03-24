@@ -3,7 +3,6 @@
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import moduleutils
 
-from copypastestate import utils
 from copypastestate import basetypes
 from copypastestate import actions
 

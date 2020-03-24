@@ -12,7 +12,6 @@ from pyrevit import forms
 from pyrevit import script
 
 from copypastestate import basetypes
-from copypastestate import utils
 
 
 mlogger = logger.get_logger(__name__)
@@ -91,15 +90,16 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        return isinstance(
-            revit.active_view,
-            (
-                DB.ViewPlan,
-                DB.ViewSection,
-                DB.View3D,
-                DB.ViewSheet,
-                DB.ViewDrafting
-            ))
+        return revit.get_selection().is_empty \
+            and isinstance(
+                revit.active_view,
+                (
+                    DB.ViewPlan,
+                    DB.ViewSection,
+                    DB.View3D,
+                    DB.ViewSheet,
+                    DB.ViewDrafting
+                ))
 
 
 # =============================================================================
@@ -184,10 +184,9 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        return not isinstance(
-            revit.active_view,
-            (DB.ViewSheet, DB.ViewSchedule)
-            )
+        return revit.get_selection().is_empty \
+            and not isinstance(revit.active_view,
+                               (DB.ViewSheet, DB.ViewSchedule))
 
 
 # =============================================================================
@@ -215,14 +214,24 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
         "Activate a view or select at least one cropable viewport"
 
     @staticmethod
-    def is_cropable(view):
-        """Check if view can be cropped"""
-        return not isinstance(view, (DB.ViewSheet, DB.TableView)) \
-            and view.ViewType not in (DB.ViewType.Legend,
-                                      DB.ViewType.DraftingView)
+    def get_cropable_views():
+        # py3 returns a filter object but py3 returns filtered list
+        # list() makes it consistent
+        # py2 filter does not support keyword arguments
+        selected_views = revit.get_selection().only_views()
+        if not selected_views:
+            selected_views = [revit.active_view]
+        return list(filter(revit.query.is_cropable_view, selected_views))
+
+    @staticmethod
+    def get_first_cropable_view():
+        views = CropRegionAction.get_cropable_views()
+        if views:
+            return views[0]
 
     def copy(self):
-        view = utils.get_views(filter_func=CropRegionAction.is_cropable)[0]
+        view = CropRegionAction.get_first_cropable_view()
+
         cropregion_curve_loops = revit.query.get_crop_region(view)
         if cropregion_curve_loops:
             script.store_data(
@@ -241,14 +250,14 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
         cr_data = script.load_data(slot_name=self.__class__.__name__)
         crv_loop = cr_data.cropregion_curveloop
         with revit.Transaction('Paste Crop Region'):
-            for view in utils.get_views():
+            for view in CropRegionAction.get_cropable_views():
                 revit.update.set_crop_region(view, crv_loop)
                 view.CropBoxActive = cr_data.is_active
         revit.uidoc.RefreshActiveView()
 
     @staticmethod
     def validate_context():
-        return utils.get_views(filter_func=CropRegionAction.is_cropable)
+        return CropRegionAction.get_first_cropable_view()
 
 
 # =============================================================================
@@ -462,16 +471,22 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         p1 = DB.XYZ(0, 0, 0)
         p3 = DB.XYZ(1, 1, 1)
         # uv's of model points projected to a view
-        uv1 = utils.project_to_viewport(p1, view)
-        uv3 = utils.project_to_viewport(p3, view)
+        uv1 = revit.units.project_to_viewport(p1, view)
+        uv3 = revit.units.project_to_viewport(p3, view)
         # uv's of upper left and lower right corners of rectangle
         uv2 = DB.UV(uv1.U, uv3.V)
         uv4 = DB.UV(uv3.U, uv1.V)
         # project all points back to model coordinates
-        p2 = utils.project_to_world(uv2, view)
-        p4 = utils.project_to_world(uv4, view)
-        p1 = utils.project_to_world(utils.project_to_viewport(p1, view), view)
-        p3 = utils.project_to_world(utils.project_to_viewport(p3, view), view)
+        p2 = revit.units.project_to_world(uv2, view)
+        p4 = revit.units.project_to_world(uv4, view)
+        p1 = revit.units.project_to_world(
+            revit.units.project_to_viewport(p1, view),
+            view
+            )
+        p3 = revit.units.project_to_world(
+            revit.units.project_to_viewport(p3, view),
+            view
+            )
         # create lines between points
         l1 = DB.Line.CreateBound(p1, p2)
         l2 = DB.Line.CreateBound(p2, p3)
@@ -484,7 +499,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         return crv_loop
 
     def copy(self):
-        viewports = utils.get_selected_viewports()
+        viewports = revit.get_selection().include(DB.Viewport)
         if len(viewports) != 1:
             raise Exception('Exactly one viewport must be selected')
         viewport = viewports[0]
@@ -532,7 +547,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
     def paste(self):
         vp_data = script.load_data(slot_name=self.__class__.__name__)
 
-        viewports = utils.get_selected_viewports()
+        viewports = revit.get_selection().include(DB.Viewport)
         align_axis = None
         if __shiftclick__:  # pylint: disable=undefined-variable
             align_axis = forms.CommandSwitchWindow.show(
@@ -603,7 +618,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        return utils.get_selected_viewports()
+        return revit.get_selection().include(DB.Viewport)
 
 
 # =============================================================================
@@ -629,14 +644,6 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
     invalid_context_msg = ""
 
     @staticmethod
-    def get_view_filters(view):
-        view_filters = []
-        for filter_id in view.GetFilters():
-            filter_element = view.Document.GetElement(filter_id)
-            view_filters.append(filter_element)
-        return view_filters
-
-    @staticmethod
     def controlled_by_template(view):
         if view.ViewTemplateId != DB.ElementId.InvalidElementId:
             view_template = view.Document.GetElement(view.ViewTemplateId)
@@ -649,29 +656,31 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         return False
 
     def copy(self):
-        view = utils.get_views()[0]
-        view_filters = FilterOverridesAction.get_view_filters(view)
-        if not view_filters:
-            raise PyRevitException('Active view has no fitlers applied')
+        views = revit.get_selection().only_views()
+        if views:
+            view = views[0]
+            view_filters = revit.query.get_view_filters(view)
+            if not view_filters:
+                raise PyRevitException('Active view has no fitlers applied')
 
-        selected_filters = forms.SelectFromList.show(
-            view_filters,
-            name_attr='Name',
-            title='Select filters to copy',
-            button_name='Select filters',
-            multiselect=True
-        )
-
-        if not selected_filters:
-            raise PyRevitException('No filters selected. Cancelled.')
-
-        script.store_data(
-            slot_name=self.__class__.__name__,
-            data=FilterOverridesData(
-                source_viewid=view.Id,
-                filter_ids=[f.Id for f in view_filters]
+            selected_filters = forms.SelectFromList.show(
+                view_filters,
+                name_attr='Name',
+                title='Select filters to copy',
+                button_name='Select filters',
+                multiselect=True
             )
-        )
+
+            if not selected_filters:
+                raise PyRevitException('No filters selected. Cancelled.')
+
+            script.store_data(
+                slot_name=self.__class__.__name__,
+                data=FilterOverridesData(
+                    source_viewid=view.Id,
+                    filter_ids=[f.Id for f in view_filters]
+                )
+            )
 
     def paste(self):
         fo_data = script.load_data(slot_name=self.__class__.__name__)
@@ -682,13 +691,13 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         # to view template or to selected view
         mode_templates = \
             forms.CommandSwitchWindow.show(
-                ['Active/selected Views', 'Select Templates'],
+                ['Active View', 'Select View Templates'],
                 message='Where do you want to paste filters?'
                 ) == 'Select Templates'
         if mode_templates:
             views = forms.select_viewtemplates()
         else:
-            views = utils.get_views()
+            views = [revit.active_view]
             views_controlled_by_template = \
                 [x for x in views
                  if FilterOverridesAction.controlled_by_template(x)]
@@ -722,4 +731,4 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        return True
+        return revit.get_selection().is_empty

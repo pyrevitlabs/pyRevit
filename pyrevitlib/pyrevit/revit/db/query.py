@@ -1467,3 +1467,17 @@ def get_crop_region(view):
 
         if curve_loops:
             return curve_loops
+
+
+def is_cropable_view(view):
+    """Check if view can be cropped"""
+    return not isinstance(view, (DB.ViewSheet, DB.TableView)) \
+        and view.ViewType not in (DB.ViewType.Legend, DB.ViewType.DraftingView)
+
+
+def get_view_filters(view):
+    view_filters = []
+    for filter_id in view.GetFilters():
+        filter_element = view.Document.GetElement(filter_id)
+        view_filters.append(filter_element)
+    return view_filters
