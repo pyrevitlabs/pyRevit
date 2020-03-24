@@ -1442,3 +1442,42 @@ def get_sheet_print_settings(tblock, printer_name, doc_psettings):
         except Exception:
             pass
     return sorted(all_tblock_psettings, key=lambda x: x.Name)
+
+
+def get_crop_region(view):
+    """Takes crop region of a view
+
+    Args:
+        view (DB.View): view to get crop region from
+
+    Returns:
+        list[DB.CurveLoop]: list of curve loops
+    """
+    crsm = view.GetCropRegionShapeManager()
+    if HOST_APP.is_newer_than(2015):
+        crsm_valid = crsm.CanHaveShape
+    else:
+        crsm_valid = crsm.Valid
+
+    if crsm_valid:
+        if HOST_APP.is_newer_than(2015):
+            curve_loops = list(crsm.GetCropShape())
+        else:
+            curve_loops = [crsm.GetCropRegionShape()]
+
+        if curve_loops:
+            return curve_loops
+
+
+def is_cropable_view(view):
+    """Check if view can be cropped"""
+    return not isinstance(view, (DB.ViewSheet, DB.TableView)) \
+        and view.ViewType not in (DB.ViewType.Legend, DB.ViewType.DraftingView)
+
+
+def get_view_filters(view):
+    view_filters = []
+    for filter_id in view.GetFilters():
+        filter_element = view.Document.GetElement(filter_id)
+        view_filters.append(filter_element)
+    return view_filters

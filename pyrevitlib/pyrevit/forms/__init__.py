@@ -2313,6 +2313,8 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
     Args:
         msg (str): message to be displayed
         title (str, optional): task dialog title
+        sub_msg (str, optional): sub message
+        expanded (str, optional): expanded area message
         ok (bool, optional): show OK button, defaults to True
         cancel (bool, optional): show Cancel button, defaults to False
         yes (bool, optional): show Yes button, defaults to False
