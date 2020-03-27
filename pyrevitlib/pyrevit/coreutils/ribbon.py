@@ -6,11 +6,15 @@ from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.framework import System, Uri
+from pyrevit.coreutils import envvars
+from pyrevit.framework import System, Uri, Windows
 from pyrevit.framework import IO
 from pyrevit.framework import Imaging
 from pyrevit.framework import BindingFlags
-from pyrevit.api import UI, AdWindows
+from pyrevit.framework import Media, Convert
+from pyrevit.api import UI, AdWindows, AdInternal, PANELLISTVIEW_TYPE
+from pyrevit.runtime import types
+from pyrevit.revit import ui
 
 
 mlogger = get_logger(__name__)
@@ -28,6 +32,26 @@ DEFAULT_TOOLTIP_IMAGE_FORMAT = '.png'
 DEFAULT_TOOLTIP_VIDEO_FORMAT = '.swf'
 if not EXEC_PARAMS.doc_mode and HOST_APP.is_newer_than(2019, or_equal=True):
     DEFAULT_TOOLTIP_VIDEO_FORMAT = '.mp4'
+
+
+def argb_to_brush(argb_color):
+    # argb_color is formatted as #AARRGGBB
+    a = r = g = b = "FF"
+    try:
+        b = argb_color[-2:]
+        g = argb_color[-4:-2]
+        r = argb_color[-6:-4]
+        if len(argb_color) > 7:
+            a = argb_color[-8:-6]
+        return Media.SolidColorBrush(Media.Color.FromArgb(
+                Convert.ToInt32("0x" + a, 16),
+                Convert.ToInt32("0x" + r, 16),
+                Convert.ToInt32("0x" + g, 16),
+                Convert.ToInt32("0x" + b, 16)
+                )
+            )
+    except Exception as color_ex:
+        mlogger.error("Bad color format %s | %s", argb_color, color_ex)
 
 
 def load_bitmapimage(image_file):
@@ -190,6 +214,8 @@ class GenericPyRevitUIContainer(object):
         self._sub_pyrvt_components = OrderedDict()
         self.itemdata_mode = False
         self._dirty = False
+        self._visible = None
+        self._enabled = None
 
     def __iter__(self):
         return iter(self._sub_pyrvt_components.values())
@@ -223,7 +249,7 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsVisible'):
             return self._rvtapi_object.IsVisible
         else:
-            raise AttributeError()
+            return self._visible
 
     @visible.setter
     def visible(self, value):
@@ -232,7 +258,7 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsVisible'):
             self._rvtapi_object.IsVisible = value
         else:
-            raise AttributeError()
+            self._visible = value
 
     @property
     def enabled(self):
@@ -242,7 +268,7 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsEnabled'):
             return self._rvtapi_object.IsEnabled
         else:
-            raise AttributeError()
+            return self._enabled
 
     @enabled.setter
     def enabled(self, value):
@@ -251,7 +277,22 @@ class GenericPyRevitUIContainer(object):
         elif hasattr(self._rvtapi_object, 'IsEnabled'):
             self._rvtapi_object.IsEnabled = value
         else:
-            raise AttributeError()
+            self._enabled = value
+
+    def process_deferred(self):
+        try:
+            if self._visible is not None:
+                self.visible = self._visible
+        except Exception as visible_err:
+            raise PyRevitUIError('Error setting .visible {} | {} '
+                                 .format(self, visible_err))
+
+        try:
+            if self._enabled is not None:
+                self.enabled = self._enabled
+        except Exception as enable_err:
+            raise PyRevitUIError('Error setting .enabled {} | {} '
+                                 .format(self, enable_err))
 
     def get_rvtapi_object(self):
         """Return underlying Revit API object for this container."""
@@ -682,7 +723,12 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
 
     def set_tooltip(self, tooltip):
         try:
-            self.get_rvtapi_object().ToolTip = tooltip
+            if tooltip:
+                self.get_rvtapi_object().ToolTip = tooltip
+            else:
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and adwindows_obj.ToolTip:
+                    adwindows_obj.ToolTip.Content = None
             self._dirty = True
         except Exception as tooltip_err:
             raise PyRevitUIError('Item does not have tooltip property: {}'
@@ -690,7 +736,12 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
 
     def set_tooltip_ext(self, tooltip_ext):
         try:
-            self.get_rvtapi_object().LongDescription = tooltip_ext
+            if tooltip_ext:
+                self.get_rvtapi_object().LongDescription = tooltip_ext
+            else:
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and adwindows_obj.ToolTip:
+                    adwindows_obj.ToolTip.ExpandedContent = None
             self._dirty = True
         except Exception as tooltip_err:
             raise PyRevitUIError('Item does not have extended '
@@ -725,7 +776,30 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
         elif tooltip_media.endswith(DEFAULT_TOOLTIP_VIDEO_FORMAT):
             self.set_tooltip_video(tooltip_media)
 
-    def process_deferred_tooltips(self):
+    def reset_highlights(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.Highlight = \
+                    coreutils.get_enum_none(AdInternal.Windows.HighlightMode)
+
+    def highlight_as_new(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.Highlight = \
+                    AdInternal.Windows.HighlightMode.New
+
+    def highlight_as_updated(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.Highlight = \
+                    AdInternal.Windows.HighlightMode.Updated
+
+    def process_deferred(self):
+        GenericPyRevitUIContainer.process_deferred(self)
+
         try:
             if self.tooltip_image:
                 self.set_tooltip_image(self.tooltip_image)
@@ -761,6 +835,11 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
             return self.ui_title
         else:
             return self._rvtapi_object.ItemText
+
+    def get_control_id(self):
+        adwindows_obj = self.get_adwindows_object()
+        if adwindows_obj and hasattr(adwindows_obj, 'Id'):
+            return getattr(adwindows_obj, 'Id', '')
 
     @property
     def assembly_name(self):
@@ -834,7 +913,7 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
                 # extended tooltips (images and videos) can only be applied when
                 # the ui element is created
-                pyrvt_ui_item.process_deferred_tooltips()
+                pyrvt_ui_item.process_deferred()
 
             elif isinstance(pyrvt_ui_item, _PyRevitSeparator):
                 self.get_rvtapi_object().AddSeparator()
@@ -872,6 +951,27 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
         if ctxhelpurl:
             ch = UI.ContextualHelp(UI.ContextualHelpType.Url, ctxhelpurl)
             self.get_rvtapi_object().SetContextualHelp(ch)
+
+    def reset_highlights(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.HighlightDropDown = \
+                    coreutils.get_enum_none(AdInternal.Windows.HighlightMode)
+
+    def highlight_as_new(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.HighlightDropDown = \
+                    AdInternal.Windows.HighlightMode.New
+
+    def highlight_as_updated(self):
+        if hasattr(AdInternal.Windows, 'HighlightMode'):
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                adwindows_obj.HighlightDropDown = \
+                    AdInternal.Windows.HighlightMode.Updated
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
@@ -1037,6 +1137,50 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             if panel.Source and panel.Source.Title == self.name:
                 return panel
 
+    def set_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        color = argb_to_brush(argb_color)
+        panel_adwnd_obj.CustomPanelBackground = color
+        panel_adwnd_obj.CustomPanelTitleBarBackground = color
+        panel_adwnd_obj.CustomSlideOutPanelBackground = color
+
+    def reset_backgrounds(self):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomPanelBackground = None
+        panel_adwnd_obj.CustomPanelTitleBarBackground = None
+        panel_adwnd_obj.CustomSlideOutPanelBackground = None
+
+    def set_panel_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomPanelBackground = \
+            argb_to_brush(argb_color)
+
+    def set_title_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomPanelTitleBarBackground = \
+            argb_to_brush(argb_color)
+
+    def set_slideout_background(self, argb_color):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.CustomSlideOutPanelBackground = \
+            argb_to_brush(argb_color)
+
+    def reset_highlights(self):
+        # no highlighting options for panels
+        pass
+
+    def highlight_as_new(self):
+        # no highlighting options for panels
+        pass
+
+    def highlight_as_updated(self):
+        # no highlighting options for panels
+        pass
+
+    def set_collapse(self, state):
+        panel_adwnd_obj = self.get_adwindows_object()
+        panel_adwnd_obj.IsCollapsed = state
+
     def open_stack(self):
         self.itemdata_mode = True
 
@@ -1111,7 +1255,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             # extended tooltips (images and videos) can only be applied when
             # the ui element is created
             if isinstance(pyrvt_ui_item, _PyRevitRibbonButton):
-                pyrvt_ui_item.process_deferred_tooltips()
+                pyrvt_ui_item.process_deferred()
 
             # if pyrvt_ui_item is a group,
             # create children and update group item data
@@ -1333,6 +1477,21 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
             raise PyRevitUIError('Can not get panels for this tab: {}'
                                  .format(self._rvtapi_object))
 
+    def get_adwindows_object(self):
+        return self.get_rvtapi_object()
+
+    def reset_highlights(self):
+        # no highlighting options for tabs
+        pass
+
+    def highlight_as_new(self):
+        # no highlighting options for tabs
+        pass
+
+    def highlight_as_updated(self):
+        # no highlighting options for tabs
+        pass
+
     @staticmethod
     def check_pyrevit_tab(revit_ui_tab):
         return hasattr(revit_ui_tab, 'Tag') \
@@ -1411,6 +1570,61 @@ class _PyRevitUI(GenericPyRevitUIContainer):
                 self._add_component(new_pyrvt_tab)
                 mlogger.debug('Native tab added to the list of tabs: %s',
                               new_pyrvt_tab.name)
+
+    def get_adwindows_ribbon_control(self):
+        return AdWindows.ComponentManager.Ribbon
+
+    @staticmethod
+    def toggle_ribbon_updator(
+            state,
+            flow_direction=Windows.FlowDirection.LeftToRight):
+        # cancel out the ribbon updator from previous runtime version
+        current_ribbon_updator = \
+            envvars.get_pyrevit_env_var(envvars.RIBBONUPDATOR_ENVVAR)
+        if current_ribbon_updator:
+            current_ribbon_updator.StopUpdatingRibbon()
+
+        # reset env var
+        envvars.set_pyrevit_env_var(envvars.RIBBONUPDATOR_ENVVAR, None)
+        if state:
+            # start or stop the ribbon updator
+            panel_set = None
+            try:
+                main_wnd = ui.get_mainwindow()
+                panel_set = \
+                    main_wnd.FindFirstChild[PANELLISTVIEW_TYPE](main_wnd)
+            except Exception as raex:
+                mlogger.error('Error activating ribbon updator. | %s', raex)
+                return
+
+            if panel_set:
+                types.RibbonEventUtils.StartUpdatingRibbon(
+                    panelSet=panel_set,
+                    flowDir=flow_direction,
+                    tagTag=PYREVIT_TAB_IDENTIFIER
+                )
+                # set the new colorizer
+                envvars.set_pyrevit_env_var(
+                    envvars.RIBBONUPDATOR_ENVVAR,
+                    types.RibbonEventUtils
+                    )
+
+    def set_RTL_flow(self):
+        _PyRevitUI.toggle_ribbon_updator(
+            state=True,
+            flow_direction=Windows.FlowDirection.RightToLeft
+            )
+
+    def set_LTR_flow(self):
+        # default is LTR, make sure any existing is stopped
+        _PyRevitUI.toggle_ribbon_updator(state=False)
+
+    def unset_RTL_flow(self):
+        _PyRevitUI.toggle_ribbon_updator(state=False)
+
+    def unset_LTR_flow(self):
+        # default is LTR, make sure any existing is stopped
+        _PyRevitUI.toggle_ribbon_updator(state=False)
 
     def get_pyrevit_tabs(self):
         return [tab for tab in self if tab.is_pyrevit_tab()]

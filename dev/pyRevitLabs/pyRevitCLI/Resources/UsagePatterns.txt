@@ -1,14 +1,14 @@
 Usage:
-	pyrevit help
 	pyrevit (-h | --help)
 	pyrevit (-V | --version)
 	pyrevit --usage
-	pyrevit (blog | docs | source | youtube | support)
+	pyrevit (wiki | blog | docs | source | youtube | support)
 	pyrevit env [--json] [--help] [--log=<log_file>]
+	pyrevit update [--help] [--log=<log_file>]
 	pyrevit clone --help
 	pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
 	pyrevit clone <clone_name> --image=<image_url> [--dest=<dest_path>] [--log=<log_file>]
-	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit clones [--help]
 	pyrevit clones (info | open) <clone_name>
 	pyrevit clones add <clone_name> <clone_path> [--force] [--log=<log_file>]
@@ -32,10 +32,12 @@ Usage:
 	pyrevit detach (--all | <revit_year>) [--log=<log_file>]
 	pyrevit extend --help
 	pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit extensions [--help]
 	pyrevit extensions search <search_pattern>
-	pyrevit extensions (info | help | open) <extension_name>
+	pyrevit extensions (info | help ) <extension_name>
+	pyrevit extensions open <extension_name>
+	pyrevit extensions open <clone_name> <extension_name>
 	pyrevit extensions delete <extension_name> [--log=<log_file>]
 	pyrevit extensions origin <extension_name> --reset [--log=<log_file>]
 	pyrevit extensions origin <extension_name> [<origin_url>] [--log=<log_file>]
@@ -43,6 +45,7 @@ Usage:
 	pyrevit extensions paths forget --all [--log=<log_file>]
 	pyrevit extensions paths (add | forget) <extensions_path> [--log=<log_file>]
 	pyrevit extensions (enable | disable) <extension_name> [--log=<log_file>]
+	pyrevit extensions (enable | disable) <clone_name> <extension_name> [--log=<log_file>]
 	pyrevit extensions sources [--help]
 	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
@@ -60,32 +63,30 @@ Usage:
 	pyrevit revits --supported [--csv=<output_file>]
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
-	pyrevit revits addons [--help]
-	pyrevit revits addons prepare <revit_year> [--allusers]
-	pyrevit revits addons install <addon_name> [--dest=<dest_path>] [--allusers]
-	pyrevit revits addons uninstall <addon_name>
 	pyrevit run --help
 	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--import=<import_path>]
-	pyrevit init --help
-	pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<temps_path>]
-	pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<temps_path>]
 	pyrevit caches --help
-	pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
-	pyrevit doctor
+	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit config --help
 	pyrevit config --from=<template_config_path> [--log=<log_file>]
 	pyrevit configs --help
-	pyrevit configs logs [(none | verbose | debug)] [--log=<log_file>]
+	pyrevit configs bincache [(enable | disable)] [--log=<log_file>]
 	pyrevit configs checkupdates [(enable | disable)] [--log=<log_file>]
 	pyrevit configs autoupdate [(enable | disable)] [--log=<log_file>]
 	pyrevit configs rocketmode [(enable | disable)] [--log=<log_file>]
+	pyrevit configs logs [(none | verbose | debug)] [--log=<log_file>]
 	pyrevit configs filelogging [(enable | disable)] [--log=<log_file>]
+	pyrevit configs startuptimeout [<timeout>] [--log=<log_file>]
 	pyrevit configs loadbeta [(enable | disable)] [--log=<log_file>]
-	pyrevit configs usercanupdate [(Yes | No)] [--log=<log_file>]
-	pyrevit configs usercanextend [(Yes | No)] [--log=<log_file>]
-	pyrevit configs usercanconfig [(Yes | No)] [--log=<log_file>]
+	pyrevit configs cpyversion [<cpy_version>] [--log=<log_file>]
+	pyrevit configs usercanupdate [(yes | no)] [--log=<log_file>]
+	pyrevit configs usercanextend [(yes | no)] [--log=<log_file>]
+	pyrevit configs usercanconfig [(yes | no)] [--log=<log_file>]
+	pyrevit configs colordocs [(enable | disable)] [--log=<log_file>]
+	pyrevit configs tooltipdebuginfo [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
+	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
 	pyrevit configs telemetry (file | server) [<dest_path>] [--log=<log_file>]
 	pyrevit configs apptelemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs apptelemetry flags [<flags>] [--log=<log_file>]
@@ -94,5 +95,3 @@ Usage:
 	pyrevit configs seed [--lock] [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
-	pyrevit cli --help
-	pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<description>] [--allusers]

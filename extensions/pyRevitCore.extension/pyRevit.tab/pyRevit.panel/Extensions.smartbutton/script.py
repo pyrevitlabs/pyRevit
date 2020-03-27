@@ -1,5 +1,7 @@
 """Add or remove pyRevit extensions."""
 #pylint: disable=E0401,W0703,W0613,C0103,C0111
+import re
+
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import script
@@ -12,7 +14,7 @@ from pyrevit.userconfig import user_config
 import pyrevitcore_globals
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 logger = script.get_logger()
@@ -234,10 +236,13 @@ class ExtensionsWindow(forms.WPFWindow):
         else:
             self.ext_toggle_b.Content = \
                 self.ext_toggle_b.Content.replace('En', 'Dis')
-        
+
         if multiple:
             self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content.replace('Extension', 'Extensions')
+                self.ext_toggle_b.Content = \
+                    re.sub("Extensions*",
+                           "Extensions",
+                           self.ext_toggle_b.Content)
         else:
             self.ext_toggle_b.Content = \
                 self.ext_toggle_b.Content.replace('Extensions', 'Extension')
@@ -320,10 +325,10 @@ class ExtensionsWindow(forms.WPFWindow):
 
                 # Set current username and pass for the private repo
                 self.repousername_tb.Text = ext_pkg_item.ext_pkg.config.username
-                self.repopassword_tb.Text = ext_pkg_item.ext_pkg.config.password
+                self.repopassword_pb.Password = ext_pkg_item.ext_pkg.config.password
             except Exception:
                 self.privaterepo_cb.IsChecked = False
-                self.repopassword_tb.Text = self.repousername_tb.Text = ''
+                self.repopassword_pb.Password = self.repousername_tb.Text = ''
 
     def _list_options(self, option_filter=None):
         if option_filter:
@@ -393,7 +398,7 @@ class ExtensionsWindow(forms.WPFWindow):
             self.selected_pkg.ext_pkg.config.username = \
                 self.repousername_tb.Text
             self.selected_pkg.ext_pkg.config.password = \
-                self.repopassword_tb.Text
+                self.repopassword_pb.Password
             user_config.save_changes()
             self.Close()
         except Exception as pkg_sett_save_err:
@@ -458,7 +463,7 @@ def call_reload():
 # decide if the settings should load or not
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     # do not load the tool if user should not config
-    if not user_config.core.get_option('usercanextend', True):
+    if not user_config.user_can_extend:
         return False
 
 # handles tool click in Revit interface:

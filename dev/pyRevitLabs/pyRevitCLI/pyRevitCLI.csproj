@@ -98,6 +98,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Properties\AssemblyShared.cs" />
     <Compile Include="PyRevitCLI.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -107,7 +108,6 @@
     <Compile Include="PyRevitCLIAppHelps.cs" />
     <Compile Include="PyRevitCLIAppCmds.cs" />
     <Compile Include="PyRevitCLIRevitCmds.cs" />
-    <Compile Include="PyRevitCLLInitCmds.cs" />
     <Compile Include="PyRevitCLIReleaseCmds.cs" />
     <Compile Include="PyRevitCLICloneCmds.cs" />
     <Compile Include="PyRevitCLIConfigCmds.cs" />

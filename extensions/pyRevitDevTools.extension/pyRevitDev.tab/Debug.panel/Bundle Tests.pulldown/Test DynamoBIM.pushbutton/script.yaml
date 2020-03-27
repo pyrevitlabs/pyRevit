@@ -1,7 +1,0 @@
-title: Test Dynamo BIM (Custom Title)
-tooltip: Test Dynamo BIM Tooltip
-author: "{{author}}"
-context:
-  - Walls
-  - Text Notes
-references:

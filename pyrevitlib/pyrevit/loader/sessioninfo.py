@@ -51,15 +51,19 @@ def setup_runtime_vars():
         envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR,
                                     attachment.Clone.Name)
         envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR,
-                                    attachment.Engine.Version)
+                                    str(attachment.Engine.Version))
     else:
-        pass
+        mlogger.debug('Can not determine attachment.')
+        envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR, "Unknown")
+        envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR, "0.0.0")
 
     # set cpython engine version env var
     cpyengine = user_config.get_active_cpython_engine()
     if cpyengine:
         envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR,
-                                    cpyengine.Version)
+                                    str(cpyengine.Version))
+    else:
+        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, "0.0.0")
 
     # set a list of important assemblies
     # this is required for dotnet script execution
@@ -172,7 +176,7 @@ def report_env():
                  envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
                  about.get_pyrevit_about().madein)
 
-    if user_config.core.get_option('rocketmode', False):
+    if user_config.rocket_mode:
         mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
 
     if HOST_APP.is_newer_than(2017):

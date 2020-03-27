@@ -33,7 +33,7 @@ namespace pyRevitLabs.PyRevit {
                 return string.Format(
                     "{0} | Product: \"{1}\" | Engine: {2} | Path: \"{3}\" | Manifest: \"{4}\"",
                     _clone.Name,
-                    Product.ProductName,
+                    Product.Name,
                     engine != null ? engine.Version : 0,
                     _clone.ClonePath,
                     Manifest.FilePath
@@ -42,7 +42,7 @@ namespace pyRevitLabs.PyRevit {
             else {
                 return string.Format(
                     "Unknown | Product: \"{0}\" | Manifest: \"{1}\"",
-                    Product.ProductName,
+                    Product.Name,
                     Manifest.FilePath
                     );
             }

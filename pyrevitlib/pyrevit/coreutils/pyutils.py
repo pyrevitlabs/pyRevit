@@ -6,6 +6,7 @@ Example:
 """
 #pylint: disable=C0103
 import re
+import copy
 from collections import OrderedDict, Callable   #pylint: disable=E0611
 
 
@@ -53,7 +54,7 @@ class DefaultOrderedDict(OrderedDict):
         if self.default_factory is None:
             args = tuple()
         else:
-            args = self.default_factory,
+            args = self.default_factory
         return type(self), args, None, None, self.items()
 
     def copy(self):
@@ -64,7 +65,6 @@ class DefaultOrderedDict(OrderedDict):
         return type(self)(self.default_factory, self)
 
     def __deepcopy__(self, memo):
-        import copy
         return type(self)(self.default_factory,
                           copy.deepcopy(self.items()))
 
@@ -151,3 +151,76 @@ def compare_lists(x, y):
         y (list): second list
     """
     return len(frozenset(x).difference(y)) == 0
+
+
+def merge(d1, d2):
+    """Merge d2 into d1.
+
+    d2 dict values are recursively merged into d1 dict values
+    other d2 values are added to d1 dict values with the same key
+    new d2 values are added to d1
+    d2 values override other d1 values
+
+    Args:
+        d1 (dict): dict to be updated
+        d2 (dict): dict to be merge into d1
+
+    Returns:
+        dict: updated d1
+
+    Example:
+        >>> d1 = {1: 1, 2: "B"    , 3: {1:"A", 2:"B"}, 4: "b"  , 5: ["a", "b"]}
+        >>> d2 = {1: 1, 2: {1:"A"}, 3: {1:"S", 3:"C"}, 4: ["a"], 5: ["c"]}
+        >>> merge(d1, d2)
+        ... { 1:1,
+        ...   2:{1:'A', 2:'B'},
+        ...   3:{1:'S', 2:'B', 3:'C'},
+        ...   4:['a','b'],
+        ...   5: ['c', 'a', 'b']
+        ... }
+    """
+    if not (isinstance(d1, dict) and isinstance(d2, dict)):
+        raise Exception('Both inputs must be of type dict')
+
+    for key, new_value in d2.items():
+        if key in d1:
+            old_value = d1[key]
+            if isinstance(new_value, dict):
+                if isinstance(old_value, dict):
+                    merge(old_value, new_value)
+                else:
+                    new_dict = copy.deepcopy(new_value)
+                    new_dict[key] = old_value
+                    d1[key] = new_dict
+            elif isinstance(old_value, dict):
+                old_value[key] = new_value
+            elif isinstance(new_value, list):
+                new_list = copy.deepcopy(new_value)
+                if isinstance(old_value, list):
+                    new_list.extend(old_value)
+                else:
+                    if old_value not in new_value:
+                        new_list.append(old_value)
+                d1[key] = new_list
+            elif isinstance(old_value, list):
+                if new_value not in old_value:
+                    old_value.append(new_value)
+            else:
+                d1[key] = new_value
+        else:
+            d1[key] = new_value
+    return d1
+
+
+def almost_equal(a, b, rnd=5):
+    """Check if two numerical values almost equal
+
+    Args:
+        a (float): value a
+        b (float): value b
+        rnd (int, optional): n digits after comma. Defaults to 5.
+
+    Returns:
+        bool: True if almost equal
+    """
+    return a == b or int(a*10**rnd) == int(b*10**rnd)

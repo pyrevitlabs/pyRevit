@@ -22,6 +22,7 @@ from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
+from pyrevit.coreutils import applocales
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import asmmaker
 from pyrevit.loader import uimaker
@@ -34,6 +35,7 @@ from pyrevit import telemetry
 from pyrevit import routes
 # import the runtime first to get all the c-sharp code to compile
 from pyrevit import runtime
+from pyrevit.runtime import types as runtime_types
 # now load the rest of module that could depend on the compiled runtime
 from pyrevit import output
 
@@ -54,14 +56,16 @@ def _clear_running_engines():
         if my_output:
             my_output.close_others(all_open_outputs=True)
 
-        EXEC_PARAMS.engine_mgr.ClearEngines()
+        runtime_types.ScriptEngineManager.ClearEngines(
+            excludeEngine=EXEC_PARAMS.engine_id
+            )
     except AttributeError:
         return False
 
 
 def _setup_output():
     # create output window and assign handle
-    out_window = runtime.types.ScriptOutput()
+    out_window = runtime.types.ScriptConsole()
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = '{}:{}:{}'.format(
         runtime_info.pyrevit_version,
@@ -72,7 +76,7 @@ def _setup_output():
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = runtime.types.ScriptOutputStream(out_window)
+    outstr = runtime.types.ScriptIO(out_window)
     sys.stdout = outstr
     # sys.stderr = outstr
     stdout_hndlr = logger.get_stdout_hndlr()
@@ -104,7 +108,7 @@ def _perform_onsessionloadstart_ops():
         mlogger.debug('No Engine Manager exists...')
 
     # check for updates
-    if user_config.core.get_option('autoupdate', default_value=False) \
+    if user_config.auto_update \
             and not _check_autoupdate_inprogress():
         mlogger.info('Auto-update is active. Attempting update...')
         _set_autoupdate_inprogress(True)
@@ -117,6 +121,9 @@ def _perform_onsessionloadstart_ops():
 
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
+
+    # init executor
+    runtime_types.ScriptExecutor.Initialize()
 
     # asking telemetry module to setup the telemetry system
     # (active or not active)
@@ -139,6 +146,9 @@ def _perform_onsessionloadcomplete_ops():
     # activate hooks now
     hooks.activate()
 
+    # activate internal handlers
+    # toggle doc colorizer
+    revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
     # activate runtime routes server
     routes.activate_routes()
 
@@ -196,8 +206,9 @@ def _new_session():
                           assm_ext.ext.name)
 
             # now run
-            execute_script(
+            execute_extension_startup_script(
                 assm_ext.ext.startup_script,
+                assm_ext.ext.name,
                 sys_paths=sys_paths
                 )
 
@@ -211,8 +222,7 @@ def _new_session():
         uimaker.update_pyrevit_ui(
             assm_ext.ext,
             assm_ext.assm,
-            user_config.core.get_option('loadbeta',
-                                        default_value=False)
+            user_config.load_beta
         )
         mlogger.info('UI created for extension: %s', assm_ext.ext.name)
 
@@ -222,6 +232,13 @@ def _new_session():
 
     # cleanup existing UI. This is primarily for cleanups after reloading
     uimaker.cleanup_pyrevit_ui()
+
+    # reflow the ui if requested, depending on the language direction
+    if user_config.respect_language_direction:
+        current_applocale = applocales.get_current_applocale()
+        uimaker.reflow_pyrevit_ui(direction=current_applocale.lang_dir)
+    else:
+        uimaker.reflow_pyrevit_ui()
 
 
 def load_session():
@@ -267,10 +284,10 @@ def load_session():
 
     # if everything went well, self destruct
     try:
-        timeout = user_config.core.startuplogtimeout
+        timeout = user_config.startuplog_timeout
         if timeout > 0 and not logger.loggers_have_errors():
             if EXEC_PARAMS.first_load:
-                # output_window is of type ScriptOutput
+                # output_window is of type ScriptConsole
                 output_window.SelfDestructTimer(timeout)
             else:
                 # output_window is of type PyRevitOutputWindow
@@ -330,43 +347,49 @@ class PyRevitExternalCommandType(object):
 
     @property
     def script(self):
-        return getattr(self._extcmd, 'baked_scriptSource', None)
+        return getattr(self._extcmd.ScriptData, 'ScriptPath', None)
 
     @property
     def config_script(self):
-        return getattr(self._extcmd, 'baked_configScriptSource', None)
+        return getattr(self._extcmd.ScriptData, 'ConfigScriptPath', None)
 
     @property
-    def syspaths(self):
-        return getattr(self._extcmd, 'baked_syspaths', None)
+    def search_paths(self):
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'SearchPaths', [])
+        return list(value)
+
+    @property
+    def arguments(self):
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'Arguments', [])
+        return list(value)
+
+    @property
+    def engine_cfgs(self):
+        return getattr(self._extcmd.ScriptRuntimeConfigs, 'EngineConfigs', '')
 
     @property
     def helpsource(self):
-        return getattr(self._extcmd, 'baked_helpSource', None)
+        return getattr(self._extcmd.ScriptData, 'HelpSource', None)
+
+    @property
+    def tooltip(self):
+        return getattr(self._extcmd.ScriptData, 'Tooltip', None)
 
     @property
     def name(self):
-        return getattr(self._extcmd, 'baked_cmdName', None)
+        return getattr(self._extcmd.ScriptData, 'CommandName', None)
 
     @property
     def bundle(self):
-        return getattr(self._extcmd, 'baked_cmdBundle', None)
+        return getattr(self._extcmd.ScriptData, 'CommandBundle', None)
 
     @property
     def extension(self):
-        return getattr(self._extcmd, 'baked_cmdExtension', None)
+        return getattr(self._extcmd.ScriptData, 'CommandExtension', None)
 
     @property
     def unique_id(self):
-        return getattr(self._extcmd, 'baked_cmdUniqueName', None)
-
-    @property
-    def needs_clean_engine(self):
-        return getattr(self._extcmd, 'baked_needsCleanEngine', None)
-
-    @property
-    def needs_fullframe_engine(self):
-        return getattr(self._extcmd, 'baked_needsFullFrameEngine', None)
+        return getattr(self._extcmd.ScriptData, 'CommandUniqueId', None)
 
     def is_available(self, category_set, zerodoc=False):
         if self._extcmd_availtype:
@@ -480,22 +503,23 @@ def create_tmp_commanddata():
 
 
 def execute_command_cls(extcmd_type, arguments=None,
-                        clean_engine=False, fullframe_engine=False,
-                        config_mode=False):
+                        config_mode=False, exec_from_ui=False):
 
     command_instance = extcmd_type()
-    # this is a manual execution from python code and not by user
-    command_instance.ExecutedFromUI = False
     # pass the arguments to the instance
     if arguments:
-        command_instance.argumentList = framework.Array[str](arguments)
-    # force using clean engine
-    command_instance.baked_needsCleanEngine = clean_engine
-    # force using fullframe engine
-    command_instance.baked_needsFullFrameEngine = fullframe_engine
+        command_instance.ScriptRuntimeConfigs.Arguments = \
+            framework.List[str](arguments)
+    # this is a manual execution from python code and not by user
+    command_instance.ExecConfigs.MimicExecFromUI = exec_from_ui
     # force using the config script
-    command_instance.ConfigScriptMode = config_mode
+    command_instance.ExecConfigs.UseConfigScript = config_mode
 
+    # Execute(
+    # ExternalCommandData commandData,
+    # string message,
+    # ElementSet elements
+    # )
     re = command_instance.Execute(create_tmp_commanddata(),
                                   '',
                                   DB.ElementSet())
@@ -523,12 +547,7 @@ def execute_command(pyrevitcmd_unique_id):
         execute_command_cls(cmd_class)
 
 
-def execute_script(script_path,
-                   arguments=None,
-                   sys_paths=None,
-                   clean_engine=True,
-                   fullframe_engine=True,
-                   persistent_engine=True):
+def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     """Executes a script using pyRevit script executor.
 
     Args:
@@ -537,7 +556,6 @@ def execute_script(script_path,
     Returns:
         results dictionary from the executed script
     """
-    script_name = op.basename(script_path)
     core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
     if sys_paths:
         sys_paths.extend(core_syspaths)
@@ -548,31 +566,29 @@ def execute_script(script_path,
     script_data.ScriptPath = script_path
     script_data.ConfigScriptPath = None
     script_data.CommandUniqueId = ''
-    script_data.CommandName = script_name
+    script_data.CommandName = 'Starting {}'.format(ext_name)
     script_data.CommandBundle = ''
-    script_data.CommandExtension = ''
+    script_data.CommandExtension = ext_name
     script_data.HelpSource = ''
 
-    script_runtime = \
-        runtime.types.ScriptRuntime(
-            cmdData=create_tmp_commanddata(),
-            elements=None,
-            scriptData=script_data,
-            searchpaths=framework.Array[str](sys_paths or []),
-            arguments=framework.Array[str](arguments or []),
-            needsCleanEngine=clean_engine,
-            needsFullFrameEngine=fullframe_engine,
-            needsPersistentEngine=persistent_engine,
-            refreshEngine=False,
-            forcedDebugMode=False,
-            configScriptMode=False,
-            executedFromUI=False
-            )
+    script_runtime_cfg = runtime.types.ScriptRuntimeConfigs()
+    script_runtime_cfg.CommandData = create_tmp_commanddata()
+    script_runtime_cfg.SelectedElements = None
+    script_runtime_cfg.SearchPaths = framework.List[str](sys_paths or [])
+    script_runtime_cfg.Arguments = framework.List[str]([])
+    script_runtime_cfg.EngineConfigs = \
+        runtime.create_ipyengine_configs(
+            clean=True,
+            full_frame=True,
+            persistent=True,
+        )
+    script_runtime_cfg.RefreshEngine = False
+    script_runtime_cfg.ConfigMode = False
+    script_runtime_cfg.DebugMode = False
+    script_runtime_cfg.ExecutedFromUI = False
 
     runtime.types.ScriptExecutor.ExecuteScript(
-        framework.clr.Reference[runtime.types.ScriptRuntime](
-            script_runtime
-            )
-        )
+        script_data,
+        script_runtime_cfg
+    )
 
-    return script_runtime.GetResultsDictionary()

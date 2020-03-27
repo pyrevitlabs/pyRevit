@@ -127,7 +127,7 @@ class ExtensionPackage:
             mlogger.deprecate(
                 "Naming of \"enable\" property in extension.json files "
                 "has changed. Please revise your extension.json files to "
-                "use \"default_enabled\" (with underscore) instead.")
+                "use \"default_enabled\" (with underscore) instead. | %s", self)
         else:
             self.default_enabled = safe_strtype(
                 info_dict.get('default_enabled', self.default_enabled)
@@ -172,7 +172,7 @@ class ExtensionPackage:
             mlogger.deprecate(
                 "Naming of \"author-url\" property in extension.json files "
                 "has changed. Please revise your extension.json files to "
-                "use \"author_profile\" (with underscore) instead.")
+                "use \"author_profile\" (with underscore) instead. | %s", self)
         else:
             self.author_profile = info_dict.get('author_profile',
                                                 self.author_profile)

@@ -9,20 +9,30 @@ using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using IWshRuntimeLibrary;
 
+using LibGit2Sharp;
+using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
+using System.Linq;
 
 namespace pyRevitLabs.Common {
     public static class CommonUtils {
+        private static object ProgressLock = new object();
+        private static int lastReport;
+
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         [DllImport("ole32.dll")] private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
 
         public static bool VerifyFile(string filePath) {
-            return System.IO.File.Exists(filePath);
+            if (filePath != null && filePath != string.Empty)
+                return System.IO.File.Exists(filePath);
+            return false;
         }
 
         public static bool VerifyPath(string path) {
-            return Directory.Exists(path);
+            if (path != null && path != string.Empty)
+                return Directory.Exists(path);
+            return false;
         }
 
         public static bool VerifyPythonScript(string path) {
@@ -84,10 +94,10 @@ namespace pyRevitLabs.Common {
             Directory.CreateDirectory(path);
         }
 
-        public static void EnsureFile(string filepath) {
-            EnsurePath(Path.GetDirectoryName(filepath));
-            if (!System.IO.File.Exists(filepath)) {
-                var file = System.IO.File.CreateText(filepath);
+        public static void EnsureFile(string filePath) {
+            EnsurePath(Path.GetDirectoryName(filePath));
+            if (!System.IO.File.Exists(filePath)) {
+                var file = System.IO.File.CreateText(filePath);
                 file.Close();
             }
         }
@@ -106,6 +116,10 @@ namespace pyRevitLabs.Common {
             return true;
         }
 
+        public static string GetFileSignature(string filepath) {
+            return Math.Abs(System.IO.File.GetLastWriteTimeUtc(filepath).GetHashCode()).ToString();
+        }
+
         public static WebClient GetWebClient() {
             if (CheckInternetConnection()) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -116,6 +130,7 @@ namespace pyRevitLabs.Common {
         }
 
         public static HttpWebRequest GetHttpWebRequest(string url) {
+            logger.Debug("Building HTTP request for: \"{0}\"", url);
             if (CheckInternetConnection()) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
@@ -126,17 +141,64 @@ namespace pyRevitLabs.Common {
                 throw new pyRevitNoInternetConnectionException();
         }
 
-        public static string DownloadFile(string url, string destPath) {
-            if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+        public static string DownloadFile(string url, string destPath, string progressToken = null) {
+            try {
                 using (var client = GetWebClient()) {
-                    client.DownloadFile(url, destPath);
+                    client.Headers.Add("User-Agent", "pyrevit-cli");
+                    if (GlobalConfigs.ReportProgress) {
+                        logger.Debug("Downloading (async) \"{0}\"", url);
+
+                        client.DownloadProgressChanged += Client_DownloadProgressChanged;
+
+                        lastReport = 0;
+                        client.DownloadFileAsync(new Uri(url), destPath, progressToken);
+
+                        // wait until download is complete
+                        while (client.IsBusy) ;
+                    }
+                    else {
+                        logger.Debug("Downloading \"{0}\"", url);
+                        client.DownloadFile(url, destPath);
+                    }
                 }
             }
-            else
-                throw new pyRevitNoInternetConnectionException();
+            catch (Exception dlEx) {
+                logger.Debug("Error downloading file. | {0}", dlEx.Message);
+                throw dlEx;
+            }
 
             return destPath;
+        }
+
+        private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
+            lock (ProgressLock) {
+                if (e.ProgressPercentage > lastReport) {
+                    lastReport = e.ProgressPercentage;
+
+                    // build progress bar and print
+                    // =====>
+                    var pbar = string.Concat(Enumerable.Repeat("=", (int)((lastReport / 100.0) * 50.0))) + ">";
+                    // 4.57 KB/27.56 KB
+                    var sizePbar = string.Format("{0}/{1}", e.BytesReceived.CleanupSize(), e.TotalBytesToReceive.CleanupSize());
+
+                    // Downloading [==========================================>       ] 23.26 KB/27.56 KB
+                    string message = "";
+                    if (lastReport == 100) {
+                        if (e.UserState != null)
+                            message = string.Format("\r{1}: Download complete ({0})", e.TotalBytesToReceive.CleanupSize(), (string)e.UserState);
+                        else
+                            message = string.Format("\rDownload complete ({0})", e.TotalBytesToReceive.CleanupSize());
+                        Console.WriteLine("{0,-120}", message);
+                    }
+                    else {
+                        if (e.UserState != null)
+                            message = string.Format("\r{2}: Downloading [{0,-50}] {1}", pbar, sizePbar, (string)e.UserState);
+                        else
+                            message = string.Format("\rDownloading [{0,-50}] {1}", pbar, sizePbar);
+                        Console.Write("{0,-120}", message);
+                    }
+                }
+            }
         }
 
         public static bool CheckInternetConnection() {
@@ -172,8 +234,12 @@ namespace pyRevitLabs.Common {
         }
 
         public static void OpenUrl(string url, string logErrMsg = null) {
-            if (CheckInternetConnection())
+            if (CheckInternetConnection()) {
+                if (!Regex.IsMatch(url, @"'^https*://'"))
+                    url = "http://" + url;
+                logger.Debug("Opening {0}", url);
                 Process.Start(url);
+            }
             else {
                 if (logErrMsg is null)
                     logErrMsg = string.Format("Error opening url \"{0}\"", url);
@@ -270,10 +336,9 @@ namespace pyRevitLabs.Common {
         // https://stackoverflow.com/a/27321188/2350244
         public static string GetISOTimeStamp(DateTime dtimeValue) => dtimeValue.ToString("yyyy-MM-ddTHH:mm:ssK");
 
-        public static string GetISOTimeStampNow() {
-            var dtime = DateTime.Now.ToUniversalTime();
-            return GetISOTimeStamp(dtime);
-        }
+        public static string GetISOTimeStampNow() => GetISOTimeStamp(DateTime.Now.ToUniversalTime());
+
+        public static string GetISOTimeStampLocalNow() => GetISOTimeStamp(DateTime.Now);
 
         public static Encoding GetUTF8NoBOMEncoding() {
             // https://coderwall.com/p/o59zug/encoding-multiply-files-to-utf8-without-bom-with-c
@@ -330,7 +395,7 @@ namespace pyRevitLabs.Common {
             string[] consonants = { "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "l", "n", "p", "q", "r", "s", "sh", "zh", "t", "v", "w", "x" };
             string[] vowels = { "a", "e", "i", "o", "u", "ae", "y" };
             string Name = "";
-            Name += consonants[r.Next(consonants.Length)].ToUpper();
+            Name += consonants[r.Next(consonants.Length)].ToUpperInvariant();
             Name += vowels[r.Next(vowels.Length)];
             int b = 2; //b tells how many times a new letter has been added. It's 2 right now because the first two letters are already in the name.
             while (b < len) {
@@ -340,6 +405,25 @@ namespace pyRevitLabs.Common {
                 b++;
             }
             return Name;
+        }
+
+        public static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
+        public static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
+        public static string GetAssemblyPath<T>() => Path.GetDirectoryName(typeof(T).Assembly.Location);
+
+        public static string GenerateSHA1Hash(string filePath) {
+            // Use input string to calculate SHA1 hash
+            using (FileStream fs = new FileStream(filePath, FileMode.Open)) {
+                using (BufferedStream bs = new BufferedStream(fs)) {
+                    using (var sha1 = new System.Security.Cryptography.SHA1Managed()) {
+                        StringBuilder sb = new StringBuilder();
+                        foreach (byte b in sha1.ComputeHash(bs)) {
+                            sb.Append(b.ToString("X2"));
+                        }
+                        return sb.ToString();
+                    }
+                }
+            }
         }
     }
 }

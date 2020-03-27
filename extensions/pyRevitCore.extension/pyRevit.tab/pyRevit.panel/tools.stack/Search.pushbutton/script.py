@@ -1,4 +1,5 @@
 """The best interface ever!"""
+# -*- coding=utf-8 -*-
 #pylint: disable=undefined-variable,import-error,invalid-name
 import os
 import os.path as op
@@ -11,7 +12,15 @@ from pyrevit import script
 import pyrevit.extensions as exts
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
+__title__ = {
+    'en_us': 'Search',
+    'fa': 'جستجو',
+    'bg': 'Търси',
+    'nl_nl': 'Zoek',
+    'fr_fr': 'Rechercher',
+    'de_de': 'Suche',
+}
 
 
 logger = script.get_logger()
@@ -20,8 +29,6 @@ logger = script.get_logger()
 HELP_SWITCH = '/help'
 DOC_SWITCH = '/doc'
 INFO_SWITCH = '/info'
-CLEAN_SWITCH = '/clean'
-FULLFRAME_SWITCH = '/full'
 OPEN_SWITCH = '/open'
 SHOW_SWITCH = '/show'
 ATOM_SWITCH = '/atom'
@@ -39,8 +46,6 @@ def print_help():
         '- **{help} COMMAND:** Opens the help url or prints the docstring\n\n'
         '- **{doc} [{config}] COMMAND:** Prints the command docstring\n\n'
         '- **{info} [{config}] COMMAND:** Prints info about the command\n\n'
-        '- **{clean} [{config}] COMMAND:** Runs command with clean engine\n\n'
-        '- **{full} [{config}] COMMAND:** Runs command with full-frame engine\n\n'
         '- **{open} [{config}] COMMAND:** Opens the bundle folder\n\n'
         '- **{show} [{config}] COMMAND:** Shows the source code\n\n'
         '- **{atom} [{config}] COMMAND:** Opens the script in atom\n\n'
@@ -50,8 +55,6 @@ def print_help():
         .format(help=HELP_SWITCH,
                 doc=DOC_SWITCH,
                 info=INFO_SWITCH,
-                clean=CLEAN_SWITCH,
-                full=FULLFRAME_SWITCH,
                 open=OPEN_SWITCH,
                 show=SHOW_SWITCH,
                 atom=ATOM_SWITCH,
@@ -64,26 +67,22 @@ def print_help():
 def show_command_info(pyrvtcmd):
     print('Script Source: {}\n\n'
           'Config Script Source: {}\n\n'
-          'Sys Paths: {}\n\n'
+          'Search Paths: {}\n\n'
           'Help Source: {}\n\n'
           'Name: {}\n\n'
           'Bundle Name: {}\n\n'
           'Extension Name: {}\n\n'
           'Unique Id: {}\n\n'
-          'Needs Clean Engine: {}\n\n'
-          'Needs Fullframe Engine: {}\n\n'
           'Class Name: {}\n\n'
           'Availability Class Name: {}\n\n'
           .format(pyrvtcmd.script,
                   pyrvtcmd.config_script,
-                  pyrvtcmd.syspaths.split(';'),
+                  pyrvtcmd.search_paths,
                   pyrvtcmd.helpsource,
                   pyrvtcmd.name,
                   pyrvtcmd.bundle,
                   pyrvtcmd.extension,
                   pyrvtcmd.unique_id,
-                  pyrvtcmd.needs_clean_engine,
-                  pyrvtcmd.needs_fullframe_engine,
                   pyrvtcmd.typename,
                   pyrvtcmd.extcmd_availtype
                   )
@@ -102,7 +101,7 @@ def show_command_docstring(pyrvtcmd):
 
 def open_command_helpurl(pyrvtcmd):
     script_content = coreutils.ScriptFileParser(selected_cmd.script)
-    helpurl = script_content.extract_param(exts.COMMAND_HELP_URL)
+    helpurl = script_content.extract_param(exts.COMMAND_HELP_URL_PARAM)
     if helpurl:
         script.open_url(helpurl)
         return True
@@ -138,9 +137,12 @@ for cmd in sessionmgr.find_all_available_commands():
 
 
 # build the search database
-search_db = []
-search_db.extend(pyrevit_cmds.keys())
-search_db.extend(postable_cmds.keys())
+search_db = {}
+for cmd in pyrevit_cmds.values():
+    search_db[cmd.name] = cmd.tooltip
+
+for postcmd in postable_cmds.values():
+    search_db[postcmd.name] = ""
 
 # search
 matched_cmdname, matched_cmdargs, switches = \
@@ -148,8 +150,6 @@ matched_cmdname, matched_cmdargs, switches = \
                             switches=[HELP_SWITCH,
                                       DOC_SWITCH,
                                       INFO_SWITCH,
-                                      CLEAN_SWITCH,
-                                      FULLFRAME_SWITCH,
                                       OPEN_SWITCH,
                                       SHOW_SWITCH,
                                       ATOM_SWITCH,
@@ -166,7 +166,6 @@ logger.debug('switches: {}'.format(switches))
 if switches[HELP_SWITCH] and not matched_cmdname:
     print_help()
     script.exit()
-
 
 if matched_cmdname:
     # if postable command
@@ -199,11 +198,7 @@ if matched_cmdname:
             open_in_editor('notepad', selected_cmd,
                            altsrc=switches[CONFIG_SWITCH])
         else:
-            clean_engine = switches[CLEAN_SWITCH]
-            fullframe_engine = switches[FULLFRAME_SWITCH]
             config_mode = switches[CONFIG_SWITCH] or switches[CONFIG_SWITCH]
             sessionmgr.execute_command_cls(selected_cmd.extcmd_type,
                                            arguments=matched_cmdargs,
-                                           clean_engine=clean_engine,
-                                           fullframe_engine=fullframe_engine,
                                            config_mode=config_mode)

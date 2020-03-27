@@ -1,38 +1,68 @@
 """Core logging module for pyRevit."""
 import sys
-import os.path
+import os.path as op
 import logging
 
 #pylint: disable=W0703,C0302,C0103
-from pyrevit import EXEC_PARAMS
+from pyrevit import EXEC_PARAMS, USER_DESKTOP
 from pyrevit.compat import safe_strtype
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit import coreutils
 from pyrevit.coreutils import envvars
 
-LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
-LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
-LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s: [<{}> %(name)s] %(message)s"
+LOG_REC_FORMAT = "%(levelname)s [%(name)s] %(message)s"
+LOG_REC_FORMAT_HEADER = \
+    coreutils.prepare_html_str(
+        "<strong>%(levelname)s</strong> [%(name)s] %(message)s"
+        )
+LOG_REC_FORMAT_HEADER_NO_NAME = \
+    coreutils.prepare_html_str(
+        "<strong>%(levelname)s</strong>\n%(message)s"
+        )
+LOG_REC_FORMAT_EMOJI = "{emoji} %(levelname)s [%(name)s] %(message)s"
+LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s [<{}> %(name)s] %(message)s"
 
 LOG_REC_FORMAT_HTML = \
-    coreutils.prepare_html_str('<div class="logdefault {0}">{1}</div>')
+    coreutils.prepare_html_str('<div class="logdefault {style}">{message}</div>')
 
 LOG_REC_CLASS_ERROR = 'logerror'
-LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_ERROR,
-                                                  LOG_REC_FORMAT)
+LOG_REC_FORMAT_ERROR = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_ERROR,
+                               message=LOG_REC_FORMAT_HEADER)
 
 LOG_REC_CLASS_WARNING = 'logwarning'
-LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_WARNING,
-                                                    LOG_REC_FORMAT)
-
+LOG_REC_FORMAT_WARNING = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_WARNING,
+                               message=LOG_REC_FORMAT_HEADER)
 
 LOG_REC_CLASS_CRITICAL = 'logcritical'
-LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_CRITICAL,
-                                                     LOG_REC_FORMAT)
+LOG_REC_FORMAT_CRITICAL = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_CRITICAL,
+                               message=LOG_REC_FORMAT_HEADER)
+
+LOG_REC_CLASS_SUCCESS = 'logsuccess'
+LOG_REC_FORMAT_SUCCESS = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_SUCCESS,
+                               message=LOG_REC_FORMAT_HEADER_NO_NAME)
+
+LOG_REC_CLASS_DEPRECATE = 'logdeprecate'
+LOG_REC_FORMAT_DEPRECATE = \
+    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_DEPRECATE,
+                               message=LOG_REC_FORMAT_HEADER_NO_NAME)
 
 
 # Setting default global logging level
 DEFAULT_LOGGING_LEVEL = logging.WARNING
+
+# add deprecate logging level
+DEPRECATE_LOG_LEVEL = 25
+logging.addLevelName(DEPRECATE_LOG_LEVEL, "DEPRECATE")
+
+# add success logging level
+SUCCESS_LOG_LEVEL = 80
+logging.addLevelName(SUCCESS_LOG_LEVEL, "SUCCESS")
+
 
 # must be the same in this file and pyrevit/loader/runtime/envdict.cs
 # this is because the csharp code hasn't been compiled when the
@@ -46,7 +76,7 @@ if not EXEC_PARAMS.doc_mode:
 
 # Creating default file log name and status
 FILE_LOG_FILENAME = '{}runtime.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
-FILE_LOG_FILEPATH = os.path.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
+FILE_LOG_FILEPATH = op.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
 FILE_LOGGING_DEFAULT_STATE = False
 
 
@@ -91,12 +121,11 @@ class LoggerWrapper(logging.Logger):
         # needs to cleanup < and > character to avoid html conflict
         if not isinstance(msg, str):
             msg_str = safe_strtype(msg)
+            # get rid of unicode characters
+            msg_str = msg_str.encode('ascii', 'ignore')
+            msg_str = msg_str.replace(op.sep, '/')
         else:
             msg_str = msg
-        # get rid of unicode characters
-        msg_str = msg_str.encode('ascii', 'ignore')
-        msg_str = msg_str.replace(os.path.sep, '/')
-
         logging.Logger._log(self, level, msg_str, args,
                             exc_info=exc_info, extra=extra)
 
@@ -120,9 +149,9 @@ class LoggerWrapper(logging.Logger):
         self._curlevel = \
             envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
-        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
+        # the loader assembly sets EXEC_PARAMS.debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
-        if EXEC_PARAMS.forced_debug_mode:
+        if EXEC_PARAMS.debug_mode:
             self._curlevel = logging.DEBUG
 
         # if file logging is disabled, return the current logging level
@@ -139,9 +168,9 @@ class LoggerWrapper(logging.Logger):
         self._curlevel = \
             envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
-        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
+        # the loader assembly sets EXEC_PARAMS.debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
-        if EXEC_PARAMS.forced_debug_mode:
+        if EXEC_PARAMS.debug_mode:
             self._curlevel = logging.DEBUG
 
         return level >= self._curlevel
@@ -186,24 +215,46 @@ class LoggerWrapper(logging.Logger):
                   '<strong>Line Text:</strong> {linetext}' \
                   .format(file=parsed_file,
                           type=parse_ex.__class__.__name__,
-                          errmsg=parse_ex.msg,
-                          lineno=parse_ex.lineno,
-                          colno=parse_ex.offset,
-                          linetext=parse_ex.text)
+                          errmsg=parse_ex.msg if hasattr(parse_ex, 'msg') else "",
+                          lineno=parse_ex.lineno if hasattr(parse_ex, 'lineno') else 0,
+                          colno=parse_ex.offset if hasattr(parse_ex, 'offset') else 0,
+                          linetext=parse_ex.text if hasattr(parse_ex, 'text') else "",
+                          )
         self.error(coreutils.prepare_html_str(err_msg))
 
-    def deprecate(self, *args):
-        """Log message with custom Deprecate level."""
-        self.warning(*args)
+    def success(self, message, *args, **kws):
+        if self.isEnabledFor(SUCCESS_LOG_LEVEL):
+            # Yes, logger takes its '*args' as 'args'.
+            self._log(SUCCESS_LOG_LEVEL, message, args, **kws) 
+
+    def deprecate(self, message, *args, **kws):
+        if self.isEnabledFor(DEPRECATE_LOG_LEVEL):
+            # Yes, logger takes its '*args' as 'args'.
+            self._log(DEPRECATE_LOG_LEVEL, message, args, **kws)
+
+    def dev_log(self, source, message=''):
+        devlog_fname = \
+            '{}.log'.format(EXEC_PARAMS.command_uniqueid or self.name)
+        with open(op.join(USER_DESKTOP, devlog_fname), 'a') as devlog_file:
+            devlog_file.writelines('{tstamp} [{exid}] {src}: {msg}\n'.format(
+                tstamp=EXEC_PARAMS.exec_timestamp,
+                exid=EXEC_PARAMS.exec_id,
+                src=source,
+                msg=message,
+                ))
 
 
 # setting up handlers and formatters -------------------------------------------
 stdout_hndlr = logging.StreamHandler(sys.stdout)
 # e.g [_parser] DEBUG: Can not create command.
 default_formatter = logging.Formatter(LOG_REC_FORMAT)
-formatters = {logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
-              logging.WARNING: logging.Formatter(LOG_REC_FORMAT_WARNING),
-              logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL)}
+formatters = {
+    SUCCESS_LOG_LEVEL: logging.Formatter(LOG_REC_FORMAT_SUCCESS),
+    logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
+    logging.WARNING: logging.Formatter(LOG_REC_FORMAT_WARNING),
+    logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL),
+    DEPRECATE_LOG_LEVEL: logging.Formatter(LOG_REC_FORMAT_DEPRECATE)
+    }
 stdout_hndlr.setFormatter(DispatchingFormatter(formatters, default_formatter))
 
 

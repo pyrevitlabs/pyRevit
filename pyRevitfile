@@ -41,7 +41,7 @@ kernel = 'CPython'
 version = 368
 runtime = false
 path = 'bin\engines\368'
-assembly = 'Python.Runtime.dll'
+assembly = 'pyRevitLabs.PythonNet.dll'
 compatproducts = []
 description = 'Alternative command execution engine.'
 
@@ -50,7 +50,7 @@ kernel = 'CPython'
 version = 372
 runtime = false
 path = 'bin\engines\372'
-assembly = 'Python.Runtime.dll'
+assembly = 'pyRevitLabs.PythonNet.dll'
 compatproducts = []
 description = 'Alternative command execution engine.'
 
@@ -63,6 +63,7 @@ core = ['bin',
 corex = ['bin',
          'extensions/pyRevitCore.extension',
          'extensions/pyRevitRun.run',
+         'extensions/extensions.json',
          'pyrevitlib',
          'site-packages',
          'pyRevitfile']
@@ -70,6 +71,7 @@ base = ['bin',
         'extensions/pyRevitCore.extension',
         'extensions/pyRevitTags.extension',
         'extensions/pyRevitTools.extension',
+        'extensions/extensions.json',
         'pyrevitlib',
         'site-packages',
         'pyRevitfile']
@@ -79,7 +81,9 @@ basepublic = ['bin',
               'extensions/pyRevitTags.extension',
               'extensions/pyRevitTools.extension',
               'extensions/pyRevitTutor.extension',
-              'pyrevitlib', 'site-packages',
+              'extensions/extensions.json',
+              'pyrevitlib',
+              'site-packages',
               'pyRevitfile']
 basex = ['bin',
          'extensions',

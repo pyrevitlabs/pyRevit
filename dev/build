@@ -330,7 +330,9 @@ elif $BUILDLABS; then
     go get "github.com/mattn/go-sqlite3"
     go get "github.com/gorilla/mux"
     go get "github.com/satori/go.uuid"
+    go get "github.com/gofrs/uuid"
     go get "pkg.re/essentialkaos/ek.v10/fmtc"
+    go get "github.com/asaskevich/govalidator"
     go build -o=$TELEMETRYSERVERBIN -ldflags "-w" $TELEMETRYSERVER
     upx --mono $TELEMETRYSERVERBIN
 

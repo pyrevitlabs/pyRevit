@@ -1,0 +1,25 @@
+layout:
+  - Run All Tests
+  - -----
+  - pyRevitLabs Module Tests
+  - Output Window Tests
+  - Appdata Module Tests
+  - CoreUtils Module Tests
+  - Forms Module Tests
+  - Revit Module Tests
+  - Script Module Tests
+  - -----
+  - Test Output Stream
+  - Test Multiple Outputs
+  - Test UI Button
+  - Test Independent Logging
+  - -----
+  - Test XAML
+  - Test Sensors
+  - Test Progressbar
+  - Test Charts
+  - Test D3
+  - Test Vue
+  - Test XML
+  - Test Toast
+  - Test FillPatternViewer

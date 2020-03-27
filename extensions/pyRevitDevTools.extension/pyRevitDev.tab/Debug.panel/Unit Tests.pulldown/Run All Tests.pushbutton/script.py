@@ -1,3 +1,3 @@
 """Unit Tests for pyRevit."""
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'

@@ -21,6 +21,11 @@ using pyRevitLabs.Json.Serialization;
 using Console = Colorful.Console;
 
 namespace pyRevitCLI {
+    public enum TargetCacheType {
+        PyRevitCache,
+        BIM360Cache
+    }
+
     public class JsonVersionConverter : JsonConverter<Version> {
         public override Version ReadJson(JsonReader reader, Type objectType, Version existingValue, bool hasExistingValue, JsonSerializer serializer) {
             throw new NotImplementedException();
@@ -34,15 +39,9 @@ namespace pyRevitCLI {
     internal static class PyRevitCLIAppCmds {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        // consts:
-        private const string autocompleteBinaryName = "pyrevit-autocomplete";
-        private const string shortcutIconName = "pyrevit.ico";
-        private const string templatesDirName = "templates";
-
         // internal helpers:
         internal static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
         internal static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
-        internal static string GetTemplatesPath() => Path.Combine(GetProcessPath(), templatesDirName);
 
         internal static void PrintHeader(string header) =>
             Console.WriteLine(string.Format("==> {0}", header), Color.Green);
@@ -57,13 +56,27 @@ namespace pyRevitCLI {
             GetProcessPath().NormalizeAsPath().Contains(clone.ClonePath.NormalizeAsPath());
 
         internal static void
-        ClearCaches(bool allCaches, string revitYear) {
-            if (allCaches)
-                PyRevitCaches.ClearAllCaches();
-            else {
-                int revitYearNumber = 0;
-                if (int.TryParse(revitYear, out revitYearNumber))
-                    PyRevitCaches.ClearCache(revitYearNumber);
+        ClearCaches(bool allCaches, string revitYear, TargetCacheType cachetype) {
+            switch (cachetype) {
+                case TargetCacheType.PyRevitCache:
+                    if (allCaches)
+                        PyRevitCaches.ClearAllCaches();
+                    else {
+                        int revitYearNumber = 0;
+                        if (int.TryParse(revitYear, out revitYearNumber))
+                            PyRevitCaches.ClearCache(revitYearNumber);
+                    }
+                    break;
+
+                case TargetCacheType.BIM360Cache:
+                    if (allCaches)
+                        RevitCaches.ClearAllCaches(RevitCacheType.BIM360Cache);
+                    else {
+                        int revitYearNumber = 0;
+                        if (int.TryParse(revitYear, out revitYearNumber))
+                            RevitCaches.ClearCache(revitYearNumber, RevitCacheType.BIM360Cache);
+                    }
+                    break;
             }
         }
 
@@ -91,7 +104,7 @@ namespace pyRevitCLI {
                         { "lookupSources", lookupSrc },
                         { "installed", RevitProduct.ListInstalledProducts() },
                         { "running", RevitController.ListRunningRevits() },
-                        { "pyrevitDataDir", PyRevitConsts.pyRevitPath },
+                        { "pyrevitDataDir", PyRevitLabsConsts.PyRevitPath },
                         { "userEnv", new Dictionary<string, object>() {
                                 { "osVersion", UserEnv.GetWindowsVersion() },
                                 { "execUser", string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName) },
@@ -134,19 +147,13 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        PrintPyRevitPaths() {
-            PrintHeader("Cache Directory");
-            Console.WriteLine(string.Format("\"{0}\"", PyRevitConsts.pyRevitPath));
-        }
-
-        internal static void
         PrinUserEnv() {
             PrintHeader("User Environment");
             Console.WriteLine(UserEnv.GetWindowsVersion());
             Console.WriteLine(string.Format("Executing User: {0}\\{1}",
                                             Environment.UserDomainName, Environment.UserName));
             Console.WriteLine(string.Format("Active User: {0}", UserEnv.GetLoggedInUserName()));
-            Console.WriteLine(string.Format("Adming Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
+            Console.WriteLine(string.Format("Admin Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
             Console.WriteLine(string.Format("%APPDATA%: \"{0}\"",
                                             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
             Console.WriteLine(string.Format("Latest Installed .Net Framework: {0}",
@@ -174,11 +181,6 @@ namespace pyRevitCLI {
             Console.WriteLine(string.Format("pyRevit CLI {0}", PyRevitCLI.CLIVersion.ToString()));
         }
 
-        internal static void
-        InspectAndFixEnv() {
-
-        }
-
         // cli specific commands
         internal static void
         PrintVersion() {
@@ -192,7 +194,7 @@ namespace pyRevitCLI {
                             string.Format(
                                 "Newer v{0} is available.\nGo to {1} to download the installer.",
                                 latestVersion,
-                                PyRevitConsts.ReleasesUrl)
+                                PyRevitLabsConsts.ReleasesUrl)
                             );
                     }
                     else
@@ -204,21 +206,12 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        AddCLIShortcut(string shortcutName, string shortcutArgs, string shortcutDesc, bool allUsers) {
-            if (shortcutName != null && shortcutArgs != null) {
-                var processPath = GetProcessPath();
-                var iconPath = Path.Combine(processPath, shortcutIconName);
-                CommonUtils.AddShortcut(
-                    shortcutName,
-                    PyRevitConsts.ProductName,
-                    GetProcessFileName(),
-                    shortcutArgs,
-                    processPath,
-                    iconPath,
-                    shortcutDesc,
-                    allUsers: allUsers
-                );
-            }
+        UpdateRemoteDateSources() {
+            // update and show progress
+            GlobalConfigs.ReportProgress = true;
+            RevitProductData.Update();
+            PyRevitProductData.Update();
+            GlobalConfigs.ReportProgress = false;
         }
     }
 }

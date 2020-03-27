@@ -20,7 +20,7 @@ namespace pyRevitLabs.DeffrelDB {
             lineParts.Add(buildMdataString(mdataDStore, dstoreType.TypeName));
             lineParts.Add(buildMdataString(mdataDStoreSource, dstoreType.Path));
             lineParts.Add(buildMdataString(mdataDStoreVersion, dstoreType.DataFormatVersion));
-            lineParts.Add(buildMdataString(mdataDStoreEncoding, dstoreType.DataFormatEncoding.WebName.ToUpper()));
+            lineParts.Add(buildMdataString(mdataDStoreEncoding, dstoreType.DataFormatEncoding.WebName.ToUpperInvariant()));
 
             return new EntryChangeRequest(EntryChangeType.Insert, 0, string.Join(mdataSeparator, lineParts));
         }

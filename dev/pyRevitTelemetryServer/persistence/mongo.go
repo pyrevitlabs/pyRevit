@@ -10,11 +10,50 @@ type MongoDBConnection struct {
 	DatabaseConnection
 }
 
-func (w MongoDBConnection) WriteScriptTelemetry(logrec *ScriptTelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w MongoDBConnection) GetType() DBBackend {
+	return w.Config.Backend
+}
+
+func (w MongoDBConnection) GetVersion(logger *cli.Logger) string {
+	// parse and grab database name from uri
+	logger.Debug("grabbing db name from connection string")
+	dialinfo, err := mgo.ParseURL(w.Config.ConnString)
+	if err != nil {
+		return ""
+	}
+
+	logger.Debug("opening mongodb session")
+	session, cErr := mgo.DialWithInfo(dialinfo)
+	if cErr != nil {
+		return ""
+	}
+	defer session.Close()
+
+	logger.Debug("getting mongodb version")
+	buildInfo, vErr := session.BuildInfo()
+	if vErr != nil {
+		return ""
+	}
+
+	return buildInfo.Version
+}
+
+func (w MongoDBConnection) GetStatus(logger *cli.Logger) ConnectionStatus {
+	return ConnectionStatus{
+		Status:  "pass",
+		Version: w.GetVersion(logger),
+	}
+}
+
+func (w MongoDBConnection) WriteScriptTelemetryV1(logrec *ScriptTelemetryRecordV1, logger *cli.Logger) (*Result, error) {
 	return commitMongo(w.Config.ConnString, w.Config.ScriptTarget, logrec, logger)
 }
 
-func (w MongoDBConnection) WriteEventTelemetry(logrec *EventTelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w MongoDBConnection) WriteScriptTelemetryV2(logrec *ScriptTelemetryRecordV2, logger *cli.Logger) (*Result, error) {
+	return commitMongo(w.Config.ConnString, w.Config.ScriptTarget, logrec, logger)
+}
+
+func (w MongoDBConnection) WriteEventTelemetryV2(logrec *EventTelemetryRecordV2, logger *cli.Logger) (*Result, error) {
 	return commitMongo(w.Config.ConnString, w.Config.EventTarget, logrec, logger)
 }
 

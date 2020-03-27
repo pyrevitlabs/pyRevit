@@ -15,6 +15,7 @@ import re
 
 import pyrevit
 from pyrevit import EXEC_PARAMS
+from pyrevit import coreutils
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils import logger
 from pyrevit.labs import TargetApps
@@ -31,7 +32,7 @@ def _remove_app_file(file_path):
     try:
         os.remove(file_path)
     except Exception as osremove_err:
-        mlogger.error('Error file cleanup on: %s | %s', file_path, osremove_err)
+        mlogger.debug('Error file cleanup on: %s | %s', file_path, osremove_err)
 
 
 def _list_app_files(prefix, file_ext, universal=False):
@@ -65,7 +66,10 @@ def _get_app_file(file_id, file_ext,
     if filename_only:
         return full_filename
     else:
-        return op.join(appdata_folder, full_filename)
+        return op.join(
+            appdata_folder,
+            coreutils.cleanup_filename(full_filename)
+            )
 
 
 def _match_file(file_name):
@@ -183,11 +187,13 @@ def is_file_available(file_name, file_ext, universal=False):
         str: file path if file is available
     """
     if universal:
-        full_filename = op.join(pyrevit.PYREVIT_APP_DIR,
-                                make_canonical_name(file_name, file_ext))
+        full_filename = op.join(
+            pyrevit.PYREVIT_APP_DIR,
+            coreutils.make_canonical_name(file_name, file_ext))
     else:
-        full_filename = op.join(pyrevit.PYREVIT_VERSION_APP_DIR,
-                                make_canonical_name(file_name, file_ext))
+        full_filename = op.join(
+            pyrevit.PYREVIT_VERSION_APP_DIR,
+            coreutils.make_canonical_name(file_name, file_ext))
     if op.exists(full_filename):
         return full_filename
     else:

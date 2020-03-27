@@ -1,7 +1,0 @@
-title: Test Ruby (Custom Title)
-tooltip: Test Ruby Tooltip
-author: "{{author}}"
-context:
-  - Walls
-  - Text Notes
-references:

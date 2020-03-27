@@ -4,7 +4,7 @@ import os.path as op
 import json
 import codecs
 
-from pyrevit import PyRevitException
+from pyrevit import PyRevitException, HOST_APP
 from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import coreutils
@@ -52,6 +52,13 @@ class NoScriptButton(GenericUICommand):
                 self.command_class = \
                     script_content.extract_param(exts.LINK_BUTTON_COMMAND_CLASS)
 
+                if self.assembly or self.command_class:
+                    mlogger.deprecate(
+                        "Creating link buttons using \"__assembly__\" "
+                        "and \"__commandclass__\" global "
+                        "variables inside a python file is deprecated. "
+                        "use bundle.yaml instead. | %s", self)
+
             except PyRevitException as err:
                 mlogger.error(err)
 
@@ -71,10 +78,10 @@ class NoScriptButton(GenericUICommand):
         else:
             mlogger.debug("%s does not specify target assembly::class.", self)
 
-        if not self.assembly:
+        if self.directory and not self.assembly:
             mlogger.error("%s does not specify target assembly.", self)
 
-        if needs_commandclass and not self.command_class:
+        if self.directory and needs_commandclass and not self.command_class:
             mlogger.error("%s does not specify target command class.", self)
 
         mlogger.debug('%s assembly.class: %s.%s',
@@ -132,26 +139,82 @@ class ContentButton(GenericUICommand):
             cmp_path=cmp_path,
             needs_script=False
             )
-        # find script file
+        # find content file
         self.script_file = \
             self.find_bundle_file([
-                exts.CONTENT_POSTFIX,
+                exts.CONTENT_VERSION_POSTFIX.format(
+                    version=HOST_APP.version
+                    ),
                 ])
+        if not self.script_file:
+            self.script_file = \
+                self.find_bundle_file([
+                    exts.CONTENT_POSTFIX,
+                    ])
+        # requires at least one bundles
+        if self.directory and not self.script_file:
+            mlogger.error('Command %s: Does not have content file.', self)
+            self.script_file = ''
 
-        # find if any alternate content is specified
+        # find alternative content file
+        self.config_script_file = \
+            self.find_bundle_file([
+                exts.ALT_CONTENT_VERSION_POSTFIX.format(
+                    version=HOST_APP.version
+                    ),
+                ])
+        if not self.config_script_file:
+            self.config_script_file = \
+                self.find_bundle_file([
+                    exts.ALT_CONTENT_POSTFIX,
+                    ])
+        if not self.config_script_file:
+            self.config_script_file = ''
+
+
+class URLButton(GenericUICommand):
+    type_id = exts.URL_BUTTON_POSTFIX
+
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
+        self.target_url = None
+        # read metadata from metadata file
         if self.meta:
-            alt_content = \
-                self.meta.get(exts.MDATA_CONTENT_BUTTON_ALT_CONTENT, None)
-            if alt_content:
-                self.config_script_file = \
-                    self.get_bundle_file(alt_content) \
-                        or self.config_script_file
+            # get the target url from metadata
+            self.target_url = \
+                self.meta.get(exts.MDATA_URL_BUTTON_HYPERLINK, None)
+            # for url buttons there is no script source so
+            # assign the metadata file to the script
+            self.script_file = self.config_script_file = self.meta_file
+        else:
+            mlogger.debug("%s does not specify target assembly::class.", self)
+
+        if self.directory and not self.target_url:
+            mlogger.error("%s does not specify target url.", self)
+
+        mlogger.debug('%s target url: %s', self, self.target_url)
+
+    def get_target_url(self):
+        return self.target_url or ""
 
 
 # Command groups only include commands. these classes can include
 # GenericUICommand as sub components
 class GenericUICommandGroup(GenericUIContainer):
     allowed_sub_cmps = [GenericUICommand, NoScriptButton]
+
+    @property
+    def control_id(self):
+        # stacks don't have control id
+        if self.parent_ctrl_id:
+            deepend_parent_id = self.parent_ctrl_id.replace(
+                '_%CustomCtrl',
+                '_%CustomCtrl_%CustomCtrl'
+            )
+            return deepend_parent_id + '%{}'.format(self.name)
+        else:
+            return '%{}%'.format(self.name)
 
     def has_commands(self):
         for component in self:
@@ -178,6 +241,11 @@ class GenericStack(GenericUIContainer):
     allowed_sub_cmps = \
         [GenericUICommandGroup, GenericUICommand, NoScriptButton]
 
+    @property
+    def control_id(self):
+        # stacks don't have control id
+        return self.parent_ctrl_id if self.parent_ctrl_id else ''
+
     def has_commands(self):
         for component in self:
             if not component.is_container:
@@ -188,11 +256,62 @@ class GenericStack(GenericUIContainer):
                     return True
 
 
+class StackButtonGroup(GenericStack):
+    type_id = exts.STACK_BUTTON_POSTFIX
+
+
+class StackTwoButtonGroup(GenericStack):
+    type_id = exts.STACK2_BUTTON_POSTFIX
+
+    def __init__(self, cmp_path=None):
+        GenericStack.__init__(self, cmp_path=cmp_path)
+        if cmp_path:
+            mlogger.deprecate(
+                ".stack2 and .stack3 bundles are deprecated and "
+                "will be removed in the next major release. "
+                "use .stack bundles instead | %s", self)
+
+
+class StackThreeButtonGroup(GenericStack):
+    type_id = exts.STACK3_BUTTON_POSTFIX
+
+    def __init__(self, cmp_path=None):
+        GenericStack.__init__(self, cmp_path=cmp_path)
+        if cmp_path:
+            mlogger.deprecate(
+                ".stack2 and .stack3 bundles are deprecated and "
+                "will be removed in the next major release. "
+                "use .stack bundles instead | %s", self)
+
+
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
 class Panel(GenericUIContainer):
     type_id = exts.PANEL_POSTFIX
     allowed_sub_cmps = \
         [GenericStack, GenericUICommandGroup, GenericUICommand, NoScriptButton]
+
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUIContainer.__init__(self, cmp_path=cmp_path)
+        self.panel_background = \
+            self.title_background = \
+                self.slideout_background = None
+        # read metadata from metadata file
+        if self.meta:
+            # check for background color configs
+            self.panel_background = \
+                self.meta.get(exts.MDATA_BACKGROUND_KEY, None)
+            if self.panel_background:
+                if isinstance(self.panel_background, dict):
+                    self.title_background = self.panel_background.get(
+                        exts.MDATA_BACKGROUND_TITLE_KEY, None)
+                    self.slideout_background = self.panel_background.get(
+                        exts.MDATA_BACKGROUND_SLIDEOUT_KEY, None)
+                    self.panel_background = self.panel_background.get(
+                        exts.MDATA_BACKGROUND_PANEL_KEY, None)
+                elif not isinstance(self.panel_background, str):
+                    mlogger.error(
+                        "%s bad background definition in metadata.", self)
 
     def has_commands(self):
         for component in self:
@@ -259,13 +378,13 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.STACK_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.SMART_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.TOGGLE_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.LINK_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.CONTENT_BUTTON_POSTFIX + ')'
         # tnteresting directories
         pat += '|(\\' + exts.COMP_LIBRARY_DIR_NAME + ')'
+        pat += '|(\\' + exts.COMP_HOOKS_DIR_NAME + ')'
         # search for scripts, setting files (future support), and layout files
         patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
@@ -273,6 +392,7 @@ class Extension(GenericUIContainer):
         patfile += '|(\\' + exts.RUBY_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.DYNAMO_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CONTENT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'
@@ -292,8 +412,17 @@ class Extension(GenericUIContainer):
         self.dir_hash_value = self._calculate_extension_dir_hash()
 
     @property
+    def control_id(self):
+        return None
+
+    @property
     def startup_script(self):
-        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
+        return self.find_bundle_file([
+            exts.PYTHON_EXT_STARTUP_FILE,
+            exts.CSHARP_EXT_STARTUP_FILE,
+            exts.VB_EXT_STARTUP_FILE,
+            exts.RUBY_EXT_STARTUP_FILE,
+        ])
 
     def get_hash(self):
         return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
@@ -319,8 +448,8 @@ class Extension(GenericUIContainer):
     def configure(self):
         cfg_dict = self.get_manifest()
         if cfg_dict:
-            for cmd in self.get_all_commands():
-                cmd.configure(cfg_dict)
+            for component in self:
+                component.configure(cfg_dict)
 
     def get_all_modules(self):
         referenced_modules = set()

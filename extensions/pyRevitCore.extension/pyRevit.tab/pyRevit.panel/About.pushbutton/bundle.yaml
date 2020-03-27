@@ -1,0 +1,15 @@
+title:
+  en_us: About
+  en_gb: About
+  de_de: Über
+  fr_fr: A Propos De
+  nl_nl: Over
+  pt_br: Sobre pyRevit
+  fa: درباره
+
+tooltip: >
+  About pyRevit. Opens the pyRevit blog website. You can find
+  detailed information on how pyRevit works, updates about the
+  new tools and changes, and a lot of other information there.
+
+context: zero-doc

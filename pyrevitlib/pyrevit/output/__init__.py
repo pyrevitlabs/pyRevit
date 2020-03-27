@@ -27,7 +27,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils import envvars
-from pyrevit.runtime.types import ScriptOutputManager
+from pyrevit.runtime.types import ScriptConsoleManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
 from pyrevit import DB
@@ -42,7 +42,7 @@ DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
 
 def docclosing_eventhandler(sender, args):  #pylint: disable=W0613
     """Close all output window on document closing."""
-    ScriptOutputManager.CloseActiveOutputWindows()
+    ScriptConsoleManager.CloseActiveOutputWindows()
 
 
 def setup_output_closer():
@@ -59,8 +59,10 @@ def set_stylesheet(stylesheet):
     Args:
         stylesheet (str): full path to stylesheet file
     """
-    envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
-                                stylesheet)
+    if op.isfile(stylesheet):
+        envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
+                                    stylesheet)
+        user_config.output_stylesheet = stylesheet
 
 
 def get_stylesheet():
@@ -82,8 +84,7 @@ def reset_stylesheet():
 # setup output window stylesheet
 if not EXEC_PARAMS.doc_mode:
     active_stylesheet = \
-        user_config.core.get_option('outputstylesheet',
-                                    default_value=get_default_stylesheet())
+        user_config.output_stylesheet or get_default_stylesheet()
     set_stylesheet(active_stylesheet)
 
 
@@ -92,7 +93,7 @@ class PyRevitOutputWindow(object):
 
     @property
     def window(self):
-        """``PyRevitLabs.PyRevit.Runtime.ScriptOutput``: Return output window object."""
+        """``PyRevitLabs.PyRevit.Runtime.ScriptConsole``: Return output window object."""
         return EXEC_PARAMS.window_handle
 
     @property
@@ -129,17 +130,21 @@ class PyRevitOutputWindow(object):
             return self.window.OutputUniqueId
 
     @property
+    def is_closed_by_user(self):
+        return self.window.ClosedByUser
+
+    @property
     def debug_mode(self):
         """Set debug mode on output window and stream.
 
         This will cause the output window to print information about the
         buffer stream and other aspects of the output window mechanism.
         """
-        return EXEC_PARAMS.pyrevit_command.OutputStream.PrintDebugInfo
+        return EXEC_PARAMS.output_stream.PrintDebugInfo
 
     @debug_mode.setter
     def debug_mode(self, value):
-        EXEC_PARAMS.pyrevit_command.OutputStream.PrintDebugInfo = value
+        EXEC_PARAMS.output_stream.PrintDebugInfo = value
 
     def _get_head_element(self):
         return self.renderer.Document.GetElementsByTagName('head')[0]
@@ -276,6 +281,18 @@ class PyRevitOutputWindow(object):
         self.set_width(width)
         self.set_height(height)
 
+    def center(self):
+        """Center the output window on the screen"""
+        screen_area = HOST_APP.proc_screen_workarea
+        left = \
+            (abs(screen_area.Right - screen_area.Left) / 2) \
+                - (self.get_width() / 2)
+        top = \
+            (abs(screen_area.Top - screen_area.Bottom) / 2) \
+                - (self.get_height() / 2)
+        self.window.Left = left
+        self.window.Top = top
+
     def get_title(self):
         """str: Return current window title."""
         if self.window:
@@ -303,9 +320,9 @@ class PyRevitOutputWindow(object):
             all_open_outputs (bool): Close all any other windows if True
         """
         if all_open_outputs:
-            ScriptOutputManager.CloseActiveOutputWindows(self.window)
+            ScriptConsoleManager.CloseActiveOutputWindows(self.window)
         else:
-            ScriptOutputManager.CloseActiveOutputWindows(self.window,
+            ScriptConsoleManager.CloseActiveOutputWindows(self.window,
                                                          self.output_id)
 
     def hide(self):
@@ -416,8 +433,14 @@ class PyRevitOutputWindow(object):
             self.show_logpanel()
             self.window.SetActivityBarVisibility(False)
 
-    def log_ok(self, message):
-        """Report OK message into output logging panel."""
+    def log_debug(self, message):
+        """Report DEBUG message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLog(message)
+
+    def log_success(self, message):
+        """Report SUCCESS message into output logging panel."""
         if self.window:
             self.show_logpanel()
             self.window.activityBar.ConsoleLogOK(message)
@@ -565,9 +588,22 @@ class PyRevitOutputWindow(object):
         self.print_md('### {title}'.format(title=title))
         self.print_md(table)
 
-    def insert_divider(self):
+    def print_image(self, image_path):
+        r"""Prints given image to the output.
+
+        Example:
+            >>> output = pyrevit.output.get_output()
+            >>> output.print_image(r'C:\image.gif')
+        """
+        self.print_html(
+            "<span><img src=\"file:///{0}\"></span>".format(
+                image_path
+            )
+        )
+
+    def insert_divider(self, level=''):
         """Add horizontal rule to the output window."""
-        self.print_md('-----')
+        self.print_md('%s\n-----' % level)
 
     def next_page(self):
         """Add hidden next page tag to the output window.
@@ -597,44 +633,75 @@ class PyRevitOutputWindow(object):
             linkmaker.make_link(element_ids, contents=title)
             )
 
-    def make_chart(self):
+    def make_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return chart object."""
-        return charts.PyRevitOutputChart(self)
+        return charts.PyRevitOutputChart(self, version=version)
 
-    def make_line_chart(self):
+    def make_line_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return line chart object."""
-        return charts.PyRevitOutputChart(self, chart_type=charts.LINE_CHART)
+        return charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.LINE_CHART,
+            version=version
+            )
 
-    def make_stacked_chart(self):
+    def make_stacked_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return stacked chart object."""
-        chart = charts.PyRevitOutputChart(self, chart_type=charts.LINE_CHART)
+        chart = charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.LINE_CHART,
+            version=version
+            )
         chart.options.scales = {'yAxes': [{'stacked': True, }]}
         return chart
 
-    def make_bar_chart(self):
+    def make_bar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return bar chart object."""
-        return charts.PyRevitOutputChart(self, chart_type=charts.BAR_CHART)
+        return charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.BAR_CHART,
+            version=version
+            )
 
-    def make_radar_chart(self):
+    def make_radar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return radar chart object."""
-        return charts.PyRevitOutputChart(self, chart_type=charts.RADAR_CHART)
+        return charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.RADAR_CHART,
+            version=version
+            )
 
-    def make_polar_chart(self):
+    def make_polar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return polar chart object."""
-        return charts.PyRevitOutputChart(self, chart_type=charts.POLAR_CHART)
+        return charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.POLAR_CHART,
+            version=version
+            )
 
-    def make_pie_chart(self):
+    def make_pie_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return pie chart object."""
-        return charts.PyRevitOutputChart(self, chart_type=charts.PIE_CHART)
+        return charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.PIE_CHART,
+            version=version
+            )
 
-    def make_doughnut_chart(self):
+    def make_doughnut_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return dougnut chart object."""
-        return charts.PyRevitOutputChart(self,
-                                         chart_type=charts.DOUGHNUT_CHART)
+        return charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.DOUGHNUT_CHART,
+            version=version
+            )
 
-    def make_bubble_chart(self):
+    def make_bubble_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return bubble chart object."""
-        return charts.PyRevitOutputChart(self, chart_type=charts.BUBBLE_CHART)
+        return charts.PyRevitOutputChart(
+            self,
+            chart_type=charts.BUBBLE_CHART,
+            version=version
+            )
 
 
 def get_output():

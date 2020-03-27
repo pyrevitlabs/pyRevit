@@ -1,5 +1,6 @@
 """Reload pyRevit into new session."""
-
+# -*- coding=utf-8 -*-
+#pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import EXEC_PARAMS
 from pyrevit import script
 from pyrevit import forms
@@ -8,9 +9,15 @@ from pyrevit.loader import sessioninfo
 
 
 __cleanengine__ = True
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 __doc__ = 'Searches the script folders and create buttons ' \
           'for the new script or newly installed extensions.'
+__title__ = {
+    'en_us': 'Reload',
+    'fa': 'بارگذاری مجدد',
+    'bg': 'Презареди',
+    'nl_nl': 'Herladen',
+}
 
 
 res = True

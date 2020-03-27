@@ -1,6 +1,7 @@
 """Create necessary compiled types for pyRevit bundles."""
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
+import pyrevit.extensions as exts
 
 from pyrevit import runtime
 
@@ -17,13 +18,13 @@ def create_bundle_type(
         bundle_search_paths,
         bundle_arguments,
         bundle_help_url,
+        bundle_tooltip,
         bundle_name,
         bundle_full_name,
         bundle_extension_name,
         bundle_unique_name,
-        bundle_requires_clean_engine,
-        bundle_requires_fullframe_engine,
-        bundle_requires_persistent_engine,
+        bundle_control_id,
+        engine_cfgs,
     ):
     runtime.create_type(
         module_builder,
@@ -35,16 +36,16 @@ def create_bundle_type(
         coreutils.join_strings(bundle_search_paths),
         coreutils.join_strings(bundle_arguments),
         bundle_help_url,
+        bundle_tooltip,
         bundle_name,
         bundle_full_name,
         bundle_extension_name,
         bundle_unique_name,
-        int(bundle_requires_clean_engine),
-        int(bundle_requires_fullframe_engine),
-        int(bundle_requires_persistent_engine))
+        bundle_control_id,
+        engine_cfgs)
 
 
-def create_executor_type(extension, module_builder, cmd_component):
+def create_executor_type(extension, module_builder, cmd_component, eng_cfgs=''):
     mlogger.debug('Creating executor type for: %s', cmd_component)
     mlogger.debug('%s uses clean engine: %s',
                   cmd_component.name, cmd_component.requires_clean_engine)
@@ -56,20 +57,18 @@ def create_executor_type(extension, module_builder, cmd_component):
     create_bundle_type(
         module_builder=module_builder,
         type_name=cmd_component.unique_name,
-        bundle_script=cmd_component.script_file,
-        bundle_config_script=cmd_component.config_script_file,
+        bundle_script=cmd_component.script_file or "",
+        bundle_config_script=cmd_component.config_script_file or "",
         bundle_search_paths=cmd_component.module_paths,
         bundle_arguments=cmd_component.arguments,
-        bundle_help_url=cmd_component.help_url,
+        bundle_help_url=cmd_component.help_url or "",
+        bundle_tooltip=cmd_component.tooltip or "",
         bundle_name=cmd_component.name,
         bundle_full_name=cmd_component.get_full_bundle_name(),
         bundle_extension_name=extension.name,
         bundle_unique_name=cmd_component.unique_name,
-        bundle_requires_clean_engine=cmd_component.requires_clean_engine,
-        bundle_requires_fullframe_engine=\
-            cmd_component.requires_fullframe_engine,
-        bundle_requires_persistent_engine=\
-            cmd_component.requires_persistent_engine
+        bundle_control_id=cmd_component.control_id,
+        engine_cfgs=eng_cfgs
         )
 
     mlogger.debug('Successfully created executor type for: %s', cmd_component)

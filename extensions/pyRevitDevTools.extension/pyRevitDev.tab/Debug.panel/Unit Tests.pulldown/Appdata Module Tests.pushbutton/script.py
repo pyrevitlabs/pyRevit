@@ -6,7 +6,7 @@ import pyrevit
 from pyrevit.coreutils import appdata
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 TEST_STRINGS = ['pyRevit_some-randomename',

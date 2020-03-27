@@ -3,10 +3,13 @@ import os
 import os.path as op
 import re
 import codecs
+import copy
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
 from pyrevit.coreutils import yaml
+from pyrevit.coreutils import applocales
+from pyrevit.coreutils import pyutils
 import pyrevit.extensions as exts
 
 
@@ -15,7 +18,9 @@ mlogger = coreutils.logger.get_logger(__name__)
 
 
 EXT_DIR_KEY = 'directory'
-SUB_CMP_KEY = 'sub_components'
+SUB_CMP_KEY = 'components'
+LAYOUT_ITEM_KEY = 'layout_items'
+LAYOUT_DIR_KEY = 'directive'
 TYPE_ID_KEY = 'type_id'
 NAME_KEY = 'name'
 
@@ -27,8 +32,8 @@ class TypedComponent(object):
 class CachableComponent(TypedComponent):
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
-        if TYPE_ID_KEY in cache_dict:
-            cache_dict[TYPE_ID_KEY] = self.type_id
+        if hasattr(self, TYPE_ID_KEY):
+            cache_dict[TYPE_ID_KEY] = getattr(self, TYPE_ID_KEY)
         return cache_dict
 
     def load_cache_data(self, cache_dict):
@@ -37,13 +42,13 @@ class CachableComponent(TypedComponent):
 
 
 class LayoutDirective(CachableComponent):
-    def __init__(self, directive_type, target):
+    def __init__(self, directive_type=None, target=None):
         self.directive_type = directive_type
         self.target = target
 
 
 class LayoutItem(CachableComponent):
-    def __init__(self, name, directive):
+    def __init__(self, name=None, directive=None):
         self.name = name
         self.directive = directive
 
@@ -65,12 +70,15 @@ class GenericUIComponent(GenericComponent):
         # using classname otherwise exceptions in superclasses won't show
         GenericComponent.__init__(self)
         self.directory = cmp_path
-        self.unique_name = None
+        self.unique_name = self.parent_ctrl_id = None
         self.icon_file = None
-        self.ui_title = None
-        self.tooltip = self.author = self.help_url = ""
+        self._ui_title = None
+        self._tooltip = self.author = self._help_url = None
         self.media_file = None
         self.min_revit_ver = self.max_revit_ver = None
+        self.is_beta = False
+        self.highlight_type = None
+        self.collapsed = False
         self.version = None
 
         self.meta = {}
@@ -121,7 +129,7 @@ class GenericUIComponent(GenericComponent):
 
     def _update_from_directory(self):
         self.name = op.splitext(op.basename(self.directory))[0]
-        self.ui_title = self.name
+        self._ui_title = self.name
         self.unique_name = GenericUIComponent.make_unique_name(self.directory)
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
@@ -154,8 +162,7 @@ class GenericUIComponent(GenericComponent):
 
         # find meta file
         self.meta_file = self.find_bundle_file([
-            exts.BUNDLEMATA_POSTFIX,
-            exts.ALT_BUNDLEMATA_POSTFIX
+            exts.BUNDLEMATA_POSTFIX
             ])
         if self.meta_file:
             # sets up self.meta
@@ -168,17 +175,23 @@ class GenericUIComponent(GenericComponent):
                     "Error reading meta file @ %s | %s", self.meta_file, err
                     )
 
+    def _resolve_locale(self, source):
+        if isinstance(source, str):
+            return source
+        elif isinstance(source, dict):
+            return applocales.get_locale_string(source)
+
+    def _resolve_liquid_tag(self, param_name, key, value):
+        liquid_tag = '{{' + key + '}}'
+        exst_val = getattr(self, param_name)
+        if exst_val and (liquid_tag in exst_val):   #pylint: disable=E1135
+            new_value = exst_val.replace(liquid_tag, value)
+            setattr(self, param_name, new_value)
+
     def _read_bundle_metadata(self):
-        self.icon_file = self.get_bundle_file(
-            self.meta.get(exts.MDATA_ICON_FILE, self.icon_file)
-            ) or self.icon_file
+        self._ui_title = self.meta.get(exts.MDATA_UI_TITLE, self._ui_title)
 
-        self.ui_title = self.meta.get(exts.MDATA_UI_TITLE, self.ui_title)
-        self.tooltip = self.meta.get(exts.MDATA_TOOLTIP, self.tooltip)
-
-        self.media_file = self.get_bundle_file(
-            self.meta.get(exts.MDATA_MEDIA, self.media_file)
-            ) or self.media_file
+        self._tooltip = self.meta.get(exts.MDATA_TOOLTIP, self._tooltip)
 
         # authors could be a list or single value
         self.author = self.meta.get(exts.MDATA_AUTHOR, self.author)
@@ -186,15 +199,46 @@ class GenericUIComponent(GenericComponent):
         if isinstance(self.author, list):
             self.author = '\n'.join(self.author)
 
-        self.help_url = \
-            self.meta.get(exts.MDATA_COMMAND_HELP_URL, self.help_url)
+        self._help_url = \
+            self.meta.get(exts.MDATA_COMMAND_HELP_URL, self._help_url)
+
         self.min_revit_ver = \
             self.meta.get(exts.MDATA_MIN_REVIT_VERSION, self.min_revit_ver)
         self.max_revit_ver = \
             self.meta.get(exts.MDATA_MAX_REVIT_VERSION, self.max_revit_ver)
 
+        self.is_beta = \
+            self.meta.get(exts.MDATA_BETA_SCRIPT, 'false').lower() == 'true'
+
+        highlight = \
+            self.meta.get(exts.MDATA_HIGHLIGHT_KEY, None)
+        if highlight and isinstance(highlight, str):
+            self.highlight_type = highlight.lower()
+
+        self.collapsed = \
+            self.meta.get(exts.MDATA_COLLAPSED_KEY, 'false').lower() == 'true'
+
         self.modules = \
             self.meta.get(exts.MDATA_LINK_BUTTON_MODULES, self.modules)
+
+    @property
+    def control_id(self):
+        if self.parent_ctrl_id:
+            return self.parent_ctrl_id + '%{}'.format(self.name)
+        else:
+            return "CustomCtrl_%CustomCtrl_%{}".format(self.name)
+
+    @property
+    def ui_title(self):
+        return self._resolve_locale(self._ui_title)
+
+    @property
+    def tooltip(self):
+        return self._resolve_locale(self._tooltip)
+
+    @property
+    def help_url(self):
+        return self._resolve_locale(self._help_url)
 
     @property
     def is_supported(self):
@@ -227,25 +271,26 @@ class GenericUIComponent(GenericComponent):
             return self.module_paths.remove(path)
 
     def get_bundle_file(self, file_name):
-        if file_name:
+        if self.directory and file_name:
             file_addr = op.join(self.directory, file_name)
             return file_addr if op.exists(file_addr) else None
 
     def find_bundle_file(self, patterns,
                          as_name=False, as_postfix=True, as_regex=False):
-        for bundle_file in os.listdir(self.directory):
-            if as_name:
-                for file_name in patterns:
-                    if op.splitext(bundle_file)[0] == file_name:
-                        return op.join(self.directory, bundle_file)
-            elif as_postfix:
-                for file_postfix in patterns:
-                    if bundle_file.endswith(file_postfix):
-                        return op.join(self.directory, bundle_file)
-            elif as_regex:
-                for regex_pattern in patterns:
-                    if re.match(regex_pattern, bundle_file):
-                        return op.join(self.directory, bundle_file)
+        if self.directory:
+            for bundle_file in os.listdir(self.directory):
+                if as_name:
+                    for file_name in patterns:
+                        if op.splitext(bundle_file)[0] == file_name:
+                            return op.join(self.directory, bundle_file)
+                elif as_postfix:
+                    for file_postfix in patterns:
+                        if bundle_file.endswith(file_postfix):
+                            return op.join(self.directory, bundle_file)
+                elif as_regex:
+                    for regex_pattern in patterns:
+                        if re.match(regex_pattern, bundle_file):
+                            return op.join(self.directory, bundle_file)
         return None
 
     def find_bundle_module(self, module):
@@ -258,6 +303,19 @@ class GenericUIComponent(GenericComponent):
             possible_module_path = op.join(module_path, module)
             if op.isfile(possible_module_path):
                 return possible_module_path
+
+    def configure(self, config_dict):
+        configurable_params = \
+            ['_ui_title', '_tooltip', '_help_url', 'author']
+        # get root key:value pairs
+        for key, value in config_dict.items():
+            for param_name in configurable_params:
+                self._resolve_liquid_tag(param_name, key, value)
+        # get key:value pairs grouped under special key, if exists
+        templates = config_dict.get(exts.MDATA_TEMPLATES_KEY, {})
+        for key, value in templates.items():
+            for param_name in configurable_params:
+                self._resolve_liquid_tag(param_name, key, value)
 
 
 # superclass for all UI group items (tab, panel, button groups, stacks)
@@ -273,14 +331,16 @@ class GenericUIContainer(GenericUIComponent):
     def _update_from_directory(self):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent._update_from_directory(self)
-        # process layout file
-        # sets self.layout_items
-        self.parse_layout_file()
+        # process layout
+        # default is layout in metadata, the older layout file is deprecate
+        # and is for fallback only
+        if not self.parse_layout_metadata():
+            self.parse_layout_file()
 
     def _apply_layout_directive(self, directive, component):
         # if matching directive found, process the directive
         if directive.directive_type == 'title':
-            component.ui_title = directive.target
+            component._ui_title = directive.target
 
     def __iter__(self):
         # if item is not listed in layout, it will not be created
@@ -304,12 +364,12 @@ class GenericUIContainer(GenericUIComponent):
             for idx, litem in enumerate(self.layout_items):
                 if exts.SEPARATOR_IDENTIFIER in litem.name \
                         and idx < last_item_index:
-                    separator = GenericComponent()
+                    separator = GenericUIComponent()
                     separator.type_id = exts.SEPARATOR_IDENTIFIER
                     laidout_cmps.insert(idx, separator)
                 elif exts.SLIDEOUT_IDENTIFIER in litem.name \
                         and idx < last_item_index:
-                    slideout = GenericComponent()
+                    slideout = GenericUIComponent()
                     slideout.type_id = exts.SLIDEOUT_IDENTIFIER
                     laidout_cmps.insert(idx, slideout)
 
@@ -342,15 +402,28 @@ class GenericUIContainer(GenericUIComponent):
             return LayoutItem(name=layout_item_name,
                               directive=layout_item_drctv)
 
+    def parse_layout_items(self, layout_lines):
+        for layout_line in layout_lines:
+            layout_item = self.parse_layout_item(layout_line)
+            if layout_item:
+                self.layout_items.append(layout_item)
+        mlogger.debug('Layout is: %s', self.layout_items)
+
+    def parse_layout_metadata(self):
+        layout = self.meta.get(exts.MDATA_LAYOUT, [])
+        if layout:
+            self.parse_layout_items(layout)
+            return True
+
     def parse_layout_file(self):
         layout_filepath = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
         if op.exists(layout_filepath):
+            mlogger.deprecate(
+                "\"_layout\" file is deprecated. "
+                "use bundle.yaml instead. | %s", self)
             with codecs.open(layout_filepath, 'r', 'utf-8') as layout_file:
-                for layout_line in layout_file.read().splitlines():
-                    layout_item = self.parse_layout_item(layout_line)
-                    if layout_item:
-                        self.layout_items.append(layout_item)
-            mlogger.debug('Layout is: %s', self.layout_items)
+                self.parse_layout_items(layout_file.read().splitlines())
+                return True
         else:
             mlogger.debug('Container does not have layout file defined: %s',
                           self)
@@ -373,8 +446,13 @@ class GenericUIContainer(GenericUIComponent):
             return self.module_paths.remove(path)
 
     def add_component(self, comp):
+        # set search paths
         for path in self.module_paths:
             comp.add_module_path(path)
+        # set its own control id on the child component
+        if hasattr(comp, 'parent_ctrl_id'):
+            comp.parent_ctrl_id = self.control_id
+        # now add to list
         self.components.append(comp)
 
     def find_components_of_type(self, cmp_type):
@@ -395,6 +473,22 @@ class GenericUIContainer(GenericUIComponent):
                 layout_items.extend(sub_comp.find_layout_items())
         return layout_items
 
+    def configure(self, config_dict):
+        # update self meta
+        GenericUIComponent.configure(self, config_dict=config_dict)
+        # create an updated dict to pass to children
+        updated_dict = copy.deepcopy(config_dict)
+        updated_dict = pyutils.merge(updated_dict, self.meta)
+        # replace the meta values with the expanded values
+        # so children can use the expanded
+        updated_dict[exts.MDATA_UI_TITLE] = self.ui_title
+        updated_dict[exts.MDATA_TOOLTIP] = self.tooltip
+        updated_dict[exts.MDATA_COMMAND_HELP_URL] = self.help_url
+        updated_dict[exts.AUTHOR_PARAM] = self.author
+        if exts.AUTHORS_PARAM in updated_dict:
+            updated_dict.pop(exts.AUTHORS_PARAM)
+        for component in self:
+            component.configure(updated_dict)
 
 # superclass for all single command classes (link, push button, toggle button)
 # GenericUICommand is not derived from GenericUIContainer since a command
@@ -413,20 +507,26 @@ class GenericUICommand(GenericUIComponent):
         self.arguments = []
         self.context = None
         self.class_name = self.avail_class_name = None
-        self.beta_cmd = False
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
         self.requires_persistent_engine = False
+        self.requires_mainthread_engine = False
+        # engine options specific to dynamo
+        self.dynamo_path = None
+        # self.dynamo_path_exec = False
+        self.dynamo_path_check_existing = False
+        self.dynamo_force_manual_run = False
+        self.dynamo_model_nodes_info = None
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent.__init__(self, cmp_path=cmp_path)
 
         mlogger.debug('Maximum host version: %s', self.max_revit_ver)
         mlogger.debug('Minimum host version: %s', self.min_revit_ver)
-        mlogger.debug('command tooltip: %s', self.tooltip)
+        mlogger.debug('command tooltip: %s', self._tooltip)
         mlogger.debug('Command author: %s', self.author)
-        mlogger.debug('Command help url: %s', self.help_url)
+        mlogger.debug('Command help url: %s', self._help_url)
 
-        if self.beta_cmd:
+        if self.is_beta:
             mlogger.debug('Command is in beta.')
 
     def _update_from_directory(self):
@@ -442,6 +542,7 @@ class GenericUICommand(GenericUIComponent):
                 exts.RUBY_SCRIPT_POSTFIX,
                 exts.DYNAMO_SCRIPT_POSTFIX,
                 exts.GRASSHOPPER_SCRIPT_POSTFIX,
+                exts.GRASSHOPPERX_SCRIPT_POSTFIX,
                 ])
 
         if self.needs_script and not self.script_file:
@@ -452,13 +553,21 @@ class GenericUICommand(GenericUIComponent):
             # allow python tools to load side scripts
             self.add_module_path(self.directory)
             # read the metadata from python script if not metadata file
-            if not self.meta:
+            if not self.meta and not self.is_cpython:
                 # sets up self.meta from script global variables
                 self._read_bundle_metadata_from_python_script()
 
         # find config scripts
         self.config_script_file = \
-            self.find_bundle_file([exts.CONFIG_SCRIPT_POSTFIX])
+            self.find_bundle_file([
+                exts.PYTHON_CONFIG_SCRIPT_POSTFIX,
+                exts.CSHARP_CONFIG_SCRIPT_POSTFIX,
+                exts.VB_CONFIG_SCRIPT_POSTFIX,
+                exts.RUBY_CONFIG_SCRIPT_POSTFIX,
+                exts.DYNAMO_CONFIG_SCRIPT_POSTFIX,
+                exts.GRASSHOPPER_CONFIG_SCRIPT_POSTFIX,
+                exts.GRASSHOPPERX_CONFIG_SCRIPT_POSTFIX,
+                ])
 
         if not self.config_script_file:
             mlogger.debug(
@@ -469,8 +578,7 @@ class GenericUICommand(GenericUIComponent):
     def _read_bundle_metadata(self):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent._read_bundle_metadata(self)
-        self.beta_cmd = \
-            self.meta.get(exts.MDATA_BETA_SCRIPT, 'false').lower() == 'true'
+        # determine engine configs
         if exts.MDATA_ENGINE in self.meta:
             self.requires_clean_engine = \
                 self.meta[exts.MDATA_ENGINE].get(
@@ -482,6 +590,34 @@ class GenericUICommand(GenericUIComponent):
                 self.meta[exts.MDATA_ENGINE].get(
                     exts.MDATA_ENGINE_PERSISTENT, 'false').lower() == 'true'
 
+            # determine if engine is required to run on main thread
+            # MDATA_ENGINE_MAINTHREAD is the generic option
+            rme = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_MAINTHREAD, 'false') == 'true'
+            # MDATA_ENGINE_DYNAMO_AUTOMATE is specific naming for dynamo
+            automate = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_DYNAMO_AUTOMATE, 'false') == 'true'
+            self.requires_mainthread_engine = rme or automate
+
+            # process engine options specific to dynamo
+            self.dynamo_path = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH, None)
+            # self.dynamo_path_exec = \
+            #     self.meta[exts.MDATA_ENGINE].get(
+            #         exts.MDATA_ENGINE_DYNAMO_PATH_EXEC, 'true') == 'true'
+            self.dynamo_path_check_existing = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH_CHECK_EXIST,
+                    'false') == 'true'
+            self.dynamo_force_manual_run = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_FORCE_MANUAL_RUN,
+                    'false') == 'true'
+            self.dynamo_model_nodes_info = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_MODEL_NODES_INFO, None)
+
         # panel buttons should be active always
         if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:
             self.context = exts.CTX_ZERODOC[0]
@@ -491,22 +627,26 @@ class GenericUICommand(GenericUIComponent):
             if isinstance(self.context, list):
                 self.context = coreutils.join_strings(self.context)
 
+            if self.context and exts.CTX_ZERODOC[1] in self.context:
+                mlogger.deprecate(
+                    "\"zerodoc\" context is deprecated. "
+                    "use \"zero-doc\" instead. | %s", self)
+
     def _read_bundle_metadata_from_python_script(self):
         try:
             # reading script file content to extract parameters
             script_content = \
                 coreutils.ScriptFileParser(self.script_file)
 
-            # extracting min requried Revit and pyRevit versions
-            self.ui_title = \
+            self._ui_title = \
                 script_content.extract_param(exts.UI_TITLE_PARAM) \
-                    or self.ui_title
+                    or self._ui_title
 
             script_docstring = script_content.get_docstring()
             custom_docstring = \
                 script_content.extract_param(exts.DOCSTRING_PARAM)
-            self.tooltip = \
-                custom_docstring or script_docstring or self.tooltip
+            self._tooltip = \
+                custom_docstring or script_docstring or self._tooltip
 
             script_author = script_content.extract_param(exts.AUTHOR_PARAM)
             script_author = script_content.extract_param(exts.AUTHORS_PARAM)
@@ -514,17 +654,24 @@ class GenericUICommand(GenericUIComponent):
                 script_author = '\n'.join(script_author)
             self.author = script_author or self.author
 
+            # extracting min requried Revit and pyRevit versions
             self.max_revit_ver = \
                 script_content.extract_param(exts.MAX_REVIT_VERSION_PARAM) \
                     or self.max_revit_ver
             self.min_revit_ver = \
                 script_content.extract_param(exts.MIN_REVIT_VERSION_PARAM) \
                     or self.min_revit_ver
-            self.help_url = \
+            self._help_url = \
                 script_content.extract_param(exts.COMMAND_HELP_URL_PARAM) \
-                    or self.help_url
+                    or self._help_url
 
-            self.beta_cmd = script_content.extract_param(exts.BETA_SCRIPT_PARAM)
+            self.is_beta = \
+                script_content.extract_param(exts.BETA_SCRIPT_PARAM) \
+                    or self.is_beta
+
+            self.highlight_type = \
+                script_content.extract_param(exts.HIGHLIGHT_SCRIPT_PARAM) \
+                    or self.highlight_type
 
             # only True when command is specifically asking for
             # a clean engine or a fullframe engine. False if not set.
@@ -547,18 +694,13 @@ class GenericUICommand(GenericUIComponent):
                 if isinstance(self.context, list):
                     self.context = coreutils.join_strings(self.context)
 
+                if self.context and exts.CTX_ZERODOC[1] in self.context:
+                    mlogger.deprecate(
+                        "\"zerodoc\" context is deprecated. "
+                        "use \"zero-doc\" instead. | %s", self)
+
         except Exception as parse_err:
             mlogger.log_parse_except(self.script_file, parse_err)
-
-    def _update_configurable_param(self, param_name, param_tag, param_value):
-        exst_val = getattr(self, param_name)
-        if exst_val and (param_tag in exst_val):   #pylint: disable=E1135
-            new_value = exst_val.replace(param_tag, param_value)
-            setattr(self, param_name, new_value)
-
-    @property
-    def configurable_params(self):
-        return ['ui_title', 'tooltip', 'author', 'help_url', 'media_file']
 
     @property
     def script_language(self):
@@ -573,22 +715,26 @@ class GenericUICommand(GenericUIComponent):
                 return exts.RUBY_LANG
             elif self.script_file.endswith(exts.DYNAMO_SCRIPT_FILE_FORMAT):
                 return exts.DYNAMO_LANG
-            elif self.script_file.endswith(exts.GRASSHOPPER_SCRIPT_FILE_FORMAT):
+            elif self.script_file.endswith(
+                    exts.GRASSHOPPER_SCRIPT_FILE_FORMAT) \
+                    or self.script_file.endswith(
+                        exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT
+                    ):
                 return exts.GRASSHOPPER_LANG
         else:
             return None
 
+    @property
+    def control_id(self):
+        if self.parent_ctrl_id:
+            return self.parent_ctrl_id + '%{}'.format(self.name)
+        else:
+            return '%{}'.format(self.name)
+
+    @property
+    def is_cpython(self):
+        with open(self.script_file, 'r') as script_f:
+            return exts.CPYTHON_HASHBANG in script_f.readline()
+
     def has_config_script(self):
         return self.config_script_file != self.script_file
-
-    def configure(self, config_dict):
-        for key, value in config_dict.items():
-            liquid_tag = '{{' + key + '}}'
-            for param_name in self.configurable_params:
-                self._update_configurable_param(param_name, liquid_tag, value)
-
-        templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, {})
-        for key, value in templates.items():
-            liquid_tag = '{{' + key + '}}'
-            for param_name in self.configurable_params:
-                self._update_configurable_param(param_name, liquid_tag, value)

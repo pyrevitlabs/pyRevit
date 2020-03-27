@@ -2,6 +2,7 @@
 import os
 import os.path as op
 import sys
+import json
 
 from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
 from pyrevit import framework
@@ -14,6 +15,7 @@ from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit.loader import HASH_CUTOFF_LENGTH
 from pyrevit.userconfig import user_config
+import pyrevit.extensions as exts
 
 from pyrevit.runtime import compiler
 
@@ -61,15 +63,15 @@ RUNTIME_NAMESPACE = 'PyRevitLabs.PyRevit.Runtime'
 
 # template python command class
 CMD_EXECUTOR_TYPE_NAME = '{}.{}'\
-    .format(RUNTIME_NAMESPACE, 'CommandType')
+    .format(RUNTIME_NAMESPACE, 'ScriptCommand')
 
 # template python command availability class
 CMD_AVAIL_TYPE_NAME_EXTENDED = \
-    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'CommandExtendedAvail')
+    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'ScriptCommandExtendedAvail')
 CMD_AVAIL_TYPE_NAME_SELECTION = \
-    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'CommandSelectionAvail')
+    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'ScriptCommandSelectionAvail')
 CMD_AVAIL_TYPE_NAME_ZERODOC = \
-    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'CommandZeroDocAvail')
+    coreutils.make_canonical_name(RUNTIME_NAMESPACE, 'ScriptCommandZeroDocAvail')
 
 CMD_AVAIL_NAME_POSTFIX = '-avail'
 
@@ -226,11 +228,15 @@ def get_references():
                 'System.Numerics', 'System.Drawing',
                 'System.Xaml', 'System.Web', 'System.Xml',
                 'System.Windows.Forms', 'System.Web.Extensions',
+                'AdWindows', 'UIFramework',
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration',
                 'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
                 'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
                 'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit']
+
+    if HOST_APP.is_newer_than(2018):
+        ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
     refs = [_get_reference_file(ref_name) for ref_name in ref_list]
 
@@ -268,6 +274,14 @@ def _get_runtime_asm():
         return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
     else:
         return _generate_runtime_asm()
+
+
+def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
+    return json.dumps({
+        exts.MDATA_ENGINE_CLEAN: clean,
+        exts.MDATA_ENGINE_FULLFRAME: full_frame,
+        exts.MDATA_ENGINE_PERSISTENT: persistent,
+    })
 
 
 def create_ext_command_attrs():
@@ -340,7 +354,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
         ... )
         >>> create_type(
         ...     module_builder,
-        ...     runtime.CommandType,
+        ...     runtime.ScriptCommand,
         ...     "PyRevitSomeCommandUniqueName",
         ...     runtime.create_ext_command_attrs(),
         ...     [scriptpath, atlscriptpath, searchpath, helpurl, name,

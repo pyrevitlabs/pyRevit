@@ -1,13 +1,17 @@
+# -*- coding: utf-8 -*-
 """Helper functions to query info and elements from Revit."""
 #pylint: disable=W0703,C0103
 from collections import namedtuple
 
+from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
+import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
+from pyrevit.revit import features
 
 from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 
@@ -89,7 +93,10 @@ def get_name(element, title_on_sheet=False):
 
     # have to use the imported Element otherwise
     # AttributeError occurs
-    return Element.Name.__get__(element)
+    if compat.PY3:
+        return element.Name
+    else:
+        return Element.Name.__get__(element)
 
 
 def get_type(element):
@@ -119,10 +126,6 @@ def get_param(element, param_name, default=None):
             return element.LookupParameter(param_name)
         except Exception:
             return default
-
-
-def get_assoc_doc(element):
-    return element.Document
 
 
 def get_mark(element):
@@ -171,15 +174,18 @@ def get_all_elements_in_view(view):
 
 
 def get_param_value(targetparam):
-    if targetparam.StorageType == DB.StorageType.Double:
-        value = targetparam.AsDouble()
-    elif targetparam.StorageType == DB.StorageType.Integer:
-        value = targetparam.AsInteger()
-    elif targetparam.StorageType == DB.StorageType.String:
-        value = targetparam.AsString()
-    elif targetparam.StorageType == DB.StorageType.ElementId:
-        value = targetparam.AsElementId()
-
+    value = None
+    if isinstance(targetparam, DB.Parameter):
+        if targetparam.StorageType == DB.StorageType.Double:
+            value = targetparam.AsDouble()
+        elif targetparam.StorageType == DB.StorageType.Integer:
+            value = targetparam.AsInteger()
+        elif targetparam.StorageType == DB.StorageType.String:
+            value = targetparam.AsString()
+        elif targetparam.StorageType == DB.StorageType.ElementId:
+            value = targetparam.AsElementId()
+    elif isinstance(targetparam, DB.GlobalParameter):
+        return targetparam.GetValue().Value
     return value
 
 
@@ -253,7 +259,7 @@ def get_elements_by_categories(element_bicats, elements=None, doc=None):
                 in element_bicats]
 
     # otherwise collect from model
-    cat_filters = [DB.ElementCategoryFilter(x) for x in element_bicats]
+    cat_filters = [DB.ElementCategoryFilter(x) for x in element_bicats if x]
     elcats_filter = \
         DB.LogicalOrFilter(framework.List[DB.ElementFilter](cat_filters))
     return DB.FilteredElementCollector(doc or HOST_APP.doc)\
@@ -292,7 +298,7 @@ def get_types_by_class(type_class, types=None, doc=None):
 
 
 def get_family(family_name, doc=None):
-    famsyms = \
+    families = \
         DB.FilteredElementCollector(doc or HOST_APP.doc)\
           .WherePasses(
               get_biparam_stringequals_filter(
@@ -301,7 +307,33 @@ def get_family(family_name, doc=None):
               )\
           .WhereElementIsElementType()\
           .ToElements()
+    return families
+
+
+def get_family_symbol(family_name, symbol_name, doc=None):
+    famsyms = \
+        DB.FilteredElementCollector(doc or HOST_APP.doc)\
+          .WherePasses(
+              get_biparam_stringequals_filter(
+                  {
+                      DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name,
+                      DB.BuiltInParameter.SYMBOL_NAME_PARAM: symbol_name
+                  }
+                ))\
+          .WhereElementIsElementType()\
+          .ToElements()
     return famsyms
+
+
+def get_families(doc=None, only_editable=True):
+    doc = doc or HOST_APP.doc
+    families = [x.Family for x in set(DB.FilteredElementCollector(doc)
+                                        .WhereElementIsElementType()
+                                        .ToElements())
+                if isinstance(x, (DB.FamilySymbol, DB.AnnotationSymbolType))]
+    if only_editable:
+        return [x for x in families if x.IsEditable]
+    return families
 
 
 def get_noteblock_families(doc=None):
@@ -430,6 +462,20 @@ def model_has_parameter(param_id_or_name, doc=None):
     return get_project_parameter(param_id_or_name, doc=doc)
 
 
+def get_global_parameters(doc=None):
+    doc = doc or HOST_APP.doc
+    return [doc.GetElement(x)
+            for x in DB.GlobalParametersManager.GetAllGlobalParameters(doc)]
+
+
+def get_global_parameter(param_name, doc=None):
+    doc = doc or HOST_APP.doc
+    if features.GLOBAL_PARAMS:
+        param_id = DB.GlobalParametersManager.FindByName(doc, param_name)
+        if param_id != DB.ElementId.InvalidElementId:
+            return doc.GetElement(param_id)
+
+
 def get_project_info(doc=None):
     return db.ProjectInfo(doc or HOST_APP.doc)
 
@@ -440,9 +486,14 @@ def get_revisions(doc=None):
                 .WhereElementIsNotElementType())
 
 
-def get_sheet_revisions(sheet, doc=None):
-    doc = doc or HOST_APP.doc
+def get_sheet_revisions(sheet):
+    doc = sheet.Document
     return [doc.GetElement(x) for x in sheet.GetAdditionalRevisionIds()]
+
+
+def get_current_sheet_revision(sheet):
+    doc = sheet.Document
+    return doc.GetElement(sheet.GetCurrentRevision())
 
 
 def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
@@ -660,13 +711,14 @@ def is_sheet_empty(viewsheet):
     return True
 
 
-def get_doc_categories(doc=None):
+def get_doc_categories(doc=None, include_subcats=True):
     doc = doc or HOST_APP.doc
     all_cats = []
     cats = doc.Settings.Categories
     all_cats.extend(cats)
-    for cat in cats:
-        all_cats.extend([x for x in cat.SubCategories])
+    if include_subcats:
+        for cat in cats:
+            all_cats.extend([x for x in cat.SubCategories])
     return all_cats
 
 
@@ -730,6 +782,32 @@ def get_builtincategory(cat_name_or_id, doc=None):
                 return bicat
 
 
+def get_subcategories(doc=None, purgable=False, filterfunc=None):
+    doc = doc or HOST_APP.doc
+    # collect custom categories
+    subcategories = []
+    for cat in doc.Settings.Categories:
+        for subcat in cat.SubCategories:
+            if purgable:
+                if subcat.Id.IntegerValue > 1:
+                    subcategories.append(subcat)
+            else:
+                subcategories.append(subcat)
+    if filterfunc:
+        subcategories = filter(filterfunc, subcategories)
+
+    return subcategories
+
+
+def get_subcategory(cat_name_or_builtin, subcategory_name, doc=None):
+    doc = doc or HOST_APP.doc
+    cat = get_category(cat_name_or_builtin)
+    if cat:
+        for subcat in cat.SubCategories:
+            if subcat.Name == subcategory_name:
+                return subcat
+
+
 def get_builtinparameter(element, param_name, doc=None):
     doc = doc or HOST_APP.doc
     eparam = element.LookupParameter(param_name)
@@ -761,7 +839,8 @@ def get_all_linkeddocs(doc=None):
     linkinstances = DB.FilteredElementCollector(doc)\
                       .OfClass(DB.RevitLinkInstance)\
                       .ToElements()
-    return {x.GetLinkDocument() for x in linkinstances}
+    docs = [x.GetLinkDocument() for x in linkinstances]
+    return [x for x in docs if x]
 
 
 def get_all_grids(group_by_direction=False,
@@ -911,7 +990,11 @@ def get_sheet_sets(doc=None):
     return list(viewsheetsets)
 
 
-def get_rev_number(revision):
+def get_rev_number(revision, sheet=None):
+    # if sheet is provided, get number on sheet
+    if sheet and isinstance(sheet, DB.ViewSheet):
+        return sheet.GetRevisionNumberOnSheet(revision.Id)
+    # otherwise get number from revision
     revnum = revision.SequenceNumber
     if hasattr(revision, 'RevisionNumber'):
         revnum = revision.RevisionNumber
@@ -962,32 +1045,6 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
 
     return [x for x in existing_fp_elements
             if x.GetFillPattern().Target == fillpattern_target]
-
-
-def get_subcategories(doc=None, purgable=False, filterfunc=None):
-    doc = doc or HOST_APP.doc
-    # collect custom categories
-    subcategories = []
-    for cat in doc.Settings.Categories:
-        for subcat in cat.SubCategories:
-            if purgable:
-                if subcat.Id.IntegerValue > 1:
-                    subcategories.append(subcat)
-            else:
-                subcategories.append(subcat)
-    if filterfunc:
-        subcategories = filter(filterfunc, subcategories)
-
-    return subcategories
-
-
-def get_subcategory(category_name, subcategory_name, doc=None):
-    doc = doc or HOST_APP.doc
-    for cat in doc.Settings.Categories:
-        if cat.Name == category_name:
-            for subcat in cat.SubCategories:
-                if subcat.Name == subcategory_name:
-                    return subcat
 
 
 def get_keynote_file(doc=None):
@@ -1219,6 +1276,7 @@ def get_schema_field_values(element, schema):
 
 
 def get_family_type(type_name, family_doc):
+    family_doc = family_doc or HOST_APP.doc
     if family_doc.IsFamilyDocument:
         for ftype in family_doc.FamilyManager.Types:
             if ftype.Name == type_name:
@@ -1228,10 +1286,38 @@ def get_family_type(type_name, family_doc):
 
 
 def get_family_parameter(param_name, family_doc):
+    family_doc = family_doc or HOST_APP.doc
     if family_doc.IsFamilyDocument:
         for fparam in family_doc.FamilyManager.GetParameters():
             if fparam.Definition.Name == param_name:
                 return fparam
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_parameters(family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        return family_doc.FamilyManager.GetParameters()
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_label_parameters(family_doc):
+    family_doc = family_doc or HOST_APP.doc
+    if family_doc.IsFamilyDocument:
+        dims = DB.FilteredElementCollector(family_doc)\
+                .OfClass(DB.Dimension)\
+                .WhereElementIsNotElementType()
+        label_params = set()
+        for dim in dims:
+            try:
+                # throws exception when dimension can not be labeled
+                if isinstance(dim.FamilyLabel, DB.FamilyParameter):
+                    label_params.add(dim.FamilyLabel)
+            except Exception:
+                pass
+        return label_params
     else:
         raise PyRevitException('Document is not a family')
 
@@ -1274,3 +1360,124 @@ def get_doors(elements=None, doc=None, room_id=None):
         return room_doors
     else:
         return list(all_doors)
+
+
+def get_all_print_settings(doc=None):
+    doc = doc or HOST_APP.doc
+    return [doc.GetElement(x)for x in doc.GetPrintSettingIds()]
+
+
+def get_used_paper_sizes(doc=None):
+    doc = doc or HOST_APP.doc
+    return [x.PrintParameters.PaperSize
+            for x in get_all_print_settings(doc=doc)]
+
+
+def find_paper_size_by_name(paper_size_name, doc=None):
+    doc = doc or HOST_APP.doc
+    paper_size_name = paper_size_name.lower()
+    for psize in doc.PrintManager.PaperSizes:
+        if psize.Name.lower() == paper_size_name:
+            return psize
+
+
+def find_paper_sizes_by_dims(printer_name, paper_width, paper_height, doc=None):
+    # paper_width, paper_height must be in inch
+    doc = doc or HOST_APP.doc
+    paper_sizes = []
+    system_paper_sizes = coreutils.get_paper_sizes(printer_name)
+    mlogger.debug('looking for paper size W:%s H:%s', paper_width, paper_height)
+    mlogger.debug('system paper sizes: %s -> %s',
+                  printer_name, [x.PaperName for x in system_paper_sizes])
+    for sys_psize in system_paper_sizes:
+        sys_pname = sys_psize.PaperName
+        sys_pwidth = int(sys_psize.Width / 100.00)
+        sys_pheight = int(sys_psize.Height / 100.00)
+        # system paper dims are in inches
+        wxd = paper_width == sys_pwidth and paper_height == sys_pheight
+        dxw = paper_width == sys_pheight and paper_height == sys_pwidth
+        mlogger.debug('%s \"%s\" W:%s H:%s',
+                      '✓' if wxd or dxw else ' ',
+                      sys_pname, sys_pwidth, sys_pheight)
+        if wxd or dxw:
+            psize = find_paper_size_by_name(sys_pname)
+            if psize:
+                paper_sizes.append(psize)
+                mlogger.debug('found matching paper \"\"', psize.Name)
+
+    return paper_sizes
+
+
+def get_sheet_print_settings(tblock, printer_name, doc_psettings):
+    doc = tblock.Document
+    # find paper sizes used in print settings of this doc
+    page_width_param = tblock.Parameter[DB.BuiltInParameter.SHEET_WIDTH]
+    page_height_param = tblock.Parameter[DB.BuiltInParameter.SHEET_HEIGHT]
+    # calculate paper size in inch
+    page_width = int(round(page_width_param.AsDouble() * 12.0))
+    page_height = int(round(page_height_param.AsDouble() * 12.0))
+    tform = tblock.GetTotalTransform()
+    is_portrait = (page_width < page_height) or (int(tform.BasisX.Y) == -1)
+    paper_sizes = find_paper_sizes_by_dims(
+        printer_name,
+        page_width,
+        page_height,
+        doc=doc
+        )
+    # names of paper sizes matching the calculated title block size
+    paper_size_names = [x.Name for x in paper_sizes]
+    # find first print settings that matches any of the paper_size_names
+    page_orient = \
+        DB.PageOrientationType.Portrait if is_portrait \
+            else DB.PageOrientationType.Landscape
+    all_tblock_psettings = set()
+    for doc_psetting in doc_psettings:
+        try:
+            pparams = doc_psetting.PrintParameters
+            if pparams.PaperSize.Name in paper_size_names \
+                    and (pparams.ZoomType == DB.ZoomType.Zoom
+                        and pparams.Zoom == 100) \
+                    and pparams.PageOrientation == page_orient:
+                all_tblock_psettings.add(doc_psetting)
+        except Exception:
+            pass
+    return sorted(all_tblock_psettings, key=lambda x: x.Name)
+
+
+def get_crop_region(view):
+    """Takes crop region of a view
+
+    Args:
+        view (DB.View): view to get crop region from
+
+    Returns:
+        list[DB.CurveLoop]: list of curve loops
+    """
+    crsm = view.GetCropRegionShapeManager()
+    if HOST_APP.is_newer_than(2015):
+        crsm_valid = crsm.CanHaveShape
+    else:
+        crsm_valid = crsm.Valid
+
+    if crsm_valid:
+        if HOST_APP.is_newer_than(2015):
+            curve_loops = list(crsm.GetCropShape())
+        else:
+            curve_loops = [crsm.GetCropRegionShape()]
+
+        if curve_loops:
+            return curve_loops
+
+
+def is_cropable_view(view):
+    """Check if view can be cropped"""
+    return not isinstance(view, (DB.ViewSheet, DB.TableView)) \
+        and view.ViewType not in (DB.ViewType.Legend, DB.ViewType.DraftingView)
+
+
+def get_view_filters(view):
+    view_filters = []
+    for filter_id in view.GetFilters():
+        filter_element = view.Document.GetElement(filter_id)
+        view_filters.append(filter_element)
+    return view_filters

@@ -11,7 +11,8 @@ from pyrevit import forms
 
 if __shiftclick__:  #pylint: disable=undefined-variable
     selected_views = \
-        forms.select_views(filterfunc=lambda x: isinstance(x, DB.ViewPlan))
+        forms.select_views(filterfunc=lambda x: isinstance(x, DB.ViewPlan),
+                           use_selection=True)
 else:
     selected_views = [revit.active_view]
 

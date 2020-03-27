@@ -4,7 +4,7 @@ from pyrevit import forms
 from pyrevit.labs import TargetApps
 
 
-__context__ = 'zerodoc'
+__context__ = 'zero-doc'
 
 
 rvt_file = forms.pick_file(files_filter='Revit Files |*.rvt;*.rte;*.rfa|'
@@ -13,7 +13,7 @@ rvt_file = forms.pick_file(files_filter='Revit Files |*.rvt;*.rte;*.rfa|'
                                         'Revit Family |*.rfa')
 if rvt_file:
     mfile = TargetApps.Revit.RevitModelFile(rvt_file)
-    print("Created in: {0} ({1}({2}))".format(mfile.RevitProduct.ProductName,
+    print("Created in: {0} ({1}({2}))".format(mfile.RevitProduct.Name,
                                               mfile.RevitProduct.BuildNumber,
                                               mfile.RevitProduct.BuildTarget))
     print("Workshared: {0}".format("Yes" if mfile.IsWorkshared else "No"))

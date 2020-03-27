@@ -57,24 +57,10 @@ namespace pyRevitLabs.PyRevit {
                     throw new PyRevitException(string.Format("Name \"{0}\" is reserved.", name));
             }
             else
-                Name = string.Format("Unnamed-{0}", ClonePath.GenerateHash().GetHashShort());
+                Name = string.Format("Unnamed-{0}", ClonePath.GenerateMD5Hash().GetHashShort());
         }
 
-        private PyRevitClone(string clonePath) {
-            // clone path could be any path inside or outside the clonePath
-            // find the clone root first
-            var _clonePath = FindValidClonePathAbove(clonePath);
-            if (_clonePath is null) {
-                _clonePath = FindValidClonePathBelow(clonePath);
-                if (_clonePath is null)
-                    throw new PyRevitException(
-                        string.Format("Path does not point to a valid clone \"{0}\"", clonePath)
-                    );
-            }
-
-            ClonePath = _clonePath.NormalizeAsPath();
-            Name = "Unnamed";
-        }
+        private PyRevitClone(string clonePath) : this(clonePath, null) {}
 
         // properties
         public string Name { get; private set; }
@@ -182,10 +168,12 @@ namespace pyRevitLabs.PyRevit {
 
         public List<PyRevitExtension> GetExtensions() => GetExtensions(ClonePath);
 
+        public PyRevitExtension GetExtension(string searchPattern) => GetExtension(ClonePath, searchPattern);
+
         // static methods ============================================================================================
         // determine if this is a git repo
         public static bool IsDeployedWithRepo(string clonePath) {
-            return CommonUtils.VerifyPath(Path.Combine(clonePath, PyRevitConsts.DefaultGitDirName));
+            return CommonUtils.VerifyPath(Path.Combine(clonePath, PyRevitLabsConsts.DefaultGitDirName));
         }
 
         // get extensions path
@@ -436,7 +424,14 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static List<PyRevitExtension> GetExtensions(string clonePath) {
             VerifyCloneValidity(clonePath);
-            return PyRevitExtension.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
+            return PyRevitExtensions.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
+        }
+
+        // get a specific builtin extension
+        // @handled @logs
+        public static PyRevitExtension GetExtension(string clonePath, string searchPattern) {
+            VerifyCloneValidity(clonePath);
+            return PyRevitExtensions.FindExtension(PyRevitClone.GetExtensionsPath(clonePath), searchPattern);
         }
 
         // check if given assembly belongs to pyrevit
@@ -462,8 +457,8 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug("Deployment: \"{0}\"", contents[2]);
 
                 var args = new PyRevitCloneFromImageArgs {
-                    Url = contents[0] == string.Empty ? PyRevitConsts.OriginalRepoPath : contents[0],
-                    BranchName = contents[1] == string.Empty ? PyRevitConsts.OriginalRepoDefaultBranch : contents[1],
+                    Url = contents[0] == string.Empty ? PyRevitLabsConsts.OriginalRepoGitPath : contents[0],
+                    BranchName = contents[1] == string.Empty ? PyRevitLabsConsts.TragetBranch : contents[1],
                     DeploymentName = contents[2] == string.Empty ? null : contents[2]
                 };
 

@@ -1,5 +1,5 @@
 """Utility fuctions to support smart modules."""
-
+import inspect
 import types
 
 
@@ -22,3 +22,22 @@ def copy_func(func, func_name, doc_string=None, arg_list=None):
                                   func_name, tuple(arg_list), func.func_closure)
     new_func.__doc__ = doc_string
     return new_func
+
+
+def mark(prop_name):
+    """Decorator function to add a marker property to the given type"""
+    def setter_decorator(type_obj):
+        setattr(type_obj, prop_name, True)
+        return type_obj
+    return setter_decorator
+
+
+def collect_marked(module_obj, prop_name):
+    """Collect module objects that are marked with given property"""
+    marked_objs = []
+    for member in inspect.getmembers(module_obj):
+        _, type_obj = member
+        if (inspect.isclass(type_obj) or inspect.isfunction(type_obj)) \
+                and getattr(type_obj, prop_name, False):
+            marked_objs.append(type_obj)
+    return marked_objs

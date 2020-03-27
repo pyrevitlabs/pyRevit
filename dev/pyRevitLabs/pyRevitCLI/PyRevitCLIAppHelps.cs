@@ -8,27 +8,6 @@ using pyRevitLabs.PyRevit;
 
 namespace pyRevitCLI {
     internal static class PyRevitCLIAppHelps {
-
-        internal static void
-        OpenHelp() {
-            string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, PyRevitCLI.CLIVersion.ToString());
-            if (CommonUtils.VerifyUrl(helpUrl))
-                CommonUtils.OpenUrl(
-                    helpUrl,
-                    logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
-                    );
-
-            else if (CommonUtils.VerifyUrl(PyRevitConsts.CLIHelpUrlDev))
-                CommonUtils.OpenUrl(
-                    PyRevitConsts.CLIHelpUrlDev,
-                    logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
-                    );
-            else
-                throw new PyRevitException(
-                    string.Format("Help page is not reachable for version {0}", PyRevitCLI.CLIVersion.ToString())
-                    );
-        }
-
         internal static void
         PrintHelp(PyRevitCLICommandType commandType) {
             switch (commandType) {
@@ -41,6 +20,7 @@ namespace pyRevitCLI {
                         optionsfirst: true,
                         mgmtCommands: new Dictionary<string, string>() {
                             { "env",                    "Print environment information" },
+                            { "update",                 "Update remote resources used by this utility" },
                             { "clones",                 "Manage pyRevit clones" },
                             { "extensions",             "Manage pyRevit extensions" },
                             { "attached",               "Manage pyRevit attachments to installed Revit" },
@@ -48,7 +28,6 @@ namespace pyRevitCLI {
                             { "revits",                 "Manage installed Revits" },
                             { "caches",                 "Manage pyRevit caches" },
                             { "configs",                "Manage pyRevit configurations" },
-                            { "cli",                    "Manage this utility" },
                         },
                         commands: new Dictionary<string, string>() {
                             { "clone",                  "Create a clone of pyRevit on this machine" },
@@ -56,13 +35,11 @@ namespace pyRevitCLI {
                             { "attach",                 "Attach pyRevit clone to installed Revit" },
                             { "switch",                 "Switch active pyRevit clone" },
                             { "detach",                 "Detach pyRevit clone from installed Revit" },
-                            //{ "image",                  "Create deployment image from pyRevit clones" },
                             { "config",                 "Configure pyRevit for current user" },
                             { "run",                    "Run python script in Revit" },
-                            { "init",                   "Create pyRevit extensions and bundles" },
                         },
                         helpCommands: new Dictionary<string, string>() {
-                            { "help",                   "Open help in default browser" },
+                            { "wiki",                   "Open pyRevit Wiki" },
                             { "blog",                   "Open pyRevit blog" },
                             { "docs",                   "Open pyRevit docs" },
                             { "source",                 "Open pyRevit source repo" },
@@ -87,6 +64,13 @@ namespace pyRevitCLI {
                         options: new Dictionary<string, string>() {
                             { "--json",                 "Switch output format to json" },
                         });
+                    break;
+
+                case PyRevitCLICommandType.Update:
+                    BuildHelp(
+                        new List<string>() { "update" },
+                        header: "Update remote resources used by this utility e.g. Revit product information"
+                        );
                     break;
 
                 case PyRevitCLICommandType.Clone:
@@ -196,6 +180,8 @@ namespace pyRevitCLI {
                             { "ui | lib | run",         "Type of custom extension to install" },
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
+                            { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
+                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" }
                         }
                     );
                     break;
@@ -276,24 +262,10 @@ namespace pyRevitCLI {
                         });
                     break;
 
-                case PyRevitCLICommandType.Image:
-                    BuildHelp(
-                        new List<string>() { "image" },
-                        header: "Build pyRevit deployment image from clone and configuration",
-                        options: new Dictionary<string, string>() {
-                            { "<clone_name>",           "Existing clone to be used for imaging" },
-                            { "--config=<image_config>","Path to configuration file generated by pyRevit" },
-                            { "--dest=<dest_path>",     "Destination path for the image file" },
-                        });
-                    break;
-
                 case PyRevitCLICommandType.Revits:
                     BuildHelp(
                         new List<string>() { "revits" },
                         header: "Manage installed and running Revits and addons",
-                        mgmtCommands: new Dictionary<string, string>() {
-                            { "addons",                 "Manage other Revit third-party addons" },
-                        },
                         commands: new Dictionary<string, string>() {
                             { "killall",                "Kill all running Revits" },
                             { "fileinfo",               "Delete existing deployment image" },
@@ -311,22 +283,6 @@ namespace pyRevitCLI {
                         });
                     break;
 
-                case PyRevitCLICommandType.RevitsAddons:
-                    BuildHelp(
-                        new List<string>() { "revits addons" },
-                        header: "Manage other Revit third-party addons",
-                        commands: new Dictionary<string, string>() {
-                            { "prepare",                "Prepare addon directory for target Revit" },
-                            { "install",                "Install third-party addon" },
-                            { "uninstall",              "Uninstall third-party addon" },
-                        },
-                        options: new Dictionary<string, string>() {
-                            { "<revit_year>",           "Target Revit year e.g. 2019" },
-                            { "<addon_name>",           "Target third-party addon name" },
-                            { "--dest=<dest_path>",     "Install destination path" },
-                        });
-                    break;
-
                 case PyRevitCLICommandType.Run:
                     BuildHelp(
                         new List<string>() { "run" },
@@ -341,24 +297,6 @@ namespace pyRevitCLI {
                         });
                     break;
 
-                case PyRevitCLICommandType.Init:
-                    BuildHelp(
-                        new List<string>() { "init" },
-                        header: "Create pyRevit extensions and bundles",
-                        options: new Dictionary<string, string>() {
-                            { "<extension_name>",       "Name of extension to create" },
-                            { "<bundle_name>",          "Name of bundle to create" },
-                            { "ui | lib | run",         "Extension type to create" },
-                            { "tab | panel | panelopt", "" },
-                            { "pull | split | splitpush", "" },
-                            { "push | smart | command", "Bundle type to create" },
-                            { "--usetemplate",          "Use templates to init the extension or bundle" },
-                            { "--templates=<temps_path>",
-                                                        "Templates path" },
-                        }
-                    );
-                    break;
-
                 case PyRevitCLICommandType.Caches:
                     BuildHelp(
                         new List<string>() { "caches" },
@@ -370,13 +308,6 @@ namespace pyRevitCLI {
                             { "--all",                  "All Revit version caches" },
                             { "<revit_year>",           "Caches for specific Revit version year e.g. 2019" },
                         });
-                    break;
-
-                case PyRevitCLICommandType.Doctor:
-                    BuildHelp(
-                        new List<string>() { "doctor" },
-                        header: "Inspect and fix errors and issues in pyRevit environment"
-                        );
                     break;
 
                 case PyRevitCLICommandType.Config:
@@ -396,16 +327,21 @@ namespace pyRevitCLI {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
                         },
                         commands: new Dictionary<string, string>() {
-                            { "logs",                   "Debug logging (reporting) levels" },
+                            { "bincache",               "Enable/Disable binary cache for caching extension info" },
                             { "allowremotedll",         "Allow loading remote dlls" },
                             { "checkupdates",           "Check updates on startup (for git clones only)" },
                             { "autoupdate",             "Auto update on startup (for git clones only)" },
                             { "rocketmode",             "Rocket mode" },
+                            { "logs",                   "Debug logging (reporting) levels" },
                             { "filelogging",            "Debug file logging (slows down the load process)" },
+                            { "startuptimeout",         "Starup log window timeout" },
                             { "loadbeta",               "Load beta tools" },
+                            { "cpyversion",             "CPython engine version" },
                             { "usercanupdate",          "Enable/Disable Update button in pyRevit" },
                             { "usercanextend",          "Enable/Disable Extensions button in pyRevit" },
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
+                            { "colordocs",              "Enable/Disable Document Colorizer" },
+                            { "tooltipdebuginfo",       "Enable/Disable showing tool debug info in extended tooltips" },
                             { "telemetry",              "Telemetry" },
                             { "apptelemetry",           "Application Telemetry" },
                             { "outputcss",              "Output window styling" },
@@ -419,22 +355,6 @@ namespace pyRevitCLI {
                             { "--lock",                 "Lock seed file by admin user" },
                             { "<option_path>",          "Custom option path formatted as \"section:option\"" },
                             { "<option_value>",         "Custom option value" },
-                        });
-                    break;
-
-                case PyRevitCLICommandType.Cli:
-                    BuildHelp(
-                        new List<string>() { "cli" },
-                        header: "Manage this utility",
-                        commands: new Dictionary<string, string>() {
-                            { "addshortcut",            "Add shortcut to start menu" },
-                            { "installautocomplete",    "Installs shell autocomplete" },
-                        },
-                        options: new Dictionary<string, string>() {
-                            { "<shortcut_name>",        "Shortcut name" },
-                            { "<shortcut_args>",        "Shortcut command line arguments" },
-                            { "--desc=<description>",   "Shortcut description" },
-                            { "--allusers",             "Create shortcut for all users" },
                         });
                     break;
             }

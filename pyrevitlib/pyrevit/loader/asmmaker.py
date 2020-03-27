@@ -33,7 +33,6 @@ def _make_extension_hash(extension):
     return coreutils.get_str_hash(
         BASE_TYPES_DIR_HASH
         + EXEC_PARAMS.engine_ver
-        + user_config.get_config_version()
         + extension.get_hash())[:HASH_CUTOFF_LENGTH]
 
 

@@ -18,11 +18,12 @@ import stat
 import codecs
 import math
 from collections import defaultdict
-import _winreg as wr     #pylint: disable=import-error
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit import compat
 from pyrevit.compat import safe_strtype
+from pyrevit.compat import winreg as wr
 from pyrevit import framework
 from pyrevit import api
 
@@ -30,10 +31,8 @@ from pyrevit import api
 # import uuid
 from System import Guid
 
-
 #pylint: disable=W0703,C0302
 DEFAULT_SEPARATOR = ';'
-
 
 # extracted from
 # https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
@@ -93,10 +92,31 @@ class ScriptFileParser(object):
         """
         self.ast_tree = None
         self.file_addr = file_address
-        with open(file_address, 'r') as source_file:
+        with codecs.open(file_address, 'r', 'utf-8') as source_file:
             contents = source_file.read()
-            if contents and not '#! python3' in contents:
+            if contents:
                 self.ast_tree = ast.parse(contents)
+
+    def extract_node_value(self, node):
+        """Manual extraction of values from node"""
+        if isinstance(node, ast.Assign):
+            node_value = node.value
+        else:
+            node_value = node
+
+        if isinstance(node_value, ast.Num):
+            return node_value.n
+        elif compat.PY2 and isinstance(node_value, ast.Name):
+            return node_value.id
+        elif compat.PY3 and isinstance(node_value, ast.NameConstant):
+            return node_value.value
+        elif isinstance(node_value, ast.Str):
+            return node_value.s
+        elif isinstance(node_value, ast.List):
+            return node_value.elts
+        elif isinstance(node_value, ast.Dict):
+            return {self.extract_node_value(k):self.extract_node_value(v)
+                    for k, v in zip(node_value.keys, node_value.values)}
 
     def get_docstring(self):
         """Get global docstring."""
@@ -118,15 +138,12 @@ class ScriptFileParser(object):
         """
         if self.ast_tree:
             try:
-                for child in ast.iter_child_nodes(self.ast_tree):
-                    if hasattr(child, 'targets'):
-                        for target in child.targets:
+                for node in ast.iter_child_nodes(self.ast_tree):
+                    if isinstance(node, ast.Assign):
+                        for target in node.targets:
                             if hasattr(target, 'id') \
                                     and target.id == param_name:
-                                param_value = ast.literal_eval(child.value)
-                                if isinstance(param_value, str):
-                                    param_value = param_value.decode('utf-8')
-                                return param_value
+                                return ast.literal_eval(node.value)
             except Exception as err:
                 raise PyRevitException('Error parsing parameter: {} '
                                        'in script file for : {} | {}'
@@ -256,6 +273,8 @@ def join_strings(str_list, separator=DEFAULT_SEPARATOR):
         str: joined string
     """
     if str_list:
+        if any(not isinstance(x, str) for x in str_list):
+            str_list = [str(x) for x in str_list]
         return separator.join(str_list)
     return ''
 
@@ -460,7 +479,7 @@ def prepare_html_str(input_string):
     as html tags. To avoid this, all <> characters that are defining
     html content need to be replaced with special phrases. pyRevit output
     later translates these phrases back in to < and >. That is how pyRevit
-    ditinquishes between <> printed from python and <> that define html.
+    distinquishes between <> printed from python and <> that define html.
 
     Args:
         input_string (str): input html string
@@ -480,7 +499,7 @@ def reverse_html(input_html):
     as html tags. To avoid this, all <> characters that are defining
     html content need to be replaced with special phrases. pyRevit output
     later translates these phrases back in to < and >. That is how pyRevit
-    ditinquishes between <> printed from python and <> that define html.
+    distinquishes between <> printed from python and <> that define html.
 
     Args:
         input_html (str): input codified html string
@@ -492,14 +511,8 @@ def reverse_html(input_html):
     return input_html.replace('&clt;', '<').replace('&cgt;', '>')
 
 
-# def check_internet_connection():
-#     client = framework.WebClient()
-#     try:
-#         client.OpenRead("http://www.google.com")
-#         return True
-#     except:
-#         return False
-#
+def escape_for_html(input_string):
+    return input_string.replace('<', '&lt;').replace('>', '&gt;')
 
 
 # def check_internet_connection():
@@ -533,6 +546,16 @@ def can_access_url(url_to_open, timeout=1000):
         return True
     except Exception:
         return False
+
+
+def read_url(url_to_open):
+    """Get the url and return response.
+
+    Args:
+        url_to_open (str): url to check access for
+    """
+    client = framework.WebClient()
+    return client.DownloadString(url_to_open)
 
 
 def check_internet_connection(timeout=1000):
@@ -629,7 +652,7 @@ def fully_remove_dir(dir_path):
     shutil.rmtree(dir_path, onerror=del_rw)
 
 
-def cleanup_filename(file_name):
+def cleanup_filename(file_name, windows_safe=False):
     """Cleanup file name from special characters.
 
     Args:
@@ -645,10 +668,13 @@ def cleanup_filename(file_name):
         >>> cleanup_filename('Perforations 1/8" (New)')
         "Perforations 18 (New).txt"
     """
-    return re.sub(r'[^\w_.() -#]|["]', '', file_name)
+    if windows_safe:
+        return re.sub(r'[\/:*?"<>|]', '', file_name)
+    else:
+        return re.sub(r'[^\w_.() -#]|["]', '', file_name)
 
 
-def _inc_or_dec_string(str_id, shift):
+def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
     """Increment or decrement identifier.
 
     Args:
@@ -662,54 +688,94 @@ def _inc_or_dec_string(str_id, shift):
         >>> _inc_or_dec_string('A319z')
         'A320a'
     """
+    # if no shift, return given string
+    if shift == 0:
+        return str_id
+
+    # otherwise lets process the shift
     next_str = ""
     index = len(str_id) - 1
     carry = shift
 
     while index >= 0:
-        if str_id[index].isalpha():
-            if str_id[index].islower():
-                reset_a = 'a'
-                reset_z = 'z'
-            else:
-                reset_a = 'A'
-                reset_z = 'Z'
+        # pick chars from right
+        # A1.101a <--
+        this_char = str_id[index]
 
-            curr_digit = (ord(str_id[index]) + carry)
-            if curr_digit < ord(reset_a):
-                curr_digit = ord(reset_z) - ((ord(reset_a) - curr_digit) - 1)
-                carry = shift
-            elif curr_digit > ord(reset_z):
-                curr_digit = ord(reset_a) + ((curr_digit - ord(reset_z)) - 1)
-                carry = shift
-            else:
-                carry = 0
-
-            curr_digit = chr(curr_digit)
-            next_str += curr_digit
-
-        elif str_id[index].isdigit():
-
-            curr_digit = int(str_id[index]) + carry
-            if curr_digit > 9:
-                curr_digit = 0 + ((curr_digit - 9)-1)
-                carry = shift
-            elif curr_digit < 0:
-                curr_digit = 9 - ((0 - curr_digit)-1)
-                carry = shift
-            else:
-                carry = 0
-            next_str += safe_strtype(curr_digit)
-
+        # determine character range (# of chars, starting index)
+        if this_char.isdigit():
+            char_range = ('0', '9')
+        elif this_char.isalpha():
+            # if this_char.isupper()
+            char_range = ('A', 'Z')
+            if this_char.islower():
+                char_range = ('a', 'z')
         else:
-            next_str += str_id[index]
+            next_str += this_char
+            index -= 1
+            continue
 
+        # get character range properties
+        direction = int(carry / abs(carry)) if carry != 0 else 1
+        start_char, end_char = \
+            char_range if direction > 0 else char_range[::-1]
+        char_steps = abs(ord(end_char) - ord(start_char)) + 1
+        # calculate offset
+
+        # positive carry -> start_char=0    end_char=9
+        # +----------++        ++          +  char_steps
+        # +--------+                          dist
+        #          +---------------+          carry (abs)
+        # 01234567[8]9012345678901[2]3456789
+        # ----------------------+==+          offset
+
+        # negative carry -> start_char=9    end_char=0
+        # +----------++        ++          +  char_steps
+        # +-------+                           dist
+        #         +---------------+           carry (abs)
+        # 9876543[2]1098765432109[8]76543210
+        # ----------------------+=+           offset
+
+        dist = abs(ord(this_char) - ord(start_char))
+        offset = (dist + abs(carry)) % char_steps
+        next_char = chr(ord(start_char) + (offset * direction))
+        next_str += next_char
+        carry = int((dist + abs(carry)) / char_steps) * direction
+        if logger:
+            logger.debug(
+                '\"{}\" index={} start_char=\"{}\" end_char=\"{}\" '
+                'next_carry={} direction={} dist={} offset={} next_char=\"{}\"'
+                .format(
+                    this_char,
+                    index,
+                    start_char,
+                    end_char,
+                    carry,
+                    direction,
+                    dist,
+                    offset,
+                    next_char))
         index -= 1
+        # refit the final value
+        # 009 --> 9
+        # ZZA --> ZA
+        if refit and index == -1:
+            if carry > 0:
+                str_id = start_char + str_id
+                if start_char.isalpha():
+                    carry -= 1
+                index = 0
+            elif direction == -1:
+                if next_str.endswith(start_char):
+                    next_str = next_str[:-1]
+                else:
+                    while next_str.endswith(end_char):
+                        next_str = next_str[:-1]
 
     return next_str[::-1]
 
 
-def increment_str(input_str, step=1):
+def increment_str(input_str, step=1, expand=False):
     """Incremenet identifier.
 
     Args:
@@ -723,10 +789,10 @@ def increment_str(input_str, step=1):
         >>> increment_str('A319z')
         'A320a'
     """
-    return _inc_or_dec_string(input_str, abs(step))
+    return _inc_or_dec_string(input_str, abs(step), refit=expand)
 
 
-def decrement_str(input_str, step=1):
+def decrement_str(input_str, step=1, shrink=False):
     """Decrement identifier.
 
     Args:
@@ -740,7 +806,7 @@ def decrement_str(input_str, step=1):
         >>> decrement_str('A310a')
         'A309z'
     """
-    return _inc_or_dec_string(input_str, -abs(step))
+    return _inc_or_dec_string(input_str, -abs(step), refit=shrink)
 
 
 def extend_counter(input_str, upper=True, use_zero=False):
@@ -1178,17 +1244,28 @@ def is_box_visible_on_screens(left, top, width, height):
     return False
 
 
-def fuzzy_search_ratio(target_string, sfilter):
+def fuzzy_search_ratio(target_string, sfilter, regex=False):
     """Match target string against the filter and return a match ratio.
 
     Args:
         target_string (str): target string
         sfilter (str): search term
+        regex (bool): treat the sfilter as regular expression pattern
 
     Returns:
         int: integer between 0 to 100, with 100 being the exact match
     """
     tstring = target_string
+
+    # process regex here. It's a yes no situation (100 or 0)
+    if regex:
+        try:
+            if re.search(sfilter, tstring):
+                return 100
+        except Exception:
+            pass
+        return 0
+
     # 100 for identical matches
     if sfilter == tstring:
         return 100
@@ -1315,3 +1392,20 @@ def split_words(input_string):
                 part += c
     parts.append(part)
     return parts
+
+
+def get_paper_sizes(printer_name=None):
+    """Get paper sizes defined on this system
+
+    Returns:
+        list[]: list of papersize instances
+    """
+    print_settings = framework.Drawing.Printing.PrinterSettings()
+    if printer_name:
+        print_settings.PrinterName = printer_name
+    return list(print_settings.PaperSizes)
+
+
+def get_integer_length(number):
+    """Return digit length of given number."""
+    return 1 if number == 0 else (math.floor(math.log10(number)) + 1)

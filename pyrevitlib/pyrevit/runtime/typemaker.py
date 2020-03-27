@@ -7,7 +7,9 @@ import pyrevit.extensions as exts
 from pyrevit import runtime
 from pyrevit.runtime import bundletypemaker
 from pyrevit.runtime import pythontypemaker
+from pyrevit.runtime import dynamotypemaker
 from pyrevit.runtime import invoketypemaker
+from pyrevit.runtime import urltypemaker
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -74,10 +76,24 @@ def create_exec_types(extension, cmd_component, module_builder=None):
                 module_builder,
                 cmd_component
                 )
+        # if url
+        elif cmd_component.type_id == exts.URL_BUTTON_POSTFIX:
+            urltypemaker.create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
         ## now language based button types
         # if python
         elif cmd_component.script_language == exts.PYTHON_LANG:
             pythontypemaker.create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
+        # if dynamo
+        elif cmd_component.script_language == exts.DYNAMO_LANG:
+            dynamotypemaker.create_executor_type(
                 extension,
                 module_builder,
                 cmd_component

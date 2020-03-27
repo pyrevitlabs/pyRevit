@@ -12,6 +12,9 @@ from pyrevit import forms
 from pyrevit import script
 
 
+NO_COLOR_COLOR = '#000000'
+
+
 logger = script.get_logger()
 
 
@@ -48,12 +51,17 @@ class StyleOption(object):
 
     @property
     def color(self):
-        return self.category.LineColor
+        if self.category.LineColor and self.category.LineColor.IsValid:
+            return self.category.LineColor
 
     @property
     def color_hex(self):
-        color = self.color
-        return '#{:x02}{:x02}{:x02}'.format(color.Red, color.Green, color.Blue)
+        if self.color:
+            return '#{:x02}{:x02}{:x02}'.format(self.color.Red,
+                                                self.color.Green,
+                                                self.color.Blue)
+        else:
+            return NO_COLOR_COLOR
 
     @property
     def pattern(self):

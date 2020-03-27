@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Generates a report from all revisions in current project."""
-
+"""tooltip."""
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit import script
@@ -58,7 +59,7 @@ rev_table_header = "| Number        | Date           | Description  |\n" \
 rev_table_template = "|{number}|{date}|{desc}|\n"
 rev_table = rev_table_header
 for rev in all_revisions:
-    revnum = revit.query.get_param(rev, 'RevisionNumber', rev.SequenceNumber)
+    revnum = revit.query.get_rev_number(rev)
     rev_table += rev_table_template.format(number=revnum,
                                            date=rev.RevisionDate,
                                            desc=rev.Description)
@@ -70,21 +71,33 @@ console.print_md(rev_table)
 class RevisedSheet:
     def __init__(self, rvt_sheet):
         self._rvt_sheet = rvt_sheet
+
+        self._clouds = []
         self._find_all_clouds()
         self._find_all_revisions()
 
     def _find_all_clouds(self):
         ownerview_ids = [self._rvt_sheet.Id]
-        ownerview_ids.extend(self._rvt_sheet.GetAllViewports())
-        self._clouds = []
+        # add all the sheeted views to list
+        ownerview_ids.extend(
+            [
+                revit.doc.GetElement(x).ViewId
+                for x in self._rvt_sheet.GetAllViewports()
+            ])
         for rev_cloud in all_clouds:
             if rev_cloud.OwnerViewId in ownerview_ids:
                 self._clouds.append(rev_cloud)
 
     def _find_all_revisions(self):
         self._revisions = set([cloud.RevisionId for cloud in self._clouds])
-        self._rev_numbers = set([revit.doc.GetElement(rev_id).RevisionNumber
-                                 for rev_id in self._revisions])
+        self._revisions.update(
+            set(self._rvt_sheet.GetAdditionalRevisionIds())
+        )
+        self._rev_numbers = set(
+            [
+                revit.query.get_rev_number(revit.doc.GetElement(rev_id))
+                for rev_id in self._revisions
+            ])
 
     @property
     def sheet_number(self):
@@ -128,23 +141,32 @@ for sheet in all_sheets:
 # draw a revision chart
 chart = console.make_bar_chart()
 chart.options.scales = {'type': 'linear',
-                        'yAxes': [{'stacked': True}],
-                        'xAxes': [{'ticks': {'minRotation': 90}}]}
+                        'yAxes': [
+                            {
+                                # 'stacked': True,
+                                'ticks': {'min': 0, 'stepSize': 1}
+                            }
+                            ],
+                        'xAxes': [
+                            {
+                                'ticks': {'minRotation': 90}
+                            }
+                            ]}
 
 chart.data.labels = [rs.sheet_number
                      for rs in revised_sheets
-                     if rs.cloud_count > 0]
+                     if rs.rev_count > 0]
 chart.set_height(100)
 
-cloudcount_dataset = chart.data.new_dataset('Revision Clouds per sheet')
-cloudcount_dataset.set_color('black')
-cloudcount_dataset.data = [rs.cloud_count
-                           for rs in revised_sheets
-                           if rs.cloud_count > 0]
-
-cloudcount_dataset = chart.data.new_dataset('Revision Numbers per sheet')
+cloudcount_dataset = chart.data.new_dataset('Revision Count')
 cloudcount_dataset.set_color('red')
 cloudcount_dataset.data = [rs.rev_count
+                           for rs in revised_sheets
+                           if rs.rev_count > 0]
+
+cloudcount_dataset = chart.data.new_dataset('Revision Cloud Count')
+cloudcount_dataset.set_color('black')
+cloudcount_dataset.data = [rs.cloud_count
                            for rs in revised_sheets
                            if rs.cloud_count > 0]
 
@@ -152,13 +174,15 @@ chart.draw()
 
 # print info on sheets
 for rev_sheet in revised_sheets:
-    if rev_sheet.cloud_count > 0:
+    if rev_sheet.rev_count > 0:
         console.print_md(
             '** Sheet {}: {}**\n\n'
-            'No. of Changes: {}\n\n'
+            'Revision Count: {}\n\n'
+            'Revision Cloud Count: {}\n\n'
             'Revision Numbers: {}'
             .format(rev_sheet.sheet_number,
                     rev_sheet.sheet_name,
+                    rev_sheet.rev_count,
                     rev_sheet.cloud_count,
                     coreutils.join_strings(rev_sheet.get_revision_numbers(),
                                            separator=',')))

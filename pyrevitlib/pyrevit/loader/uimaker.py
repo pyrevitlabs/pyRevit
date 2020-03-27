@@ -5,6 +5,7 @@ import imp
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import applocales
 
 if not EXEC_PARAMS.doc_mode:
     from pyrevit.coreutils import ribbon
@@ -12,6 +13,7 @@ if not EXEC_PARAMS.doc_mode:
 #pylint: disable=W0703,C0302,C0103,C0413
 import pyrevit.extensions as exts
 from pyrevit.extensions import components
+from pyrevit.userconfig import user_config
 
 
 mlogger = get_logger(__name__)
@@ -63,14 +65,23 @@ def _make_button_tooltip_ext(button, asm_name):
                         button.min_revit_ver)
 
     if isinstance(button, (components.LinkButton, components.InvokeButton)):
-        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}\n\n'.format(
             button.command_class or 'Runs first matching DB.IExternalCommand',
             button.assembly)
     else:
-        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'\
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}\n\n'\
             .format(button.unique_name, asm_name)
 
+    if button.control_id:
+        tooltip_ext += 'Control Id:\n{}'\
+            .format(button.control_id)
+
     return tooltip_ext
+
+
+def _make_tooltip_ext_if_requested(button, asm_name):
+    if user_config.tooltip_debug_info:
+        return _make_button_tooltip_ext(button, asm_name)
 
 
 def _make_ui_title(button):
@@ -85,6 +96,14 @@ def _make_full_class_name(asm_name, class_name):
         return None
     else:
         return '{}.{}'.format(asm_name, class_name)
+
+
+def _set_highlights(button, ui_item):
+    ui_item.reset_highlights()
+    if button.highlight_type == exts.MDATA_HIGHLIGHT_TYPE_UPDATED:
+        ui_item.highlight_as_updated()
+    elif button.highlight_type == exts.MDATA_HIGHLIGHT_TYPE_NEW:
+        ui_item.highlight_as_new()
 
 
 def _get_effective_classname(button):
@@ -160,7 +179,7 @@ def _produce_ui_smartbutton(ui_maker_params):
     if not smartbutton.is_supported:
         return None
 
-    if smartbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if smartbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing smart button: %s', smartbutton)
@@ -171,8 +190,8 @@ def _produce_ui_smartbutton(ui_maker_params):
             class_name=_get_effective_classname(smartbutton),
             icon_path=smartbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(smartbutton),
-            tooltip_ext=_make_button_tooltip_ext(smartbutton,
-                                                 ext_asm_info.name),
+            tooltip_ext=_make_tooltip_ext_if_requested(smartbutton,
+                                                       ext_asm_info.name),
             tooltip_media=smartbutton.media_file,
             ctxhelpurl=smartbutton.help_url,
             avail_class_name=smartbutton.avail_class_name,
@@ -182,7 +201,8 @@ def _produce_ui_smartbutton(ui_maker_params):
         mlogger.error('UI error: %s', err.msg)
         return None
 
-    new_uibutton = parent_ui_item.button(smartbutton.name)
+    smartbutton_ui = parent_ui_item.button(smartbutton.name)
+
     mlogger.debug('Importing smart button as module: %s', smartbutton)
     try:
         # replacing EXEC_PARAMS.command_name value with button name so the
@@ -205,8 +225,8 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__shiftclick__'] = False
         __builtins__['__forceddebugmode__'] = False
     except Exception as err:
-        mlogger.error('Smart button import setup: %s | %s', smartbutton, err)
-        return new_uibutton
+        mlogger.error('Smart button setup error: %s | %s', smartbutton, err)
+        return smartbutton_ui
 
     try:
         # setup sys.paths for the smart command
@@ -233,7 +253,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         try:
             # running the smart button initializer function
             res = importedscript.__selfinit__(smartbutton,
-                                              new_uibutton, HOST_APP.uiapp)
+                                              smartbutton_ui, HOST_APP.uiapp)
         except Exception as button_err:
             mlogger.error('Error initializing smart button: %s | %s',
                           smartbutton, button_err)
@@ -242,15 +262,18 @@ def _produce_ui_smartbutton(ui_maker_params):
         # remove the button
         if res is False:
             mlogger.debug('SelfInit returned False on Smartbutton: %s',
-                          new_uibutton)
-            new_uibutton.deactivate()
+                          smartbutton_ui)
+            smartbutton_ui.deactivate()
 
-        mlogger.debug('SelfInit successful on Smartbutton: %s', new_uibutton)
-        return new_uibutton
+        mlogger.debug('SelfInit successful on Smartbutton: %s', smartbutton_ui)
     except Exception as err:
         mlogger.error('Smart button script import error: %s | %s',
                       smartbutton, err)
-        return new_uibutton
+        return smartbutton_ui
+
+    _set_highlights(smartbutton, smartbutton_ui)
+
+    return smartbutton_ui
 
 
 def _produce_ui_linkbutton(ui_maker_params):
@@ -267,7 +290,7 @@ def _produce_ui_linkbutton(ui_maker_params):
     if not linkbutton.is_supported:
         return None
 
-    if linkbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if linkbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing button: %s', linkbutton)
@@ -288,19 +311,26 @@ def _produce_ui_linkbutton(ui_maker_params):
             linked_asm = linked_asm_list[0]
 
         parent_ui_item.create_push_button(
-            linkbutton.name,
-            linked_asm.Location,
-            _make_full_class_name(linked_asm.GetName().Name,
-                                  linkbutton.command_class),
-            linkbutton.icon_file or parent.icon_file,
-            _make_button_tooltip(linkbutton),
-            _make_button_tooltip_ext(linkbutton, ext_asm_info.name),
-            None,
-            None,
-            None,
+            button_name=linkbutton.name,
+            asm_location=linked_asm.Location,
+            class_name=_make_full_class_name(
+                linked_asm.GetName().Name,
+                linkbutton.command_class
+                ),
+            icon_path=linkbutton.icon_file or parent.icon_file,
+            tooltip=_make_button_tooltip(linkbutton),
+            tooltip_ext=_make_tooltip_ext_if_requested(linkbutton,
+                                                       ext_asm_info.name),
+            tooltip_media=linkbutton.media_file,
+            ctxhelpurl=linkbutton.help_url,
+            avail_class_name=linkbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(linkbutton))
-        return parent_ui_item.button(linkbutton.name)
+        linkbutton_ui = parent_ui_item.button(linkbutton.name)
+
+        _set_highlights(linkbutton, linkbutton_ui)
+
+        return linkbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -320,7 +350,7 @@ def _produce_ui_pushbutton(ui_maker_params):
     if not pushbutton.is_supported:
         return None
 
-    if pushbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if pushbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing button: %s', pushbutton)
@@ -331,14 +361,18 @@ def _produce_ui_pushbutton(ui_maker_params):
             class_name=_get_effective_classname(pushbutton),
             icon_path=pushbutton.icon_file or parent.icon_file,
             tooltip=_make_button_tooltip(pushbutton),
-            tooltip_ext=_make_button_tooltip_ext(pushbutton,
-                                                 ext_asm_info.name),
+            tooltip_ext=_make_tooltip_ext_if_requested(pushbutton,
+                                                       ext_asm_info.name),
             tooltip_media=pushbutton.media_file,
             ctxhelpurl=pushbutton.help_url,
             avail_class_name=pushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))
-        return parent_ui_item.button(pushbutton.name)
+        pushbutton_ui = parent_ui_item.button(pushbutton.name)
+
+        _set_highlights(pushbutton, pushbutton_ui)
+
+        return pushbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -358,7 +392,11 @@ def _produce_ui_pulldown(ui_maker_params):
         parent_ribbon_panel.create_pulldown_button(pulldown.ui_title,
                                                    pulldown.icon_file,
                                                    update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(pulldown.ui_title)
+        pulldown_ui = parent_ribbon_panel.ribbon_item(pulldown.ui_title)
+
+        _set_highlights(pulldown, pulldown_ui)
+
+        return pulldown_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -378,7 +416,11 @@ def _produce_ui_split(ui_maker_params):
         parent_ribbon_panel.create_split_button(split.ui_title,
                                                 split.icon_file,
                                                 update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(split.ui_title)
+        split_ui = parent_ribbon_panel.ribbon_item(split.ui_title)
+
+        _set_highlights(split, split_ui)
+
+        return split_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -398,7 +440,11 @@ def _produce_ui_splitpush(ui_maker_params):
         parent_ribbon_panel.create_splitpush_button(splitpush.ui_title,
                                                     splitpush.icon_file,
                                                     update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(splitpush.ui_title)
+        splitpush_ui = parent_ribbon_panel.ribbon_item(splitpush.ui_title)
+
+        _set_highlights(splitpush, splitpush_ui)
+
+        return splitpush_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -465,27 +511,31 @@ def _produce_ui_panelpushbutton(ui_maker_params):
     """
     parent_ui_item = ui_maker_params.parent_ui
     # parent = ui_maker_params.parent_cmp
-    paneldlgbutton = ui_maker_params.component
+    panelpushbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
-    if paneldlgbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+    if panelpushbutton.is_beta and not ui_maker_params.create_beta_cmds:
         return None
 
-    mlogger.debug('Producing panel button: %s', paneldlgbutton)
+    mlogger.debug('Producing panel button: %s', panelpushbutton)
     try:
         parent_ui_item.create_panel_push_button(
-            button_name=paneldlgbutton.name,
+            button_name=panelpushbutton.name,
             asm_location=ext_asm_info.location,
-            class_name=_get_effective_classname(paneldlgbutton),
-            tooltip=_make_button_tooltip(paneldlgbutton),
-            tooltip_ext=_make_button_tooltip_ext(paneldlgbutton,
-                                                 ext_asm_info.name),
-            tooltip_media=paneldlgbutton.media_file,
-            ctxhelpurl=paneldlgbutton.help_url,
-            avail_class_name=paneldlgbutton.avail_class_name,
+            class_name=_get_effective_classname(panelpushbutton),
+            tooltip=_make_button_tooltip(panelpushbutton),
+            tooltip_ext=_make_tooltip_ext_if_requested(panelpushbutton,
+                                                       ext_asm_info.name),
+            tooltip_media=panelpushbutton.media_file,
+            ctxhelpurl=panelpushbutton.help_url,
+            avail_class_name=panelpushbutton.avail_class_name,
             update_if_exists=True)
 
-        return parent_ui_item.button(paneldlgbutton.name)
+        panelpushbutton_ui = parent_ui_item.button(panelpushbutton.name)
+
+        _set_highlights(panelpushbutton, panelpushbutton_ui)
+
+        return panelpushbutton_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -503,7 +553,24 @@ def _produce_ui_panels(ui_maker_params):
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
-        return parent_ui_tab.ribbon_panel(panel.name)
+        panel_ui = parent_ui_tab.ribbon_panel(panel.name)
+
+        # set backgrounds
+        panel_ui.reset_backgrounds()
+        if panel.panel_background:
+            panel_ui.set_background(panel.panel_background)
+        # override the title background if exists
+        if panel.title_background:
+            panel_ui.set_title_background(panel.title_background)
+        # override the slideout background if exists
+        if panel.slideout_background:
+            panel_ui.set_slideout_background(panel.slideout_background)
+
+        _set_highlights(panel, panel_ui)
+
+        panel_ui.set_collapse(panel.collapsed)
+
+        return panel_ui
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -524,7 +591,11 @@ def _produce_ui_tab(ui_maker_params):
         mlogger.debug('Producing ribbon tab: %s', tab)
         try:
             parent_ui.create_ribbon_tab(tab.name, update_if_exists=True)
-            return parent_ui.ribbon_tab(tab.name)
+            tab_ui = parent_ui.ribbon_tab(tab.name)
+
+            _set_highlights(tab, tab_ui)
+
+            return tab_ui
         except PyRevitException as err:
             mlogger.error('UI error: %s', err.msg)
             return None
@@ -537,13 +608,15 @@ _component_creation_dict = {
     exts.TAB_POSTFIX: _produce_ui_tab,
     exts.PANEL_POSTFIX: _produce_ui_panels,
     exts.STACK_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.STACK2_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.STACK3_BUTTON_POSTFIX: _produce_ui_stacks,
     exts.PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
     exts.SPLIT_BUTTON_POSTFIX: _produce_ui_split,
     exts.SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
     exts.PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
-    exts.TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
     exts.SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
     exts.CONTENT_BUTTON_POSTFIX: _produce_ui_pushbutton,
+    exts.URL_BUTTON_POSTFIX: _produce_ui_pushbutton,
     exts.LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
     exts.INVOKE_BUTTON_POSTFIX: _produce_ui_pushbutton,
     exts.SEPARATOR_IDENTIFIER: _produce_ui_separator,
@@ -571,7 +644,9 @@ def _recursively_produce_ui_items(ui_maker_params):
         except KeyError:
             mlogger.debug('Can not find create function for: %s', sub_cmp)
         except Exception as create_err:
-            mlogger.critical(create_err)
+            mlogger.critical(
+                'Error creating item: %s | %s', sub_cmp, create_err
+            )
 
         mlogger.debug('UI item created by create func is: %s', ui_item)
 
@@ -635,3 +710,11 @@ def cleanup_pyrevit_ui():
                 item.deactivate()
             except Exception as deact_err:
                 mlogger.debug(deact_err)
+
+
+def reflow_pyrevit_ui(direction=applocales.DEFAULT_LANG_DIR):
+    # set flow direction of the tabs
+    if direction == "LTR":
+        current_ui.set_LTR_flow()
+    elif direction == "RTL":
+        current_ui.set_RTL_flow()
