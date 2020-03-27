@@ -273,6 +273,8 @@ def join_strings(str_list, separator=DEFAULT_SEPARATOR):
         str: joined string
     """
     if str_list:
+        if any(not isinstance(x, str) for x in str_list):
+            str_list = [str(x) for x in str_list]
         return separator.join(str_list)
     return ''
 
