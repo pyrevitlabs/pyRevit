@@ -43,7 +43,7 @@ def create_key_schedule(category, key_name, sched_name,
                 try:
                     new_key_sched.Definition.AddField(sched_field)
                 except Exception:
-                    pass
+                    logger.debug('Failed adding field: %s', sched_fieldname)
     # fill with data
     if records:
         # create records first
@@ -98,9 +98,11 @@ def ensure_parameters(category, parameter_defs, doc=None):
                 #     doc=revit.doc
                 #     )
     if not params_ensured:
-        logger.critical("Revit API does not allow creation of "
-        "Project Parameters. Please create the missing parameters "
-        "manually before importing the data from CSV file.")
+        logger.critical(
+            "Revit API does not allow creation of "
+            "Project Parameters. Please create the missing parameters "
+            "manually before importing the data from CSV file."
+            )
     return params_ensured
 
 
