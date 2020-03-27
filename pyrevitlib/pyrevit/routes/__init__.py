@@ -40,9 +40,10 @@ class API(object):
 
 
 def activate_routes():
-    postern_server = envvars.get_pyrevit_env_var(envvars.POSTERN_SERVER)
-    if not postern_server:
+    routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
+    if not routes_server:
+        host = user_config.core.get_option("routes_host", default_value='')
         port = user_config.core.get_option("routes_port", default_value=48884)
-        postern_server = server.RoutesServer(ip='', port=port)
-        envvars.set_pyrevit_env_var(envvars.POSTERN_SERVER, postern_server)
-        postern_server.start()
+        routes_server = server.RoutesServer(ip=host, port=port)
+        envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
+        routes_server.start()

@@ -21,10 +21,10 @@ def get_routes(api_name):
     if api_name is None:
         raise Exception("App name can not be None.")
 
-    routes_map = envvars.get_pyrevit_env_var(envvars.POSTERN_ROUTES)
+    routes_map = envvars.get_pyrevit_env_var(envvars.ROUTES_ROUTES)
     if routes_map is None:
         routes_map = {}
-        envvars.set_pyrevit_env_var(envvars.POSTERN_ROUTES, routes_map)
+        envvars.set_pyrevit_env_var(envvars.ROUTES_ROUTES, routes_map)
 
     if api_name in routes_map:
         return routes_map[api_name]
