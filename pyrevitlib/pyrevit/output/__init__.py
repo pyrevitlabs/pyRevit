@@ -601,9 +601,9 @@ class PyRevitOutputWindow(object):
             )
         )
 
-    def insert_divider(self):
+    def insert_divider(self, level=''):
         """Add horizontal rule to the output window."""
-        self.print_md('-----')
+        self.print_md('%s\n-----' % level)
 
     def next_page(self):
         """Add hidden next page tag to the output window.
