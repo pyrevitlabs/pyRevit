@@ -8,6 +8,13 @@ from pyrevit.routes import router
 from pyrevit.routes import server
 
 
+__all__ = ('API', 'Request', 'Response', 'activate_routes')
+
+
+Request = server.Request
+Response = server.Response
+
+
 class API(object):
     """API root object
 
@@ -27,7 +34,7 @@ class API(object):
 
     def route(self, route_url, methods=['GET']):
         """Define a new route on this API."""
-        def decorator(f):
+        def __func_wrapper__(f):
             for method in methods:
                 router.add_route(
                     api_name=self.name,
@@ -36,7 +43,7 @@ class API(object):
                     handler_func=f
                     )
             return f
-        return decorator
+        return __func_wrapper__
 
 
 def activate_routes():
