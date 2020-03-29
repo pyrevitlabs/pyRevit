@@ -9,17 +9,15 @@ class APINotDefinedException(Exception):
         message = "API is not defined: \"%s\"" % api_name
         super(APINotDefinedException, self).__init__(message)
         self.status = 404 # https://httpstatuses.com/404
-        self.source = "pyrevit routes server"
 
 
 class RouteHandlerNotDefinedException(Exception):
     """Route does not exits exception"""
     def __init__(self, api_name, route, method):
         message = \
-        "Route does not exits: \"%s %s/%s\"" % (method, api_name, route)
+        "Route does not exits: \"%s %s%s\"" % (method, api_name, route)
         super(RouteHandlerNotDefinedException, self).__init__(message)
         self.status = 404 # https://httpstatuses.com/404
-        self.source = "pyrevit routes server"
 
 
 class RouteHandlerDeniedException(Exception):
@@ -36,5 +34,44 @@ class RouteHandlerTimedOutException(Exception):
     def __init__(self, request):
         message = "Route handler was timed out by host: \"%s\"" % request.route
         super(RouteHandlerTimedOutException, self).__init__(message)
+        self.status = 408 # https://httpstatuses.com/408
+        self.source = HOST_APP.pretty_name
+
+
+class RouteHandlerIsNotCallableException(Exception):
+    """Route handler is not callable"""
+    def __init__(self, hndlr_name):
+        message = "Route handler is not callable: \"%s\"" % hndlr_name
+        super(RouteHandlerIsNotCallableException, self).__init__(message)
+        self.status = 405 # https://httpstatuses.com/405
+        self.source = HOST_APP.pretty_name
+
+
+class RouteHandlerExecException(Exception):
+    """Route handler exception"""
+    def __init__(self, message):
+        message = "Route exception in Execute: %s" % message
+        super(RouteHandlerExecException, self).__init__(message)
+        self.status = 408 # https://httpstatuses.com/408
+        self.source = HOST_APP.pretty_name
+
+
+class RouteHandlerException(Exception):
+    """Route handler exception"""
+    def __init__(self,
+                 message, exception_type, exception_traceback,
+                 clsx_message, clsx_source, clsx_stacktrace, clsx_targetsite):
+        message = "%s: %s\n%s\n" \
+                  "Script Executor Traceback:\n" \
+                  "%s: %s\n%s\n%s" % (
+                      exception_type.__name__,
+                      message,
+                      exception_traceback,
+                      clsx_source,
+                      clsx_message,
+                      clsx_stacktrace,
+                      clsx_targetsite
+                  )
+        super(RouteHandlerException, self).__init__(message)
         self.status = 408 # https://httpstatuses.com/408
         self.source = HOST_APP.pretty_name

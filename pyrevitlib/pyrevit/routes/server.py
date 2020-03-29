@@ -21,7 +21,12 @@ mlogger = get_logger(__name__)
 DEFAULT_STATUS = 500
 DEFAULT_SOURCE = __name__
 
-REQUEST_HNDLR = handler.RequestHandler(request=None, handler=None)
+
+# instance of event handler created when this module is loaded
+# on hosts main thread. Creating external events on non-main threads
+# are prohibited by the host. this event handler is reconfigured
+# for every request registered by this module
+REQUEST_HNDLR = handler.RequestHandler()
 EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 
 
@@ -63,7 +68,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 return api_name, route
         return None, None
 
-    def _write_error(self, err_msg, status, source):
+    def _write_error(self, message, status, source):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
@@ -71,14 +76,14 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             {
                 "exception": {
                     "source": source,
-                    "message": err_msg
+                    "message": message
                 }
             }
         ))
 
     def _write_exeption(self, excp):
         self._write_error(
-            err_msg=str(excp),
+            message=str(excp),
             status=excp.status if hasattr(excp, 'status') else DEFAULT_STATUS,
             source=excp.source if hasattr(excp, 'source') else DEFAULT_SOURCE,
         )
@@ -142,15 +147,19 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             pass
 
         # wait until handler signals completion
-        while True:
-            with req_hndlr.lock:
-                if req_hndlr.done:
-                    break
+        req_hndlr.join()
 
     def _parse_reponse(self, req_hndlr):
-        response = None
-        with req_hndlr.lock:
-            response = req_hndlr.response
+        # grab response from req_hndlr.response
+        # req_hndlr.response getter is thread-safe
+        response = req_hndlr.response
+
+        # now process reponse based on obj type
+        # it is an exception is has .message
+        # write the exeption to output and return
+        if hasattr(response, 'message'):
+            self._write_exeption(response)
+            return
 
         # plain text response
         if isinstance(response, str):
@@ -167,6 +176,11 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         else:
             status = 200
             data_string = None
+            # can not directly check for isinstance(x, Response)
+            # this module is executed on a different Engine than the
+            # script that registered the request handler function, thus
+            # the Response in script engine does not match Response
+            # registered when this module was loaded
             if hasattr(response, 'data'):
                 data_string = json.dumps(getattr(response, 'data'))
             else:
