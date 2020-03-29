@@ -20,17 +20,23 @@ class RequestHandler(UI.IExternalEventHandler):
         self.done = False
         self.lock = threading.Lock()
 
-    def Execute(self, uiapp):
-        """This method is called to handle the external event."""
-        with self.lock: #pylint: disable=not-context-manager
+    def reset(self):
+        """Reset internals for new execution"""
+        with self.lock:
             self.response = None
             self.done = False
 
+    def Execute(self, uiapp):
+        """This method is called to handle the external event."""
+        handler = None
+        with self.lock: #pylint: disable=not-context-manager
+            handler = self.handler
+
         response = None
-        if self.handler and callable(self.handler):
+        if handler and callable(handler):
             try:
                 response = \
-                    self.handler(self.request, uiapp) #pylint: disable=not-callable
+                    handler(self.request, uiapp) #pylint: disable=not-callable
             except Exception as hndlr_ex:
                 response = {
                     "exception": {

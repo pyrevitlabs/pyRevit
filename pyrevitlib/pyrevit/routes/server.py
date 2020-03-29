@@ -40,8 +40,8 @@ class Request(object):
 
 class Response(object):
     # TODO: implement headers and other stuff
-    def __init__(self, code='200', data=None):
-        self.code = code
+    def __init__(self, status=200, data=None):
+        self.status = status
         self.data = data
 
     def get_header(self, key):
@@ -128,6 +128,8 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         return REQUEST_HNDLR, EVENT_HNDLR
 
     def _call_host_event_sync(self, req_hndlr, event_hndlr):
+        # reset handler
+        req_hndlr.reset()
         # raise request to host
         extevent_raise_response = event_hndlr.Raise()
         if extevent_raise_response == UI.ExternalEventRequest.Denied:
@@ -146,30 +148,38 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                     break
 
     def _parse_reponse(self, req_hndlr):
-        # pre-defined response object
-        if isinstance(req_hndlr.response, Response):
-            self.send_response(req_hndlr.response.code)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(
-                json.dumps(req_hndlr.response.data)
-                )
+        response = None
+        with req_hndlr.lock:
+            response = req_hndlr.response
 
-        # response string
-        elif isinstance(req_hndlr.response, str):
+        # plain text response
+        if isinstance(response, str):
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
-            self.wfile.write(req_hndlr.response)
+            self.wfile.write(response)
 
+        # any obj that has .status and .data, OR
         # any json serializable object
+        # serialize before sending results
+        # in case exceptions happen in serialization,
+        # there are no double status in response header
         else:
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(
-                json.dumps(req_hndlr.response)
-                )
+            status = 200
+            data_string = None
+            if hasattr(response, 'data'):
+                data_string = json.dumps(getattr(response, 'data'))
+            else:
+                data_string = json.dumps(response)
+
+            if hasattr(response, 'status'):
+                status = getattr(response, 'status')
+
+            self.send_response(status)
+            if data_string:
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(data_string)
 
     def _handle_route(self, method):
         # process the given url and find API and route
