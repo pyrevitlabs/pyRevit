@@ -1,5 +1,6 @@
 """Routes HTTP Server."""
 #pylint: disable=import-error,invalid-name,broad-except
+#pylint: disable=missing-docstring
 import cgi
 import json
 import threading
@@ -9,7 +10,7 @@ from SocketServer import ThreadingMixIn
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 
-from pyrevit.routes import exceptions
+from pyrevit.routes import exceptions as exps
 from pyrevit.routes import router
 from pyrevit.routes import handler
 
@@ -17,12 +18,11 @@ from pyrevit.routes import handler
 mlogger = get_logger(__name__)
 
 
-# create the base Revit external event handler
-# upon Raise(), finds and runs the appropriate func
-lock = threading.Lock()
-req_hndlr = handler.RequestHandler()
-req_hndlr.lock = lock
-event_hndlr = UI.ExternalEvent.Create(req_hndlr)
+DEFAULT_STATUS = 500
+DEFAULT_SOURCE = __name__
+
+REQUEST_HNDLR = handler.RequestHandler(request=None, handler=None)
+EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 
 
 class Request(object):
@@ -32,6 +32,10 @@ class Request(object):
         self.route = route
         self.method = method
         self.data = data
+        self._headers = {}
+
+    def add_header(self, key, value):
+        self._headers[key] = value
 
 
 class Response(object):
@@ -39,6 +43,10 @@ class Response(object):
     def __init__(self, code='200', data=None):
         self.code = code
         self.data = data
+
+    def get_header(self, key):
+        # TODO: implement Response.get_header
+        pass
 
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
@@ -55,59 +63,77 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 return api_name, route
         return None, None
 
-    def _write_error(self, err_msg, res_code=500):
-        self.send_response(res_code)
+    def _write_error(self, err_msg, status, source):
+        self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
         self.wfile.write(json.dumps(
             {
                 "exception": {
-                    "source": "pyrevit routes server",
+                    "source": source,
                     "message": err_msg
                 }
             }
         ))
 
-    def _handle_route(self, method):
-        # find the app
-        api_name, route = self._parse_path()
-        if not api_name:
-            raise exceptions.APINotDefinedException()
+    def _write_exeption(self, excp):
+        self._write_error(
+            err_msg=str(excp),
+            status=excp.status if hasattr(excp, 'status') else DEFAULT_STATUS,
+            source=excp.source if hasattr(excp, 'source') else DEFAULT_SOURCE,
+        )
 
+    def _parse_route_info(self):
+        # find the app
+        api_name, route = self._parse_path() #type:str, str
+        if not api_name:
+            raise exps.APINotDefinedException(api_name)
+        return api_name, route
+
+    def _find_route_handler(self, api_name, route, method):
         route_handler = router.get_route(
             api_name=api_name,
             route=route,
             method=method
             )
         if not route_handler:
-            raise exceptions.RouteHandlerNotDefinedException()
+            raise exps.RouteHandlerNotDefinedException(api_name, route, method)
+        return route_handler
 
-        req_hndlr.handler = route_handler
-
+    def _prepare_request(self, api_name, route, method):
         # process request data
         data = None
         content_length = self.headers.getheader('content-length') # type: str
         if content_length and content_length.isnumeric():
             data = self.rfile.read(int(content_length))
-        # format data
-        content_type_header = self.headers.getheader('content-type')
-        if content_type_header:
-            content_type, _ = cgi.parse_header(content_type_header)
-            if content_type == 'application/json':
-                data = json.loads(data)
+            # format data
+            content_type_header = self.headers.getheader('content-type')
+            if content_type_header:
+                content_type, _ = cgi.parse_header(content_type_header)
+                if content_type == 'application/json':
+                    data = json.loads(data)
 
-        # configure the handler for this app
-        req_hndlr.request = \
-            Request(
-                name=api_name,
-                route=route,
-                method=method,
-                data=data
-            )
+        return Request(
+            name=api_name,
+            route=route,
+            method=method,
+            data=data
+        )
 
+    def _prepare_host_handler(self, request, route_handler):
+        # create the base Revit external event handler
+        # upon Raise(), finds and runs the appropriate func
+        REQUEST_HNDLR.request = request
+        REQUEST_HNDLR.handler = route_handler
+        return REQUEST_HNDLR, EVENT_HNDLR
+
+    def _call_host_event_sync(self, req_hndlr, event_hndlr):
         # raise request to host
-        # TODO: check for ExternalEventRequest
-        event_hndlr.Raise()
+        extevent_raise_response = event_hndlr.Raise()
+        if extevent_raise_response == UI.ExternalEventRequest.Denied:
+            raise exps.RouteHandlerDeniedException(req_hndlr.request)
+        elif extevent_raise_response == UI.ExternalEventRequest.TimedOut:
+            raise exps.RouteHandlerTimedOutException(req_hndlr.request)
 
         # wait until event has been picked up by host for execution
         while event_hndlr.IsPending:
@@ -115,11 +141,12 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
         # wait until handler signals completion
         while True:
-            with lock:
+            with req_hndlr.lock:
                 if req_hndlr.done:
                     break
 
-        # prepare response
+    def _parse_reponse(self, req_hndlr):
+        # pre-defined response object
         if isinstance(req_hndlr.response, Response):
             self.send_response(req_hndlr.response.code)
             self.send_header('Content-Type', 'application/json')
@@ -127,11 +154,15 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(
                 json.dumps(req_hndlr.response.data)
                 )
+
+        # response string
         elif isinstance(req_hndlr.response, str):
             self.send_response(200)
-            self.send_header('Content-Type','text/html')
+            self.send_header('Content-Type', 'text/html')
             self.end_headers()
             self.wfile.write(req_hndlr.response)
+
+        # any json serializable object
         else:
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -140,23 +171,33 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 json.dumps(req_hndlr.response)
                 )
 
+    def _handle_route(self, method):
+        # process the given url and find API and route
+        api_name, route = self._parse_route_info()
+
+        # find the handler function registered by the API and route
+        route_handler = self._find_route_handler(api_name, route, method)
+
+        # prepare a request obj to be passed to registered handler
+        request = self._prepare_request(api_name, route, method)
+
+        # create a handler and event object in host
+        req_hndlr, event_hndlr = \
+            self._prepare_host_handler(request, route_handler)
+
+        # do the handling work
+        self._call_host_event_sync(req_hndlr, event_hndlr)
+
+        # prepare response
+        self._parse_reponse(req_hndlr)
+
     def _process_request(self, method):
+        # this method is wrapping the actual handler and is
+        # catching all the exps
         try:
             self._handle_route(method=method)
-        except exceptions.APINotDefinedException as api_ex:
-            self._write_error(
-                err_msg=str(api_ex),
-                res_code=404
-                )
-        except exceptions.RouteHandlerNotDefinedException as route_ex:
-            self._write_error(
-                err_msg=str(route_ex),
-                res_code=404
-                )
         except Exception as ex:
-            self._write_error(
-                err_msg=str(ex)
-                )
+            self._write_exeption(ex)
 
     # CRUD Methods ------------------------------------------------------------
     # create

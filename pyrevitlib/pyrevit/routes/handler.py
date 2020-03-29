@@ -1,5 +1,7 @@
 """Revit-aware event handler"""
 #pylint: disable=import-error,invalid-name,broad-except
+import threading
+
 from pyrevit import HOST_APP
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
@@ -10,13 +12,13 @@ mlogger = get_logger(__name__)
 
 class RequestHandler(UI.IExternalEventHandler):
     """Revit external event handler type."""
-    request = None
-    handler = None
-    response = None
-    # thread management
-    # lock is set by server, done is set by self and checked by server
-    lock = None
-    done = False
+
+    def __init__(self, request, handler):
+        self.request = request
+        self.handler = handler
+        self.response = None
+        self.done = False
+        self.lock = threading.Lock()
 
     def Execute(self, uiapp):
         """This method is called to handle the external event."""
@@ -30,14 +32,14 @@ class RequestHandler(UI.IExternalEventHandler):
                 response = \
                     self.handler(self.request, uiapp) #pylint: disable=not-callable
             except Exception as hndlr_ex:
-                self.response = {
+                response = {
                     "exception": {
                         "source": HOST_APP.pretty_name,
                         "message": str(hndlr_ex)
                     }
                 }
         else:
-            self.response = {
+            response = {
                 "exception": {
                     "source": HOST_APP.pretty_name,
                     "message": "Route handler is invalid"

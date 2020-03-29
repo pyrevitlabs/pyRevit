@@ -6,13 +6,11 @@ from pyrevit.userconfig import user_config
 
 from pyrevit.routes import router
 from pyrevit.routes import server
+from pyrevit.routes.server import Request, Response
 
 
-__all__ = ('API', 'Request', 'Response', 'activate_routes')
-
-
-Request = server.Request
-Response = server.Response
+__all__ = ('API', 'Request', 'Response',
+           'activate_routes', 'deactivate_routes')
 
 
 class API(object):
@@ -54,3 +52,9 @@ def activate_routes():
         routes_server = server.RoutesServer(ip=host, port=port)
         envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
         routes_server.start()
+
+
+def deactivate_routes():
+    routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
+    envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
+    routes_server.stop()
