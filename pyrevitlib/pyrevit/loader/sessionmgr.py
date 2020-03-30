@@ -9,7 +9,6 @@ Everything starts from ``sessionmgr.load_session()`` function...
 The only public function is ``load_session()`` that loads a new session.
 Everything else is private.
 """
-
 import os.path as op
 import sys
 from collections import namedtuple
@@ -42,7 +41,7 @@ from pyrevit import output
 from pyrevit import DB, UI, revit
 
 
-#pylint: disable=W0703,C0302,C0103
+#pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
 
@@ -149,8 +148,10 @@ def _perform_onsessionloadcomplete_ops():
     # activate internal handlers
     # toggle doc colorizer
     revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
+
     # activate runtime routes server
-    routes.activate_routes()
+    if user_config.routes_server:
+        routes.activate_routes()
 
 
 def _new_session():

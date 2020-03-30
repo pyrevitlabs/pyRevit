@@ -115,6 +115,12 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         return self.get_section(CONSTS.ConfigsCoreSection)
 
     @property
+    def routes(self):
+        if not self.has_section(CONSTS.ConfigsRoutesSection):
+            self.add_section(CONSTS.ConfigsRoutesSection)
+        return self.get_section(CONSTS.ConfigsRoutesSection)
+
+    @property
     def telemetry(self):
         if not self.has_section(CONSTS.ConfigsTelemetrySection):
             self.add_section(CONSTS.ConfigsTelemetrySection)
@@ -315,6 +321,48 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
+    def routes_host(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsRoutesHostKey,
+            default_value="",
+        )
+
+    @routes_host.setter
+    def routes_host(self, routes_host):
+        self.routes.set_option(
+            CONSTS.ConfigsRoutesHostKey,
+            value=routes_host
+        )
+
+    @property
+    def routes_ports(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsRoutesPortsKey,
+            default_value={},
+        )
+
+    @routes_ports.setter
+    def routes_ports(self, ports_dict):
+        self.routes.set_option(
+            CONSTS.ConfigsRoutesPortsKey,
+            value=ports_dict
+        )
+
+    @property
+    def load_core_api(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsLoadCoreAPIKey,
+            default_value=CONSTS.ConfigsConfigsLoadCoreAPIDefault,
+        )
+
+    @load_core_api.setter
+    def load_core_api(self, state):
+        self.routes.set_option(
+            CONSTS.ConfigsLoadCoreAPIKey,
+            value=state
+        )
+
+    @property
     def telemetry_utc_timestamp(self):
         return self.telemetry.get_option(
             CONSTS.ConfigsTelemetryUTCTimestampsKey,
@@ -482,6 +530,19 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             value=state
         )
 
+    @property
+    def routes_server(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsRoutesServerKey,
+            default_value=CONSTS.ConfigsRoutesServerDefault,
+        )
+
+    @routes_server.setter
+    def routes_server(self, state):
+        self.routes.set_option(
+            CONSTS.ConfigsRoutesServerKey,
+            value=state
+        )
 
     @property
     def respect_language_direction(self):
@@ -596,6 +657,13 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     def set_active_cpython_engine(self, pyrevit_engine):
         self.cpython_engine_version = pyrevit_engine.Version
+
+    def get_routes_port(self, revit_year):
+        ports_dict = self.routes_ports
+        return ports_dict.get(
+            revit_year,
+            CONSTS.ConfigsRoutesPortsDefault + int(HOST_APP.version)
+            )
 
     def save_changes(self):
         """Save user config into associated config file."""

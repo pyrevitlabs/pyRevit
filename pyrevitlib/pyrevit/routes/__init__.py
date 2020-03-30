@@ -52,14 +52,20 @@ class API(object):
 def activate_routes():
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
-        host = user_config.core.get_option("routes_host", default_value='')
-        ports_dict = \
-            user_config.core.get_option("routes_ports", default_value={})
-        port = ports_dict.get(HOST_APP.version, None)
+        host = user_config.routes_host
+        port = user_config.get_routes_port(HOST_APP.version)
         if port:
             routes_server = server.RoutesServer(ip=host, port=port)
             envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
-            routes_server.start()
+            try:
+                routes_server.start()
+                mlogger.info(
+                    "Routes server is listening on http://%s:%s",
+                    host or "0.0.0.0",
+                    port
+                    )
+            except Exception as rs_ex:
+                mlogger.error("Error starting Routes server | %s", str(rs_ex))
         else:
             mlogger.error("Port is not configured for Routes server")
 
@@ -69,3 +75,8 @@ def deactivate_routes():
     if routes_server:
         envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
         routes_server.stop()
+
+
+def get_available_servers():
+    # TODO: collect all available servers
+    pass
