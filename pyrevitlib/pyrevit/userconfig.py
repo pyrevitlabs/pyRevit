@@ -662,7 +662,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         ports_dict = self.routes_ports
         return ports_dict.get(
             revit_year,
-            CONSTS.ConfigsRoutesPortsDefault + int(HOST_APP.version)
+            CONSTS.ConfigsRoutesPortsDefault + int(revit_year)
             )
 
     def save_changes(self):

@@ -3,16 +3,15 @@ from pyrevit import HOST_APP
 from pyrevit import routes
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import sessionmgr
-from pyrevit.userconfig import user_config
 
 
 api = routes.API("pyrevit-core")
 
 
-@api.route('/configs/ports/', methods=['GET'])
-def get_server_configs(request, uiapp):
+@api.route('/servers/', methods=['GET'])
+def get_servers(request, uiapp):
     """Get server port configs"""
-    return user_config.routes_ports
+    return routes.get_available_servers()
 
 
 @api.route('/status', methods=['GET'])

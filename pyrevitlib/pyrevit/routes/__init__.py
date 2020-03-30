@@ -2,6 +2,7 @@
 #pylint: disable=import-error,invalid-name,broad-except,dangerous-default-value,missing-docstring
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.api import DB, UI
+from pyrevit.labs import TargetApps
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
@@ -16,6 +17,9 @@ __all__ = ('API', 'Request', 'Response',
 
 
 mlogger = get_logger(__name__)
+
+
+REVITCTRL = TargetApps.Revit.RevitController
 
 
 class API(object):
@@ -78,5 +82,15 @@ def deactivate_routes():
 
 
 def get_available_servers():
-    # TODO: collect all available servers
-    pass
+    # check if routes server is active
+    if user_config.routes_server:
+        servers = {}
+        # get all running instances of Revit
+        for revit in REVITCTRL.ListRunningRevits():
+            revit_year = revit.RevitProduct.ProductYear
+            # get the configured port number for each
+            port = user_config.get_routes_port(revit_year)
+            if port:
+                servers[revit_year] = port
+    # return server data { <revit_year>:<port_number> }
+    return servers # type: dict
