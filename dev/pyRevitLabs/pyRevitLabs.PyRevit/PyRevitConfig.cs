@@ -73,7 +73,7 @@ namespace pyRevitLabs.PyRevit {
         }
 
         // get config key value and make a string dictionary out of it
-        public Dictionary<string, string> GetDictValue(string sectionName, string keyName, IEnumerable<string> defaultValue = null) {
+        public Dictionary<string, string> GetDictValue(string sectionName, string keyName) {
             logger.Debug("Try getting config as dict \"{0}:{1}\"", sectionName, keyName);
             var stringValue = GetValue(sectionName, keyName);
             if (stringValue != null)

@@ -99,6 +99,15 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAppendTooltipExKey = "tooltip_debug_info";
         public const bool ConfigsAppendTooltipExDefault = false;
 
+        public const string ConfigsRoutesSection = "routes";
+        public const string ConfigsRoutesServerKey = "enabled";
+        public const bool ConfigsRoutesServerDefault = false;
+        public const string ConfigsRoutesHostKey = "host";
+        public const string ConfigsRoutesPortsKey = "ports";
+        public const int ConfigsRoutesPortsDefault = 46865;
+        public const string ConfigsLoadCoreAPIKey = "core_api";
+        public const bool ConfigsConfigsLoadCoreAPIDefault = false;
+
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
         public const bool ConfigsTelemetryUTCTimestampsDefault = true;

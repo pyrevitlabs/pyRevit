@@ -676,6 +676,42 @@ namespace pyRevitCLI {
                                                         PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
                 }
 
+                else if (all("routes")) {
+                    if (all("port")) {
+                        var portNumber = TryGetValue("<port_number>");
+                        int revitYear = int.Parse(TryGetValue("<revit_year>"));
+                        if (portNumber is null) {
+                            if (arguments["--unset"].IsTrue)
+                                PyRevitConfigs.RemoveRoutesServerPort(revitYear);
+                            else
+                                Console.WriteLine(string.Format("Routes Port for Revit {0}: {1}", revitYear, PyRevitConfigs.GetRoutesServerPort(revitYear)));
+                        }
+                        else
+                            PyRevitConfigs.SetRoutesServerPort(revitYear: revitYear, port: int.Parse(portNumber));
+                    }
+
+                    else if (all("coreapi")) {
+                        if (all("enable"))
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(true);
+                        else if (all("disable"))
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(false);
+                        else
+                            Console.WriteLine(string.Format("Routes Core API is {0}",
+                                                            PyRevitConfigs.GetRoutesLoadCoreAPIStatus() ? "Enabled" : "Disabled"));
+                    }
+
+                    else if (all("enable"))
+                        PyRevitConfigs.EnableRoutesServer();
+
+                    else if (all("disable"))
+                        PyRevitConfigs.DisableRoutesServer();
+
+                    else {
+                        Console.WriteLine(string.Format("Routes Server is {0}",
+                                                        PyRevitConfigs.GetRoutesServerStatus() ? "Enabled" : "Disabled"));
+                    }
+                }
+
                 else if (all("telemetry")) {
                     if (all("utc")) {
                         if (any("yes", "no"))

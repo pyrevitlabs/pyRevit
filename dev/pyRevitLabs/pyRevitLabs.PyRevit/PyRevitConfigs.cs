@@ -104,6 +104,72 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey, state);
         }
 
+        // routes
+        public static bool GetRoutesServerStatus() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+        }
+
+        public static void SetRoutesServerStatus(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey, state);
+        }
+
+        public static void EnableRoutesServer() => SetRoutesServerStatus(true);
+
+        public static void DisableRoutesServer() => SetRoutesServerStatus(false);
+
+        public static string GetRoutesServerHost() {
+            var cfg = GetConfigFile();
+            return cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey);
+        }
+
+        public static void SetRoutesServerHost(string host) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey, host);
+        }
+
+        public static int GetRoutesServerPort(int revitYear) {
+            var cfg = GetConfigFile();
+            var portsDict = cfg.GetDictValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey);
+            if (portsDict is null || !portsDict.ContainsKey(revitYear.ToString()))
+                return revitYear + PyRevitConsts.ConfigsRoutesPortsDefault;
+            else
+                return int.Parse(portsDict[revitYear.ToString()]);
+        }
+
+        public static void SetRoutesServerPort(int revitYear, int port) {
+            var cfg = GetConfigFile();
+            var portsDict = cfg.GetDictValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey);
+            if (portsDict is null)
+                portsDict = new Dictionary<string, string>();
+            
+            portsDict[revitYear.ToString()] = port.ToString();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey, portsDict);
+        }
+
+        public static void RemoveRoutesServerPort(int revitYear) {
+            var cfg = GetConfigFile();
+            var portsDict = cfg.GetDictValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey);
+            if (portsDict != null) {
+                portsDict.Remove(revitYear.ToString());
+                cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey, portsDict);
+            }
+        }
+
+        public static bool GetRoutesLoadCoreAPIStatus() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+        }
+
+        public static void SetRoutesLoadCoreAPIStatus(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey, state);
+        }
+
+
         // telemetry
         public static bool GetTelemetryStatus() {
             var cfg = GetConfigFile();
@@ -113,7 +179,7 @@ namespace pyRevitLabs.PyRevit {
 
         public static void SetTelemetryStatus(bool state) {
             var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, true);
+            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, state);
         }
 
         public static string GetTelemetryFilePath() {
@@ -164,7 +230,7 @@ namespace pyRevitLabs.PyRevit {
 
         public static void SetAppTelemetryStatus(bool state) {
             var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, true);
+            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, state);
         }
 
         public static string GetAppTelemetryServerUrl() {
