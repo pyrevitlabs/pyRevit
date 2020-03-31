@@ -83,13 +83,19 @@ class RequestHandler(UI.IExternalEventHandler):
     def Execute(self, uiapp):
         """This method is called to handle the external event."""
         handler = self.handler
-
+        request = self.request
         response = None
+
         try:
             if handler and callable(handler):
                 try:
-                    response = \
-                        handler(self.request, uiapp) #pylint: disable=not-callable
+                    # if route pattern has parameter, provide those as
+                    # keyword args to the handler
+                    if request.params:
+                        kwargs = {x.key:x.value for x in request.params}
+                        response = handler(request, uiapp, **kwargs) #pylint: disable=not-callable
+                    else:
+                        response = handler(request, uiapp) #pylint: disable=not-callable
                 except Exception as hndlr_ex:
                     # grab original CLS exception
                     clsx = hndlr_ex.clsException #pylint: disable=no-member

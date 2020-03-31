@@ -1,6 +1,8 @@
 """Routes HTTP Server."""
 #pylint: disable=import-error,invalid-name,broad-except
 #pylint: disable=missing-docstring
+import sys
+import traceback
 import cgi
 import json
 import threading
@@ -10,7 +12,7 @@ from SocketServer import ThreadingMixIn
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 
-from pyrevit.routes import exceptions as exps
+from pyrevit.routes import exceptions as excp
 from pyrevit.routes import router
 from pyrevit.routes import handler
 
@@ -32,12 +34,20 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 
 class Request(object):
     # TODO: implement headers and other stuff
-    def __init__(self, name, route='/', method='GET', data=None):
-        self.name = name
-        self.route = route
+    def __init__(self, path='/', method='GET', data=None, params=None):
+        self.path = path
         self.method = method
         self.data = data
         self._headers = {}
+        self._params = params or []
+
+    @property
+    def headers(self):
+        return self._headers
+
+    @property
+    def params(self):
+        return self._params
 
     def add_header(self, key, value):
         self._headers[key] = value
@@ -55,17 +65,17 @@ class Response(object):
 
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
-    def _parse_path(self):
+    def _parse_api_path(self):
         if self.path:
             levels = self.path.split('/')
             # host:ip/<api_name>/<route>/.../.../...
             if levels and len(levels) >= 2:
                 api_name = levels[1]
                 if len(levels) > 2:
-                    route = '/' + '/'.join(levels[2:])
+                    api_path = '/' + '/'.join(levels[2:])
                 else:
-                    route = '/'
-                return api_name, route
+                    api_path = '/'
+                return api_name, api_path
         return None, None
 
     def _write_error(self, message, status, source):
@@ -81,31 +91,31 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             }
         ))
 
-    def _write_exeption(self, excp):
+    def _write_exeption(self, excep):
         self._write_error(
-            message=str(excp),
-            status=excp.status if hasattr(excp, 'status') else DEFAULT_STATUS,
-            source=excp.source if hasattr(excp, 'source') else DEFAULT_SOURCE,
+            message=str(excep),
+            status=excep.status if hasattr(excep, 'status') else DEFAULT_STATUS,
+            source=excep.source if hasattr(excep, 'source') else DEFAULT_SOURCE,
         )
 
-    def _parse_route_info(self):
+    def _parse_request_info(self):
         # find the app
-        api_name, route = self._parse_path() #type:str, str
+        api_name, api_path = self._parse_api_path() #type:str, str
         if not api_name:
-            raise exps.APINotDefinedException(api_name)
-        return api_name, route
+            raise excp.APINotDefinedException(api_name)
+        return api_name, api_path
 
-    def _find_route_handler(self, api_name, route, method):
-        route_handler = router.get_route(
+    def _find_route_handler(self, api_name, path, method):
+        route, route_handler = router.get_route_handler(
             api_name=api_name,
-            route=route,
+            path=path,
             method=method
             )
         if not route_handler:
-            raise exps.RouteHandlerNotDefinedException(api_name, route, method)
-        return route_handler
+            raise excp.RouteHandlerNotDefinedException(api_name, path, method)
+        return route, route_handler
 
-    def _prepare_request(self, api_name, route, method):
+    def _prepare_request(self, route, path, method):
         # process request data
         data = None
         content_length = self.headers.getheader('content-length') # type: str
@@ -119,10 +129,10 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                     data = json.loads(data)
 
         return Request(
-            name=api_name,
-            route=route,
+            path=path,
             method=method,
-            data=data
+            data=data,
+            params=router.extract_route_params(route.pattern, path)
         )
 
     def _prepare_host_handler(self, request, route_handler):
@@ -138,9 +148,9 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         # raise request to host
         extevent_raise_response = event_hndlr.Raise()
         if extevent_raise_response == UI.ExternalEventRequest.Denied:
-            raise exps.RouteHandlerDeniedException(req_hndlr.request)
+            raise excp.RouteHandlerDeniedException(req_hndlr.request)
         elif extevent_raise_response == UI.ExternalEventRequest.TimedOut:
-            raise exps.RouteHandlerTimedOutException(req_hndlr.request)
+            raise excp.RouteHandlerTimedOutException(req_hndlr.request)
 
         # wait until event has been picked up by host for execution
         while event_hndlr.IsPending:
@@ -197,13 +207,13 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_route(self, method):
         # process the given url and find API and route
-        api_name, route = self._parse_route_info()
+        api_name, path = self._parse_request_info()
 
         # find the handler function registered by the API and route
-        route_handler = self._find_route_handler(api_name, route, method)
+        route, route_handler = self._find_route_handler(api_name, path, method)
 
         # prepare a request obj to be passed to registered handler
-        request = self._prepare_request(api_name, route, method)
+        request = self._prepare_request(route, path, method)
 
         # create a handler and event object in host
         req_hndlr, event_hndlr = \
@@ -217,11 +227,25 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
     def _process_request(self, method):
         # this method is wrapping the actual handler and is
-        # catching all the exps
+        # catching all the excp
         try:
             self._handle_route(method=method)
         except Exception as ex:
-            self._write_exeption(ex)
+            # get exception info
+            sys.exc_type, sys.exc_value, sys.exc_traceback = \
+                sys.exc_info()
+            # go back one frame to grab exception stack from handler
+            # and grab traceback lines
+            tb_report = ''.join(
+                traceback.format_tb(sys.exc_traceback)[1:]
+            )
+            self._write_exeption(
+                excp.ServerException(
+                    message=str(ex),
+                    exception_type=sys.exc_type,
+                    exception_traceback=tb_report
+                )
+            )
 
     # CRUD Methods ------------------------------------------------------------
     # create

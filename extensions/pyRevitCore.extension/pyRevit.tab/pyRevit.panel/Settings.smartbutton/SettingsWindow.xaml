@@ -374,13 +374,10 @@
                                     </CheckBox.Content>
                                 </CheckBox>
                             </GroupBox>
-                            <Border x:Name="routesserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0" Margin="0,10,0,0">
+                            <Border x:Name="routesserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0" Margin="0,10,0,0" Background="LightGray">
                                 <TextBlock x:Name="routesserver_statusmsg" Foreground="White" VerticalAlignment="Center"/>
                             </Border>
                         </StackPanel>
-                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
-                            pyRevit core implements a basic REST API. See documentation for more info
-                        </TextBlock>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
@@ -406,7 +403,7 @@
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"
                                          TextChanged="telemetryserver_changed"/>
-                                <Border x:Name="telemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
+                                <Border x:Name="telemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0" Background="LightGray">
                                     <TextBlock x:Name="telemetryserver_statusmsg" Foreground="White"  VerticalAlignment="Center" MouseLeftButtonUp="update_telemetryserver_status_lights"/>
                                 </Border>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">
@@ -453,7 +450,7 @@
                                          Margin="0,10,0,5" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"
                                          TextChanged="apptelemetryserver_changed"/>
-                                <Border x:Name="apptelemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0">
+                                <Border x:Name="apptelemetryserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0" Background="LightGray">
                                     <TextBlock x:Name="apptelemetryserver_statusmsg" Foreground="White" VerticalAlignment="Center" MouseLeftButtonUp="update_apptelemetryserver_status_lights"/>
                                 </Border>
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray">

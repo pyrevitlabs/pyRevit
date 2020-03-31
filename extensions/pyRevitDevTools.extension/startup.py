@@ -72,14 +72,56 @@ def get_doors(request, uiapp):
 @api.route('/except', methods=['GET'])
 def raise_except(request, uiapp):
     """Test handler exception"""
-    m = 12 / 0
+    m = 12 / 0 #pylint: disable=unused-variable
 
 
 @api.route('/reflect', methods=['POST'])
 def reflect_request(request, uiapp):
     return {
-        "name": request.name,
-        "route": request.route,
+        "path": request.path,
         "method": request.method,
         "data": request.data
+    }
+
+
+@api.route('/posts/<int:uiapp>', methods=['GET'])
+def invalid_pattern(request, uiapp):
+    # this must throw an error in routes
+    pass
+
+
+@api.route('/posts/<int:pid>', methods=['GET'])
+def post_id(request, uiapp, pid):
+    return {
+        "path": request.path,
+        "method": request.method,
+        "data": {
+            "post_id": pid,
+            "post_id_type": type(pid).__name__
+        }
+    }
+
+
+@api.route('/posts/<uuid:pid>', methods=['GET'])
+def post_uuid(request, uiapp, pid):
+    return {
+        "path": request.path,
+        "method": request.method,
+        "data": {
+            "post_id": str(pid),
+            "post_id_type": type(pid).__name__
+        }
+    }
+
+@api.route('/archive/<int:year>/<int:month>/<int:day>/posts/<int:pid>',
+           methods=['GET'])
+def post_date_id(request, uiapp, year, month, day, pid):
+    return {
+        "path": request.path,
+        "method": request.method,
+        "data": {
+            "date": '{}/{}/{}'.format(year, month, day),
+            "post_id": pid,
+            "post_id_type": type(pid).__name__
+        }
     }

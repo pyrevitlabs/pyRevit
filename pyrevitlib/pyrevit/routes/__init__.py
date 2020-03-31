@@ -13,7 +13,7 @@ from pyrevit.routes.server import Request, Response
 
 
 __all__ = ('API', 'Request', 'Response',
-           'activate_routes', 'deactivate_routes')
+           'activate_server', 'deactivate_server')
 
 
 mlogger = get_logger(__name__)
@@ -39,13 +39,13 @@ class API(object):
     def __init__(self, name):
         self.name = name
 
-    def route(self, route_url, methods=['GET']):
+    def route(self, pattern, methods=['GET']):
         """Define a new route on this API."""
         def __func_wrapper__(f):
             for method in methods:
                 router.add_route(
                     api_name=self.name,
-                    route=route_url,
+                    pattern=pattern,
                     method=method,
                     handler_func=f
                     )

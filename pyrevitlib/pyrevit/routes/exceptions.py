@@ -3,6 +3,18 @@
 from pyrevit import HOST_APP
 
 
+class ServerException(Exception):
+    """Server error"""
+    def __init__(self, message, exception_type, exception_traceback):
+        message = "Server error (%s): %s\n%s\n" % (
+            exception_type.__name__,
+            message,
+            exception_traceback
+        )
+        super(ServerException, self).__init__(message)
+        self.status = 500 # https://httpstatuses.com/500
+
+
 class APINotDefinedException(Exception):
     """API is not defined exception"""
     def __init__(self, api_name):
