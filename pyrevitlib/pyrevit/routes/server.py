@@ -267,9 +267,19 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
 
 
 class RoutesServer(object):
-    def __init__(self, ip, port):
-        self.server = ThreadedHttpServer((ip, port), HttpRequestHandler)
+    def __init__(self, host, port):
+        self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
+        self.host = host
+        self.port = port
         self.start()
+
+    def __str__(self):
+        return "Routes server is listening on http://%s:%s" \
+            % (self.host or "0.0.0.0", self.port)
+
+    def __repr__(self):
+        return '<RoutesServer @ http://%s:%s>' \
+            % (self.host or "0.0.0.0", self.port)
 
     def start(self):
         self.server_thread = threading.Thread(target=self.server.serve_forever)

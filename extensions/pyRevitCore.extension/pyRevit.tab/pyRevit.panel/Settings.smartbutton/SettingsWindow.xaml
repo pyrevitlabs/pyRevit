@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
-        Height="700" Width="700"
+        Height="750" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -339,6 +339,49 @@
                         </DockPanel>
                     </StackPanel>
 
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Routes" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">
+                    <StackPanel Margin="10px">
+                        <TextBlock TextWrapping="WrapWithOverflow">
+                            Routes server is a RESTFUL API server implemented in python as part of pyRevit. The server is accompanied
+                            by a python module (pyrevit.routes) that is inspired by python flask and provides necessary functions,
+                            type, and decorators to easily define your owne APIs in your extensions. See pyrevit CLI for advanced
+                            configurations (e.g. setting server ports)
+                        </TextBlock>
+                        <StackPanel >
+                            <WrapPanel Margin="0,15,0,0">
+                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="routes_cb" IsChecked="False"/>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Routes Server (Beta)</TextBlock>
+                            </WrapPanel>
+                            <GroupBox Header="REST API Settings" Padding="10" Margin="0,10,0,0">
+                                <CheckBox x:Name="coreapi_cb">
+                                    <CheckBox.Content>
+                                        <TextBlock>
+                                            <TextBlock FontFamily="Consolas" FontWeight="Black" >pyrevit-core/</TextBlock>
+                                            <LineBreak/>
+                                            pyRevitCore extension implements a basic REST API to get information about the running pyRevit instances.
+                                            <LineBreak/>
+                                            <Hyperlink x:Name="coreapi_docs" NavigateUri="" Click="handle_url_click">
+                                                See documentation for more info
+                                            </Hyperlink>
+                                            <LineBreak/>
+                                            <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Foreground="DarkGray" Margin="0,5,0,0">
+                                                Example
+                                                <LineBreak/>GET http://pyrevithost:48884/pyrevit-core/status
+                                            </TextBlock>
+                                        </TextBlock>
+                                    </CheckBox.Content>
+                                </CheckBox>
+                            </GroupBox>
+                            <Border x:Name="routesserver_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0" Margin="0,10,0,0">
+                                <TextBlock x:Name="routesserver_statusmsg" Foreground="White" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
+                            pyRevit core implements a basic REST API. See documentation for more info
+                        </TextBlock>
+                    </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
                 <Expander Header="Telemetry" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">

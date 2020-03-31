@@ -53,38 +53,47 @@ class API(object):
         return __func_wrapper__
 
 
-def activate_routes():
+def init():
+    # clear all routes
+    router.reset_routes()
+    # stop existing server
+    deactivate_server()
+
+
+def activate_server():
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
         host = user_config.routes_host
         port = user_config.get_routes_port(HOST_APP.version)
         if port:
-            routes_server = server.RoutesServer(ip=host, port=port)
+            routes_server = server.RoutesServer(host=host, port=port)
             envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
             try:
                 routes_server.start()
-                mlogger.info(
-                    "Routes server is listening on http://%s:%s",
-                    host or "0.0.0.0",
-                    port
-                    )
             except Exception as rs_ex:
                 mlogger.error("Error starting Routes server | %s", str(rs_ex))
         else:
             mlogger.error("Port is not configured for Routes server")
 
 
-def deactivate_routes():
+def deactivate_server():
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if routes_server:
         envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
-        routes_server.stop()
+        try:
+            routes_server.stop()
+        except Exception as rs_ex:
+            mlogger.error("Error stopping Routes server | %s", str(rs_ex))
+
+
+def get_active_server():
+    return envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
 
 
 def get_available_servers():
     # check if routes server is active
+    servers = {}
     if user_config.routes_server:
-        servers = {}
         # get all running instances of Revit
         for revit in REVITCTRL.ListRunningRevits():
             revit_year = revit.RevitProduct.ProductYear

@@ -12,6 +12,11 @@ mlogger = get_logger(__name__)
 Route = namedtuple('Route', ['route', 'verb'])
 
 
+def reset_routes():
+    """Reset registered APIs and routes"""
+    envvars.set_pyrevit_env_var(envvars.ROUTES_ROUTES, {})
+
+
 def get_routes(api_name):
     """Add a new root route for given API name
 
