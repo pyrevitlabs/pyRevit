@@ -3,6 +3,7 @@
 #pylint: disable=missing-docstring
 import sys
 import traceback
+import urlparse
 import cgi
 import json
 import threading
@@ -66,8 +67,9 @@ class Response(object):
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
     def _parse_api_path(self):
-        if self.path:
-            levels = self.path.split('/')
+        url_parts = urlparse.urlparse(self.path)
+        if url_parts:
+            levels = url_parts.path.split('/')
             # host:ip/<api_name>/<route>/.../.../...
             if levels and len(levels) >= 2:
                 api_name = levels[1]
