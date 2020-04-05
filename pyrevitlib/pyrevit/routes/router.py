@@ -11,11 +11,16 @@ from pyrevit.coreutils.logger import get_logger
 mlogger = get_logger(__name__)
 
 
+ARGS_REQUEST = 'request'
+ARGS_UIAPP = 'uiapp'
+
 ROUTE_VAR_SEP = ':'
+
 INVALID_VAR_NAMES = [
-    'request',
-    'uiapp',
+    ARGS_REQUEST,
+    ARGS_UIAPP,
 ]
+
 
 Route = namedtuple('Route', ['pattern', 'method'])
 

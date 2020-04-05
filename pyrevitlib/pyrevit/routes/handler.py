@@ -1,6 +1,8 @@
 """Revit-aware event handler"""
 #pylint: disable=import-error,invalid-name,broad-except
 import sys
+import json
+import urllib2
 import traceback
 import threading
 
@@ -8,6 +10,8 @@ from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.routes import exceptions as excp
+from pyrevit.routes import router
+from pyrevit.routes import utils
 
 
 mlogger = get_logger(__name__)
@@ -80,6 +84,40 @@ class RequestHandler(UI.IExternalEventHandler):
                 if self._done:
                     return
 
+    @staticmethod
+    def run_handler(handler, kwargs):
+        response = None
+        kwargs = kwargs or {}
+        if handler and callable(handler):
+            try:
+                # now call handler, and save response
+                response = handler(**kwargs) #pylint: disable=not-callable
+            except Exception as hndlr_ex:
+                # grab original CLS exception
+                clsx = hndlr_ex.clsException #pylint: disable=no-member
+                # get exception info
+                sys.exc_type, sys.exc_value, sys.exc_traceback = \
+                    sys.exc_info()
+                # go back one frame to grab exception stack from handler
+                # and grab traceback lines
+                tb_report = ''.join(
+                    traceback.format_tb(sys.exc_traceback)[1:]
+                )
+                # wrap all the exception info
+                response = excp.RouteHandlerException(
+                    message=str(hndlr_ex),
+                    exception_type=sys.exc_type,
+                    exception_traceback=tb_report,
+                    clsx_message=clsx.Message,
+                    clsx_source=clsx.Source,
+                    clsx_stacktrace=clsx.StackTrace,
+                    clsx_targetsite=clsx.TargetSite.ToString()
+                    )
+        else:
+            response = \
+                excp.RouteHandlerIsNotCallableException(handler.__name__)
+        return response
+
     def Execute(self, uiapp):
         """This method is called to handle the external event."""
         handler = self.handler
@@ -87,39 +125,17 @@ class RequestHandler(UI.IExternalEventHandler):
         response = None
 
         try:
-            if handler and callable(handler):
-                try:
-                    # if route pattern has parameter, provide those as
-                    # keyword args to the handler
-                    if request.params:
-                        kwargs = {x.key:x.value for x in request.params}
-                        response = handler(request, uiapp, **kwargs) #pylint: disable=not-callable
-                    else:
-                        response = handler(request, uiapp) #pylint: disable=not-callable
-                except Exception as hndlr_ex:
-                    # grab original CLS exception
-                    clsx = hndlr_ex.clsException #pylint: disable=no-member
-                    # get exception info
-                    sys.exc_type, sys.exc_value, sys.exc_traceback = \
-                        sys.exc_info()
-                    # go back one frame to grab exception stack from handler
-                    # and grab traceback lines
-                    tb_report = ''.join(
-                        traceback.format_tb(sys.exc_traceback)[1:]
-                    )
-                    # wrap all the exception info
-                    response = excp.RouteHandlerException(
-                        message=str(hndlr_ex),
-                        exception_type=sys.exc_type,
-                        exception_traceback=tb_report,
-                        clsx_message=clsx.Message,
-                        clsx_source=clsx.Source,
-                        clsx_stacktrace=clsx.StackTrace,
-                        clsx_targetsite=clsx.TargetSite.ToString()
-                        )
-            else:
-                response = \
-                    excp.RouteHandlerIsNotCallableException(handler.__name__)
+            # keyword args to the handler
+            kwargs = {}
+            kwargs[router.ARGS_UIAPP] = uiapp
+            if utils.has_argument(handler, router.ARGS_REQUEST):
+                kwargs[router.ARGS_REQUEST] = request
+            # if route pattern has parameter, provide those as
+            if request.params:
+                kwargs.update({x.key:x.value for x in request.params})
+
+            # run handler
+            response = self.run_handler(handler, kwargs)
         except Exception as exec_ex:
             response = excp.RouteHandlerExecException(message=str(exec_ex))
         finally:

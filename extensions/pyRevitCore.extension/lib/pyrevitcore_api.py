@@ -8,14 +8,14 @@ from pyrevit.loader import sessionmgr
 api = routes.API("pyrevit-core")
 
 
-@api.route('/servers/', methods=['GET'])
-def get_servers(request, uiapp):
+@api.route('/servers/')
+def get_servers():
     """Get server port configs"""
     return routes.get_available_servers()
 
 
-@api.route('/status', methods=['GET'])
-def get_status(request, uiapp):
+@api.route('/status')
+def get_status():
     """Get current session status"""
     return {
         "host": HOST_APP.pretty_name,
@@ -24,14 +24,15 @@ def get_status(request, uiapp):
         }
 
 
-@api.route('/revits/', methods=['GET'])
-def get_revits(request, uiapp):
+@api.route('/revits/')
+def get_revits():
     # TODO: get all instances of revit
     pass
 
 
+# if has uiapp arg, it will be executed in api context
 @api.route('/sessions/', methods=['POST'])
-def reload_pyrevit(request, uiapp):
+def reload_pyrevit(uiapp):
     """Reload pyRevit"""
     new_session_id = sessionmgr.reload_pyrevit()
     return {"session_id": new_session_id}

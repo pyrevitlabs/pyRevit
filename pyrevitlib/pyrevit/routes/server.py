@@ -14,6 +14,7 @@ from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.routes import exceptions as excp
+from pyrevit.routes import utils
 from pyrevit.routes import router
 from pyrevit.routes import handler
 
@@ -144,7 +145,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         REQUEST_HNDLR.handler = route_handler
         return REQUEST_HNDLR, EVENT_HNDLR
 
-    def _call_host_event_sync(self, req_hndlr, event_hndlr):
+    def _call_host_event(self, req_hndlr, event_hndlr):
         # reset handler
         req_hndlr.reset()
         # raise request to host
@@ -154,6 +155,10 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         elif extevent_raise_response == UI.ExternalEventRequest.TimedOut:
             raise excp.RouteHandlerTimedOutException(req_hndlr.request)
 
+    def _call_host_event_sync(self, req_hndlr, event_hndlr):
+        # call handler
+        self._call_host_event(req_hndlr, event_hndlr)
+
         # wait until event has been picked up by host for execution
         while event_hndlr.IsPending:
             pass
@@ -161,11 +166,8 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         # wait until handler signals completion
         req_hndlr.join()
 
-    def _parse_reponse(self, req_hndlr):
-        # grab response from req_hndlr.response
-        # req_hndlr.response getter is thread-safe
-        response = req_hndlr.response
 
+    def _parse_reponse(self, response):
         # now process reponse based on obj type
         # it is an exception is has .message
         # write the exeption to output and return
@@ -217,15 +219,34 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         # prepare a request obj to be passed to registered handler
         request = self._prepare_request(route, path, method)
 
-        # create a handler and event object in host
-        req_hndlr, event_hndlr = \
-            self._prepare_host_handler(request, route_handler)
+        # if handler has uiapp in arguments, run in host api context
+        if utils.has_argument(route_handler, router.ARGS_UIAPP):
+            # create a handler and event object in host
+            req_hndlr, event_hndlr = \
+                self._prepare_host_handler(request, route_handler)
 
-        # do the handling work
-        self._call_host_event_sync(req_hndlr, event_hndlr)
-
-        # prepare response
-        self._parse_reponse(req_hndlr)
+            # do the handling work
+            self._call_host_event_sync(req_hndlr, event_hndlr)
+            # prepare response
+            # grab response from req_hndlr.response
+            # req_hndlr.response getter is thread-safe
+            self._parse_reponse(req_hndlr.response)
+        # otherwise run here
+        else:
+            # prepare handler args
+            kwargs = {}
+            if utils.has_argument(route_handler, router.ARGS_REQUEST):
+                kwargs[router.ARGS_REQUEST] = request
+            if request.params:
+                kwargs.update({x.key:x.value for x in request.params})
+            # now run the method, and gret response
+            response = \
+                handler.RequestHandler.run_handler(
+                    route_handler,
+                    kwargs
+                )
+            # prepare response
+            self._parse_reponse(response)
 
     def _process_request(self, method):
         # this method is wrapping the actual handler and is

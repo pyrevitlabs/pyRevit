@@ -53,14 +53,14 @@ api = routes.API("pyrevit-dev")
 
 
 @api.route('/forms-block', methods=['POST'])
-def forms_blocking(request, uiapp):
+def forms_blocking():
     """Test blocking GUI"""
     forms.alert("Routes works!")
     return 'Routes works!'
 
 
-@api.route('/doors/', methods=['GET'])
-def get_doors(request, uiapp):
+@api.route('/doors/')
+def get_doors(uiapp):
     """Test API access: find doors in active model"""
     doors = revit.query.get_elements_by_categories(
         [DB.BuiltInCategory.OST_Doors]
@@ -69,14 +69,14 @@ def get_doors(request, uiapp):
     return routes.Response(status=202, data=doors_data)
 
 
-@api.route('/except', methods=['GET'])
-def raise_except(request, uiapp):
+@api.route('/except')
+def raise_except():
     """Test handler exception"""
     m = 12 / 0 #pylint: disable=unused-variable
 
 
 @api.route('/reflect', methods=['POST'])
-def reflect_request(request, uiapp):
+def reflect_request(request):
     return {
         "path": request.path,
         "method": request.method,
@@ -84,14 +84,14 @@ def reflect_request(request, uiapp):
     }
 
 
-@api.route('/posts/<int:uiapp>', methods=['GET'])
-def invalid_pattern(request, uiapp):
+@api.route('/posts/<int:uiapp>')
+def invalid_pattern():
     # this must throw an error in routes
     pass
 
 
-@api.route('/posts/<int:pid>', methods=['GET'])
-def post_id(request, uiapp, pid):
+@api.route('/posts/<int:pid>')
+def post_id(request, pid):
     return {
         "path": request.path,
         "method": request.method,
@@ -102,8 +102,8 @@ def post_id(request, uiapp, pid):
     }
 
 
-@api.route('/posts/<uuid:pid>', methods=['GET'])
-def post_uuid(request, uiapp, pid):
+@api.route('/posts/<uuid:pid>')
+def post_uuid(request, pid):
     return {
         "path": request.path,
         "method": request.method,
@@ -113,9 +113,8 @@ def post_uuid(request, uiapp, pid):
         }
     }
 
-@api.route('/archive/<int:year>/<int:month>/<int:day>/posts/<int:pid>',
-           methods=['GET'])
-def post_date_id(request, uiapp, year, month, day, pid):
+@api.route('/archive/<int:year>/<int:month>/<int:day>/posts/<int:pid>')
+def post_date_id(request, year, month, day, pid):
     return {
         "path": request.path,
         "method": request.method,
