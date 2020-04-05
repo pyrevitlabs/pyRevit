@@ -1,17 +1,17 @@
 """Revit-aware event handler"""
 #pylint: disable=import-error,invalid-name,broad-except
 import sys
-import json
 import urllib2
 import traceback
 import threading
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import moduleutils as modutils
 
 from pyrevit.routes import exceptions as excp
+from pyrevit.routes import base
 from pyrevit.routes import router
-from pyrevit.routes import utils
 
 
 mlogger = get_logger(__name__)
@@ -86,6 +86,7 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @staticmethod
     def run_handler(handler, kwargs):
+        """Execute the handler function and return base.Response"""
         response = None
         kwargs = kwargs or {}
         if handler and callable(handler):
@@ -118,28 +119,45 @@ class RequestHandler(UI.IExternalEventHandler):
                 excp.RouteHandlerIsNotCallableException(handler.__name__)
         return response
 
+    @staticmethod
+    def make_callback(callback_url, response):
+        """Prepare request from base.Response and submit to callback url"""
+        # parse response object
+        _, headers, data = base.parse_response(response)
+        # prepare request
+        req = urllib2.Request(url=callback_url, headers=headers, data=data)
+        # submit request
+        urllib2.urlopen(req).close()
+
     def Execute(self, uiapp):
         """This method is called to handle the external event."""
+        # grab data. getters are thread-safe
         handler = self.handler
         request = self.request
         response = None
 
         try:
-            # keyword args to the handler
+            # process necessary arguments for the handler
             kwargs = {}
             kwargs[router.ARGS_UIAPP] = uiapp
-            if utils.has_argument(handler, router.ARGS_REQUEST):
+            if modutils.has_argument(handler, router.ARGS_REQUEST):
                 kwargs[router.ARGS_REQUEST] = request
-            # if route pattern has parameter, provide those as
+            # if route pattern has parameter, provide those as well
             if request.params:
                 kwargs.update({x.key:x.value for x in request.params})
 
-            # run handler
+            # run handler with prepared arguments, and grab the response
             response = self.run_handler(handler, kwargs)
         except Exception as exec_ex:
+            # create exception response
             response = excp.RouteHandlerExecException(message=str(exec_ex))
         finally:
-            self._set_response(response)
+            # send response to callback url if requested
+            if request.callback_url:
+                RequestHandler.make_callback(request.callback_url, response)
+            # or set the response to be picked up by http request handler
+            else:
+                self._set_response(response)
 
     def GetName(self):
         """String identification of the event handler."""

@@ -16,6 +16,7 @@ errors are printed from pyRevit commands.
 #pylint: disable=unused-import,wrong-import-position,unused-argument
 #pylint: disable=missing-docstring
 import sys
+import time
 
 from pyrevit import HOST_APP, framework
 from pyrevit import revit, DB
@@ -62,11 +63,15 @@ def forms_blocking():
 @api.route('/doors/')
 def get_doors(uiapp):
     """Test API access: find doors in active model"""
+    time.sleep(3)
     doors = revit.query.get_elements_by_categories(
         [DB.BuiltInCategory.OST_Doors]
         )
     doors_data = [x.Id.IntegerValue for x in doors]
-    return routes.Response(status=202, data=doors_data)
+    return routes.make_response(
+        data=doors_data,
+        headers={"pyRevit": "v4.6.7"}
+        )
 
 
 @api.route('/except')

@@ -9,10 +9,10 @@ from pyrevit.userconfig import user_config
 
 from pyrevit.routes import router
 from pyrevit.routes import server
-from pyrevit.routes.server import Request, Response
+from pyrevit.routes.base import Request, Response, make_response
 
 
-__all__ = ('API', 'Request', 'Response',
+__all__ = ('API', 'Request', 'Response', 'make_response',
            'activate_server', 'deactivate_server')
 
 

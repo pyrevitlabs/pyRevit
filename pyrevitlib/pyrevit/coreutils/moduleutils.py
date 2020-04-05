@@ -41,3 +41,8 @@ def collect_marked(module_obj, prop_name):
                 and getattr(type_obj, prop_name, False):
             marked_objs.append(type_obj)
     return marked_objs
+
+
+def has_argument(function_obj, arg_name):
+    """Check if given function object has argument matching arg_name"""
+    return arg_name in inspect.getargspec(function_obj)[0] #pylint: disable=deprecated-method

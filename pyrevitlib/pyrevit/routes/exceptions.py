@@ -7,7 +7,7 @@ class ServerException(Exception):
     """Server error"""
     def __init__(self, message, exception_type, exception_traceback):
         message = "Server error (%s): %s\n%s\n" % (
-            exception_type.__name__,
+            exception_type.__name__ if exception_type else "",
             message,
             exception_traceback
         )
@@ -76,7 +76,7 @@ class RouteHandlerException(Exception):
         message = "%s: %s\n%s\n" \
                   "Script Executor Traceback:\n" \
                   "%s: %s\n%s\n%s" % (
-                      exception_type.__name__,
+                      exception_type.__name__ if exception_type else "",
                       message,
                       exception_traceback,
                       clsx_source,
