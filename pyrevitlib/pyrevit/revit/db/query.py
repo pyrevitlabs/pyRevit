@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """Helper functions to query info and elements from Revit."""
-#pylint: disable=W0703,C0103
+#pylint: disable=W0703,C0103,too-many-lines
 from collections import namedtuple
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
-import pyrevit.compat as compat
+from pyrevit import compat
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
@@ -319,7 +319,7 @@ def get_family_symbol(family_name, symbol_name, doc=None):
                       DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name,
                       DB.BuiltInParameter.SYMBOL_NAME_PARAM: symbol_name
                   }
-                ))\
+                  ))\
           .WhereElementIsElementType()\
           .ToElements()
     return famsyms
@@ -328,8 +328,8 @@ def get_family_symbol(family_name, symbol_name, doc=None):
 def get_families(doc=None, only_editable=True):
     doc = doc or HOST_APP.doc
     families = [x.Family for x in set(DB.FilteredElementCollector(doc)
-                                        .WhereElementIsElementType()
-                                        .ToElements())
+                                      .WhereElementIsElementType()
+                                      .ToElements())
                 if isinstance(x, (DB.FamilySymbol, DB.AnnotationSymbolType))]
     if only_editable:
         return [x for x in families if x.IsEditable]
@@ -1047,6 +1047,25 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
             if x.GetFillPattern().Target == fillpattern_target]
 
 
+def get_fillpattern_from_element(element, background=True, doc=None):
+    doc = doc or HOST_APP.doc
+    def get_fpm_from_frtype(etype):
+        fp_id = None
+        if HOST_APP.is_newer_than(2018):
+            # return requested fill pattern (background or foreground)
+            fp_id = etype.BackgroundPatternId \
+                if background else etype.ForegroundPatternId
+        else:
+            fp_id = etype.FillPatternId
+        if fp_id:
+            fillpat_element = doc.GetElement(fp_id)
+            if fillpat_element:
+                return fillpat_element.GetFillPattern()
+
+    if isinstance(element, DB.FilledRegion):
+        return get_fpm_from_frtype(doc.GetElement(element.GetTypeId()))
+
+
 def get_keynote_file(doc=None):
     doc = doc or HOST_APP.doc
     knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
@@ -1436,7 +1455,7 @@ def get_sheet_print_settings(tblock, printer_name, doc_psettings):
             pparams = doc_psetting.PrintParameters
             if pparams.PaperSize.Name in paper_size_names \
                     and (pparams.ZoomType == DB.ZoomType.Zoom
-                        and pparams.Zoom == 100) \
+                         and pparams.Zoom == 100) \
                     and pparams.PageOrientation == page_orient:
                 all_tblock_psettings.add(doc_psetting)
         except Exception:
