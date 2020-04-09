@@ -353,7 +353,13 @@ namespace pyRevitLabs.PyRevit {
 
                     // cleanup temp files
                     logger.Debug("Cleaning up temp files after clone from image...");
-                    CommonUtils.DeleteDirectory(stagedImage);
+                    try {
+                        CommonUtils.DeleteDirectory(stagedImage);
+                    }
+                    catch (Exception delEx) {
+                        logger.Error(string.Format("Error cleaning up temp staging files \"{0}\" | {1}",
+                                                   destPath, delEx.Message));
+                    }
 
                     // record image deployment settings
                     try {

@@ -23,10 +23,10 @@
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyrevitbanner.bmp" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevitcli.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{8D13B375-35DF-4A04-8A47-BF4A8C843ADB} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{21E2B6B9-B39B-4482-99C0-C83B93181870} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="0.21.0.0" Type="32" TargetFile="pyrevit.exe"/>
+    <ROW Property="ProductVersion" Value="0.24.0.0" Type="32" TargetFile="pyrevit.exe"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
@@ -53,7 +53,7 @@
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="AI_CustomARPName" ComponentId="{CEA70F42-C335-4A6E-A584-FA2B1A3B0EB5}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{91D604CF-1C3D-4A1A-9629-D53A0F64CF98}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{ED98A64F-BD1E-4B58-B43B-B983C4FF59D4}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{8E745626-B193-44C6-9CB3-829A8A490626}" Directory_="APPDIR" Attributes="0"/>
     <ROW Component="Colorful.Console.dll" ComponentId="{0E2C12E3-BEE9-421D-B2F9-C084E247EBA5}" Directory_="APPDIR" Attributes="0" KeyPath="Colorful.Console.dll"/>

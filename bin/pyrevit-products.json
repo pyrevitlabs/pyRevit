@@ -150,6 +150,11 @@
     "key": "{EF91A585-DC0C-43B8-B88B-4C130F430E84}"
 }, {
     "product": "pyRevit CLI",
+    "release": "0.24.0",
+    "version": "0.24.0",
+    "key": "{21E2B6B9-B39B-4482-99C0-C83B93181870}"
+},{
+    "product": "pyRevit CLI",
     "release": "0.21.0",
     "version": "0.21.0",
     "key": "{8D13B375-35DF-4A04-8A47-BF4A8C843ADB}"
