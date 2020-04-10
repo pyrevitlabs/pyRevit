@@ -200,7 +200,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Update);
                 else
-                    PyRevitCLIAppCmds.UpdateRemoteDateSources();
+                    PyRevitCLIAppCmds.UpdateRemoteDataSources();
             }
 
             else if (all("clone")) {

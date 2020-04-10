@@ -206,7 +206,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        UpdateRemoteDateSources() {
+        UpdateRemoteDataSources() {
             // update and show progress
             GlobalConfigs.ReportProgress = true;
             RevitProductData.Update();
