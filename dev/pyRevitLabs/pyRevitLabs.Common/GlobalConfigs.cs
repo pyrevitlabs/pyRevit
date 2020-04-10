@@ -13,7 +13,6 @@ namespace pyRevitLabs.Common {
         private static readonly object padlock = new object();
 
         private static bool _underTest = false;
-        private static bool _reportProgress = false;
         private static bool _allClonesAreValid = false;
 
         GlobalConfigs() {
@@ -39,19 +38,6 @@ namespace pyRevitLabs.Common {
             set {
                 lock (padlock) {
                      _underTest = value;
-                }
-            }
-        }
-
-        public static bool ReportProgress {
-            get {
-                lock (padlock) {
-                    return _reportProgress;
-                }
-            }
-            set {
-                lock (padlock) {
-                    _reportProgress = value;
                 }
             }
         }

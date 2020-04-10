@@ -51,9 +51,6 @@ namespace pyRevitCLI {
         CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, string username, string password) {
             // FIXME: implement image
             if (cloneName != null) {
-                // report progress
-                GlobalConfigs.ReportProgress = true;
-
                 // if deployment requested or image path is provided
                 if (imagePath != null || deployName != null)
                     PyRevitClones.DeployFromImage(
@@ -74,8 +71,6 @@ namespace pyRevitCLI {
                         username: username,
                         password: password
                         );
-
-                GlobalConfigs.ReportProgress = false;
             }
         }
 
