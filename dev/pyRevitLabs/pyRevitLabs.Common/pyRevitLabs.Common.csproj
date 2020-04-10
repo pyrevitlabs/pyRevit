@@ -73,7 +73,6 @@
     <Compile Include="OSVersionInfo.cs" />
     <Compile Include="Unmanaged.cs" />
     <Compile Include="UserEnv.cs" />
-    <Compile Include="GlobalConfigs.cs" />
     <Compile Include="Errors.cs" />
     <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="GitInstaller.cs" />

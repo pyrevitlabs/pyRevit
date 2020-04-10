@@ -87,12 +87,6 @@ namespace pyRevitCLI {
             // process arguments for logging level
             var argsList = new List<string>(args);
 
-            // check for testing and set the global test flag
-            if (argsList.Contains("--test")) {
-                argsList.Remove("--test");
-                GlobalConfigs.UnderTest = true;
-            }
-
             // setup logger
             // process arguments for hidden debug mode switch
             PyRevitCLILogLevel logLevel = PyRevitCLILogLevel.InfoMessages;

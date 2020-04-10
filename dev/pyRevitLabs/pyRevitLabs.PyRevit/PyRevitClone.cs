@@ -208,21 +208,19 @@ namespace pyRevitLabs.PyRevit {
                 var normClonePath = clonePath.NormalizeAsPath();
                 logger.Debug("Checking pyRevit clone validity \"{0}\"", normClonePath);
                 if (CommonUtils.VerifyPath(normClonePath)) {
-                    // say yes if under test
-                    if (!GlobalConfigs.AllClonesAreValid) {
-                        // determine clone validity based on directory availability
-                        logger.Debug("Checking clone validity by directory structure...");
-                        var pyrevitDir = GetPyRevitPath(normClonePath);
-                        logger.Debug("Checking pyRevit path \"{0}\"", pyrevitDir);
-                        if (!CommonUtils.VerifyPath(pyrevitDir)) {
-                            throw new pyRevitInvalidPyRevitCloneException(normClonePath);
-                        }
-
-                        // if is a repo, and repo is NOT valid, throw an exception
-                        logger.Debug("Checking clone validity by git repo...");
-                        if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath))
-                            throw new pyRevitInvalidGitCloneException(normClonePath);
+                    // determine clone validity based on directory availability
+                    logger.Debug("Checking clone validity by directory structure...");
+                    var pyrevitDir = GetPyRevitPath(normClonePath);
+                    logger.Debug("Checking pyRevit path \"{0}\"", pyrevitDir);
+                    if (!CommonUtils.VerifyPath(pyrevitDir)) {
+                        throw new pyRevitInvalidPyRevitCloneException(normClonePath);
                     }
+
+                    // if is a repo, and repo is NOT valid, throw an exception
+                    logger.Debug("Checking clone validity by git repo...");
+                    if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath))
+                        throw new pyRevitInvalidGitCloneException(normClonePath);
+
                     logger.Debug("Valid pyRevit clone \"{0}\"", normClonePath);
                     return;
                 }
