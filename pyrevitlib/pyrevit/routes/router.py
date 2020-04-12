@@ -28,7 +28,8 @@ RouteParam = namedtuple('RouteParam', ['key', 'value'])
 
 
 def _make_finder_pattern(route_pattern):
-    return re.sub(r"\<.+?\>", "(.+)", route_pattern)
+    modified_pattern = re.sub(r"\<.+?\>", "(.+)", route_pattern)
+    return '^%s$' % modified_pattern
 
 
 def _find_pattern_keys(route_pattern):
