@@ -1,6 +1,6 @@
 """Utility functions for creating data files within pyRevit environment.
 
-Most times, scripts need to save some data to shared between different scripts
+Most times, scripts need to save some data to share between different scripts
 that work on a similar topic or between script executions. This module provides
 the necessary and consistent mechanism for creating and maintaining such files.
 
@@ -16,7 +16,6 @@ import re
 import pyrevit
 from pyrevit import EXEC_PARAMS
 from pyrevit import coreutils
-from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils import logger
 from pyrevit.labs import TargetApps
 
@@ -33,6 +32,16 @@ def _remove_app_file(file_path):
         os.remove(file_path)
     except Exception as osremove_err:
         mlogger.debug('Error file cleanup on: %s | %s', file_path, osremove_err)
+
+
+def _list_app_folders():
+    app_folders = []
+    for appdata_entry in os.listdir(pyrevit.PYREVIT_APP_DIR):
+        if re.match(pattern=r'^\d{4}$', string=appdata_entry):
+            app_folder = op.join(pyrevit.PYREVIT_APP_DIR, appdata_entry)
+            if op.isdir(app_folder):
+                app_folders.append(app_folder)
+    return app_folders
 
 
 def _list_app_files(prefix, file_ext, universal=False):
@@ -234,7 +243,7 @@ def list_data_files(file_ext, universal=False):
         )
 
 
-def list_session_data_files(file_ext):
+def list_instance_data_files(file_ext):
     """List all data files associated with current session.
 
     Args:
@@ -245,6 +254,55 @@ def list_session_data_files(file_ext):
 
     """
     return _list_app_files(pyrevit.PYREVIT_FILE_PREFIX_STAMPED, file_ext)
+
+
+def find_data_files(file_ext):
+    """Find data files in all data files directories
+
+    Args:
+        file_ext (str): data files with this extension will be listed only
+
+    Returns:
+        :obj:`list`: list of files
+    """
+    all_datafiles = set()
+    for app_folder in _list_app_folders():
+        for appdata_file in os.listdir(app_folder):
+            file_naming_dict = _match_file(
+                op.basename(appdata_file)
+            )
+            if file_naming_dict \
+                    and file_naming_dict['fname'].endswith(file_ext):
+                all_datafiles.add(
+                    op.join(app_folder, appdata_file)
+                    )
+    return all_datafiles
+
+
+def find_instance_data_files(file_ext, instance_id):
+    """Find instance data files in all data files directories
+
+    Args:
+        file_ext (str): data files with this extension will be listed only
+        instance_id (int): list data files for this instance id only
+
+    Returns:
+        :obj:`list`: list of files
+    """
+    # instance files names are like pyRevit_2018_14422_
+    instance_files = set()
+    for appdata_file in find_data_files(file_ext):
+        file_naming_dict = _match_file(
+            op.basename(appdata_file)
+        )
+        if 'pid' in file_naming_dict:
+            try:
+                pid = int(file_naming_dict['pid'])
+                if instance_id == pid:
+                    instance_files.add(appdata_file)
+            except Exception:
+                pass
+    return instance_files
 
 
 def garbage_data_file(file_path):
