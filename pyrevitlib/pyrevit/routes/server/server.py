@@ -3,6 +3,7 @@
 #pylint: disable=missing-docstring
 import sys
 import traceback
+import urlparse
 import cgi
 import json
 import threading
@@ -12,16 +13,13 @@ from SocketServer import ThreadingMixIn
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 
-from pyrevit.routes import exceptions as excp
-from pyrevit.routes import router
-from pyrevit.routes import handler
+from pyrevit.routes.server import exceptions as excp
+from pyrevit.routes.server import base
+from pyrevit.routes.server import handler
+from pyrevit.routes.server import router
 
 
 mlogger = get_logger(__name__)
-
-
-DEFAULT_STATUS = 500
-DEFAULT_SOURCE = __name__
 
 
 # instance of event handler created when this module is loaded
@@ -32,42 +30,11 @@ REQUEST_HNDLR = handler.RequestHandler()
 EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 
 
-class Request(object):
-    # TODO: implement headers and other stuff
-    def __init__(self, path='/', method='GET', data=None, params=None):
-        self.path = path
-        self.method = method
-        self.data = data
-        self._headers = {}
-        self._params = params or []
-
-    @property
-    def headers(self):
-        return self._headers
-
-    @property
-    def params(self):
-        return self._params
-
-    def add_header(self, key, value):
-        self._headers[key] = value
-
-
-class Response(object):
-    # TODO: implement headers and other stuff
-    def __init__(self, status=200, data=None):
-        self.status = status
-        self.data = data
-
-    def get_header(self, key):
-        # TODO: implement Response.get_header
-        pass
-
-
 class HttpRequestHandler(BaseHTTPRequestHandler):
     def _parse_api_path(self):
-        if self.path:
-            levels = self.path.split('/')
+        url_parts = urlparse.urlparse(self.path)
+        if url_parts:
+            levels = url_parts.path.split('/')
             # host:ip/<api_name>/<route>/.../.../...
             if levels and len(levels) >= 2:
                 api_name = levels[1]
@@ -77,26 +44,6 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                     api_path = '/'
                 return api_name, api_path
         return None, None
-
-    def _write_error(self, message, status, source):
-        self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(
-            {
-                "exception": {
-                    "source": source,
-                    "message": message
-                }
-            }
-        ))
-
-    def _write_exeption(self, excep):
-        self._write_error(
-            message=str(excep),
-            status=excep.status if hasattr(excep, 'status') else DEFAULT_STATUS,
-            source=excep.source if hasattr(excep, 'source') else DEFAULT_SOURCE,
-        )
 
     def _parse_request_info(self):
         # find the app
@@ -128,7 +75,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 if content_type == 'application/json':
                     data = json.loads(data)
 
-        return Request(
+        return base.Request(
             path=path,
             method=method,
             data=data,
@@ -142,7 +89,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         REQUEST_HNDLR.handler = route_handler
         return REQUEST_HNDLR, EVENT_HNDLR
 
-    def _call_host_event_sync(self, req_hndlr, event_hndlr):
+    def _call_host_event(self, req_hndlr, event_hndlr):
         # reset handler
         req_hndlr.reset()
         # raise request to host
@@ -152,6 +99,10 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         elif extevent_raise_response == UI.ExternalEventRequest.TimedOut:
             raise excp.RouteHandlerTimedOutException(req_hndlr.request)
 
+    def _call_host_event_sync(self, req_hndlr, event_hndlr):
+        # call handler
+        self._call_host_event(req_hndlr, event_hndlr)
+
         # wait until event has been picked up by host for execution
         while event_hndlr.IsPending:
             pass
@@ -159,51 +110,15 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         # wait until handler signals completion
         req_hndlr.join()
 
-    def _parse_reponse(self, req_hndlr):
-        # grab response from req_hndlr.response
-        # req_hndlr.response getter is thread-safe
-        response = req_hndlr.response
-
-        # now process reponse based on obj type
-        # it is an exception is has .message
-        # write the exeption to output and return
-        if hasattr(response, 'message'):
-            self._write_exeption(response)
-            return
-
-        # plain text response
-        if isinstance(response, str):
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html')
+    def _write_response(self, response):
+        r = handler.RequestHandler.parse_response(response)
+        self.send_response(r.status)
+        if r.headers:
+            for key, value in r.headers.items():
+                self.send_header(key, value)
             self.end_headers()
-            self.wfile.write(response)
-
-        # any obj that has .status and .data, OR
-        # any json serializable object
-        # serialize before sending results
-        # in case exceptions happen in serialization,
-        # there are no double status in response header
-        else:
-            status = 200
-            data_string = None
-            # can not directly check for isinstance(x, Response)
-            # this module is executed on a different Engine than the
-            # script that registered the request handler function, thus
-            # the Response in script engine does not match Response
-            # registered when this module was loaded
-            if hasattr(response, 'data'):
-                data_string = json.dumps(getattr(response, 'data'))
-            else:
-                data_string = json.dumps(response)
-
-            if hasattr(response, 'status'):
-                status = getattr(response, 'status')
-
-            self.send_response(status)
-            if data_string:
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(data_string)
+        # sending \n if no data otherwise Postman panics for some reason
+        self.wfile.write(r.data or "\n")
 
     def _handle_route(self, method):
         # process the given url and find API and route
@@ -215,15 +130,39 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         # prepare a request obj to be passed to registered handler
         request = self._prepare_request(route, path, method)
 
-        # create a handler and event object in host
-        req_hndlr, event_hndlr = \
-            self._prepare_host_handler(request, route_handler)
+        # if handler has uiapp in arguments, run in host api context
+        if handler.RequestHandler.wants_api_context(route_handler):
+            # create a handler and event object in host
+            req_hndlr, event_hndlr = \
+                self._prepare_host_handler(request, route_handler)
 
-        # do the handling work
-        self._call_host_event_sync(req_hndlr, event_hndlr)
-
-        # prepare response
-        self._parse_reponse(req_hndlr)
+            # do the handling work
+            # if request has callback url, raise the event handler and return
+            #   the handler, when executed, will notify the callback url
+            if request.callback_url:
+                self._call_host_event(req_hndlr, event_hndlr)
+                # acknowledge the request is accepted and return
+                self._write_response(base.Response(status=base.NO_CONTENT))
+            # otherwise run the handler and wait
+            else:
+                self._call_host_event_sync(req_hndlr, event_hndlr)
+                # prepare response
+                # grab response from req_hndlr.response
+                # req_hndlr.response getter is thread-safe
+                self._write_response(req_hndlr.response)
+        # otherwise run here
+        else:
+            # now run the method, and gret response
+            response = \
+                handler.RequestHandler.run_handler(
+                    handler=route_handler,
+                    kwargs=handler.RequestHandler.prepare_handler_kwargs(
+                        request=request,
+                        handler=route_handler
+                    )
+                )
+            # prepare response
+            self._write_response(response)
 
     def _process_request(self, method):
         # this method is wrapping the actual handler and is
@@ -239,7 +178,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             tb_report = ''.join(
                 traceback.format_tb(sys.exc_traceback)[1:]
             )
-            self._write_exeption(
+            self._write_response(
                 excp.ServerException(
                     message=str(ex),
                     exception_type=sys.exc_type,

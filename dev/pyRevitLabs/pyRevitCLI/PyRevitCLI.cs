@@ -83,7 +83,6 @@ namespace pyRevitCLI {
 
         // cli entry point:
         static void Main(string[] args) {
-
             // process arguments for logging level
             var argsList = new List<string>(args);
 
@@ -159,10 +158,6 @@ namespace pyRevitCLI {
                 logger.Debug("Arg processing failed. | {0}", ex.Message);
                 PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
             }
-        }
-
-        // configure env
-        private static void PrepareEnv() {
         }
 
         // cli argument processor
@@ -673,15 +668,11 @@ namespace pyRevitCLI {
                 else if (all("routes")) {
                     if (all("port")) {
                         var portNumber = TryGetValue("<port_number>");
-                        int revitYear = int.Parse(TryGetValue("<revit_year>"));
                         if (portNumber is null) {
-                            if (arguments["--unset"].IsTrue)
-                                PyRevitConfigs.RemoveRoutesServerPort(revitYear);
-                            else
-                                Console.WriteLine(string.Format("Routes Port for Revit {0}: {1}", revitYear, PyRevitConfigs.GetRoutesServerPort(revitYear)));
+                            Console.WriteLine(string.Format("Routes Port: {0}", PyRevitConfigs.GetRoutesServerPort()));
                         }
                         else
-                            PyRevitConfigs.SetRoutesServerPort(revitYear: revitYear, port: int.Parse(portNumber));
+                            PyRevitConfigs.SetRoutesServerPort(int.Parse(portNumber));
                     }
 
                     else if (all("coreapi")) {

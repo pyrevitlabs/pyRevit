@@ -16,6 +16,7 @@ errors are printed from pyRevit commands.
 #pylint: disable=unused-import,wrong-import-position,unused-argument
 #pylint: disable=missing-docstring
 import sys
+import time
 
 from pyrevit import HOST_APP, framework
 from pyrevit import revit, DB
@@ -53,30 +54,42 @@ api = routes.API("pyrevit-dev")
 
 
 @api.route('/forms-block', methods=['POST'])
-def forms_blocking(request, uiapp):
+def forms_blocking():
     """Test blocking GUI"""
     forms.alert("Routes works!")
     return 'Routes works!'
 
 
-@api.route('/doors/', methods=['GET'])
-def get_doors(request, uiapp):
+@api.route('/doc')
+def get_doc(doc):
+    """Test API access: get active document title"""
+    return {
+        "title": doc.Title if doc else ""
+    }
+
+
+@api.route('/doors/')
+def get_doors(uiapp):
     """Test API access: find doors in active model"""
+    time.sleep(3)
     doors = revit.query.get_elements_by_categories(
         [DB.BuiltInCategory.OST_Doors]
         )
     doors_data = [x.Id.IntegerValue for x in doors]
-    return routes.Response(status=202, data=doors_data)
+    return routes.make_response(
+        data=doors_data,
+        headers={"pyRevit": "v4.6.7"}
+        )
 
 
-@api.route('/except', methods=['GET'])
-def raise_except(request, uiapp):
+@api.route('/except')
+def raise_except():
     """Test handler exception"""
     m = 12 / 0 #pylint: disable=unused-variable
 
 
 @api.route('/reflect', methods=['POST'])
-def reflect_request(request, uiapp):
+def reflect_request(request):
     return {
         "path": request.path,
         "method": request.method,
@@ -84,14 +97,14 @@ def reflect_request(request, uiapp):
     }
 
 
-@api.route('/posts/<int:uiapp>', methods=['GET'])
-def invalid_pattern(request, uiapp):
+@api.route('/posts/<int:uiapp>')
+def invalid_pattern():
     # this must throw an error in routes
     pass
 
 
-@api.route('/posts/<int:pid>', methods=['GET'])
-def post_id(request, uiapp, pid):
+@api.route('/posts/<int:pid>')
+def post_id(request, pid):
     return {
         "path": request.path,
         "method": request.method,
@@ -102,8 +115,8 @@ def post_id(request, uiapp, pid):
     }
 
 
-@api.route('/posts/<uuid:pid>', methods=['GET'])
-def post_uuid(request, uiapp, pid):
+@api.route('/posts/<uuid:pid>')
+def post_uuid(request, pid):
     return {
         "path": request.path,
         "method": request.method,
@@ -113,9 +126,8 @@ def post_uuid(request, uiapp, pid):
         }
     }
 
-@api.route('/archive/<int:year>/<int:month>/<int:day>/posts/<int:pid>',
-           methods=['GET'])
-def post_date_id(request, uiapp, year, month, day, pid):
+@api.route('/archive/<int:year>/<int:month>/<int:day>/posts/<int:pid>')
+def post_date_id(request, year, month, day, pid):
     return {
         "path": request.path,
         "method": request.method,

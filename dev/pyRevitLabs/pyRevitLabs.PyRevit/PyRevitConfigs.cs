@@ -130,32 +130,15 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey, host);
         }
 
-        public static int GetRoutesServerPort(int revitYear) {
+        public static int GetRoutesServerPort() {
             var cfg = GetConfigFile();
-            var portsDict = cfg.GetDictValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey);
-            if (portsDict is null || !portsDict.ContainsKey(revitYear.ToString()))
-                return revitYear + PyRevitConsts.ConfigsRoutesPortsDefault;
-            else
-                return int.Parse(portsDict[revitYear.ToString()]);
+            var port = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey);
+            return port != null ? int.Parse(port) : PyRevitConsts.ConfigsRoutesPortDefault;
         }
 
-        public static void SetRoutesServerPort(int revitYear, int port) {
+        public static void SetRoutesServerPort(int port) {
             var cfg = GetConfigFile();
-            var portsDict = cfg.GetDictValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey);
-            if (portsDict is null)
-                portsDict = new Dictionary<string, string>();
-            
-            portsDict[revitYear.ToString()] = port.ToString();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey, portsDict);
-        }
-
-        public static void RemoveRoutesServerPort(int revitYear) {
-            var cfg = GetConfigFile();
-            var portsDict = cfg.GetDictValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey);
-            if (portsDict != null) {
-                portsDict.Remove(revitYear.ToString());
-                cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortsKey, portsDict);
-            }
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey, port);
         }
 
         public static bool GetRoutesLoadCoreAPIStatus() {

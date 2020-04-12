@@ -324,7 +324,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def routes_host(self):
         return self.routes.get_option(
             CONSTS.ConfigsRoutesHostKey,
-            default_value="",
+            default_value=CONSTS.ConfigsRoutesHostDefault,
         )
 
     @routes_host.setter
@@ -335,17 +335,17 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
-    def routes_ports(self):
+    def routes_port(self):
         return self.routes.get_option(
-            CONSTS.ConfigsRoutesPortsKey,
-            default_value={},
+            CONSTS.ConfigsRoutesPortKey,
+            default_value=CONSTS.ConfigsRoutesPortDefault,
         )
 
-    @routes_ports.setter
-    def routes_ports(self, ports_dict):
+    @routes_port.setter
+    def routes_port(self, port):
         self.routes.set_option(
-            CONSTS.ConfigsRoutesPortsKey,
-            value=ports_dict
+            CONSTS.ConfigsRoutesPortKey,
+            value=port
         )
 
     @property
@@ -626,7 +626,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
                 clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
                 engines = clone.GetEngines()
             except Exception as cEx:
-                mlogger.debug('Can not create clone from path: %s', )
+                mlogger.debug('Can not create clone from path: %s', str(cEx))
 
         # find cpython engines
         cpy_engines_dict = {
@@ -658,12 +658,6 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def set_active_cpython_engine(self, pyrevit_engine):
         self.cpython_engine_version = pyrevit_engine.Version
 
-    def get_routes_port(self, revit_year):
-        ports_dict = self.routes_ports
-        return ports_dict.get(
-            revit_year,
-            CONSTS.ConfigsRoutesPortsDefault + int(revit_year)
-            )
 
     def save_changes(self):
         """Save user config into associated config file."""
