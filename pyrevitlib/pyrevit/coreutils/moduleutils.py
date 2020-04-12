@@ -48,6 +48,14 @@ def has_argument(function_obj, arg_name):
     return arg_name in inspect.getargspec(function_obj)[0] #pylint: disable=deprecated-method
 
 
+def has_any_arguments(function_obj, arg_name_list):
+    """Check if given function object has any of given arguments"""
+    args = inspect.getargspec(function_obj)[0] #pylint: disable=deprecated-method
+    if arg_name_list:
+        return any(x in args for x in arg_name_list)
+    return False
+
+
 def filter_kwargs(function_obj, kwargs):
     """Filter given arguments dict for function_obj arguments"""
     filtered_kwargs = {}

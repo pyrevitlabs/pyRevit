@@ -29,7 +29,6 @@ __all__ = (
 mlogger = get_logger(__name__)
 
 
-
 def init():
     """Initialize routes. Reset all registered routes and shutdown servers"""
     # clear all routes

@@ -1,12 +1,17 @@
+"""Builtin routes API
+
+This module also provides the API object to be used by third-party
+api developers to define new apis
+"""
 #pylint: disable=dangerous-default-value,invalid-name
-#pylint: disable=import-error,invalid-name,broad-except,dangerous-default-value,missing-docstring
+#pylint: disable=invalid-name,broad-except,dangerous-default-value
 from pyrevit import HOST_APP
 from pyrevit.labs import TargetApps
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import sessioninfo
 
-from pyrevit.routes import router
-from pyrevit.routes import serverinfo
+from pyrevit.routes.server import router
+from pyrevit.routes.server import serverinfo
 
 
 mlogger = get_logger(__name__)
@@ -66,8 +71,7 @@ def get_status():
 @PYREVIT_ROUTES_API.route('/sisters', methods=['GET'])
 def get_sisters():
     """Get other servers running on the same machine"""
-    # return [x.get_cache_data() for x in serverinfo.get_registered_servers()]
-    return []
+    return [x.get_cache_data() for x in serverinfo.get_registered_servers()]
 
 
 # GET /sisters/<int:year>

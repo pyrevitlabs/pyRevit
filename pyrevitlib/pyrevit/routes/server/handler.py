@@ -143,7 +143,13 @@ class RequestHandler(UI.IExternalEventHandler):
     @staticmethod
     def wants_api_context(handler):
         """Check if handler needs host api context"""
-        return modutils.has_argument(handler, ARGS_UIAPP)
+        return modutils.has_any_arguments(
+            function_obj=handler,
+            arg_name_list=[
+                ARGS_UIAPP,
+                ARGS_UIDOC,
+                ARGS_DOC
+            ])
 
     @staticmethod
     def prepare_handler_kwargs(request, handler, uiapp=None):
