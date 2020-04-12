@@ -123,5 +123,18 @@ namespace pyRevitLabs.PyRevit {
         public void SetValue(string sectionName, string keyName, IDictionary<string, string> dictString) {
             SetValue(sectionName, keyName, dictString.ConvertToTomlDictString());
         }
+    
+        // removes a value from config file
+        public bool DeleteValue(string sectionName, string keyName) {
+            logger.Debug(string.Format("Try getting config \"{0}:{1}\"", sectionName, keyName));
+            if (_config.Sections.Contains(sectionName) && _config.Sections[sectionName].Keys.Contains(keyName)) {
+                logger.Debug(string.Format("Removing config \"{0}:{1}\"", sectionName, keyName));
+                return _config.Sections[sectionName].Keys.Remove(keyName);
+            }
+            else {
+                logger.Debug(string.Format("Config \"{0}:{1}\" not set.", sectionName, keyName));
+                return false;
+            }
+        }
     }
 }
