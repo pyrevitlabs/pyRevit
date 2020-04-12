@@ -7,19 +7,13 @@ from collections import namedtuple
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 
+from pyrevit.routes.server import handler
+
 
 mlogger = get_logger(__name__)
 
 
-ARGS_REQUEST = 'request'
-ARGS_UIAPP = 'uiapp'
-
 ROUTE_VAR_SEP = ':'
-
-INVALID_VAR_NAMES = [
-    ARGS_REQUEST,
-    ARGS_UIAPP,
-]
 
 
 Route = namedtuple('Route', ['pattern', 'method'])
@@ -57,7 +51,7 @@ def _extract_route_param_keys(route_pattern):
 
 def _validate_pattern(route_pattern):
     param_keys = _extract_route_param_keys(route_pattern)
-    return not param_keys.intersection(INVALID_VAR_NAMES)
+    return not param_keys.intersection(handler.RESERVED_VAR_NAMES)
 
 
 def _cast_value(cast, val):
@@ -161,9 +155,9 @@ def get_route_handler(api_name, path, method):
     Returns:
         function: registered route handler function
     """
-    for api_route, handler in get_routes(api_name).items():
+    for api_route, route_handler in get_routes(api_name).items():
         if route_match(api_route, path, method):
-            return api_route, handler
+            return api_route, route_handler
     return None, None
 
 

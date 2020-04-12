@@ -1,5 +1,6 @@
 """Defines the basic server management api"""
-#pylint: disable=invalid-name,broad-except
+#pylint: disable=invalid-name,broad-except,useless-object-inheritance
+#pylint: disable=too-few-public-methods,too-many-arguments
 import os.path as op
 import pickle
 from collections import OrderedDict

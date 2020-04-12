@@ -46,3 +46,11 @@ def collect_marked(module_obj, prop_name):
 def has_argument(function_obj, arg_name):
     """Check if given function object has argument matching arg_name"""
     return arg_name in inspect.getargspec(function_obj)[0] #pylint: disable=deprecated-method
+
+
+def filter_kwargs(function_obj, kwargs):
+    """Filter given arguments dict for function_obj arguments"""
+    filtered_kwargs = {}
+    for arg_name in inspect.getargspec(function_obj)[0]: #pylint: disable=deprecated-method
+        filtered_kwargs[arg_name] = kwargs.get(arg_name, None)
+    return filtered_kwargs

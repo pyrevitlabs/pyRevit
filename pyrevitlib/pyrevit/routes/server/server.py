@@ -12,12 +12,11 @@ from SocketServer import ThreadingMixIn
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils import moduleutils as modutils
 
-from pyrevit.routes import exceptions as excp
-from pyrevit.routes import base
-from pyrevit.routes import router
-from pyrevit.routes import handler
+from pyrevit.routes.server import exceptions as excp
+from pyrevit.routes.server import base
+from pyrevit.routes.server import handler
+from pyrevit.routes.server import router
 
 
 mlogger = get_logger(__name__)
@@ -112,14 +111,14 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         req_hndlr.join()
 
     def _write_response(self, response):
-        status, headers, data = base.parse_response(response)
-        self.send_response(status)
-        if headers:
-            for key, value in headers.items():
+        r = handler.RequestHandler.parse_response(response)
+        self.send_response(r.status)
+        if r.headers:
+            for key, value in r.headers.items():
                 self.send_header(key, value)
             self.end_headers()
-        # FIXME: sending \n of no data otherwise Postman panics for some reason
-        self.wfile.write(data or "\n")
+        # sending \n if no data otherwise Postman panics for some reason
+        self.wfile.write(r.data or "\n")
 
     def _handle_route(self, method):
         # process the given url and find API and route
@@ -132,7 +131,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         request = self._prepare_request(route, path, method)
 
         # if handler has uiapp in arguments, run in host api context
-        if modutils.has_argument(route_handler, router.ARGS_UIAPP):
+        if handler.RequestHandler.wants_api_context(route_handler):
             # create a handler and event object in host
             req_hndlr, event_hndlr = \
                 self._prepare_host_handler(request, route_handler)
@@ -153,17 +152,14 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 self._write_response(req_hndlr.response)
         # otherwise run here
         else:
-            # prepare handler args
-            kwargs = {}
-            if modutils.has_argument(route_handler, router.ARGS_REQUEST):
-                kwargs[router.ARGS_REQUEST] = request
-            if request.params:
-                kwargs.update({x.key:x.value for x in request.params})
             # now run the method, and gret response
             response = \
                 handler.RequestHandler.run_handler(
-                    route_handler,
-                    kwargs
+                    handler=route_handler,
+                    kwargs=handler.RequestHandler.prepare_handler_kwargs(
+                        request=request,
+                        handler=route_handler
+                    )
                 )
             # prepare response
             self._write_response(response)

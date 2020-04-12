@@ -60,6 +60,14 @@ def forms_blocking():
     return 'Routes works!'
 
 
+@api.route('/doc')
+def get_doc(doc):
+    """Test API access: get active document title"""
+    return {
+        "title": doc.Title if doc else ""
+    }
+
+
 @api.route('/doors/')
 def get_doors(uiapp):
     """Test API access: find doors in active model"""
