@@ -110,7 +110,7 @@ def parse_response(response):
         data = getattr(response, 'data', response)
 
         # serialize data
-        if data:
+        if data is not None:
             data = json.dumps(data)
             headers['Content-Type'] = 'application/json'
 
