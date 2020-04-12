@@ -626,7 +626,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
                 clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
                 engines = clone.GetEngines()
             except Exception as cEx:
-                mlogger.debug('Can not create clone from path: %s', )
+                mlogger.debug('Can not create clone from path: %s', str(cEx))
 
         # find cpython engines
         cpy_engines_dict = {
