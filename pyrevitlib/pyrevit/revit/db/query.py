@@ -1500,3 +1500,10 @@ def get_view_filters(view):
         filter_element = view.Document.GetElement(filter_id)
         view_filters.append(filter_element)
     return view_filters
+
+
+def get_element_workset(element):
+    doc = element.Document
+    workset_table = doc.GetWorksetTable()
+    if element.WorksetId != DB.WorksetId.InvalidWorksetId:
+        return workset_table.GetWorkset(element.WorksetId)
