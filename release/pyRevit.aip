@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="15.2" version="16.8.1" Modules="professional" RootPath="." Language="en" Id="{1EA8C788-EF81-496E-9716-ABCD117C40CC}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="15.2" version="16.9" Modules="professional" RootPath="." Language="en" Id="{1EA8C788-EF81-496E-9716-ABCD117C40CC}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
-    <ROW Name="HiddenItems" Value="AppXAppDetailsComponent;FixupComponent;AppXCapabilitiesComponent;AppXDependenciesComponent;AppXProductDetailsComponent;AppXVisualAssetsComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent"/>
+    <ROW Name="HiddenItems" Value="AppXAppDetailsComponent;FixupComponent;AppXCapabilitiesComponent;AppXDependenciesComponent;AppXProductDetailsComponent;AppXVisualAssetsComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent;MsiXDiffComponent"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
@@ -29,10 +29,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevit.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{40BE31F6-E27A-49D0-ABF5-67778407DD6F} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{57D90459-1106-444E-A9DC-DC68435BBAEE} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.7.5" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.7.6" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>
@@ -277,6 +277,7 @@
     <ROW Directory="Sessions.panel_Dir" Directory_Parent="pyRevitTutor.tab_Dir" DefaultDir="SESSIO~1.PAN|Sessions.panel"/>
     <ROW Directory="SetCropRegionToSelectedShape.pu_Dir" Directory_Parent="Sheets.pulldown_Dir" DefaultDir="SETCRO~1.PUS|Set Crop Region To Selected Shape.pushbutton"/>
     <ROW Directory="SetRevisionOnSheets.pushbutton_Dir" Directory_Parent="Revision.pulldown_Dir" DefaultDir="SETREV~1.PUS|Set Revision On Sheets.pushbutton"/>
+    <ROW Directory="SetWorkset.pushbutton_Dir" Directory_Parent="Selection.panel_Dir" DefaultDir="SETWOR~1.PUS|Set Workset.pushbutton"/>
     <ROW Directory="Settings.smartbutton_Dir" Directory_Parent="pyRevit.panel_Dir" DefaultDir="SETTIN~1.SMA|Settings.smartbutton"/>
     <ROW Directory="ShakeFilledRegions.pushbutton_Dir" Directory_Parent="Edit.pulldown_Dir" DefaultDir="SHAKEF~1.PUS|Shake Filled Regions.pushbutton"/>
     <ROW Directory="Sheets.pulldown_Dir" Directory_Parent="DrawingSet.panel_Dir" DefaultDir="SHEETS~1.PUL|Sheets.pulldown"/>
@@ -332,6 +333,7 @@
     <ROW Directory="contrib_3_Dir" Directory_Parent="urllib3_2_Dir" DefaultDir="contrib"/>
     <ROW Directory="contrib_4_Dir" Directory_Parent="werkzeug_Dir" DefaultDir="contrib"/>
     <ROW Directory="contrib_Dir" Directory_Parent="urllib3_Dir" DefaultDir="contrib"/>
+    <ROW Directory="copypastestate_Dir" Directory_Parent="lib_2_Dir" DefaultDir="COPYPA~1|copypastestate"/>
     <ROW Directory="coreutils_Dir" Directory_Parent="pyrevit_Dir" DefaultDir="COREUT~1|coreutils"/>
     <ROW Directory="data_Dir" Directory_Parent="tests_7_Dir" DefaultDir="data"/>
     <ROW Directory="databases_Dir" Directory_Parent="sqlalchemy_Dir" DefaultDir="DATABA~1|databases"/>
@@ -362,6 +364,7 @@
     <ROW Directory="importlib_resources_Dir" Directory_Parent="sitepackages_Dir" DefaultDir="IMPORT~1|importlib_resources"/>
     <ROW Directory="interop_Dir" Directory_Parent="pyrevit_Dir" DefaultDir="interop"/>
     <ROW Directory="lib_1_Dir" Directory_Parent="pyRevitCore.extension_Dir" DefaultDir="lib"/>
+    <ROW Directory="lib_2_Dir" Directory_Parent="memo.stack_Dir" DefaultDir="lib"/>
     <ROW Directory="lib_4_Dir" Directory_Parent="Memory.pulldown_1_Dir" DefaultDir="lib"/>
     <ROW Directory="lib_Dir" Directory_Parent="pyRevitTags.extension_Dir" DefaultDir="lib"/>
     <ROW Directory="links.stack_Dir" Directory_Parent="pyRevit.panel_Dir" DefaultDir="LINKS~2.STA|links.stack"/>
@@ -401,6 +404,7 @@
     <ROW Directory="requests_Dir" Directory_Parent="sitepackages_Dir" DefaultDir="requests"/>
     <ROW Directory="revit_Dir" Directory_Parent="pyrevit_Dir" DefaultDir="revit"/>
     <ROW Directory="rjm_Dir" Directory_Parent="pyrevitlib_Dir" DefaultDir="rjm"/>
+    <ROW Directory="routes_Dir" Directory_Parent="pyrevit_Dir" DefaultDir="routes"/>
     <ROW Directory="rpwDocs.urlbutton_Dir" Directory_Parent="rpwlinks.stack_Dir" DefaultDir="RPWDOC~1.URL|rpw Docs.urlbutton"/>
     <ROW Directory="rpw_Dir" Directory_Parent="pyrevitlib_Dir" DefaultDir="rpw"/>
     <ROW Directory="rpwlinks.stack_Dir" Directory_Parent="pyRevit.panel_Dir" DefaultDir="RPWLIN~2.STA|rpwlinks.stack"/>
@@ -408,6 +412,7 @@
     <ROW Directory="rsparam_Dir" Directory_Parent="pyrevitlib_Dir" DefaultDir="rsparam"/>
     <ROW Directory="runtime_Dir" Directory_Parent="pyrevit_Dir" DefaultDir="runtime"/>
     <ROW Directory="select.stack_Dir" Directory_Parent="Selection.panel_Dir" DefaultDir="SELECT~2.STA|select.stack"/>
+    <ROW Directory="server_Dir" Directory_Parent="routes_Dir" DefaultDir="server"/>
     <ROW Directory="shared_Dir" Directory_Parent="debug_Dir" DefaultDir="shared"/>
     <ROW Directory="sitepackages_Dir" Directory_Parent="APPDIR" DefaultDir="SITE-P~1|site-packages"/>
     <ROW Directory="slackclient_Dir" Directory_Parent="sitepackages_Dir" DefaultDir="SLACKC~1|slackclient"/>
@@ -450,7 +455,7 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
     <ROW Component="ACT" ComponentId="{1C2437CB-91AB-4EEF-B858-DCFDF94CC556}" Directory_="Australia_Dir" Attributes="0" KeyPath="ACT" Type="0"/>
-    <ROW Component="AI_CustomARPName" ComponentId="{EE8C6085-CC79-46A3-A831-C3001CD790F9}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{39A3157B-8503-496C-A898-89AF9FF78E63}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_DisableModify" ComponentId="{C77D802D-6409-4BD6-9303-97390842F7D5}" Directory_="APPDIR" Attributes="260" KeyPath="NoModify" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{505F96D2-054E-4761-AE20-B27603EF0AAB}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{75E77E8F-2600-4C14-ABAB-AA1511F88147}" Directory_="APPDIR" Attributes="0"/>
@@ -546,6 +551,7 @@
     <ROW Component="WPFEditProject.sln" ComponentId="{CA2B3E93-1122-4E3F-9460-A8BF729288A0}" Directory_="WPFEditProject_Dir" Attributes="0" KeyPath="WPFEditProject.sln" Type="0"/>
     <ROW Component="YamlDotNet.dll_1" ComponentId="{7730F64E-C674-45A3-90D6-F94B3AE4639B}" Directory_="bin_Dir" Attributes="0" KeyPath="YamlDotNet.dll_1"/>
     <ROW Component="__init__.py" ComponentId="{0A88814D-7EAD-4BF5-AE75-DE4AE2D9B175}" Directory_="rsparam_Dir" Attributes="0" KeyPath="__init__.py_134" Type="0"/>
+    <ROW Component="__init__.py_1" ComponentId="{B3C38AF5-3762-41D4-941F-48D32C47A6CF}" Directory_="routes_Dir" Attributes="0" KeyPath="__init__.py_6" Type="0"/>
     <ROW Component="__init__.py_10" ComponentId="{2CC51BBF-2583-461A-986A-ED306C8922AA}" Directory_="dialects_Dir" Attributes="0" KeyPath="__init__.py_165" Type="0"/>
     <ROW Component="__init__.py_6" ComponentId="{5D5764DE-4FC2-4EC6-A659-FC41D617B455}" Directory_="enum_Dir" Attributes="0" KeyPath="__init__.py_138" Type="0"/>
     <ROW Component="__init__.py_7" ComponentId="{F21E6370-030C-4CFF-B519-B282BC2658BB}" Directory_="pathlib2_Dir" Attributes="0" KeyPath="__init__.py_141" Type="0"/>
@@ -577,6 +583,7 @@
     <ROW Component="abc.py" ComponentId="{954FB5A1-CEF5-44B1-B7D5-03BD5D76CBAE}" Directory_="importlib_resources_Dir" Attributes="0" KeyPath="abc.py" Type="0"/>
     <ROW Component="about.py" ComponentId="{89293F1D-E453-4EFB-B144-50AF7DD6FA45}" Directory_="versionmgr_Dir" Attributes="0" KeyPath="about.py" Type="0"/>
     <ROW Component="aboutscript.py" ComponentId="{515DEBAA-D35F-41B5-845C-553A4D689382}" Directory_="About.pushbutton_Dir" Attributes="0" KeyPath="aboutscript.py" Type="0"/>
+    <ROW Component="actions.py" ComponentId="{7BE49E9E-BF1A-4CB2-A597-5AE1ECD47076}" Directory_="copypastestate_Dir" Attributes="0" KeyPath="actions.py" Type="0"/>
     <ROW Component="adapters.py" ComponentId="{A48FFA2E-81F3-4E39-B48E-7C66F538AE51}" Directory_="requests_Dir" Attributes="0" KeyPath="adapters.py" Type="0"/>
     <ROW Component="adodbapi.py" ComponentId="{046FFFD9-8623-48EB-9CB8-3A794DD86703}" Directory_="mssql_Dir" Attributes="0" KeyPath="adodbapi.py" Type="0"/>
     <ROW Component="annotation.py" ComponentId="{2ED169C0-FFD8-4497-B9EA-5CAFA3F6B41E}" Directory_="sql_Dir" Attributes="0" KeyPath="annotation.py" Type="0"/>
@@ -734,6 +741,7 @@
     <ROW Component="icon.png_169" ComponentId="{2DBB4DDD-4ACD-4818-AE95-4C6EBA9F5631}" Directory_="MatchTags.pushbutton_1_Dir" Attributes="0" KeyPath="icon.png_183" Type="0"/>
     <ROW Component="icon.png_17" ComponentId="{A38BBBA5-C284-4CE4-B4EE-E60857B54B00}" Directory_="GetInPlaceFamilyCount.pushbutto_Dir" Attributes="0" KeyPath="icon.png_24" Type="0"/>
     <ROW Component="icon.png_172" ComponentId="{F184C436-944C-4AE3-9D9A-7F95DB8EFCD6}" Directory_="Settings.smartbutton_Dir" Attributes="0" KeyPath="icon.png_181" Type="0"/>
+    <ROW Component="icon.png_18" ComponentId="{DBE01B59-333C-4A6F-9BB0-7694120F9B7C}" Directory_="SetWorkset.pushbutton_Dir" Attributes="0" KeyPath="icon.png_25" Type="0"/>
     <ROW Component="icon.png_180" ComponentId="{9CE795F7-C1FA-4074-9D89-010BA0198C54}" Directory_="Update.smartbutton_Dir" Attributes="0" KeyPath="icon.png_189" Type="0"/>
     <ROW Component="icon.png_2" ComponentId="{A2DBBAD0-6DCE-42F6-B988-BCAC65CE6CF2}" Directory_="Wiki.pushbutton_Dir" Attributes="0" KeyPath="icon.png_4" Type="0"/>
     <ROW Component="icon.png_207" ComponentId="{462B5638-E717-4290-BF09-B8C18FEA507E}" Directory_="CreateRevisedSheetSet.pushbutto_Dir" Attributes="0" KeyPath="icon.png_217" Type="0"/>
@@ -914,9 +922,11 @@
     <ROW Component="script.py_96" ComponentId="{C6444633-7FCA-435F-BFAD-F605332B450C}" Directory_="IncrementSelectedSheetNumbers.p_Dir" Attributes="0" KeyPath="script.py_300" Type="0"/>
     <ROW Component="script.py_97" ComponentId="{33FE2FC2-4693-475F-9E27-BDA369130D0D}" Directory_="MoveSelectedViewportsToSelected_Dir" Attributes="0" KeyPath="script.py_301" Type="0"/>
     <ROW Component="script.py_98" ComponentId="{54400C53-85F9-472A-9CAB-2ABB541901C6}" Directory_="ViewOrderingTool.pushbutton_Dir" Attributes="0" KeyPath="script.py_308" Type="0"/>
+    <ROW Component="serverinfo.py" ComponentId="{16E33565-0108-49CC-9C6B-E43CA2EC546E}" Directory_="server_Dir" Attributes="0" KeyPath="serverinfo.py" Type="0"/>
     <ROW Component="sorteddict.py" ComponentId="{25B8B5D5-C429-49A0-8B25-D4142A67C2B8}" Directory_="sortedcontainers_Dir" Attributes="0" KeyPath="sorteddict.py" Type="0"/>
     <ROW Component="sqlite3.dll" ComponentId="{416DA269-7B73-4DD0-B1CB-E4621D02847A}" Directory_="__3_Dir" Attributes="256" KeyPath="sqlite3.dll"/>
     <ROW Component="sqlite3.dll_1" ComponentId="{1BD07B35-8BA5-417F-BF58-BB7832A76545}" Directory_="__7_Dir" Attributes="256" KeyPath="sqlite3.dll_1"/>
+    <ROW Component="startup.py" ComponentId="{E9458A1C-FDAB-4EA6-AC71-E5FA3E845E28}" Directory_="pyRevitCore.extension_Dir" Attributes="0" KeyPath="startup.py" Type="0"/>
     <ROW Component="test_cookiejar.py" ComponentId="{6FFC332D-C10B-4289-AD65-834C8872E199}" Directory_="tests_7_Dir" Attributes="0" KeyPath="test_cookiejar.py" Type="0"/>
     <ROW Component="test_ddl.py" ComponentId="{5C7539C3-4275-4804-803B-670C2059CC14}" Directory_="suite_Dir" Attributes="0" KeyPath="test_ddl.py" Type="0"/>
     <ROW Component="vcruntime140.dll" ComponentId="{857001BC-A48B-4B15-9B4C-DFB54026CB8B}" Directory_="__3_Dir" Attributes="256" KeyPath="vcruntime140.dll"/>
@@ -5717,6 +5727,23 @@
     <ROW File="script.py_19" Component_="icon.png_17" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Analysis.panel\Tools.stack\Analyse.pulldown\Get In Place Family Count.pushbutton\script.py" SelfReg="false"/>
     <ROW File="BatchImportPATFiles.pushbuttonscript.py" Component_="BatchImportPATFiles.pushbuttonscript.py" FileName="BATCHI~1.PY|Batch Import PAT Files.pushbuttonscript.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Patterns.splitpushbutton\Batch Import PAT Files.pushbuttonscript.py" SelfReg="false"/>
     <ROW File="failure.py" Component_="create.py" FileName="failure.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\revit\db\failure.py" SelfReg="false"/>
+    <ROW File="startup.py" Component_="startup.py" FileName="startup.py" Attributes="0" SourcePath="..\extensions\pyRevitCore.extension\startup.py" SelfReg="false"/>
+    <ROW File="pyrevitcore_api.py" Component_="pyrevitcore_globals.py" FileName="PYREVI~2.PY|pyrevitcore_api.py" Attributes="0" SourcePath="..\extensions\pyRevitCore.extension\lib\pyrevitcore_api.py" SelfReg="false"/>
+    <ROW File="actions.py" Component_="actions.py" FileName="actions.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\memo.stack\lib\copypastestate\actions.py" SelfReg="false"/>
+    <ROW File="__init__.py_5" Component_="actions.py" FileName="__init__.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\memo.stack\lib\copypastestate\__init__.py" SelfReg="false"/>
+    <ROW File="basetypes.py" Component_="actions.py" FileName="BASETY~1.PY|basetypes.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\memo.stack\lib\copypastestate\basetypes.py" SelfReg="false"/>
+    <ROW File="icon.png_25" Component_="icon.png_18" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\Set Workset.pushbutton\icon.png" SelfReg="false"/>
+    <ROW File="script.py_20" Component_="icon.png_18" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\Set Workset.pushbutton\script.py" SelfReg="false"/>
+    <ROW File="pickling.py" Component_="create.py" FileName="pickling.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\revit\db\pickling.py" SelfReg="false"/>
+    <ROW File="__init__.py_6" Component_="__init__.py_1" FileName="__init__.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\__init__.py" SelfReg="false"/>
+    <ROW File="serverinfo.py" Component_="serverinfo.py" FileName="SERVER~1.PY|serverinfo.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\serverinfo.py" SelfReg="false"/>
+    <ROW File="server.py_1" Component_="serverinfo.py" FileName="server.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\server.py" SelfReg="false"/>
+    <ROW File="handler.py" Component_="serverinfo.py" FileName="handler.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\handler.py" SelfReg="false"/>
+    <ROW File="__init__.py_7" Component_="serverinfo.py" FileName="__init__.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\__init__.py" SelfReg="false"/>
+    <ROW File="exceptions.py_1" Component_="serverinfo.py" FileName="EXCEPT~1.PY|exceptions.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\exceptions.py" SelfReg="false"/>
+    <ROW File="router.py" Component_="serverinfo.py" FileName="router.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\router.py" SelfReg="false"/>
+    <ROW File="base.py_1" Component_="serverinfo.py" FileName="base.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\base.py" SelfReg="false"/>
+    <ROW File="api.py_1" Component_="__init__.py_1" FileName="api.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\api.py" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
@@ -6324,6 +6351,11 @@
     <ROW Feature_="MainFeature" Component_="APPDIR"/>
     <ROW Feature_="MainFeature" Component_="icon.png_17"/>
     <ROW Feature_="MainFeature" Component_="BatchImportPATFiles.pushbuttonscript.py"/>
+    <ROW Feature_="MainFeature" Component_="startup.py"/>
+    <ROW Feature_="MainFeature" Component_="actions.py"/>
+    <ROW Feature_="MainFeature" Component_="icon.png_18"/>
+    <ROW Feature_="MainFeature" Component_="__init__.py_1"/>
+    <ROW Feature_="MainFeature" Component_="serverinfo.py"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="pyRevit.exe" SourcePath="..\bin\pyRevit.ico" Index="0"/>
