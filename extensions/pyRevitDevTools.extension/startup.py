@@ -54,7 +54,7 @@ api = routes.API("pyrevit-dev")
 
 
 @api.route('/forms-block', methods=['POST'])
-def forms_blocking():
+def forms_blocking(doc):
     """Test blocking GUI"""
     forms.alert("Routes works!")
     return 'Routes works!'
