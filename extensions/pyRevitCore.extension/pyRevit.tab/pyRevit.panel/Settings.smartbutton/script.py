@@ -306,6 +306,13 @@ class SettingsWindow(forms.WPFWindow):
                 self.routesserver_statusbox,
                 self.routesserver_statusmsg
             )
+            # setup example
+            self.show_element(self.routes_exampleblock)
+            self.routes_example.Text = \
+                "GET http://{}:{}/routes/status".format(
+                    coreutils.get_my_ip(),
+                    user_config.routes_port
+                )
 
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""

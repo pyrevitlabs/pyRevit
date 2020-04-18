@@ -17,6 +17,7 @@ import random
 import stat
 import codecs
 import math
+import socket
 from collections import defaultdict
 
 #pylint: disable=E0401
@@ -1409,3 +1410,8 @@ def get_paper_sizes(printer_name=None):
 def get_integer_length(number):
     """Return digit length of given number."""
     return 1 if number == 0 else (math.floor(math.log10(number)) + 1)
+
+
+def get_my_ip():
+    """Return local ip address of this machine"""
+    return socket.gethostbyname(socket.gethostname())
