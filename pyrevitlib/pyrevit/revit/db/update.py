@@ -134,3 +134,16 @@ def set_crop_region(view, curve_loops):
         else:
             crsm.SetCropRegionShape(cloop)
     view.CropBoxActive = crop_active_saved
+
+
+def set_active_workset(workset_id, doc=None):
+    """Set active workset
+
+    Args:
+        workset_id (DB.WorksetId): target workset id
+        doc (DB.Document, optional): target document. defaults to active
+    """
+    doc = doc or HOST_APP.doc
+    if doc.IsWorkshared:
+        workset_table = doc.GetWorksetTable()
+        workset_table.SetActiveWorksetId(workset_id)
