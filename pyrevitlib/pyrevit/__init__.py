@@ -281,6 +281,16 @@ class _HostApplication(object):
         return api.get_product_serial_number()
 
     @property
+    def pretty_name(self):
+        """str: Pretty name of the host
+        (e.g. 'Autodesk Revit 2019.2 build: 20190808_0900(x64)')
+        """
+        host_name = self.version_name
+        if self.is_newer_than(2017):
+            host_name = host_name.replace(self.version, self.subversion)
+        return "%s build: %s" % (host_name, self.build)
+
+    @property
     def is_demo(self):
         """bool: Determine if product is using demo license."""
         return api.is_product_demo()
@@ -423,7 +433,7 @@ class _ExecutorParams(object):
         try:
             return __execid__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def exec_timestamp(self):
@@ -431,7 +441,7 @@ class _ExecutorParams(object):
         try:
             return __timestamp__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def engine_id(self):
@@ -439,7 +449,7 @@ class _ExecutorParams(object):
         try:
             return __cachedengineid__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def engine_ver(self):

@@ -8,7 +8,7 @@ using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class DomainStorageKeys {
-        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpper();
+        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
         public static string EnginesDictKey = keyPrefix + "CachedEngines";
@@ -18,7 +18,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public static class EnvDictionaryKeys
     {
-        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpper();
+        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string SessionUUID = string.Format("{0}_UUID", keyPrefix);
         public static string RevitVersion = string.Format("{0}_APPVERSION", keyPrefix);

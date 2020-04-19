@@ -281,6 +281,18 @@ class PyRevitOutputWindow(object):
         self.set_width(width)
         self.set_height(height)
 
+    def center(self):
+        """Center the output window on the screen"""
+        screen_area = HOST_APP.proc_screen_workarea
+        left = \
+            (abs(screen_area.Right - screen_area.Left) / 2) \
+                - (self.get_width() / 2)
+        top = \
+            (abs(screen_area.Top - screen_area.Bottom) / 2) \
+                - (self.get_height() / 2)
+        self.window.Left = left
+        self.window.Top = top
+
     def get_title(self):
         """str: Return current window title."""
         if self.window:
@@ -589,9 +601,9 @@ class PyRevitOutputWindow(object):
             )
         )
 
-    def insert_divider(self):
+    def insert_divider(self, level=''):
         """Add horizontal rule to the output window."""
-        self.print_md('-----')
+        self.print_md('%s\n-----' % level)
 
     def next_page(self):
         """Add hidden next page tag to the output window.

@@ -9,8 +9,6 @@ Everything starts from ``sessionmgr.load_session()`` function...
 The only public function is ``load_session()`` that loads a new session.
 Everything else is private.
 """
-
-import os.path as op
 import sys
 from collections import namedtuple
 
@@ -29,9 +27,10 @@ from pyrevit.loader import uimaker
 from pyrevit.loader import hooks
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
-from pyrevit import telemetry
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
+from pyrevit import telemetry
+from pyrevit import routes
 # import the runtime first to get all the c-sharp code to compile
 from pyrevit import runtime
 from pyrevit.runtime import types as runtime_types
@@ -41,7 +40,7 @@ from pyrevit import output
 from pyrevit import DB, UI, revit
 
 
-#pylint: disable=W0703,C0302,C0103
+#pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
 
@@ -101,7 +100,7 @@ def _set_autoupdate_inprogress(state):
     envvars.set_pyrevit_env_var(envvars.AUTOUPDATING_ENVVAR, state)
 
 
-def _perform_onsessionload_ops():
+def _perform_onsessionloadstart_ops():
     # clear the cached engines
     if not _clear_running_engines():
         mlogger.debug('No Engine Manager exists...')
@@ -123,6 +122,9 @@ def _perform_onsessionload_ops():
 
     # init executor
     runtime_types.ScriptExecutor.Initialize()
+
+    # init routes
+    routes.init()
 
     # asking telemetry module to setup the telemetry system
     # (active or not active)
@@ -148,6 +150,15 @@ def _perform_onsessionloadcomplete_ops():
     # activate internal handlers
     # toggle doc colorizer
     revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
+
+    # activate runtime routes server
+    if user_config.routes_server:
+        routes.active_routes_api()
+        active_server = routes.activate_server()
+        if active_server:
+            mlogger.info(str(active_server))
+        else:
+            mlogger.error('Routes servers failed activation')
 
 
 def _new_session():
@@ -266,7 +277,7 @@ def load_session():
     timer = Timer()
 
     # perform pre-load tasks
-    _perform_onsessionload_ops()
+    _perform_onsessionloadstart_ops()
 
     # create a new session
     _new_session()
@@ -294,6 +305,7 @@ def load_session():
                       imp_err)
 
     _cleanup_output()
+    return sessioninfo.get_session_uuid()
 
 
 def _perform_onsessionreload_ops():
@@ -307,8 +319,9 @@ def _perform_onsessionreloadcomplete_ops():
 def reload_pyrevit():
     _perform_onsessionreload_ops()
     mlogger.info('Reloading....')
-    load_session()
+    session_Id = load_session()
     _perform_onsessionreloadcomplete_ops()
+    return session_Id
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing
@@ -587,4 +600,3 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
         script_data,
         script_runtime_cfg
     )
-

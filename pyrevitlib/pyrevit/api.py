@@ -43,3 +43,9 @@ def get_product_serial_number():
 def is_product_demo():
     """Determine if product is using demo license"""
     return get_product_serial_number() == '000-00000000'
+
+
+def is_api_object(data_type):
+    """Check if given object belongs to Revit API"""
+    if hasattr(data_type, 'GetType'):
+        return 'Autodesk.Revit.' in data_type.GetType().Namespace

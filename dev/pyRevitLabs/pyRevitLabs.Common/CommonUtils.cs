@@ -145,21 +145,21 @@ namespace pyRevitLabs.Common {
             try {
                 using (var client = GetWebClient()) {
                     client.Headers.Add("User-Agent", "pyrevit-cli");
-                    if (GlobalConfigs.ReportProgress) {
-                        logger.Debug("Downloading (async) \"{0}\"", url);
+                    //if (GlobalConfigs.ReportProgress) {
+                    //    logger.Debug("Downloading (async) \"{0}\"", url);
 
-                        client.DownloadProgressChanged += Client_DownloadProgressChanged;
+                    //    client.DownloadProgressChanged += Client_DownloadProgressChanged;
 
-                        lastReport = 0;
-                        client.DownloadFileAsync(new Uri(url), destPath, progressToken);
+                    //    lastReport = 0;
+                    //    client.DownloadFileAsync(new Uri(url), destPath, progressToken);
 
-                        // wait until download is complete
-                        while (client.IsBusy) ;
-                    }
-                    else {
+                    //    // wait until download is complete
+                    //    while (client.IsBusy) ;
+                    //}
+                    //else {
                         logger.Debug("Downloading \"{0}\"", url);
                         client.DownloadFile(url, destPath);
-                    }
+                    //}
                 }
             }
             catch (Exception dlEx) {
@@ -170,36 +170,36 @@ namespace pyRevitLabs.Common {
             return destPath;
         }
 
-        private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
-            lock (ProgressLock) {
-                if (e.ProgressPercentage > lastReport) {
-                    lastReport = e.ProgressPercentage;
+        //private static void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
+        //    lock (ProgressLock) {
+        //        if (e.ProgressPercentage > lastReport) {
+        //            lastReport = e.ProgressPercentage;
 
-                    // build progress bar and print
-                    // =====>
-                    var pbar = string.Concat(Enumerable.Repeat("=", (int)((lastReport / 100.0) * 50.0))) + ">";
-                    // 4.57 KB/27.56 KB
-                    var sizePbar = string.Format("{0}/{1}", e.BytesReceived.CleanupSize(), e.TotalBytesToReceive.CleanupSize());
+        //            // build progress bar and print
+        //            // =====>
+        //            var pbar = string.Concat(Enumerable.Repeat("=", (int)((lastReport / 100.0) * 50.0))) + ">";
+        //            // 4.57 KB/27.56 KB
+        //            var sizePbar = string.Format("{0}/{1}", e.BytesReceived.CleanupSize(), e.TotalBytesToReceive.CleanupSize());
 
-                    // Downloading [==========================================>       ] 23.26 KB/27.56 KB
-                    string message = "";
-                    if (lastReport == 100) {
-                        if (e.UserState != null)
-                            message = string.Format("\r{1}: Download complete ({0})", e.TotalBytesToReceive.CleanupSize(), (string)e.UserState);
-                        else
-                            message = string.Format("\rDownload complete ({0})", e.TotalBytesToReceive.CleanupSize());
-                        Console.WriteLine("{0,-120}", message);
-                    }
-                    else {
-                        if (e.UserState != null)
-                            message = string.Format("\r{2}: Downloading [{0,-50}] {1}", pbar, sizePbar, (string)e.UserState);
-                        else
-                            message = string.Format("\rDownloading [{0,-50}] {1}", pbar, sizePbar);
-                        Console.Write("{0,-120}", message);
-                    }
-                }
-            }
-        }
+        //            // Downloading [==========================================>       ] 23.26 KB/27.56 KB
+        //            string message = "";
+        //            if (lastReport == 100) {
+        //                if (e.UserState != null)
+        //                    message = string.Format("\r{1}: Download complete ({0})", e.TotalBytesToReceive.CleanupSize(), (string)e.UserState);
+        //                else
+        //                    message = string.Format("\rDownload complete ({0})", e.TotalBytesToReceive.CleanupSize());
+        //                Console.WriteLine("{0,-120}", message);
+        //            }
+        //            else {
+        //                if (e.UserState != null)
+        //                    message = string.Format("\r{2}: Downloading [{0,-50}] {1}", pbar, sizePbar, (string)e.UserState);
+        //                else
+        //                    message = string.Format("\rDownloading [{0,-50}] {1}", pbar, sizePbar);
+        //                Console.Write("{0,-120}", message);
+        //            }
+        //        }
+        //    }
+        //}
 
         public static bool CheckInternetConnection() {
             try {
@@ -395,7 +395,7 @@ namespace pyRevitLabs.Common {
             string[] consonants = { "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "l", "n", "p", "q", "r", "s", "sh", "zh", "t", "v", "w", "x" };
             string[] vowels = { "a", "e", "i", "o", "u", "ae", "y" };
             string Name = "";
-            Name += consonants[r.Next(consonants.Length)].ToUpper();
+            Name += consonants[r.Next(consonants.Length)].ToUpperInvariant();
             Name += vowels[r.Next(vowels.Length)];
             int b = 2; //b tells how many times a new letter has been added. It's 2 right now because the first two letters are already in the name.
             while (b < len) {

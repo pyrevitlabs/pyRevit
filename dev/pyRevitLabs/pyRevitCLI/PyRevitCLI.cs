@@ -83,15 +83,8 @@ namespace pyRevitCLI {
 
         // cli entry point:
         static void Main(string[] args) {
-
             // process arguments for logging level
             var argsList = new List<string>(args);
-
-            // check for testing and set the global test flag
-            if (argsList.Contains("--test")) {
-                argsList.Remove("--test");
-                GlobalConfigs.UnderTest = true;
-            }
 
             // setup logger
             // process arguments for hidden debug mode switch
@@ -167,10 +160,6 @@ namespace pyRevitCLI {
             }
         }
 
-        // configure env
-        private static void PrepareEnv() {
-        }
-
         // cli argument processor
         private static void ProcessArguments() {
             if (IsHelpUsagePatternMode) Console.WriteLine(UsagePatterns.Replace("\t", "    "));
@@ -200,7 +189,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Update);
                 else
-                    PyRevitCLIAppCmds.UpdateRemoteDateSources();
+                    PyRevitCLIAppCmds.UpdateRemoteDataSources();
             }
 
             else if (all("clone")) {
@@ -674,6 +663,38 @@ namespace pyRevitCLI {
                     else
                         Console.WriteLine(string.Format("Doc Colorizer is {0}",
                                                         PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
+                }
+
+                else if (all("routes")) {
+                    if (all("port")) {
+                        var portNumber = TryGetValue("<port_number>");
+                        if (portNumber is null) {
+                            Console.WriteLine(string.Format("Routes Port: {0}", PyRevitConfigs.GetRoutesServerPort()));
+                        }
+                        else
+                            PyRevitConfigs.SetRoutesServerPort(int.Parse(portNumber));
+                    }
+
+                    else if (all("coreapi")) {
+                        if (all("enable"))
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(true);
+                        else if (all("disable"))
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(false);
+                        else
+                            Console.WriteLine(string.Format("Routes Core API is {0}",
+                                                            PyRevitConfigs.GetRoutesLoadCoreAPIStatus() ? "Enabled" : "Disabled"));
+                    }
+
+                    else if (all("enable"))
+                        PyRevitConfigs.EnableRoutesServer();
+
+                    else if (all("disable"))
+                        PyRevitConfigs.DisableRoutesServer();
+
+                    else {
+                        Console.WriteLine(string.Format("Routes Server is {0}",
+                                                        PyRevitConfigs.GetRoutesServerStatus() ? "Enabled" : "Disabled"));
+                    }
                 }
 
                 else if (all("telemetry")) {

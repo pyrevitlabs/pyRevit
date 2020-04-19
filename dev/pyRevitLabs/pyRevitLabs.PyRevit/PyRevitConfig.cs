@@ -73,7 +73,7 @@ namespace pyRevitLabs.PyRevit {
         }
 
         // get config key value and make a string dictionary out of it
-        public Dictionary<string, string> GetDictValue(string sectionName, string keyName, IEnumerable<string> defaultValue = null) {
+        public Dictionary<string, string> GetDictValue(string sectionName, string keyName) {
             logger.Debug("Try getting config as dict \"{0}:{1}\"", sectionName, keyName);
             var stringValue = GetValue(sectionName, keyName);
             if (stringValue != null)
@@ -122,6 +122,19 @@ namespace pyRevitLabs.PyRevit {
         // sets config key value as string dictionary
         public void SetValue(string sectionName, string keyName, IDictionary<string, string> dictString) {
             SetValue(sectionName, keyName, dictString.ConvertToTomlDictString());
+        }
+    
+        // removes a value from config file
+        public bool DeleteValue(string sectionName, string keyName) {
+            logger.Debug(string.Format("Try getting config \"{0}:{1}\"", sectionName, keyName));
+            if (_config.Sections.Contains(sectionName) && _config.Sections[sectionName].Keys.Contains(keyName)) {
+                logger.Debug(string.Format("Removing config \"{0}:{1}\"", sectionName, keyName));
+                return _config.Sections[sectionName].Keys.Remove(keyName);
+            }
+            else {
+                logger.Debug(string.Format("Config \"{0}:{1}\" not set.", sectionName, keyName));
+                return false;
+            }
         }
     }
 }

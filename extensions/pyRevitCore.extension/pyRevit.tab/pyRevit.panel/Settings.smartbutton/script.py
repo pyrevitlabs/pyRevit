@@ -8,6 +8,7 @@ from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
+from pyrevit import routes
 from pyrevit import telemetry
 from pyrevit import script
 from pyrevit import forms
@@ -102,6 +103,7 @@ class SettingsWindow(forms.WPFWindow):
         self.set_image_source(self.logdebug, 'logdebug.png')
 
         self._setup_uiux()
+        self._setup_routes()
         self._setup_telemetry()
         self._setup_addinfiles()
 
@@ -290,6 +292,27 @@ class SettingsWindow(forms.WPFWindow):
                     )))
             cbox.Content = tblock
             self.event_telemetry_sp.Children.Add(cbox)
+
+    def _setup_routes(self):
+        self.routes_cb.IsChecked = user_config.routes_server
+        self.coreapi_cb.IsChecked = user_config.load_core_api
+        active_server = routes.get_active_server()
+        if active_server:
+            self.update_status_lights(
+                {
+                    "status": "pass",
+                    "message": str(active_server)
+                },
+                self.routesserver_statusbox,
+                self.routesserver_statusmsg
+            )
+            # setup example
+            self.show_element(self.routes_exampleblock)
+            self.routes_example.Text = \
+                "GET http://{}:{}/routes/status".format(
+                    coreutils.get_my_ip(),
+                    user_config.routes_port
+                )
 
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""
@@ -480,13 +503,17 @@ class SettingsWindow(forms.WPFWindow):
         """Update given status light by given status"""
         if status and status["status"] == "pass":
             serverbox.Background = self.Resources['pyRevitAccentBrush']
+            custom_msg = status.get("message", None)
             servermsg.Text = ""
-            for check, check_status in status["checks"].items():
-                servermsg.Text += \
-                    u'\u2713 {} ({})'.format(
-                        check,
-                        check_status["version"]
-                        )
+            if custom_msg:
+                servermsg.Text = custom_msg
+            else:
+                for check, check_status in status["checks"].items():
+                    servermsg.Text += \
+                        u'\u2713 {} ({})'.format(
+                            check,
+                            check_status["version"]
+                            )
             return
         serverbox.Background = self.Resources['pyRevitDarkBrush']
         servermsg.Text = "Unknown Status. Click Here to Test"
@@ -630,7 +657,7 @@ class SettingsWindow(forms.WPFWindow):
                         request_reload = forms.alert(
                             'UI language has changed. Reloading pyRevit is '
                             'required for this change to take effect. Do you '
-                            'want to reload now?', yes=True, no=True,)
+                            'want to reload now?', yes=True, no=True)
         # colorize docs
         user_config.colorize_docs = self.colordocs_cb.IsChecked
         revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
@@ -644,8 +671,34 @@ class SettingsWindow(forms.WPFWindow):
             request_reload = forms.alert(
                 'pyRevit UI Configuration has changed. Reloading pyRevit is '
                 'required for this change to take effect. Do you '
-                'want to reload now?', yes=True, no=True,)
+                'want to reload now?', yes=True, no=True)
         user_config.tooltip_debug_info = self.loadtooltipex_cb.IsChecked
+
+        return request_reload
+
+    def _save_routes(self):
+        request_reload = False
+
+        # decide to turn off or on
+        if self.routes_cb.IsChecked:
+            if not user_config.routes_server:
+                request_reload = forms.alert(
+                    'Routes server setting has changed. '
+                    'Reloading pyRevit is required for this change to take '
+                    'effect. Do you want to reload now?', yes=True, no=True)
+        else:
+            routes.deactivate_server()
+
+        if user_config.load_core_api != self.coreapi_cb.IsChecked \
+                and not request_reload:
+            request_reload = forms.alert(
+                'pyRevit Core REST API setting has changed. '
+                'Reloading pyRevit is required for this change to take effect. '
+                'Do you want to reload now?', yes=True, no=True)
+
+        # save configs
+        user_config.routes_server = self.routes_cb.IsChecked
+        user_config.load_core_api = self.coreapi_cb.IsChecked
 
         return request_reload
 
@@ -692,6 +745,8 @@ class SettingsWindow(forms.WPFWindow):
             self._save_user_extensions_list() or self.reload_requested
         self.reload_requested = \
             self._save_uiux() or self.reload_requested
+        self.reload_requested = \
+            self._save_routes() or self.reload_requested
         self.reload_requested = \
             self._save_telemetry() or self.reload_requested
 

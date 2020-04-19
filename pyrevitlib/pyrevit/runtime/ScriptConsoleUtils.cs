@@ -40,7 +40,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     var el = doc.GetElement(elementIds[0]);
 
                     // if element is a view, open the view
-                    if (el.GetType().IsSubclassOf(typeof(View))) {
+                    Type elType = el.GetType();
+                    if (elType == typeof(View) || elType.IsSubclassOf(typeof(View))) {
                         uidoc.ActiveView = (View)el;
                     }
                     // if element is a 2D element and has an owner view

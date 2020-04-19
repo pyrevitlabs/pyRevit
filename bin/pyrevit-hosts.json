@@ -1083,4 +1083,15 @@
     "build": "20190808_0900",
     "target": "x64",
     "notes": "https://up.autodesk.com/2019/RVT/Autodesk_Revit_2019_2_2_Readme.html"
+}, {
+    "meta": {
+        "schema": "1.0",
+        "source": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021release_html"
+    },
+    "product": "Autodesk Revit",
+    "release": "2021 First Customer Ship",
+    "version": "21.0.0.383",
+    "build": "20200220_1100",
+    "target": "x64",
+    "notes": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021release_html"
 }]
