@@ -9,7 +9,6 @@ Everything starts from ``sessionmgr.load_session()`` function...
 The only public function is ``load_session()`` that loads a new session.
 Everything else is private.
 """
-import os.path as op
 import sys
 from collections import namedtuple
 
@@ -598,4 +597,3 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
         script_data,
         script_runtime_cfg
     )
-
