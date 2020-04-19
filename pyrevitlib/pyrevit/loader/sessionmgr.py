@@ -319,8 +319,9 @@ def _perform_onsessionreloadcomplete_ops():
 def reload_pyrevit():
     _perform_onsessionreload_ops()
     mlogger.info('Reloading....')
-    return load_session()
+    session_Id = load_session()
     _perform_onsessionreloadcomplete_ops()
+    return session_Id
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing
