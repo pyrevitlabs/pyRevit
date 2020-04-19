@@ -123,7 +123,7 @@ def reset_routes():
 
 
 def get_routes(api_name):
-    """Add a new root route for given API name
+    """Get all registered routes for given API name
 
     Args:
         api_name (str): unique name of the api

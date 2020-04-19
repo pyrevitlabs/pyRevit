@@ -22,7 +22,7 @@ __all__ = (
     'OK', 'ACCEPTED', 'INTERNAL_SERVER_ERROR', 'NO_CONTENT',
     'Request', 'Response',
     'init', 'activate_server', 'deactivate_server', 'get_active_server',
-    'make_response',
+    'make_response', 'get_routes', 'add_route', 'remove_route',
     )
 
 
@@ -79,3 +79,35 @@ def make_response(data, status=OK, headers=None):
     for key, value in (headers or {}).items():
         res.add_header(key, value)
     return res
+
+
+def get_routes(api_name):
+    """Get all registered routes for given API name
+
+    Args:
+        api_name (str): unique name of the api
+    """
+    return router.get_routes(api_name)
+
+
+def add_route(api_name, pattern, method, handler_func):
+    """Add new route for given API name
+
+    Args:
+        api_name (str): unique name of the api
+        pattern (str): route pattern
+        method (str): method name
+        handler_func (function): route handler function
+    """
+    return router.add_route(api_name, pattern, method, handler_func)
+
+
+def remove_route(api_name, pattern, method):
+    """Remove previously registered route for given API name
+
+    Args:
+        api_name (str): unique name of the api
+        pattern (str): route pattern
+        method (str): method name
+    """
+    return router.remove_route(api_name, pattern, method)
