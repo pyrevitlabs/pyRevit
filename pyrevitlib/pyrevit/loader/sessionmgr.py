@@ -153,10 +153,12 @@ def _perform_onsessionloadcomplete_ops():
 
     # activate runtime routes server
     if user_config.routes_server:
-        routes.activate_server()
-        active_server = routes.get_active_server()
+        routes.active_routes_api()
+        active_server = routes.activate_server()
         if active_server:
             mlogger.info(str(active_server))
+        else:
+            mlogger.error('Routes servers failed activation')
 
 
 def _new_session():

@@ -50,6 +50,7 @@ def activate_server():
                     )
             routes_server.start()
             envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
+            return routes_server
         except Exception as rs_ex:
             serverinfo.unregister()
             mlogger.error("Error starting Routes server | %s", str(rs_ex))
