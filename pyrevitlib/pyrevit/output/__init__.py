@@ -13,7 +13,7 @@ Here is the source of :func:`pyrevit.script.get_output`. As you can see this
 functions calls the :func:`pyrevit.output.get_output` to receive the
 output wrapper.
 
-.. literalinclude:: ../../../pyrevitlib/pyrevit/script.py
+.. literalinclude:: ../../pyrevitlib/pyrevit/script.py
     :pyobject: get_output
 """
 
