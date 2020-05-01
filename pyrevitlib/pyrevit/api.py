@@ -26,15 +26,6 @@ from Autodesk.Revit import DB
 from Autodesk.Revit import UI
 
 
-# grab the interal PanelSetListView type
-PANELLISTVIEW_TYPE = None
-ADPRIVATE_ASSM = clr.GetClrType(AdPrivate.Windows.RibbonTabList).Assembly
-for apt in ADPRIVATE_ASSM.GetTypes():
-    if 'PanelSetListView' in apt.Name:
-        PANELLISTVIEW_TYPE = apt
-        break
-
-
 def get_product_serial_number():
     """Return serial number of running host instance."""
     return UIFrameworkServices.InfoCenterService.ProductSerialNumber
