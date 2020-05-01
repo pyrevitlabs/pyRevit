@@ -21,9 +21,11 @@ deeper into pyRevit inner workings.
 * :doc:`pyrevit/loader`
 * :doc:`pyrevit/output`
 * :doc:`pyrevit/revit`
+* :doc:`pyrevit/routes`
 * :doc:`pyrevit/script`
 * :doc:`pyrevit/userconfig`
 * :doc:`pyrevit/versionmgr`
+
 
 ..  toctree::
     :maxdepth: 2
@@ -39,6 +41,7 @@ deeper into pyRevit inner workings.
     pyrevit/loader.rst
     pyrevit/output.rst
     pyrevit/revit.rst
+    pyrevit/routes.rst
     pyrevit/script.rst
     pyrevit/userconfig.rst
     pyrevit/versionmgr.rst
