@@ -44,6 +44,11 @@ NPC = u'\u200e'
 INDEX_FORMAT = '{{:0{digits}}}'
 
 
+EXPORT_ENCODING = 'utf_16_le'
+if HOST_APP.is_newer_than(2020):
+    EXPORT_ENCODING = 'utf_8'
+
+
 AvailableDoc = namedtuple('AvailableDoc', ['name', 'hash', 'linked'])
 
 NamingFormatter = namedtuple('NamingFormatter', ['template', 'desc'])
@@ -524,7 +529,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         sched_data = []
         try:
-            with codecs.open(schedule_data_file, 'r', 'utf_16_le') \
+            with codecs.open(schedule_data_file, 'r', EXPORT_ENCODING) \
                     as sched_data_file:
                 return [x.strip() for x in sched_data_file.readlines()]
         except Exception as open_err:
