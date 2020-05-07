@@ -1094,4 +1094,15 @@
     "build": "20200220_1100",
     "target": "x64",
     "notes": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021release_html"
+}, {
+    "meta": {
+        "schema": "1.0",
+        "source": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_html"
+    },
+    "product": "Autodesk Revit",
+    "release": "2020.2.1 (New Install)",
+    "version": "20.2.12.1",
+    "build": "20200210_1400",
+    "target": "x64",
+    "notes": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_html"
 }]
