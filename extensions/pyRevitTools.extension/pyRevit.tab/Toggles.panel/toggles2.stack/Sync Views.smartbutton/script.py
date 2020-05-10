@@ -60,15 +60,15 @@ def copyzoomstate(sender, args):
             try:
                 pl.dump(type(args.CurrentActiveView).__name__, f)
                 # dump zoom and center
-                pl.dump(revit.serializable.serialize_list(cornerlist), f)
+                pl.dump([revit.serialize(corner) for corner in cornerlist], f)
                 # dump ViewOrientation3D
                 if isinstance(args.CurrentActiveView, DB.View3D):
                     orientation = args.CurrentActiveView.GetOrientation()
-                    pl.dump(revit.serializable.ViewOrientation3D(orientation),
+                    pl.dump(revit.serialize(orientation),
                             f)
                 elif isinstance(args.CurrentActiveView, DB.ViewSection):
                     direction = args.CurrentActiveView.ViewDirection
-                    pl.dump(revit.serializable.XYZ(direction), f)
+                    pl.dump(revit.serialize(direction), f)
             except Exception:
                 pass
             finally:
