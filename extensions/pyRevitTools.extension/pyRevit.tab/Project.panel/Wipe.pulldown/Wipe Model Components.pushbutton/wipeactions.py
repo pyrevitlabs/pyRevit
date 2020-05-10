@@ -1,11 +1,11 @@
 import types
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import script
-from pyrevit import compat
 
 
 logger = coreutils.logger.get_logger(__name__)
@@ -89,7 +89,7 @@ def call_purge():
         UI.RevitCommandId.LookupPostableCommandId(
             UI.PostableCommand.PurgeUnused
             )
-    __revit__.PostCommand(cid_PurgeUnused)
+    __revit__.PostCommand(cid_PurgeUnused) #pylint: disable=undefined-variable
 
 
 @dependent
@@ -371,55 +371,104 @@ VIEWREF_PREFIX = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
                   DB.ViewType.ThreeD: '3D View: '}
 
 
+def get_referenced_view_names():
+    """Return names of referenced views in a list"""
+    view_refs = DB.FilteredElementCollector(revit.doc)\
+                .OfCategory(DB.BuiltInCategory.OST_ReferenceViewer)\
+                .WhereElementIsNotElementType()\
+                .ToElements()
+
+    view_refs_names = set()
+    for view_ref in view_refs:
+        ref_param = view_ref.Parameter[
+            DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW
+            ]
+        view_refs_names.add(ref_param.AsValueString())
+    return list(view_refs_names)
+
+
+def get_sheeted_view_ids():
+    """Return list of sheeted view ids"""
+    sheeted_view_ids = []
+    all_viewports = DB.FilteredElementCollector(revit.doc)\
+        .OfClass(DB.Viewport)\
+        .WhereElementIsNotElementType()\
+        .ToElements()
+    for viewport in all_viewports:
+        sheeted_view_ids.append(viewport.ViewId)
+    return sheeted_view_ids
+
+
+def get_dependent_view_ids():
+    dependent_view_ids = defaultdict(list)
+    all_views = DB.FilteredElementCollector(revit.doc)\
+        .OfClass(DB.View)\
+        .WhereElementIsNotElementType()\
+        .ToElements()
+    for view in all_views:
+        dependent_view_ids[view.Id].extend(
+            view.GetDependentViewIds()
+        )
+        # try to get parent views of callouts
+        param_parent_view = \
+            view.get_Parameter(DB.BuiltInParameter.SECTION_PARENT_VIEW_NAME)
+        if param_parent_view and param_parent_view.HasValue:
+            parent_view_id = param_parent_view.AsElementId()
+            dependent_view_ids[parent_view_id].append(view.Id)
+    return dependent_view_ids
+
+
 def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
-                     header, action_title, action_cat, keep_referenced=False):
-    cl = DB.FilteredElementCollector(revit.doc)
-    views = set(cl.OfClass(viewclass_to_purge)
-                  .WhereElementIsNotElementType()
-                  .ToElements())
+                     header, action_title, action_cat,
+                     keep_referenced=False,
+                     keep_sheeted=False):
+    views = set(
+        DB.FilteredElementCollector(revit.doc)
+        .OfClass(viewclass_to_purge)
+        .WhereElementIsNotElementType()
+        .ToElements()
+        )
 
-    open_UIViews = revit.uidoc.GetOpenUIViews()
-    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+    open_uiviews = revit.uidoc.GetOpenUIViews()
+    open_views = [x.ViewId.IntegerValue for x in open_uiviews]
 
-    def is_referenced(v):
-        view_refs = DB.FilteredElementCollector(revit.doc)\
-                      .OfCategory(DB.BuiltInCategory.OST_ReferenceViewer)\
-                      .WhereElementIsNotElementType()\
-                      .ToElements()
+    view_refnames = get_referenced_view_names()
+    sheeted_view_ids = get_sheeted_view_ids()
 
-        view_refs_names = set()
-        for view_ref in view_refs:
-            ref_param = view_ref.Parameter[
-                DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW
-                ]
-            view_refs_names.add(ref_param.AsValueString())
-
-        refsheet = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_SHEET]
-        refviewport = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_DETAIL]
-        refprefix = VIEWREF_PREFIX.get(v.ViewType, '')
+    def is_referenced(view):
+        refsheet = \
+            view.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_SHEET]
+        refviewport = \
+            view.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_DETAIL]
+        refprefix = VIEWREF_PREFIX.get(view.ViewType, '')
         if refsheet \
                 and refviewport \
                 and refsheet.AsString() != '' \
                 and refviewport.AsString() != '' \
-                or (refprefix + revit.query.get_name(v)) in view_refs_names:
+                or (refprefix + revit.query.get_name(view)) in view_refnames:
             return True
 
-    def confirm_removal(v):
-        if isinstance(v, viewclass_to_purge):
-            if viewtype_to_purge and v.ViewType != viewtype_to_purge:
+    def is_sheeted(view_id):
+        return view_id in sheeted_view_ids
+
+    def confirm_removal(view):
+        if isinstance(view, viewclass_to_purge):
+            if viewtype_to_purge and view.ViewType != viewtype_to_purge:
                 return False
-            elif v.ViewType in READONLY_VIEWS:
+            elif view.ViewType in READONLY_VIEWS:
                 return False
-            elif v.IsTemplate:
+            elif view.IsTemplate:
                 return False
-            elif DB.ViewType.ThreeD == v.ViewType \
-                    and '{3D}' == revit.query.get_name(v):
+            elif DB.ViewType.ThreeD == view.ViewType \
+                    and '{3D}' == revit.query.get_name(view):
                 return False
-            elif '<' in revit.query.get_name(v):
+            elif '<' in revit.query.get_name(view):
                 return False
-            elif v.Id.IntegerValue in open_views:
+            elif view.Id.IntegerValue in open_views:
                 return False
-            elif keep_referenced and is_referenced(v):
+            elif keep_referenced and is_referenced(view):
+                return False
+            elif keep_sheeted and is_sheeted(view.Id):
                 return False
             else:
                 return True
@@ -435,24 +484,12 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
 
 @dependent
 def remove_all_views():
-    """Remove All Views (of any kind, except open views and sheets)"""
+    """Remove All Views (of any kind, except open views)"""
 
     # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
     _purge_all_views(DB.View, None,
                      'REMOVING DRAFTING, PLAN, SECTION, AND ELEVATION VIEWS',
                      'Remove All Views', 'View')
-
-
-@dependent
-def remove_all_unreferenced_views():
-    """Remove All Unreferenced Views (of any kind, except open views and sheets)"""
-
-    # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
-    _purge_all_views(DB.View, None,
-                     'REMOVING UNREFERENCED RAFTING, PLAN, '
-                     'SECTION, AND ELEVATION VIEWS',
-                     'Remove All Unreferenced Views', 'View',
-                     keep_referenced=True)
 
 
 @dependent
@@ -472,6 +509,16 @@ def remove_all_unreferenced_plans():
                      'REMOVING UNREFERENCED PLAN VIEWS',
                      'Remove All Unreferenced Plan Views', 'Plan View',
                      keep_referenced=True)
+
+
+@dependent
+def remove_all_unsheeted_plans():
+    """Remove All Unsheeted Views (Floor Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.FloorPlan,
+                     'REMOVING UNSHEEDED PLAN VIEWS',
+                     'Remove All Unsheeted Plan Views', 'Plan View',
+                     keep_sheeted=True)
 
 
 @dependent
@@ -495,6 +542,17 @@ def remove_all_unreferenced_rcps():
 
 
 @dependent
+def remove_all_unsheeted_rcps():
+    """Remove All Unsheeted Views (Reflected Ceiling Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.CeilingPlan,
+                     'REMOVING UNSHEEDED RCP VIEWS',
+                     'Remove All Unsheeted Reflected Ceiling Plans',
+                     'Ceiling View',
+                     keep_sheeted=True)
+
+
+@dependent
 def remove_all_engplan():
     """Remove All Views (Engineering Plans only)"""
 
@@ -512,6 +570,17 @@ def remove_all_unreferenced_engplan():
                      'Remove All Unreferenced Engineering Plans',
                      'Engineering View',
                      keep_referenced=True)
+
+
+@dependent
+def remove_all_unsheeted_engplan():
+    """Remove All Unsheeted Views (Engineering Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.EngineeringPlan,
+                     'REMOVING UNSHEEDED ENGINEERING VIEWS',
+                     'Remove All Unsheeted Engineering Plans',
+                     'Engineering View',
+                     keep_sheeted=True)
 
 
 @dependent
@@ -534,6 +603,16 @@ def remove_all_unreferenced_areaplans():
 
 
 @dependent
+def remove_all_unsheeted_areaplans():
+    """Remove All Unsheeted Views (Area Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.AreaPlan,
+                     'REMOVING UNSHEETED AREA VIEWS',
+                     'Remove All Unsheeted Area Plans', 'Area View',
+                     keep_sheeted=True)
+
+
+@dependent
 def remove_all_threed():
     """Remove All Views (3D Views only)"""
 
@@ -550,6 +629,16 @@ def remove_all_unreferenced_threed():
                      'REMOVING UNREFERENCED 3D VIEWS',
                      'Remove All Unreferenced 3D Views', '3D View',
                      keep_referenced=True)
+
+
+@dependent
+def remove_all_unsheeted_threed():
+    """Remove All Unsheeted Views (3D Views only)"""
+
+    _purge_all_views(DB.View3D, DB.ViewType.ThreeD,
+                     'REMOVING UNSHEETED 3D VIEWS',
+                     'Remove All Unsheeted 3D Views', '3D View',
+                     keep_sheeted=True)
 
 
 @dependent
@@ -570,6 +659,17 @@ def remove_all_unreferenced_drafting():
                      'Remove All Unreferenced Drafting Views',
                      'Drafting View',
                      keep_referenced=True)
+
+
+@dependent
+def remove_all_unsheeted_drafting():
+    """Remove All Unsheeted Views (Drafting Views only)"""
+
+    _purge_all_views(DB.ViewDrafting, None,
+                     'REMOVING UNSHEETED DRAFTING VIEWS',
+                     'Remove All Unsheeted Drafting Views',
+                     'Drafting View',
+                     keep_sheeted=True)
 
 
 @dependent
@@ -607,6 +707,26 @@ def remove_all_unreferenced_detailsection():
 
 
 @dependent
+def remove_all_unsheeted_sections():
+    """Remove All Unsheeted Views (Sections only)"""
+
+    _purge_all_views(DB.ViewSection, DB.ViewType.Section,
+                     'REMOVING UNSHEETED SECTION VIEWS',
+                     'Remove All Unsheeted Section Views', 'Section View',
+                     keep_sheeted=True)
+
+
+@dependent
+def remove_all_unsheeted_detailsection():
+    """Remove All Unsheeted Views (Detail Views only)"""
+
+    _purge_all_views(DB.ViewSection, DB.ViewType.Detail,
+                     'REMOVING UNSHEETED DETAIL VIEWS',
+                     'Remove All Unsheeted Detail Views', 'Detail View',
+                     keep_sheeted=True)
+
+
+@dependent
 def remove_all_elevations():
     """Remove All Views (Elevations only)"""
     _purge_all_views(DB.ViewSection, DB.ViewType.Elevation,
@@ -621,6 +741,16 @@ def remove_all_unreferenced_elevations():
                      'REMOVING UNREFERENCED SECTION VIEWS',
                      'Remove All Unreferenced Elevation Views', 'Elevation View',
                      keep_referenced=True)
+
+
+@dependent
+def remove_all_unsheeted_elevations():
+    """Remove All Unsheeted Views (Elevations only)"""
+
+    _purge_all_views(DB.ViewSection, DB.ViewType.Elevation,
+                     'REMOVING UNSHEETED SECTION VIEWS',
+                     'Remove All Unsheeted Elevation Views', 'Elevation View',
+                     keep_sheeted=True)
 
 
 @dependent

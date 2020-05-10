@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,15 +83,8 @@ namespace pyRevitCLI {
 
         // cli entry point:
         static void Main(string[] args) {
-
             // process arguments for logging level
             var argsList = new List<string>(args);
-
-            // check for testing and set the global test flag
-            if (argsList.Contains("--test")) {
-                argsList.Remove("--test");
-                GlobalConfigs.UnderTest = true;
-            }
 
             // setup logger
             // process arguments for hidden debug mode switch
@@ -167,10 +160,6 @@ namespace pyRevitCLI {
             }
         }
 
-        // configure env
-        private static void PrepareEnv() {
-        }
-
         // cli argument processor
         private static void ProcessArguments() {
             if (IsHelpUsagePatternMode) Console.WriteLine(UsagePatterns.Replace("\t", "    "));
@@ -200,7 +189,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Update);
                 else
-                    PyRevitCLIAppCmds.UpdateRemoteDateSources();
+                    PyRevitCLIAppCmds.UpdateRemoteDataSources();
             }
 
             else if (all("clone")) {
@@ -213,7 +202,9 @@ namespace pyRevitCLI {
                         branchName: TryGetValue("--branch"),
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
-                        destPath: TryGetValue("--dest")
+                        destPath: TryGetValue("--dest"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
                     );
             }
 
@@ -341,7 +332,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extend);
 
-                else if (any("ui", "lib", "run"))
+                else if (any("ui", "lib", "run")) {
                     PyRevitCLIExtensionCmds.Extend(
                         ui: arguments["ui"].IsTrue,
                         lib: arguments["lib"].IsTrue,
@@ -349,8 +340,11 @@ namespace pyRevitCLI {
                         extName: TryGetValue("<extension_name>"),
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
-                        branchName: TryGetValue("--branch")
-                        );
+                        branchName: TryGetValue("--branch"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
+                    );
+                }
 
                 else
                     PyRevitCLIExtensionCmds.Extend(
@@ -367,12 +361,17 @@ namespace pyRevitCLI {
                         headerPrefix: "Matched"
                     );
 
-                else if (any("info", "help", "open"))
+                else if (any("info", "help"))
                     PyRevitCLIExtensionCmds.ProcessExtensionInfoCommands(
                         extName: TryGetValue("<extension_name>"),
                         info: arguments["info"].IsTrue,
-                        help: arguments["help"].IsTrue,
-                        open: arguments["open"].IsTrue
+                        help: arguments["help"].IsTrue
+                    );
+
+                else if (all("open"))
+                    PyRevitCLIExtensionCmds.ProcessExtensionOpenCommand(
+                        cloneName: TryGetValue("<clone_name>"),
+                        extName: TryGetValue("<extension_name>")
                     );
 
                 else if (all("delete"))
@@ -407,11 +406,11 @@ namespace pyRevitCLI {
                 else if (any("enable", "disable"))
                     PyRevitCLIExtensionCmds.ToggleExtension(
                         enable: arguments["enable"].IsTrue,
+                        cloneName: TryGetValue("<clone_name>"),
                         extName: TryGetValue("<extension_name>")
                     );
 
                 else if (all("sources")) {
-                    Console.WriteLine("dfsdfsd");
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
 
@@ -656,8 +655,48 @@ namespace pyRevitCLI {
                     else
                         Console.WriteLine(string.Format("Doc Colorizer is {0}",
                                                         PyRevitConfigs.GetColorizeDocs() ? "Enabled" : "Disabled"));
-                } 
-                
+                }
+
+                else if (all("tooltipdebuginfo")) {
+                    if (any("enable", "disable"))
+                        PyRevitConfigs.SetAppendTooltipEx(arguments["enable"].IsTrue);
+                    else
+                        Console.WriteLine(string.Format("Doc Colorizer is {0}",
+                                                        PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
+                }
+
+                else if (all("routes")) {
+                    if (all("port")) {
+                        var portNumber = TryGetValue("<port_number>");
+                        if (portNumber is null) {
+                            Console.WriteLine(string.Format("Routes Port: {0}", PyRevitConfigs.GetRoutesServerPort()));
+                        }
+                        else
+                            PyRevitConfigs.SetRoutesServerPort(int.Parse(portNumber));
+                    }
+
+                    else if (all("coreapi")) {
+                        if (all("enable"))
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(true);
+                        else if (all("disable"))
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(false);
+                        else
+                            Console.WriteLine(string.Format("Routes Core API is {0}",
+                                                            PyRevitConfigs.GetRoutesLoadCoreAPIStatus() ? "Enabled" : "Disabled"));
+                    }
+
+                    else if (all("enable"))
+                        PyRevitConfigs.EnableRoutesServer();
+
+                    else if (all("disable"))
+                        PyRevitConfigs.DisableRoutesServer();
+
+                    else {
+                        Console.WriteLine(string.Format("Routes Server is {0}",
+                                                        PyRevitConfigs.GetRoutesServerStatus() ? "Enabled" : "Disabled"));
+                    }
+                }
+
                 else if (all("telemetry")) {
                     if (all("utc")) {
                         if (any("yes", "no"))

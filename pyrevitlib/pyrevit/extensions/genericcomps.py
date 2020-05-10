@@ -18,7 +18,9 @@ mlogger = coreutils.logger.get_logger(__name__)
 
 
 EXT_DIR_KEY = 'directory'
-SUB_CMP_KEY = 'sub_components'
+SUB_CMP_KEY = 'components'
+LAYOUT_ITEM_KEY = 'layout_items'
+LAYOUT_DIR_KEY = 'directive'
 TYPE_ID_KEY = 'type_id'
 NAME_KEY = 'name'
 
@@ -30,8 +32,8 @@ class TypedComponent(object):
 class CachableComponent(TypedComponent):
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
-        if TYPE_ID_KEY in cache_dict:
-            cache_dict[TYPE_ID_KEY] = self.type_id
+        if hasattr(self, TYPE_ID_KEY):
+            cache_dict[TYPE_ID_KEY] = getattr(self, TYPE_ID_KEY)
         return cache_dict
 
     def load_cache_data(self, cache_dict):
@@ -40,13 +42,13 @@ class CachableComponent(TypedComponent):
 
 
 class LayoutDirective(CachableComponent):
-    def __init__(self, directive_type, target):
+    def __init__(self, directive_type=None, target=None):
         self.directive_type = directive_type
         self.target = target
 
 
 class LayoutItem(CachableComponent):
-    def __init__(self, name, directive):
+    def __init__(self, name=None, directive=None):
         self.name = name
         self.directive = directive
 
@@ -269,25 +271,26 @@ class GenericUIComponent(GenericComponent):
             return self.module_paths.remove(path)
 
     def get_bundle_file(self, file_name):
-        if file_name:
+        if self.directory and file_name:
             file_addr = op.join(self.directory, file_name)
             return file_addr if op.exists(file_addr) else None
 
     def find_bundle_file(self, patterns,
                          as_name=False, as_postfix=True, as_regex=False):
-        for bundle_file in os.listdir(self.directory):
-            if as_name:
-                for file_name in patterns:
-                    if op.splitext(bundle_file)[0] == file_name:
-                        return op.join(self.directory, bundle_file)
-            elif as_postfix:
-                for file_postfix in patterns:
-                    if bundle_file.endswith(file_postfix):
-                        return op.join(self.directory, bundle_file)
-            elif as_regex:
-                for regex_pattern in patterns:
-                    if re.match(regex_pattern, bundle_file):
-                        return op.join(self.directory, bundle_file)
+        if self.directory:
+            for bundle_file in os.listdir(self.directory):
+                if as_name:
+                    for file_name in patterns:
+                        if op.splitext(bundle_file)[0] == file_name:
+                            return op.join(self.directory, bundle_file)
+                elif as_postfix:
+                    for file_postfix in patterns:
+                        if bundle_file.endswith(file_postfix):
+                            return op.join(self.directory, bundle_file)
+                elif as_regex:
+                    for regex_pattern in patterns:
+                        if re.match(regex_pattern, bundle_file):
+                            return op.join(self.directory, bundle_file)
         return None
 
     def find_bundle_module(self, module):
@@ -507,6 +510,13 @@ class GenericUICommand(GenericUIComponent):
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
         self.requires_persistent_engine = False
+        self.requires_mainthread_engine = False
+        # engine options specific to dynamo
+        self.dynamo_path = None
+        # self.dynamo_path_exec = False
+        self.dynamo_path_check_existing = False
+        self.dynamo_force_manual_run = False
+        self.dynamo_model_nodes_info = None
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent.__init__(self, cmp_path=cmp_path)
 
@@ -568,6 +578,7 @@ class GenericUICommand(GenericUIComponent):
     def _read_bundle_metadata(self):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent._read_bundle_metadata(self)
+        # determine engine configs
         if exts.MDATA_ENGINE in self.meta:
             self.requires_clean_engine = \
                 self.meta[exts.MDATA_ENGINE].get(
@@ -578,6 +589,34 @@ class GenericUICommand(GenericUIComponent):
             self.requires_persistent_engine = \
                 self.meta[exts.MDATA_ENGINE].get(
                     exts.MDATA_ENGINE_PERSISTENT, 'false').lower() == 'true'
+
+            # determine if engine is required to run on main thread
+            # MDATA_ENGINE_MAINTHREAD is the generic option
+            rme = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_MAINTHREAD, 'false') == 'true'
+            # MDATA_ENGINE_DYNAMO_AUTOMATE is specific naming for dynamo
+            automate = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_DYNAMO_AUTOMATE, 'false') == 'true'
+            self.requires_mainthread_engine = rme or automate
+
+            # process engine options specific to dynamo
+            self.dynamo_path = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH, None)
+            # self.dynamo_path_exec = \
+            #     self.meta[exts.MDATA_ENGINE].get(
+            #         exts.MDATA_ENGINE_DYNAMO_PATH_EXEC, 'true') == 'true'
+            self.dynamo_path_check_existing = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH_CHECK_EXIST,
+                    'false') == 'true'
+            self.dynamo_force_manual_run = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_FORCE_MANUAL_RUN,
+                    'false') == 'true'
+            self.dynamo_model_nodes_info = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_MODEL_NODES_INFO, None)
 
         # panel buttons should be active always
         if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:

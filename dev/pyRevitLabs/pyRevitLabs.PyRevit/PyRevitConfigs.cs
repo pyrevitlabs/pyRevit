@@ -104,6 +104,55 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey, state);
         }
 
+        // routes
+        public static bool GetRoutesServerStatus() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+        }
+
+        public static void SetRoutesServerStatus(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey, state);
+        }
+
+        public static void EnableRoutesServer() => SetRoutesServerStatus(true);
+
+        public static void DisableRoutesServer() => SetRoutesServerStatus(false);
+
+        public static string GetRoutesServerHost() {
+            var cfg = GetConfigFile();
+            return cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey);
+        }
+
+        public static void SetRoutesServerHost(string host) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey, host);
+        }
+
+        public static int GetRoutesServerPort() {
+            var cfg = GetConfigFile();
+            var port = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey);
+            return port != null ? int.Parse(port) : PyRevitConsts.ConfigsRoutesPortDefault;
+        }
+
+        public static void SetRoutesServerPort(int port) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey, port);
+        }
+
+        public static bool GetRoutesLoadCoreAPIStatus() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+        }
+
+        public static void SetRoutesLoadCoreAPIStatus(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey, state);
+        }
+
+
         // telemetry
         public static bool GetTelemetryStatus() {
             var cfg = GetConfigFile();
@@ -113,7 +162,7 @@ namespace pyRevitLabs.PyRevit {
 
         public static void SetTelemetryStatus(bool state) {
             var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, true);
+            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, state);
         }
 
         public static string GetTelemetryFilePath() {
@@ -164,7 +213,7 @@ namespace pyRevitLabs.PyRevit {
 
         public static void SetAppTelemetryStatus(bool state) {
             var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, true);
+            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, state);
         }
 
         public static string GetAppTelemetryServerUrl() {
@@ -417,6 +466,17 @@ namespace pyRevitLabs.PyRevit {
         public static void SetColorizeDocs(bool state) {
             var cfg = GetConfigFile();
             cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey, state);
+        }
+
+        public static bool GetAppendTooltipEx() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAppendTooltipExDefault;
+        }
+
+        public static void SetAppendTooltipEx(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey, state);
         }
 
         // configurations private access methods  ====================================================================

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -80,7 +80,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        Extend(bool ui, bool lib, bool run, string extName, string destPath, string repoUrl, string branchName) {
+        Extend(bool ui, bool lib, bool run, string extName, string destPath, string repoUrl, string branchName, string username, string password) {
             PyRevitExtensionTypes extType = PyRevitExtensionTypes.Unknown;
             if (ui)
                 extType = PyRevitExtensionTypes.UIExtension;
@@ -89,25 +89,40 @@ namespace pyRevitCLI {
             else if (run)
                 extType = PyRevitExtensionTypes.RunnerExtension;
 
-            PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName);
+            PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName, username, password);
         }
 
         internal static void
-        ProcessExtensionInfoCommands(string extName, bool info, bool help, bool open) {
+        ProcessExtensionInfoCommands(string extName, bool info, bool help) {
             if (extName != null) {
-                var ext = PyRevitExtensions.FindRegisteredExtension(extName);
+                var extDef = PyRevitExtensions.FindRegisteredExtension(extName);
+
                 if (Errors.LatestError == ErrorCodes.MoreThanOneItemMatched)
                     logger.Warn("More than one extension matches the search pattern \"{0}\"", extName);
                 else {
-                    if (info)
-                        Console.WriteLine(ext.ToString());
-                    else if (help)
-                        Process.Start(ext.Website);
-                    else if (open) {
-                        var instExt = PyRevitExtensions.GetInstalledExtension(extName);
-                        CommonUtils.OpenInExplorer(instExt.InstallPath);
-                    }
+                    if (info && extDef != null)
+                        Console.WriteLine(extDef.ToString());
+                    else if (help && extDef != null)
+                        Process.Start(extDef.Website);
                 }
+            }
+        }
+
+        internal static void
+        ProcessExtensionOpenCommand(string cloneName, string extName) {
+            if (extName != null) {
+                PyRevitClone clone = null;
+                if (cloneName != null)
+                    clone = PyRevitClones.GetRegisteredClone(cloneName);
+
+                PyRevitExtension ext;
+                if (clone != null)
+                    ext = PyRevitExtensions.GetShippedExtension(clone, extName);
+                else
+                    ext = PyRevitExtensions.GetInstalledExtension(extName);
+
+                if (ext != null)
+                    CommonUtils.OpenInExplorer(ext.InstallPath);
             }
         }
 
@@ -158,12 +173,24 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        ToggleExtension(bool enable, string extName) {
+        ToggleExtension(bool enable, string cloneName, string extName) {
             if (extName != null) {
-                if (enable)
-                    PyRevitExtensions.EnableExtension(extName);
-                else
-                    PyRevitExtensions.DisableExtension(extName);
+                PyRevitClone clone = null;
+                if (cloneName != null)
+                    clone = PyRevitClones.GetRegisteredClone(cloneName);
+
+                if (enable) {
+                    if (clone != null)
+                        PyRevitExtensions.EnableShippedExtension(clone, extName);
+                    else
+                        PyRevitExtensions.EnableInstalledExtension(extName);
+                }
+                else {
+                    if (clone != null)
+                        PyRevitExtensions.DisableShippedExtension(clone, extName);
+                    else
+                        PyRevitExtensions.DisableInstalledExtension(extName);
+                }
             }
         }
 

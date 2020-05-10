@@ -8,7 +8,7 @@ Usage:
 	pyrevit clone --help
 	pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
 	pyrevit clone <clone_name> --image=<image_url> [--dest=<dest_path>] [--log=<log_file>]
-	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit clones [--help]
 	pyrevit clones (info | open) <clone_name>
 	pyrevit clones add <clone_name> <clone_path> [--force] [--log=<log_file>]
@@ -32,10 +32,12 @@ Usage:
 	pyrevit detach (--all | <revit_year>) [--log=<log_file>]
 	pyrevit extend --help
 	pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
+	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit extensions [--help]
 	pyrevit extensions search <search_pattern>
-	pyrevit extensions (info | help | open) <extension_name>
+	pyrevit extensions (info | help ) <extension_name>
+	pyrevit extensions open <extension_name>
+	pyrevit extensions open <clone_name> <extension_name>
 	pyrevit extensions delete <extension_name> [--log=<log_file>]
 	pyrevit extensions origin <extension_name> --reset [--log=<log_file>]
 	pyrevit extensions origin <extension_name> [<origin_url>] [--log=<log_file>]
@@ -43,6 +45,7 @@ Usage:
 	pyrevit extensions paths forget --all [--log=<log_file>]
 	pyrevit extensions paths (add | forget) <extensions_path> [--log=<log_file>]
 	pyrevit extensions (enable | disable) <extension_name> [--log=<log_file>]
+	pyrevit extensions (enable | disable) <clone_name> <extension_name> [--log=<log_file>]
 	pyrevit extensions sources [--help]
 	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
@@ -81,6 +84,12 @@ Usage:
 	pyrevit configs usercanextend [(yes | no)] [--log=<log_file>]
 	pyrevit configs usercanconfig [(yes | no)] [--log=<log_file>]
 	pyrevit configs colordocs [(enable | disable)] [--log=<log_file>]
+	pyrevit configs tooltipdebuginfo [(enable | disable)] [--log=<log_file>]
+	pyrevit configs routes [--help]
+	pyrevit configs routes [(enable | disable)] [--log=<log_file>]
+	pyrevit configs routes port [<port_number>] [--log=<log_file>]
+	pyrevit configs routes coreapi [(enable | disable)] [--log=<log_file>]
+	pyrevit configs telemetry [--help]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
 	pyrevit configs telemetry (file | server) [<dest_path>] [--log=<log_file>]

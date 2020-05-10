@@ -180,6 +180,8 @@ namespace pyRevitCLI {
                             { "ui | lib | run",         "Type of custom extension to install" },
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
+                            { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
+                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" }
                         }
                     );
                     break;
@@ -339,6 +341,8 @@ namespace pyRevitCLI {
                             { "usercanextend",          "Enable/Disable Extensions button in pyRevit" },
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
                             { "colordocs",              "Enable/Disable Document Colorizer" },
+                            { "tooltipdebuginfo",       "Enable/Disable showing tool debug info in extended tooltips" },
+                            { "routes",                 "Routes" },
                             { "telemetry",              "Telemetry" },
                             { "apptelemetry",           "Application Telemetry" },
                             { "outputcss",              "Output window styling" },

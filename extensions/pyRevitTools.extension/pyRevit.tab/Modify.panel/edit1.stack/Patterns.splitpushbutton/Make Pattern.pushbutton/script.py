@@ -183,17 +183,30 @@ class MakePatternWindow(forms.WPFWindow):
             if isinstance(element, acceptable_lines):
                 geom_curves.append(self.grab_geom_curves(element))
             elif isinstance(element, DB.FilledRegion):
-                frtype = revit.doc.GetElement(element.GetTypeId())
-                fillpat_element = revit.doc.GetElement(frtype.FillPatternId)
-                fillpat = fillpat_element.GetFillPattern()
-                fillgrids = fillpat.GetFillGrids()
-                # adjust derafting patterns to current scale
-                if fillpat.Target == DB.FillPatternTarget.Drafting:
-                    adjusted_fillgrids = \
-                        [self.update_fillgrid(x, revit.active_view.Scale)
-                         for x in fillgrids]
-                else:
-                    adjusted_fillgrids.extend(fillgrids)
+                bg_fillpat = \
+                    revit.query.get_fillpattern_from_element(element)
+                fg_fillpat = None
+                # check for version otherwise fg_fillpat is same as bg_fillpat
+                if HOST_APP.is_newer_than(2018):
+                    fg_fillpat = \
+                        revit.query.get_fillpattern_from_element(
+                            element,
+                            background=False
+                            )
+                # process both forground and background patterns
+                for fillpat in [bg_fillpat, fg_fillpat]:
+                    # if available
+                    if fillpat:
+                        fillgrids = fillpat.GetFillGrids()
+                        # adjust derafting patterns to current scale
+                        if fillpat.Target == DB.FillPatternTarget.Drafting:
+                            adjusted_fillgrids.extend(
+                                [self.update_fillgrid(x,
+                                                      revit.active_view.Scale)
+                                 for x in fillgrids]
+                            )
+                        else:
+                            adjusted_fillgrids.extend(fillgrids)
 
         return geom_curves, adjusted_fillgrids
 

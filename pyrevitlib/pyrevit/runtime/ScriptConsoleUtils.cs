@@ -40,7 +40,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     var el = doc.GetElement(elementIds[0]);
 
                     // if element is a view, open the view
-                    if (el.GetType().IsSubclassOf(typeof(View))) {
+                    Type elType = el.GetType();
+                    if (elType == typeof(View) || elType.IsSubclassOf(typeof(View))) {
                         uidoc.ActiveView = (View)el;
                     }
                     // if element is a 2D element and has an owner view
@@ -70,23 +71,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             }
 
                             elementIdsToIsolate.AddRange(elementIds);
-                            view.IsolateElementsTemporary(elementIdsToIsolate);
-#if (REVIT2013 || REVIT2014)
-                            uidoc.Selection.Elements = SelElementSet.Create();
-#else
-                            uidoc.Selection.SetElementIds(new List<ElementId>());
-#endif
-
-#if !(REVIT2013)
-                            // Revit 2013 API does not have zoom to fit option
-                            foreach (var uiview in openUIViews)
-                                if (uiview.ViewId == view.Id)
-                                    uiview.ZoomToFit();
-#endif
-
-
-                            // set the view back to normal
-                            view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+                            // islolate the element, deselect, and zoom fit
+                            uidoc.ShowElements(elementIdsToIsolate);
                         }
                     }
                     // if element is a 3D element and does not have an owner view
@@ -96,21 +82,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         View view = (View)uidoc.ActiveView;
 
                         // islolate the element, deselect, and zoom fit
-                        view.IsolateElementsTemporary(elementIds);
-#if (REVIT2013 || REVIT2014)
-                        uidoc.Selection.Elements = SelElementSet.Create();
-#else
-                            uidoc.Selection.SetElementIds(new List<ElementId>());
-#endif
-
-#if !(REVIT2013)
-                            // Revit 2013 API does not have zoom to fit option
-                            foreach (var uiview in openUIViews)
-                                if (uiview.ViewId == view.Id)
-                                    uiview.ZoomToFit();
-#endif
-                        // set the view back to normal
-                        view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
+                        uidoc.ShowElements(elementIds);
                     }
 
                 }

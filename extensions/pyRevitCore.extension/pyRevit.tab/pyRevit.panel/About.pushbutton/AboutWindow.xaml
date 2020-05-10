@@ -354,7 +354,7 @@
                            Margin="0,5,0,0"
                            HorizontalAlignment="Center"
                            TextAlignment="Center"
-                           Text="2014-2019 copyright message"
+                           Text="2014-2020 copyright message"
                            MouseDown="openkeybaseprofile"/>
             </StackPanel>
         </Grid>

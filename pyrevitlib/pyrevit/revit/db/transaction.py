@@ -1,6 +1,7 @@
 from pyrevit import HOST_APP, DB
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.revit.db import failure
 
 
 __all__ = ('carryout',
@@ -12,77 +13,6 @@ mlogger = get_logger(__name__)
 
 
 DEFAULT_TRANSACTION_NAME = 'pyRevit Transaction'
-
-
-RESOLUTION_TYPES = [DB.FailureResolutionType.MoveElements,
-                    DB.FailureResolutionType.CreateElements,
-                    DB.FailureResolutionType.DetachElements,
-                    DB.FailureResolutionType.FixElements,
-                    DB.FailureResolutionType.SkipElements,
-                    DB.FailureResolutionType.DeleteElements,
-                    DB.FailureResolutionType.QuitEditMode,
-                    DB.FailureResolutionType.UnlockConstraints,
-                    DB.FailureResolutionType.SetValue,
-                    DB.FailureResolutionType.SaveDocument]
-
-
-# see FailureProcessingResult docs
-# http://www.revitapidocs.com/2018.1/f147e6e6-4b2e-d61c-df9b-8b8e5ebe3fcb.htm
-# explains usage of FailureProcessingResult options
-class FailureSwallower(DB.IFailuresPreprocessor):
-    def PreprocessFailures(self, failuresAccessor):
-        severity = failuresAccessor.GetSeverity()
-        # log some info
-        mlogger.debug('processing failure with severity: %s', severity)
-
-        if severity == coreutils.get_enum_none(DB.FailureSeverity):
-            mlogger.debug('clean document. returning with'
-                          'FailureProcessingResult.Continue')
-            return DB.FailureProcessingResult.Continue
-
-        # log the failure messages
-        failures = failuresAccessor.GetFailureMessages()
-        mlogger.debug('processing %s failure messages.', len(failures))
-        for failure in failures:
-            # log some info
-            mlogger.debug('processing failure msg: %s',
-                          getattr(failure.GetFailureDefinitionId(), 'Guid', '')
-                          )
-            mlogger.debug('\tseverity: %s', failure.GetSeverity())
-            mlogger.debug('\tdescription: %s', failure.GetDescriptionText())
-            mlogger.debug('\telements: %s',
-                          [x.IntegerValue
-                           for x in failure.GetFailingElementIds()])
-            mlogger.debug('\thas resolutions: %s', failure.HasResolutions())
-
-        # now go through failures and attempt resolution
-        action_taken = False
-        for failure in failures:
-            mlogger.debug('attempt resolving failure: %s',
-                          getattr(failure.GetFailureDefinitionId(), 'Guid', '')
-                          )
-            # iterate through resolution options, pick one and resolve
-            for res_type in RESOLUTION_TYPES:
-                found_resolution = False
-                if failure.GetSeverity() != DB.FailureSeverity.Warning \
-                        and failure.HasResolutionOfType(res_type):
-                    mlogger.debug('setting failure resolution to: %s', res_type)
-                    failure.SetCurrentResolutionType(res_type)
-                    action_taken = found_resolution = True
-                    break
-
-            if found_resolution:
-                failuresAccessor.ResolveFailure(failure)
-
-        # report back
-        if action_taken:
-            mlogger.debug('resolving failures with '
-                          'FailureProcessingResult.ProceedWithCommit')
-            return DB.FailureProcessingResult.ProceedWithCommit
-        else:
-            mlogger.debug('resolving failures with '
-                          'FailureProcessingResult.Continue')
-            return DB.FailureProcessingResult.Continue
 
 
 class Transaction():
@@ -121,7 +51,7 @@ class Transaction():
             if swallow_errors:
                 self._fhndlr_ops = \
                     self._fhndlr_ops.SetFailuresPreprocessor(
-                        FailureSwallower()
+                        failure.FailureSwallower()
                         )
             self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
         self._logerror = log_errors

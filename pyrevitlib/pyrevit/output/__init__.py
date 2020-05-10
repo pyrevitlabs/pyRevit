@@ -13,7 +13,7 @@ Here is the source of :func:`pyrevit.script.get_output`. As you can see this
 functions calls the :func:`pyrevit.output.get_output` to receive the
 output wrapper.
 
-.. literalinclude:: ../../../pyrevitlib/pyrevit/script.py
+.. literalinclude:: ../../pyrevitlib/pyrevit/script.py
     :pyobject: get_output
 """
 
@@ -128,6 +128,10 @@ class PyRevitOutputWindow(object):
         """
         if self.window:
             return self.window.OutputUniqueId
+
+    @property
+    def is_closed_by_user(self):
+        return self.window.ClosedByUser
 
     @property
     def debug_mode(self):
@@ -276,6 +280,18 @@ class PyRevitOutputWindow(object):
         """Resize window to the new width and height."""
         self.set_width(width)
         self.set_height(height)
+
+    def center(self):
+        """Center the output window on the screen"""
+        screen_area = HOST_APP.proc_screen_workarea
+        left = \
+            (abs(screen_area.Right - screen_area.Left) / 2) \
+                - (self.get_width() / 2)
+        top = \
+            (abs(screen_area.Top - screen_area.Bottom) / 2) \
+                - (self.get_height() / 2)
+        self.window.Left = left
+        self.window.Top = top
 
     def get_title(self):
         """str: Return current window title."""
@@ -585,9 +601,9 @@ class PyRevitOutputWindow(object):
             )
         )
 
-    def insert_divider(self):
+    def insert_divider(self, level=''):
         """Add horizontal rule to the output window."""
-        self.print_md('-----')
+        self.print_md('%s\n-----' % level)
 
     def next_page(self):
         """Add hidden next page tag to the output window.

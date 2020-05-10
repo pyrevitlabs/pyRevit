@@ -37,6 +37,7 @@ __py*
 # Release and installer files
 release/pyrevit*cache
 dist/
+*.back*.aip
 
 # ignore linter configs
 .vscode/.ropeproject/*

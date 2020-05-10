@@ -1,5 +1,6 @@
 #pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import HOST_APP
+from pyrevit.framework import clr
 from pyrevit.framework import IntPtr
 from pyrevit.framework import Interop, Windows
 from pyrevit.api import AdInternal as ai
@@ -80,3 +81,10 @@ def toggle_doc_colorizer(state):
             envvars.TABCOLORIZER_ENVVAR,
             types.DocumentTabEventUtils
             )
+
+
+def get_ribbon_roottype():
+    ap_assm = clr.GetClrType(ap.Windows.RibbonTabList).Assembly
+    for apt in ap_assm.GetTypes():
+        if 'PanelSetListView' in apt.Name:
+            return apt

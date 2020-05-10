@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Provide conversion services between python.locale and host languages"""
 # https://www.science.co.il/language/Locale-codes.php
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.api import ApplicationServices
 from pyrevit.userconfig import user_config
 
@@ -37,109 +37,113 @@ class AppLocale(object):
         return str(self)
 
 
-DEFAULT_LOCALE = AppLocale(
-    lang_type=ApplicationServices.LanguageType.English_USA,
-    lang_name="English USA",
-    locale_codes=["en_us", "english"])
+if not EXEC_PARAMS.doc_mode:
+    DEFAULT_LOCALE = AppLocale(
+        lang_type=ApplicationServices.LanguageType.English_USA,
+        lang_name="English USA",
+        locale_codes=["en_us", "english"])
 
-APP_LOCALES = [
-    DEFAULT_LOCALE,
+    APP_LOCALES = [
+        DEFAULT_LOCALE,
 
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.German,
-        lang_name="Deutsch",
-        locale_codes=["de_de", "german"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Spanish,
-        lang_name="español",
-        locale_codes=["es_es", "spanish"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.French,
-        lang_name="français",
-        locale_codes=["fr_fr", "french"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Italian,
-        lang_name="italiano",
-        locale_codes=["it_it", "italian"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Dutch,
-        lang_name="Nederlands",
-        locale_codes=["nl_nl", "nl_be", "dutch"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Chinese_Simplified,
-        lang_name="简体中文",
-        locale_codes=["chinese_s", "chinese"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Chinese_Traditional,
-        lang_name="繁體中文",
-        locale_codes=["chinese_t", "chinese"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Japanese,
-        lang_name="日本語",
-        locale_codes=["ja", "japanese"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Korean,
-        lang_name="한국어",
-        locale_codes=["ko", "korean"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Russian,
-        lang_name="Русский",
-        locale_codes=["ru", "russian"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Czech,
-        lang_name="Čeština",
-        locale_codes=["cs", "czech"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Polish,
-        lang_name="Polski",
-        locale_codes=["pl", "polish"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Hungarian,
-        lang_name="Magyar",
-        locale_codes=["hu", "hungarian"]),
-    AppLocale(
-        lang_type=ApplicationServices.LanguageType.Brazilian_Portuguese,
-        lang_name="Português do Brasil",
-        locale_codes=["pt_br", "portuguese_brazil", "brazilian",
-                      "portuguese", "pt_pt"]),
-]
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.German,
+            lang_name="Deutsch",
+            locale_codes=["de_de", "german"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Spanish,
+            lang_name="español",
+            locale_codes=["es_es", "spanish"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.French,
+            lang_name="français",
+            locale_codes=["fr_fr", "french"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Italian,
+            lang_name="italiano",
+            locale_codes=["it_it", "italian"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Dutch,
+            lang_name="Nederlands",
+            locale_codes=["nl_nl", "nl_be", "dutch"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Chinese_Simplified,
+            lang_name="简体中文",
+            locale_codes=["chinese_s", "chinese"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Chinese_Traditional,
+            lang_name="繁體中文",
+            locale_codes=["chinese_t", "chinese"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Japanese,
+            lang_name="日本語",
+            locale_codes=["ja", "japanese"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Korean,
+            lang_name="한국어",
+            locale_codes=["ko", "korean"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Russian,
+            lang_name="Русский",
+            locale_codes=["ru", "russian"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Czech,
+            lang_name="Čeština",
+            locale_codes=["cs", "czech"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Polish,
+            lang_name="Polski",
+            locale_codes=["pl", "polish"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Hungarian,
+            lang_name="Magyar",
+            locale_codes=["hu", "hungarian"]),
+        AppLocale(
+            lang_type=ApplicationServices.LanguageType.Brazilian_Portuguese,
+            lang_name="Português do Brasil",
+            locale_codes=["pt_br", "portuguese_brazil", "brazilian",
+                        "portuguese", "pt_pt"]),
+    ]
 
-# add version specific languages
-if HOST_APP.is_newer_than(2018, or_equal=True):
+    # add version specific languages
+    if HOST_APP.is_newer_than(2018, or_equal=True):
+        APP_LOCALES.append(
+            AppLocale(
+                lang_type=ApplicationServices.LanguageType.English_GB,
+                lang_name="English Great Britain",
+                locale_codes=["en_gb"])
+            )
+
+    # add custom languages provided by this module
     APP_LOCALES.append(
         AppLocale(
-            lang_type=ApplicationServices.LanguageType.English_GB,
-            lang_name="English Great Britain",
-            locale_codes=["en_gb"])
+            lang_type="Bulgarian",
+            lang_name="Български",
+            locale_codes=["bg", "bulgarian"])
         )
-
-# add custom languages provided by this module
-APP_LOCALES.append(
-    AppLocale(
-        lang_type="Bulgarian",
-        lang_name="Български",
-        locale_codes=["bg", "bulgarian"])
-    )
-APP_LOCALES.append(
-    AppLocale(
-        lang_type="Farsi",
-        locale_codes=["fa", "farsi", "persian"],
-        lang_name="فارسی",
-        lang_dir='RTL'
-    ))
-APP_LOCALES.append(
-    AppLocale(
-        lang_type="Arabic",
-        locale_codes=["ar", "arabic"],
-        lang_name="العربیه",
-        lang_dir='RTL'
-    ))
-APP_LOCALES.append(
-    AppLocale(
-        lang_type="Ukrainian",
-        locale_codes=["uk", "ukrainian"],
-        lang_name="Українська"
-    ))
+    APP_LOCALES.append(
+        AppLocale(
+            lang_type="Farsi",
+            locale_codes=["fa", "farsi", "persian"],
+            lang_name="فارسی",
+            lang_dir='RTL'
+        ))
+    APP_LOCALES.append(
+        AppLocale(
+            lang_type="Arabic",
+            locale_codes=["ar", "arabic"],
+            lang_name="العربیه",
+            lang_dir='RTL'
+        ))
+    APP_LOCALES.append(
+        AppLocale(
+            lang_type="Ukrainian",
+            locale_codes=["uk", "ukrainian"],
+            lang_name="Українська"
+        ))
+else:
+    DEFAULT_LOCALE = None
+    APP_LOCALES = []
 
 
 def get_applocale_by_local_code(locale_code):
@@ -154,9 +158,20 @@ def get_applocale_by_lang_type(lang_type):
             return applocale
 
 
+def get_applocale_by_lang_name(lang_name):
+    for applocale in APP_LOCALES:
+        if lang_name == applocale.lang_name \
+                or lang_name == str(applocale.lang_type):
+            return applocale
+
+
 def get_current_applocale():
     if user_config.user_locale:
         return get_applocale_by_local_code(user_config.user_locale)
+    return get_applocale_by_lang_type(HOST_APP.language)
+
+
+def get_host_applocale():
     return get_applocale_by_lang_type(HOST_APP.language)
 
 
