@@ -39,6 +39,7 @@ class CopyPasteStateAction(object):
     """
     name = None
     invalid_context_msg = None
+    this_project = True
 
     def copy(self):
         """Performs copy action.
