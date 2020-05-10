@@ -673,6 +673,14 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
     invalid_context_msg = ""
 
     @staticmethod
+    def get_suitable_views():
+        selected_views = revit.get_selection().only_views()
+        if not selected_views:
+            selected_views = [revit.active_view]
+        return [view for view in selected_views
+                if view.AreGraphicsOverridesAllowed()]
+
+    @staticmethod
     def controlled_by_template(view):
         if view.ViewTemplateId != DB.ElementId.InvalidElementId:
             view_template = view.Document.GetElement(view.ViewTemplateId)
@@ -685,12 +693,12 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         return False
 
     def copy(self):
-        views = revit.get_selection().only_views()
+        views = FilterOverridesAction.get_suitable_views()
         if views:
             view = views[0]
             view_filters = revit.query.get_view_filters(view)
             if not view_filters:
-                raise PyRevitException('Active view has no fitlers applied')
+                raise PyRevitException('Active/Selected view has no fitlers applied')
 
             selected_filters = forms.SelectFromList.show(
                 view_filters,
@@ -720,13 +728,14 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         # to view template or to selected view
         mode_templates = \
             forms.CommandSwitchWindow.show(
-                ['Active View', 'Select View Templates'],
+                ['Active/Selected View', 'Select View Templates'],
                 message='Where do you want to paste filters?'
                 ) == 'Select Templates'
         if mode_templates:
             views = forms.select_viewtemplates()
         else:
-            views = [revit.active_view]
+            views = FilterOverridesAction.get_suitable_views()
+            views = [view for view in views if view.Id != source_view.Id]
             views_controlled_by_template = \
                 [x for x in views
                  if FilterOverridesAction.controlled_by_template(x)]
@@ -736,7 +745,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
                     ' They will be skipped'
                     )
         if not views:
-            raise PyRevitException('Nothing selected')
+            raise PyRevitException('No suitable views selected or active')
 
         # check if there are views controlled by template
         with revit.TransactionGroup('Paste Filter Overrides'):
@@ -760,4 +769,4 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        return revit.get_selection().is_empty
+        return bool(FilterOverridesAction.get_suitable_views())
