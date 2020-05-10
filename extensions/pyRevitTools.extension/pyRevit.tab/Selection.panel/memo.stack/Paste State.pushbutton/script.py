@@ -32,14 +32,15 @@ if available_actions:
                 )
         if selected_action:
             action = action_options[selected_action]
+        else:
+            script.exit()
     else:
         action = available_actions[0]
 
-    if action:
-        try:
-            action().paste()
-        except PyRevitException as ex:
-            forms.alert(ex.msg)
+    try:
+        action().paste()
+    except PyRevitException as ex:
+        forms.alert(ex.msg)
 else:
     forms.alert('No available actions for this view or no saved'
                 ' data found. Use "Copy State" first.')
