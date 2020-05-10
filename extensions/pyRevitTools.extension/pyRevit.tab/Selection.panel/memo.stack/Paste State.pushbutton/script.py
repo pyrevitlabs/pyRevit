@@ -17,7 +17,8 @@ __authors__ = ['Gui Talarico', '{{author}}', 'Alex Melnikov']
 # collect actions that are valid in this context
 available_actions = [
     x for x in copypastestate.get_actions()
-    if x.validate_context() and script.data_exists(x.__name__)
+    if x.validate_context() and script.data_exists(x.__name__,
+        this_project=x.this_project)
 ]
 
 if available_actions:

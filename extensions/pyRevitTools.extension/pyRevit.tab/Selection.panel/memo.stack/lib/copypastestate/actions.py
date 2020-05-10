@@ -43,6 +43,7 @@ class ViewZoomPanStateData(object):
 class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
     name = 'View Zoom/Pan State'
     invalid_context_msg = "Type of active view is not supported"
+    this_project = False
 
     def copy(self):
         active_view = revit.active_view
@@ -60,12 +61,14 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
                 view_type=active_view.ViewType,
                 corner_pts=active_ui_view.GetZoomCorners(),
                 dir_orient=dir_orient
-            )
+            ),
+            this_project=False
         )
 
     def paste(self):
         # load data
-        vzps_data = script.load_data(slot_name=self.__class__.__name__)
+        vzps_data = script.load_data(slot_name=self.__class__.__name__,
+                                     this_project=False)
 
         view_type = vzps_data.view_type
         vc1, vc2 = vzps_data.corner_pts
@@ -124,6 +127,7 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
     name = '3D Section Box State'
     invalid_context_msg = \
         "You must be on a 3D view to copy and paste 3D section box."
+    this_project = False
 
     def copy(self):
         section_box = revit.active_view.GetSectionBox()
@@ -134,11 +138,13 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
             data=SectionBox3DStateData(
                 section_box=section_box,
                 view_orientation=view_orientation
-            )
+            ),
+            this_project=False
         )
 
     def paste(self):
-        sb3d_data = script.load_data(slot_name=self.__class__.__name__)
+        sb3d_data = script.load_data(slot_name=self.__class__.__name__,
+                                     this_project=False)
 
         active_ui_view = revit.uidoc.GetOpenUIViews()[0]
         with revit.Transaction('Paste Section Box Settings'):
@@ -217,6 +223,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
     name = 'Crop Region'
     invalid_context_msg = \
         "Activate a view or select at least one cropable viewport"
+    this_project = False
 
     @staticmethod
     def get_cropable_views():
@@ -252,7 +259,8 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
                     cropregion_curveloop=cropregion_curve_loop,
                     crop_bbox=crop_bbox,
                     is_active=view.CropBoxActive
-                )
+                ),
+                this_project=False
             )
         else:
             raise PyRevitException(
@@ -260,7 +268,8 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
                 )
 
     def paste(self):
-        cr_data = script.load_data(slot_name=self.__class__.__name__)
+        cr_data = script.load_data(slot_name=self.__class__.__name__,
+                                   this_project=False)
         crv_loop = cr_data.cropregion_curveloop
         with revit.Transaction('Paste Crop Region'):
             for view in CropRegionAction.get_cropable_views():
@@ -326,6 +335,7 @@ class ViewportPlacementData(object):
 class ViewportPlacementAction(basetypes.CopyPasteStateAction):
     name = 'Viewport Placement on Sheet'
     invalid_context_msg = "At least one viewport must be selected"
+    this_project = False
 
     @staticmethod
     def calculate_offset(view, offset_uv, alignment):
@@ -558,11 +568,13 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                 alignment=alignment,
                 center=center,
                 offset_uv=offset_uv if alignment == ALIGNMENT_CROPBOX else None
-            )
+            ),
+            this_project=False
         )
 
     def paste(self):
-        vp_data = script.load_data(slot_name=self.__class__.__name__)
+        vp_data = script.load_data(slot_name=self.__class__.__name__,
+                                   this_project=False)
 
         viewports = revit.get_selection().include(DB.Viewport)
         align_axis = None
