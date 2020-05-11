@@ -28,19 +28,22 @@ func (w GenericSQLConnection) GetType() DBBackend {
 }
 
 func (w GenericSQLConnection) GetVersion(logger *cli.Logger) string {
-	db, err := openConnection(w.Config.Backend, w.Config.ConnString, logger)
-	if err != nil {
-		logger.Debug("error opening connection")
-		return ""
-	}
-	defer db.Close()
-
-	var version string
-	err = db.QueryRow("select version()").Scan(&version)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return version
+    db, err := openConnection(w.Config.Backend, w.Config.ConnString, logger)
+    if err != nil {
+        logger.Debug("error opening connection")
+        return ""
+    }
+    defer db.Close()
+ 
+    var version string
+    err = db.QueryRow("select version()").Scan(&version)
+    if err != nil {
+        err = db.QueryRow("select @@version").Scan(&version)
+        if err != nil {
+            log.Fatal(err)
+        }
+    }
+    return version
 }
 
 func (w GenericSQLConnection) GetStatus(logger *cli.Logger) ConnectionStatus {
