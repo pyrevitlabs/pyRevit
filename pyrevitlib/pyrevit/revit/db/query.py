@@ -120,6 +120,22 @@ def get_family_name(element):
     return get_name(element.Symbol.Family)
 
 
+# episode_id and guid explanation
+# https://thebuildingcoder.typepad.com/blog/2009/02/uniqueid-dwf-and-ifc-guid.html
+def get_episodeid(element):
+    """Extract episode id from element"""
+    return str(element.UniqueId)[:36]
+
+
+def get_guid(element):
+    """Extract guid from given element"""
+    uid = str(element.UniqueId)
+    last_32_bits = int(uid[28:36], 16)
+    element_id = int(uid[37:], 16)
+    xor = last_32_bits ^ element_id
+    return uid[:28] +  "{0:x}".format(xor)
+
+
 def get_param(element, param_name, default=None):
     if isinstance(element, DB.Element):
         try:
