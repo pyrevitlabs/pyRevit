@@ -2,6 +2,7 @@
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": ["--max-line-length=80"],
+    "python.linting.pylintUseMinimalCheckers": false,
     "python.linting.pycodestyleEnabled": false,
     "python.linting.flake8Enabled": false,
     "python.linting.pylamaEnabled": false,
