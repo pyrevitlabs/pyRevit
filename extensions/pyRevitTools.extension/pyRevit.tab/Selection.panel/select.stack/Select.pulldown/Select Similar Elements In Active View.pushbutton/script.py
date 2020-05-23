@@ -1,43 +1,43 @@
 """Selects elements similar to the currently
-selected elements in the active view."""
+selected elements in the active view.
+
+Shift-Click: select in whole project"""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import revit, DB
 from pyrevit import forms
-
+from pyrevit.framework import List
 
 __context__ = 'selection'
 
+if not __shiftclick__:
+    # ensure active view is a graphical view
+    forms.check_graphicalview(revit.active_view, exitscript=True)
 
-# ensure active view is a graphical view
-forms.check_graphicalview(revit.active_view, exit_script=True)
+sel_cat_ids = set()
 
-cl = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
-       .WhereElementIsNotElementType()\
-       .ToElementIds()
-
-matchlist = []
-selCatList = set()
-
+# analyze selection
 selection = revit.get_selection()
-
 for el in selection:
     try:
-        selCatList.add(el.Category.Name)
+        sel_cat_ids.add(el.Category.Id)
     except Exception:
         continue
 
-for elid in cl:
-    el = revit.doc.GetElement(elid)
-    try:
-        # if el.ViewSpecific and ( el.Category.Name in selCatList):
-        if el.Category.Name in selCatList:
-            matchlist.append(elid)
-    except Exception:
-        continue
+if not sel_cat_ids:
+    forms.alert("No suitable elements selected", exitscript=True)
 
-selSet = []
-for elid in matchlist:
-    selSet.append(elid)
+mc_filter = DB.ElementMulticategoryFilter(List[DB.ElementId](sel_cat_ids))
 
-selection.set_to(selSet)
+# collect from whole model
+if __shiftclick__:
+    cl = DB.FilteredElementCollector(revit.doc)\
+        .WhereElementIsNotElementType()
+# collect from a view
+else:
+    cl = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
+        .WhereElementIsNotElementType()
+
+match_list = cl.WherePasses(mc_filter).ToElementIds()
+
+selection.set_to(match_list)
 revit.uidoc.RefreshActiveView()
