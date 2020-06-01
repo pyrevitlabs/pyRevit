@@ -1,5 +1,4 @@
 {
-    "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": ["--max-line-length=80"],
     "python.linting.pylintUseMinimalCheckers": false,
@@ -7,6 +6,8 @@
     "python.linting.flake8Enabled": false,
     "python.linting.pylamaEnabled": false,
     "python.linting.mypyEnabled": false,
-    "restructuredtext.confPath": "${workspaceFolder}/docs",
+    "python.jediEnabled": true,
     "python.pythonPath": "${env:PYREVIT_VENV}",
+    "restructuredtext.confPath": "${workspaceFolder}/docs",
+    "python.formatting.provider": "black",
 }
