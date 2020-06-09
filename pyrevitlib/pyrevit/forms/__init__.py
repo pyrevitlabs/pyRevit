@@ -2469,7 +2469,7 @@ def pick_folder(title=None):
 
 
 def pick_file(file_ext='*', files_filter='', init_dir='',
-              restore_dir=True, multi_file=False, unc_paths=False):
+              restore_dir=True, multi_file=False, unc_paths=False, title=None):
     r"""Pick file dialog to select a destination file.
 
     Args:
@@ -2479,6 +2479,7 @@ def pick_file(file_ext='*', files_filter='', init_dir='',
         restore_dir (bool): restore last directory
         multi_file (bool): allow select multiple files
         unc_paths (bool): return unc paths
+        title (str): text to show in the title bar
 
     Returns:
         str or list[str]: file path or list of file paths if multi_file=True
@@ -2506,6 +2507,8 @@ def pick_file(file_ext='*', files_filter='', init_dir='',
     of_dlg.Multiselect = multi_file
     if init_dir:
         of_dlg.InitialDirectory = init_dir
+    if title:
+        of_dlg.Title = title
     if of_dlg.ShowDialog() == Forms.DialogResult.OK:
         if multi_file:
             if unc_paths:
@@ -2519,7 +2522,7 @@ def pick_file(file_ext='*', files_filter='', init_dir='',
 
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
-              restore_dir=True, unc_paths=False):
+              restore_dir=True, unc_paths=False, title=None):
     r"""Save file dialog to select a destination file for data.
 
     Args:
@@ -2529,6 +2532,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         default_name (str): default file name
         restore_dir (bool): restore last directory
         unc_paths (bool): return unc paths
+        title (str): text to show in the title bar
 
     Returns:
         str: file path
@@ -2546,7 +2550,9 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
     sf_dlg.RestoreDirectory = restore_dir
     if init_dir:
         sf_dlg.InitialDirectory = init_dir
-
+    if title:
+        of_dlg.Title = title
+    
     # setting default filename
     sf_dlg.FileName = default_name
 
@@ -2556,11 +2562,12 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         return sf_dlg.FileName
 
 
-def pick_excel_file(save=False):
+def pick_excel_file(save=False, title=None):
     """File pick/save dialog for an excel file.
 
     Args:
         save (bool): show file save dialog, instead of file pick dialog
+        title (str): text to show in the title bar
 
     Returns:
         str: file path
@@ -2568,16 +2575,20 @@ def pick_excel_file(save=False):
     if save:
         return save_file(file_ext='xlsx')
     return pick_file(files_filter='Excel Workbook (*.xlsx)|*.xlsx|'
-                                  'Excel 97-2003 Workbook|*.xls')
+                                  'Excel 97-2003 Workbook|*.xls',
+                     title=title)
 
 
 def save_excel_file():
     """File save dialog for an excel file.
 
+    Args:
+        title (str): text to show in the title bar
+    
     Returns:
         str: file path
     """
-    return pick_excel_file(save=True)
+    return pick_excel_file(save=True, title=title)
 
 
 def check_workshared(doc=None, message='Model is not workshared.'):
