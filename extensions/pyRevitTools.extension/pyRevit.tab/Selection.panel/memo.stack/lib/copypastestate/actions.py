@@ -730,7 +730,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
             forms.CommandSwitchWindow.show(
                 ['Active/Selected View', 'Select View Templates'],
                 message='Where do you want to paste filters?'
-                ) == 'Select Templates'
+                ) == 'Select View Templates'
         if mode_templates:
             views = forms.select_viewtemplates()
         else:
