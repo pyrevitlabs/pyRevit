@@ -1,12 +1,22 @@
 """Copy/Paste State Base Types"""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit.coreutils import logger
+from pyrevit import DB
 
 
 mlogger = logger.get_logger(__name__)
 
 
 COPYPASTE_MARKER_PROPNAME = 'is_copypaste_action'
+
+COMPATIBLE_VIEWTYPES = [
+    [
+        DB.ViewType.FloorPlan,
+        DB.ViewType.CeilingPlan,
+        DB.ViewType.EngineeringPlan,
+        DB.ViewType.AreaPlan
+    ]
+]
 
 
 class CopyPasteStateAction(object):
@@ -87,3 +97,16 @@ class CopyPasteStateAction(object):
             >>>        return "Geometrical view must be active. Not a schedule."
         """
         return
+
+    @staticmethod
+    def is_compatible_viewtype(target_view, source_viewtype):
+        """Check if view types are compatible for this action"""
+        if target_view.ViewType == source_viewtype:
+            return True
+
+        for compat_viewtypes in COMPATIBLE_VIEWTYPES:
+            if target_view.ViewType in compat_viewtypes \
+                    and source_viewtype in compat_viewtypes:
+                return True
+
+        return False
