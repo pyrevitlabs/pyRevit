@@ -708,3 +708,26 @@ def load_data(slot_name, this_project=True):
 
     with open(data_file, 'r') as dfile:
         return pickle.load(dfile)
+
+
+def data_exists(slot_name, this_project=True):
+    """Checks if data file in a specified slot and for certain project exists.
+
+    Args:
+        slot_name (type): desc
+        this_project (bool): data belongs to this project only
+
+    Returns:
+        bool: true if the path exists
+    """
+    # for this specific project?
+    if this_project:
+        data_file = get_document_data_file(file_id=slot_name,
+                                           file_ext=DATAFEXT,
+                                           add_cmd_name=False)
+    # for any project file
+    else:
+        data_file = get_data_file(file_id=slot_name,
+                                  file_ext=DATAFEXT,
+                                  add_cmd_name=False)
+    return os.path.exists(data_file)

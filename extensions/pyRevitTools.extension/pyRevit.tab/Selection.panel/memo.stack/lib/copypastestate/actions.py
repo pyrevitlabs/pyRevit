@@ -43,6 +43,7 @@ class ViewZoomPanStateData(object):
 class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
     name = 'View Zoom/Pan State'
     invalid_context_msg = "Type of active view is not supported"
+    this_project = False
 
     def copy(self):
         active_view = revit.active_view
@@ -60,19 +61,21 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
                 view_type=active_view.ViewType,
                 corner_pts=active_ui_view.GetZoomCorners(),
                 dir_orient=dir_orient
-            )
+            ),
+            this_project=False
         )
 
     def paste(self):
         # load data
-        vzps_data = script.load_data(slot_name=self.__class__.__name__)
+        vzps_data = script.load_data(slot_name=self.__class__.__name__,
+                                     this_project=False)
 
         view_type = vzps_data.view_type
         vc1, vc2 = vzps_data.corner_pts
         dir_orient = vzps_data.dir_orient
 
         active_ui_view = revit.uidoc.GetOpenUIViews()[0]
-        if revit.active_view.ViewType == view_type:
+        if not self.is_compatible_viewtype(revit.active_view, view_type):
             raise PyRevitException(
                 'Saved view type (%s) is different from active view (%s)'
                 % (vzps_data.view_type, type(revit.active_view).__name__))
@@ -124,6 +127,7 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
     name = '3D Section Box State'
     invalid_context_msg = \
         "You must be on a 3D view to copy and paste 3D section box."
+    this_project = False
 
     def copy(self):
         section_box = revit.active_view.GetSectionBox()
@@ -134,11 +138,13 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
             data=SectionBox3DStateData(
                 section_box=section_box,
                 view_orientation=view_orientation
-            )
+            ),
+            this_project=False
         )
 
     def paste(self):
-        sb3d_data = script.load_data(slot_name=self.__class__.__name__)
+        sb3d_data = script.load_data(slot_name=self.__class__.__name__,
+                                     this_project=False)
 
         active_ui_view = revit.uidoc.GetOpenUIViews()[0]
         with revit.Transaction('Paste Section Box Settings'):
@@ -217,6 +223,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
     name = 'Crop Region'
     invalid_context_msg = \
         "Activate a view or select at least one cropable viewport"
+    this_project = False
 
     @staticmethod
     def get_cropable_views():
@@ -252,7 +259,8 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
                     cropregion_curveloop=cropregion_curve_loop,
                     crop_bbox=crop_bbox,
                     is_active=view.CropBoxActive
-                )
+                ),
+                this_project=False
             )
         else:
             raise PyRevitException(
@@ -260,7 +268,8 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
                 )
 
     def paste(self):
-        cr_data = script.load_data(slot_name=self.__class__.__name__)
+        cr_data = script.load_data(slot_name=self.__class__.__name__,
+                                   this_project=False)
         crv_loop = cr_data.cropregion_curveloop
         with revit.Transaction('Paste Crop Region'):
             for view in CropRegionAction.get_cropable_views():
@@ -326,6 +335,7 @@ class ViewportPlacementData(object):
 class ViewportPlacementAction(basetypes.CopyPasteStateAction):
     name = 'Viewport Placement on Sheet'
     invalid_context_msg = "At least one viewport must be selected"
+    this_project = False
 
     @staticmethod
     def calculate_offset(view, offset_uv, alignment):
@@ -558,11 +568,13 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
                 alignment=alignment,
                 center=center,
                 offset_uv=offset_uv if alignment == ALIGNMENT_CROPBOX else None
-            )
+            ),
+            this_project=False
         )
 
     def paste(self):
-        vp_data = script.load_data(slot_name=self.__class__.__name__)
+        vp_data = script.load_data(slot_name=self.__class__.__name__,
+                                   this_project=False)
 
         viewports = revit.get_selection().include(DB.Viewport)
         align_axis = None
@@ -661,6 +673,14 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
     invalid_context_msg = ""
 
     @staticmethod
+    def get_suitable_views():
+        selected_views = revit.get_selection().only_views()
+        if not selected_views:
+            selected_views = [revit.active_view]
+        return [view for view in selected_views
+                if view.AreGraphicsOverridesAllowed()]
+
+    @staticmethod
     def controlled_by_template(view):
         if view.ViewTemplateId != DB.ElementId.InvalidElementId:
             view_template = view.Document.GetElement(view.ViewTemplateId)
@@ -673,12 +693,12 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         return False
 
     def copy(self):
-        views = revit.get_selection().only_views()
+        views = FilterOverridesAction.get_suitable_views()
         if views:
             view = views[0]
             view_filters = revit.query.get_view_filters(view)
             if not view_filters:
-                raise PyRevitException('Active view has no fitlers applied')
+                raise PyRevitException('Active/Selected view has no fitlers applied')
 
             selected_filters = forms.SelectFromList.show(
                 view_filters,
@@ -708,13 +728,14 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         # to view template or to selected view
         mode_templates = \
             forms.CommandSwitchWindow.show(
-                ['Active View', 'Select View Templates'],
+                ['Active/Selected View', 'Select View Templates'],
                 message='Where do you want to paste filters?'
-                ) == 'Select Templates'
+                ) == 'Select View Templates'
         if mode_templates:
             views = forms.select_viewtemplates()
         else:
-            views = [revit.active_view]
+            views = FilterOverridesAction.get_suitable_views()
+            views = [view for view in views if view.Id != source_view.Id]
             views_controlled_by_template = \
                 [x for x in views
                  if FilterOverridesAction.controlled_by_template(x)]
@@ -724,7 +745,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
                     ' They will be skipped'
                     )
         if not views:
-            raise PyRevitException('Nothing selected')
+            raise PyRevitException('No suitable views selected or active')
 
         # check if there are views controlled by template
         with revit.TransactionGroup('Paste Filter Overrides'):
@@ -748,4 +769,4 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def validate_context():
-        return revit.get_selection().is_empty
+        return bool(FilterOverridesAction.get_suitable_views())
