@@ -1,8 +1,8 @@
 """Module for managing tags metadata."""
 #pylint: disable=E0401,C0111,W0603,C0103
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 
-from pyrevit import framework, HOST_APP
+from pyrevit import HOST_APP
 from pyrevit import PyRevitException
 from pyrevit.coreutils import pyutils
 from pyrevit.coreutils import logger
@@ -724,49 +724,19 @@ def create_tag_filter(tags, name_format=None, exclude=False):
             sfilters.append(exst_filter)
             return sfilters
 
-    # get tags param id
-    param_id = _get_tag_paramid()
-
-    # create filter rule
-    if HOST_APP.is_newer_than(2019, or_equal=True):
-        rules = None
-    else:
-        rules = framework.List[DB.FilterRule]()
-    param_prov = DB.ParameterValueProvider(param_id)
-    param_contains = DB.FilterStringContains()
-    for tag in tags:
-        rule = DB.FilterStringRule(param_prov,
-                                   param_contains,
-                                   tag.name,
-                                   False)
-        if exclude:
-            rule = DB.FilterInverseRule(rule)
-
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            if rules:
-                rules = DB.LogicalOrFilter(rules,
-                                           DB.ElementParameterFilter(rule))
-            else:
-                rules = DB.ElementParameterFilter(rule)
-        else:
-            rules.Add(rule)
-
-    # collect applicable categories
-    cats = []
-    for cat in revit.query.get_all_category_set():
-        if DB.ParameterFilterElement.AllRuleParametersApplicable(
-                revit.doc,
-                framework.List[DB.ElementId]([cat.Id]),
-                rules
-            ):
-            cats.append(cat.Id)
-
-    # create filter
+    # create tag filter
     sfilter = \
-        DB.ParameterFilterElement.Create(revit.doc,
-                                         filter_name,
-                                         framework.List[DB.ElementId](cats),
-                                         rules)
+        revit.create.create_param_value_filter(
+            filter_name=filter_name,
+            param_id=_get_tag_paramid(),
+            param_values=[x.name for x in tags],
+            evaluator="contains",
+            match_any=True,
+            case_sensitive=False,
+            exclude=exclude,
+            category_list=None,
+            doc=revit.doc
+            )
     sfilters.append(sfilter)
     return sfilters
 
@@ -781,53 +751,31 @@ def create_modifier_filters(exclude=False):
         list[DB.ParameterFilterElement]: list of created filters
     """
     mfilters = []
-
-    existing_filters = [x for x in revit.query.get_rule_filters()]
-
+    # create filter name and check availability
     for modif in TagModifiers.get_modifiers():
-        # create filter name and check availability
         filter_name = \
             '{} {}'.format('NONE' if exclude else 'ALL', modif.name)
         filter_exists = False
-        for exst_filter in existing_filters:
+        for exst_filter in revit.query.get_rule_filters():
             if exst_filter.Name == filter_name:
                 filter_exists = True
                 mfilters.append(exst_filter)
         if filter_exists:
             continue
 
-        # get tags param id
-        param_id = _get_tag_paramid()
-
-        # create filter rule
-        rules = framework.List[DB.FilterRule]()
-        param_prov = DB.ParameterValueProvider(param_id)
-        param_contains = DB.FilterStringContains()
-        rule = DB.FilterStringRule(param_prov,
-                                   param_contains,
-                                   modif.tag,
-                                   False)
-        if exclude:
-            rule = DB.FilterInverseRule(rule)
-        rules.Add(rule)
-
-        # collect applicable categories
-        cats = []
-        for cat in revit.query.get_all_category_set():
-            if DB.ParameterFilterElement.AllRuleParametersApplicable(
-                    revit.doc,
-                    framework.List[DB.ElementId]([cat.Id]),
-                    rules
-                ):
-                cats.append(cat.Id)
-
-        # create filter
-        mfilter = DB.ParameterFilterElement.Create(
-            revit.doc,
-            filter_name,
-            framework.List[DB.ElementId](cats),
-            rules
-            )
+        # create modifier filter
+        mfilter = \
+            revit.create.create_param_value_filter(
+                filter_name=filter_name,
+                param_id=_get_tag_paramid(),
+                param_values=[modif.tag],
+                evaluator="contains",
+                match_any=True,
+                case_sensitive=False,
+                exclude=exclude,
+                category_list=None,
+                doc=revit.doc
+                )
         mfilters.append(mfilter)
     return mfilters
 
