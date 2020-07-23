@@ -7,7 +7,7 @@
     "python.linting.pylamaEnabled": false,
     "python.linting.mypyEnabled": false,
     "python.jediEnabled": true,
-    "python.pythonPath": "${env:PYREVIT_VENV}",
     "restructuredtext.confPath": "${workspaceFolder}/docs",
     "python.formatting.provider": "black",
+    "python.languageServer": "Jedi",
 }
