@@ -2,6 +2,7 @@
 <DOCUMENT Type="Advanced Installer" CreateVersion="15.2" version="16.9" Modules="professional" RootPath="." Language="en" Id="{1EA8C788-EF81-496E-9716-ABCD117C40CC}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
     <ROW Name="HiddenItems" Value="AppXAppDetailsComponent;FixupComponent;AppXCapabilitiesComponent;AppXDependenciesComponent;AppXProductDetailsComponent;AppXVisualAssetsComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent;MsiXDiffComponent"/>
+    <ROW Name="SkipBuildResCheck" Value="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
@@ -5744,6 +5745,7 @@
     <ROW File="router.py" Component_="serverinfo.py" FileName="router.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\router.py" SelfReg="false"/>
     <ROW File="base.py_1" Component_="serverinfo.py" FileName="base.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\server\base.py" SelfReg="false"/>
     <ROW File="api.py_1" Component_="__init__.py_1" FileName="api.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\routes\api.py" SelfReg="false"/>
+    <ROW File="pyrevitargs" Component_="pyrevitargs" FileName="PYREVI~1|.pyrevitargs" Attributes="2" SourcePath=".pyrevitargs" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
@@ -5753,6 +5755,9 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
     <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="1" PackageFolder="[|AI_AIP_FOLDER]..\dist" PackageFileName="[|ProductName]_[|ProductVersion]_signed" Languages="en" InstallationType="2" CabsLocation="1" CompressCabs="false" UseLzma="true" LzmaMethod="2" LzmaCompressionLevel="2" PackageType="1" FilesInsideExe="true" ExeIconPath="..\bin\pyRevit.ico" ExtractionFolder="[TempFolder]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" MsiPackageType="x64"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.CacheComponent">
+    <ATTRIBUTE name="Enable" value="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
     <ROW Path="&lt;AI_DICTS&gt;ui.ail"/>
@@ -5785,6 +5790,9 @@
     <ROW Action="AI_DeleteRLzma" Description="Deleting files extracted from archive" DescriptionLocId="ActionText.Description.AI_DeleteLzma" TemplateLocId="-"/>
     <ROW Action="AI_ExtractFiles" Description="Extracting files from archive" DescriptionLocId="ActionText.Description.AI_ExtractLzma" TemplateLocId="-"/>
     <ROW Action="AI_ExtractLzma" Description="Extracting files from archive" DescriptionLocId="ActionText.Description.AI_ExtractLzma" TemplateLocId="-"/>
+    <ROW Action="UninstallClearCaches" Description="and leaving no traces..."/>
+    <ROW Action="UninstallDetachAll" Description="Detaching pyRevit"/>
+    <ROW Action="UninstallForgetAll" Description="Forgetting pyRevit"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiAppSearchComponent">
     <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_LM" Builds="DefaultBuild"/>
@@ -5792,13 +5800,13 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
     <ROW Name="ExternalUICleaner.dll" SourcePath="&lt;AI_CUSTACTS&gt;ExternalUICleaner.dll"/>
-    <ROW Name="PowerShellScriptLauncher.dll" SourcePath="&lt;AI_CUSTACTS&gt;PowerShellScriptLauncher.dll"/>
     <ROW Name="Prereq.dll" SourcePath="&lt;AI_CUSTACTS&gt;Prereq.dll"/>
     <ROW Name="SoftwareDetector.dll" SourcePath="&lt;AI_CUSTACTS&gt;SoftwareDetector.dll"/>
     <ROW Name="aicustact.dll" SourcePath="&lt;AI_CUSTACTS&gt;aicustact.dll"/>
     <ROW Name="lzmaextractor.dll" SourcePath="&lt;AI_CUSTACTS&gt;lzmaextractor.dll"/>
     <ROW Name="pyrevit.bmp" SourcePath="pyrevit.bmp"/>
     <ROW Name="pyrevitbanner.bmp" SourcePath="pyrevit-banner.bmp"/>
+    <ROW Name="viewer.exe_1" SourcePath="&lt;AI_CUSTACTS64&gt;viewer.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlComponent">
     <ROW Dialog_="LicenseAgreementDlg" Control="AgreementText" Type="ScrollableText" X="20" Y="60" Width="330" Height="120" Attributes="7" Text="gpl-3.0.rtf" Order="400" TextLocId="Control.Text.LicenseAgreementDlg#AgreementText" MsiKey="LicenseAgreementDlg#AgreementText"/>
@@ -5842,8 +5850,6 @@
     <ROW Action="AI_DATA_SETTER_1" Type="51" Source="CustomActionData" Target="revit.exe"/>
     <ROW Action="AI_DATA_SETTER_2" Type="51" Source="CustomActionData" Target="revit.exe"/>
     <ROW Action="AI_DATA_SETTER_3" Type="51" Source="CustomActionData" Target="Revit instances are open. This installer will close the running Revit instances. Make sure you are synced and saved before proceeding! |pyRevit Installer |MB_OK,MB_ICONWARNING,MB_DEFBUTTON1|BTN_PRESSED|[CLIENTPROCESSID]"/>
-    <ROW Action="AI_DATA_SETTER_4" Type="51" Source="CustomActionData" Target="AEkAcwA2ADQAQgBpAHQAAgAxAAEASQBzAEYAYQBsAGwAYgBhAGMAawAzADIAQgBpAHQAAgABAFAAYQByAGEAbQBzAAIALQBhAHAAcABEAGkAcgAgACIAWwBBAFAAUABEAEkAUgBdACIAAQBTAGMAcgBpAHAAdAACACMAIABCAGwAbwBjAGsAIABmAG8AcgAgAGQAZQBjAGwAYQByAGkAbgBnACAAdABoAGUAIABzAGMAcgBpAHAAdAAgAHAAYQByAGEAbQBlAHQAZQByAHMALgANAAoAUABhAHIAYQBtACgAJABhAHAAcABEAGkAcgApAA0ACgANAAoAIwAgAFkAbwB1AHIAIABjAG8AZABlACAAZwBvAGUAcwAgAGgAZQByAGUALgANAAoAIwAgAEEASQAgAHIAdQBuAHMAIAB0AGgAZQAgAHMAYwByAGkAcAB0ACAAdwBpAHQAaAAgAEIAeQBwAGEAcwBzACAARQB4AGUAYwB1AHQAaQBvAG4AIABQAG8AbABpAGMAeQANAAoAUwBlAHQALQBMAG8AYwBhAHQAaQBvAG4AIAAiACQAYQBwAHAARABpAHIAIgANAAoAdAByAHkAIABbAFwAewBdAA0ACgAJAC4AXABiAGkAbgBcAHAAeQByAGUAdgBpAHQAIABjAGEAYwBoAGUAcwAgAGMAbABlAGEAcgAgAC0ALQBhAGwAbAANAAoACQAuAFwAYgBpAG4AXABwAHkAcgBlAHYAaQB0ACAAZABlAHQAYQBjAGgAIAAtAC0AYQBsAGwADQAKAAkALgBcAGIAaQBuAFwAcAB5AHIAZQB2AGkAdAAgAGMAbABvAG4AZQBzACAAZgBvAHIAZwBlAHQAIAAtAC0AYQBsAGwADQAKAAkALgBcAGIAaQBuAFwAcAB5AHIAZQB2AGkAdAAgAGMAbABvAG4AZQBzACAAYQBkAGQAIABtAGEAcwB0AGUAcgAgACIAJABhAHAAcABEAGkAcgBcACIADQAKAAkALgBcAGIAaQBuAFwAcAB5AHIAZQB2AGkAdAAgAGEAdAB0AGEAYwBoACAAbQBhAHMAdABlAHIAIAAyADcANwAgAC0ALQBpAG4AcwB0AGEAbABsAGUAZAANAAoACQAuAFwAYgBpAG4AXABwAHkAcgBlAHYAaQB0ACAAYwBvAG4AZgBpAGcAcwAgAGIAaQBuAGMAYQBjAGgAZQAgAGUAbgBhAGIAbABlAA0ACgBbAFwAfQBdAA0ACgBjAGEAdABjAGgAIABbAFwAewBdAFsAXAB9AF0ADQAKAFcAcgBpAHQAZQAtAE8AdQB0AHAAdQB0ACAAIgAiACAAPgAgAC4AcAB5AHIAZQB2AGkAdABhAHIAZwBzAA0ACgBXAHIAaQB0AGUALQBPAHUAdABwAHUAdAAgACIAbQBhAHMAdABlAHIAIgAgAD4APgAgAC4AcAB5AHIAZQB2AGkAdABhAHIAZwBzAA0ACgBXAHIAaQB0AGUALQBPAHUAdABwAHUAdAAgACIAYgBhAHMAZQBwAHUAYgBsAGkAYwAiACAAPgA+ACAALgBwAHkAcgBlAHYAaQB0AGEAcgBnAHM="/>
-    <ROW Action="AI_DATA_SETTER_5" Type="51" Source="CustomActionData" Target="AEkAcwA2ADQAQgBpAHQAAgAxAAEAUABhAHIAYQBtAHMAAgAtAGEAcABwAEQAaQByACAAIgBbAEEAUABQAEQASQBSAF0AIgABAFMAYwByAGkAcAB0AAIAIwAgAEIAbABvAGMAawAgAGYAbwByACAAZABlAGMAbABhAHIAaQBuAGcAIAB0AGgAZQAgAHMAYwByAGkAcAB0ACAAcABhAHIAYQBtAGUAdABlAHIAcwAuAA0ACgBQAGEAcgBhAG0AKAAkAGEAcABwAEQAaQByACkADQAKAA0ACgAjACAAWQBvAHUAcgAgAGMAbwBkAGUAIABnAG8AZQBzACAAaABlAHIAZQAuAA0ACgAjACAAQQBJACAAcgB1AG4AcwAgAHQAaABlACAAcwBjAHIAaQBwAHQAIAB3AGkAdABoACAAQgB5AHAAYQBzAHMAIABFAHgAZQBjAHUAdABpAG8AbgAgAFAAbwBsAGkAYwB5AA0ACgBTAGUAdAAtAEwAbwBjAGEAdABpAG8AbgAgACIAJABhAHAAcABEAGkAcgAiAA0ACgB0AHIAeQAgAFsAXAB7AF0ADQAKAAkALgBcAGIAaQBuAFwAcAB5AHIAZQB2AGkAdAAgAGQAZQB0AGEAYwBoACAALQAtAGEAbABsAA0ACgAJAC4AXABiAGkAbgBcAHAAeQByAGUAdgBpAHQAIABjAGwAbwBuAGUAcwAgAGYAbwByAGcAZQB0ACAALQAtAGEAbABsAA0ACgAJAC4AXABiAGkAbgBcAHAAeQByAGUAdgBpAHQAIABjAGEAYwBoAGUAcwAgAGMAbABlAGEAcgAgAC0ALQBhAGwAbAANAAoAWwBcAH0AXQANAAoAYwBhAHQAYwBoACAAWwBcAHsAXQBbAFwAfQBdAA0ACgBSAGUAbQBvAHYAZQAtAEkAdABlAG0AIAAuAFwALgBwAHkAcgBlAHYAaQB0AGEAcgBnAHM="/>
     <ROW Action="AI_DOWNGRADE" Type="19" Target="4010"/>
     <ROW Action="AI_DeleteCadLzma" Type="51" Source="AI_DeleteLzma" Target="[AI_SETUPEXEPATH]"/>
     <ROW Action="AI_DeleteLzma" Type="1025" Source="lzmaextractor.dll" Target="DeleteLZMAFiles"/>
@@ -5867,13 +5873,20 @@
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
     <ROW Action="DetectProcess" Type="65" Source="aicustact.dll" Target="DetectProcess" Options="3" AdditionalSeq="AI_DATA_SETTER_2"/>
+    <ROW Action="InstallAddMaster" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; clones add master [APPDIR]" Options="1"/>
+    <ROW Action="InstallAttachMaster" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; attach master 277 --installed" Options="1"/>
+    <ROW Action="InstallClearCaches" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; caches clear --all" Options="1"/>
+    <ROW Action="InstallDetachAll" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; detach --all" Options="1"/>
+    <ROW Action="InstallEnableBinCache" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; configs bincache enable" Options="1"/>
+    <ROW Action="InstallForgetAll" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; clones forget --all" Options="1"/>
     <ROW Action="MessageBox" Type="65" Source="aicustact.dll" Target="MsgBox" Options="1" AdditionalSeq="AI_DATA_SETTER_3"/>
-    <ROW Action="Registration" Type="65" Source="PowerShellScriptLauncher.dll" Target="RunPowerShellScript" Options="1" AdditionalSeq="AI_DATA_SETTER_4"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="DefaultBuild:[AppDataFolder][ProductName]-Master"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
     <ROW Action="StopProcess" Type="65" Source="aicustact.dll" Target="StopProcess" Options="1" AdditionalSeq="AI_DATA_SETTER_1"/>
-    <ROW Action="Unregistration" Type="65" Source="PowerShellScriptLauncher.dll" Target="RunPowerShellScript" Options="1" AdditionalSeq="AI_DATA_SETTER_5"/>
+    <ROW Action="UninstallClearCaches" Type="1026" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; caches clear --all" Options="1"/>
+    <ROW Action="UninstallDetachAll" Type="1026" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; detach --all" Options="1"/>
+    <ROW Action="UninstallForgetAll" Type="1026" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[APPDIR]\bin\pyrevit.exe&quot; clones forget --all" Options="1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiEnvComponent">
     <ROW Environment="PATH" Name="=-Path" Value="[~];[APPDIR]bin" Component_="ProductInformation"/>
@@ -6388,11 +6401,16 @@
     <ROW Action="AI_DATA_SETTER_3" Condition="AI_PROCESS_STATE = &quot;Running&quot;" Sequence="204"/>
     <ROW Action="DetectProcess" Sequence="202"/>
     <ROW Action="AI_DATA_SETTER_2" Sequence="201"/>
-    <ROW Action="Unregistration" Condition="( ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) OR ( Installed AND ( REMOVE = &quot;ALL&quot; OR AI_INSTALL_MODE = &quot;Remove&quot; ) ) ) AND ( (VersionNT &gt; 501) OR (VersionNT = 501 AND ServicePackLevel &gt;= 2) )" Sequence="1602"/>
-    <ROW Action="AI_DATA_SETTER_5" Condition="( ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) OR ( Installed AND ( REMOVE = &quot;ALL&quot; OR AI_INSTALL_MODE = &quot;Remove&quot; ) ) ) AND ( (VersionNT &gt; 501) OR (VersionNT = 501 AND ServicePackLevel &gt;= 2) )" Sequence="1601"/>
-    <ROW Action="Registration" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) ) AND ( (VersionNT &gt; 501) OR (VersionNT = 501 AND ServicePackLevel &gt;= 2) )" Sequence="6602"/>
-    <ROW Action="AI_DATA_SETTER_4" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) ) AND ( (VersionNT &gt; 501) OR (VersionNT = 501 AND ServicePackLevel &gt;= 2) )" Sequence="6601"/>
     <ROW Action="AI_DETECT_MODERNWIN" Condition="(VersionNT &gt;= 603)" Sequence="54" MsiKey="AI_DETECT_MODERNWIN"/>
+    <ROW Action="UninstallDetachAll" Condition="( ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) OR ( Installed AND ( REMOVE = &quot;ALL&quot; OR AI_INSTALL_MODE = &quot;Remove&quot; ) ) )" Sequence="1601"/>
+    <ROW Action="UninstallForgetAll" Condition="( ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) OR ( Installed AND ( REMOVE = &quot;ALL&quot; OR AI_INSTALL_MODE = &quot;Remove&quot; ) ) )" Sequence="1602"/>
+    <ROW Action="UninstallClearCaches" Condition="( ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) OR ( Installed AND ( REMOVE = &quot;ALL&quot; OR AI_INSTALL_MODE = &quot;Remove&quot; ) ) )" Sequence="1603"/>
+    <ROW Action="InstallClearCaches" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6601"/>
+    <ROW Action="InstallDetachAll" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6602"/>
+    <ROW Action="InstallForgetAll" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6603"/>
+    <ROW Action="InstallAddMaster" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6604"/>
+    <ROW Action="InstallAttachMaster" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6605"/>
+    <ROW Action="InstallEnableBinCache" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6606"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_ResolveKnownFolders" Sequence="53"/>
