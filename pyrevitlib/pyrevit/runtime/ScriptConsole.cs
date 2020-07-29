@@ -29,6 +29,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string CPYErrorHeader = "<strong>CPython Traceback:</strong>";
         public static string IRubyErrorHeader = "<strong>IronRuby Traceback:</strong>";
         public static string CLRErrorHeader = "<strong>Script Executor Traceback:</strong>";
+        public static string CSharpErrorHeader = "<strong>C# Traceback:</strong>";
+        public static string VBErrorHeader = "<strong>VB.NET Traceback:</strong>";
         public static string ProgressBlock = "<div class=\"progressindicator\" id=\"pbarcontainer\"></div>";
         public static string ProgressBlockId = "pbarcontainer";
         public static string ProgressBar = "<div class=\"progressbar\" id=\"pbar\"></div>";
@@ -464,12 +466,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.CPYErrorHeader);
                     break;
                 case ScriptEngineType.CSharp:
-                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.CLRErrorHeader);
+                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.CSharpErrorHeader);
                     break;
                 case ScriptEngineType.Invoke:
                     break;
                 case ScriptEngineType.VisualBasic:
-                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.CLRErrorHeader);
+                    errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.VBErrorHeader);
                     break;
                 case ScriptEngineType.IronRuby:
                     errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.IRubyErrorHeader);

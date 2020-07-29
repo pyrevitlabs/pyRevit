@@ -70,12 +70,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override int Execute(ref ScriptRuntime runtime) {
             // compile first
             // only if the signature doesn't match
+            var errors = new List<string>();
             if (scriptSig == null || runtime.ScriptSourceFileSignature != scriptSig) {
                 try {
                     scriptSig = runtime.ScriptSourceFileSignature;
-                    scriptAssm = CompileCLRScript(ref runtime);
+                    scriptAssm = CompileCLRScript(ref runtime, out errors);
+                    if (scriptAssm == null) {
+                        if (runtime.RuntimeType == ScriptRuntimeType.ExternalCommand) {
+                            runtime.OutputStream.WriteError(string.Join(Environment.NewLine, errors.ToArray()), runtime.EngineType);
+                        }
+                        // clear script signature
+                        scriptSig = null;
+                        return ScriptExecutorResultCodes.CompileException;
+                    }
                 }
                 catch (Exception compileEx) {
+                    // make sure a bad compile is not cached
+                    scriptAssm = null;
                     string traceMessage = compileEx.ToString();
                     traceMessage = traceMessage.NormalizeNewLine();
                     runtime.TraceMessage = traceMessage;
@@ -148,7 +159,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public static Assembly CompileCLRScript(ref ScriptRuntime runtime) {
+        public static Assembly CompileCLRScript(ref ScriptRuntime runtime, out List<string> errors) {
             // https://stackoverflow.com/a/3188953
             // read the script
             var scriptContents = File.ReadAllText(runtime.ScriptSourceFile);
@@ -174,6 +185,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             compileParams.CompilerOptions = string.Format("/optimize /define:REVIT{0}", runtime.App.VersionNumber);
             compileParams.GenerateInMemory = true;
             compileParams.GenerateExecutable = false;
+            compileParams.TreatWarningsAsErrors = false;
             compileParams.ReferencedAssemblies.Add(typeof(ScriptExecutor).Assembly.Location);
 
             // determine which code provider to use
@@ -191,11 +203,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // compile code first
-            var res = compiler.CompileAssemblyFromSource(
+            var res = compiler.CompileAssemblyFromFile(
                 options: compileParams,
-                sources: new string[] { scriptContents }
+                fileNames: new string[] { runtime.ScriptSourceFile }
             );
 
+            // return nothing if errors occured
+            errors = new List<string> { };
+            if(res.Errors.HasErrors) {
+                foreach (var err in res.Errors)
+                    errors.Add(err.ToString());
+                return null;
+            }
+
+            // otherwise return compiled assm
             return res.CompiledAssembly;
         }
 
