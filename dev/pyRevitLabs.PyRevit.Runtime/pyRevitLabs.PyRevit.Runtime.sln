@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2002
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime", "pyRevitLabs.PyRevit.Runtime\pyRevitLabs.PyRevit.Runtime.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2019", "pyRevitLabs.PyRevit.Runtime2019\pyRevitLabs.PyRevit.Runtime2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2013", "pyRevitLabs.PyRevit.Runtime2013\pyRevitLabs.PyRevit.Runtime2013.csproj", "{DC92F379-AC1A-4930-842B-981C70A840F6}"
 EndProject
@@ -18,6 +16,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2017", "pyRevitLabs.PyRevit.Runtime2017\pyRevitLabs.PyRevit.Runtime2017.csproj", "{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2018", "pyRevitLabs.PyRevit.Runtime2018\pyRevitLabs.PyRevit.Runtime2018.csproj", "{8CEA0B80-D74F-411F-A607-DC1599AA934E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2019", "pyRevitLabs.PyRevit.Runtime2019\pyRevitLabs.PyRevit.Runtime2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2020", "pyRevitLabs.PyRevit.Runtime2020\pyRevitLabs.PyRevit.Runtime2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,13 +37,6 @@ Global
 		{479435EA-C820-49E4-942F-1274C151EE71}.Release|Any CPU.Build.0 = Release|x64
 		{479435EA-C820-49E4-942F-1274C151EE71}.Release|x64.ActiveCfg = Release|x64
 		{479435EA-C820-49E4-942F-1274C151EE71}.Release|x64.Build.0 = Release|x64
-		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|Any CPU.ActiveCfg = Release|x64
-		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|Any CPU.Build.0 = Release|x64
-		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|x64.ActiveCfg = Release|x64
-		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|x64.Build.0 = Release|x64
-		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|Any CPU.ActiveCfg = Release|x64
-		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|x64.ActiveCfg = Release|x64
-		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|x64.Build.0 = Release|x64
 		{DC92F379-AC1A-4930-842B-981C70A840F6}.Debug|Any CPU.ActiveCfg = Release|x64
 		{DC92F379-AC1A-4930-842B-981C70A840F6}.Debug|Any CPU.Build.0 = Release|x64
 		{DC92F379-AC1A-4930-842B-981C70A840F6}.Debug|x64.ActiveCfg = Release|x64
@@ -84,6 +79,20 @@ Global
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Release|Any CPU.ActiveCfg = Release|x64
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Release|x64.ActiveCfg = Release|x64
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Release|x64.Build.0 = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|Any CPU.ActiveCfg = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|Any CPU.Build.0 = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|x64.ActiveCfg = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|x64.Build.0 = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|Any CPU.ActiveCfg = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|x64.ActiveCfg = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|x64.Build.0 = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|Any CPU.ActiveCfg = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|Any CPU.Build.0 = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|x64.ActiveCfg = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|x64.Build.0 = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Release|Any CPU.ActiveCfg = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Release|x64.ActiveCfg = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
