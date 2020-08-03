@@ -59,7 +59,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 host_user = UserEnv.GetLoggedInUserName(),
                 username = runtime.App.Username,
                 revit = runtime.App.VersionNumber,
+
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
                 revitbuild = runtime.App.VersionBuild,
+#else
+                // Revit 2021 has a bug on .VersionBuild
+                // it reports identical value as .VersionNumber
+                // let's give a invalid, but correctly formatted value to the telemetry server
+                revitbuild = "20000101_0000(x64)",
+#endif
                 sessionid = runtime.SessionUUID,
                 pyrevit = runtime.PyRevitVersion,
                 clone = runtime.CloneName,
