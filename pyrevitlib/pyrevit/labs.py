@@ -74,6 +74,22 @@ class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
             return logging.WARNING
 
 
+def extract_build_from_exe(proc_path):
+    """Extract build number from host .exe file
+
+    Args:
+        proc_path (str): full path of the host .exe file
+
+    Returns:
+        str: build number (e.g. '20170927_1515(x64)')
+    """
+    # Revit 2021 has a bug on .VersionBuild
+    ## it reports identical value as .VersionNumber
+    pinfo = TargetApps.Revit.RevitProductData.GetBinaryProductInfo(proc_path)
+    return "{}({})".format(pinfo.build, pinfo.target) \
+        if pinfo.build else "20000101_0000(x64)"
+
+
 # activate binding resolver
 if not EXEC_PARAMS.doc_mode:
     if HOST_APP.is_older_than(2019):
