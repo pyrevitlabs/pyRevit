@@ -1443,7 +1443,7 @@ def find_paper_sizes_by_dims(printer_name, paper_width, paper_height, doc=None):
     return paper_sizes
 
 
-def get_sheet_print_settings(tblock, printer_name, doc_psettings):
+def get_titleblock_print_settings(tblock, printer_name, doc_psettings):
     doc = tblock.Document
     # find paper sizes used in print settings of this doc
     page_width_param = tblock.Parameter[DB.BuiltInParameter.SHEET_WIDTH]
@@ -1469,13 +1469,14 @@ def get_sheet_print_settings(tblock, printer_name, doc_psettings):
     for doc_psetting in doc_psettings:
         try:
             pparams = doc_psetting.PrintParameters
-            if pparams.PaperSize.Name in paper_size_names \
+            if pparams.PaperSize \
+                    and pparams.PaperSize.Name in paper_size_names \
                     and (pparams.ZoomType == DB.ZoomType.Zoom
                          and pparams.Zoom == 100) \
                     and pparams.PageOrientation == page_orient:
                 all_tblock_psettings.add(doc_psetting)
-        except Exception:
-            pass
+        except Exception as ex:
+            mlogger.debug("incompatible psettings: %s", doc_psetting.Name)
     return sorted(all_tblock_psettings, key=lambda x: x.Name)
 
 
