@@ -59,7 +59,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // determine build number
             string revitbuild = "20000101_0000(x64)";
 #if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
-                revitbuild = runtime.App.VersionBuild,
+                revitbuild = runtime.App.VersionBuild;
 #else
             // Revit 2021 has a bug on .VersionBuild
             // it reports identical value as .VersionNumber
