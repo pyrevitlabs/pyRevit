@@ -59,8 +59,14 @@ SheetRevision = namedtuple('SheetRevision', ['number', 'desc', 'date'])
 class NamingFormat(forms.Reactive):
     def __init__(self, name, template, builtin=False):
         self._name = name
-        self._template = template
+        self._template = self.verify_template(template)
         self.builtin = builtin
+
+    @staticmethod
+    def verify_template(value):
+        if not value.lower().endswith('.pdf'):
+            value += '.pdf'
+        return value
 
     @forms.reactive
     def name(self):
@@ -76,7 +82,7 @@ class NamingFormat(forms.Reactive):
 
     @template.setter
     def template(self, value):
-        self._template = value
+        self._template = self.verify_template(value)
 
 
 class ViewSheetListItem(forms.Reactive):
