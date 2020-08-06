@@ -1,7 +1,7 @@
 """Activates selection tool that picks a specific type of element.
 
 Shift-Click:
-Pick from all available categories.
+Pick favorites from all available categories
 """
 # pylint: disable=E0401,W0703,C0103
 from collections import namedtuple
@@ -12,6 +12,7 @@ from pyrevit import script
 
 
 logger = script.get_logger()
+my_config = script.get_config()
 
 
 # somehow DB.BuiltInCategory.OST_Truss does not have a corresponding DB.Category
@@ -43,23 +44,44 @@ CategoryOption = namedtuple('CategoryOption', ['name', 'revit_cat'])
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
+    """Selection filter implementation"""
     def __init__(self, category_opt):
         self.category_opt = category_opt
 
-    # standard API override function
     def AllowElement(self, element):
+        """Is element allowed to be selected?"""
         if element.Category \
                 and self.category_opt.revit_cat.Id == element.Category.Id:
             return True
         else:
             return False
 
-    # standard API override function
     def AllowReference(self, refer, point):  # pylint: disable=W0613
+        """Not used for selection"""
         return False
 
 
+class FSCategoryItem(forms.TemplateListItem):
+    """Wrapper class for frequently selected category list item"""
+    pass
+
+
+def load_configs():
+    """Load list of frequently selected categories from configs or defaults"""
+    fscats = my_config.get_option('fscats', [])
+    revit_cats = [revit.query.get_category(x)
+                  for x in (fscats or FREQUENTLY_SELECTED_CATEGORIES)]
+    return [x for x in revit_cats if x]
+
+
+def save_configs(categories):
+    """Save given list of categories as frequently selected"""
+    my_config.fscats = [x.Name for x in categories]
+    script.save_config()
+
+
 def pick_by_category(category_opt):
+    """Create selection handler that selects given category only"""
     try:
         selection = revit.get_selection()
         msfilter = PickByCategorySelectionFilter(category_opt)
@@ -71,10 +93,44 @@ def pick_by_category(category_opt):
     except Exception as err:
         logger.debug(err)
 
-source_categories = \
-    [revit.query.get_category(x) for x in FREQUENTLY_SELECTED_CATEGORIES]
+
+def reset_defaults(options):
+    """Reset frequently selected categories to defaults"""
+    defaults = [revit.query.get_category(x)
+                for x in FREQUENTLY_SELECTED_CATEGORIES]
+    default_names = [x.Name for x in defaults if x]
+    for opt in options:
+        if opt.name in default_names:
+            opt.checked = True
+
+
+def configure_fscats(prev_fscats):
+    """Ask for users frequently selected categories"""
+    all_cats = revit.doc.Settings.Categories
+    prev_fscatnames = [x.Name for x in prev_fscats]
+    fscats = forms.SelectFromList.show(
+        sorted(
+            [FSCategoryItem(x,
+                            checked=x.Name in prev_fscatnames,
+                            name_attr='Name')
+             for x in all_cats],
+            key=lambda x: x.name
+            ),
+        title='Select Favorite Categories',
+        button_name='Apply',
+        multiselect=True,
+        resetfunc=reset_defaults
+    )
+    if fscats:
+        save_configs(fscats)
+    return fscats
+
+
+source_categories = load_configs()
 if __shiftclick__:  # pylint: disable=E0602
-    source_categories = revit.doc.Settings.Categories
+    source_categories = configure_fscats(source_categories)
+    if not source_categories:
+        script.exit()
 
 # cleanup source categories
 source_categories = filter(None, source_categories)
