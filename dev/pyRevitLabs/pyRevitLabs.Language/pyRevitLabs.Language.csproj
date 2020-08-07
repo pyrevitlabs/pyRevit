@@ -62,11 +62,6 @@
       <LastGenOutput>StringLib.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="NETStandard.Library">
-      <Version>2.0.3</Version>
-    </PackageReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "$(TargetDir)..\..\..\..\..\bin"

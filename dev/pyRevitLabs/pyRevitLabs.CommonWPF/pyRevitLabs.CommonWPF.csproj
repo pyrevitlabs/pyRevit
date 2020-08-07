@@ -101,9 +101,6 @@
     <PackageReference Include="Expression.Blend.Sdk">
       <Version>1.0.2</Version>
     </PackageReference>
-    <PackageReference Include="NETStandard.Library">
-      <Version>2.0.3</Version>
-    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
