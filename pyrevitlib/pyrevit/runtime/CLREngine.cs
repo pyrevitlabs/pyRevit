@@ -185,12 +185,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // add location of this assembly
             refFiles.Add(typeof(ScriptExecutor).Assembly.Location);
 
-            // add the ref files to errors
-            // they'll be printed if errors occur
-            errors = new List<string>();
-            foreach (var refFile in refFiles)
-                errors.Add($"Reference: {refFile}");
-
             // create output assembly
             string outputAssembly = Path.Combine(
                 UserEnv.UserTemp,
@@ -215,8 +209,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 sourceFiles: new string[] { sourceFile },
                 assemblyName: Path.GetFileName(outputPath),
                 references: refFiles,
-                out errors,
-                defines: defines
+                defines: defines,
+                out errors
                 );
         }
 
@@ -235,6 +229,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             compileParams.GenerateExecutable = false;
             compileParams.TreatWarningsAsErrors = false;
 
+            // add the ref files to errors
+            // they'll be printed if errors occur
+            errors = new List<string>();
+            foreach (var refFile in refFiles)
+                errors.Add($"Reference: {refFile}");
+
             compiler = new VBCodeProvider(compConfig);
 
             // compile code first
@@ -244,7 +244,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             );
 
             // return nothing if errors occured
-            errors = new List<string>();
             if (res.Errors.HasErrors) {
                 foreach (var err in res.Errors)
                     errors.Add(err.ToString());

@@ -21,53 +21,44 @@ namespace pyRevitLabs.Common {
             string outputPath,
             IEnumerable<string> references,
             IEnumerable<string> defines,
-            bool log
+            out List<string> messages
             ) {
-            // prepare a file for logging
-            string compileLog = Path.Combine(
-                Path.GetDirectoryName(outputPath),
-                Path.GetFileNameWithoutExtension(outputPath) + ".log"
-                );
-
             CSharpCompilation compilation =
                 CreateCSharpCompilation(
                     sourceFiles,
                     Path.GetFileName(outputPath),
                     references,
-                    defines
+                    defines,
+                    out messages
                 );
 
             // compile and write results
-            string diagMsg = string.Empty;
             var result = compilation.Emit(outputPath);
             foreach (var diag in result.Diagnostics)
-                diagMsg += $"{diag}\n";
+                messages.Add(diag.ToString());
 
-            if (log)
-                File.AppendAllText(compileLog, diagMsg);
-
-            return true;
+            return result.Success;
         }
 
         public static Assembly CompileCSharpToAssembly(
             IEnumerable<string> sourceFiles,
             string assemblyName,
             IEnumerable<string> references,
-            out List<string> messages,
-            IEnumerable<string> defines = null
+            IEnumerable<string> defines,
+            out List<string> messages
             ) {
             var compilation = CreateCSharpCompilation(
                 sourceFiles,
                 assemblyName,
                 references,
-                defines
+                defines,
+                out messages
                 );
             // compile and write results
-            messages = new List<string>();
             using (var assmData = new MemoryStream()) {
                 var result = compilation.Emit(assmData);
                 foreach (var diag in result.Diagnostics)
-                    messages.Append(diag.ToString());
+                    messages.Add(diag.ToString());
 
                 // load assembly from memory stream
                 assmData.Seek(0, SeekOrigin.Begin);
@@ -82,7 +73,8 @@ namespace pyRevitLabs.Common {
             IEnumerable<string> sourceFiles,
             string assemblyName,
             IEnumerable<string> references,
-            IEnumerable<string> defines
+            IEnumerable<string> defines,
+            out List<string> messages
             ) {
             // parse the source files
             var parseOpts =
@@ -102,27 +94,33 @@ namespace pyRevitLabs.Common {
                     );
 
             // collect references
-            string corelib = typeof(object).Assembly.Location;
-            List<MetadataReference> refs =
-                new List<MetadataReference> {
-                    AssemblyMetadata.CreateFromFile(corelib).GetReference()
-                };
+            var refs = new List<string>();
+            // add mscorelib
+            refs.Add(typeof(object).Assembly.Location);
             foreach (var refFile in references)
-                refs.Add(
-                    AssemblyMetadata.CreateFromFile(refFile).GetReference()
-                    );
+                refs.Add(refFile);
+
+            messages = new List<string>();
+            var mdataRefs = new List<MetadataReference>();
+            foreach (var refPath in refs) {
+                messages.Add($"Reference: {refPath}");
+                mdataRefs.Add(
+                    AssemblyMetadata.CreateFromFile(refPath).GetReference()
+                    );    
+            }
 
             // compile options
             var compileOpts =
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                     .WithOverflowChecks(true)
+                    .WithPlatform(Platform.X64)
                     .WithOptimizationLevel(OptimizationLevel.Release);
 
             // create compilation job
             return CSharpCompilation.Create(
                 assemblyName,
                 syntaxTree,
-                refs,
+                mdataRefs,
                 compileOpts
                 );
         }

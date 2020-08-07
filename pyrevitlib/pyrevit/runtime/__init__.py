@@ -220,21 +220,32 @@ def _get_reference_file(ref_name):
 
 def get_references():
     # 'IronRuby', 'IronRuby.Libraries',
-    ref_list = ['pyRevitLoader',
-                'RevitAPI', 'RevitAPIUI',
-                'IronPython', 'IronPython.Modules',
-                'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
-                'System', 'System.Core', 'System.IO',
-                'System.Numerics', 'System.Drawing',
-                'System.Xaml', 'System.Web', 'System.Xml',
-                'System.Windows.Forms', 'System.Web.Extensions',
-                'AdWindows', 'UIFramework',
-                'PresentationCore', 'PresentationFramework',
-                'WindowsBase', 'WindowsFormsIntegration',
-                'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
-                'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
-                'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit']
+    ref_list = [
+        # system stuff
+        'System', 'System.Core',
+        'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
+        'System.Drawing', 'System.Windows.Forms', 'System.Web.Extensions',
+        'PresentationCore', 'PresentationFramework',
+        'WindowsBase', 'WindowsFormsIntegration',
+        # legacy csharp/vb.net compiler
+        'Microsoft.CSharp',
+        # roslyn csharp compiler
+        'Microsoft.CodeAnalysis.CSharp', 'Microsoft.CodeAnalysis',
+        'System.Reflection.Metadata',
+        # iron python engine
+        'Microsoft.Dynamic', 'Microsoft.Scripting',
+        'IronPython', 'IronPython.Modules',
+        # revit api
+        'RevitAPI', 'RevitAPIUI', 'AdWindows', 'UIFramework',
+        # pyrevit loader assembly
+        'pyRevitLoader',
+        # pyrevit labs
+        'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
+        'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
+        'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit'
+        ]
 
+    # another revit api
     if HOST_APP.is_newer_than(2018):
         ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
@@ -254,7 +265,7 @@ def _generate_runtime_asm():
     # now try to compile
     try:
         mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
-        labs.Common.CodeCompiler.CompileCSharp(
+        res, msgs = labs.Common.CodeCompiler.CompileCSharp(
             sourceFiles=Array[str](source_list),
             outputPath=RUNTIME_ASSM_FILE,
             references=Array[str](
@@ -262,10 +273,18 @@ def _generate_runtime_asm():
                 ),
             defines=Array[str](
                 ["REVIT{}".format(HOST_APP.version)]
-                ),
-            log=True
+                )
             )
-        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
+        # log results
+        logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
+        with open(logfile, 'w') as lf:
+            lf.write('\n'.join(msgs))
+        # load compiled dll if successful
+        if res:
+            return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
+        # otherwise raise hell
+        else:
+            raise PyRevitException("Error compiling runtime")
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',
