@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 // cpython
-using pyRevitLabs.PythonNet;
+using Python.Runtime;
+using CpyRuntime = Python.Runtime.Runtime;
 
-using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 
@@ -53,7 +53,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // execute
                 try {
-                    scope.ExecUTF8(scriptContents);
+                    scope.Exec(scriptContents);
                 }
                 catch (PythonException cpyex) {
                     var traceBackParts = cpyex.StackTrace.Split(']');
@@ -109,7 +109,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void SetupBuiltins(ref ScriptRuntime runtime) {
             // get builtins
-            IntPtr builtins = pyRevitLabs.PythonNet.Runtime.PyEval_GetBuiltins();
+            IntPtr builtins = CpyRuntime.PyEval_GetBuiltins();
 
             // Add timestamp and executuin uuid
             SetVariable(builtins, "__execid__", runtime.ExecId);
@@ -174,11 +174,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void SetupSearchPaths(ref ScriptRuntime runtime) {
             // set sys paths
             PyObject sys = PythonEngine.ImportModule("sys");
-            PyObject sysPaths = sys.GetAttr("path");
+            PyObject sysPathsObj = sys.GetAttr("path");
+            PyList sysPaths = PyList.AsList(sysPathsObj);
 
             // if this is a new engine, save the syspaths
             if (!RecoveredFromCache) {
-                SaveSearchPaths(sysPaths.Handle);
+                SaveSearchPaths(sysPaths);
             }
             // otherwise reset to default before changing
             else {
@@ -188,7 +189,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths.Reverse<string>()) {
                 var searthPathStr = new PyString(searchPath);
-                pyRevitLabs.PythonNet.Runtime.PyList_Insert(sysPaths.Handle, 0, searthPathStr.Handle);
+                sysPaths.Insert(0, searthPathStr);
             }
         }
 
@@ -201,12 +202,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // for python make sure the first argument is the script
             var scriptSourceStr = new PyString(runtime.ScriptSourceFile);
-            pyRevitLabs.PythonNet.Runtime.PyList_Append(pythonArgv.Handle, scriptSourceStr.Handle);
+            pythonArgv.Append(scriptSourceStr);
 
             // add the rest of the args
             foreach (string arg in runtime.ScriptRuntimeConfigs.Arguments) {
                 var argStr = new PyString(arg);
-                pyRevitLabs.PythonNet.Runtime.PyList_Append(pythonArgv.Handle, argStr.Handle);
+                pythonArgv.Append(argStr);
             }
 
             sys.SetAttr("argv", pythonArgv);
@@ -220,39 +221,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         }
 
-        private static PyObject CopyPyList(IntPtr sourceList) {
-            var newList = new PyList();
-            long itemsCount = pyRevitLabs.PythonNet.Runtime.PyList_Size(sourceList);
-            for (long i = 0; i < itemsCount; i++) {
-                IntPtr listItem = pyRevitLabs.PythonNet.Runtime.PyList_GetItem(sourceList, i);
-                pyRevitLabs.PythonNet.Runtime.PyList_Insert(newList.Handle, i, listItem);
-            }
-            return new PyObject(newList.Handle);
-        }
-
-        private void SaveSearchPaths(IntPtr sourceList) {
+        private void SaveSearchPaths(PyList sourceList) {
             _sysPaths = new List<string>();
-            long itemsCount = pyRevitLabs.PythonNet.Runtime.PyList_Size(sourceList);
+            long itemsCount = sourceList.Length();
             for (long i = 0; i < itemsCount; i++) {
-                IntPtr listItem = pyRevitLabs.PythonNet.Runtime.PyList_GetItem(sourceList, i);
-                var value = new PyObject(listItem).As<string>();
-                _sysPaths.Add(value);
+                BorrowedReference item = CpyRuntime.PyList_GetItem(sourceList.Handle, i);
+                string path = CpyRuntime.GetManagedString(item);
+                _sysPaths.Add(path);
             }
         }
 
-        private PyObject RestoreSearchPaths() {
+        private PyList RestoreSearchPaths() {
             var newList = new PyList();
             int i = 0;
             foreach (var searchPath in _sysPaths) {
                 var searthPathStr = new PyString(searchPath);
-                pyRevitLabs.PythonNet.Runtime.PyList_Insert(newList.Handle, i, searthPathStr.Handle);
+                newList.Insert(i, searthPathStr);
                 i++;
             }
             return newList;
         }
 
         private static void SetVariable(IntPtr? globals, string key, IntPtr value) {
-            pyRevitLabs.PythonNet.Runtime.PyDict_SetItemString(
+            CpyRuntime.PyDict_SetItemString(
                 pointer: globals.Value,
                 key: key,
                 value: value

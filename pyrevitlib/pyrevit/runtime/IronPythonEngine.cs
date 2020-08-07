@@ -10,7 +10,6 @@ using IronPython.Hosting;
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 
-using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 

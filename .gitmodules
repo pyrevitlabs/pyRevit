@@ -1,0 +1,3 @@
+[submodule "dev/modules/pyRevitLabs.Python.Net"]
+	path = dev/modules/pyRevitLabs.Python.Net
+	url = https://github.com/pyrevitlabs/pythonnet.git

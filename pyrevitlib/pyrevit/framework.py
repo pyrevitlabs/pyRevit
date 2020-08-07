@@ -29,7 +29,7 @@ from System import AppDomain, Version
 from System import Type
 from System import Uri, Guid
 from System import EventHandler
-from System import Array, IntPtr, Enum
+from System import Array, IntPtr, Enum, Byte
 from System import Convert
 from System.Text import Encoding
 from System.Collections import ObjectModel
@@ -52,7 +52,7 @@ from System.Reflection.Emit import AssemblyBuilderAccess
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
 from System import IO
-from System.IO import IOException, DriveInfo, Path, StringReader
+from System.IO import IOException, DriveInfo, Path, StringReader, File
 
 from System import Net
 from System.Net import WebClient, WebRequest, WebProxy
@@ -70,13 +70,11 @@ from System.Windows import Interop
 from System.Windows import Input
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 from System import Math
-from System.CodeDom import Compiler
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
 
 from System.Linq import Enumerable
 
-from Microsoft.CSharp import CSharpCodeProvider
 
 wpf = None
 clr.AddReference('IronPython.Wpf')
