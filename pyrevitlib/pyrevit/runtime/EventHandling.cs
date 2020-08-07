@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Interop;
@@ -7,7 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Reflection;
 
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
@@ -19,7 +17,6 @@ using UIFramework;
 using Xceed.Wpf.AvalonDock.Controls;
 #endif
 
-using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
 using pyRevitLabs.PyRevit;
 

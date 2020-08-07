@@ -47,7 +47,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\bin\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -194,13 +194,28 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>echo === Post-Build Actions ===
+
 echo Cleaning up build files
-copy "$(TargetDir)lib\win32\x64\*.dll" "$(TargetDir)"
-rd /S /Q "$(TargetDir)lib"
-del /Q "$(TargetDir)*.pdb"
-del /Q "$(TargetDir)*.config"
-del /Q "$(TargetDir)*.xml"
+
+del /Q System.Xml.XPath.XDocument.dll
+del /Q System.Threading.Tasks.Extensions.dll
+del /Q System.Threading.Overlapped.dll
+del /Q System.Security.SecureString.dll
+del /Q System.Text.Encoding.CodePages.dll
+del /Q System.Runtime.Serialization.Primitives.dll
+del /Q System.IO.Compression.dll
+del /Q System.Buffers.dll
+del /Q System.Data.Common.dll
+del /Q System.Diagnostics.StackTrace.dll
+del /Q System.Diagnostics.Tracing.dll
+del /Q System.Globalization.Extensions.dll
+del /Q System.Net.Sockets.dll
+del /Q System.Net.Http.dll
+copy "$(TargetDir)lib\win32\x64\*.dll" "$(TargetDir)..\..\..\..\..\bin\"
+copy "$(TargetDir)*.dll" "$(TargetDir)..\..\..\..\..\bin\"
+copy "$(TargetDir)*.exe" "$(TargetDir)..\..\..\..\..\bin\"
 echo Signing binaries
+
 signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
