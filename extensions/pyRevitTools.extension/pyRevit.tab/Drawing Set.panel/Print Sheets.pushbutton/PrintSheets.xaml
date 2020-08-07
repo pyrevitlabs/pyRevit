@@ -214,7 +214,7 @@
                 <Border x:Name="errormsg_block" Background="Red" Padding="5" Margin="0,5,0,5" Visibility="Collapsed">
                     <TextBlock x:Name="errormsg_tb" Foreground="White" VerticalAlignment="Center" />
                 </Border>
-                <Border x:Name="varsizeguide" Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3" Margin="0,5,0,5" Visibility="Visible">
+                <Border x:Name="varsizeguide" Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3" Margin="0,5,0,5" Visibility="Collapsed">
                     <DockPanel DockPanel.Dock="Right" Margin="5">
                         <DockPanel x:Name="sheetopts_wp" DockPanel.Dock="Right" IsEnabled="False">
                             <DockPanel DockPanel.Dock="Bottom">
