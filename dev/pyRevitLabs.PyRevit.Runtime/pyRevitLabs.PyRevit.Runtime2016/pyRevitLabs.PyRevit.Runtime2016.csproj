@@ -95,7 +95,7 @@
       <HintPath>..\..\..\bin\engines\279\pyRevitLoader.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLabs.PythonNet">
-      <HintPath>..\..\..\bin\engines\372\pyRevitLabs.PythonNet.dll</HintPath>
+      <HintPath>..\..\modules\pyRevitLabs.Python.Net/src/runtime/bin/pyRevitLabs.PythonNet.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPI">
       <HintPath>.\RevitAPI.dll</HintPath>
