@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,13 +11,17 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace pyRevitLabs.Common {
     public static class CodeCompiler {
+        private static readonly LanguageVersion MaxLanguageVersion =
+            Enum.GetValues(typeof(LanguageVersion))
+                .Cast<LanguageVersion>()
+                .Max();
+
         public static bool CompileCSharp(
             IEnumerable<string> sourceFiles,
             string outputPath,
             IEnumerable<string> references,
-            IEnumerable<string> defines = null,
-            IEnumerable<string> resources = null,
-            LanguageVersion langVersion = LanguageVersion.CSharp8
+            IEnumerable<string> defines,
+            bool log
             ) {
             // prepare a file for logging
             string compileLog = Path.Combine(
@@ -24,11 +29,65 @@ namespace pyRevitLabs.Common {
                 Path.GetFileNameWithoutExtension(outputPath) + ".log"
                 );
 
+            CSharpCompilation compilation =
+                CreateCSharpCompilation(
+                    sourceFiles,
+                    Path.GetFileName(outputPath),
+                    references,
+                    defines
+                );
 
+            // compile and write results
+            string diagMsg = string.Empty;
+            var result = compilation.Emit(outputPath);
+            foreach (var diag in result.Diagnostics)
+                diagMsg += $"{diag}\n";
+
+            if (log)
+                File.AppendAllText(compileLog, diagMsg);
+
+            return true;
+        }
+
+        public static Assembly CompileCSharpToAssembly(
+            IEnumerable<string> sourceFiles,
+            string assemblyName,
+            IEnumerable<string> references,
+            out List<string> messages,
+            IEnumerable<string> defines = null
+            ) {
+            var compilation = CreateCSharpCompilation(
+                sourceFiles,
+                assemblyName,
+                references,
+                defines
+                );
+            // compile and write results
+            messages = new List<string>();
+            using (var assmData = new MemoryStream()) {
+                var result = compilation.Emit(assmData);
+                foreach (var diag in result.Diagnostics)
+                    messages.Append(diag.ToString());
+
+                // load assembly from memory stream
+                assmData.Seek(0, SeekOrigin.Begin);
+                if (assmData.Length > 0)
+                    return Assembly.Load(assmData.ToArray());
+            }
+            return null;
+        }
+
+        // TODO: implement resources https://stackoverflow.com/a/26853131/2350244
+        private static CSharpCompilation CreateCSharpCompilation(
+            IEnumerable<string> sourceFiles,
+            string assemblyName,
+            IEnumerable<string> references,
+            IEnumerable<string> defines
+            ) {
             // parse the source files
             var parseOpts =
                 CSharpParseOptions.Default
-                .WithLanguageVersion(langVersion)
+                .WithLanguageVersion(MaxLanguageVersion)
                 .WithPreprocessorSymbols(defines);
 
             // and build syntax tree
@@ -36,9 +95,9 @@ namespace pyRevitLabs.Common {
             foreach (var sourceFile in sourceFiles)
                 syntaxTree.Add(
                     CSharpSyntaxTree.ParseText(
-                        File.ReadAllText(sourceFile),
-                        path: sourceFile,
-                        options: parseOpts
+                        text: File.ReadAllText(sourceFile),
+                        options: parseOpts,
+                        path: sourceFile
                         )
                     );
 
@@ -60,20 +119,12 @@ namespace pyRevitLabs.Common {
                     .WithOptimizationLevel(OptimizationLevel.Release);
 
             // create compilation job
-            var compilation = CSharpCompilation.Create(
-                Path.GetFileName(outputPath),
+            return CSharpCompilation.Create(
+                assemblyName,
                 syntaxTree,
                 refs,
                 compileOpts
                 );
-
-            // compile and write results
-            string diagMsg = string.Empty;
-            var result = compilation.Emit(outputPath);
-            foreach (var diag in result.Diagnostics)
-                diagMsg += $"{diag}\n";
-            File.AppendAllText(compileLog, diagMsg);
-            return true;
         }
     }
 }

@@ -193,15 +193,12 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>echo === Post-Build Actions ===
-
+    <PostBuildEvent>
+echo === Post-Build Actions ===
 echo Cleaning up build files
-
 del /Q System.Xml.XPath.XDocument.dll
-del /Q System.Threading.Tasks.Extensions.dll
 del /Q System.Threading.Overlapped.dll
 del /Q System.Security.SecureString.dll
-del /Q System.Text.Encoding.CodePages.dll
 del /Q System.Runtime.Serialization.Primitives.dll
 del /Q System.IO.Compression.dll
 del /Q System.Buffers.dll
@@ -215,7 +212,7 @@ copy "$(TargetDir)lib\win32\x64\*.dll" "$(TargetDir)..\..\..\..\..\bin\"
 copy "$(TargetDir)*.dll" "$(TargetDir)..\..\..\..\..\bin\"
 copy "$(TargetDir)*.exe" "$(TargetDir)..\..\..\..\..\bin\"
 echo Signing binaries
-
-signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"</PostBuildEvent>
+signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

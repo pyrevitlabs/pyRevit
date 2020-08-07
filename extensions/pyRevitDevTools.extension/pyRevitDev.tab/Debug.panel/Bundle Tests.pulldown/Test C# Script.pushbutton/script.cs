@@ -36,6 +36,7 @@ namespace HelloWorld {
             }
 
             Console.WriteLine(execParams.UIButton.ToString());
+            Console.WriteLine($"New C# Features Work: {true}");
             Console.WriteLine(":thumbs_up:");
 
             return Result.Succeeded;

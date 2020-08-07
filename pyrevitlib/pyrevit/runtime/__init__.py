@@ -6,7 +6,7 @@ import json
 
 from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
 from pyrevit import framework
-from pyrevit.framework import List
+from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
 from pyrevit.compat import safe_strtype
@@ -254,15 +254,16 @@ def _generate_runtime_asm():
     # now try to compile
     try:
         mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
-        res = labs.Common.CodeCompiler.CompileCSharp(
-            sourceFiles=List[str](source_list),
+        labs.Common.CodeCompiler.CompileCSharp(
+            sourceFiles=Array[str](source_list),
             outputPath=RUNTIME_ASSM_FILE,
-            references=List[str](
+            references=Array[str](
                 get_references()
                 ),
-            defines=List[str](
+            defines=Array[str](
                 ["REVIT{}".format(HOST_APP.version)]
-                )
+                ),
+            log=True
             )
         return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
     except PyRevitException as compile_err:
