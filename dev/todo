@@ -1,0 +1,41 @@
+
+TODO: primary goals
+- [ ] make my life easier building a new release of pyRevit
+- [ ] build docs for quick testing of doc build errors
+
+tasks:
+- [X] docs
+- [ ] labs + cli
+- [ ] engines: iron-python loader and runners
+- [ ] engines: cpython
+- [ ] telemetry server, and autocomplete
+    echo "prepare git for go packages..."
+    git config --global http.https://pkg.re.followRedirects true
+    echo "formatting autocomplete helper code"
+    go fmt $AUTOCOMP
+    go get "github.com/lib/pq"
+    go get "gopkg.in/mgo.v2"
+    go get "github.com/denisenkom/go-mssqldb"
+    go get "github.com/go-sql-driver/mysql"
+    go get "github.com/mattn/go-sqlite3"
+    go get "github.com/gorilla/mux"
+    go get "github.com/satori/go.uuid"
+    go get "github.com/gofrs/uuid"
+    go get "pkg.re/essentialkaos/ek.v10/fmtc"
+    go get "github.com/asaskevich/govalidator"
+    go get "github.com/posener/complete"
+- [ ] installer: pyrevit (and update pyrevit_products.json)
+- [ ] installer: pyrevit cli (and update pyrevit_products.json)
+    echo "setting version "$PYREVIT_VERSION" on "$PYREVIT_AIPFILE
+    advancedinstaller.com "//edit" $PYREVIT_AIPFILE "//SetVersion" $PYREVIT_VERSION
+    AIPVersion=$(advancedinstaller.com "//edit" $PYREVIT_AIPFILE "//GetProperty" "ProductVersion")
+    echo $AIPVersion > $PYREVIT_VERSION_FILE
+    advancedinstaller.com "//build" $PYREVIT_AIPFILE
+
+utils:
+- [ ] add new revit version
+- [X] collect changes
+- [ ] run tests?
+- [ ] start telemetry server for testing (mongo db docker)
+- [ ] push translation files into pyRevit (airtable api)
+
