@@ -78,9 +78,6 @@
     <Reference Include="Microsoft.Scripting">
       <HintPath>..\..\bin\engines\2710\Microsoft.Scripting.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Scripting.Metadata">
-      <HintPath>..\..\bin\engines\2710\Microsoft.Scripting.Metadata.dll</HintPath>
-    </Reference>
     <Reference Include="pyRevitLabs.Common">
       <HintPath>..\..\bin\pyRevitLabs.Common.dll</HintPath>
     </Reference>
@@ -103,7 +100,7 @@
       <HintPath>..\..\bin\engines\2710\pyRevitLoader.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLabs.PythonNet">
-      <HintPath>..\..\modules\pyRevitLabs.Python.Net/src/runtime/bin/pyRevitLabs.PythonNet.dll</HintPath>
+      <HintPath>..\modules\pyRevitLabs.Python.Net/src/runtime/bin/pyRevitLabs.PythonNet.dll</HintPath>
     </Reference>
     <Reference Include="AdWindows">
       <HintPath>.\2020\AdWindows.dll</HintPath>
