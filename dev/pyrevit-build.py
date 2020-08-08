@@ -16,22 +16,52 @@
 # TODO: primary goals
 # - make my life easier building a new release of pyRevit
 # - build docs for quick testing of doc build errors
+#pylint: disable=broad-except,invalid-name
+"""Utility to support pyRevit build and release workflows
+
+Usage:
+    {cliname} changelog <tag>
+
+Commands:
+    changelog <tag>          List commit messages from given tag to HEAD
+
+Options:
+    -h, --help               Show this help
+"""
 import sys
+import os.path as op
+from typing import List
 import subprocess
 from collections import namedtuple
+
+# pipenv dependencies
+from docopt import docopt
+
+# cli info
+__binname__ = op.splitext(op.basename(__file__))[0] # grab script name
+__version__ = '1.0'
 
 
 Change = namedtuple('Change', ['hash', 'message'])
 
 
-def system(args):
+class CLIArgs:
+    """Data type to hold command line args"""
+    def __init__(self, args):
+        if args['changelog']:
+            self.command = 'changelog'
+            self.tag = args['<tag>']
+
+
+def system(args: List[str]):
     """Run a command and return the stdout"""
     res = subprocess.run(args, capture_output=True, check=True)
     return res.stdout.decode().strip()
 
-def report_changes_since(tag):
+
+def report_changes_since(cfg: CLIArgs):
     """List commit messages between given tag and HEAD"""
-    tag_hash = system(["git", "rev-parse", f"{tag}"])
+    tag_hash = system(["git", "rev-parse", f"{cfg.tag}"])
     changes = []
     for cline in system(
             ["git", "log", "--oneline", f"{tag_hash}..HEAD"]).split('\n'):
@@ -40,5 +70,27 @@ def report_changes_since(tag):
     return changes
 
 
-changes_since = report_changes_since(sys.argv[1])
-print('\n'.join([x.message for x in changes_since]))
+def run_command(cfg: CLIArgs):
+    """Process cli args and run the appropriate commands"""
+    if cfg.command == 'changelog':
+        changes_since = report_changes_since(cfg)
+        print('\n'.join([x.message for x in changes_since]))
+
+
+if __name__ == '__main__':
+    try:
+        # do the work
+        run_command(
+            # make settings from cli args
+            cfg=CLIArgs(
+                # process args
+                docopt(
+                    __doc__.format(cliname=__binname__),
+                    version='{} {}'.format(__binname__, __version__)
+                )
+            )
+        )
+    # gracefully handle exceptions and print results
+    except Exception as run_ex:
+        sys.stderr.write("[ERROR] %s\n" % str(run_ex))
+        sys.exit(1)
