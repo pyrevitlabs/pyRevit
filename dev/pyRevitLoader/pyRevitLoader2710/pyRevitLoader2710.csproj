@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DF80A4BB-CB40-4F2E-BF40-5CBC8ABAECBE}</ProjectGuid>
+    <ProjectGuid>{C887E6E2-BF9E-457A-ABD7-F008F716A981}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>pyRevitRunner</RootNamespace>
-    <AssemblyName>pyRevitRunner</AssemblyName>
+    <RootNamespace>pyRevitLoader</RootNamespace>
+    <AssemblyName>pyRevitLoader</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -23,7 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x64</PlatformTarget>
-    <IntermediateOutputPath>C:\Users\ehsan\AppData\Local\Temp\vs1B60.tmp\Debug\</IntermediateOutputPath>
+    <IntermediateOutputPath>C:\Users\ehsan\AppData\Local\Temp\vsE02C.tmp\Debug\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,35 +32,42 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <IntermediateOutputPath>C:\Users\ehsan\AppData\Local\Temp\vs1B60.tmp\Release\</IntermediateOutputPath>
+    <IntermediateOutputPath>C:\Users\ehsan\AppData\Local\Temp\vsE02C.tmp\Release\</IntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="IKVM.Reflection">
+      <HintPath>..\..\..\bin\engines\2710\IKVM.Reflection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="IronPython">
-      <HintPath>..\..\..\bin\engines\277\IronPython.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\2710\IronPython.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Modules">
-      <HintPath>..\..\..\bin\engines\277\IronPython.Modules.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\2710\IronPython.Modules.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.SQLite">
-      <HintPath>..\..\..\bin\engines\277\IronPython.SQLite.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\2710\IronPython.SQLite.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Wpf">
-      <HintPath>..\..\..\bin\engines\277\IronPython.Wpf.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\2710\IronPython.Wpf.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\2710\Microsoft.Dynamic.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Scripting">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Scripting.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Scripting.Metadata">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Scripting.Metadata.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\2710\Microsoft.Scripting.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RevitAPI">
@@ -79,11 +86,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Source\PyRevitRunnerApplication.cs">
-      <Link>PyRevitRunnerApplication.cs</Link>
-    </Compile>
-    <Compile Include="..\Source\PyRevitRunnerCommand.cs">
-      <Link>PyRevitRunnerCommand.cs</Link>
+    <Compile Include="..\Source\PyRevitLoaderApplication.cs">
+      <Link>PyRevitLoaderApplication.cs</Link>
     </Compile>
     <Compile Include="..\Source\ScriptExecutor.cs">
       <Link>ScriptExecutor.cs</Link>
@@ -91,13 +95,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\Resources\python_277_lib.zip">
-      <Link>Resources\python_277_lib.zip</Link>
+    <EmbeddedResource Include="..\Resources\python_2710_lib.zip">
+      <Link>Resources\python_2710_lib.zip</Link>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 $(TargetPath)
-copy "$(TargetPath)" "$(ProjectDir)..\..\..\bin\engines\277\"</PostBuildEvent>
+copy "$(TargetPath)" "$(ProjectDir)..\..\..\bin\engines\2710\"</PostBuildEvent>
   </PropertyGroup>
 </Project>
