@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime", "pyRevitLabs.PyRevit.Runtime\pyRevitLabs.PyRevit.Runtime.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime", "pyRevitLabs.PyRevit.Runtime.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2017", "pyRevitLabs.PyRevit.Runtime2017\pyRevitLabs.PyRevit.Runtime2017.csproj", "{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2017", "pyRevitLabs.PyRevit.Runtime2017.csproj", "{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2018", "pyRevitLabs.PyRevit.Runtime2018\pyRevitLabs.PyRevit.Runtime2018.csproj", "{8CEA0B80-D74F-411F-A607-DC1599AA934E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2018", "pyRevitLabs.PyRevit.Runtime2018.csproj", "{8CEA0B80-D74F-411F-A607-DC1599AA934E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2019", "pyRevitLabs.PyRevit.Runtime2019\pyRevitLabs.PyRevit.Runtime2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2019", "pyRevitLabs.PyRevit.Runtime2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2020", "pyRevitLabs.PyRevit.Runtime2020\pyRevitLabs.PyRevit.Runtime2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2020", "pyRevitLabs.PyRevit.Runtime2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "modules", "modules", "{79D470EE-3B43-4186-8E04-FA7742AB6B55}"
 EndProject
