@@ -34,6 +34,15 @@ runtime = true
 path = 'bin\engines\279'
 assembly = 'pyRevitLoader.dll'
 compatproducts = []
+description = 'IronPython Engine'
+
+[engines.IPY2710]
+kernel = 'IronPython'
+version = 2710
+runtime = true
+path = 'bin\engines\2710'
+assembly = 'pyRevitLoader.dll'
+compatproducts = []
 description = 'Latest Stable IronPython Engine'
 
 [engines.CPY378]
