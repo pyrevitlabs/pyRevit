@@ -1,8 +1,9 @@
 """Wrapper module for pyRevitLabs functionality"""
 import logging
+import os.path as op
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
 #pylint: disable=superfluous-parens,useless-import-alias
-from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
+from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR, BIN_DIR
 from pyrevit.framework import clr
 import pyrevit.compat as compat
 
@@ -13,6 +14,25 @@ clr.AddReference('OpenMcdf')
 clr.AddReference('YamlDotNet')
 clr.AddReference('pyRevitLabs.NLog')
 clr.AddReference('pyRevitLabs.MahAppsMetro')
+# roslyn csharp compiler dependencies are referenced by
+# pyRevitLabs.Common thus loading ahead
+clr.AddReference('System.Threading.Tasks.Extensions')
+clr.AddReference('System.Collections.Immutable')
+clr.AddReference('System.Numerics.Vectors')
+# Revit, and its builtin addons, ship multiple versions of this assembly
+# let's make sure our specific version is loaded
+clr.AddReferenceToFileAndPath(
+    op.join(BIN_DIR, 'System.Runtime.CompilerServices.Unsafe.dll')
+    )
+clr.AddReference('System.Text.Encoding.CodePages')
+clr.AddReferenceToFileAndPath(
+    op.join(BIN_DIR, 'System.Memory.dll')
+    )
+# clr.AddReference('System.Memory')
+clr.AddReference('System.Reflection.Metadata')
+clr.AddReference('Microsoft.CodeAnalysis')
+clr.AddReference('Microsoft.CodeAnalysis.CSharp')
+# and now
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
 clr.AddReference('pyRevitLabs.CommonWPF')

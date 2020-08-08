@@ -229,9 +229,6 @@ def get_references():
         'WindowsBase', 'WindowsFormsIntegration',
         # legacy csharp/vb.net compiler
         'Microsoft.CSharp',
-        # roslyn csharp compiler
-        'Microsoft.CodeAnalysis.CSharp', 'Microsoft.CodeAnalysis',
-        'System.Reflection.Metadata',
         # iron python engine
         'Microsoft.Dynamic', 'Microsoft.Scripting',
         'IronPython', 'IronPython.Modules',
