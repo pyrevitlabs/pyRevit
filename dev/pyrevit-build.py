@@ -21,16 +21,18 @@
 
 Usage:
     {cliname} changelog <tag>
+    {cliname} build docs
 
 Commands:
-    changelog <tag>          List commit messages from given tag to HEAD
+    changelog <tag>        List commit messages from given tag to HEAD
+    build docs             Build the python docs
 
 Options:
-    -h, --help               Show this help
+    -h, --help             Show this help
 """
 import sys
 import os.path as op
-from typing import List
+from typing import List, Optional
 import subprocess
 from collections import namedtuple
 
@@ -51,11 +53,14 @@ class CLIArgs:
         if args['changelog']:
             self.command = 'changelog'
             self.tag = args['<tag>']
+        elif args['build']:
+            self.command = 'build'
+            self.target = 'docs'
 
 
-def system(args: List[str]):
+def system(args: List[str], cwd: Optional[str] = None):
     """Run a command and return the stdout"""
-    res = subprocess.run(args, capture_output=True, check=True)
+    res = subprocess.run(args, capture_output=True, check=True, cwd=cwd)
     return res.stdout.decode().strip()
 
 
@@ -70,11 +75,24 @@ def report_changes_since(cfg: CLIArgs):
     return changes
 
 
+def build_docs(cfg: CLIArgs):
+    """Build python documentation"""
+    report = system(
+        ["pipenv", "run", "sphinx-build", "-b", "html", ".", "./_build"],
+        cwd='../docs'
+        )
+    print(report)
+
+
 def run_command(cfg: CLIArgs):
     """Process cli args and run the appropriate commands"""
     if cfg.command == 'changelog':
         changes_since = report_changes_since(cfg)
         print('\n'.join([x.message for x in changes_since]))
+    
+    elif cfg.command == 'build':
+        if cfg.target == 'docs':
+            build_docs(cfg)
 
 
 if __name__ == '__main__':
