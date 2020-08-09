@@ -220,6 +220,10 @@ CONTENT_VERSION_POSTFIX = \
 ALT_CONTENT_POSTFIX = DEFAULT_ALT_CONTENT_NAME + CONTENT_FILE_FORMAT
 ALT_CONTENT_VERSION_POSTFIX = \
     DEFAULT_ALT_CONTENT_NAME + "_{version}" + CONTENT_FILE_FORMAT
+
+# bundle help
+HELP_FILE_PATTERN = r'.*help\..+'
+
 # -----------------------------------------------------------------------------
 # Command bundle defaults
 CTX_SELETION = 'selection'

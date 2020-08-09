@@ -137,8 +137,11 @@ class GenericUIComponent(GenericComponent):
         mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
 
         self.media_file = \
-            self.find_bundle_file([exts.DEFAULT_MEDIA_FILENAME], as_name=True)
+            self.find_bundle_file([exts.DEFAULT_MEDIA_FILENAME], finder='name')
         mlogger.debug('Media file is: %s:%s', self.name, self.media_file)
+
+        self._help_url = \
+            self.find_bundle_file([exts.HELP_FILE_PATTERN], finder='regex')
 
         # each component can store custom libraries under
         # lib/ inside the component folder
@@ -275,19 +278,18 @@ class GenericUIComponent(GenericComponent):
             file_addr = op.join(self.directory, file_name)
             return file_addr if op.exists(file_addr) else None
 
-    def find_bundle_file(self, patterns,
-                         as_name=False, as_postfix=True, as_regex=False):
+    def find_bundle_file(self, patterns, finder='postfix'):
         if self.directory:
             for bundle_file in os.listdir(self.directory):
-                if as_name:
+                if 'name' == finder:
                     for file_name in patterns:
                         if op.splitext(bundle_file)[0] == file_name:
                             return op.join(self.directory, bundle_file)
-                elif as_postfix:
+                elif 'postfix' == finder:
                     for file_postfix in patterns:
                         if bundle_file.endswith(file_postfix):
                             return op.join(self.directory, bundle_file)
-                elif as_regex:
+                elif 'regex' == finder:
                     for regex_pattern in patterns:
                         if re.match(regex_pattern, bundle_file):
                             return op.join(self.directory, bundle_file)
