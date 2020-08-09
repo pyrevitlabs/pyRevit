@@ -1,0 +1,6 @@
+#!/usr/local/bin/bash
+PYREVIT_BIN="pyrevit"
+export PYREVIT_BIN
+clear
+pipenv run python ./pyrevit-build.py $@
+
