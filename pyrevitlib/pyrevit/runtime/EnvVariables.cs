@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using IronPython.Runtime;
 
 using pyRevitLabs.Common;
-using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class DomainStorageKeys {

@@ -1,9 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.TargetApps.Revit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class ScriptTelemetryRecordEngineInfo {
@@ -54,12 +55,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public static class ScriptTelemetry {
         private static ScriptTelemetryRecord MakeTelemetryRecord(ref ScriptRuntime runtime) {
+            // determine build number
+            string revitbuild = "20000101_0000(x64)";
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
+                revitbuild = runtime.App.VersionBuild;
+#else
+            // Revit 2021 has a bug on .VersionBuild
+            // it reports identical value as .VersionNumber
+            // let's give a invalid, but correctly formatted value to the telemetry server
+            string revitExePath = Process.GetCurrentProcess().MainModule.FileName;
+            if (revitExePath != null && revitExePath != string.Empty) {
+                HostProductInfo pinfo = RevitProductData.GetBinaryProductInfo(revitExePath);
+                if (pinfo.build != null && pinfo.build != string.Empty)
+                    revitbuild = string.Format("{0}({1})", pinfo.build, pinfo.target);
+            }
+#endif
+
             // setup a new telemetry record
             return new ScriptTelemetryRecord {
                 host_user = UserEnv.GetLoggedInUserName(),
                 username = runtime.App.Username,
                 revit = runtime.App.VersionNumber,
-                revitbuild = runtime.App.VersionBuild,
+                revitbuild = revitbuild,
                 sessionid = runtime.SessionUUID,
                 pyrevit = runtime.PyRevitVersion,
                 clone = runtime.CloneName,

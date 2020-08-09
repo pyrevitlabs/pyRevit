@@ -1,6 +1,7 @@
 title: Test Dynamo BIM GUI (Custom Title)
 tooltip: Test Dynamo BIM GUI Tooltip
 author: "{{author}}"
+highlight: new
 references:
 engine:
   clean: false

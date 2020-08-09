@@ -120,6 +120,22 @@ def get_family_name(element):
     return get_name(element.Symbol.Family)
 
 
+# episode_id and guid explanation
+# https://thebuildingcoder.typepad.com/blog/2009/02/uniqueid-dwf-and-ifc-guid.html
+def get_episodeid(element):
+    """Extract episode id from element"""
+    return str(element.UniqueId)[:36]
+
+
+def get_guid(element):
+    """Extract guid from given element"""
+    uid = str(element.UniqueId)
+    last_32_bits = int(uid[28:36], 16)
+    element_id = int(uid[37:], 16)
+    xor = last_32_bits ^ element_id
+    return uid[:28] +  "{0:x}".format(xor)
+
+
 def get_param(element, param_name, default=None):
     if isinstance(element, DB.Element):
         try:
@@ -1427,7 +1443,7 @@ def find_paper_sizes_by_dims(printer_name, paper_width, paper_height, doc=None):
     return paper_sizes
 
 
-def get_sheet_print_settings(tblock, printer_name, doc_psettings):
+def get_titleblock_print_settings(tblock, printer_name, doc_psettings):
     doc = tblock.Document
     # find paper sizes used in print settings of this doc
     page_width_param = tblock.Parameter[DB.BuiltInParameter.SHEET_WIDTH]
@@ -1453,13 +1469,14 @@ def get_sheet_print_settings(tblock, printer_name, doc_psettings):
     for doc_psetting in doc_psettings:
         try:
             pparams = doc_psetting.PrintParameters
-            if pparams.PaperSize.Name in paper_size_names \
+            if pparams.PaperSize \
+                    and pparams.PaperSize.Name in paper_size_names \
                     and (pparams.ZoomType == DB.ZoomType.Zoom
                          and pparams.Zoom == 100) \
                     and pparams.PageOrientation == page_orient:
                 all_tblock_psettings.add(doc_psetting)
-        except Exception:
-            pass
+        except Exception as ex:
+            mlogger.debug("incompatible psettings: %s", doc_psetting.Name)
     return sorted(all_tblock_psettings, key=lambda x: x.Name)
 
 

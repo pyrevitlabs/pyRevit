@@ -1,5 +1,7 @@
 """Reformat parameter string values (Super handy for renaming elements)"""
 #pylint: disable=E0401,W0703,W0613
+import re
+
 from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit import forms
@@ -17,15 +19,23 @@ class ReValueItem(object):
         self.final = final
         self.tooltip = ''
 
-    def format_value(self, old_format, new_format):
+    def format_value(self, from_pattern, to_pattern):
         try:
-            if old_format and new_format:
-                self.newvalue = coreutils.reformat_string(self.oldvalue,
-                                                          old_format,
-                                                          new_format)
-                self.tooltip = '{} --> {}'.format(old_format, new_format)
+            if from_pattern and to_pattern:
+                # if format contains pattern finders use reformatter
+                if any(x in from_pattern for x in ['{', '}']):
+                    self.newvalue = \
+                        coreutils.reformat_string(self.oldvalue,
+                                                  from_pattern,
+                                                  to_pattern)
+                    self.tooltip = '{} --> {}'.format(from_pattern, to_pattern)
+                # otherwise use a simple find/replacer
+                else:
+                    self.newvalue = \
+                        re.sub(from_pattern, to_pattern, self.oldvalue)
             else:
                 self.tooltip = 'No Conversion Specified'
+                self.newvalue = ''
         except Exception:
             self.newvalue = ''
 

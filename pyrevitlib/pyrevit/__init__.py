@@ -273,7 +273,11 @@ class _HostApplication(object):
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
-        return self.app.VersionBuild
+        if int(self.version) >= 2021:
+            # uses labs module that is imported later in this code
+            return labs.extract_build_from_exe(self.proc_path)
+        else:
+            return self.app.VersionBuild
 
     @property
     def serial_no(self):
@@ -410,6 +414,16 @@ class _HostApplication(object):
                     pass
 
         return self._postable_cmds
+
+    def post_command(self, command_id):
+        """Request Revit to run a command
+
+        Args:
+            command_id (str): command identifier e.g. ID_REVIT_SAVE_AS_TEMPLATE
+        """
+        command_id = UI.RevitCommandId.LookupCommandId(command_id)
+        self.uiapp.PostCommand(command_id)
+
 
 
 try:

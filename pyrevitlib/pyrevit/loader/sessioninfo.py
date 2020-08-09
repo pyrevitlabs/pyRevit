@@ -180,7 +180,8 @@ def report_env():
         mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
 
     mlogger.info('Host is %s pid: %s', HOST_APP.pretty_name, HOST_APP.proc_id)
-    mlogger.info('Running on: %s', sys.version)
+    # ipy 2.7.10 has a new line in its sys.version :rolling-eyes-emoji:
+    mlogger.info('Running on: %s', sys.version.replace('\n', ' '))
     mlogger.info('User is: %s', HOST_APP.username)
     mlogger.info('Home Directory is: %s', HOME_DIR)
     mlogger.info('Session uuid is: %s', get_session_uuid())
