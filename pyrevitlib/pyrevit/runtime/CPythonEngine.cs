@@ -25,12 +25,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Start(ref ScriptRuntime runtime) {
+            // if this is the first run
             if (!RecoveredFromCache) {
+                // initialize
                 using (Py.GIL()) {
-                    // initialize
                     if (!PythonEngine.IsInitialized)
                         PythonEngine.Initialize();
                 }
+                // if this is a new engine, save the syspaths
+                StoreSearchPaths();
             }
 
             SetupBuiltins(ref runtime);
@@ -173,20 +176,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void SetupSearchPaths(ref ScriptRuntime runtime) {
             // set sys paths
-            PyObject sys = PythonEngine.ImportModule("sys");
-            PyObject sysPathsObj = sys.GetAttr("path");
-            PyList sysPaths = PyList.AsList(sysPathsObj);
+            PyList sysPaths = RestoreSearchPaths();
 
-            // if this is a new engine, save the syspaths
-            if (!RecoveredFromCache) {
-                SaveSearchPaths(sysPaths);
-            }
-            // otherwise reset to default before changing
-            else {
-                sysPaths = RestoreSearchPaths();
-                sys.SetAttr("path", sysPaths);
+            // manually add PYTHONPATH since we are overwriting the sys paths
+            var pythonPath = Environment.GetEnvironmentVariable("PYTHONPATH");
+            if (pythonPath != null && pythonPath != string.Empty) {
+                var searthPathStr = new PyString(pythonPath);
+                sysPaths.Insert(0, searthPathStr);
             }
 
+            // now add the search paths for the script bundle
             foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths.Reverse<string>()) {
                 var searthPathStr = new PyString(searchPath);
                 sysPaths.Insert(0, searthPathStr);
@@ -221,11 +220,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         }
 
-        private void SaveSearchPaths(PyList sourceList) {
+        private void StoreSearchPaths() {
+            var currentSysPath = GetSysPaths();
             _sysPaths = new List<string>();
-            long itemsCount = sourceList.Length();
+            long itemsCount = currentSysPath.Length();
             for (long i = 0; i < itemsCount; i++) {
-                BorrowedReference item = CpyRuntime.PyList_GetItem(sourceList.Handle, i);
+                BorrowedReference item = 
+                    CpyRuntime.PyList_GetItem(currentSysPath.Handle, i);
                 string path = CpyRuntime.GetManagedString(item);
                 _sysPaths.Add(path);
             }
@@ -239,7 +240,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 newList.Insert(i, searthPathStr);
                 i++;
             }
+            SetSysPaths(newList);
             return newList;
+        }
+
+        private PyList GetSysPaths() {
+            // set sys paths
+            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sysPathsObj = sys.GetAttr("path");
+            return PyList.AsList(sysPathsObj);
+        }
+
+        private void SetSysPaths(PyList sysPaths) {
+            PyObject sys = PythonEngine.ImportModule("sys");
+            sys.SetAttr("path", sysPaths);
         }
 
         private static void SetVariable(IntPtr? globals, string key, IntPtr value) {

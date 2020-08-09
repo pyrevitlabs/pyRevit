@@ -19,15 +19,19 @@ clr.AddReference('pyRevitLabs.MahAppsMetro')
 clr.AddReference('System.Threading.Tasks.Extensions')
 clr.AddReference('System.Collections.Immutable')
 clr.AddReference('System.Numerics.Vectors')
+clr.AddReference('System.Text.Encoding.CodePages')
 # Revit, and its builtin addons, ship multiple versions of this assembly
 # let's make sure our specific version is loaded
-clr.AddReferenceToFileAndPath(
-    op.join(BIN_DIR, 'System.Runtime.CompilerServices.Unsafe.dll')
-    )
-clr.AddReference('System.Text.Encoding.CodePages')
-clr.AddReferenceToFileAndPath(
-    op.join(BIN_DIR, 'System.Memory.dll')
-    )
+if compat.PY2:
+    clr.AddReferenceToFileAndPath(
+        op.join(BIN_DIR, 'System.Runtime.CompilerServices.Unsafe.dll')
+        )
+    clr.AddReferenceToFileAndPath(
+        op.join(BIN_DIR, 'System.Memory.dll')
+        )
+else:
+    clr.AddReference('System.Runtime.CompilerServices.Unsafe')
+    clr.AddReference('System.Memory.dll')
 # clr.AddReference('System.Memory')
 clr.AddReference('System.Reflection.Metadata')
 clr.AddReference('Microsoft.CodeAnalysis')

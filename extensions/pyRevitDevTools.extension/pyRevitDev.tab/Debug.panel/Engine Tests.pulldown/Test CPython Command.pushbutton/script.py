@@ -5,11 +5,11 @@
 def print_html(output_str):
     print(output_str.replace('<', '&clt;').replace('>', '&cgt;'))
 
+
 import sys
 print(sys.version)
 print("\n## sys.path:")
 print('\n'.join(sys.path))
-
 
 # print globals
 print('\n## This file (__file__):')
@@ -44,6 +44,10 @@ print('__eventargs__ = %s' % __eventargs__)
 
 
 print('\n## Module Tests:')
+import os
+pythonpath=os.environ['PYTHONPATH']
+print(f'{pythonpath=}')
+
 # try tkinter
 try:
     import tkinter
@@ -120,7 +124,6 @@ for el in revit.get_selection():
 #           '\n Switch 2 = {}'.format(selected_switch,
 #                                     switches['Switch 1'],
 #                                     switches['Switch 2']))
-
 
 
 from System.Collections.Generic import List
