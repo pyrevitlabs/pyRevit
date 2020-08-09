@@ -214,8 +214,8 @@
                 <Border x:Name="errormsg_block" Background="Red" Padding="5" Margin="0,5,0,5" Visibility="Collapsed">
                     <TextBlock x:Name="errormsg_tb" Foreground="White" VerticalAlignment="Center" />
                 </Border>
-                <Border x:Name="varsizeguide" Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3" Margin="0,5,0,5" Visibility="Collapsed">
-                    <DockPanel DockPanel.Dock="Right" Margin="5">
+                <Border x:Name="varsizeguide" Padding="5" Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3" Margin="0,5,0,5" Visibility="Collapsed">
+                    <DockPanel DockPanel.Dock="Right">
                         <DockPanel x:Name="sheetopts_wp" DockPanel.Dock="Right" IsEnabled="False">
                             <DockPanel DockPanel.Dock="Bottom">
                                 <Button DockPanel.Dock="Right" Height="25" Width="120" Margin="10,0,0,0" Content="Set Print Settings" Click="set_sheet_printsettings"/>
@@ -223,7 +223,7 @@
                             </DockPanel>
                             <Grid />
                         </DockPanel>
-                        <Expander IsExpanded="False" Header="Guide" Foreground="White">
+                        <Expander Header="Guide" Foreground="White" Cursor="Help">
                             <TextBlock Margin="5,5,0,0" TextWrapping="Wrap" Foreground="White">
                                 Print settings can be set on titleblock types. Create a "Print Setting" type parameter (of type Text) on a titleblock family,
                                 and set the parameter value to the name of the desired print setting. When using "Variable Paper Size", this tool will

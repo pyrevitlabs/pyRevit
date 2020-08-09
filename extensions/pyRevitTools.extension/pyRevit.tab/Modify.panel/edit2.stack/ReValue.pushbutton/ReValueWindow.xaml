@@ -15,8 +15,8 @@
                           Height="24"
                           SelectionChanged="on_param_change"/>
             </DockPanel>
-            <Expander Header="Guide" Margin="0,5,0,0">
-                <Border Margin="0,5,0,0" Padding="10" CornerRadius="5" Background="{DynamicResource pyRevitAccentBrush}">
+            <Border Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3" Margin="0,10,0,0" Padding="5">
+                <Expander Header="Guide" Foreground="White" Cursor="Help">
                     <TextBlock TextWrapping="WrapWithOverflow" Margin="0,3,0,0" Foreground="White">
                     <Bold>By Format</Bold>
                     <LineBreak />
@@ -31,8 +31,8 @@
                     <LineBreak />
                     If the first box does not contain a format finder "{}", then the tool works in Find/Replace mode with Regular Expression support.
                     </TextBlock>
-                </Border>
-            </Expander>
+                </Expander>
+            </Border>
             <DockPanel Margin="0,10,0,0">
                 <TextBlock FontSize="14" Margin="0,0,10,0" Width="100" DockPanel.Dock="Left" VerticalAlignment="Center">Original Pattern:</TextBlock>
                 <TextBox x:Name="orig_format_tb"
