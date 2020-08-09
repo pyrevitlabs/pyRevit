@@ -4,6 +4,8 @@ import os.path as op
 # ==============================================================================
 # Configs
 # ------------------------------------------------------------------------------
+VERSION_RANGE = 2017, 2021
+
 DOCS_DIR = "../docs/"
 DOCS_BUILD = DOCS_DIR + "_build/"
 DOCS_INDEX = DOCS_BUILD + "index.html"

@@ -16,6 +16,9 @@ class Command:
         )
         self.run = run
 
+    def __repr__(self):
+        return f'[{self.name} {self.target}]'
+
 
 def system(args: List[str], cwd: Optional[str] = None):
     """Run a command and return the stdout"""
@@ -25,6 +28,9 @@ def system(args: List[str], cwd: Optional[str] = None):
 
 def run_command(commands: List[Command], args: Dict[str, str]):
     """Process cli args and run the appropriate commands"""
-    for cmd in commands:
-        if args[cmd.name]:
-            cmd.run(args)
+    for cmd in [x for x in commands if args[x.name]]:
+        if cmd.target:
+            if not args[cmd.target]:
+                continue
+        print(f'Running {cmd}')
+        cmd.run(args)

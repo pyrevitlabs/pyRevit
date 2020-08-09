@@ -1,23 +1,23 @@
 """Utility to support pyRevit build and release workflows
 
-Usage:
+\033[1mUsage:\033[0m
     {command_templates}
 
-Commands:
+\033[1mCommands:\033[0m
     {command_helps}
 
-Options:
+\033[1mOptions:\033[0m
     -h, --help                  Show this help
 
 
-\033[1mREADME\033[0m
-
+\033[1mRequirements:\033[0m
     Install these tools before starting the build process
-        msbuild                 https://visualstudio.microsoft.com/vs/
-        python 2.7 (docs)       https://www.python.org/downloads/
-        pipenv (venv)           https://pipenv.readthedocs.io/en/latest/
+        msbuild                 visualstudio.microsoft.com/downloads/
+        python 2 (docs)         www.python.org/downloads/
+        python 3 (build)        www.python.org/downloads/
+        pipenv (venv)           pipenv.readthedocs.io/en/latest/
         Advanced Installer (installer builder)
-                                https://www.advancedinstaller.com
+                                www.advancedinstaller.com
 """
 # pylint: disable=invalid-name,broad-except
 import sys
@@ -36,7 +36,9 @@ from scripts.utils import Command
 from scripts import configs
 
 # cli info
-__binname__ = os.environ["PYREVIT_BIN"] or op.splitext(op.basename(__file__))[0]
+__binname__ = (
+    os.environ.get("PYREVIT_BIN", None) or op.splitext(op.basename(__file__))[0]
+)
 __version__ = "1.0"
 
 
@@ -63,8 +65,16 @@ def report_changes_since(args: Dict[str, str]):
 def build_docs(_: Dict[str, str]):
     """Build the python docs"""
     report = utils.system(
-        ["pipenv", "run", "sphinx-build", "-b", "html", ".", configs.DOCS_BUILD],
-        cwd="../docs",
+        [
+            "pipenv",
+            "run",
+            "sphinx-build",
+            "-b",
+            "html",
+            configs.DOCS_DIR,
+            configs.DOCS_BUILD,
+        ],
+        cwd=configs.DOCS_DIR
     )
     print(report)
 
@@ -87,12 +97,28 @@ def clean_docs(_: Dict[str, str]):
     print("Removed docs build directory")
 
 
+def build_labs(_: Dict[str, str]):
+    """Build pyRevit labs"""
+    # clean
+    utils.system(
+        [f"msbuild {configs.LABS} ", "-t:Restore ", "-p:Configuration=Release"]
+    )
+    # build
+    utils.system([f"msbuild {configs.LABS} ", "-t:Build ", "-p:Configuration=Release"])
+
+
+def create_release(_: Dict[str, str]):
+    """Create pyRevit release (build, test, publish)"""
+
+
 COMMANDS = [
     Command(name="install", target="", args=[], run=install),
+    Command(name="release", target="", args=["<tag>"], run=create_release),
     Command(name="changelog", target="", args=["<tag>"], run=report_changes_since),
     Command(name="build", target="docs", args=[], run=build_docs),
     Command(name="open", target="docs", args=[], run=open_docs),
     Command(name="clean", target="docs", args=[], run=clean_docs),
+    Command(name="build", target="labs", args=[], run=build_labs),
 ]
 
 
