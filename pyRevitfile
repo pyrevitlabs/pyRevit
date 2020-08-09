@@ -34,26 +34,34 @@ runtime = true
 path = 'bin\engines\279'
 assembly = 'pyRevitLoader.dll'
 compatproducts = []
+description = 'IronPython Engine'
+
+[engines.IPY2710]
+kernel = 'IronPython'
+version = 2710
+runtime = true
+path = 'bin\engines\2710'
+assembly = 'pyRevitLoader.dll'
+compatproducts = []
 description = 'Latest Stable IronPython Engine'
 
-[engines.CPY368]
+[engines.CPY378]
 kernel = 'CPython'
-version = 368
+version = 378
 runtime = false
-path = 'bin\engines\368'
+path = 'bin\engines\378'
 assembly = 'pyRevitLabs.PythonNet.dll'
 compatproducts = []
 description = 'Alternative command execution engine.'
 
-[engines.CPY372]
+[engines.CPY385]
 kernel = 'CPython'
-version = 372
+version = 385
 runtime = false
-path = 'bin\engines\372'
+path = 'bin\engines\385'
 assembly = 'pyRevitLabs.PythonNet.dll'
 compatproducts = []
 description = 'Alternative command execution engine.'
-
 
 [deployments]
 core = ['bin',

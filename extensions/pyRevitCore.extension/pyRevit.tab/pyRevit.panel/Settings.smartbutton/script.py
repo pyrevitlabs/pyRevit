@@ -92,11 +92,11 @@ class SettingsWindow(forms.WPFWindow):
         # check boxes for each version of Revit
         # this could be automated but it pushes me to verify and test
         # before actually adding a new Revit version to the list
-        self._addinfiles_cboxes = {'2016': self.revit2016_cb,
-                                   '2017': self.revit2017_cb,
+        self._addinfiles_cboxes = {'2017': self.revit2017_cb,
                                    '2018': self.revit2018_cb,
                                    '2019': self.revit2019_cb,
-                                   '2020': self.revit2020_cb}
+                                   '2020': self.revit2020_cb,
+                                   '2021': self.revit2021_cb}
 
         self.set_image_source(self.lognone, 'lognone.png')
         self.set_image_source(self.logverbose, 'logverbose.png')
@@ -499,6 +499,11 @@ class SettingsWindow(forms.WPFWindow):
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
 
+    def validate_telemetry_url(self, urlbox):
+        url = urlbox.Text
+        if url and not url.endswith("/"):
+            urlbox.Text = url + "/"
+
     def update_status_lights(self, status, serverbox, servermsg):
         """Update given status light by given status"""
         if status and status["status"] == "pass":
@@ -520,6 +525,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def telemetryserver_changed(self, sender, args):
         """Reset telemetry server status light"""
+        self.validate_telemetry_url(self.telemetryserver_tb)
         self.update_status_lights(
             None,
             self.telemetryserver_statusbox,
@@ -528,6 +534,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def apptelemetryserver_changed(self, sender, args):
         """Reset app telemetry server status light"""
+        self.validate_telemetry_url(self.apptelemetryserver_tb)
         self.update_status_lights(
             None,
             self.apptelemetryserver_statusbox,

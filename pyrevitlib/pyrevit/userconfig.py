@@ -733,9 +733,13 @@ if not EXEC_PARAMS.doc_mode:
     # check to see if there is any config file provided by admin
     elif ADMIN_CONFIG_FILE:
         # if yes, copy that and use as default
+        # if admin config file is writable it means it is provided
+        # to bootstrap the first pyRevit run
         if os.access(ADMIN_CONFIG_FILE, os.W_OK):
             CONFIG_TYPE = 'Seed'
-            PyRevit.PyRevitConfigs.SeedConfig(False, ADMIN_CONFIG_FILE)
+            # make a local copy if one does not exist
+            if not USER_CONFIG_FILE:
+                PyRevit.PyRevitConfigs.SeedConfig(False, ADMIN_CONFIG_FILE)
             CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
         # unless it's locked. then read that config file and set admin-mode
         else:
