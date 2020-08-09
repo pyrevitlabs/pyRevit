@@ -113,3 +113,37 @@ def set_keynote_file(keynote_file, doc=None):
             DB.PathType.Absolute)
         knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
         knote_table.LoadFrom(keynote_exres, DB.KeyBasedTreeEntriesLoadResults())
+
+
+def set_crop_region(view, curve_loops):
+    """Sets crop region to a view
+
+    Args:
+        view (DB.View): view to change
+        curve_loops (list[DB.CurveLoop]): list of curve loops
+    """
+    if not isinstance(curve_loops, list):
+        curve_loops = [curve_loops]
+
+    crop_active_saved = view.CropBoxActive
+    view.CropBoxActive = True
+    crsm = view.GetCropRegionShapeManager()
+    for cloop in curve_loops:
+        if HOST_APP.is_newer_than(2015):
+            crsm.SetCropShape(cloop)
+        else:
+            crsm.SetCropRegionShape(cloop)
+    view.CropBoxActive = crop_active_saved
+
+
+def set_active_workset(workset_id, doc=None):
+    """Set active workset
+
+    Args:
+        workset_id (DB.WorksetId): target workset id
+        doc (DB.Document, optional): target document. defaults to active
+    """
+    doc = doc or HOST_APP.doc
+    if doc.IsWorkshared:
+        workset_table = doc.GetWorksetTable()
+        workset_table.SetActiveWorksetId(workset_id)

@@ -12,7 +12,7 @@ from pyrevit.framework import IO
 from pyrevit.framework import Imaging
 from pyrevit.framework import BindingFlags
 from pyrevit.framework import Media, Convert
-from pyrevit.api import UI, AdWindows, AdInternal, PANELLISTVIEW_TYPE
+from pyrevit.api import UI, AdWindows, AdInternal
 from pyrevit.runtime import types
 from pyrevit.revit import ui
 
@@ -1591,8 +1591,9 @@ class _PyRevitUI(GenericPyRevitUIContainer):
             panel_set = None
             try:
                 main_wnd = ui.get_mainwindow()
+                ribbon_root_type = ui.get_ribbon_roottype()
                 panel_set = \
-                    main_wnd.FindFirstChild[PANELLISTVIEW_TYPE](main_wnd)
+                    main_wnd.FindFirstChild[ribbon_root_type](main_wnd)
             except Exception as raex:
                 mlogger.error('Error activating ribbon updator. | %s', raex)
                 return

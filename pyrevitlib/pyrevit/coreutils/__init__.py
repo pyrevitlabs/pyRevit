@@ -17,6 +17,7 @@ import random
 import stat
 import codecs
 import math
+import socket
 from collections import defaultdict
 
 #pylint: disable=E0401
@@ -273,6 +274,8 @@ def join_strings(str_list, separator=DEFAULT_SEPARATOR):
         str: joined string
     """
     if str_list:
+        if any(not isinstance(x, str) for x in str_list):
+            str_list = [str(x) for x in str_list]
         return separator.join(str_list)
     return ''
 
@@ -1392,15 +1395,23 @@ def split_words(input_string):
     return parts
 
 
-def get_paper_sizes():
+def get_paper_sizes(printer_name=None):
     """Get paper sizes defined on this system
 
     Returns:
         list[]: list of papersize instances
     """
-    return list(framework.Drawing.Printing.PrinterSettings().PaperSizes)
+    print_settings = framework.Drawing.Printing.PrinterSettings()
+    if printer_name:
+        print_settings.PrinterName = printer_name
+    return list(print_settings.PaperSizes)
 
 
 def get_integer_length(number):
     """Return digit length of given number."""
     return 1 if number == 0 else (math.floor(math.log10(number)) + 1)
+
+
+def get_my_ip():
+    """Return local ip address of this machine"""
+    return socket.gethostbyname(socket.gethostname())

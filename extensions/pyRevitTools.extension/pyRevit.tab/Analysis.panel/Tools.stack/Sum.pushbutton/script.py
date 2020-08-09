@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 from pyrevit import revit, DB
+from pyrevit.compat import safe_strtype
 from pyrevit import forms
 from pyrevit import script
 from pyrevit import coreutils
@@ -31,7 +32,7 @@ def is_calculable_param(param):
 
     if param.StorageType == DB.StorageType.Integer:
         val_str = param.AsValueString()
-        if val_str and unicode(val_str).lower().isdigit():
+        if val_str and safe_strtype(val_str).lower().isdigit():
             return True
 
     return False
@@ -66,27 +67,27 @@ def calc_param_total(element_list, param_name):
 
 
 def format_length(total):
-    print('{} feet\n'
-          '{} meters\n'
-          '{} centimeters'.format(total,
-                                  total/3.28084,
-                                  (total/3.28084)*100))
+    return '{} feet\n' \
+           '{} meters\n' \
+           '{} centimeters'.format(total,
+                                   total/3.28084,
+                                   (total/3.28084)*100)
 
 
 def format_area(total):
-    print('{} square feet\n'
-          '{} square meters\n'
-          '{} square centimeters'.format(total,
-                                         total/10.7639,
-                                         (total/10.7639)*10000))
+    return '{} square feet\n' \
+           '{} square meters\n' \
+           '{} square centimeters'.format(total,
+                                          total/10.7639,
+                                          (total/10.7639)*10000)
 
 
 def format_volume(total):
-    print('{} cubic feet\n'
-          '{} cubic meters\n'
-          '{} cubic centimeters'.format(total,
-                                        total/35.3147,
-                                        (total/35.3147)*1000000))
+    return '{} cubic feet\n' \
+           '{} cubic meters\n' \
+           '{} cubic centimeters'.format(total,
+                                         total/35.3147,
+                                         (total/35.3147)*1000000)
 
 
 formatter_funcs = {DB.ParameterType.Length: format_length,
@@ -99,9 +100,21 @@ def output_param_total(element_list, param_def):
 
     print('Total value for parameter {} is:\n\n'.format(param_def.name))
     if param_def.type in formatter_funcs.keys():
-        formatter_funcs[param_def.type](total_value)
+        outputstr = formatter_funcs[param_def.type](total_value)
     else:
-        print('{}\n'.format(total_value))
+        outputstr = '{}\n'.format(total_value)
+    print(outputstr)
+
+
+def output_breakdown(element_list, param_def):
+    for element in element_list:
+        total_value = calc_param_total([element], param_def.name)
+
+        if param_def.type in formatter_funcs.keys():
+            outputstr = formatter_funcs[param_def.type](total_value)
+        else:
+            outputstr = '{}\n'.format(total_value)
+        print('{}\n{}'.format(output.linkify(element.Id), outputstr))
 
 
 def process_options(element_list):
@@ -174,4 +187,6 @@ if options:
                 type_name = coreutils.escape_for_html(type_name)
                 output.print_md('### Totals for: {}'.format(type_name))
                 output_param_total(element_set, selected_option)
-                output.insert_divider()
+                output.print_md('#### Breakdown:')
+                output_breakdown(element_set, selected_option)
+                output.insert_divider(level='##')

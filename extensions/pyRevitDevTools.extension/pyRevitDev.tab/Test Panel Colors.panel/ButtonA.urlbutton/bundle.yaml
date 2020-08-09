@@ -1,0 +1,5 @@
+tooltip: Open JSON Formatter website
+author: "{{author}}"
+hyperlink: "https://jsoneditoronline.org/"
+context: zero-doc
+highlight: updated

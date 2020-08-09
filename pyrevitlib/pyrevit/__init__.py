@@ -273,12 +273,26 @@ class _HostApplication(object):
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
-        return self.app.VersionBuild
+        if int(self.version) >= 2021:
+            # uses labs module that is imported later in this code
+            return labs.extract_build_from_exe(self.proc_path)
+        else:
+            return self.app.VersionBuild
 
     @property
     def serial_no(self):
         """str: Return serial number number (e.g. '569-09704828')."""
         return api.get_product_serial_number()
+
+    @property
+    def pretty_name(self):
+        """str: Pretty name of the host
+        (e.g. 'Autodesk Revit 2019.2 build: 20190808_0900(x64)')
+        """
+        host_name = self.version_name
+        if self.is_newer_than(2017):
+            host_name = host_name.replace(self.version, self.subversion)
+        return "%s build: %s" % (host_name, self.build)
 
     @property
     def is_demo(self):
@@ -423,7 +437,7 @@ class _ExecutorParams(object):
         try:
             return __execid__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def exec_timestamp(self):
@@ -431,7 +445,7 @@ class _ExecutorParams(object):
         try:
             return __timestamp__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def engine_id(self):
@@ -439,7 +453,7 @@ class _ExecutorParams(object):
         try:
             return __cachedengineid__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def engine_ver(self):

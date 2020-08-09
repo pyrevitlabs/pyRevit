@@ -15,7 +15,7 @@ layout:
   - Test Independent Logging
   - -----
   - Test XAML
-  - Test Sensors
+  - Test Modeless (Sensors)
   - Test Progressbar
   - Test Charts
   - Test D3

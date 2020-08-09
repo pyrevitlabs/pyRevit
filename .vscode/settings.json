@@ -1,11 +1,13 @@
 {
-    "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": ["--max-line-length=80"],
+    "python.linting.pylintUseMinimalCheckers": false,
     "python.linting.pycodestyleEnabled": false,
     "python.linting.flake8Enabled": false,
     "python.linting.pylamaEnabled": false,
     "python.linting.mypyEnabled": false,
+    "python.jediEnabled": true,
     "restructuredtext.confPath": "${workspaceFolder}/docs",
-    "python.pythonPath": "${env:PYREVIT_VENV}",
+    "python.formatting.provider": "black",
+    "python.languageServer": "Jedi",
 }

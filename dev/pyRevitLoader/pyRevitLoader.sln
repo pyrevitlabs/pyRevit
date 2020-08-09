@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2036
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30330.147
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLoader278", "pyRevitLoader278\pyRevitLoader278.csproj", "{8D8DCC3A-5A07-4B96-9144-E6E23CA71CBE}"
 EndProject
@@ -22,6 +22,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitRunner278", "pyRevitRunner278\pyRevitRunner278.csproj", "{B3857355-C71A-402E-867A-D97BDD27950D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitRunner279", "pyRevitRunner279\pyRevitRunner279.csproj", "{566D96D9-0C02-4F6D-A5EB-862DCB01D14B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLoader2710", "pyRevitLoader2710\pyRevitLoader2710.csproj", "{C887E6E2-BF9E-457A-ABD7-F008F716A981}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitRunner2710", "pyRevitRunner2710\pyRevitRunner2710.csproj", "{199F6A50-FB7A-4D6E-B02E-7A06B233E107}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +65,14 @@ Global
 		{566D96D9-0C02-4F6D-A5EB-862DCB01D14B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{566D96D9-0C02-4F6D-A5EB-862DCB01D14B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{566D96D9-0C02-4F6D-A5EB-862DCB01D14B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C887E6E2-BF9E-457A-ABD7-F008F716A981}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C887E6E2-BF9E-457A-ABD7-F008F716A981}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C887E6E2-BF9E-457A-ABD7-F008F716A981}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C887E6E2-BF9E-457A-ABD7-F008F716A981}.Release|Any CPU.Build.0 = Release|Any CPU
+		{199F6A50-FB7A-4D6E-B02E-7A06B233E107}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{199F6A50-FB7A-4D6E-B02E-7A06B233E107}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{199F6A50-FB7A-4D6E-B02E-7A06B233E107}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{199F6A50-FB7A-4D6E-B02E-7A06B233E107}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,6 +86,8 @@ Global
 		{27A6711F-EC60-4FB9-8FF0-B33F2B7AF983} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
 		{B3857355-C71A-402E-867A-D97BDD27950D} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
 		{566D96D9-0C02-4F6D-A5EB-862DCB01D14B} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
+		{C887E6E2-BF9E-457A-ABD7-F008F716A981} = {5D24CE7B-67FD-4685-AC89-578FF15552A2}
+		{199F6A50-FB7A-4D6E-B02E-7A06B233E107} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8CC1064C-1D16-446B-B480-989CE124102A}

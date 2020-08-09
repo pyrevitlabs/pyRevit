@@ -127,7 +127,7 @@ namespace pyRevitLabs.Common.Extensions {
             var match = DriveLetterFinder.Match(normedPath);
             if (match.Success) {
                 var driveLetter = match.Groups["drive"].Value + ":";
-                normedPath = normedPath.Replace(driveLetter, driveLetter.ToUpper());
+                normedPath = normedPath.Replace(driveLetter, driveLetter.ToUpperInvariant());
             }
 
             logger.Debug("Normalized as \"{0}\"", normedPath);

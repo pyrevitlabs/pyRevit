@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-[assembly: AssemblyCopyright("Copyright © 2014-2019")]
+[assembly: AssemblyCopyright("Copyright © 2014-2020")]
 [assembly: AssemblyCompany("pyRevitLabs.io")]
 
 // Version information for an assembly consists of the following four values:
@@ -15,5 +15,5 @@ using System.Runtime.CompilerServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.21.0.0")]
-[assembly: AssemblyFileVersion("0.21.0.0")]
+[assembly: AssemblyVersion("4.8.0")]
+[assembly: AssemblyFileVersion("4.8.0")]

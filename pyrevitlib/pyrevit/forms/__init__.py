@@ -33,6 +33,7 @@ from pyrevit.framework import Input
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
+from pyrevit.framework import ObservableCollection
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
@@ -400,10 +401,11 @@ class TemplateUserInputWindow(WPFWindow):
         return dlg.response
 
 
-class TemplateListItem(object):
+class TemplateListItem(Reactive):
     """Base class for checkbox option wrapping another object."""
 
-    def __init__(self, orig_item, checked=False, checkable=True, name_attr=None):
+    def __init__(self, orig_item,
+                 checked=False, checkable=True, name_attr=None):
         """Initialize the checkbox option and wrap given obj.
 
         Args:
@@ -412,6 +414,7 @@ class TemplateListItem(object):
             checkable (bool): Use checkbox for items
             name_attr (str): Get this attribute of wrapped object as name
         """
+        super(TemplateListItem, self).__init__()
         self.item = orig_item
         self.state = checked
         self._nameattr = name_attr
@@ -444,6 +447,15 @@ class TemplateListItem(object):
         """Unwrap and return wrapped object."""
         return self.item
 
+    @reactive
+    def checked(self):
+        """Id checked"""
+        return self.state
+
+    @checked.setter
+    def checked(self, value):
+        self.state = value
+
     @property
     def checkable(self):
         """List Item CheckBox Visibility."""
@@ -453,11 +465,6 @@ class TemplateListItem(object):
     @checkable.setter
     def checkable(self, value):
         self._checkable = value
-
-    @classmethod
-    def is_checkbox(cls, item):
-        """Check if the object has all necessary attribs for a checkbox."""
-        return isinstance(item, TemplateListItem)
 
 
 class SelectFromList(TemplateUserInputWindow):
@@ -491,6 +498,8 @@ class SelectFromList(TemplateUserInputWindow):
             This options works in multiselect mode only. defaults to False
         filterfunc (function):
             filter function to be applied to context items.
+        resetfunc (function):
+            reset function to be called when user clicks on Reset button
         group_selector_title (str):
             title for list group selector. defaults to 'List Group'
         default_group (str): name of defautl group to be selected
@@ -542,6 +551,7 @@ class SelectFromList(TemplateUserInputWindow):
 
     @property
     def use_regex(self):
+        """Is using regex?"""
         return self.regexToggle_b.IsChecked
 
     def _setup(self, **kwargs):
@@ -568,6 +578,11 @@ class SelectFromList(TemplateUserInputWindow):
 
         # filter function?
         self.filter_func = kwargs.get('filterfunc', None)
+
+        # reset function?
+        self.reset_func = kwargs.get('resetfunc', None)
+        if self.reset_func:
+            self.show_element(self.reset_b)
 
         # context group title?
         self.ctx_groups_title = \
@@ -607,7 +622,7 @@ class SelectFromList(TemplateUserInputWindow):
             ctx_items = filter(self.filter_func, ctx_items)
 
         for item in ctx_items:
-            if TemplateListItem.is_checkbox(item):
+            if isinstance(item, TemplateListItem):
                 item.checkable = self.multiselect
                 new_ctx.append(item)
             else:
@@ -666,12 +681,15 @@ class SelectFromList(TemplateUserInputWindow):
                 )
             # filter out any match with score less than 80
             self.list_lb.ItemsSource = \
-                [x[0] for x in fuzzy_matches if x[1] >= 80]
+                ObservableCollection[TemplateListItem](
+                    [x[0] for x in fuzzy_matches if x[1] >= 80]
+                    )
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'
             self.toggleall_b.Content = 'Toggle All'
-            self.list_lb.ItemsSource = [x for x in self._get_active_ctx()]
+            self.list_lb.ItemsSource = \
+                ObservableCollection[TemplateListItem](self._get_active_ctx())
 
     @staticmethod
     def _unwrap_options(options):
@@ -696,20 +714,16 @@ class SelectFromList(TemplateUserInputWindow):
             return self._unwrap_options([self.list_lb.SelectedItem])[0]
 
     def _set_states(self, state=True, flip=False, selected=False):
-        all_items = self.list_lb.ItemsSource
         if selected:
             current_list = self.list_lb.SelectedItems
         else:
             current_list = self.list_lb.ItemsSource
         for checkbox in current_list:
+            # using .checked to push ui update
             if flip:
-                checkbox.state = not checkbox.state
+                checkbox.checked = not checkbox.checked
             else:
-                checkbox.state = state
-
-        # push list view to redraw
-        self.list_lb.ItemsSource = None
-        self.list_lb.ItemsSource = all_items
+                checkbox.checked = state
 
     def toggle_all(self, sender, args):    #pylint: disable=W0613
         """Handle toggle all button to toggle state of all check boxes."""
@@ -731,6 +745,11 @@ class SelectFromList(TemplateUserInputWindow):
         """Mark selected checkboxes as unchecked."""
         self._set_states(state=False, selected=True)
 
+    def button_reset(self, sender, args):#pylint: disable=W0613
+        if self.reset_func:
+            all_items = self.list_lb.ItemsSource
+            self.reset_func(all_items)
+
     def button_select(self, sender, args):    #pylint: disable=W0613
         """Handle select button click."""
         self.response = self._get_options()
@@ -746,6 +765,7 @@ class SelectFromList(TemplateUserInputWindow):
         self._list_options(option_filter=self.search_tb.Text)
 
     def toggle_regex(self, sender, args):
+        """Activate regex in search"""
         self.regexToggle_b.Content = \
             self.Resources['regexIcon'] if self.use_regex \
                 else self.Resources['filterIcon']
@@ -2313,6 +2333,8 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
     Args:
         msg (str): message to be displayed
         title (str, optional): task dialog title
+        sub_msg (str, optional): sub message
+        expanded (str, optional): expanded area message
         ok (bool, optional): show OK button, defaults to True
         cancel (bool, optional): show Cancel button, defaults to False
         yes (bool, optional): show Yes button, defaults to False
@@ -2467,7 +2489,7 @@ def pick_folder(title=None):
 
 
 def pick_file(file_ext='*', files_filter='', init_dir='',
-              restore_dir=True, multi_file=False, unc_paths=False):
+              restore_dir=True, multi_file=False, unc_paths=False, title=None):
     r"""Pick file dialog to select a destination file.
 
     Args:
@@ -2477,6 +2499,7 @@ def pick_file(file_ext='*', files_filter='', init_dir='',
         restore_dir (bool): restore last directory
         multi_file (bool): allow select multiple files
         unc_paths (bool): return unc paths
+        title (str): text to show in the title bar
 
     Returns:
         str or list[str]: file path or list of file paths if multi_file=True
@@ -2504,6 +2527,8 @@ def pick_file(file_ext='*', files_filter='', init_dir='',
     of_dlg.Multiselect = multi_file
     if init_dir:
         of_dlg.InitialDirectory = init_dir
+    if title:
+        of_dlg.Title = title
     if of_dlg.ShowDialog() == Forms.DialogResult.OK:
         if multi_file:
             if unc_paths:
@@ -2517,7 +2542,7 @@ def pick_file(file_ext='*', files_filter='', init_dir='',
 
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
-              restore_dir=True, unc_paths=False):
+              restore_dir=True, unc_paths=False, title=None):
     r"""Save file dialog to select a destination file for data.
 
     Args:
@@ -2527,6 +2552,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         default_name (str): default file name
         restore_dir (bool): restore last directory
         unc_paths (bool): return unc paths
+        title (str): text to show in the title bar
 
     Returns:
         str: file path
@@ -2544,7 +2570,9 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
     sf_dlg.RestoreDirectory = restore_dir
     if init_dir:
         sf_dlg.InitialDirectory = init_dir
-
+    if title:
+        of_dlg.Title = title
+    
     # setting default filename
     sf_dlg.FileName = default_name
 
@@ -2554,11 +2582,12 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         return sf_dlg.FileName
 
 
-def pick_excel_file(save=False):
+def pick_excel_file(save=False, title=None):
     """File pick/save dialog for an excel file.
 
     Args:
         save (bool): show file save dialog, instead of file pick dialog
+        title (str): text to show in the title bar
 
     Returns:
         str: file path
@@ -2566,16 +2595,20 @@ def pick_excel_file(save=False):
     if save:
         return save_file(file_ext='xlsx')
     return pick_file(files_filter='Excel Workbook (*.xlsx)|*.xlsx|'
-                                  'Excel 97-2003 Workbook|*.xls')
+                                  'Excel 97-2003 Workbook|*.xls',
+                     title=title)
 
 
 def save_excel_file():
     """File save dialog for an excel file.
 
+    Args:
+        title (str): text to show in the title bar
+    
     Returns:
         str: file path
     """
-    return pick_excel_file(save=True)
+    return pick_excel_file(save=True, title=title)
 
 
 def check_workshared(doc=None, message='Model is not workshared.'):

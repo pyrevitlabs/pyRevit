@@ -15,6 +15,7 @@ import re
 import codecs
 import json
 import csv
+import pickle
 
 from pyrevit import EXEC_PARAMS, PyRevitException
 from pyrevit import coreutils
@@ -25,7 +26,6 @@ from pyrevit import framework
 from pyrevit import revit
 from pyrevit import output
 from pyrevit import versionmgr
-from pyrevit import forms
 from pyrevit.labs import PyRevit
 
 
@@ -34,6 +34,9 @@ warnings.filterwarnings("ignore")
 
 #pylint: disable=W0703,C0302,C0103,W0614
 mlogger = logger.get_logger(__name__)
+
+
+DATAFEXT = 'pym'
 
 
 def get_info():
@@ -596,3 +599,135 @@ def load_csv(filepath):
     """
     with codecs.open(filepath, 'rb', encoding='utf-8') as csvfile:
         return list(csv.reader(csvfile, delimiter=',', quotechar='\"'))
+
+
+def store_data(slot_name, data, this_project=True):
+    """Wraps python pickle.dump() to easily store data to pyRevit data files
+
+    To store native Revit objects, use revit.serialize(). See Example
+
+    Args:
+        slot_name (type): desc
+        data (obj): any pickalable data
+        this_project (bool): data belongs to this project only
+
+    Example:
+        >>> from pyrevit import revit
+        ... from pyrevit import script
+        ...
+        ...
+        ... class CustomData(object):
+        ...     def __init__(self, count, element_ids):
+        ...         self._count = count
+        ...         # serializes the Revit native objects
+        ...         self._elmnt_ids = [revit.serialize(x) for x in element_ids]
+        ...
+        ...     @property
+        ...     def count(self):
+        ...         return self._count
+        ...
+        ...     @property
+        ...     def element_ids(self):
+        ...         # de-serializes the Revit native objects
+        ...         return [x.deserialize() for x in self._elmnt_ids]
+        ...
+        ...
+        ... mydata = CustomData(
+        ...     count=3,
+        ...     element_ids=[<DB.ElementId>, <DB.ElementId>, <DB.ElementId>]
+        ... )
+        ...
+        ... script.store_data("Selected Elements", mydata)
+
+    """
+    # for this specific project?
+    if this_project:
+        data_file = get_document_data_file(file_id=slot_name,
+                                           file_ext=DATAFEXT,
+                                           add_cmd_name=False)
+    # for any project file
+    else:
+        data_file = get_data_file(file_id=slot_name,
+                                  file_ext=DATAFEXT,
+                                  add_cmd_name=False)
+
+    with open(data_file, 'w') as dfile:
+        pickle.dump(data, dfile)
+
+
+def load_data(slot_name, this_project=True):
+    """Wraps python pickle.load() to easily load data from pyRevit data files
+
+    To recover native Revit objects, use revit.deserialize(). See Example
+
+    Similar to pickle module, the custom data types must be defined in the main
+    scope so the loader can create an instance and return original stored data
+
+    Args:
+        slot_name (type): desc
+        this_project (bool): data belongs to this project only
+
+    Returns:
+        obj: stored data
+
+    Example:
+        >>> from pyrevit import revit
+        ... from pyrevit import script
+        ...
+        ...
+        ... class CustomData(object):
+        ...     def __init__(self, count, element_ids):
+        ...         self._count = count
+        ...         # serializes the Revit native objects
+        ...         self._elmnt_ids = [revit.serialize(x) for x in element_ids]
+        ...
+        ...     @property
+        ...     def count(self):
+        ...         return self._count
+        ...
+        ...     @property
+        ...     def element_ids(self):
+        ...         # de-serializes the Revit native objects
+        ...         return [x.deserialize() for x in self._elmnt_ids]
+        ...
+        ...
+        ... mydata = script.load_data("Selected Elements", element_ids)
+        ... mydata.element_ids
+        [<DB.ElementId>, <DB.ElementId>, <DB.ElementId>]
+    """
+    # for this specific project?
+    if this_project:
+        data_file = get_document_data_file(file_id=slot_name,
+                                           file_ext=DATAFEXT,
+                                           add_cmd_name=False)
+    # for any project file
+    else:
+        data_file = get_data_file(file_id=slot_name,
+                                  file_ext=DATAFEXT,
+                                  add_cmd_name=False)
+
+    with open(data_file, 'r') as dfile:
+        return pickle.load(dfile)
+
+
+def data_exists(slot_name, this_project=True):
+    """Checks if data file in a specified slot and for certain project exists.
+
+    Args:
+        slot_name (type): desc
+        this_project (bool): data belongs to this project only
+
+    Returns:
+        bool: true if the path exists
+    """
+    # for this specific project?
+    if this_project:
+        data_file = get_document_data_file(file_id=slot_name,
+                                           file_ext=DATAFEXT,
+                                           add_cmd_name=False)
+    # for any project file
+    else:
+        data_file = get_data_file(file_id=slot_name,
+                                  file_ext=DATAFEXT,
+                                  add_cmd_name=False)
+    return os.path.exists(data_file)

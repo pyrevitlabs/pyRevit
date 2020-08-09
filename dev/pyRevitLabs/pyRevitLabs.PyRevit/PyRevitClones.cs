@@ -284,8 +284,7 @@ namespace pyRevitLabs.PyRevit {
             if (imageSource.IsValidHttpUrl()) {
                 try {
                     var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), Path.GetFileName(imageSource));
-                    if (GlobalConfigs.ReportProgress)
-                        Console.WriteLine("Downloading package \"{0}\"", imageSource);
+                    logger.Info("Downloading package \"{0}\"", imageSource);
                     logger.Debug("Downloading package \"{0}\" to \"{1}\"", imageSource, pkgDest);
                     imageFilePath =
                         CommonUtils.DownloadFile(imageSource, pkgDest, progressToken: Path.GetFileName(imageSource));
@@ -320,8 +319,7 @@ namespace pyRevitLabs.PyRevit {
                 }
 
                 // unpack image
-                if (GlobalConfigs.ReportProgress)
-                    Console.WriteLine("Preparing package for deployment...");
+                logger.Info("Preparing package for deployment...");
 
                 try {
                     logger.Debug("Staging package to \"{0}\"", stagedImage);
@@ -338,8 +336,7 @@ namespace pyRevitLabs.PyRevit {
                     var clone = new PyRevitClone(stagedImage);
 
                     // deployment: copy the needed directories
-                    if (GlobalConfigs.ReportProgress)
-                        Console.WriteLine("Deploying to \"{0}\"", destPath);
+                    logger.Info("Deploying to \"{0}\"", destPath);
 
                     if (deploymentName != null) {
                         // deploy the requested deployment
@@ -353,7 +350,13 @@ namespace pyRevitLabs.PyRevit {
 
                     // cleanup temp files
                     logger.Debug("Cleaning up temp files after clone from image...");
-                    CommonUtils.DeleteDirectory(stagedImage);
+                    try {
+                        CommonUtils.DeleteDirectory(stagedImage);
+                    }
+                    catch (Exception delEx) {
+                        logger.Error(string.Format("Error cleaning up temp staging files \"{0}\" | {1}",
+                                                   destPath, delEx.Message));
+                    }
 
                     // record image deployment settings
                     try {
@@ -377,8 +380,7 @@ namespace pyRevitLabs.PyRevit {
                     // register the clone
                     VerifyAndRegisterClone(cloneName, destPath);
 
-                    if (GlobalConfigs.ReportProgress)
-                        Console.WriteLine("Package deployed and registered.");
+                    logger.Info("Package deployed and registered.");
                 }
                 catch (PyRevitException ex) {
                     logger.Error("Can not find a valid clone inside extracted package. | {0}", ex.Message);

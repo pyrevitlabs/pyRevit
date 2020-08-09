@@ -1,10 +1,8 @@
 using System;
-using System.IO;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
@@ -12,7 +10,6 @@ using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.NLog;
-using pyRevitLabs.Common;
 using Autodesk.Revit.UI.Events;
 
 namespace PyRevitLabs.PyRevit.Runtime {
@@ -941,7 +938,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
                     { "as_master_file", e.IsSavingAsMasterFile },
+#else
+                    { "as_master_file", e.IsSavingAsCentralFile },
+#endif
                     { "path", e.PathName },
                 }
             }, sender, e);
@@ -956,7 +957,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
                     { "as_master_file", e.IsSavingAsMasterFile },
+#else
+                    { "as_master_file", e.IsSavingAsCentralFile },
+#endif
                     { "original_path",  e.OriginalPath },
                     { "project_info", GetProjectInfo(e.Document) }
                 }

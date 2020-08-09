@@ -53,6 +53,19 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
+        <DataTemplate x:Key="PrintSettingCell">
+            <StackPanel x:Name="psettinginfo" VerticalAlignment="Center" Orientation="Horizontal">
+                <Border Background="{StaticResource RevBGColor}" CornerRadius="3" Margin="2,2,0,2" Padding="5,0,5,0">
+                    <TextBlock x:Name="psettingname" Text="{Binding print_settings.Name}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding read_only}" Value="True">
+                    <Setter TargetName="psettingname" Property="Foreground" Value="Gray" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
         <Style TargetType="{x:Type Hyperlink}">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="TextBlock.TextDecorations" Value="{x:Null}" />
@@ -68,8 +81,25 @@
             </Path>
         </Canvas>
 
+        <DataTemplate x:Key="printSettingsItem">
+            <WrapPanel>
+                <TextBlock x:Name="sizeName" Text="{Binding name}" />
+                <Border x:Name="incompatibleMarker" Background="Red"  Height="18" Margin="8,0,0,0" CornerRadius="3">
+                    <TextBlock HorizontalAlignment="Left" Padding="5" Text="Incompatible with printer" FontSize="10" Foreground="White" VerticalAlignment="Center" />
+                </Border>
+            </WrapPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding is_compatible}" Value="True">
+                    <Setter TargetName="incompatibleMarker" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="sizeName" Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding is_compatible}" Value="False">
+                    <Setter TargetName="incompatibleMarker" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="sizeName" Property="Foreground" Value="Gray" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </Window.Resources>
-
     <DockPanel>
         <StackPanel Margin="10,10,10,0" DockPanel.Dock="Top">
             <Grid>
@@ -167,19 +197,11 @@
                             </DockPanel>
                             <DockPanel Margin="0,5,0,0" Height="24" >
                                 <TextBlock Text="Printer" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox x:Name="printers_cb"/>
+                                <ComboBox x:Name="printers_cb" SelectionChanged="printers_changed"/>
                             </DockPanel>
                             <DockPanel Margin="0,5,0,0" Height="24" >
                                 <TextBlock Text="Page Settings" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox x:Name="printsettings_cb" SelectionChanged="sheetlist_changed">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding name}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                <ComboBox x:Name="printsettings_cb" SelectionChanged="sheetlist_changed" ItemTemplate="{StaticResource printSettingsItem}" />
                             </DockPanel>
                         </StackPanel>
                     </DockPanel>
@@ -192,10 +214,24 @@
                 <Border x:Name="errormsg_block" Background="Red" Padding="5" Margin="0,5,0,5" Visibility="Collapsed">
                     <TextBlock x:Name="errormsg_tb" Foreground="White" VerticalAlignment="Center" />
                 </Border>
-                <WrapPanel x:Name="sheetopts_wp" FlowDirection="RightToLeft" DockPanel.Dock="Right" Visibility="Visible" IsEnabled="False">
-                    <Button Height="25" Width="120" Content="Set Print Settings" Click="set_sheet_printsettings"/>
-                    <Button Height="25" Width="120" Content="Reset Print Settings " Click="sheetlist_changed" Margin="10,0,0,0"/>
-                </WrapPanel>
+                <Border x:Name="varsizeguide" Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3" Margin="0,5,0,5" Visibility="Collapsed">
+                    <DockPanel DockPanel.Dock="Right" Margin="5">
+                        <DockPanel x:Name="sheetopts_wp" DockPanel.Dock="Right" IsEnabled="False">
+                            <DockPanel DockPanel.Dock="Bottom">
+                                <Button DockPanel.Dock="Right" Height="25" Width="120" Margin="10,0,0,0" Content="Set Print Settings" Click="set_sheet_printsettings"/>
+                                <Button DockPanel.Dock="Left" Height="25" Width="120" Content="Reset Print Settings " Click="sheetlist_changed"/>
+                            </DockPanel>
+                            <Grid />
+                        </DockPanel>
+                        <Expander IsExpanded="False" Header="Guide" Foreground="White">
+                            <TextBlock Margin="5,5,0,0" TextWrapping="Wrap" Foreground="White">
+                                Print settings can be set on titleblock types. Create a "Print Setting" type parameter (of type Text) on a titleblock family,
+                                and set the parameter value to the name of the desired print setting. When using "Variable Paper Size", this tool will
+                                automatically assign the correct print setting based on the value of this parameter
+                            </TextBlock>
+                        </Expander>
+                    </DockPanel>
+                </Border>
             </StackPanel>
         </StackPanel>
         <StatusBar DockPanel.Dock="Bottom" Height="25" Background="{DynamicResource pyRevitDarkBrush}">
@@ -230,7 +266,7 @@
                 <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
                 <DataGridTemplateColumn Header="Sheet Revision" MinWidth="50" Width="1*" IsReadOnly="True"
                                         CellTemplate="{StaticResource RevisionCell}" SortMemberPath="revision.number" />
-                <DataGridTextColumn x:Name="psettingcol" Header="Print Setting" Binding="{Binding print_settings.Name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
+                <DataGridTemplateColumn x:Name="psettingcol" Header="Print Setting" MinWidth="50" Width="*" IsReadOnly="True" CellTemplate="{StaticResource PrintSettingCell}" Visibility="Collapsed"/>
                 <DataGridTextColumn x:Name="pfilename" Header="File Name" FontFamily="Consolas" Binding="{Binding print_filename}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
             </DataGrid.Columns>
         </DataGrid>

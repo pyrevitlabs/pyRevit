@@ -14,3 +14,9 @@ if not EXEC_PARAMS.doc_mode:
         clr.AddReference(RUNTIME_ASSM)
 
     from PyRevitLabs.PyRevit.Runtime import *
+else:
+    # define the values for docs
+    ScriptConsoleManager = None
+    EventTelemetry = None
+    EventType = None
+    EventHooks = None

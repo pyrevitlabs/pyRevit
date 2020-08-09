@@ -179,14 +179,7 @@ def report_env():
     if user_config.rocket_mode:
         mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
 
-    if HOST_APP.is_newer_than(2017):
-        full_host_name = \
-            HOST_APP.version_name.replace(HOST_APP.version,
-                                          HOST_APP.subversion)
-    else:
-        full_host_name = HOST_APP.version_name
-    mlogger.info('Host is %s (build: %s id: %s)',
-                 full_host_name, HOST_APP.build, HOST_APP.proc_id)
+    mlogger.info('Host is %s pid: %s', HOST_APP.pretty_name, HOST_APP.proc_id)
     mlogger.info('Running on: %s', sys.version)
     mlogger.info('User is: %s', HOST_APP.username)
     mlogger.info('Home Directory is: %s', HOME_DIR)

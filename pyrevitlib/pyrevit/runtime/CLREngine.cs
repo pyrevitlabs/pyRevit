@@ -6,17 +6,17 @@ using System.Collections.Generic;
 using System.Reflection;
 using Autodesk.Revit.UI;
 
-// csharp
-using System.CodeDom.Compiler;
-using Microsoft.CSharp;
 //vb
+using System.CodeDom.Compiler;
 using Microsoft.VisualBasic;
 
+// csharp uses roslyn compiler in
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
+using Microsoft.Scripting;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class ExecParams {
@@ -70,12 +70,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override int Execute(ref ScriptRuntime runtime) {
             // compile first
             // only if the signature doesn't match
+            var errors = new List<string>();
             if (scriptSig == null || runtime.ScriptSourceFileSignature != scriptSig) {
                 try {
                     scriptSig = runtime.ScriptSourceFileSignature;
-                    scriptAssm = CompileCLRScript(ref runtime);
+                    scriptAssm = CompileCLRScript(ref runtime, out errors);
+                    if (scriptAssm == null) {
+                        if (runtime.RuntimeType == ScriptRuntimeType.ExternalCommand) {
+                            var errorReport = string.Join(Environment.NewLine, errors.ToArray());
+                            runtime.OutputStream.WriteError(
+                                errorReport != string.Empty ? errorReport : "Failed to compile assembly for unknown reason",
+                                runtime.EngineType
+                                );
+                        }
+                        // clear script signature
+                        scriptSig = null;
+                        return ScriptExecutorResultCodes.CompileException;
+                    }
                 }
                 catch (Exception compileEx) {
+                    // make sure a bad compile is not cached
+                    scriptAssm = null;
                     string traceMessage = compileEx.ToString();
                     traceMessage = traceMessage.NormalizeNewLine();
                     runtime.TraceMessage = traceMessage;
@@ -83,7 +98,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     if (runtime.RuntimeType == ScriptRuntimeType.ExternalCommand) {
                         var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
                         dialog.MainInstruction = "Error compiling .NET script.";
-                        dialog.ExpandedContent = string.Format("{0}\n{1}", compileEx.Message, traceMessage);
+                        string errorReport = string.Empty;
+                        foreach (var errline in errors)
+                            errorReport += $"{errline}\n";
+                        errorReport += string.Format("\nTrace:\n{0}\n{1}", compileEx.Message, traceMessage);
+                        dialog.ExpandedContent = errorReport;
                         dialog.Show();
                     }
 
@@ -148,54 +167,90 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public static Assembly CompileCLRScript(ref ScriptRuntime runtime) {
+        public static Assembly CompileCLRScript(ref ScriptRuntime runtime, out List<string> errors) {
             // https://stackoverflow.com/a/3188953
-            // read the script
-            var scriptContents = File.ReadAllText(runtime.ScriptSourceFile);
 
             // read the referenced dlls from env vars
             // pyrevit sets this when loading
-            string[] refFiles;
+            List<string> refFiles;
             var envDic = new EnvDictionary();
             if (envDic.ReferencedAssemblies.Length == 0) {
                 var refs = AppDomain.CurrentDomain.GetAssemblies();
-                refFiles = refs.Select(a => a.Location).ToArray();
+                refFiles = refs.Select(a => a.Location).ToList();
             }
             else {
-                refFiles = envDic.ReferencedAssemblies;
+                refFiles = envDic.ReferencedAssemblies.ToList();
             }
 
-            // create compiler parameters
-            var compileParams = new CompilerParameters(refFiles);
-            compileParams.OutputAssembly = Path.Combine(
+            // add location of this assembly
+            refFiles.Add(typeof(ScriptExecutor).Assembly.Location);
+
+            // create output assembly
+            string outputAssembly = Path.Combine(
                 UserEnv.UserTemp,
                 string.Format("{0}_{1}.dll", runtime.ScriptData.CommandName, runtime.ScriptSourceFileSignature)
                 );
-            compileParams.CompilerOptions = string.Format("/optimize /define:REVIT{0}", runtime.App.VersionNumber);
-            compileParams.GenerateInMemory = true;
-            compileParams.GenerateExecutable = false;
-            compileParams.ReferencedAssemblies.Add(typeof(ScriptExecutor).Assembly.Location);
 
-            // determine which code provider to use
-            CodeDomProvider compiler;
-            var compConfig = new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } };
+            List<string> defines = new List<string> { $"REVIT{runtime.App.VersionNumber}" };
+
+            // determine which compiler to use
             switch (runtime.EngineType) {
                 case ScriptEngineType.CSharp:
-                    compiler = new CSharpCodeProvider(compConfig);
-                    break;
+                    return CompileCSharp(runtime.ScriptSourceFile, outputAssembly, refFiles, defines, out errors);
                 case ScriptEngineType.VisualBasic:
-                    compiler = new VBCodeProvider(compConfig);
-                    break;
+                    return CompileVB(runtime.ScriptSourceFile, outputAssembly, refFiles, defines, out errors);
                 default:
                     throw new PyRevitException("Specified language does not have a compiler.");
             }
+        }
+        
+        private static Assembly CompileCSharp(string sourceFile, string outputPath, List<string> refFiles, List<string> defines, out List<string> errors) {
+            return pyRevitLabs.Common.CodeCompiler.CompileCSharpToAssembly(
+                sourceFiles: new string[] { sourceFile },
+                assemblyName: Path.GetFileName(outputPath),
+                references: refFiles,
+                defines: defines,
+                out errors
+                );
+        }
+
+        private static Assembly CompileVB(string sourceFile, string outputPath, List<string> refFiles, List<string> defines, out List<string> errors) {
+            CodeDomProvider compiler;
+            var compConfig = new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } };
+
+            // create compiler parameters
+            var compileParams = new CompilerParameters(refFiles.ToArray());
+            compileParams.OutputAssembly = outputPath;
+            string defineOptions = string.Empty;
+            foreach (string define in defines)
+                defineOptions += $"/define:{define} ";
+            compileParams.CompilerOptions = string.Format("/optimize {0}", defineOptions);
+            compileParams.GenerateInMemory = true;
+            compileParams.GenerateExecutable = false;
+            compileParams.TreatWarningsAsErrors = false;
+
+            // add the ref files to errors
+            // they'll be printed if errors occur
+            errors = new List<string>();
+            foreach (var refFile in refFiles)
+                errors.Add($"Reference: {refFile}");
+
+            compiler = new VBCodeProvider(compConfig);
 
             // compile code first
-            var res = compiler.CompileAssemblyFromSource(
+            var res = compiler.CompileAssemblyFromFile(
                 options: compileParams,
-                sources: new string[] { scriptContents }
+                fileNames: new string[] { sourceFile }
             );
 
+            // return nothing if errors occured
+            if (res.Errors.HasErrors) {
+                foreach (var err in res.Errors)
+                    errors.Add(err.ToString());
+                return null;
+            }
+
+            // otherwise return compiled assm
             return res.CompiledAssembly;
         }
 

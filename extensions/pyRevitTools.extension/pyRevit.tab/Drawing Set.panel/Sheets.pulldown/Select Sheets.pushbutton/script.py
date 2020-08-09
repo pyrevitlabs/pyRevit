@@ -1,4 +1,4 @@
-"""Change the selected sheet names."""
+"""Select multiple sheets from a list"""
 #pylint: disable=import-error,invalid-name
 from pyrevit import revit
 from pyrevit import forms
