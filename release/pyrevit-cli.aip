@@ -7,12 +7,10 @@
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="AI_EXTERNALUIUNINSTALLERNAME" MultiBuildValue="DefaultBuild:aiui"/>
     <ROW Property="AI_FINDEXE_TITLE" Value="Select the installation package for [|ProductName]" ValueLocId="AI.Property.FindExeTitle"/>
-    <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_INTERNET_CONNECTION;AI_DETECTED_DOTNET_CORE_VERSION;AI_DETECTED_DOTNET_VERSION"/>
+    <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_INTERNET_CONNECTION;AI_DETECTED_DOTNET_VERSION"/>
     <ROW Property="AI_PRODUCTNAME_ARP" Value="pyRevit CLI"/>
-    <ROW Property="AI_REQUIRED_DOTNET_CORE_DISPLAY" MultiBuildValue="DefaultBuild:2.0" ValueLocId="-"/>
-    <ROW Property="AI_REQUIRED_DOTNET_CORE_VERSION" MultiBuildValue="DefaultBuild:2.0" ValueLocId="-"/>
-    <ROW Property="AI_REQUIRED_DOTNET_DISPLAY" MultiBuildValue="DefaultBuild:4.7.1" ValueLocId="-"/>
-    <ROW Property="AI_REQUIRED_DOTNET_VERSION" MultiBuildValue="DefaultBuild:4.7.1" ValueLocId="-"/>
+    <ROW Property="AI_REQUIRED_DOTNET_DISPLAY" MultiBuildValue="DefaultBuild:4.8" ValueLocId="-"/>
+    <ROW Property="AI_REQUIRED_DOTNET_VERSION" MultiBuildValue="DefaultBuild:4.8" ValueLocId="-"/>
     <ROW Property="AI_RUN_AS_ADMIN" Value="0"/>
     <ROW Property="AI_UNINSTALLER" Value="msiexec.exe"/>
     <ROW Property="ALLUSERS" Value="1" MultiBuildValue="DefaultBuild:2"/>
@@ -23,10 +21,10 @@
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyrevitbanner.bmp" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevitcli.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{27F44ADD-E91B-4733-B4FC-51473A2FAC3D} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{A0465103-77E8-4880-8192-9D055744798B} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="0.25.0.0" Type="32" TargetFile="pyrevit.exe"/>
+    <ROW Property="ProductVersion" Value="4.8.0.0" Type="32" TargetFile="pyrevit.exe"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
@@ -43,16 +41,11 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
     <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." IsPseudoRoot="1"/>
-    <ROW Directory="AdvancedInstaller_Dir" Directory_Parent="Caphyon_Dir" DefaultDir="ADVANC~1|Advanced Installer"/>
-    <ROW Directory="Caphyon_Dir" Directory_Parent="CommonAppDataFolder" DefaultDir="Caphyon"/>
-    <ROW Directory="CommonAppDataFolder" Directory_Parent="TARGETDIR" DefaultDir="COMMON~1|CommonAppDataFolder" IsPseudoRoot="1"/>
-    <ROW Directory="NETFramework4.7.1webinstaller_Dir" Directory_Parent="Prerequisites_Dir" DefaultDir="NETFRA~1.1(W|.NET Framework 4.7.1 (web installer)"/>
-    <ROW Directory="Prerequisites_Dir" Directory_Parent="AdvancedInstaller_Dir" DefaultDir="PREREQ~1|Prerequisites"/>
     <ROW Directory="ProgramMenuFolder" Directory_Parent="TARGETDIR" DefaultDir="PROGRA~1|ProgramMenuFolder" IsPseudoRoot="1"/>
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="AI_CustomARPName" ComponentId="{52092D93-78F9-400A-BF31-DFA30823B502}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{0FD4E32C-A33B-4593-B9AF-F9FE5270A3F1}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{ED98A64F-BD1E-4B58-B43B-B983C4FF59D4}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{8E745626-B193-44C6-9CB3-829A8A490626}" Directory_="APPDIR" Attributes="0"/>
     <ROW Component="Colorful.Console.dll" ComponentId="{0E2C12E3-BEE9-421D-B2F9-C084E247EBA5}" Directory_="APPDIR" Attributes="0" KeyPath="Colorful.Console.dll"/>
@@ -71,7 +64,6 @@
     <ROW Component="Microsoft.CodeAnalysis.dll" ComponentId="{9EE53956-8EEC-4474-AA21-95C24862B30C}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.CodeAnalysis.dll"/>
     <ROW Component="Microsoft.WindowsAPICodePack.Shell.dll" ComponentId="{9EA49319-C908-4FE7-9100-06EBA25DADCD}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.WindowsAPICodePack.Shell.dll"/>
     <ROW Component="Microsoft.WindowsAPICodePack.dll" ComponentId="{65B2F8D8-32CE-4FEE-BC61-102A121458FA}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.WindowsAPICodePack.dll"/>
-    <ROW Component="NETFramework4.7.1webinstaller.aip" ComponentId="{67401655-36E6-498D-B713-0E4AD58E2BDC}" Directory_="NETFramework4.7.1webinstaller_Dir" Attributes="0" KeyPath="NETFramework4.7.1webinstaller.aip" Type="0"/>
     <ROW Component="Nett.dll" ComponentId="{614741B2-7619-48FE-A227-35F9AFD1FEFD}" Directory_="APPDIR" Attributes="0" KeyPath="Nett.dll"/>
     <ROW Component="OpenMcdf.dll" ComponentId="{A809334E-CD23-41B4-A3FD-2782A4DB17BD}" Directory_="APPDIR" Attributes="0" KeyPath="OpenMcdf.dll"/>
     <ROW Component="ProductInformation" ComponentId="{23703FE9-535E-4128-81CE-D1375CCC4B97}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
@@ -82,10 +74,12 @@
     <ROW Component="System.Numerics.Vectors.dll" ComponentId="{899A29D6-CDC2-4C8D-8AB8-5BCF1F0D9BDA}" Directory_="APPDIR" Attributes="0" KeyPath="System.Numerics.Vectors.dll"/>
     <ROW Component="System.Reflection.Metadata.dll" ComponentId="{BE8AEDE7-62EB-43BD-946A-E0568C708E27}" Directory_="APPDIR" Attributes="0" KeyPath="System.Reflection.Metadata.dll"/>
     <ROW Component="System.Runtime.CompilerServices.Unsafe.dll" ComponentId="{666FCE50-F5E9-42D5-9353-485496272305}" Directory_="APPDIR" Attributes="0" KeyPath="System.Runtime.CompilerServices.Unsafe.dll"/>
-    <ROW Component="System.Security.Cryptography.Algorithms.dll" ComponentId="{AF80E64D-C6D5-403A-9427-48C0CD32F296}" Directory_="APPDIR" Attributes="0" KeyPath="System.Security.Cryptography.Algorithms.dll"/>
+    <ROW Component="System.Text.Encoding.CodePages.dll" ComponentId="{1612F564-1DDE-41C2-972A-78B5821867CE}" Directory_="APPDIR" Attributes="0" KeyPath="System.Text.Encoding.CodePages.dll"/>
+    <ROW Component="System.Threading.Tasks.Extensions.dll" ComponentId="{D3791113-CF67-4F32-9A3D-B50F02C560C5}" Directory_="APPDIR" Attributes="0" KeyPath="System.Threading.Tasks.Extensions.dll"/>
     <ROW Component="System.Windows.Interactivity.dll" ComponentId="{32ABD954-5434-47DD-AE25-A0BCBAE40192}" Directory_="APPDIR" Attributes="0" KeyPath="System.Windows.Interactivity.dll"/>
     <ROW Component="YamlDotNet.dll" ComponentId="{ED37BACB-3DD9-4DF0-93D2-D081F348C864}" Directory_="APPDIR" Attributes="0" KeyPath="YamlDotNet.dll"/>
     <ROW Component="git2106a5f2.dll" ComponentId="{1FCB3649-517F-413C-83E4-84F0AB146480}" Directory_="APPDIR" Attributes="256" KeyPath="git2106a5f2.dll"/>
+    <ROW Component="git27ce88e6.dll" ComponentId="{EA6022D3-EE1F-46E0-B9DE-2BC66819FAEC}" Directory_="APPDIR" Attributes="256" KeyPath="git27ce88e6.dll"/>
     <ROW Component="pyRevitLabs.Common.dll" ComponentId="{379FC385-744C-4190-A95C-281E67B527AF}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.Common.dll"/>
     <ROW Component="pyRevitLabs.CommonCLI.dll" ComponentId="{A83F9E4E-2B1A-45A3-B465-B25A73D75272}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.CommonCLI.dll"/>
     <ROW Component="pyRevitLabs.CommonWPF.dll" ComponentId="{5363FD8C-C3D6-446B-8F9F-FD6AD171F2B0}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.CommonWPF.dll"/>
@@ -121,7 +115,6 @@
     <ROW File="DocoptNet.dll" Component_="DocoptNet.dll" FileName="DOCOPT~1.DLL|DocoptNet.dll" Attributes="512" SourcePath="..\bin\DocoptNet.dll" SelfReg="false"/>
     <ROW File="Nett.dll" Component_="Nett.dll" FileName="Nett.dll" Attributes="512" SourcePath="..\bin\Nett.dll" SelfReg="false"/>
     <ROW File="Colorful.Console.dll" Component_="Colorful.Console.dll" FileName="COLORF~1.DLL|Colorful.Console.dll" Attributes="512" SourcePath="..\bin\Colorful.Console.dll" SelfReg="false"/>
-    <ROW File="NETFramework4.7.1webinstaller.aip" Component_="NETFramework4.7.1webinstaller.aip" FileName="NETFRA~1.AIP|.NET Framework 4.7.1 (web installer).aip" Attributes="2" SourcePath=".NET Framework 4.7.1 (web installer)\.NET Framework 4.7.1 (web installer).aip" SelfReg="false"/>
     <ROW File="ControlzEx.dll" Component_="ControlzEx.dll" FileName="CONTRO~1.DLL|ControlzEx.dll" Attributes="512" SourcePath="..\bin\ControlzEx.dll" SelfReg="false"/>
     <ROW File="System.Windows.Interactivity.dll" Component_="System.Windows.Interactivity.dll" FileName="SYSTE~13.DLL|System.Windows.Interactivity.dll" Attributes="512" SourcePath="..\bin\System.Windows.Interactivity.dll" SelfReg="false"/>
     <ROW File="DotNetVersionFinder.dll" Component_="DotNetVersionFinder.dll" FileName="DOTNET~1.DLL|DotNetVersionFinder.dll" Attributes="512" SourcePath="..\bin\DotNetVersionFinder.dll" SelfReg="false"/>
@@ -156,10 +149,12 @@
     <ROW File="Microsoft.CodeAnalysis.dll" Component_="Microsoft.CodeAnalysis.dll" FileName="MICROS~4.DLL|Microsoft.CodeAnalysis.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.dll" SelfReg="false"/>
     <ROW File="git2106a5f2.dll" Component_="git2106a5f2.dll" FileName="GIT2-1~1.DLL|git2-106a5f2.dll" Attributes="0" SourcePath="..\bin\git2-106a5f2.dll" SelfReg="false"/>
     <ROW File="System.Runtime.CompilerServices.Unsafe.dll" Component_="System.Runtime.CompilerServices.Unsafe.dll" FileName="SYSTEM~2.DLL|System.Runtime.CompilerServices.Unsafe.dll" Attributes="0" SourcePath="..\bin\System.Runtime.CompilerServices.Unsafe.dll" SelfReg="false"/>
-    <ROW File="System.Security.Cryptography.Algorithms.dll" Component_="System.Security.Cryptography.Algorithms.dll" FileName="SYSTEM~3.DLL|System.Security.Cryptography.Algorithms.dll" Attributes="0" SourcePath="..\bin\System.Security.Cryptography.Algorithms.dll" SelfReg="false"/>
     <ROW File="System.Numerics.Vectors.dll" Component_="System.Numerics.Vectors.dll" FileName="SYSTEM~4.DLL|System.Numerics.Vectors.dll" Attributes="0" SourcePath="..\bin\System.Numerics.Vectors.dll" SelfReg="false"/>
     <ROW File="System.Collections.Immutable.dll" Component_="System.Collections.Immutable.dll" FileName="SYSTEM~5.DLL|System.Collections.Immutable.dll" Attributes="0" SourcePath="..\bin\System.Collections.Immutable.dll" SelfReg="false"/>
     <ROW File="System.Memory.dll" Component_="System.Memory.dll" FileName="SYSTEM~6.DLL|System.Memory.dll" Attributes="0" SourcePath="..\bin\System.Memory.dll" SelfReg="false"/>
+    <ROW File="git27ce88e6.dll" Component_="git27ce88e6.dll" FileName="GIT2-7~1.DLL|git2-7ce88e6.dll" Attributes="0" SourcePath="..\bin\git2-7ce88e6.dll" SelfReg="false"/>
+    <ROW File="System.Text.Encoding.CodePages.dll" Component_="System.Text.Encoding.CodePages.dll" FileName="SYSTEM~7.DLL|System.Text.Encoding.CodePages.dll" Attributes="0" SourcePath="..\bin\System.Text.Encoding.CodePages.dll" SelfReg="false"/>
+    <ROW File="System.Threading.Tasks.Extensions.dll" Component_="System.Threading.Tasks.Extensions.dll" FileName="SYSTEM~8.DLL|System.Threading.Tasks.Extensions.dll" Attributes="0" SourcePath="..\bin\System.Threading.Tasks.Extensions.dll" SelfReg="false"/>
     <ATTRIBUTE name="DontAddFileAttributes" value="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
@@ -245,11 +240,11 @@
     <ROW Dialog_="VerifyReadyDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_PATCH" Ordering="199"/>
     <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="PatchWelcomeDlg" Condition="AI_PATCH" Ordering="203"/>
     <ROW Dialog_="ResumeDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_RESUME" Ordering="299"/>
+    <ROW Dialog_="LicenseAgreementDlg" Control_="Next" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="1"/>
+    <ROW Dialog_="LicenseAgreementDlg" Control_="Back" Event="NewDialog" Argument="WelcomeDlg" Condition="AI_INSTALL" Ordering="1"/>
     <ROW Dialog_="WelcomePrereqDlg" Control_="Next" Event="NewDialog" Argument="PrerequisitesDlg" Condition="AI_BOOTSTRAPPER" Ordering="1"/>
     <ROW Dialog_="PrerequisitesDlg" Control_="Next" Event="EndDialog" Argument="Return" Condition="AI_BOOTSTRAPPER" Ordering="1"/>
     <ROW Dialog_="PrerequisitesDlg" Control_="Back" Event="NewDialog" Argument="WelcomePrereqDlg" Condition="AI_BOOTSTRAPPER" Ordering="1"/>
-    <ROW Dialog_="LicenseAgreementDlg" Control_="Next" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="1"/>
-    <ROW Dialog_="LicenseAgreementDlg" Control_="Back" Event="NewDialog" Argument="WelcomeDlg" Condition="AI_INSTALL" Ordering="1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCreateFolderComponent">
     <ROW Directory_="APPDIR" Component_="APPDIR" ManualDelete="true"/>
@@ -306,7 +301,6 @@
     <ROW Feature_="MainFeature" Component_="MadMilkman.Ini.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.WindowsAPICodePack.Shell.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.WindowsAPICodePack.dll"/>
-    <ROW Feature_="MainFeature" Component_="NETFramework4.7.1webinstaller.aip"/>
     <ROW Feature_="MainFeature" Component_="Nett.dll"/>
     <ROW Feature_="MainFeature" Component_="OpenMcdf.dll"/>
     <ROW Feature_="MainFeature" Component_="ProductInformation"/>
@@ -338,10 +332,12 @@
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.dll"/>
     <ROW Feature_="MainFeature" Component_="git2106a5f2.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Runtime.CompilerServices.Unsafe.dll"/>
-    <ROW Feature_="MainFeature" Component_="System.Security.Cryptography.Algorithms.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Numerics.Vectors.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Collections.Immutable.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Memory.dll"/>
+    <ROW Feature_="MainFeature" Component_="git27ce88e6.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Text.Encoding.CodePages.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Threading.Tasks.Extensions.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="pyrevit_cli.exe" SourcePath="..\bin\pyrevit_cli.ico" Index="0"/>
@@ -367,10 +363,10 @@
     <ROW Action="AI_EstimateExtractFiles" Sequence="3999" Builds="DefaultBuild"/>
     <ROW Action="AI_GetArpIconPath" Sequence="1401"/>
     <ROW Action="AI_RemoveExternalUIStub" Condition="(REMOVE=&quot;ALL&quot;) AND ((VersionNT &gt; 500) OR((VersionNT = 500) AND (ServicePackLevel &gt;= 4)))" Sequence="1501"/>
-    <ROW Action="AI_AppSearchEx" Sequence="101"/>
     <ROW Action="AI_DOWNGRADE" Condition="AI_NEWERPRODUCTFOUND AND (UILevel &lt;&gt; 5)" Sequence="201"/>
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
     <ROW Action="AI_DETECT_MODERNWIN" Condition="(VersionNT &gt;= 603)" Sequence="54" MsiKey="AI_DETECT_MODERNWIN"/>
+    <ROW Action="AI_AppSearchEx" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_ResolveKnownFolders" Sequence="53"/>
@@ -380,15 +376,14 @@
     <ROW Action="AI_DetectSoftware" Sequence="103"/>
     <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Sequence="99"/>
     <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="102"/>
-    <ROW Action="AI_AppSearchEx" Sequence="101"/>
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
+    <ROW Action="AI_AppSearchEx" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiLaunchConditionsComponent">
     <ROW Condition="( Version9X OR VersionNT64 )" Description="[ProductName] cannot be installed on [WindowsTypeNTDisplay]." DescriptionLocId="AI.LaunchCondition.NoNT" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="((VersionNT &lt;&gt; 501) AND (VersionNT &lt;&gt; 502))" Description="[ProductName] cannot be installed on [WindowsTypeNT5XDisplay]." DescriptionLocId="AI.LaunchCondition.NoNT5X" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="(VersionNT &lt;&gt; 400)" Description="[ProductName] cannot be installed on [WindowsTypeNT40Display]." DescriptionLocId="AI.LaunchCondition.NoNT40" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="(VersionNT &lt;&gt; 500)" Description="[ProductName] cannot be installed on [WindowsTypeNT50Display]." DescriptionLocId="AI.LaunchCondition.NoNT50" IsPredefined="true" Builds="DefaultBuild"/>
-    <ROW Condition="AI_DETECTED_DOTNET_CORE_VERSION &gt;= AI_REQUIRED_DOTNET_CORE_VERSION" Description="[ProductName] cannot be installed on systems with .NET Core version lower than [AI_REQUIRED_DOTNET_CORE_DISPLAY]." DescriptionLocId="AI.LaunchCondition.DotNETCore" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="AI_DETECTED_DOTNET_VERSION &gt;= AI_REQUIRED_DOTNET_VERSION" Description="[ProductName] cannot be installed on systems with .NET Framework version lower than [AI_REQUIRED_DOTNET_DISPLAY]." DescriptionLocId="AI.LaunchCondition.DotNET" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="AI_DETECTED_INTERNET_CONNECTION" Description="[ProductName] requires an active Internet connection for installation. Please check your network configuration and proxy settings." DescriptionLocId="AI.LaunchCondition.Internet" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="SETUPEXEDIR OR (REMOVE=&quot;ALL&quot;)" Description="This package can only be run from a bootstrapper." DescriptionLocId="AI.LaunchCondition.RequireBootstrapper" IsPredefined="true" Builds="DefaultBuild"/>
@@ -430,11 +425,11 @@
     <ROW UpgradeCode="[|UpgradeCode]" VersionMin="[|ProductVersion]" Attributes="2" ActionProperty="AI_NEWERPRODUCTFOUND"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">
-    <ROW PrereqKey="A29CF2DAF30403F8D44F6E2FF8D1654" DisplayName=".NET Framework 4.7.1 (web installer)" SetupFileUrl="https://download.microsoft.com/download/8/E/2/8E2BDDE7-F06E-44CC-A145-56C6B9BBE5DD/NDP471-KB4033344-Web.exe" Location="1" ExactSize="1434504" WinNTVersions="Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86/Windows 10 x86" WinNT64Versions="Windows Vista RTM x64, Windows Server 2008 x64" Operator="0" NoUiComLine="/q /norestart" Options="xyma" MD5="4fb795478a8f346c337a1f84baccc85b" TargetName=".NET Framework 4.7.1"/>
-    <ATTRIBUTE name="PrereqsOrder" value="A29CF2DAF30403F8D44F6E2FF8D1654"/>
+    <ROW PrereqKey="BF9259651485FB4F316A40CB01E7B" DisplayName=".NET Framework 4.8 (web installer)" SetupFileUrl="Prerequisites\.NET Framework 4.8\ndp48-web.exe" Location="0" ExactSize="0" WinNTVersions="Windows Vista x86, Windows Server 2008 x86, Windows 7 RTM x86, Windows 8 x86, Windows 10 version 1507 x86, Windows 10 version 1511 x86, Windows 10 version 1903 x86, Windows 10 version 1909 x86, Windows 10 version 2004 x86" WinNT64Versions="Windows Vista x64, Windows Server 2008 x64, Windows 7 RTM x64, Windows Server 2008 R2 RTM x64, Windows 8 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64, Windows 10 version 1903 x64, Windows 10 version 1909 x64, Windows 10 version 2004 x64" Operator="1" NoUiComLine="/q /norestart" Options="xy" TargetName=".NET Framework 4.8\ndp48-web.exe"/>
+    <ATTRIBUTE name="PrereqsOrder" value="BF9259651485FB4F316A40CB01E7B"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqSearchComponent">
-    <ROW SearchKey="A29CF2DAF30403F8D44F6E2FF8D1654Release" Prereq="A29CF2DAF30403F8D44F6E2FF8D1654" SearchType="9" SearchString="HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\Release" RefContent="G461307" Order="1" Property="PreReqSearch_D5734F904894AAF3007352"/>
+    <ROW SearchKey="BF9259651485FB4F316A40CB01E7BReleas" Prereq="BF9259651485FB4F316A40CB01E7B" SearchType="9" SearchString="HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\Release" RefContent="G528048" Order="1" Property="PreReqSearch_BF9259651485FB4F316A40"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.SynchronizedFolderComponent">
     <ROW Directory_="APPDIR" SourcePath="..\bin" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store|/*.png|/*.ico|/*.svg" ExcludeSubFolders="true" FileAddOptions="4"/>

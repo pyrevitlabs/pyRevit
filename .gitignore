@@ -36,6 +36,7 @@ __py*
 
 # Release and installer files
 release/pyrevit*cache
+release/Prerequisites/*
 dist/
 *.back*.aip
 

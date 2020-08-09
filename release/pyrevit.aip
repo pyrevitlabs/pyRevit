@@ -7,12 +7,10 @@
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="AI_EXTERNALUIUNINSTALLERNAME" MultiBuildValue="DefaultBuild:aiui"/>
     <ROW Property="AI_FINDEXE_TITLE" Value="Select the installation package for [|ProductName]" ValueLocId="AI.Property.FindExeTitle"/>
-    <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_DOTNET_CORE_VERSION;AI_DETECTED_DOTNET_VERSION"/>
+    <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_DOTNET_VERSION"/>
     <ROW Property="AI_PRODUCTNAME_ARP" Value="[|ProductName]"/>
-    <ROW Property="AI_REQUIRED_DOTNET_CORE_DISPLAY" MultiBuildValue="DefaultBuild:2.0" ValueLocId="-"/>
-    <ROW Property="AI_REQUIRED_DOTNET_CORE_VERSION" MultiBuildValue="DefaultBuild:2.0" ValueLocId="-"/>
-    <ROW Property="AI_REQUIRED_DOTNET_DISPLAY" MultiBuildValue="DefaultBuild:4.7.1" ValueLocId="-"/>
-    <ROW Property="AI_REQUIRED_DOTNET_VERSION" MultiBuildValue="DefaultBuild:4.7.1" ValueLocId="-"/>
+    <ROW Property="AI_REQUIRED_DOTNET_DISPLAY" MultiBuildValue="DefaultBuild:4.8" ValueLocId="-"/>
+    <ROW Property="AI_REQUIRED_DOTNET_VERSION" MultiBuildValue="DefaultBuild:4.8" ValueLocId="-"/>
     <ROW Property="AI_RUN_AS_ADMIN" Value="0"/>
     <ROW Property="AI_ThemeStyle" Value="aero" MsiKey="AI_ThemeStyle"/>
     <ROW Property="AI_UNINSTALLER" Value="msiexec.exe"/>
@@ -29,10 +27,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevit.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{57D90459-1106-444E-A9DC-DC68435BBAEE} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{CDA0124F-714E-4F93-BF5D-37FF54C25F15} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.7.6" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.0" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>
@@ -52,7 +50,6 @@
     <ROW Directory="About.pushbutton_Dir" Directory_Parent="pyRevit.panel_Dir" DefaultDir="ABOUT~1.PUS|About.pushbutton"/>
     <ROW Directory="AddTaggedElements.pushbutton_1_Dir" Directory_Parent="Select.pulldown_1_Dir" DefaultDir="ADDTAG~1.PUS|Add Tagged Elements.pushbutton"/>
     <ROW Directory="AddViewstoSheets.pushbutton_1_Dir" Directory_Parent="Views.pulldown_1_Dir" DefaultDir="ADDVIE~1.PUS|Add Views to Sheets.pushbutton"/>
-    <ROW Directory="AdvancedInstaller_Dir" Directory_Parent="Caphyon_Dir" DefaultDir="ADVANC~1|Advanced Installer"/>
     <ROW Directory="Africa_Dir" Directory_Parent="zoneinfo_Dir" DefaultDir="Africa"/>
     <ROW Directory="America_Dir" Directory_Parent="zoneinfo_Dir" DefaultDir="America"/>
     <ROW Directory="Analyse.pulldown_1_Dir" Directory_Parent="Tools.stack_Dir" DefaultDir="ANALYS~1.PUL|Analyse.pulldown"/>
@@ -70,13 +67,11 @@
     <ROW Directory="Brazil_Dir" Directory_Parent="zoneinfo_Dir" DefaultDir="Brazil"/>
     <ROW Directory="CalculateAverageArea.pushbutt_1_Dir" Directory_Parent="Analyse.pulldown_1_Dir" DefaultDir="CALCUL~1.PUS|Calculate Average Area.pushbutton"/>
     <ROW Directory="Canada_Dir" Directory_Parent="zoneinfo_Dir" DefaultDir="Canada"/>
-    <ROW Directory="Caphyon_Dir" Directory_Parent="CommonAppDataFolder" DefaultDir="Caphyon"/>
     <ROW Directory="ChangeElementTypeSafely.pushbut_Dir" Directory_Parent="Edit.pulldown_Dir" DefaultDir="CHANGE~1.PUS|Change Element Type Safely.pushbutton"/>
     <ROW Directory="Chile_Dir" Directory_Parent="zoneinfo_Dir" DefaultDir="Chile"/>
     <ROW Directory="ClearTags.pushbutton_1_Dir" Directory_Parent="tagstack.stack_Dir" DefaultDir="CLEART~1.PUS|Clear Tags.pushbutton"/>
     <ROW Directory="Collector.pushbutton_Dir" Directory_Parent="Session5.pulldown_Dir" DefaultDir="COLLEC~1.PUS|Collector.pushbutton"/>
     <ROW Directory="ColorizeGroupTypes.pushbutton_Dir" Directory_Parent="Groups.pulldown_Dir" DefaultDir="COLORI~1.PUS|ColorizeGroupTypes.pushbutton"/>
-    <ROW Directory="CommonAppDataFolder" Directory_Parent="TARGETDIR" DefaultDir="COMMON~1|CommonAppDataFolder" IsPseudoRoot="1"/>
     <ROW Directory="CompareDetailViews.pushbutton_1_Dir" Directory_Parent="Inspect.pulldown_1_Dir" DefaultDir="COMPAR~1.PUS|Compare Detail Views.pushbutton"/>
     <ROW Directory="CompareProperties.pushbutton_1_Dir" Directory_Parent="Match.splitpushbutton_1_Dir" DefaultDir="COMPAR~1.PUS|Compare Properties.pushbutton"/>
     <ROW Directory="ConvertACISSolidtoFreeForm.pu_1_Dir" Directory_Parent="Family.pulldown_1_Dir" DefaultDir="CONVER~1.PUS|Convert ACIS Solid to FreeForm.pushbutton"/>
@@ -193,7 +188,6 @@
     <ROW Directory="MinifyUI.smartbutton_1_Dir" Directory_Parent="toggles1.stack_Dir" DefaultDir="MINIFY~1.SMA|MinifyUI.smartbutton"/>
     <ROW Directory="Modify.panel_Dir" Directory_Parent="pyRevit.tab_2_Dir" DefaultDir="MODIFY~1.PAN|Modify.panel"/>
     <ROW Directory="MoveSelectedViewportsToSelected_Dir" Directory_Parent="Sheets.pulldown_Dir" DefaultDir="MOVESE~1.PUS|Move Selected Viewports To Selected Sheet.pushbutton"/>
-    <ROW Directory="NETFramework4.7.1webinstaller_Dir" Directory_Parent="Prerequisites_Dir" DefaultDir="NETFRA~1.1(W|.NET Framework 4.7.1 (web installer)"/>
     <ROW Directory="Next.pushbutton_1_Dir" Directory_Parent="Memory.pulldown_1_Dir" DefaultDir="NEXT~1.PUS|Next.pushbutton"/>
     <ROW Directory="North_Dakota_Dir" Directory_Parent="America_Dir" DefaultDir="NORTH_~1|North_Dakota"/>
     <ROW Directory="OpenCurrentProjectCentralLog._1_Dir" Directory_Parent="Spy.pulldown_1_Dir" DefaultDir="OPENCU~1.PUS|Open Current Project Central Log.pushbutton"/>
@@ -220,7 +214,6 @@
     <ROW Directory="PickModelElements.pushbutton_Dir" Directory_Parent="Pick.splitpushbutton_Dir" DefaultDir="PICKMO~1.PUS|Pick Model Elements.pushbutton"/>
     <ROW Directory="PinAllViewports.pushbutton_Dir" Directory_Parent="Sheets.pulldown_Dir" DefaultDir="PINALL~1.PUS|Pin All Viewports.pushbutton"/>
     <ROW Directory="PlaceOriginMarker.pushbutton_1_Dir" Directory_Parent="Edit.pulldown_Dir" DefaultDir="PLACEO~1.PUS|Place Origin Marker.pushbutton"/>
-    <ROW Directory="Prerequisites_Dir" Directory_Parent="AdvancedInstaller_Dir" DefaultDir="PREREQ~1|Prerequisites"/>
     <ROW Directory="Prev.pushbutton_1_Dir" Directory_Parent="Memory.pulldown_1_Dir" DefaultDir="PREV~1.PUS|Prev.pushbutton"/>
     <ROW Directory="PrintSheets.pushbutton_Dir" Directory_Parent="DrawingSet.panel_Dir" DefaultDir="PRINTS~1.PUS|Print Sheets.pushbutton"/>
     <ROW Directory="ProgramMenuFolder" Directory_Parent="TARGETDIR" DefaultDir="PROGRA~1|ProgramMenuFolder" IsPseudoRoot="1"/>
@@ -316,6 +309,7 @@
     <ROW Directory="WipeUnusedViewTemplates.pushbut_Dir" Directory_Parent="Wipe.pulldown_Dir" DefaultDir="WIPEUN~3.PUS|Wipe Unused View Templates.pushbutton"/>
     <ROW Directory="__1_Dir" Directory_Parent="engines_Dir" DefaultDir="385"/>
     <ROW Directory="__2_Dir" Directory_Parent="engines_Dir" DefaultDir="378"/>
+    <ROW Directory="__3_Dir" Directory_Parent="engines_Dir" DefaultDir="2710"/>
     <ROW Directory="__4_Dir" Directory_Parent="engines_Dir" DefaultDir="277"/>
     <ROW Directory="__5_Dir" Directory_Parent="engines_Dir" DefaultDir="278"/>
     <ROW Directory="__6_Dir" Directory_Parent="engines_Dir" DefaultDir="279"/>
@@ -454,7 +448,7 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
     <ROW Component="ACT" ComponentId="{1C2437CB-91AB-4EEF-B858-DCFDF94CC556}" Directory_="Australia_Dir" Attributes="0" KeyPath="ACT" Type="0"/>
-    <ROW Component="AI_CustomARPName" ComponentId="{39A3157B-8503-496C-A898-89AF9FF78E63}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{05080D6F-5C82-4F4D-A65E-97070F475A06}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_DisableModify" ComponentId="{C77D802D-6409-4BD6-9303-97390842F7D5}" Directory_="APPDIR" Attributes="260" KeyPath="NoModify" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{505F96D2-054E-4761-AE20-B27603EF0AAB}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{75E77E8F-2600-4C14-ABAB-AA1511F88147}" Directory_="APPDIR" Attributes="0"/>
@@ -492,24 +486,29 @@
     <ROW Component="GMT" ComponentId="{0C8F47CD-B523-42C1-B692-6C09E2C45C41}" Directory_="Etc_Dir" Attributes="0" KeyPath="GMT" Type="0"/>
     <ROW Component="GUIInternals.drawio" ComponentId="{1A84B4A9-D396-4754-8AD6-9C844DF93E1E}" Directory_="Session9.pushbutton_Dir" Attributes="0" KeyPath="GUIInternals.drawio" Type="0"/>
     <ROW Component="IKVM.Reflection.dll" ComponentId="{2B3F7AA5-1DFB-444B-BD5C-4A9993B7FFA6}" Directory_="__5_Dir" Attributes="0" KeyPath="IKVM.Reflection.dll"/>
+    <ROW Component="IKVM.Reflection.dll_1" ComponentId="{EC4C50E7-ABCA-48A7-BCA1-147F0AF65BA3}" Directory_="__3_Dir" Attributes="0" KeyPath="IKVM.Reflection.dll_1"/>
     <ROW Component="IKVM.Reflection.dll_2" ComponentId="{B6875C8C-2BC2-4175-9A5B-57ABDF0E1979}" Directory_="__6_Dir" Attributes="0" KeyPath="IKVM.Reflection.dll_2"/>
     <ROW Component="Ifc.NET.XmlSerializers.dll_1" ComponentId="{A1ABC8B1-0FFB-4C88-8C75-23EE70341CD0}" Directory_="bin_Dir" Attributes="0" KeyPath="Ifc.NET.XmlSerializers.dll_1"/>
     <ROW Component="Ifc.NET.dll_1" ComponentId="{383B3E9E-D598-4423-89A5-55F75F7B5CF3}" Directory_="bin_Dir" Attributes="0" KeyPath="Ifc.NET.dll_1"/>
     <ROW Component="Ifc.NET.resources.dll_1" ComponentId="{A9405413-7C70-4EEC-87FF-1962E9720479}" Directory_="bin_Dir" Attributes="0" KeyPath="Ifc.NET.resources.dll_1"/>
     <ROW Component="Indianapolis" ComponentId="{5FCB56C5-974A-4227-B9B3-7334672CC5FC}" Directory_="Indiana_Dir" Attributes="0" KeyPath="Indianapolis" Type="0"/>
     <ROW Component="IronPython.Modules.dll" ComponentId="{C1C55709-BAA0-444B-A4B1-AE6113E14EED}" Directory_="__Dir" Attributes="0" KeyPath="IronPython.Modules.dll"/>
+    <ROW Component="IronPython.Modules.dll_1" ComponentId="{78DC45F6-6DB9-477E-8565-D88447B1075C}" Directory_="__3_Dir" Attributes="0" KeyPath="IronPython.Modules.dll_1"/>
     <ROW Component="IronPython.Modules.dll_4" ComponentId="{7F52BE2D-4FB1-44CC-88E1-19823D758621}" Directory_="__4_Dir" Attributes="0" KeyPath="IronPython.Modules.dll_4"/>
     <ROW Component="IronPython.Modules.dll_5" ComponentId="{DA88E730-7DB2-4573-B149-CFE80F0EECE3}" Directory_="__5_Dir" Attributes="0" KeyPath="IronPython.Modules.dll_5"/>
     <ROW Component="IronPython.Modules.dll_6" ComponentId="{F051A18A-C0DC-47E1-9095-C0D8B675A120}" Directory_="__6_Dir" Attributes="0" KeyPath="IronPython.Modules.dll_6"/>
     <ROW Component="IronPython.SQLite.dll" ComponentId="{8F768704-AE69-4248-BEAC-796E8CF05B52}" Directory_="__Dir" Attributes="0" KeyPath="IronPython.SQLite.dll"/>
+    <ROW Component="IronPython.SQLite.dll_1" ComponentId="{AD45624E-D8AE-426D-B36C-91DD6777AB72}" Directory_="__3_Dir" Attributes="0" KeyPath="IronPython.SQLite.dll_1"/>
     <ROW Component="IronPython.SQLite.dll_4" ComponentId="{39EE46E6-49C7-4F89-B65C-F295AF8F8D1B}" Directory_="__4_Dir" Attributes="0" KeyPath="IronPython.SQLite.dll_4"/>
     <ROW Component="IronPython.SQLite.dll_5" ComponentId="{896AE0E5-42F7-496F-B579-1CE8265A5064}" Directory_="__5_Dir" Attributes="0" KeyPath="IronPython.SQLite.dll_5"/>
     <ROW Component="IronPython.SQLite.dll_6" ComponentId="{5BCA4000-C023-4B2D-9C26-A81A09B6CB0B}" Directory_="__6_Dir" Attributes="0" KeyPath="IronPython.SQLite.dll_6"/>
     <ROW Component="IronPython.Wpf.dll" ComponentId="{2C35D49D-0C6C-486A-8BAD-6EEC07821542}" Directory_="__Dir" Attributes="0" KeyPath="IronPython.Wpf.dll"/>
+    <ROW Component="IronPython.Wpf.dll_1" ComponentId="{38B2840F-540B-413C-8418-529B13ECDA7A}" Directory_="__3_Dir" Attributes="0" KeyPath="IronPython.Wpf.dll_1"/>
     <ROW Component="IronPython.Wpf.dll_4" ComponentId="{CDDD692E-C8BC-400E-8AD8-F6694A504292}" Directory_="__4_Dir" Attributes="0" KeyPath="IronPython.Wpf.dll_4"/>
     <ROW Component="IronPython.Wpf.dll_5" ComponentId="{0C183F8B-EC5E-49CB-9BBF-29F824851347}" Directory_="__5_Dir" Attributes="0" KeyPath="IronPython.Wpf.dll_5"/>
     <ROW Component="IronPython.Wpf.dll_6" ComponentId="{AB8F99B2-F8BF-4F18-9C05-C97AF81B04AA}" Directory_="__6_Dir" Attributes="0" KeyPath="IronPython.Wpf.dll_6"/>
     <ROW Component="IronPython.dll" ComponentId="{7EEE112C-A349-4127-A114-9F82BC4215ED}" Directory_="__Dir" Attributes="0" KeyPath="IronPython.dll"/>
+    <ROW Component="IronPython.dll_1" ComponentId="{5C7CC2EE-0813-48AA-86E6-73AA84D0A86A}" Directory_="__3_Dir" Attributes="0" KeyPath="IronPython.dll_1"/>
     <ROW Component="IronPython.dll_4" ComponentId="{C7D34DB7-EA5C-4CCF-A1D2-540F14A24CBB}" Directory_="__4_Dir" Attributes="0" KeyPath="IronPython.dll_4"/>
     <ROW Component="IronPython.dll_5" ComponentId="{8957EC11-5A92-452A-A193-AA8B0A30EAAD}" Directory_="__5_Dir" Attributes="0" KeyPath="IronPython.dll_5"/>
     <ROW Component="IronPython.dll_6" ComponentId="{5109AA43-7F74-4FC7-8BAE-8F978C6EF371}" Directory_="__6_Dir" Attributes="0" KeyPath="IronPython.dll_6"/>
@@ -527,6 +526,7 @@
     <ROW Component="Microsoft.CodeAnalysis.CSharp.dll" ComponentId="{A5157D6F-25B6-4056-B79A-B8EE5CDE63AF}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.CodeAnalysis.CSharp.dll"/>
     <ROW Component="Microsoft.CodeAnalysis.dll" ComponentId="{E4A5FC09-A74D-4A06-9AE2-8614D51FBAE8}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.CodeAnalysis.dll"/>
     <ROW Component="Microsoft.Dynamic.dll" ComponentId="{66A0FB52-8894-403E-A88D-FEFEBEAD9BA8}" Directory_="__Dir" Attributes="0" KeyPath="Microsoft.Dynamic.dll"/>
+    <ROW Component="Microsoft.Dynamic.dll_1" ComponentId="{5EB17BF9-61CC-449F-A4C6-FFE786682B28}" Directory_="__3_Dir" Attributes="0" KeyPath="Microsoft.Dynamic.dll_1"/>
     <ROW Component="Microsoft.Dynamic.dll_4" ComponentId="{F6CBF0FC-3147-404C-878D-C4E8FF7C681C}" Directory_="__4_Dir" Attributes="0" KeyPath="Microsoft.Dynamic.dll_4"/>
     <ROW Component="Microsoft.Dynamic.dll_5" ComponentId="{FEF9DF26-22D2-4E74-91D2-7B0948F988DE}" Directory_="__5_Dir" Attributes="0" KeyPath="Microsoft.Dynamic.dll_5"/>
     <ROW Component="Microsoft.Dynamic.dll_6" ComponentId="{8CB58F09-3995-4EE5-8B5B-2D7E65446FCF}" Directory_="__6_Dir" Attributes="0" KeyPath="Microsoft.Dynamic.dll_6"/>
@@ -534,12 +534,12 @@
     <ROW Component="Microsoft.Scripting.Metadata.dll_3" ComponentId="{3EA62DC7-EC3E-439B-8B3A-FCE23A51D3BE}" Directory_="__4_Dir" Attributes="0" KeyPath="Microsoft.Scripting.Metadata.dll_3"/>
     <ROW Component="Microsoft.Scripting.Metadata.dll_4" ComponentId="{C363B828-04BA-4BAC-9DA0-52FA766506D8}" Directory_="__5_Dir" Attributes="0" KeyPath="Microsoft.Scripting.Metadata.dll_4"/>
     <ROW Component="Microsoft.Scripting.dll" ComponentId="{38DAE83F-8DBC-4DF0-916D-AC17BE3E69CE}" Directory_="__Dir" Attributes="0" KeyPath="Microsoft.Scripting.dll"/>
+    <ROW Component="Microsoft.Scripting.dll_1" ComponentId="{0EECA469-1729-4D88-A0DF-4637626B10B4}" Directory_="__3_Dir" Attributes="0" KeyPath="Microsoft.Scripting.dll_1"/>
     <ROW Component="Microsoft.Scripting.dll_4" ComponentId="{27D57C44-71BB-4818-9D0F-FD48F9F3252C}" Directory_="__4_Dir" Attributes="0" KeyPath="Microsoft.Scripting.dll_4"/>
     <ROW Component="Microsoft.Scripting.dll_5" ComponentId="{A3DAFA51-D9AA-43FD-9650-D899E7BCD425}" Directory_="__5_Dir" Attributes="0" KeyPath="Microsoft.Scripting.dll_5"/>
     <ROW Component="Microsoft.Scripting.dll_6" ComponentId="{CB9FCFD2-746D-41EA-AF55-0878E3E77F95}" Directory_="__6_Dir" Attributes="0" KeyPath="Microsoft.Scripting.dll_6"/>
     <ROW Component="Microsoft.WindowsAPICodePack.Shell.dll" ComponentId="{DC1EE605-498A-41E4-B4D7-62D1D257B6CA}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.WindowsAPICodePack.Shell.dll"/>
     <ROW Component="Microsoft.WindowsAPICodePack.dll" ComponentId="{EA7BDEE6-D069-4B2A-88C6-B0937E792A62}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.WindowsAPICodePack.dll"/>
-    <ROW Component="NETFramework4.7.1webinstaller.aip" ComponentId="{4643930F-1B2C-424C-AAD1-929C381F4D49}" Directory_="NETFramework4.7.1webinstaller_Dir" Attributes="0" KeyPath="NETFramework4.7.1webinstaller.aip" Type="0"/>
     <ROW Component="Nett.dll" ComponentId="{997AAC0C-D2F6-4508-8BF5-364DAD5607D1}" Directory_="bin_Dir" Attributes="0" KeyPath="Nett.dll"/>
     <ROW Component="OpenMcdf.dll" ComponentId="{54325791-3BE4-4F6E-9633-98DAD732310E}" Directory_="bin_Dir" Attributes="0" KeyPath="OpenMcdf.dll"/>
     <ROW Component="ProductInformation" ComponentId="{23703FE9-535E-4128-81CE-D1375CCC4B97}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
@@ -551,7 +551,8 @@
     <ROW Component="System.Numerics.Vectors.dll" ComponentId="{47A2866F-8F33-4F54-8C82-2AEF0687E0C4}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Numerics.Vectors.dll"/>
     <ROW Component="System.Reflection.Metadata.dll" ComponentId="{48A88618-0AB3-4DD4-B640-819187112855}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Reflection.Metadata.dll"/>
     <ROW Component="System.Runtime.CompilerServices.Unsafe.dll" ComponentId="{641FD6D0-7221-441F-962E-C1498BF61302}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Runtime.CompilerServices.Unsafe.dll"/>
-    <ROW Component="System.Security.Cryptography.Algorithms.dll" ComponentId="{F423922D-AAF7-4D61-BD9C-A7FA9714DBA0}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Security.Cryptography.Algorithms.dll"/>
+    <ROW Component="System.Text.Encoding.CodePages.dll" ComponentId="{299A2A9A-BFF9-4CCD-B125-163AA0DDF532}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Text.Encoding.CodePages.dll"/>
+    <ROW Component="System.Threading.Tasks.Extensions.dll" ComponentId="{1BC75022-EF6F-4050-80BC-4D61DE68B6E6}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Threading.Tasks.Extensions.dll"/>
     <ROW Component="System.Windows.Interactivity.dll" ComponentId="{F959E3FF-BDAE-465F-A186-FAEF1CE779D7}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Windows.Interactivity.dll"/>
     <ROW Component="WPFEditProject.csproj" ComponentId="{B3174649-0FE6-4711-B44A-51AB45278F28}" Directory_="WPFEditProject_1_Dir" Attributes="0" KeyPath="WPFEditProject.csproj" Type="0"/>
     <ROW Component="WPFEditProject.sln" ComponentId="{CA2B3E93-1122-4E3F-9460-A8BF729288A0}" Directory_="WPFEditProject_Dir" Attributes="0" KeyPath="WPFEditProject.sln" Type="0"/>
@@ -669,6 +670,7 @@
     <ROW Component="files.py" ComponentId="{53FE6F52-9A18-493C-86DE-BB2F7E8EC060}" Directory_="revit_Dir" Attributes="0" KeyPath="files.py" Type="0"/>
     <ROW Component="firsttransaction_script.py" ComponentId="{F2774182-93D0-4AD9-993D-75B27F7D81E1}" Directory_="Session4.pushbutton_Dir" Attributes="0" KeyPath="firsttransaction_script.py" Type="0"/>
     <ROW Component="git2106a5f2.dll" ComponentId="{1E9F9136-BBC9-46D5-8CF2-4BFB700A306B}" Directory_="bin_Dir" Attributes="256" KeyPath="git2106a5f2.dll"/>
+    <ROW Component="git27ce88e6.dll" ComponentId="{7204AF02-C007-436A-AE47-FBB44535BA90}" Directory_="bin_Dir" Attributes="256" KeyPath="git27ce88e6.dll"/>
     <ROW Component="header01.txt" ComponentId="{6F393DFF-05B1-4899-AC2D-3B9194982072}" Directory_="data_Dir" Attributes="0" KeyPath="header01.txt" Type="0"/>
     <ROW Component="icon.png" ComponentId="{E1AB6C3A-3CA8-4A26-86B4-66CFD89AEC08}" Directory_="FindRangeOfRoofSlopes.pushbut_1_Dir" Attributes="0" KeyPath="icon.png_72" Type="0"/>
     <ROW Component="icon.png_1" ComponentId="{391514B1-ACA6-4834-A145-A36E7AD80EF7}" Directory_="ReOrderSheets.pushbutton_Dir" Attributes="0" KeyPath="icon.png_1" Type="0"/>
@@ -868,6 +870,7 @@
     <ROW Component="pyRevitLabs.TargetApps.Navisworks.dll" ComponentId="{CFC05BC5-CBED-49ED-B010-5530D5E4F61F}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.TargetApps.Navisworks.dll"/>
     <ROW Component="pyRevitLabs.TargetApps.Revit.dll" ComponentId="{8E1FE5D8-DA3F-4675-ACA4-1CD614EE8A24}" Directory_="bin_Dir" Attributes="256" KeyPath="pyRevitLabs.TargetApps.Revit.dll"/>
     <ROW Component="pyRevitLoader.dll" ComponentId="{72113B0D-060B-41C5-AEEF-94C891D1710E}" Directory_="__Dir" Attributes="256" KeyPath="pyRevitLoader.dll"/>
+    <ROW Component="pyRevitLoader.dll_1" ComponentId="{7DD626A7-661C-4747-B04F-CEBC06973249}" Directory_="__3_Dir" Attributes="0" KeyPath="pyRevitLoader.dll_1"/>
     <ROW Component="pyRevitLoader.dll_4" ComponentId="{EF222F54-167B-45B5-856A-C559B200F2F8}" Directory_="__4_Dir" Attributes="256" KeyPath="pyRevitLoader.dll_4"/>
     <ROW Component="pyRevitLoader.dll_5" ComponentId="{150D5A7D-E7CC-4517-9818-F6B40B16B62D}" Directory_="__5_Dir" Attributes="256" KeyPath="pyRevitLoader.dll_5"/>
     <ROW Component="pyRevitLoader.dll_6" ComponentId="{04C807B0-99D9-4AB2-918E-D2D8469B1B23}" Directory_="__6_Dir" Attributes="256" KeyPath="pyRevitLoader.dll_6"/>
@@ -876,6 +879,7 @@
     <ROW Component="pyRevitRunner.dll_1" ComponentId="{EFD891D6-170A-4673-83F0-3CB3B3EA2A2F}" Directory_="__4_Dir" Attributes="256" KeyPath="pyRevitRunner.dll_1"/>
     <ROW Component="pyRevitRunner.dll_2" ComponentId="{8C2F84CF-A162-4C97-88DA-4DAC322BE926}" Directory_="__5_Dir" Attributes="256" KeyPath="pyRevitRunner.dll_2"/>
     <ROW Component="pyRevitRunner.dll_3" ComponentId="{64F91021-7B94-42E3-A943-F98BA4B18704}" Directory_="__6_Dir" Attributes="256" KeyPath="pyRevitRunner.dll_3"/>
+    <ROW Component="pyRevitRunner.dll_4" ComponentId="{379C27DB-7144-42C3-95FC-05AA91B7E2D4}" Directory_="__3_Dir" Attributes="0" KeyPath="pyRevitRunner.dll_4"/>
     <ROW Component="pyrevit.exe" ComponentId="{91082B17-558B-4738-9AE2-D93D18653BEE}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevit.exe"/>
     <ROW Component="pyrevitargs" ComponentId="{AAEF21C4-CB5C-42B9-BC12-A7A6BD9E99BE}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitfile" Type="0"/>
     <ROW Component="pyrevitautocomplete.exe" ComponentId="{8D5454E0-B165-4E7F-9645-D4E90E7F051F}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevitautocomplete.exe"/>
@@ -951,7 +955,6 @@
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
-    <ROW File="NETFramework4.7.1webinstaller.aip" Component_="NETFramework4.7.1webinstaller.aip" FileName="NETFRA~1.AIP|.NET Framework 4.7.1 (web installer).aip" Attributes="0" SourcePath=".NET Framework 4.7.1 (web installer)\.NET Framework 4.7.1 (web installer).aip" SelfReg="false"/>
     <ROW File="Colorful.Console.dll" Component_="Colorful.Console.dll" FileName="COLORF~1.DLL|Colorful.Console.dll" Attributes="0" SourcePath="..\bin\Colorful.Console.dll" SelfReg="false"/>
     <ROW File="ControlzEx.dll" Component_="ControlzEx.dll" FileName="CONTRO~1.DLL|ControlzEx.dll" Attributes="0" SourcePath="..\bin\ControlzEx.dll" SelfReg="false"/>
     <ROW File="DocoptNet.dll" Component_="DocoptNet.dll" FileName="DOCOPT~1.DLL|DocoptNet.dll" Attributes="0" SourcePath="..\bin\DocoptNet.dll" SelfReg="false"/>
@@ -5770,17 +5773,28 @@
     <ROW File="_decimal.pyd_3" Component_="python37._pth" FileName="_decimal.pyd" Attributes="0" SourcePath="..\bin\engines\378\_decimal.pyd" SelfReg="false"/>
     <ROW File="unicodedata.pyd_3" Component_="python37._pth" FileName="UNICOD~1.PYD|unicodedata.pyd" Attributes="0" SourcePath="..\bin\engines\378\unicodedata.pyd" SelfReg="false"/>
     <ROW File="System.Runtime.CompilerServices.Unsafe.dll" Component_="System.Runtime.CompilerServices.Unsafe.dll" FileName="SYSTEM~2.DLL|System.Runtime.CompilerServices.Unsafe.dll" Attributes="0" SourcePath="..\bin\System.Runtime.CompilerServices.Unsafe.dll" SelfReg="false"/>
-    <ROW File="System.Security.Cryptography.Algorithms.dll" Component_="System.Security.Cryptography.Algorithms.dll" FileName="SYSTEM~3.DLL|System.Security.Cryptography.Algorithms.dll" Attributes="0" SourcePath="..\bin\System.Security.Cryptography.Algorithms.dll" SelfReg="false"/>
     <ROW File="System.Numerics.Vectors.dll" Component_="System.Numerics.Vectors.dll" FileName="SYSTEM~4.DLL|System.Numerics.Vectors.dll" Attributes="0" SourcePath="..\bin\System.Numerics.Vectors.dll" SelfReg="false"/>
     <ROW File="System.Collections.Immutable.dll" Component_="System.Collections.Immutable.dll" FileName="SYSTEM~5.DLL|System.Collections.Immutable.dll" Attributes="0" SourcePath="..\bin\System.Collections.Immutable.dll" SelfReg="false"/>
     <ROW File="System.Memory.dll" Component_="System.Memory.dll" FileName="SYSTEM~6.DLL|System.Memory.dll" Attributes="0" SourcePath="..\bin\System.Memory.dll" SelfReg="false"/>
     <ROW File="pick_config.py" Component_="icon.png_304" FileName="PICK_C~1.PY|pick_config.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\Pick.splitpushbutton\Pick.pushbutton\pick_config.py" SelfReg="false"/>
+    <ROW File="git27ce88e6.dll" Component_="git27ce88e6.dll" FileName="GIT2-7~1.DLL|git2-7ce88e6.dll" Attributes="0" SourcePath="..\bin\git2-7ce88e6.dll" SelfReg="false"/>
+    <ROW File="System.Text.Encoding.CodePages.dll" Component_="System.Text.Encoding.CodePages.dll" FileName="SYSTEM~7.DLL|System.Text.Encoding.CodePages.dll" Attributes="0" SourcePath="..\bin\System.Text.Encoding.CodePages.dll" SelfReg="false"/>
+    <ROW File="System.Threading.Tasks.Extensions.dll" Component_="System.Threading.Tasks.Extensions.dll" FileName="SYSTEM~8.DLL|System.Threading.Tasks.Extensions.dll" Attributes="0" SourcePath="..\bin\System.Threading.Tasks.Extensions.dll" SelfReg="false"/>
+    <ROW File="IronPython.dll_1" Component_="IronPython.dll_1" FileName="IRONPY~1.DLL|IronPython.dll" Attributes="0" SourcePath="..\bin\engines\2710\IronPython.dll" SelfReg="false"/>
+    <ROW File="Microsoft.Dynamic.dll_1" Component_="Microsoft.Dynamic.dll_1" FileName="MICROS~1.DLL|Microsoft.Dynamic.dll" Attributes="0" SourcePath="..\bin\engines\2710\Microsoft.Dynamic.dll" SelfReg="false"/>
+    <ROW File="IKVM.Reflection.dll_1" Component_="IKVM.Reflection.dll_1" FileName="IKVMRE~1.DLL|IKVM.Reflection.dll" Attributes="0" SourcePath="..\bin\engines\2710\IKVM.Reflection.dll" SelfReg="false"/>
+    <ROW File="pyRevitLoader.dll_1" Component_="pyRevitLoader.dll_1" FileName="PYREVI~1.DLL|pyRevitLoader.dll" Attributes="0" SourcePath="..\bin\engines\2710\pyRevitLoader.dll" SelfReg="false"/>
+    <ROW File="Microsoft.Scripting.dll_1" Component_="Microsoft.Scripting.dll_1" FileName="MICROS~2.DLL|Microsoft.Scripting.dll" Attributes="0" SourcePath="..\bin\engines\2710\Microsoft.Scripting.dll" SelfReg="false"/>
+    <ROW File="IronPython.SQLite.dll_1" Component_="IronPython.SQLite.dll_1" FileName="IRONPY~2.DLL|IronPython.SQLite.dll" Attributes="0" SourcePath="..\bin\engines\2710\IronPython.SQLite.dll" SelfReg="false"/>
+    <ROW File="pyRevitRunner.dll_4" Component_="pyRevitRunner.dll_4" FileName="PYREVI~2.DLL|pyRevitRunner.dll" Attributes="0" SourcePath="..\bin\engines\2710\pyRevitRunner.dll" SelfReg="false"/>
+    <ROW File="IronPython.Modules.dll_1" Component_="IronPython.Modules.dll_1" FileName="IRONPY~3.DLL|IronPython.Modules.dll" Attributes="0" SourcePath="..\bin\engines\2710\IronPython.Modules.dll" SelfReg="false"/>
+    <ROW File="IronPython.Wpf.dll_1" Component_="IronPython.Wpf.dll_1" FileName="IRONPY~4.DLL|IronPython.Wpf.dll" Attributes="0" SourcePath="..\bin\engines\2710\IronPython.Wpf.dll" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrapperUISequenceComponent">
-    <ROW Action="AI_DetectSoftware" Sequence="101"/>
+    <ROW Action="AI_DetectSoftware" Sequence="151"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
     <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="1" PackageFolder="[|AI_AIP_FOLDER]..\dist" PackageFileName="[|ProductName]_[|ProductVersion]_signed" Languages="en" InstallationType="2" CabsLocation="1" CompressCabs="false" UseLzma="true" LzmaMethod="2" LzmaCompressionLevel="2" PackageType="1" FilesInsideExe="true" ExeIconPath="..\bin\pyRevit.ico" ExtractionFolder="[TempFolder]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" MsiPackageType="x64"/>
@@ -6003,7 +6017,6 @@
     <ROW Feature_="MainFeature" Component_="Microsoft.Scripting.dll_6"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.WindowsAPICodePack.Shell.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.WindowsAPICodePack.dll"/>
-    <ROW Feature_="MainFeature" Component_="NETFramework4.7.1webinstaller.aip"/>
     <ROW Feature_="MainFeature" Component_="Nett.dll"/>
     <ROW Feature_="MainFeature" Component_="OpenMcdf.dll"/>
     <ROW Feature_="MainFeature" Component_="ProductInformation"/>
@@ -6409,10 +6422,21 @@
     <ROW Feature_="MainFeature" Component_="pythonw.exe_1"/>
     <ROW Feature_="MainFeature" Component_="python.exe_1"/>
     <ROW Feature_="MainFeature" Component_="System.Runtime.CompilerServices.Unsafe.dll"/>
-    <ROW Feature_="MainFeature" Component_="System.Security.Cryptography.Algorithms.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Numerics.Vectors.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Collections.Immutable.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Memory.dll"/>
+    <ROW Feature_="MainFeature" Component_="git27ce88e6.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Text.Encoding.CodePages.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Threading.Tasks.Extensions.dll"/>
+    <ROW Feature_="MainFeature" Component_="IronPython.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Dynamic.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="IKVM.Reflection.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="pyRevitLoader.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Scripting.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="IronPython.SQLite.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="pyRevitRunner.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="IronPython.Modules.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="IronPython.Wpf.dll_1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="pyRevit.exe" SourcePath="..\bin\pyRevit.ico" Index="0"/>
@@ -6422,11 +6446,10 @@
     <ROW Action="AI_PREPARE_UPGRADE" Condition="AI_UPGRADE=&quot;No&quot; AND (Not Installed)" Sequence="1399"/>
     <ROW Action="AI_ResolveKnownFolders" Sequence="53"/>
     <ROW Action="AI_EnableDebugLog" Sequence="51"/>
-    <ROW Action="AI_DetectSoftware" Sequence="103"/>
     <ROW Action="AI_GetArpIconPath" Sequence="1401"/>
     <ROW Action="AI_RemoveExternalUIStub" Condition="(REMOVE=&quot;ALL&quot;) AND ((VersionNT &gt; 500) OR((VersionNT = 500) AND (ServicePackLevel &gt;= 4)))" Sequence="1501"/>
     <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Sequence="99" Builds="DefaultBuild"/>
-    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="102" Builds="DefaultBuild"/>
+    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="103" Builds="DefaultBuild"/>
     <ROW Action="AI_DeleteCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="199" Builds="DefaultBuild"/>
     <ROW Action="AI_DeleteRCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="198" Builds="DefaultBuild"/>
     <ROW Action="AI_ExtractCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="197" Builds="DefaultBuild"/>
@@ -6438,7 +6461,7 @@
     <ROW Action="AI_DATA_SETTER" Sequence="3997"/>
     <ROW Action="AI_EstimateExtractFiles" Sequence="3999" Builds="DefaultBuild"/>
     <ROW Action="AI_DOWNGRADE" Condition="AI_NEWERPRODUCTFOUND AND (UILevel &lt;&gt; 5)" Sequence="203"/>
-    <ROW Action="AI_AppSearchEx" Sequence="101"/>
+    <ROW Action="AI_AppSearchEx" Sequence="102"/>
     <ROW Action="StopProcess" Condition="BTN_PRESSED = &quot;IDOK&quot;" Sequence="207"/>
     <ROW Action="AI_DATA_SETTER_1" Condition="BTN_PRESSED = &quot;IDOK&quot;" Sequence="206"/>
     <ROW Action="MessageBox" Condition="AI_PROCESS_STATE = &quot;Running&quot;" Sequence="205"/>
@@ -6455,22 +6478,22 @@
     <ROW Action="InstallAddMaster" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6604"/>
     <ROW Action="InstallAttachMaster" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6605"/>
     <ROW Action="InstallEnableBinCache" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) )" Sequence="6606"/>
+    <ROW Action="AI_DetectSoftware" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_ResolveKnownFolders" Sequence="53"/>
     <ROW Action="AI_DpiContentScale" Sequence="52"/>
     <ROW Action="AI_EnableDebugLog" Sequence="51"/>
-    <ROW Action="AI_DetectSoftware" Sequence="103"/>
     <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Sequence="99"/>
-    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="102"/>
-    <ROW Action="AI_AppSearchEx" Sequence="101"/>
+    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="103"/>
+    <ROW Action="AI_AppSearchEx" Sequence="102"/>
+    <ROW Action="AI_DetectSoftware" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiLaunchConditionsComponent">
     <ROW Condition="( Version9X OR VersionNT64 )" Description="[ProductName] cannot be installed on [WindowsTypeNTDisplay]." DescriptionLocId="AI.LaunchCondition.NoNT" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="((VersionNT &lt;&gt; 501) AND (VersionNT &lt;&gt; 502))" Description="[ProductName] cannot be installed on [WindowsTypeNT5XDisplay]." DescriptionLocId="AI.LaunchCondition.NoNT5X" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="(VersionNT &lt;&gt; 400)" Description="[ProductName] cannot be installed on [WindowsTypeNT40Display]." DescriptionLocId="AI.LaunchCondition.NoNT40" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="(VersionNT &lt;&gt; 500)" Description="[ProductName] cannot be installed on [WindowsTypeNT50Display]." DescriptionLocId="AI.LaunchCondition.NoNT50" IsPredefined="true" Builds="DefaultBuild"/>
-    <ROW Condition="AI_DETECTED_DOTNET_CORE_VERSION &gt;= AI_REQUIRED_DOTNET_CORE_VERSION" Description="[ProductName] cannot be installed on systems with .NET Core version lower than [AI_REQUIRED_DOTNET_CORE_DISPLAY]." DescriptionLocId="AI.LaunchCondition.DotNETCore" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="AI_DETECTED_DOTNET_VERSION &gt;= AI_REQUIRED_DOTNET_VERSION" Description="[ProductName] cannot be installed on systems with .NET Framework version lower than [AI_REQUIRED_DOTNET_DISPLAY]." DescriptionLocId="AI.LaunchCondition.DotNET" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="SETUPEXEDIR OR (REMOVE=&quot;ALL&quot;)" Description="This package can only be run from a bootstrapper." DescriptionLocId="AI.LaunchCondition.RequireBootstrapper" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="VersionNT" Description="[ProductName] cannot be installed on [WindowsType9XDisplay]." DescriptionLocId="AI.LaunchCondition.No9X" IsPredefined="true" Builds="DefaultBuild"/>
@@ -6512,11 +6535,11 @@
     <ROW UpgradeCode="[|UpgradeCode]" VersionMin="[|ProductVersion]" Attributes="2" ActionProperty="AI_NEWERPRODUCTFOUND"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">
-    <ROW PrereqKey="F9D68372B545F1A42F66A465504E1F" DisplayName=".NET Framework 4.7.1 (web installer)" SetupFileUrl="https://download.microsoft.com/download/8/E/2/8E2BDDE7-F06E-44CC-A145-56C6B9BBE5DD/NDP471-KB4033344-Web.exe" Location="1" ExactSize="1434504" WinNTVersions="Windows Vista RTM x86, Windows Server 2008 x86, Windows 7 RTM x86, Windows 10 version 1507 x86, Windows 10 version 1511 x86, Windows 10 version 1709 x86, Windows 10 version 1803 x86" WinNT64Versions="Windows Vista RTM x64, Windows Server 2008 x64, Windows 7 RTM x64, Windows Server 2008 R2 RTM x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64, Windows 10 version 1709 x64, Windows 10 version 1803 x64" Operator="0" NoUiComLine="/q /norestart" Options="xyma" MD5="4fb795478a8f346c337a1f84baccc85b" TargetName=".NET Framework 4.7.1"/>
-    <ATTRIBUTE name="PrereqsOrder" value="F9D68372B545F1A42F66A465504E1F"/>
+    <ROW PrereqKey="BF9259651485FB4F316A40CB01E7B" DisplayName=".NET Framework 4.8 (web installer)" SetupFileUrl="Prerequisites\.NET Framework 4.8\ndp48-web.exe" Location="0" ExactSize="0" WinNTVersions="Windows Vista x86, Windows Server 2008 x86, Windows 7 RTM x86, Windows 8 x86, Windows 10 version 1507 x86, Windows 10 version 1511 x86, Windows 10 version 1903 x86, Windows 10 version 1909 x86, Windows 10 version 2004 x86" WinNT64Versions="Windows Vista x64, Windows Server 2008 x64, Windows 7 RTM x64, Windows Server 2008 R2 RTM x64, Windows 8 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64, Windows 10 version 1903 x64, Windows 10 version 1909 x64, Windows 10 version 2004 x64" Operator="1" NoUiComLine="/q /norestart" Options="xy" TargetName=".NET Framework 4.8\ndp48-web.exe"/>
+    <ATTRIBUTE name="PrereqsOrder" value="BF9259651485FB4F316A40CB01E7B"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqSearchComponent">
-    <ROW SearchKey="F9D68372B545F1A42F66A465504E1FRelease" Prereq="F9D68372B545F1A42F66A465504E1F" SearchType="9" SearchString="HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\Release" RefContent="G461309" Order="1" Property="PreReqSearch_D5734F904894AAF3007352"/>
+    <ROW SearchKey="BF9259651485FB4F316A40CB01E7BReleas" Prereq="BF9259651485FB4F316A40CB01E7B" SearchType="9" SearchString="HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\Release" RefContent="G528048" Order="1" Property="PreReqSearch_BF9259651485FB4F316A40"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.SynchronizedFolderComponent">
     <ROW Directory_="bin_Dir" SourcePath="..\bin" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store" FileAddOptions="4"/>
