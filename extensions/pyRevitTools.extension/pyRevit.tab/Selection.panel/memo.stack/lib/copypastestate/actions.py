@@ -78,7 +78,7 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
         if not self.is_compatible_viewtype(revit.active_view, view_type):
             raise PyRevitException(
                 'Saved view type (%s) is different from active view (%s)'
-                % (vzps_data.view_type, type(revit.active_view).__name__))
+                % (vzps_data.view_type, type(revit.active_view).ViewType))
         # load ViewOrientation3D
         if isinstance(revit.active_view, DB.View3D):
             if revit.active_view.IsLocked:
