@@ -44,6 +44,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\..\bin\pyRevitLabs.NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\..\bin\pyRevitLabs.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
