@@ -35,16 +35,18 @@
         <StackPanel DockPanel.Dock="Top">
             <TextBlock Text="Select Order Parameter" />
             <ComboBox x:Name="orderparams_cb" Height="24" Margin="0,5,0,0" SelectionChanged="selection_changed"/>
-            <Expander Header="Group Index Numbers By" Margin="0,5,0,0">
-                <TextBlock TextWrapping="WrapWithOverflow" Margin="0,3,0,0" FontSize="12">
-                    <Bold>Usage</Bold>: Enter a regular expression pattern in this box. This pattern is used to detect changes in
+            <Expander Header="Guide" Margin="0,5,0,0">
+                <Border Margin="0,5,0,0" Padding="10" Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="5">
+                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,3,0,0" Foreground="White">
+                    Enter a regular expression pattern in this box. This pattern is used to detect changes in
                     Sheet Numbers and group indices. For example, to group using the discipline identifier in
                     Sheet Number (A in A1.00), use "([A-Z])\d". The () in pattern select the discipline identifier as a group
                     which is used to group sheet ranges.
                     <Hyperlink NavigateUri="https://regexr.com/" Click="handle_url_click">
                         See Regexr on how to use Regular Expressions
                     </Hyperlink>
-                </TextBlock>
+                    </TextBlock>
+                </Border>
             </Expander>
             <TextBox x:Name="indexgroup_tb" Text=""
                      Height="24" Margin="0,5,0,0" FontFamily="Consolas"
