@@ -415,6 +415,16 @@ class _HostApplication(object):
 
         return self._postable_cmds
 
+    def post_command(self, command_id):
+        """Request Revit to run a command
+
+        Args:
+            command_id (str): command identifier e.g. ID_REVIT_SAVE_AS_TEMPLATE
+        """
+        command_id = UI.RevitCommandId.LookupCommandId(command_id)
+        self.uiapp.PostCommand(command_id)
+
+
 
 try:
     # Create an intance of host application wrapper
