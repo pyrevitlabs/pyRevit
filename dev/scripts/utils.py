@@ -1,6 +1,10 @@
 """Dev scripts utilities"""
+import logging
 from typing import List, Optional, Dict
 import subprocess
+
+
+logger = logging.getLogger()
 
 
 class Command:
@@ -32,5 +36,5 @@ def run_command(commands: List[Command], args: Dict[str, str]):
         if cmd.target:
             if not args[cmd.target]:
                 continue
-        print(f'Running {cmd}')
+        logger.debug('Running %s', cmd)
         cmd.run(args)

@@ -1,0 +1,105 @@
+"""Utility to support pyRevit build and release workflows
+
+\033[1mUsage:\033[0m
+    {command_templates}
+
+\033[1mCommands:\033[0m
+    {command_helps}
+
+\033[1mOptions:\033[0m
+    -h, --help                  Show this help
+
+\033[1m  * Requirements:\033[0m
+    Install these tools before starting the build process
+        msbuild                 visualstudio.microsoft.com/downloads/
+        python 2 (docs)         www.python.org/downloads/
+        python 3 (build)        www.python.org/downloads/
+        pipenv (venv)           pipenv.readthedocs.io/en/latest/
+        Advanced Installer (installer builder)
+                                www.advancedinstaller.com
+"""
+# pylint: disable=invalid-name,broad-except
+import logging
+import sys
+import os
+import os.path as op
+from typing import Dict
+
+# pipenv dependencies
+from docopt import docopt
+
+# dev scripts
+from scripts import utils
+from scripts.utils import Command
+
+# functions
+import _install as install
+import _apidocspy as apidocspy
+import _changelog as changelog
+import _labs as labs
+import _release as release
+
+
+# cli info
+__binname__ = op.splitext(op.basename(__file__))[0]
+__version__ = "1.0"
+
+
+logging.basicConfig()
+logger = logging.getLogger()
+# logger.setLevel(logging.DEBUG)
+
+
+COMMANDS = [
+    Command(name="install", target="", args=[], run=install.install),
+    Command(
+        name="changelog", target="", args=["<tag>"], run=changelog.report_changes_since,
+    ),
+    Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
+    Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
+    Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
+    Command(name="build", target="labs", args=[], run=labs.build_labs),
+    Command(name="release", target="", args=["<tag>"], run=release.create_release),
+]
+
+
+def format_cmd_help(helpstring):
+    """Format command help for cli help"""
+    formatted_help = helpstring
+    helplines = helpstring.split("\n")
+    helplines = [x.strip() for x in helplines]
+    if helplines:
+        formatted_help = helplines[0]
+        for hline in helplines[1:]:
+            if hline:
+                formatted_help += f"\n{'':33}{hline}"
+    return formatted_help
+
+
+def prepare_docopt_help():
+    """Prepare docstring for docopt"""
+    return __doc__.format(
+        command_templates="\n    ".join(
+            [f"{__binname__} {x.template}" for x in COMMANDS]
+        ),
+        command_helps="\n    ".join(
+            [f"{x.template:27} {format_cmd_help(x.help)}" for x in COMMANDS]
+        ),
+    )
+
+
+if __name__ == "__main__":
+    try:
+        # run the appropriate command
+        utils.run_command(
+            COMMANDS,
+            # process args
+            docopt(
+                doc=prepare_docopt_help(),
+                version="{} {}".format(__binname__, __version__),
+            ),
+        )
+    # gracefully handle exceptions and print results
+    except Exception as run_ex:
+        logger.error("%s", str(run_ex))
+        sys.exit(1)
