@@ -38,4 +38,5 @@ utils:
 - [ ] run tests?
 - [ ] start telemetry server for testing (mongo db docker)
 - [ ] push translation files into pyRevit (airtable api)
+- [ ] count code lines pygount ~/Desktop/gits/pyRevit/pyrevitlib/pyrevit/ | awk '{s+=$1} END {print s}'
 
