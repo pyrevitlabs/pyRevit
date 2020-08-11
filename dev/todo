@@ -1,29 +1,17 @@
 
 TODO: primary goals
 - [ ] make my life easier building a new release of pyRevit
-- [ ] build docs for quick testing of doc build errors
+- [X] build docs for quick testing of doc build errors
 
 tasks:
 - [X] docs
-- [ ] labs + cli
-- [ ] engines: iron-python loader and runners
-- [ ] engines: cpython
-- [ ] telemetry server, and autocomplete
-    echo "prepare git for go packages..."
-    git config --global http.https://pkg.re.followRedirects true
-    echo "formatting autocomplete helper code"
-    go fmt $AUTOCOMP
-    go get "github.com/lib/pq"
-    go get "gopkg.in/mgo.v2"
-    go get "github.com/denisenkom/go-mssqldb"
-    go get "github.com/go-sql-driver/mysql"
-    go get "github.com/mattn/go-sqlite3"
-    go get "github.com/gorilla/mux"
-    go get "github.com/satori/go.uuid"
-    go get "github.com/gofrs/uuid"
-    go get "pkg.re/essentialkaos/ek.v10/fmtc"
-    go get "github.com/asaskevich/govalidator"
-    go get "github.com/posener/complete"
+- [X] labs + cli
+- [X] engines: iron-python loader and runners
+- [X] engines: cpython
+- [X] telemetry server
+- [ ] and autocomplete `go fmt $AUTOCOMP`
+
+
 - [ ] installer: pyrevit (and update pyrevit_products.json)
 - [ ] installer: pyrevit cli (and update pyrevit_products.json)
     echo "setting version "$PYREVIT_VERSION" on "$PYREVIT_AIPFILE

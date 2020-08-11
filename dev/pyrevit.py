@@ -12,18 +12,19 @@
 \033[1m  * Requirements:\033[0m
     Install these tools before starting the build process
         msbuild                 visualstudio.microsoft.com/downloads/
+                                ensure `msbuild` is in %PATH%
         python 2 (docs)         www.python.org/downloads/
         python 3 (build)        www.python.org/downloads/
         pipenv (venv)           pipenv.readthedocs.io/en/latest/
         Advanced Installer (installer builder)
                                 www.advancedinstaller.com
+        mingw (gcc)             http://mingw.org
+                                ensure `gcc` is in %PATH%
 """
 # pylint: disable=invalid-name,broad-except
 import logging
 import sys
-import os
 import os.path as op
-from typing import Dict
 
 # pipenv dependencies
 from docopt import docopt
@@ -36,7 +37,7 @@ from scripts.utils import Command
 import _install as install
 import _apidocspy as apidocspy
 import _changelog as changelog
-import _labs as labs
+import _build as build
 import _release as release
 
 
@@ -53,13 +54,23 @@ logger = logging.getLogger()
 COMMANDS = [
     Command(name="install", target="", args=[], run=install.install),
     Command(
-        name="changelog", target="", args=["<tag>"], run=changelog.report_changes_since,
+        name="changelog",
+        target="",
+        args=["<tag>"],
+        run=changelog.report_changes_since,
     ),
     Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
-    Command(name="build", target="labs", args=[], run=labs.build_labs),
-    Command(name="release", target="", args=["<tag>"], run=release.create_release),
+    Command(name="build", target="all", args=[], run=build.build_all),
+    Command(name="build", target="labs", args=[], run=build.build_labs),
+    Command(name="build", target="engines", args=[], run=build.build_engines),
+    Command(
+        name="build", target="telemetry", args=[], run=build.build_telemetry
+    ),
+    Command(
+        name="release", target="", args=["<tag>"], run=release.create_release
+    ),
 ]
 
 

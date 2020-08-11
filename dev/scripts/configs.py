@@ -13,6 +13,9 @@ DOCS_INDEX = DOCS_BUILD + "index.html"
 BINPATH = "../bin/"
 
 LABS = "./pyRevitLabs/pyRevitLabs.sln"
+LOADERS = "./pyRevitLoader/pyRevitLoader.sln"
+CPYTHONRUNTIME = \
+    "./modules/pyRevitLabs.Python.Net/src/runtime/Python.Runtime.csproj"
 
 # API file paths must be absolute otherwise advancedinstaller will mess up
 # the relative source paths defined inside the api file and fails

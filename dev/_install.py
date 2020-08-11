@@ -5,4 +5,4 @@ from typing import Dict
 
 def install(_: Dict[str, str]):
     """Prepare build environment"""
-    print("running install")
+    print("Preparing build environment")
