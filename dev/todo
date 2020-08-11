@@ -21,8 +21,8 @@ tasks:
     advancedinstaller.com "//build" $PYREVIT_AIPFILE
 
 utils:
-- [ ] set pyrevit version
-- [ ] set copyright
+- [X] set pyrevit version
+- [X] set copyright
 - [ ] add new revit version
 - [X] collect changes
 - [ ] run tests?

@@ -2,10 +2,6 @@
 This tool will set the active workset from the selected element's workset.
 Copyright (c) 2020 Jean-Marc Couffin
 https://github.com/jmcouffin
---------------------------------------------------------
-pyRevit Notice:
-Copyright (c) 2014-2020 Ehsan Iran-Nejad
-pyRevit: repository at https://github.com/eirannejad/pyRevit
 """
 
 __title__ = 'Set\nWorkset'

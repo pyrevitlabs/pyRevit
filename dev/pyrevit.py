@@ -41,6 +41,7 @@ import _changelog as changelog
 import _build as build
 import _buildall as buildall
 import _release as release
+import _setprop as setprop
 
 
 # cli info
@@ -78,6 +79,15 @@ COMMANDS = [
     ),
     Command(
         name="release", target="", args=["<tag>"], run=release.create_release
+    ),
+    Command(
+        name="set", target="copyright", args=[], run=setprop.update_copyright
+    ),
+    Command(
+        name="set",
+        target="version",
+        args=["<version>"],
+        run=setprop.update_versions,
     ),
 ]
 
