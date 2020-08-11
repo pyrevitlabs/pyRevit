@@ -36,8 +36,10 @@ from scripts.utils import Command
 # functions
 import _install as install
 import _apidocspy as apidocspy
+import _autocomplete as autocomplete
 import _changelog as changelog
 import _build as build
+import _buildall as buildall
 import _release as release
 
 
@@ -62,9 +64,15 @@ COMMANDS = [
     Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
-    Command(name="build", target="all", args=[], run=build.build_all),
+    Command(name="build", target="all", args=[], run=buildall.build_all),
     Command(name="build", target="labs", args=[], run=build.build_labs),
     Command(name="build", target="engines", args=[], run=build.build_engines),
+    Command(
+        name="build",
+        target="autocomplete",
+        args=[],
+        run=autocomplete.build_autocomplete,
+    ),
     Command(
         name="build", target="telemetry", args=[], run=build.build_telemetry
     ),

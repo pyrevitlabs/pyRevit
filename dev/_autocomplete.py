@@ -1,23 +1,29 @@
-#pylint: disable=invalid-name
-import sys
+"""Generate and build autocompleter for pyRevit CLI"""
+# pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring
+import os
+import os.path as op
+from typing import Dict
 import re
+
+from scripts import configs
+from scripts import utils
 
 
 # tokens
 class GoToken(object):
-    template = '{}'
+    template = "{}"
 
     def __init__(self, token):
         self.token = token
         self.nodes = []
 
     def __repr__(self):
-        return '<{} token={} childs={}>'.format(self.__class__.__name__,
-                                                self.token,
-                                                len(self.nodes))
+        return "<{} token={} childs={}>".format(
+            self.__class__.__name__, self.token, len(self.nodes)
+        )
 
     def __hash__(self):
-        return hash('{}.{}'.format(self.__class__.__name__, self.token))
+        return hash("{}.{}".format(self.__class__.__name__, self.token))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -31,10 +37,10 @@ class GoToken(object):
                 return node
 
     def write_go(self):
-        go_code = '\n'
+        go_code = "\n"
         for node in self.nodes:
             go_code += node.write_go()
-            go_code += '\n'
+            go_code += "\n"
         return self.template.format(go_code)
 
 
@@ -73,14 +79,14 @@ class GoCommand(GoToken):
             self.flags.update([GoFlags(x) for x in flags])
 
     def write_go(self):
-        go_code = ''
+        go_code = ""
         for node in self.nodes:
             go_code += node.write_go()
 
-        flags_go_code = ''
+        flags_go_code = ""
         for flag in self.flags:
             flags_go_code += flag.write_go()
-            flags_go_code += '\n'
+            flags_go_code += "\n"
         return self.template.format(self.token, go_code, flags_go_code)
 
 
@@ -97,10 +103,10 @@ class GoApplication(GoCommand):
 
 
 class GoCompleteFunc(GoToken):
-    template = 'func main() {{{}}}'
+    template = "func main() {{{}}}"
 
     def __init__(self, app):
-        super(GoCompleteFunc, self).__init__('main')
+        super(GoCompleteFunc, self).__init__("main")
         self.app = app
 
     def write_go(self):
@@ -109,24 +115,24 @@ class GoCompleteFunc(GoToken):
 
 
 class GoImports(GoToken):
-    template = '{} ({})'
+    template = "{} ({})"
 
     def __init__(self, sources):
-        super(GoImports, self).__init__('import')
+        super(GoImports, self).__init__("import")
         self.sources = set(sources)
 
     def write_go(self):
-        import_lines = ''
+        import_lines = ""
         for source in self.sources:
             import_lines += '"{}"'.format(source)
         return self.template.format(self.token, import_lines)
 
 
 class GoPackage(GoToken):
-    template = '{} {}'
+    template = "{} {}"
 
     def __init__(self, name):
-        super(GoPackage, self).__init__('package')
+        super(GoPackage, self).__init__("package")
         self.name = name
 
     def write_go(self):
@@ -140,36 +146,38 @@ class GoAst(GoToken):
 
 
 def extract_branch(space_delimited_string):
-    return re.findall(r'\w+', space_delimited_string)
+    return re.findall(r"\w+", space_delimited_string)
 
 
 def parse_docopt_line(line, go_app):
     # cleanup extra characters
     line = line.strip()
-    for char in ['[', ']', '|', '=']:
-        line = line.replace(char, '')
-    line = re.sub(r'<[a-zA-Z_]+?>', '', line)
+    for char in ["[", "]", "|", "="]:
+        line = line.replace(char, "")
+    line = re.sub(r"<[a-zA-Z_]+?>", "", line)
     line = line.strip()
 
     # process flags
-    flags = re.findall(r'\s--(\w+)\s?', line)
+    flags = re.findall(r"\s--(\w+)\s?", line)
     for flag in flags:
-        line = line.replace('--{}'.format(flag), '')
+        line = line.replace("--{}".format(flag), "")
     # remove short flags
-    for sflag in re.findall(r'-(\w+)\s?', line):
-        line = line.replace('-{}'.format(sflag), '')
+    for sflag in re.findall(r"-(\w+)\s?", line):
+        line = line.replace("-{}".format(sflag), "")
     line = line.strip()
 
     # process branches
     command_paths = []
-    optionals = re.search(r'\((.+?)\)', line)
+    optionals = re.search(r"\((.+?)\)", line)
     if optionals:
         options_def = optionals.group()
         command_paths.extend(
-            [extract_branch(line.replace(options_def, x))
-             for x in re.findall(r'\w+', optionals.groups()[0])]
+            [
+                extract_branch(line.replace(options_def, x))
+                for x in re.findall(r"\w+", optionals.groups()[0])
+            ]
         )
-        line = line.replace(options_def, '').strip()
+        line = line.replace(options_def, "").strip()
     command_paths.append(extract_branch(line))
 
     # report
@@ -179,20 +187,19 @@ def parse_docopt_line(line, go_app):
 
 def parse_docopts(docopts_filepath):
     # kickstart with pyrevit command
-    go_app = GoApplication('pyrevit')
-    go_app.flags.update([
-        GoFlags('verbose'),
-        GoFlags('debug'),
-    ])
-    go_ast = GoAst([
-        GoPackage('main'),
-        GoImports(['github.com/posener/complete']),
-        GoCompleteFunc(
-            go_app
-        )
-    ])
+    go_app = GoApplication("pyrevit")
+    go_app.flags.update(
+        [GoFlags("verbose"), GoFlags("debug"),]
+    )
+    go_ast = GoAst(
+        [
+            GoPackage("main"),
+            GoImports(["github.com/posener/complete"]),
+            GoCompleteFunc(go_app),
+        ]
+    )
 
-    with open(docopts_filepath, 'r') as df:
+    with open(docopts_filepath, "r") as df:
         # read and skip first
         for line in df.readlines()[1:]:
             parse_docopt_line(line, go_app)
@@ -200,17 +207,22 @@ def parse_docopts(docopts_filepath):
     return go_ast
 
 
-def build_go(src_file, dst_file):
-    go_ast = parse_docopts(src_file)
+def build_autocomplete(_: Dict[str, str]):
+    """Build CLI shell autocomplete utility"""
+    print("Updating autocomplete utility dependencies...")
+    utils.system(["go", "get", "github.com/posener/complete"])
+    print("Autocomplete utility dependencies successfully updated")
+
+    # generate go autocomplete source from usage patterns
+    go_ast = parse_docopts(configs.USAGEPATTERNS)
     if go_ast:
         go_code = go_ast.write_go()
-        with open(dst_file, 'w') as gf:
+        with open(configs.AUTOCOMP, "w") as gf:
             gf.write(go_code)
 
-
-if len(sys.argv) > 2:
-    source_file, dest_file = sys.argv[-2:]    #pylint: disable=unbalanced-tuple-unpacking
-    print('creating autocomplete source: {} -> {}'.format(source_file, dest_file))
-    build_go(source_file, dest_file)
-else:
-    print('needs source file and destination files as input.')
+    print("Building autocomplete utility...")
+    target = op.abspath(configs.AUTOCOMPBIN)
+    utils.system(["go", "fmt", configs.AUTOCOMP])
+    utils.system(["go", "build", "-o", target, configs.AUTOCOMP])
+    print("Building autocomplete utility succompleted successfully")
+    os.remove(configs.AUTOCOMP)

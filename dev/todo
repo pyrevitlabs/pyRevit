@@ -9,7 +9,7 @@ tasks:
 - [X] engines: iron-python loader and runners
 - [X] engines: cpython
 - [X] telemetry server
-- [ ] and autocomplete `go fmt $AUTOCOMP`
+- [X] and autocomplete `go fmt $AUTOCOMP`
 
 
 - [ ] installer: pyrevit (and update pyrevit_products.json)
@@ -21,6 +21,8 @@ tasks:
     advancedinstaller.com "//build" $PYREVIT_AIPFILE
 
 utils:
+- [ ] set pyrevit version
+- [ ] set copyright
 - [ ] add new revit version
 - [X] collect changes
 - [ ] run tests?

@@ -87,10 +87,3 @@ def build_telemetry(_: Dict[str, str]):
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
     )
     print("Building telemetry server succompleted successfully")
-
-
-def build_all(_: Dict[str, str]):
-    """Build all projects under pyRevit dev"""
-    build_labs(_)
-    build_engines(_)
-    build_telemetry(_)
