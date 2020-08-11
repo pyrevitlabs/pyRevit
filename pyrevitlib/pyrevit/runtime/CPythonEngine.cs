@@ -59,22 +59,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     scope.Exec(scriptContents);
                 }
                 catch (PythonException cpyex) {
-                    var traceBackParts = cpyex.StackTrace.Split(']');
-                    string pyTraceback = traceBackParts[0].Trim() + "]";
                     string cleanedPyTraceback = string.Empty;
-                    foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
-                        if (tbLine.Contains("File \"<string>\"")) {
-                            var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", runtime.ScriptSourceFile));
-                            cleanedPyTraceback += fixedTbLine;
-                            var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
-                            cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
+                    string pyNetTraceback = string.Empty;
+                    runtime.OutputStream.WriteError(cpyex.StackTrace, ScriptEngineType.CPython);
+                    if (cpyex.StackTrace != null && cpyex.StackTrace != string.Empty) {
+                        var traceBackParts = cpyex.StackTrace.Split(']');
+                        int nextIdx = 0;
+                        // if stack trace contains file info, clean it up
+                        if (traceBackParts.Count() == 2) {
+                            nextIdx = 1;
+                            string pyTraceback = traceBackParts[0].Trim() + "]";
+                            cleanedPyTraceback = string.Empty;
+                            foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
+                                if (tbLine.Contains("File \"<string>\"")) {
+                                    var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", runtime.ScriptSourceFile));
+                                    cleanedPyTraceback += fixedTbLine;
+                                    var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
+                                    cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
+                                }
+                                else {
+                                    cleanedPyTraceback += tbLine;
+                                }
+                            }
                         }
-                        else {
-                            cleanedPyTraceback += tbLine;
-                        }
+                        // grab the dotnet cpython stack trace
+                        pyNetTraceback = traceBackParts[nextIdx].Trim();
                     }
-
-                    string pyNetTraceback = traceBackParts[1].Trim();
 
                     string traceMessage = string.Join(
                         "\n",
@@ -90,6 +100,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     traceMessage = traceMessage.NormalizeNewLine();
                     runtime.TraceMessage = traceMessage;
                     runtime.OutputStream.WriteError(traceMessage, ScriptEngineType.CPython);
+                    result = ScriptExecutorResultCodes.ExecutionException;
+                }
+                catch (Exception ex) {
+                    runtime.OutputStream.WriteError(ex.Message, ScriptEngineType.CPython);
                     result = ScriptExecutorResultCodes.ExecutionException;
                 }
                 finally {
