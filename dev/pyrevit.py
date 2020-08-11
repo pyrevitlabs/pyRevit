@@ -21,6 +21,13 @@
         mingw (gcc)             http://mingw.org
                                 ensure `gcc` is in %PATH%
 """
+# todo
+# - [ ] add new supported revit version
+# - [ ] run tests?
+# - [ ] start telemetry server for testing (mongo db docker)
+# - [ ] push translation files into pyRevit (airtable api)
+# - [ ] report downloads from github api
+
 # pylint: disable=invalid-name,broad-except
 import logging
 import sys

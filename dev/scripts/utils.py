@@ -1,4 +1,5 @@
 """Dev scripts utilities"""
+import sys
 import logging
 import re
 from typing import List, Optional, Dict
@@ -58,3 +59,10 @@ def parse_msbuild_output(output):
                 result = False
                 capture = True
     return result, report
+
+
+def ensure_windows():
+    """Ensure utility is running on Windows"""
+    if sys.platform != 'win32':
+        print("This command can only execute on Windows")
+        sys.exit(1)

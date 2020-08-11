@@ -20,6 +20,8 @@ def _abort(message):
 
 
 def _build(name: str, sln: str, config: str):
+    utils.ensure_windows()
+
     # clean
     slnpath = op.abspath(sln)
     logger.debug("building %s solution: %s", name, slnpath)

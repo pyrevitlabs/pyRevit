@@ -1,5 +1,4 @@
 """Dev scripts configs"""
-import os.path as op
 
 # ==============================================================================
 # Configs
@@ -19,8 +18,8 @@ CPYTHONRUNTIME = \
 
 # API file paths must be absolute otherwise advancedinstaller will mess up
 # the relative source paths defined inside the api file and fails
-PYREVIT_AIPFILE = op.abspath("../../release/pyrevit.aip")
-PYREVIT_CLI_AIPFILE = op.abspath("../../release/pyrevit-cli.aip")
+PYREVIT_AIPFILE = "../release/pyrevit.aip"
+PYREVIT_CLI_AIPFILE = "../release/pyrevit-cli.aip"
 PYREVIT_VERSION = ""
 PYREVIT_VERSION_FILE = "../pyrevitlib/pyrevit/version"
 PYREVIT_CLI_VERSION = ""
@@ -33,6 +32,9 @@ TELEMETRYSERVERPATH = "./pyRevitTelemetryServer/"
 TELEMETRYSERVER = TELEMETRYSERVERPATH + "main.go"
 TELEMETRYSERVERBIN = BINPATH + "pyrevit-telemetryserver.exe"
 
+
+PYREVIT_HOSTS_DATAFILE = '../bin/pyrevit-hosts.json'
+PYREVIT_PRODUCTS_DATAFILE = '../bin/pyrevit-products.json'
 
 VERSION_FILES = [
     "./pyRevitLabs/pyRevitCLI/Properties/AssemblyShared.cs",
