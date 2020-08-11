@@ -61,7 +61,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 catch (PythonException cpyex) {
                     string cleanedPyTraceback = string.Empty;
                     string pyNetTraceback = string.Empty;
-                    runtime.OutputStream.WriteError(cpyex.StackTrace, ScriptEngineType.CPython);
                     if (cpyex.StackTrace != null && cpyex.StackTrace != string.Empty) {
                         var traceBackParts = cpyex.StackTrace.Split(']');
                         int nextIdx = 0;
