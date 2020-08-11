@@ -42,6 +42,7 @@ import _build as build
 import _buildall as buildall
 import _release as release
 import _setprop as setprop
+import _misc as misc
 
 
 # cli info
@@ -88,6 +89,12 @@ COMMANDS = [
         target="version",
         args=["<version>"],
         run=setprop.update_versions,
+    ),
+    Command(
+        name="report",
+        target="sloc",
+        args=[],
+        run=misc.count_sloc,
     ),
 ]
 

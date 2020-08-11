@@ -54,3 +54,8 @@ COPYRIGHT_FILES = [
     "./pyRevitLoader/pyRevitRunner2710/Properties/AssemblyInfo.cs",
     "../docs/conf.py",
 ]
+
+SOURCE_DIRS = [
+    '../pyrevitlib/pyrevit',
+    '../dev',
+]

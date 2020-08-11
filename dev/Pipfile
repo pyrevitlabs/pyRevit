@@ -11,6 +11,7 @@ black = "*"
 [packages]
 docopt = "*"
 requests = "*"
+pygount = "*"
 
 [requires]
 python_version = "3.8"
