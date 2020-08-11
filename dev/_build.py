@@ -52,12 +52,6 @@ def build_labs(_: Dict[str, str]):
     _build("cli and labs", configs.LABS, "Release")
 
 
-def build_all(_: Dict[str, str]):
-    """Build all projects under pyRevit dev"""
-    build_labs(_)
-    build_engines(_)
-
-
 def build_telemetry(_: Dict[str, str]):
     """Build pyRevit telemetry server"""
     # get telemetry dependencies
@@ -93,3 +87,10 @@ def build_telemetry(_: Dict[str, str]):
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
     )
     print("Building telemetry server succompleted successfully")
+
+
+def build_all(_: Dict[str, str]):
+    """Build all projects under pyRevit dev"""
+    build_labs(_)
+    build_engines(_)
+    build_telemetry(_)
