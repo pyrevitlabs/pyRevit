@@ -239,7 +239,8 @@ def get_references():
         # pyrevit labs
         'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
         'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
-        'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit'
+        'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit',
+        'pyRevitLabs.Emojis',
         ]
 
     # another revit api

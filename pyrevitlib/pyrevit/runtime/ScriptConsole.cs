@@ -12,6 +12,7 @@ using System.Diagnostics;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
+using pyRevitLabs.Emojis;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class ScriptConsoleConfigs {
@@ -437,7 +438,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // "\n"     --->    <br/>
             contents = ScriptConsoleConfigs.EscapeForOutput(contents);
             // :heart:  --->    \uFFFF (emoji unicode)
-            contents = ScriptConsoleEmojis.Emojize(contents);
+            contents = Emojis.Emojize(contents);
 
             var htmlElement = ActiveDocument.CreateElement(HtmlElementType);
             htmlElement.InnerHtml = contents;

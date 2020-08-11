@@ -93,6 +93,9 @@
     <Reference Include="pyRevitLabs.PyRevit">
       <HintPath>..\..\bin\pyRevitLabs.PyRevit.dll</HintPath>
     </Reference>
+    <Reference Include="pyRevitLabs.Emojis">
+      <HintPath>..\..\bin\pyRevitLabs.Emojis.dll</HintPath>
+    </Reference>
     <Reference Include="pyRevitLabs.TargetApps.Revit">
       <HintPath>..\..\bin\pyRevitLabs.TargetApps.Revit.dll</HintPath>
     </Reference>
@@ -181,9 +184,6 @@
     </Compile>
     <Compile Include="..\..\pyrevitlib\pyrevit\runtime\ScriptConsole.cs">
       <Link>ScriptConsole.cs</Link>
-    </Compile>
-    <Compile Include="..\..\pyrevitlib\pyrevit\runtime\ScriptConsoleEmojis.cs">
-      <Link>ScriptConsoleEmojis.cs</Link>
     </Compile>
     <Compile Include="..\..\pyrevitlib\pyrevit\runtime\ScriptConsoleUtils.cs">
       <Link>ScriptConsoleUtils.cs</Link>
