@@ -6,7 +6,7 @@ import datetime
 from scripts import configs
 
 
-def update_copyright(_: Dict[str, str]):
+def set_year(_: Dict[str, str]):
     """Update copyright notice"""
     this_year = datetime.datetime.today().year
     cp_finder = re.compile(r'© 2014-\d{4}')
@@ -22,10 +22,10 @@ def update_copyright(_: Dict[str, str]):
             sfile.writelines(contents)
 
 
-def update_versions(args: Dict[str, str]):
+def set_ver(args: Dict[str, str]):
     """Update version number"""
     ver_finder = re.compile(r'4\.\d\.\d')
-    new_version = args["<version>"]
+    new_version = args["<ver>"]
     print(f'Updating version to v{new_version}...')
     for version_file in configs.VERSION_FILES:
         contents = []

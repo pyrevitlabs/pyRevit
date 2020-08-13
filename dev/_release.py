@@ -108,10 +108,10 @@ def create_release(args: Dict[str, str]):
 
     release_ver = args["<tag>"]
     # update copyright notice
-    setprop.update_copyright(args)
-    # prepare required arg for setprop.update_versions
-    args["<version>"] = release_ver
-    setprop.update_versions(args)
+    setprop.set_year(args)
+    # prepare required arg for setprop.set_ver
+    args["<ver>"] = release_ver
+    setprop.set_ver(args)
 
     # now build all projects
     buildall.build_all(args)

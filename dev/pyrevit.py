@@ -23,8 +23,6 @@
                                 ensure `gcc` is in %PATH%
         docker                  for telemetry server tests
 """
-# todo
-# - [ ] add new supported revit version
 # - [ ] run tests?
 # - [ ] push translation files into pyRevit (airtable api)
 
@@ -43,10 +41,10 @@ from scripts.utils import Command
 # functions
 import _install as install
 import _apidocspy as apidocspy
-import _autocomplete as autocomplete
-import _build as build
+import _autocomplete as autoc
+import _labs as labs
 import _buildall as buildall
-import _changelog as changelog
+import _changelog as clog
 import _hostdata as hostdata
 import _release as release
 import _setprop as setprop
@@ -66,62 +64,31 @@ logger = logging.getLogger()
 
 COMMANDS = [
     Command(name="install", target="", args=[], run=install.install),
-    Command(
-        name="changelog",
-        target="",
-        args=["<tag>"],
-        run=changelog.report_changes_since,
-    ),
-    Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
-    Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
-    Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
-    Command(name="build", target="all", args=[], run=buildall.build_all),
-    Command(name="build", target="clean", args=[], run=buildall.build_clean),
-    Command(name="build", target="labs", args=[], run=build.build_labs),
-    Command(name="build", target="engines", args=[], run=build.build_engines),
-    Command(
-        name="build",
-        target="autocomplete",
-        args=[],
-        run=autocomplete.build_autocomplete,
-    ),
-    Command(
-        name="build", target="telemetry", args=[], run=build.build_telemetry
-    ),
-    Command(
-        name="test", target="telemetry", args=[], run=telem.start_telemserver
-    ),
+    # main release command
     Command(
         name="release", target="", args=["<tag>"], run=release.create_release
     ),
+    # individual release steps for testing
+    Command(name="changelog", target="", args=["<tag>"], run=clog.report_clog),
+    Command(name="build", target="all", args=[], run=buildall.build_all),
+    Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
+    Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
+    Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
+    Command(name="build", target="labs", args=[], run=labs.build_labs),
+    Command(name="clean", target="labs", args=[], run=buildall.build_clean),
+    Command(name="build", target="engines", args=[], run=labs.build_engines),
+    Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
+    Command(name="build", target="telem", args=[], run=telem.build_telem),
+    # unit testing
+    Command(name="test", target="telem", args=[], run=telem.start_telem),
+    # manual data setters
+    Command(name="update", target="year", args=[], run=setprop.set_year),
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
-    Command(
-        name="set", target="copyright", args=[], run=setprop.update_copyright
-    ),
-    Command(
-        name="set",
-        target="version",
-        args=["<version>"],
-        run=setprop.update_versions,
-    ),
+    Command(name="set", target="version", args=["<ver>"], run=setprop.set_ver),
+    # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
-    Command(
-        name="report", target="downloads", args=[], run=misc.report_downloads,
-    ),
+    Command(name="report", target="downloads", args=[], run=misc.report_dls),
 ]
-
-
-def format_cmd_help(helpstring):
-    """Format command help for cli help"""
-    formatted_help = helpstring
-    helplines = helpstring.split("\n")
-    helplines = [x.strip() for x in helplines]
-    if helplines:
-        formatted_help = helplines[0]
-        for hline in helplines[1:]:
-            if hline:
-                formatted_help += f"\n{'':33}{hline}"
-    return formatted_help
 
 
 def prepare_docopt_help():
@@ -132,7 +99,10 @@ def prepare_docopt_help():
                 [f"{__binname__} {x.template}" for x in COMMANDS]
             ),
             command_helps="\n    ".join(
-                [f"{x.template:27} {format_cmd_help(x.help)}" for x in COMMANDS]
+                [
+                    f"{x.template:27} {utils.format_cmd_help(x.help)}"
+                    for x in COMMANDS
+                ]
             ),
         )
     )

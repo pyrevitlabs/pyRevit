@@ -51,7 +51,7 @@ def _input(name, title, validator, hdata):
     while not validator(data):
         if data:
             print(utils.colorize(f"<red>Invalid {name} format</red>"))
-        data = input(utils.colorize(f"<b>Enter {title}:</b>\n"))
+        data = input(utils.colorize(f"<f>Enter {title}:</f>\n"))
         if any(x for x in hdata if getattr(x, name) == data):
             _abort(f"Host already exists with {name}={data}")
     return data

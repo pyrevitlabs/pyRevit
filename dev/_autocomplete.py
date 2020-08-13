@@ -207,7 +207,7 @@ def parse_docopts(docopts_filepath):
     return go_ast
 
 
-def build_autocomplete(_: Dict[str, str]):
+def build_autocmp(_: Dict[str, str]):
     """Build CLI shell autocomplete utility"""
     print("Updating autocomplete utility dependencies...")
     utils.system(["go", "get", "github.com/posener/complete"])

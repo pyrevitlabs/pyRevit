@@ -43,6 +43,19 @@ def system(
         return res.stdout.decode().strip()
 
 
+def format_cmd_help(helpstring):
+    """Format command help for cli help"""
+    formatted_help = helpstring
+    helplines = helpstring.split("\n")
+    helplines = [x.strip() for x in helplines]
+    if helplines:
+        formatted_help = helplines[0]
+        for hline in helplines[1:]:
+            if hline:
+                formatted_help += f"\n{'':33}{hline}"
+    return formatted_help
+
+
 def run_command(commands: List[Command], args: Dict[str, str]):
     """Process cli args and run the appropriate commands"""
     for cmd in [x for x in commands if args[x.name]]:
@@ -81,14 +94,15 @@ def ensure_windows():
 
 TERMINAL_CODES = {
     'b': 1,
-    'red': 91
+    'f': 2,
+    'red': 91,
 }
 
 
 def colorize(input_string):
     """Replace <x> tags with terminal color codes
     Tag format: <x> content </x>
-    Supported tags: b, red
+    Supported tags: b, f, red
     """
     result = input_string
     for tcode, tval in TERMINAL_CODES.items():

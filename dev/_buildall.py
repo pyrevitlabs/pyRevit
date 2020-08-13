@@ -6,11 +6,14 @@ from typing import Dict
 
 from scripts import configs
 
-import _autocomplete as autocomp
-import _build as build
+import _apidocspy as apidocs
+import _autocomplete as autoc
+import _labs as labs
+import _telem as telem
 
 
 ARTIFACTS = ['bin', 'obj', '.vs', 'TestResults']
+
 
 def build_clean(_: Dict[str, str]):
     """Clean bin and obj from projects"""
@@ -22,7 +25,8 @@ def build_clean(_: Dict[str, str]):
 
 def build_all(_: Dict[str, str]):
     """Build all projects under pyRevit dev"""
-    build.build_labs(_)
-    build.build_engines(_)
-    build.build_telemetry(_)
-    autocomp.build_autocomplete(_)
+    apidocs.build_docs(_)
+    labs.build_labs(_)
+    labs.build_engines(_)
+    telem.build_telem(_)
+    autoc.build_autocmp(_)

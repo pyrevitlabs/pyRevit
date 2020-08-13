@@ -1,5 +1,6 @@
 """Manage python api documentation tasks"""
 # pylint: disable=invalid-name,broad-except
+import sys
 import shutil
 import os.path as op
 from typing import Dict

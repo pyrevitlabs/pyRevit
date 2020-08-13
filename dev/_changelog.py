@@ -142,7 +142,7 @@ def header(text: str, level: int = 2):
     print("#" * level + f" {text}")
 
 
-def report_changes_since(args: Dict[str, str]):
+def report_clog(args: Dict[str, str]):
     """Report changes from given <tag> to HEAD
     Queries github issue information for better reporting, so
     GITHUBAUTH env var must contain access token for github API.
