@@ -13,6 +13,7 @@
     Install these tools before starting the build process
         msbuild                 visualstudio.microsoft.com/downloads/
                                 ensure `msbuild` is in %PATH%
+        signtool                for digitally signing binaries
         python 2 (docs)         www.python.org/downloads/
         python 3 (build)        www.python.org/downloads/
         pipenv (venv)           pipenv.readthedocs.io/en/latest/

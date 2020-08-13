@@ -208,8 +208,6 @@ del /Q System.Net.Http.dll
 copy "$(TargetDir)lib\win32\x64\*.dll" "$(TargetDir)..\..\..\..\..\bin\"
 copy "$(TargetDir)*.dll" "$(TargetDir)..\..\..\..\..\bin\"
 copy "$(TargetDir)*.exe" "$(TargetDir)..\..\..\..\..\bin\"
-echo Signing binaries
-signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"
     </PostBuildEvent>
   </PropertyGroup>
 </Project>

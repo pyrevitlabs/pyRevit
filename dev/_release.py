@@ -1,6 +1,7 @@
 """Manage pyRevit release tasks"""
 # pylint: disable=invalid-name,broad-except
 import sys
+import os
 import os.path as op
 from typing import Dict, Tuple
 import json
@@ -80,9 +81,29 @@ def _installer_build():
         )
 
 
+def _get_binaries():
+    for dirname, _, files in os.walk(configs.BINPATH):
+        for fn in files:
+            bf = fn.lower()
+            if bf.startswith('pyrevit') \
+                    and any(bf.endswith(x) for x in ['.exe', '.dll']):
+                yield op.join(dirname, fn)
+
+
+def _sign_binary(bin_file):
+    print("digitally signing binaries...")
+    utils.system([
+        'signtool', 'sign',
+        '/n', 'Ehsan Iran Nejad',
+        '/t', 'http://timestamp.digicert.com',
+        '/fd', 'sha256',
+        f'{bin_file}'
+    ])
+
+
 def create_release(args: Dict[str, str]):
     """Create pyRevit release (build, test, publish)"""
-    # utils.ensure_windows()
+    utils.ensure_windows()
 
     release_ver = args["<tag>"]
     # update copyright notice
@@ -98,6 +119,10 @@ def create_release(args: Dict[str, str]):
     pyrevit_pc, pyrevitcli_pc = _installer_set_version(release_ver)
     _update_product_data(release_ver, pyrevit_pc)
     _update_product_data(release_ver, pyrevitcli_pc, cli=True)
+
+    # sign everything
+    for bin_file in _get_binaries():
+        _sign_binary(bin_file)
 
     # now build the installers
     _installer_build()

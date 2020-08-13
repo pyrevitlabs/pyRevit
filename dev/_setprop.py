@@ -20,7 +20,6 @@ def update_copyright(_: Dict[str, str]):
                 contents.append(cline)
         with open(copyright_file, 'w') as sfile:
             sfile.writelines(contents)
-        print(f'Copyright notice updated in {copyright_file}')
 
 
 def update_versions(args: Dict[str, str]):
@@ -36,4 +35,3 @@ def update_versions(args: Dict[str, str]):
                 contents.append(cline)
         with open(version_file, 'w') as vfile:
             vfile.writelines(contents)
-        print(f'Version number updated in {version_file}')
