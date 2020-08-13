@@ -263,7 +263,10 @@ class _HostApplication(object):
     @property
     def subversion(self):
         """str: Return subversion number (e.g. '2018.3')."""
-        return self.app.SubVersionNumber
+        if hasattr(self.app, 'SubVersionNumber'):
+            return self.app.SubVersionNumber
+        else:
+            return '{}.0'.format(self.version)
 
     @property
     def version_name(self):

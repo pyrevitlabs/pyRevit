@@ -191,7 +191,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 string.Format("{0}_{1}.dll", runtime.ScriptData.CommandName, runtime.ScriptSourceFileSignature)
                 );
 
-            List<string> defines = new List<string> { $"REVIT{runtime.App.VersionNumber}" };
+            List<string> defines = new List<string> {
+                $"REVIT{runtime.App.VersionNumber}",
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
+                $"REVIT{runtime.App.VersionNumber}_0"
+#else
+                $"REVIT{runtime.App.SubVersionNumber.Replace(".", "_")}"
+#endif
+            };
 
             // determine which compiler to use
             switch (runtime.EngineType) {

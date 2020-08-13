@@ -938,9 +938,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
-#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021_0)
                     { "as_master_file", e.IsSavingAsMasterFile },
 #else
+                    // this change was made in Revit 2021.1
                     { "as_master_file", e.IsSavingAsCentralFile },
 #endif
                     { "path", e.PathName },
@@ -957,9 +958,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
-#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021_0)
                     { "as_master_file", e.IsSavingAsMasterFile },
 #else
+                    // this change was made in Revit 2021.1
                     { "as_master_file", e.IsSavingAsCentralFile },
 #endif
                     { "original_path",  e.OriginalPath },

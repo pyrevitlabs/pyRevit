@@ -101,6 +101,7 @@ namespace pyRevitLabs.Common {
                 refs.Add(refFile);
 
             messages = new List<string>();
+            messages.Add($"Define: {string.Join(";", defines)}");
             var mdataRefs = new List<MetadataReference>();
             foreach (var refPath in refs) {
                 messages.Add($"Reference: {refPath}");
