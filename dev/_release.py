@@ -90,15 +90,16 @@ def _get_binaries():
                 yield op.join(dirname, fn)
 
 
-def _sign_binary(bin_file):
+def _sign_binaries():
     print("digitally signing binaries...")
-    utils.system([
-        'signtool', 'sign',
-        '/n', 'Ehsan Iran Nejad',
-        '/t', 'http://timestamp.digicert.com',
-        '/fd', 'sha256',
-        f'{bin_file}'
-    ])
+    for bin_file in _get_binaries():
+        utils.system([
+            'signtool', 'sign',
+            '/n', 'Ehsan Iran Nejad',
+            '/t', 'http://timestamp.digicert.com',
+            '/fd', 'sha256',
+            f'{bin_file}'
+        ])
 
 
 def create_release(args: Dict[str, str]):
@@ -121,8 +122,8 @@ def create_release(args: Dict[str, str]):
     _update_product_data(release_ver, pyrevitcli_pc, cli=True)
 
     # sign everything
-    for bin_file in _get_binaries():
-        _sign_binary(bin_file)
+    _sign_binaries()
 
     # now build the installers
+    # installer are signed by the installer builder
     _installer_build()
