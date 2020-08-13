@@ -488,7 +488,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string GetInput() {
             // disable rest of ui
             activityBar.IsEnabled = false;
-            host.IsEnabled = false;
 
             // ask for input
             Activate();
@@ -497,7 +496,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             
             // enable the ui again
             activityBar.IsEnabled = true;
-            host.IsEnabled = true;
 
             // return input
             return inputText;
