@@ -98,7 +98,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyShared.cs" />
+    <Compile Include="..\..\pyRevit\AssemblyCopyright.cs">
+      <Link>Properties\AssemblyCopyright.cs</Link>
+    </Compile>
+    <Compile Include="..\..\pyRevit\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="PyRevitCLI.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>

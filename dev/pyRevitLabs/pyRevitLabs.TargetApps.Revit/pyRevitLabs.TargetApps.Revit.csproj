@@ -70,8 +70,11 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\pyRevitCLI\Properties\AssemblyShared.cs">
-      <Link>Properties\AssemblyShared.cs</Link>
+    <Compile Include="..\..\pyRevit\AssemblyCopyright.cs">
+      <Link>Properties\AssemblyCopyright.cs</Link>
+    </Compile>
+    <Compile Include="..\..\pyRevit\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
     <Compile Include="RevitAddons.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
