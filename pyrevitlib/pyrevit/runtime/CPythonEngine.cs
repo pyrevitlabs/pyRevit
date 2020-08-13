@@ -176,7 +176,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void SetupStreams(ref ScriptRuntime runtime) {
             // set output stream
             PyObject sys = PythonEngine.ImportModule("sys");
-            sys.SetAttr("stdout", PyObject.FromManagedObject(runtime.OutputStream));
+            var baseStream = PyObject.FromManagedObject(runtime.OutputStream);
+            sys.SetAttr("stdout", baseStream);
+            sys.SetAttr("stdin", baseStream);
+            sys.SetAttr("stderr", baseStream);
         }
 
         private void SetupCaching(ref ScriptRuntime runtime) {

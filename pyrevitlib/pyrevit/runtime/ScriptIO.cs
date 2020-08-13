@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
-
+using IronPython.Runtime;
 using pyRevitLabs.Common.Extensions;
 
 namespace PyRevitLabs.PyRevit.Runtime {
@@ -122,6 +122,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public override void SetLength(long value) {
             throw new NotImplementedException();
+        }
+
+        public string readline(int size=-1) {
+            var buffer = new byte[1024];
+            // we know how read works so don't need to read size until
+            // zero and make multiple calls
+            Read(buffer, 0, 1024);
+            return OutputEncoding.GetString(buffer);
         }
 
         public override int Read(byte[] buffer, int offset, int count) {
