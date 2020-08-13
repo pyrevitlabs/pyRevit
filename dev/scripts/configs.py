@@ -10,6 +10,7 @@ DOCS_BUILD = DOCS_DIR + "_build/"
 DOCS_INDEX = DOCS_BUILD + "index.html"
 
 BINPATH = "../bin/"
+DEVPATH = "../dev/"
 
 LABS = "./pyRevitLabs/pyRevitLabs.sln"
 LOADERS = "./pyRevitLoader/pyRevitLoader.sln"
@@ -37,27 +38,17 @@ PYREVIT_HOSTS_DATAFILE = '../bin/pyrevit-hosts.json'
 PYREVIT_PRODUCTS_DATAFILE = '../bin/pyrevit-products.json'
 
 VERSION_FILES = [
-    "./pyRevitLabs/pyRevitCLI/Properties/AssemblyShared.cs",
+    "./pyRevit/AssemblyVersion.cs",
     "../pyrevitlib/pyrevit/version",
 ]
 
 COPYRIGHT_FILES = [
-    "./pyRevitLabs/pyRevitCLI/Properties/AssemblyShared.cs",
+    "./pyRevit/AssemblyCopyright.cs",
     "../pyrevitlib/pyrevit/versionmgr/about.py",
-    "./pyRevitLoader/pyRevitLoader273/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitLoader277/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitLoader278/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitLoader279/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitLoader2710/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitRunner273/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitRunner277/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitRunner278/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitRunner279/Properties/AssemblyInfo.cs",
-    "./pyRevitLoader/pyRevitRunner2710/Properties/AssemblyInfo.cs",
     "../docs/conf.py",
 ]
 
 SOURCE_DIRS = [
     '../pyrevitlib/pyrevit',
-    '../dev',
+    DEVPATH,
 ]

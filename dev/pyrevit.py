@@ -75,6 +75,7 @@ COMMANDS = [
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
     Command(name="build", target="all", args=[], run=buildall.build_all),
+    Command(name="build", target="clean", args=[], run=buildall.build_clean),
     Command(name="build", target="labs", args=[], run=build.build_labs),
     Command(name="build", target="engines", args=[], run=build.build_engines),
     Command(
