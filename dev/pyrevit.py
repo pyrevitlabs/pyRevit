@@ -27,7 +27,6 @@
 # - [ ] run tests?
 # - [ ] start telemetry server for testing (mongo db docker)
 # - [ ] push translation files into pyRevit (airtable api)
-# - [ ] report downloads from github api
 
 # pylint: disable=invalid-name,broad-except
 import logging
@@ -104,6 +103,12 @@ COMMANDS = [
         target="sloc",
         args=[],
         run=misc.count_sloc,
+    ),
+    Command(
+        name="report",
+        target="downloads",
+        args=[],
+        run=misc.report_downloads,
     ),
 ]
 

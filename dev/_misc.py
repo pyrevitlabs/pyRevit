@@ -3,6 +3,7 @@ from typing import Dict
 
 from scripts import configs
 from scripts import utils
+from scripts import github
 
 
 def count_sloc(_: Dict[str, str]):
@@ -12,3 +13,13 @@ def count_sloc(_: Dict[str, str]):
     counter_args.extend(configs.SOURCE_DIRS)
     report = utils.system(counter_args)
     print(report)
+
+
+def report_downloads(_: Dict[str, str]):
+    """Report downloads on latest release assets"""
+    print("Collecting download info...")
+    print("-"*64)
+    for release in github.get_releases():
+        if release.assets:
+            for asset in release.assets:
+                print(f'{asset.name:<48}{asset.downloads:>16}')
