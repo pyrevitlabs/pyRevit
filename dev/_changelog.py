@@ -98,6 +98,7 @@ CHANGE_GROUPS = [
     ChangeGroup(tag="tool", header="Tools"),
     ChangeGroup(tag="host", header="Supported Revits"),
     ChangeGroup(tag="engine", header="Engines"),
+    ChangeGroup(tag="runtime", header="Runtime"),
     ChangeGroup(tag="framework", header="Framework Updates"),
     ChangeGroup(tag="installer", header="Installer"),
     ChangeGroup(tag="bundles", header="Script bundles"),
