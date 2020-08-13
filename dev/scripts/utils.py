@@ -1,4 +1,5 @@
 """Dev scripts utilities"""
+#pylint: disable=bad-continuation
 import sys
 import logging
 import re
@@ -23,13 +24,23 @@ class Command:
         self.run = run
 
     def __repr__(self):
-        return f'[{self.name} {self.target}]'
+        return f"[{self.name} {self.target}]"
 
 
-def system(args: List[str], cwd: Optional[str] = None):
+def system(
+    args: List[str],
+    cwd: Optional[str] = None,
+    dump_stdout: Optional[bool] = False,
+):
     """Run a command and return the stdout"""
-    res = subprocess.run(args, capture_output=True, check=False, cwd=cwd)
-    return res.stdout.decode().strip()
+    if dump_stdout:
+        res = subprocess.run(
+            args, stderr=subprocess.STDOUT, check=False, cwd=cwd
+        )
+        return ""
+    else:
+        res = subprocess.run(args, capture_output=True, check=False, cwd=cwd)
+        return res.stdout.decode().strip()
 
 
 def run_command(commands: List[Command], args: Dict[str, str]):
@@ -38,24 +49,24 @@ def run_command(commands: List[Command], args: Dict[str, str]):
         if cmd.target:
             if not args[cmd.target]:
                 continue
-        logger.debug('Running %s', cmd)
+        logger.debug("Running %s", cmd)
         cmd.run(args)
 
 
 def parse_msbuild_output(output):
     """Parse msbuild output to find the result and error reports"""
     result = True
-    build_finder = re.compile(r'^Build (success.*|FAIL.*)$')
-    time_finder = re.compile(r'^Time Elapsed (.+)$')
+    build_finder = re.compile(r"^Build (success.*|FAIL.*)$")
+    time_finder = re.compile(r"^Time Elapsed (.+)$")
     capture = False
-    report = ''
-    for oline in output.split('\n'):
+    report = ""
+    for oline in output.split("\n"):
         if time_finder.match(oline):
             break
         if capture:
-            report += f'{oline}\n'
+            report += f"{oline}\n"
         if match := build_finder.match(oline):
-            if 'fail' in match.groups()[0].lower():
+            if "fail" in match.groups()[0].lower():
                 result = False
                 capture = True
     return result, report
@@ -63,6 +74,24 @@ def parse_msbuild_output(output):
 
 def ensure_windows():
     """Ensure utility is running on Windows"""
-    if sys.platform != 'win32':
+    if sys.platform != "win32":
         print("This command can only execute on Windows")
         sys.exit(1)
+
+
+TERMINAL_CODES = {
+    'b': 1,
+    'red': 91
+}
+
+
+def colorize(input_string):
+    """Replace <x> tags with terminal color codes
+    Tag format: <x> content </x>
+    Supported tags: b, red
+    """
+    result = input_string
+    for tcode, tval in TERMINAL_CODES.items():
+        result = result.replace(f"<{tcode}>", f'\033[{tval}m')
+        result = result.replace(f"</{tcode}>", '\033[0m')
+    return result

@@ -1,15 +1,15 @@
 """Utility to support pyRevit build and release workflows
 
-\033[1mUsage:\033[0m
+<b>Usage:</b>
     {command_templates}
 
-\033[1mCommands:\033[0m
+<b>Commands:</b>
     {command_helps}
 
-\033[1mOptions:\033[0m
+<b>Options:</b>
     -h, --help                  Show this help
 
-\033[1m  * Requirements:\033[0m
+<b>  * Requirements:</b>
     Install these tools before starting the build process
         msbuild                 visualstudio.microsoft.com/downloads/
                                 ensure `msbuild` is in %PATH%
@@ -21,11 +21,11 @@
                                 www.advancedinstaller.com
         mingw (gcc)             http://mingw.org
                                 ensure `gcc` is in %PATH%
+        docker                  for telemetry server tests
 """
 # todo
 # - [ ] add new supported revit version
 # - [ ] run tests?
-# - [ ] start telemetry server for testing (mongo db docker)
 # - [ ] push translation files into pyRevit (airtable api)
 
 # pylint: disable=invalid-name,broad-except
@@ -44,11 +44,13 @@ from scripts.utils import Command
 import _install as install
 import _apidocspy as apidocspy
 import _autocomplete as autocomplete
-import _changelog as changelog
 import _build as build
 import _buildall as buildall
+import _changelog as changelog
+import _hostdata as hostdata
 import _release as release
 import _setprop as setprop
+import _telem as telem
 import _misc as misc
 
 
@@ -87,8 +89,12 @@ COMMANDS = [
         name="build", target="telemetry", args=[], run=build.build_telemetry
     ),
     Command(
+        name="test", target="telemetry", args=[], run=telem.start_telemserver
+    ),
+    Command(
         name="release", target="", args=["<tag>"], run=release.create_release
     ),
+    Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
     Command(
         name="set", target="copyright", args=[], run=setprop.update_copyright
     ),
@@ -98,17 +104,9 @@ COMMANDS = [
         args=["<version>"],
         run=setprop.update_versions,
     ),
+    Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
     Command(
-        name="report",
-        target="sloc",
-        args=[],
-        run=misc.count_sloc,
-    ),
-    Command(
-        name="report",
-        target="downloads",
-        args=[],
-        run=misc.report_downloads,
+        name="report", target="downloads", args=[], run=misc.report_downloads,
     ),
 ]
 
@@ -128,13 +126,15 @@ def format_cmd_help(helpstring):
 
 def prepare_docopt_help():
     """Prepare docstring for docopt"""
-    return __doc__.format(
-        command_templates="\n    ".join(
-            [f"{__binname__} {x.template}" for x in COMMANDS]
-        ),
-        command_helps="\n    ".join(
-            [f"{x.template:27} {format_cmd_help(x.help)}" for x in COMMANDS]
-        ),
+    return utils.colorize(
+        __doc__.format(
+            command_templates="\n    ".join(
+                [f"{__binname__} {x.template}" for x in COMMANDS]
+            ),
+            command_helps="\n    ".join(
+                [f"{x.template:27} {format_cmd_help(x.help)}" for x in COMMANDS]
+            ),
+        )
     )
 
 

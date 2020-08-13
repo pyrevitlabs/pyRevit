@@ -54,7 +54,7 @@ def build_labs(_: Dict[str, str]):
     _build("cli and labs", configs.LABS, "Release")
 
 
-def build_telemetry(_: Dict[str, str]):
+def build_telemetry(args: Dict[str, str]):
     """Build pyRevit telemetry server"""
     # get telemetry dependencies
     # configure git globally for `go get`
@@ -78,14 +78,13 @@ def build_telemetry(_: Dict[str, str]):
     print("Telemetry server dependencies successfully updated")
 
     print("Building telemetry server...")
+    output_bin = (
+        args["<output>"]
+        if "<output>" in args
+        else op.abspath(configs.TELEMETRYSERVERBIN)
+    )
     report = utils.system(
-        [
-            "go",
-            "build",
-            "-o",
-            op.abspath(configs.TELEMETRYSERVERBIN),
-            op.abspath(configs.TELEMETRYSERVER),
-        ],
+        ["go", "build", "-o", output_bin, op.abspath(configs.TELEMETRYSERVER)],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
     )
     print("Building telemetry server succompleted successfully")
