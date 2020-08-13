@@ -124,10 +124,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             throw new NotImplementedException();
         }
 
+        public string read(int size = -1) {
+            return readline(size);
+        }
+
         public string readline(int size=-1) {
             var buffer = new byte[1024];
             // we know how read works so don't need to read size until
             // zero and make multiple calls
+            Read(buffer, 0, 1024);
+            // second call to clear the flag
             Read(buffer, 0, 1024);
             return OutputEncoding.GetString(buffer);
         }
