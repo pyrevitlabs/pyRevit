@@ -19,13 +19,19 @@ ReleaseInfo = namedtuple("ReleaseInfo", ["name", "tag", "assets", "data"])
 AssetInfo = namedtuple("AssetInfo", ["name", "downloads", "data"])
 
 
+def _call_github(url):
+    headers = {}
+    # if no api token is provided, calls will be rate limited
+    if AUTH_TOKEN:
+        headers = {"Authorization": "token " + AUTH_TOKEN}
+    return requests.get(url, headers=headers)
+
+
 def get_ticket(ticket: str):
     """Get issue info"""
     logger.debug("getting ticket info for #%s", ticket)
     ticket_url = API_ISSUES.format(ticket=ticket)
-    res = requests.get(
-        ticket_url, headers={"Authorization": "token " + AUTH_TOKEN}
-    )
+    res = _call_github(ticket_url)
     if res.ok:
         issue = res.json()
         logger.debug("found ticket %s", issue)
@@ -36,9 +42,7 @@ def get_ticket(ticket: str):
 def get_releases():
     """Get all release infos"""
     releases = []
-    res = requests.get(
-        API_RELEASES, headers={"Authorization": "token " + AUTH_TOKEN}
-    )
+    res = _call_github(API_RELEASES)
     if res.ok:
         for release in res.json():
             logger.debug("found release %s", release["name"])
