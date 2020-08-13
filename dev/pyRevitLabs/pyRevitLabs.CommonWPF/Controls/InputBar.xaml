@@ -1,0 +1,22 @@
+﻿<UserControl x:Class="pyRevitLabs.CommonWPF.Controls.InputBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:pyRevitLabs.CommonWPF.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="30" d:DesignWidth="600">
+    <UserControl.Resources>
+        <Brush x:Key="pyRevitDark">#ff2c3e50</Brush>
+    </UserControl.Resources>
+    <Grid Margin="6">
+        <TextBox x:Name="inputTb" BorderBrush="{StaticResource pyRevitDark}" BorderThickness="1" SnapsToDevicePixels="True"
+                 AcceptsTab="False" AcceptsReturn="False"
+                 Padding="32,0" MaxLength="256" MaxLines="1"
+                 VerticalContentAlignment="Center" FontFamily="Consolas"
+                 KeyUp="inputTb_KeyUp" />
+        <Label Content=">>>" Background="{StaticResource pyRevitDark}" Foreground="White" SnapsToDevicePixels="True"
+               VerticalAlignment="Stretch" HorizontalAlignment="Left" VerticalContentAlignment="Center"
+               FontFamily="Consolas" Padding="6,0" Width="32"/>
+    </Grid>
+</UserControl>

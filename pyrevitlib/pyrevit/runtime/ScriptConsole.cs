@@ -162,6 +162,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private bool _contentLoaded;
         private bool _debugMode;
         private bool _frozen = false;
+        private string _lastLine = string.Empty;
         private DispatcherTimer _animationTimer;
         private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
         private UIApplication _uiApp;
@@ -189,6 +190,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public System.Windows.Forms.WebBrowser renderer;
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
         public ActivityBar activityBar;
+        public InputBar stdinBar;
 
         public ScriptConsole(bool debugMode = false, UIApplication uiApp = null) : base() {
             _debugMode = debugMode;
@@ -232,6 +234,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             activityBar.Foreground = Brushes.White;
             activityBar.Visibility = Visibility.Collapsed;
 
+            // standard input bar
+            stdinBar = new InputBar();
+            stdinBar.Visibility = Visibility.Collapsed;
+
             // Add the interop host control to the Grid
             // control's collection of child controls.
             Grid baseGrid = new Grid();
@@ -244,36 +250,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var rendererRow = new RowDefinition();
             baseGrid.RowDefinitions.Add(rendererRow);
 
-            //if (_debugMode) {
-            //    var splitterRow = new RowDefinition();
-            //    var replRow = new RowDefinition();
-
-            //    splitterRow.Height = new GridLength(6);
-            //    replRow.Height = new GridLength(100);
-
-            //    baseGrid.RowDefinitions.Add(splitterRow);
-            //    baseGrid.RowDefinitions.Add(replRow);
-
-            //    var splitter = new GridSplitter();
-            //    splitter.ResizeDirection = GridResizeDirection.Rows;
-            //    splitter.HorizontalAlignment = HorizontalAlignment.Stretch;
-            //    splitter.Background = Brushes.LightGray;
-
-            //    var repl = new REPLControl();
-
-            //    Grid.SetRow(splitter, 2);
-            //    Grid.SetRow(repl, 3);
-
-            //    baseGrid.Children.Add(splitter);
-            //    baseGrid.Children.Add(repl);
-            //}
+            var stdinRow = new RowDefinition();
+            stdinRow.Height = GridLength.Auto;
+            baseGrid.RowDefinitions.Add(stdinRow);
 
             // set activity bar and host
             Grid.SetRow(activityBar, 0);
             Grid.SetRow(host, 1);
+            Grid.SetRow(stdinBar, 2);
 
             baseGrid.Children.Add(activityBar);
             baseGrid.Children.Add(host);
+            baseGrid.Children.Add(stdinBar);
             this.Content = baseGrid;
 
             // resize buttons
@@ -446,6 +434,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void AppendText(string OutputText, string HtmlElementType) {
+            _lastLine = OutputText;
+
             if (!_frozen) {
                 WaitReadyBrowser();
                 ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
@@ -489,6 +479,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 errorHeader += "\n";
 
             AppendText(errorHeader + OutputText, ScriptConsoleConfigs.ErrorBlock);
+        }
+
+        public string GetLastLine() {
+            return _lastLine;
+        }
+
+        public string GetInput() {
+            // disable rest of ui
+            activityBar.IsEnabled = false;
+            host.IsEnabled = false;
+
+            // ask for input
+            Activate();
+            Focus();
+            string inputText = stdinBar.ReadInput();
+            
+            // enable the ui again
+            activityBar.IsEnabled = true;
+            host.IsEnabled = true;
+
+            // return input
+            return inputText;
         }
 
         private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e) {
@@ -705,6 +717,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
             var outputWindow = (ScriptConsole)sender;
+
+            outputWindow.stdinBar.CancelRead();
 
             ScriptConsoleManager.RemoveFromOutputList(this);
 
