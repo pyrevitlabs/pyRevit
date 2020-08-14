@@ -2,43 +2,44 @@
 active view in such way, so each group type have certain color.
 To color many views you should do it at once,
 so select views in project browser before start.
+
+Groups with only 1 instance on views will be colored in gray.
 """
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
-
+import itertools
 
 __title__ = "Colorize Group Types"
 
 logger = script.get_logger()
 
+def arange_int(start, end, count):
+    multipliers = [float(x) / (count - 1) for x in range(count)]
+    for m in multipliers:
+        yield int((end - start) * m + start)
 
-def colors(n):
-    ret = []
-    if not n:
-        return ret
-    r = int(0 * 256)
-    g = int(0.33 * 256)
-    b = int(0.66 * 256)
-    step = 256 / n
-    for i in range(n):
-        r += step
-        g += step
-        b += step
-        r = int(r) % 256
-        g = int(g) % 256
-        b = int(b) % 256
-        ret.append((r, g, b))
-    return ret
-
-
-def blend_color(color, p=0.5):
-    r = []
-    for ch in color:
-        delta = 256 - ch
-        r.append(int(ch + delta*p))
-    return (r[0], r[1], r[2])
+def generate_colors(n):
+    i = 3
+    result_colors = [col for col in itertools.product([0, 255], repeat=3)
+                     if sum(col) > 0 and sum(col) < 255 * 3]
+    # iterate to produce colors closest to clean one
+    while len(result_colors) < n:
+        channel_values = list(arange_int(0, 255, i))
+        # first add colors closest to clean one
+        [result_colors.append(col)
+         for col in itertools.permutations(channel_values, 3)
+         if col not in result_colors]
+        # in the second stem add more mixed colors
+        [result_colors.append(col)
+         for col in itertools.product(channel_values, repeat=3)
+         if col not in result_colors \
+         # exlude too bright and too dark colors
+         and sum(col) > 20 and sum(col) < 600]
+        # repeat with more tones if necessary
+        i += 1
+    return list(result_colors)[:n]
 
 
 def get_groups(view_id=None, ids=False):
@@ -68,42 +69,29 @@ def collect_groups(views):
     for view in views:
         groups = get_groups(view.Id)
         for g in groups:
-            g_type = g.GetTypeId()
-            if g_type not in groups_dict:
-                groups_dict[g_type] = set()
-            groups_dict[g_type].add(g.Id)
+            gt_id = g.GetTypeId()
+            if gt_id not in groups_dict:
+                groups_dict[gt_id] = set()
+            groups_dict[gt_id].add(g.Id)
     return groups_dict
 
 
 def prepare_colors(groups_dict):
     groups_colors = {}
-    count_1 = 0
-    count_n = 0
-    for k in groups_dict.keys():
-        if len(groups_dict[k]) == 1:
-            # one instance of a group
-            count_1 += 1
-        else:
-            # several instances
-            count_n += 1
-
-    colors_all = colors(count_1 + count_n)
-    _colors_1 = [blend_color(x) for x in colors_all[:count_1]]
-    _colors_n = colors_all[count_1:]
-    colors_1 = [DB.Color(x[0], x[1], x[2]) for x in _colors_1]
-    colors_n = [DB.Color(x[0], x[1], x[2]) for x in _colors_n]
-
-    i = 0
+    count = sum([len(groups) for groups in groups_dict.values()
+                 if len(groups)>1])
+    colors = [DB.Color(x[0], x[1], x[2]) for x in generate_colors(count)]
+    color_gray = DB.Color(128, 128, 128)
     j = 0
-    for k in groups_dict.keys():
-        if len(groups_dict[k]) == 1:
-            logger.debug("len(groups_dict[k]) == 1")
-            color = colors_1[i]
-            i += 1
+    for gt_id in groups_dict.keys():
+        if len(groups_dict[gt_id]) == 1:
+            logger.warn("Group %s has only 1 instance on selected views."
+                        % revit.query.get_name(revit.doc.GetElement(gt_id)))
+            color = color_gray
         else:
-            color = colors_n[j]
+            color = colors[j]
             j += 1
-        groups_colors[k] = \
+        groups_colors[gt_id] = \
             DB.OverrideGraphicSettings() \
               .SetProjectionLineColor(color) \
               .SetProjectionLineWeight(6) \
