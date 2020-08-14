@@ -20,7 +20,7 @@ namespace HelloWorld {
             logger.Debug("Logger works...");
             Console.WriteLine(execParams.ScriptPath);
 
-            Debugger.Break();
+            // Debugger.Break();
 
             TaskDialog.Show(execParams.CommandName, "Hello World from C#!");
 
@@ -46,7 +46,7 @@ namespace HelloWorld {
             var inputString = Console.ReadLine();
             Console.WriteLine($"echo: {inputString}");
 
-            Debugger.Log(0, "", "Testing debugger...\n");
+            // Debugger.Log(0, "", "Testing debugger...\n");
 
             return Result.Succeeded;
         }
