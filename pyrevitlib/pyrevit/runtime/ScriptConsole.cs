@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -229,41 +230,43 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Assign the WebBrowser control as the host control's child.
             host.Child = renderer;
 
-            // activiy bar
-            activityBar = new ActivityBar();
-            activityBar.Foreground = Brushes.White;
-            activityBar.Visibility = Visibility.Collapsed;
+            #region Window Layout
 
-            // standard input bar
-            stdinBar = new InputBar();
-            stdinBar.Visibility = Visibility.Collapsed;
-
-            // Add the interop host control to the Grid
-            // control's collection of child controls.
             Grid baseGrid = new Grid();
             baseGrid.Margin = new Thickness(0, 0, 0, 0);
-
+            
+            // activiy bar
             var activityBarRow = new RowDefinition();
             activityBarRow.Height = GridLength.Auto;
             baseGrid.RowDefinitions.Add(activityBarRow);
+            activityBar = new ActivityBar();
+            activityBar.Foreground = Brushes.White;
+            activityBar.Visibility = Visibility.Collapsed;
+            Grid.SetRow(activityBar, 0);
 
+            // Add the interop host control to the Grid
+            // control's collection of child controls.
             var rendererRow = new RowDefinition();
             baseGrid.RowDefinitions.Add(rendererRow);
+            Grid.SetRow(host, 1);
 
+            // standard input bar
             var stdinRow = new RowDefinition();
             stdinRow.Height = GridLength.Auto;
             baseGrid.RowDefinitions.Add(stdinRow);
-
-            // set activity bar and host
-            Grid.SetRow(activityBar, 0);
-            Grid.SetRow(host, 1);
+            stdinBar = new InputBar();
+            stdinBar.Visibility = Visibility.Collapsed;
             Grid.SetRow(stdinBar, 2);
 
+            // set activity bar and host
             baseGrid.Children.Add(activityBar);
             baseGrid.Children.Add(host);
             baseGrid.Children.Add(stdinBar);
             this.Content = baseGrid;
 
+            #endregion
+
+            #region Titlebar Buttons
             // resize buttons
             var expandToggleButton = new Button() { ToolTip = "Expand/Shrink Window", Focusable = false };
             expandToggleButton.Width = 32;
@@ -305,6 +308,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 MakeButtonPath("M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z");
             openButton.Click += OpenButton_Click;
             RightWindowCommands.Items.Insert(0, openButton);
+
+            #endregion
 
             this.Width = 900; this.MinWidth = 700;
             this.Height = 600; this.MinHeight = this.TitlebarHeight;
@@ -486,16 +491,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public string GetInput() {
-            // disable rest of ui
-            activityBar.IsEnabled = false;
+            // checkout the last line and configure the input control
+            string lastLine = GetLastLine().ToLower();
+            // determine debugger
+            if (lastLine.StartsWith("(pdb)"))
+                stdinBar.EnableDebug("c", "n", "s", "r", "q");
+            else if (new string[] { "select", "file" }.All(x => lastLine.Contains(x)))
+                stdinBar.EnableFilePicker();
 
             // ask for input
             Activate();
             Focus();
             string inputText = stdinBar.ReadInput();
-            
-            // enable the ui again
-            activityBar.IsEnabled = true;
 
             // return input
             return inputText;

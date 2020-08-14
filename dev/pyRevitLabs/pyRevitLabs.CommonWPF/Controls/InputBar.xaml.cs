@@ -18,18 +18,34 @@ namespace pyRevitLabs.CommonWPF.Controls {
     /// Interaction logic for InputDebugBar.xaml
     /// </summary>
     public partial class InputBar : UserControl {
+        // input control mechanism
         private object _inputLock = new object();
         private bool _waiting = false;
+
+        // input buffer
+        private string _input = string.Empty;
+
+        // debug commands config
+        private string _dbgCont = string.Empty;
+        private string _dbgStepOver = string.Empty;
+        private string _dbgStepIn = string.Empty;
+        private string _dbgStepOut = string.Empty;
+        private string _dbgStop = string.Empty;
 
         public InputBar() {
             InitializeComponent();
         }
 
         public string ReadInput() {
-            Show();
-
+            // clear inputs
+            _input = string.Empty;
+            inputTb.Text = string.Empty;
+            
+            // start waiting
             _waiting = true;
-            inputTb.Text = "";
+            
+            // show input control
+            Show();
             inputTb.Focus();
             do {
                 // pass control to dispatcher to update ui
@@ -44,8 +60,21 @@ namespace pyRevitLabs.CommonWPF.Controls {
                 }
             } while (true);
 
+            // we are not waiting anymore (_waiting = false)
+            // hide the control
             Hide();
-            return inputTb.Text;
+
+            // if no input is provided from the box or the buttons
+            // it means the window has been cancelled
+            // so if we are in debug mode (_dbgStop has value), let's stop
+            if (_input == string.Empty && _dbgStop != string.Empty)
+                _input = _dbgStop;
+
+            // disable debug and file modes
+            debugPanel.Visibility = Visibility.Collapsed;
+            filePanel.Visibility = Visibility.Collapsed;
+
+            return _input;
         }
 
         public void CancelRead() {
@@ -62,10 +91,58 @@ namespace pyRevitLabs.CommonWPF.Controls {
             Visibility = Visibility.Collapsed;
         }
 
+        public void EnableFilePicker() {
+            filePanel.Visibility = Visibility.Visible;
+            debugPanel.Visibility = Visibility.Collapsed;
+        }
+
+        public void EnableDebug(string dbgCont, string dbgStepOver, string dbgStepIn, string dbgStepOut, string dbgStop) {
+            _dbgCont = dbgCont;
+            _dbgStepOver = dbgStepOver;
+            _dbgStepIn = dbgStepIn;
+            _dbgStepOut = dbgStepOut;
+            _dbgStop = dbgStop;
+
+            debugPanel.Visibility = Visibility.Visible;
+            filePanel.Visibility = Visibility.Collapsed;
+        }
+
+        // privates
+        private void SendInput(string input) {
+            lock (_inputLock) {
+                _input = input;
+                _waiting = false;
+            }
+        }
+
         private void inputTb_KeyUp(object sender, KeyEventArgs e) {
             if (e.Key == Key.Enter) {
-                CancelRead();
+                SendInput(inputTb.Text);
             }
+        }
+
+        private void dbgCont_Click(object sender, RoutedEventArgs e) =>
+            SendInput(_dbgCont);
+
+        private void dbStepOver_Click(object sender, RoutedEventArgs e) =>
+            SendInput(_dbgStepOver);
+
+        private void dbgStepIn_Click(object sender, RoutedEventArgs e) =>
+            SendInput(_dbgStepIn);
+
+        private void dbgStepOut_Click(object sender, RoutedEventArgs e) =>
+            SendInput(_dbgStepOut);
+
+        private void dbgStop_Click(object sender, RoutedEventArgs e) =>
+            SendInput(_dbgStop);
+
+        private void pickFile_Click(object sender, RoutedEventArgs e) {
+            var fileDlg = new System.Windows.Forms.OpenFileDialog() {
+                Title = "Select File:",
+                Filter = "Any|*.*"
+            };
+            fileDlg.ShowDialog();
+            SendInput(fileDlg.FileName);
         }
     }
 }

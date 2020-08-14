@@ -6,13 +6,23 @@ __fullframeengine__ = True
 import sys
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-
-# from pyrevit import script
-# out = script.get_output()
-# out.debug_mode = True
-
 import pdb
 pdb.set_trace()
+
+from pyrevit import script
+out = script.get_output()
+# out.debug_mode = True
+
+out.log_debug("Some output")
+
+def debug_test(value):
+    i = 12
+    print(value)
+    print(i)
+
+for idx in range(2):
+    debug_test(idx)
+
 
 print("stdout: %s", sys.stdout.__class__)
 print("stdin: %s", sys.stdin.__class__)
@@ -25,8 +35,15 @@ print(sys.stdin.read())
 if PY2: 
     m = raw_input("Enter raw input (py2):")
     print(m)
-import this
-# this fails in py2 since it is wrapped in eval
-# https://ironpython-test.readthedocs.io/en/latest/library/functions.html#input
-m = input("Enter expression (e.g. 1+2):" if PY2 else "Enter string:")
-print(m)
+
+    # this fails in py2 since it is wrapped in eval
+    # https://ironpython-test.readthedocs.io/en/latest/library/functions.html#input
+    m = input("Enter expression (e.g. 1+2):")
+    print(m)
+
+    m = raw_input("Select File:")
+    print(m)
+else:
+    m = input("Enter string:")
+    print(m)
+

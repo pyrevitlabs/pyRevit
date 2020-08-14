@@ -70,6 +70,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (ExecEngineConfigs.full_frame) {
                     flags["Frames"] = true;
                     flags["FullFrames"] = true;
+                    flags["Tracing"] = true;
                 }
 
                 Engine = IronPython.Hosting.Python.CreateEngine(flags);
