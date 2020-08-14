@@ -86,7 +86,7 @@
                     Click="pickFile_Click" />
         </Grid>
         <TextBox x:Name="inputTb" BorderBrush="{StaticResource pyRevitDark}" BorderThickness="1" 
-                 AcceptsTab="False" AcceptsReturn="False" Text="Test Input" Padding="2,0,0,0"
+                 AcceptsTab="False" AcceptsReturn="False" Text="" Padding="2,0,0,0"
                  MaxLength="256" MaxLines="1"
                  VerticalContentAlignment="Center" FontFamily="Consolas"
                  KeyUp="inputTb_KeyUp" />
