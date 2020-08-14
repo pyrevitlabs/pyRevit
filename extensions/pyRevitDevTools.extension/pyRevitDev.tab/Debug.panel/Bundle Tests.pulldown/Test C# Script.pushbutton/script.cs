@@ -43,8 +43,8 @@ namespace HelloWorld {
             Console.WriteLine($"New C# Features Work: {true}");
             Console.WriteLine(":thumbs_up:");
 
-            var read = Console.ReadLine();
-            Console.WriteLine($"echo: {read}");
+            var inputString = Console.ReadLine();
+            Console.WriteLine($"echo: {inputString}");
 
             Debugger.Log(0, "", "Testing debugger...\n");
 

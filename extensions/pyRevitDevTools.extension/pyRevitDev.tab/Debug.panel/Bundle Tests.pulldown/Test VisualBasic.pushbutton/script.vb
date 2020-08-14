@@ -1,5 +1,6 @@
 Imports System
 Imports Microsoft.VisualBasic
+Imports System.Diagnostics
 
 Imports Autodesk.Revit.UI
 Imports Autodesk.Revit.DB
@@ -22,8 +23,11 @@ Public Class HelloWorld
             logger.Debug("Logger works...")
             Console.WriteLine(execParams.ScriptPath)
 
-            MsgBox("Hello World from Visual Basic!!")
+            Debugger.Break()
+
             TaskDialog.Show(execParams.CommandName, "Hello World from Visual Basic!!")
+
+            ' test access to bundle path
             TaskDialog.Show(execParams.CommandName, execParams.ScriptPath)
 
             If execParams.ConfigMode Then
@@ -35,7 +39,13 @@ Public Class HelloWorld
             End If
 
             Console.WriteLine(execParams.UIButton.ToString())
+            Console.WriteLine($"New VisualBasic Features Work: {true}")
             Console.WriteLine(":thumbs_up:")
+
+            Dim inputString = Console.ReadLine()
+            Console.WriteLine($"echo: {inputString}")
+
+            Debugger.Log(0, "", "Testing debugger...\n")
 
             Return Autodesk.Revit.UI.Result.Succeeded
     End Function
