@@ -28,15 +28,14 @@ def generate_colors(n):
     while len(result_colors) < n:
         channel_values = list(arange_int(0, 255, i))
         # first add colors closest to clean one
-        [result_colors.append(col)
-         for col in itertools.permutations(channel_values, 3)
-         if col not in result_colors]
+        for col in itertools.permutations(channel_values, 3):
+            if col not in result_colors:
+                result_colors.append(col)
         # in the second stem add more mixed colors
-        [result_colors.append(col)
-         for col in itertools.product(channel_values, repeat=3)
-         if col not in result_colors \
-         # exlude too bright and too dark colors
-         and sum(col) > 20 and sum(col) < 600]
+        for col in itertools.product(channel_values, repeat=3):
+            # excluding too dark and too bright
+            if col not in result_colors and sum(col) > 20 and sum(col) < 600:
+                result_colors.append(col)
         # repeat with more tones if necessary
         i += 1
     return list(result_colors)[:n]
@@ -75,6 +74,20 @@ def collect_groups(views):
             groups_dict[gt_id].add(g.Id)
     return groups_dict
 
+def filter_group_types(groups_dict):
+    keys_map = {"%s <%d>" % (revit.query.get_name(revit.doc.GetElement(gt_id)),
+                                                   len(groups_dict[gt_id])):
+                gt_id
+                for gt_id in groups_dict.keys()}
+    picked_group_types = forms.SelectFromList.show(sorted(keys_map.keys()),
+        multiselect=True,
+        button_name='Select group types')
+    if not picked_group_types:
+        forms.alert("Cancelled!", exitscript=True)
+    picked_group_type_ids = [keys_map[group_name]
+                             for group_name in picked_group_types]
+    return {k:v for k,v in groups_dict.items()
+            if k in picked_group_type_ids}
 
 def prepare_colors(groups_dict):
     groups_colors = {}
@@ -85,8 +98,6 @@ def prepare_colors(groups_dict):
     j = 0
     for gt_id in groups_dict.keys():
         if len(groups_dict[gt_id]) == 1:
-            logger.warn("Group %s has only 1 instance on selected views."
-                        % revit.query.get_name(revit.doc.GetElement(gt_id)))
             color = color_gray
         else:
             color = colors[j]
@@ -106,12 +117,13 @@ def prepare_colors(groups_dict):
 def colorize_grouptypes_in_view(view, groups_colors):
     override_empty = DB.OverrideGraphicSettings()
     for element in get_all_view_elements(view.Id):
-        if not element.GroupId \
-                or element.GroupId == DB.ElementId.InvalidElementId:
-            view.SetElementOverrides(element.Id, override_empty)
-        else:
+        element_override = override_empty
+        if element.GroupId and\
+                element.GroupId != DB.ElementId.InvalidElementId:
             group_type_id = revit.doc.GetElement(element.GroupId).GetTypeId()
-            view.SetElementOverrides(element.Id, groups_colors[group_type_id])
+            if group_type_id and group_type_id in groups_colors.keys():
+                element_override = groups_colors[group_type_id]
+        view.SetElementOverrides(element.Id, element_override)
 
 
 def colorize_grouptypes_in_views(views):
@@ -124,6 +136,7 @@ def colorize_grouptypes_in_views(views):
         return
 
     groups_dict = collect_groups(views)
+    groups_dict = filter_group_types(groups_dict)
     logger.debug(groups_dict)
     # prepare colors across selected views
     groups_colors = prepare_colors(groups_dict)
