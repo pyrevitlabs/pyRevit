@@ -45,8 +45,6 @@ namespace pyRevitLabs.CommonWPF.Controls {
             _waiting = true;
             
             // show input control
-            Show();
-            inputTb.Focus();
             do {
                 // pass control to dispatcher to update ui
                 inputTb.Dispatcher.Invoke(
@@ -61,8 +59,6 @@ namespace pyRevitLabs.CommonWPF.Controls {
             } while (true);
 
             // we are not waiting anymore (_waiting = false)
-            // hide the control
-            Hide();
 
             // if no input is provided from the box or the buttons
             // it means the window has been cancelled

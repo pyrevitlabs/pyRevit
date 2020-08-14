@@ -28,6 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // if this is the first run
             if (!RecoveredFromCache) {
                 // initialize
+                PythonEngine.ProgramName = "pyrevit";
                 using (Py.GIL()) {
                     if (!PythonEngine.IsInitialized)
                         PythonEngine.Initialize();

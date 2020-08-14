@@ -283,7 +283,7 @@ def _generate_runtime_asm():
             return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
         # otherwise raise hell
         else:
-            raise PyRevitException("Error compiling runtime")
+            raise PyRevitException('\n'.join(msgs))
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',

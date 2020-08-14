@@ -16,6 +16,17 @@ using pyRevitLabs.CommonWPF.Controls;
 using pyRevitLabs.Emojis;
 
 namespace PyRevitLabs.PyRevit.Runtime {
+    public struct ScriptConsoleDebugger {
+        public string Name;
+        public Regex PromptFinder;
+        public string DebugContinueKey;
+        public string DebugStepOverKey;
+        public string DebugStepInKey;
+        public string DebugStepOutKey;
+        public string DebugStopKey;
+        public Regex StopFinder;
+    }
+
     public static class ScriptConsoleConfigs {
         public static string DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         public static string DOCHead = "<head>" +
@@ -167,6 +178,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private DispatcherTimer _animationTimer;
         private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
         private UIApplication _uiApp;
+
+        private List<ScriptConsoleDebugger> _supportedDebuggers = 
+            new List<ScriptConsoleDebugger> {
+                new ScriptConsoleDebugger() {
+                    Name = "Pdb",
+                    PromptFinder = new Regex(@"\(pdb\)"),
+                    DebugContinueKey = "c",
+                    DebugStepOverKey = "n",
+                    DebugStepInKey = "s",
+                    DebugStepOutKey = "r",
+                    DebugStopKey = "q",
+                    StopFinder = new Regex(@"bdb.BdbQuit")
+                }
+        };
 
         // OutputUniqueId is set in constructor
         // OutputUniqueId is unique for every output window
@@ -438,8 +463,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return htmlElement;
         }
 
-        public void AppendText(string OutputText, string HtmlElementType) {
-            _lastLine = OutputText;
+        public void AppendText(string OutputText, string HtmlElementType, bool record = true) {
+            if (record)
+                _lastLine = OutputText;
 
             if (!_frozen) {
                 WaitReadyBrowser();
@@ -483,7 +509,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (errorHeader != string.Empty)
                 errorHeader += "\n";
 
-            AppendText(errorHeader + OutputText, ScriptConsoleConfigs.ErrorBlock);
+            // if this is a know debugger stop error
+            // make a nice report
+            foreach (var dbgr in _supportedDebuggers) {
+                if (dbgr.StopFinder.IsMatch(OutputText)) {
+                    AppendText(
+                        errorHeader + "Debugger stopped (bdb.BdbQuit exception)",
+                        ScriptConsoleConfigs.ErrorBlock
+                        );
+                    return;
+                }
+            }
+
+            // otherwise report the error
+            AppendText(
+                errorHeader + OutputText,
+                ScriptConsoleConfigs.ErrorBlock
+                );
         }
 
         public string GetLastLine() {
@@ -494,15 +536,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // checkout the last line and configure the input control
             string lastLine = GetLastLine().ToLower();
             // determine debugger
-            if (lastLine.StartsWith("(pdb)"))
-                stdinBar.EnableDebug("c", "n", "s", "r", "q");
-            else if (new string[] { "select", "file" }.All(x => lastLine.Contains(x)))
+            bool dbgMode = false;
+            foreach (var dbgr in _supportedDebuggers) {
+                if (dbgr.PromptFinder.IsMatch(lastLine)) {
+                    stdinBar.EnableDebug(
+                        dbgCont: dbgr.DebugContinueKey,
+                        dbgStepOver: dbgr.DebugStepOverKey,
+                        dbgStepIn: dbgr.DebugStepInKey,
+                        dbgStepOut: dbgr.DebugStepOutKey,
+                        dbgStop: dbgr.DebugStopKey
+                        );
+                    dbgMode = true;
+                }
+            }
+            // if no debugger, find other patterns
+            if (!dbgMode &&
+                    new string[] { "select", "file" }.All(x => lastLine.Contains(x)))
                 stdinBar.EnableFilePicker();
 
             // ask for input
             Activate();
-            Focus();
+
+            stdinBar.Show();
+            // printing an empty line will cause the page to scroll to
+            // bottom again and not be covered by the input control
+            AppendText("", ScriptConsoleConfigs.DefaultBlock, record: false);
             string inputText = stdinBar.ReadInput();
+            stdinBar.Hide();
 
             // return input
             return inputText;
