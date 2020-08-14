@@ -6,22 +6,6 @@ __fullframeengine__ = True
 import sys
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-import pdb
-pdb.set_trace()
-
-from pyrevit import script
-out = script.get_output()
-# out.debug_mode = True
-
-out.log_debug("Some output")
-
-def debug_test(value):
-    i = 12
-    print(value)
-    print(i)
-
-for idx in range(2):
-    debug_test(idx)
 
 
 print("stdout: %s", sys.stdout.__class__)
