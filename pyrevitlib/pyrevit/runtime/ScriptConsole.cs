@@ -182,7 +182,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private List<ScriptConsoleDebugger> _supportedDebuggers = 
             new List<ScriptConsoleDebugger> {
                 new ScriptConsoleDebugger() {
-                    Name = "Pdb",
+                    Name = "Pdb (IronPython|CPython)",
                     PromptFinder = new Regex(@"\(pdb\)"),
                     DebugContinueKey = "c",
                     DebugStepOverKey = "n",
@@ -191,11 +191,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     DebugStopKey = "q",
                     StopFinders = new List<Tuple<Regex, string>> {
                         new Tuple<Regex, string> (
-                            new Regex(@"bdb.BdbQuit"),
+                            new Regex(@"bdb.BdbQuit|BdbQuit :"),
                             "Debugger stopped (bdb.BdbQuit exception)"
                         ),
                         new Tuple<Regex, string> (
-                            new Regex(@"pdb.Restart"),
+                            new Regex(@"pdb.Restart|Restart :"),
                             "Debugger stopped. Restart by running the script again (pdb.Restart exception)"
                         )
                     }
