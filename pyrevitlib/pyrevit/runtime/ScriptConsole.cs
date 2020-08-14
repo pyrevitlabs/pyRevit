@@ -24,7 +24,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string DebugStepInKey;
         public string DebugStepOutKey;
         public string DebugStopKey;
-        public Regex StopFinder;
+        public List<Tuple<Regex, string>> StopFinders;
     }
 
     public static class ScriptConsoleConfigs {
@@ -189,7 +189,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     DebugStepInKey = "s",
                     DebugStepOutKey = "r",
                     DebugStopKey = "q",
-                    StopFinder = new Regex(@"bdb.BdbQuit")
+                    StopFinders = new List<Tuple<Regex, string>> {
+                        new Tuple<Regex, string> (
+                            new Regex(@"bdb.BdbQuit"),
+                            "Debugger stopped (bdb.BdbQuit exception)"
+                        ),
+                        new Tuple<Regex, string> (
+                            new Regex(@"pdb.Restart"),
+                            "Debugger stopped. Restart by running the script again (pdb.Restart exception)"
+                        )
+                    }
                 }
         };
 
@@ -512,12 +521,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // if this is a know debugger stop error
             // make a nice report
             foreach (var dbgr in _supportedDebuggers) {
-                if (dbgr.StopFinder.IsMatch(OutputText)) {
-                    AppendText(
-                        errorHeader + "Debugger stopped (bdb.BdbQuit exception)",
-                        ScriptConsoleConfigs.ErrorBlock
-                        );
-                    return;
+                foreach(var stopFinder in dbgr.StopFinders) {
+                    if (stopFinder.Item1.IsMatch(OutputText)) {
+                        AppendText(
+                            errorHeader + stopFinder.Item2,
+                            ScriptConsoleConfigs.ErrorBlock
+                            );
+                        return;
+                    }
                 }
             }
 
@@ -549,6 +560,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     dbgMode = true;
                 }
             }
+            
             // if no debugger, find other patterns
             if (!dbgMode &&
                     new string[] { "select", "file" }.All(x => lastLine.Contains(x)))

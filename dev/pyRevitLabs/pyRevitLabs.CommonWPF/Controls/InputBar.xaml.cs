@@ -22,6 +22,10 @@ namespace pyRevitLabs.CommonWPF.Controls {
         private object _inputLock = new object();
         private bool _waiting = false;
 
+        // input history
+        private int _historyPointer = -1;
+        private List<string> _history = new List<string>();
+
         // input buffer
         private string _input = string.Empty;
 
@@ -41,6 +45,8 @@ namespace pyRevitLabs.CommonWPF.Controls {
             _input = string.Empty;
             inputTb.Text = string.Empty;
             inputTb.Focus();
+            // see inputTb_KeyUp handler for history notes
+            _historyPointer = _history.Count;
             
             // start waiting
             _waiting = true;
@@ -113,8 +119,50 @@ namespace pyRevitLabs.CommonWPF.Controls {
         }
 
         private void inputTb_KeyUp(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Enter) {
-                SendInput(inputTb.Text);
+            switch (e.Key) {
+                // submit input
+                case Key.Enter:
+                    if (inputTb.Text != string.Empty)
+                        _history.Add(inputTb.Text);
+                    SendInput(inputTb.Text);
+                    break;
+
+                /*
+                 *  history array (count = n+1)
+                 * | index = 0
+                 * |                ▲ history up
+                 * |                ▼ history down
+                 * | index = n
+                 * ------------------------------------------------
+                 * input text box (index = n+1)
+                 * ------------------------------------------------
+                 * 
+                 * if pointer is n+1 means the textbox should have focus
+                 * as the new entry in the history
+                 */
+                case Key.Up:
+                    _historyPointer--;
+                    if (_historyPointer < _history.Count)
+                        if (_historyPointer >= 0)
+                            inputTb.Text = _history.ElementAt(_historyPointer);
+                        else
+                            _historyPointer = 0;
+                    break;
+                
+                case Key.Down:
+                    _historyPointer++;
+                    if (_historyPointer >= 0)
+                        if (_historyPointer < _history.Count)
+                            inputTb.Text = _history.ElementAt(_historyPointer);
+                        else {
+                            _historyPointer = _history.Count;
+                            inputTb.Text = string.Empty;
+                        }
+                            
+                    break;
+
+                default:
+                    break;
             }
         }
 
