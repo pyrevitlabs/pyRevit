@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace pyRevitLabs.Common {
     public static class CodeCompiler {
@@ -55,15 +56,25 @@ namespace pyRevitLabs.Common {
                 out messages
                 );
             // compile and write results
-            using (var assmData = new MemoryStream()) {
-                var result = compilation.Emit(assmData);
+            var emitOpts = new EmitOptions();
+            using (var assmData = new MemoryStream())
+            using (var assmPdbData = new MemoryStream()) {
+                var result =
+                    compilation.Emit(
+                        peStream: assmData,
+                        pdbStream: assmPdbData,
+                        options: emitOpts
+                        );
                 foreach (var diag in result.Diagnostics)
                     messages.Add(diag.ToString());
 
                 // load assembly from memory stream
                 assmData.Seek(0, SeekOrigin.Begin);
                 if (assmData.Length > 0)
-                    return Assembly.Load(assmData.ToArray());
+                    return Assembly.Load(
+                        assmData.ToArray(),
+                        assmPdbData.ToArray()
+                        );
             }
             return null;
         }
@@ -83,13 +94,14 @@ namespace pyRevitLabs.Common {
                 .WithPreprocessorSymbols(defines);
 
             // and build syntax tree
-            List<SyntaxTree> syntaxTree = new List<SyntaxTree>();
+            List<SyntaxTree> syntaxTrees = new List<SyntaxTree>();
             foreach (var sourceFile in sourceFiles)
-                syntaxTree.Add(
+                syntaxTrees.Add(
                     CSharpSyntaxTree.ParseText(
                         text: File.ReadAllText(sourceFile),
                         options: parseOpts,
-                        path: sourceFile
+                        path: sourceFile,
+                        encoding: Encoding.UTF8
                         )
                     );
 
@@ -119,10 +131,10 @@ namespace pyRevitLabs.Common {
 
             // create compilation job
             return CSharpCompilation.Create(
-                assemblyName,
-                syntaxTree,
-                mdataRefs,
-                compileOpts
+                assemblyName: assemblyName,
+                syntaxTrees: syntaxTrees,
+                references: mdataRefs,
+                options: compileOpts
                 );
         }
     }

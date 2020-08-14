@@ -314,8 +314,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // reroute console output to runtime stream
             var existingOutStream = Console.Out;
             StreamWriter runtimeOutputStream = new StreamWriter(runtime.OutputStream);
+            StreamReader runtimeInputStream = new StreamReader(runtime.OutputStream);
             runtimeOutputStream.AutoFlush = true;
             Console.SetOut(runtimeOutputStream);
+            Console.SetIn(runtimeInputStream);
 
             // setup logger
             var prevLoggerCfg = LogManager.Configuration;

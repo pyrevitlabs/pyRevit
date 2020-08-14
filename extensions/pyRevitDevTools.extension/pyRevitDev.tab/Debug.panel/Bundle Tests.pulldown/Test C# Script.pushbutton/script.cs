@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
@@ -17,6 +19,8 @@ namespace HelloWorld {
             logger.Info("Logger works...");
             logger.Debug("Logger works...");
             Console.WriteLine(execParams.ScriptPath);
+
+            Debugger.Break();
 
             TaskDialog.Show(execParams.CommandName, "Hello World from C#!");
 
@@ -38,6 +42,11 @@ namespace HelloWorld {
             Console.WriteLine(execParams.UIButton.ToString());
             Console.WriteLine($"New C# Features Work: {true}");
             Console.WriteLine(":thumbs_up:");
+
+            var read = Console.ReadLine();
+            Console.WriteLine($"echo: {read}");
+
+            Debugger.Log(0, "", "Testing debugger...\n");
 
             return Result.Succeeded;
         }
