@@ -40,6 +40,7 @@ namespace pyRevitLabs.CommonWPF.Controls {
             // clear inputs
             _input = string.Empty;
             inputTb.Text = string.Empty;
+            inputTb.Focus();
             
             // start waiting
             _waiting = true;

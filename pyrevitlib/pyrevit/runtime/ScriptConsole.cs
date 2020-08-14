@@ -555,7 +555,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 stdinBar.EnableFilePicker();
 
             // ask for input
-            Activate();
+            Activate(); Focus();
 
             stdinBar.Show();
             // printing an empty line will cause the page to scroll to
