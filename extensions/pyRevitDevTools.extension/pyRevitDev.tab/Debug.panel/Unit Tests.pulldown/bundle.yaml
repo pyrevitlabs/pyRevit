@@ -10,6 +10,7 @@ layout:
   - Script Module Tests
   - -----
   - Test Output Stream
+  - Test Input Stream
   - Test Multiple Outputs
   - Test UI Button
   - Test Independent Logging

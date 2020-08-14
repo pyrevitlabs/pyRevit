@@ -222,43 +222,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static Assembly CompileVB(string sourceFile, string outputPath, List<string> refFiles, List<string> defines, out List<string> errors) {
-            CodeDomProvider compiler;
-            var compConfig = new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } };
-
-            // create compiler parameters
-            var compileParams = new CompilerParameters(refFiles.ToArray());
-            compileParams.OutputAssembly = outputPath;
-            string defineOptions = string.Empty;
-            foreach (string define in defines)
-                defineOptions += $"/define:{define} ";
-            compileParams.CompilerOptions = string.Format("/optimize {0}", defineOptions);
-            compileParams.GenerateInMemory = true;
-            compileParams.GenerateExecutable = false;
-            compileParams.TreatWarningsAsErrors = false;
-
-            // add the ref files to errors
-            // they'll be printed if errors occur
-            errors = new List<string>();
-            foreach (var refFile in refFiles)
-                errors.Add($"Reference: {refFile}");
-
-            compiler = new VBCodeProvider(compConfig);
-
-            // compile code first
-            var res = compiler.CompileAssemblyFromFile(
-                options: compileParams,
-                fileNames: new string[] { sourceFile }
-            );
-
-            // return nothing if errors occured
-            if (res.Errors.HasErrors) {
-                foreach (var err in res.Errors)
-                    errors.Add(err.ToString());
-                return null;
-            }
-
-            // otherwise return compiled assm
-            return res.CompiledAssembly;
+            return pyRevitLabs.Common.CodeCompiler.CompileVisualBasicToAssembly(
+                sourceFiles: new string[] { sourceFile },
+                assemblyName: Path.GetFileName(outputPath),
+                references: refFiles,
+                defines: defines.Select(x => new KeyValuePair<string, object>(x, null)),
+                out errors
+                );
         }
 
         public static int ExecuteExternalCommand(Assembly assmObj, string className, ref ScriptRuntime runtime) {
@@ -314,8 +284,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // reroute console output to runtime stream
             var existingOutStream = Console.Out;
             StreamWriter runtimeOutputStream = new StreamWriter(runtime.OutputStream);
+            StreamReader runtimeInputStream = new StreamReader(runtime.OutputStream);
             runtimeOutputStream.AutoFlush = true;
             Console.SetOut(runtimeOutputStream);
+            Console.SetIn(runtimeInputStream);
 
             // setup logger
             var prevLoggerCfg = LogManager.Configuration;
