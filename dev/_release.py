@@ -10,6 +10,7 @@ from collections import namedtuple
 from scripts import configs
 from scripts import utils
 
+import _install as install
 import _buildall as buildall
 import _setprop as setprop
 
@@ -105,6 +106,10 @@ def _sign_binaries():
 def create_release(args: Dict[str, str]):
     """Create pyRevit release (build, test, publish)"""
     utils.ensure_windows()
+
+    # run a check on all tools
+    if not install.check(args):
+        _abort('At least one necessary tool is missing for release process')
 
     release_ver = args["<tag>"]
     # update copyright notice

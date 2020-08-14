@@ -43,6 +43,13 @@ def system(
         return res.stdout.decode().strip()
 
 
+def where(program_name):
+    """Test if a program is available on PATH"""
+    finder = 'where' if sys.platform == 'win32' else 'which'
+    res = subprocess.run([finder, program_name], capture_output=True)
+    return res.stdout != b''
+
+
 def format_cmd_help(helpstring):
     """Format command help for cli help"""
     formatted_help = helpstring
@@ -96,6 +103,7 @@ TERMINAL_CODES = {
     'b': 1,
     'f': 2,
     'red': 91,
+    'grn': 92,
 }
 
 

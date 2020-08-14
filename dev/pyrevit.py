@@ -13,14 +13,14 @@
     Install these tools before starting the build process
         msbuild                 visualstudio.microsoft.com/downloads/
                                 ensure `msbuild` is in %PATH%
-        signtool                for digitally signing binaries
-        python 2 (docs)         www.python.org/downloads/
-        python 3 (build)        www.python.org/downloads/
-        pipenv (venv)           pipenv.readthedocs.io/en/latest/
-        Advanced Installer (installer builder)
-                                www.advancedinstaller.com
         mingw (gcc)             http://mingw.org
                                 ensure `gcc` is in %PATH%
+        signtool                for digitally signing binaries
+        Advanced Installer (installer builder)
+                                www.advancedinstaller.com
+        pipenv (venv)           pipenv.readthedocs.io/en/latest/
+        python 2 (docs)         www.python.org/downloads/
+        python 3 (build)        www.python.org/downloads/
         docker                  for telemetry server tests
 """
 # - [ ] run tests?
@@ -63,7 +63,9 @@ logger = logging.getLogger()
 
 
 COMMANDS = [
+    # prepare and verify build env
     Command(name="install", target="", args=[], run=install.install),
+    Command(name="check", target="", args=[], run=install.check),
     # main release command
     Command(
         name="release", target="", args=["<tag>"], run=release.create_release
