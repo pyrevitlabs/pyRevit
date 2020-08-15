@@ -1,5 +1,5 @@
 """Dev scripts utilities"""
-#pylint: disable=bad-continuation
+# pylint: disable=bad-continuation
 import sys
 import logging
 import re
@@ -45,12 +45,14 @@ def system(
 
 def where(program_name):
     """Test if a program is available on PATH"""
-    finder = 'where' if sys.platform == 'win32' else 'which'
-    res = subprocess.run([finder, program_name], capture_output=True)
-    return res.stdout != b''
+    finder = "where" if sys.platform == "win32" else "which"
+    res = subprocess.run(
+        [finder, program_name], check=False, capture_output=True
+    )
+    return res.stdout != b""
 
 
-def format_cmd_help(helpstring):
+def format_help(helpstring):
     """Format command help for cli help"""
     formatted_help = helpstring
     helplines = helpstring.split("\n")
@@ -59,7 +61,7 @@ def format_cmd_help(helpstring):
         formatted_help = helplines[0]
         for hline in helplines[1:]:
             if hline:
-                formatted_help += f"\n{'':33}{hline}"
+                formatted_help += f"\n{'':44}{hline}"
     return formatted_help
 
 
@@ -100,10 +102,10 @@ def ensure_windows():
 
 
 TERMINAL_CODES = {
-    'b': 1,
-    'f': 2,
-    'red': 91,
-    'grn': 92,
+    "b": 1,
+    "f": 2,
+    "red": 91,
+    "grn": 92,
 }
 
 
@@ -114,6 +116,6 @@ def colorize(input_string):
     """
     result = input_string
     for tcode, tval in TERMINAL_CODES.items():
-        result = result.replace(f"<{tcode}>", f'\033[{tval}m')
-        result = result.replace(f"</{tcode}>", '\033[0m')
+        result = result.replace(f"<{tcode}>", f"\033[{tval}m")
+        result = result.replace(f"</{tcode}>", "\033[0m")
     return result

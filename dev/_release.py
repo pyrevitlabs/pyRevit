@@ -12,7 +12,7 @@ from scripts import utils
 
 import _install as install
 import _buildall as buildall
-import _setprop as setprop
+import _props as props
 
 
 PyRevitProduct = namedtuple("PyRevitProduct", "product,release,version,key")
@@ -113,10 +113,10 @@ def create_release(args: Dict[str, str]):
 
     release_ver = args["<tag>"]
     # update copyright notice
-    setprop.set_year(args)
+    props.set_year(args)
     # prepare required arg for setprop.set_ver
     args["<ver>"] = release_ver
-    setprop.set_ver(args)
+    props.set_ver(args)
 
     # now build all projects
     buildall.build_all(args)

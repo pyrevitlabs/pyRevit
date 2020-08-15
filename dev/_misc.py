@@ -17,9 +17,7 @@ def count_sloc(_: Dict[str, str]):
 
 def report_dls(_: Dict[str, str]):
     """Report downloads on latest release assets
-    Queries github release information to find download counts, so
-    GITHUBAUTH env var must contain access token for github API.
-    Otherwise access will be limited to github api rate limits
+    Queries github release information to find download counts
     """
     print("Collecting download info...")
     print("-"*64)

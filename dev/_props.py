@@ -23,6 +23,16 @@ def _modify_contents(files, finder, new_value):
                 sfile.writelines(contents)
 
 
+def get_version():
+    """Get current version"""
+    ver_finder = re.compile(r"4\.\d\.\d")
+    for verfile in configs.VERSION_FILES:
+        with open(verfile, 'r') as vfile:
+            for cline in vfile.readlines():
+                if match := ver_finder.search(cline):
+                    return match.group()
+
+
 def set_year(_: Dict[str, str]):
     """Update copyright notice"""
     this_year = datetime.datetime.today().year

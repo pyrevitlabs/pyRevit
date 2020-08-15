@@ -144,9 +144,7 @@ def header(text: str, level: int = 2):
 
 def report_clog(args: Dict[str, str]):
     """Report changes from given <tag> to HEAD
-    Queries github issue information for better reporting, so
-    GITHUBAUTH env var must contain access token for github API.
-    Otherwise access will be limited to github api rate limits
+    Queries github issue information for better reporting
     """
     tag_hash = utils.system(["git", "rev-parse", f"{args['<tag>']}"])
     gitlog_report = utils.system(
