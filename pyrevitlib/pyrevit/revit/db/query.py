@@ -677,9 +677,9 @@ def get_all_schedules(doc=None):
     return filter(is_schedule, all_scheds)
 
 
-def get_view_by_name(view_name, doc=None):
+def get_view_by_name(view_name, view_types=None, doc=None):
     doc = doc or HOST_APP.doc
-    for view in get_all_views(doc=doc):
+    for view in get_all_views(doc=doc, view_types=view_types):
         if get_name(view) == view_name:
             return view
 
