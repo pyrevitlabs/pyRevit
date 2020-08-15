@@ -1999,6 +1999,7 @@ def select_open_docs(title='Select Open Documents',
                      button_name='OK',
                      width=DEFAULT_INPUTWINDOW_WIDTH,    #pylint: disable=W0613
                      multiple=True,
+                     check_more_than_one=True,
                      filterfunc=None):
     """Standard form for selecting open documents.
 
@@ -2022,7 +2023,8 @@ def select_open_docs(title='Select Open Documents',
     """
     # find open documents other than the active doc
     open_docs = [d for d in revit.docs if not d.IsLinked]    #pylint: disable=E1101
-    open_docs.remove(revit.doc)    #pylint: disable=E1101
+    if check_more_than_one:
+        open_docs.remove(revit.doc)    #pylint: disable=E1101
 
     if not open_docs:
         alert('Only one active document is found. '
