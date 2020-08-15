@@ -1,9 +1,11 @@
 """Set various metadata properties across source files"""
+import sys
 from typing import Dict
 import re
 import datetime
 
 from scripts import configs
+from scripts import utils
 
 
 def _modify_contents(files, finder, new_value):
@@ -36,7 +38,15 @@ def set_ver(args: Dict[str, str]):
     """Update version number"""
     ver_finder = re.compile(r"4\.\d\.\d")
     new_version = args["<ver>"]
-    print(f"Updating version to v{new_version}...")
-    _modify_contents(
-        files=configs.VERSION_FILES, finder=ver_finder, new_value=new_version
-    )
+    if ver_finder.match(new_version):
+        print(f"Updating version to v{new_version}...")
+        _modify_contents(
+            files=configs.VERSION_FILES,
+            finder=ver_finder,
+            new_value=new_version,
+        )
+    else:
+        print(utils.colorize(
+            "<red>Invalid version format (e.g. 4.8.0)</red>"
+        ))
+        sys.exit(1)
