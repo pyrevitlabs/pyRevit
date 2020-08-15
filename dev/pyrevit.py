@@ -20,10 +20,12 @@
     git                     for creating release reports (https://git-scm.com)
     docker                  for telemetry server tests (https://www.docker.com/products/docker-desktop)
 
-    Some of the commands call github APIs for necessary information.
-    GITHUBAUTH env var must contain access token otherwise access will be
-    limited to github API rate limits. You can create a personal access
-    token on your github account
+    Some of the commands call web APIs for necessary information.
+    Access tokens must be set in env vars otherwise access will be
+    limited to github API rate limits:
+
+    GITHUBAUTH              for accessing repo info on github
+    AIRTABLEAUTH            for accessing shared tables on airtable
 
 """  # pylint: disable=line-too-long
 # - [ ] run tests?
