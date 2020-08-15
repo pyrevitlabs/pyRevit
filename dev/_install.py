@@ -24,14 +24,14 @@ def install(_: Dict[str, str]):
 
 def check(_: Dict[str, str]):
     """Check build environment"""
-    any_failed = False
+    all_pass = True
     # check required tools
     for rtool in REQUIRED_TOOLS:
         has_tool = utils.where(rtool.name)
         if has_tool:
             print(utils.colorize(f"[ <grn>PASS</grn> ]\t{rtool.name} is ready"))
         else:
-            any_failed = True
+            all_pass = False
             print(
                 utils.colorize(
                     f"[ <red>FAIL</red> ]\t{rtool.name} is "
@@ -39,4 +39,4 @@ def check(_: Dict[str, str]):
                     f"see --help"
                 )
             )
-    return any_failed
+    return all_pass
