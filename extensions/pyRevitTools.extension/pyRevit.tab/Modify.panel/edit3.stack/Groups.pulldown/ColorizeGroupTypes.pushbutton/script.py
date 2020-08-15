@@ -1,32 +1,44 @@
 """Overrides graphics of groups instances on selected views or
-active view in such way, so each group type have certain color.
-To color many views you should do it at once,
-so select views in project browser before start.
+active view in such way that all instances of the same group type
+are marked with the same color. You can select multiple views before
+running the tool to colorize the group types in all of them at once
 
-Groups with only 1 instance on views will be colored in gray.
+Note:
+Groups with only 1 instance on views will be colored in gray
 """
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+import itertools
+from collections import defaultdict
+
+from pyrevit import HOST_APP
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
-import itertools
+
 
 __title__ = "Colorize Group Types"
 
+
 logger = script.get_logger()
 
-def arange_int(start, end, count):
+
+def _arange_int(start, end, count):
     multipliers = [float(x) / (count - 1) for x in range(count)]
     for m in multipliers:
         yield int((end - start) * m + start)
 
+
 def generate_colors(n):
+    """Generate a seried of colors to be used for colorizing group types"""
     i = 3
-    result_colors = [col for col in itertools.product([0, 255], repeat=3)
-                     if sum(col) > 0 and sum(col) < 255 * 3]
+    result_colors = [
+        col
+        for col in itertools.product([0, 255], repeat=3)
+        if sum(col) > 0 and sum(col) < 255 * 3
+    ]
     # iterate to produce colors closest to clean one
     while len(result_colors) < n:
-        channel_values = list(arange_int(0, 255, i))
+        channel_values = list(_arange_int(0, 255, i))
         # first add colors closest to clean one
         for col in itertools.permutations(channel_values, 3):
             if col not in result_colors:
@@ -41,9 +53,10 @@ def generate_colors(n):
     return list(result_colors)[:n]
 
 
-def get_groups(view_id=None, ids=False):
-    if view_id:
-        cl = DB.FilteredElementCollector(revit.doc, view_id)
+def get_groups(view=None, ids=False):
+    """Get group elements in given view"""
+    if view:
+        cl = DB.FilteredElementCollector(revit.doc, view.Id)
     else:
         cl = DB.FilteredElementCollector(revit.doc)
     elements = cl.OfClass(DB.Group).WhereElementIsNotElementType()
@@ -54,9 +67,11 @@ def get_groups(view_id=None, ids=False):
         return elements.ToElements()
 
 
-def get_all_view_elements(view_id, ids=False):
-    elements = \
-        DB.FilteredElementCollector(revit.doc, view_id).WhereElementIsNotElementType()
+def get_all_view_elements(view, ids=False):
+    """Get all elements visible in a view"""
+    elements = DB.FilteredElementCollector(
+        revit.doc, view.Id
+    ).WhereElementIsNotElementType()
     if ids:
         return elements.ToElementIds()
     else:
@@ -64,35 +79,52 @@ def get_all_view_elements(view_id, ids=False):
 
 
 def collect_groups(views):
-    groups_dict = {}
+    """Collect group elements in given view
+
+    Returns:
+        dict[DB.ElementId, DB.ElementId]: dict of group {type_id: element_id}
+    """
+    groups_dict = defaultdict(set)
     for view in views:
-        groups = get_groups(view.Id)
+        groups = get_groups(view)
         for g in groups:
-            gt_id = g.GetTypeId()
-            if gt_id not in groups_dict:
-                groups_dict[gt_id] = set()
-            groups_dict[gt_id].add(g.Id)
+            groups_dict[g.GetTypeId()].add(g.Id)
     return groups_dict
 
+
 def filter_group_types(groups_dict):
-    keys_map = {"%s <%d>" % (revit.query.get_name(revit.doc.GetElement(gt_id)),
-                                                   len(groups_dict[gt_id])):
-                gt_id
-                for gt_id in groups_dict.keys()}
-    picked_group_types = forms.SelectFromList.show(sorted(keys_map.keys()),
+    """Create a dict of group types
+
+    Returns:
+        dict[DB.ElementId, DB.ElementId]: dict of group {type_id: element_id}
+    """
+    keys_map = {
+        "%s (%d instances)"
+        % (
+            revit.query.get_name(revit.doc.GetElement(gt_id)),
+            len(groups_dict[gt_id]),
+        ): gt_id
+        for gt_id in groups_dict.keys()
+    }
+    picked_group_types = forms.SelectFromList.show(
+        sorted(keys_map.keys()),
         multiselect=True,
-        button_name='Select group types')
+        button_name="Select Group Types",
+    )
     if not picked_group_types:
-        forms.alert("Cancelled!", exitscript=True)
-    picked_group_type_ids = [keys_map[group_name]
-                             for group_name in picked_group_types]
-    return {k:v for k,v in groups_dict.items()
-            if k in picked_group_type_ids}
+        script.exit()
+    picked_group_type_ids = [
+        keys_map[group_name] for group_name in picked_group_types
+    ]
+    return {k: v for k, v in groups_dict.items() if k in picked_group_type_ids}
+
 
 def prepare_colors(groups_dict):
+    """Prepare a list of vg overrides for each group type"""
     groups_colors = {}
-    count = sum([len(groups) for groups in groups_dict.values()
-                 if len(groups)>1])
+    count = sum(
+        [len(groups) for groups in groups_dict.values() if len(groups) > 1]
+    )
     colors = [DB.Color(x[0], x[1], x[2]) for x in generate_colors(count)]
     color_gray = DB.Color(128, 128, 128)
     j = 0
@@ -102,24 +134,36 @@ def prepare_colors(groups_dict):
         else:
             color = colors[j]
             j += 1
-        groups_colors[gt_id] = \
-            DB.OverrideGraphicSettings() \
-              .SetProjectionLineColor(color) \
-              .SetProjectionLineWeight(6) \
-              .SetCutLineColor(color) \
-              .SetCutLineWeight(6) \
-              .SetCutFillColor(color) \
-              .SetProjectionFillColor(color)
+        if HOST_APP.is_newer_than(2019, or_equal=True):
+            groups_colors[gt_id] = (
+                DB.OverrideGraphicSettings()
+                .SetProjectionLineColor(color)
+                .SetProjectionLineWeight(6)
+                .SetSurfaceBackgroundPatternColor(color)
+                .SetCutLineColor(color)
+                .SetCutLineWeight(6)
+                .SetCutBackgroundPatternColor(color)
+            )
+        else:
+            groups_colors[gt_id] = (
+                DB.OverrideGraphicSettings()
+                .SetProjectionLineColor(color)
+                .SetProjectionLineWeight(6)
+                .SetProjectionFillColor(color)
+                .SetCutLineColor(color)
+                .SetCutLineWeight(6)
+                .SetCutFillColor(color)
+            )
 
     return groups_colors
 
 
 def colorize_grouptypes_in_view(view, groups_colors):
+    """Colorize groups by type in given view"""
     override_empty = DB.OverrideGraphicSettings()
-    for element in get_all_view_elements(view.Id):
+    for element in get_all_view_elements(view):
         element_override = override_empty
-        if element.GroupId and\
-                element.GroupId != DB.ElementId.InvalidElementId:
+        if element.GroupId and element.GroupId != DB.ElementId.InvalidElementId:
             group_type_id = revit.doc.GetElement(element.GroupId).GetTypeId()
             if group_type_id and group_type_id in groups_colors.keys():
                 element_override = groups_colors[group_type_id]
@@ -127,10 +171,12 @@ def colorize_grouptypes_in_view(view, groups_colors):
 
 
 def colorize_grouptypes_in_views(views):
+    """Colorize groups by type in given views"""
     view_names = [x.Name for x in views]
-    text = \
-        "Do you want to override colors on these views:\n" \
+    text = (
+        "Do you want to colorize groups by type on these views:\n\n"
         + "\n".join(view_names)
+    )
 
     if not forms.alert(text, yes=True, cancel=True, no=False):
         return
@@ -142,7 +188,7 @@ def colorize_grouptypes_in_views(views):
     groups_colors = prepare_colors(groups_dict)
     logger.debug(groups_colors)
 
-    with revit.Transaction(__title__ + ""):
+    with revit.Transaction(__title__):
         for view in views:
             # apply overrides to each view
             colorize_grouptypes_in_view(view, groups_colors)
