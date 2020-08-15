@@ -10,7 +10,9 @@ __doc__ = 'Open the source sheet. Run this script and select destination '\
           'the destination sheet.'
 
 
-selViewports = []
+
+cursheet = revit.active_view
+forms.check_viewtype(cursheet, DB.ViewType.DrawingSheet, exitscript=True)
 
 dest_sheet = forms.select_sheets(title='Select Target Sheets',
                                  button_name='Select Sheets',
@@ -18,15 +20,15 @@ dest_sheet = forms.select_sheets(title='Select Target Sheets',
                                  include_placeholder=False,
                                  use_selection=True)
 
+selected_vports = []
 if dest_sheet:
-    cursheet = revit.active_view
     sel = revit.pick_elements()
     for el in sel:
-        selViewports.append(el)
+        selected_vports.append(el)
 
-    if len(selViewports) > 0:
+    if len(selected_vports) > 0:
         with revit.Transaction('Move Viewports'):
-            for vp in selViewports:
+            for vp in selected_vports:
                 if isinstance(vp, DB.Viewport):
                     viewId = vp.ViewId
                     vpCenter = vp.GetBoxCenter()
