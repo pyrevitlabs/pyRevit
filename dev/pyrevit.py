@@ -8,20 +8,23 @@
     directory for these tools to your system PATH. Run `check` to test
 
     Visual Studio:          for building labs (https://visualstudio.microsoft.com/downloads/)
-        msbuild                 building C#
-        signtool                digitally signing binaries
+    ├── msbuild                 building C#
+    └── signtool                digitally signing binaries
     gcc                     for building sqlite package in telemetry server (http://mingw.org)
     go                      for building telemetry server (https://golang.org)
     Advanced Installer      for buidling installers (https://www.advancedinstaller.com)
     pipenv                  for managing python virtual envs (https://pipenv.readthedocs.io/)
     python 2                for building docs (https://www.python.org/downloads/)
     python 3                for the build tools (https://www.python.org/downloads/)
+    pygount                 for counting code lines (https://pypi.org/project/pygount/)
+    git                     for creating release reports (https://git-scm.com)
     docker                  for telemetry server tests (https://www.docker.com/products/docker-desktop)
 
     Some of the commands call github APIs for necessary information.
     GITHUBAUTH env var must contain access token otherwise access will be
     limited to github API rate limits. You can create a personal access
     token on your github account
+
 """  # pylint: disable=line-too-long
 # - [ ] run tests?
 # - [ ] push translation files into pyRevit (airtable api)
@@ -91,9 +94,7 @@ COMMANDS = [
     # Command(name="install", target="", args=[], run=install.install),
     Command(name="check", target="", args=[], run=install.check),
     # main release command
-    Command(
-        name="release", target="", args=["<tag>"], run=release.create_release
-    ),
+    Command(name="release", target="", args=["<tag>"], run=release.create_release),
     # individual release steps for testing
     Command(name="changelog", target="", args=["<tag>"], run=clog.report_clog),
     Command(name="build", target="all", args=[], run=buildall.build_all),
@@ -108,8 +109,9 @@ COMMANDS = [
     Command(name="test", target="telem", args=[], run=telem.start_telem),
     # unit testing
     # manual data setters
-    # Command(name="update", target="year", args=[], run=props.set_year),
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
+    Command(name="update", target="year", args=[], run=props.set_year),
+    Command(name="update", target="locales", args=[], run=props.update_locales),
     Command(name="set", target="version", args=["<ver>"], run=props.set_ver),
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
@@ -124,7 +126,7 @@ if __name__ == "__main__":
         args = docopt(
             doc=prepare_docopt_help(),
             version="{} {}".format(__binname__, props.get_version()),
-            help=False
+            help=False,
         )
         # run the appropriate command
         utils.run_command(COMMANDS, args)

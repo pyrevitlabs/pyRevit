@@ -3,9 +3,11 @@ import sys
 from typing import Dict
 import re
 import datetime
+import json
 
 from scripts import configs
 from scripts import utils
+from scripts import airtavolo
 
 
 def _modify_contents(files, finder, new_value):
@@ -27,7 +29,7 @@ def get_version():
     """Get current version"""
     ver_finder = re.compile(r"4\.\d\.\d")
     for verfile in configs.VERSION_FILES:
-        with open(verfile, 'r') as vfile:
+        with open(verfile, "r") as vfile:
             for cline in vfile.readlines():
                 if match := ver_finder.search(cline):
                     return match.group()
@@ -56,7 +58,14 @@ def set_ver(args: Dict[str, str]):
             new_value=new_version,
         )
     else:
-        print(utils.colorize(
-            "<red>Invalid version format (e.g. 4.8.0)</red>"
-        ))
+        print(utils.colorize("<red>Invalid version format (e.g. 4.8.0)</red>"))
         sys.exit(1)
+
+
+# TODO: find a list of all bundles with their names
+# TODO: for each tool locale, lookup the bundle
+# TODO: write in yaml files only?
+def update_locales(_: Dict[str, str]):
+    """Update locale files across the extensions"""
+    tool_locales = airtavolo.get_tool_locales()
+    print(len(tool_locales))

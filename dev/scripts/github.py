@@ -1,4 +1,4 @@
-"""Simple github api v3 io"""
+"""Wrapping needed github api v3 functions"""
 import os
 import logging
 from collections import namedtuple

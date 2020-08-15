@@ -55,10 +55,10 @@
         },
         "pygount": {
             "hashes": [
-                "sha256:609d6d972cc092a11030085159655eb8f4e63db5d3eb5c7c587f4c5390aec74c"
+                "sha256:8ec56e58cfcb2be8bb54f32f02e7130d33302e2543c8a37b441e606ea3b8a2c5"
             ],
             "index": "pypi",
-            "version": "==1.2.3"
+            "version": "==1.2.4"
         },
         "requests": {
             "hashes": [

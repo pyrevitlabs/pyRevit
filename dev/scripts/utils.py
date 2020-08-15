@@ -112,8 +112,10 @@ TERMINAL_CODES = {
 def colorize(input_string):
     """Replace <x> tags with terminal color codes
     Tag format: <x> content </x>
-    Supported tags: b, f, red
-    """
+    Supported tags: {}
+    """.format(
+        ", ".join(TERMINAL_CODES.keys())
+    )
     result = input_string
     for tcode, tval in TERMINAL_CODES.items():
         result = result.replace(f"<{tcode}>", f"\033[{tval}m")
