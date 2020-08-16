@@ -27,10 +27,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevit.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{CDA0124F-714E-4F93-BF5D-37FF54C25F15} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{311A0079-4026-4F30-9288-619E8824DCA5} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.8.0" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.1" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>
@@ -523,6 +523,7 @@
     <ROW Component="Louisville" ComponentId="{A43BD6B1-AC26-4196-8092-9CA78AD6C1AD}" Directory_="Kentucky_Dir" Attributes="0" KeyPath="Louisville" Type="0"/>
     <ROW Component="MadMilkman.Ini.dll" ComponentId="{932D1DB0-F396-40C6-B97E-BCEE96D6CE46}" Directory_="bin_Dir" Attributes="0" KeyPath="MadMilkman.Ini.dll"/>
     <ROW Component="Microsoft.CodeAnalysis.CSharp.dll" ComponentId="{A5157D6F-25B6-4056-B79A-B8EE5CDE63AF}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.CodeAnalysis.CSharp.dll"/>
+    <ROW Component="Microsoft.CodeAnalysis.VisualBasic.dll" ComponentId="{9C7B3475-6ADD-4720-BDF5-2BBFD60F1ABF}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.CodeAnalysis.VisualBasic.dll"/>
     <ROW Component="Microsoft.CodeAnalysis.dll" ComponentId="{E4A5FC09-A74D-4A06-9AE2-8614D51FBAE8}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.CodeAnalysis.dll"/>
     <ROW Component="Microsoft.Dynamic.dll" ComponentId="{66A0FB52-8894-403E-A88D-FEFEBEAD9BA8}" Directory_="__Dir" Attributes="0" KeyPath="Microsoft.Dynamic.dll"/>
     <ROW Component="Microsoft.Dynamic.dll_1" ComponentId="{5EB17BF9-61CC-449F-A4C6-FFE786682B28}" Directory_="__3_Dir" Attributes="0" KeyPath="Microsoft.Dynamic.dll_1"/>
@@ -2961,6 +2962,8 @@
     <ROW File="IronPython.Modules.dll_1" Component_="IronPython.Modules.dll_1" FileName="IRONPY~3.DLL|IronPython.Modules.dll" Attributes="0" SourcePath="..\bin\engines\2710\IronPython.Modules.dll" SelfReg="false"/>
     <ROW File="IronPython.Wpf.dll_1" Component_="IronPython.Wpf.dll_1" FileName="IRONPY~4.DLL|IronPython.Wpf.dll" Attributes="0" SourcePath="..\bin\engines\2710\IronPython.Wpf.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.Emojis.dll" Component_="pyRevitLabs.Emojis.dll" FileName="PYREV~13.DLL|pyRevitLabs.Emojis.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.Emojis.dll" SelfReg="false"/>
+    <ROW File="Microsoft.CodeAnalysis.VisualBasic.dll" Component_="Microsoft.CodeAnalysis.VisualBasic.dll" FileName="MICROS~5.DLL|Microsoft.CodeAnalysis.VisualBasic.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.VisualBasic.dll" SelfReg="false"/>
+    <ROW File="Test100.csv" Component_="script.py_23" FileName="Test100.csv" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\views.stack\Schedules.pulldown\Create Schedule from CSV.pushbutton\Test100.csv" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
@@ -3609,6 +3612,7 @@
     <ROW Feature_="MainFeature" Component_="IronPython.Modules.dll_1"/>
     <ROW Feature_="MainFeature" Component_="IronPython.Wpf.dll_1"/>
     <ROW Feature_="MainFeature" Component_="pyRevitLabs.Emojis.dll"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.VisualBasic.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="pyRevit.exe" SourcePath="..\bin\pyRevit.ico" Index="0"/>
