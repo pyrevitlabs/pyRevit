@@ -40,6 +40,7 @@ clr.AddReference('Microsoft.CodeAnalysis.CSharp')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
 clr.AddReference('pyRevitLabs.CommonWPF')
+clr.AddReference('pyRevitLabs.Emojis')
 clr.AddReference('pyRevitLabs.Language')
 clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
@@ -54,6 +55,7 @@ from pyRevitLabs import NLog
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI
 from pyRevitLabs import CommonWPF
+from pyRevitLabs import Emojis
 from pyRevitLabs import Language
 from pyRevitLabs import DeffrelDB
 from pyRevitLabs import TargetApps

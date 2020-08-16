@@ -27,6 +27,7 @@ docs/_*
 __py*
 *.db
 .DS_Store
+Icon?
 
 # ignore sphinx files
 *.pyc
@@ -43,3 +44,6 @@ dist/
 # ignore linter configs
 .vscode/.ropeproject/*
 !.vscode/.ropeproject/config.py
+
+# resilio sync
+.sync

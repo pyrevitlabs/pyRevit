@@ -542,7 +542,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         schedule_data_file = \
             script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
         vseop = DB.ViewScheduleExportOptions()
-        vseop.TextQualifier = DB.ExportTextQualifier.None
+        vseop.TextQualifier = coreutils.get_enum_none(DB.ExportTextQualifier)
         schedule_view.Export(op.dirname(schedule_data_file),
                              op.basename(schedule_data_file),
                              vseop)
@@ -708,10 +708,13 @@ class PrintSheetsWindow(forms.WPFWindow):
     def _print_combined_sheets_in_order(self, target_sheets):
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
+        if not print_mgr:
+            forms.alert(
+                "Error getting print manager for this document",
+                exitscript=True
+                )
         with revit.TransactionGroup('Print Sheets in Order',
                                     doc=self.selected_doc):
-            if not print_mgr:
-                return
             with revit.Transaction('Set Printer Settings',
                                    doc=self.selected_doc,
                                    log_errors=False):
@@ -1266,7 +1269,7 @@ forms.check_modeldoc(exitscript=True)
 
 # TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602
-    open_docs = forms.select_open_docs()
+    open_docs = forms.select_open_docs(check_more_than_one=False)
     if open_docs:
         for open_doc in open_docs:
             cleanup_sheetnumbers(open_doc)

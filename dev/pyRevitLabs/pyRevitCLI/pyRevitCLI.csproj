@@ -98,7 +98,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyShared.cs" />
+    <Compile Include="..\..\pyRevit\AssemblyCopyright.cs">
+      <Link>Properties\AssemblyCopyright.cs</Link>
+    </Compile>
+    <Compile Include="..\..\pyRevit\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="PyRevitCLI.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -208,8 +213,6 @@ del /Q System.Net.Http.dll
 copy "$(TargetDir)lib\win32\x64\*.dll" "$(TargetDir)..\..\..\..\..\bin\"
 copy "$(TargetDir)*.dll" "$(TargetDir)..\..\..\..\..\bin\"
 copy "$(TargetDir)*.exe" "$(TargetDir)..\..\..\..\..\bin\"
-echo Signing binaries
-signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"
     </PostBuildEvent>
   </PropertyGroup>
 </Project>

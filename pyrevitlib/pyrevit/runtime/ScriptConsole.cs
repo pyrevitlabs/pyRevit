@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -12,8 +13,20 @@ using System.Diagnostics;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
+using pyRevitLabs.Emojis;
 
 namespace PyRevitLabs.PyRevit.Runtime {
+    public struct ScriptConsoleDebugger {
+        public string Name;
+        public Regex PromptFinder;
+        public string DebugContinueKey;
+        public string DebugStepOverKey;
+        public string DebugStepInKey;
+        public string DebugStepOutKey;
+        public string DebugStopKey;
+        public List<Tuple<Regex, string>> StopFinders;
+    }
+
     public static class ScriptConsoleConfigs {
         public static string DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         public static string DOCHead = "<head>" +
@@ -161,9 +174,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private bool _contentLoaded;
         private bool _debugMode;
         private bool _frozen = false;
+        private string _lastLine = string.Empty;
         private DispatcherTimer _animationTimer;
         private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
         private UIApplication _uiApp;
+
+        private List<ScriptConsoleDebugger> _supportedDebuggers = 
+            new List<ScriptConsoleDebugger> {
+                new ScriptConsoleDebugger() {
+                    Name = "Pdb (IronPython|CPython)",
+                    PromptFinder = new Regex(@"\(pdb\)"),
+                    DebugContinueKey = "c",
+                    DebugStepOverKey = "n",
+                    DebugStepInKey = "s",
+                    DebugStepOutKey = "r",
+                    DebugStopKey = "q",
+                    StopFinders = new List<Tuple<Regex, string>> {
+                        new Tuple<Regex, string> (
+                            new Regex(@"bdb.BdbQuit|BdbQuit :"),
+                            "Debugger stopped (bdb.BdbQuit exception)"
+                        ),
+                        new Tuple<Regex, string> (
+                            new Regex(@"pdb.Restart|Restart :"),
+                            "Debugger stopped. Restart by running the script again (pdb.Restart exception)"
+                        )
+                    }
+                }
+        };
 
         // OutputUniqueId is set in constructor
         // OutputUniqueId is unique for every output window
@@ -188,6 +225,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public System.Windows.Forms.WebBrowser renderer;
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
         public ActivityBar activityBar;
+        public InputBar stdinBar;
 
         public ScriptConsole(bool debugMode = false, UIApplication uiApp = null) : base() {
             _debugMode = debugMode;
@@ -226,55 +264,43 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Assign the WebBrowser control as the host control's child.
             host.Child = renderer;
 
-            // activiy bar
-            activityBar = new ActivityBar();
-            activityBar.Foreground = Brushes.White;
-            activityBar.Visibility = Visibility.Collapsed;
+            #region Window Layout
 
-            // Add the interop host control to the Grid
-            // control's collection of child controls.
             Grid baseGrid = new Grid();
             baseGrid.Margin = new Thickness(0, 0, 0, 0);
-
+            
+            // activiy bar
             var activityBarRow = new RowDefinition();
             activityBarRow.Height = GridLength.Auto;
             baseGrid.RowDefinitions.Add(activityBarRow);
+            activityBar = new ActivityBar();
+            activityBar.Foreground = Brushes.White;
+            activityBar.Visibility = Visibility.Collapsed;
+            Grid.SetRow(activityBar, 0);
 
+            // Add the interop host control to the Grid
+            // control's collection of child controls.
             var rendererRow = new RowDefinition();
             baseGrid.RowDefinitions.Add(rendererRow);
-
-            //if (_debugMode) {
-            //    var splitterRow = new RowDefinition();
-            //    var replRow = new RowDefinition();
-
-            //    splitterRow.Height = new GridLength(6);
-            //    replRow.Height = new GridLength(100);
-
-            //    baseGrid.RowDefinitions.Add(splitterRow);
-            //    baseGrid.RowDefinitions.Add(replRow);
-
-            //    var splitter = new GridSplitter();
-            //    splitter.ResizeDirection = GridResizeDirection.Rows;
-            //    splitter.HorizontalAlignment = HorizontalAlignment.Stretch;
-            //    splitter.Background = Brushes.LightGray;
-
-            //    var repl = new REPLControl();
-
-            //    Grid.SetRow(splitter, 2);
-            //    Grid.SetRow(repl, 3);
-
-            //    baseGrid.Children.Add(splitter);
-            //    baseGrid.Children.Add(repl);
-            //}
-
-            // set activity bar and host
-            Grid.SetRow(activityBar, 0);
             Grid.SetRow(host, 1);
 
+            // standard input bar
+            var stdinRow = new RowDefinition();
+            stdinRow.Height = GridLength.Auto;
+            baseGrid.RowDefinitions.Add(stdinRow);
+            stdinBar = new InputBar();
+            stdinBar.Visibility = Visibility.Collapsed;
+            Grid.SetRow(stdinBar, 2);
+
+            // set activity bar and host
             baseGrid.Children.Add(activityBar);
             baseGrid.Children.Add(host);
+            baseGrid.Children.Add(stdinBar);
             this.Content = baseGrid;
 
+            #endregion
+
+            #region Titlebar Buttons
             // resize buttons
             var expandToggleButton = new Button() { ToolTip = "Expand/Shrink Window", Focusable = false };
             expandToggleButton.Width = 32;
@@ -316,6 +342,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 MakeButtonPath("M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z");
             openButton.Click += OpenButton_Click;
             RightWindowCommands.Items.Insert(0, openButton);
+
+            #endregion
 
             this.Width = 900; this.MinWidth = 700;
             this.Height = 600; this.MinHeight = this.TitlebarHeight;
@@ -437,14 +465,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // "\n"     --->    <br/>
             contents = ScriptConsoleConfigs.EscapeForOutput(contents);
             // :heart:  --->    \uFFFF (emoji unicode)
-            contents = ScriptConsoleEmojis.Emojize(contents);
+            contents = Emojis.Emojize(contents);
 
             var htmlElement = ActiveDocument.CreateElement(HtmlElementType);
             htmlElement.InnerHtml = contents;
             return htmlElement;
         }
 
-        public void AppendText(string OutputText, string HtmlElementType) {
+        public void AppendText(string OutputText, string HtmlElementType, bool record = true) {
+            if (record)
+                _lastLine = OutputText;
+
             if (!_frozen) {
                 WaitReadyBrowser();
                 ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
@@ -487,7 +518,66 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (errorHeader != string.Empty)
                 errorHeader += "\n";
 
-            AppendText(errorHeader + OutputText, ScriptConsoleConfigs.ErrorBlock);
+            // if this is a know debugger stop error
+            // make a nice report
+            foreach (var dbgr in _supportedDebuggers) {
+                foreach(var stopFinder in dbgr.StopFinders) {
+                    if (stopFinder.Item1.IsMatch(OutputText)) {
+                        AppendText(
+                            errorHeader + stopFinder.Item2,
+                            ScriptConsoleConfigs.ErrorBlock
+                            );
+                        return;
+                    }
+                }
+            }
+
+            // otherwise report the error
+            AppendText(
+                errorHeader + OutputText,
+                ScriptConsoleConfigs.ErrorBlock
+                );
+        }
+
+        public string GetLastLine() {
+            return _lastLine;
+        }
+
+        public string GetInput() {
+            // checkout the last line and configure the input control
+            string lastLine = GetLastLine().ToLower();
+            // determine debugger
+            bool dbgMode = false;
+            foreach (var dbgr in _supportedDebuggers) {
+                if (dbgr.PromptFinder.IsMatch(lastLine)) {
+                    stdinBar.EnableDebug(
+                        dbgCont: dbgr.DebugContinueKey,
+                        dbgStepOver: dbgr.DebugStepOverKey,
+                        dbgStepIn: dbgr.DebugStepInKey,
+                        dbgStepOut: dbgr.DebugStepOutKey,
+                        dbgStop: dbgr.DebugStopKey
+                        );
+                    dbgMode = true;
+                }
+            }
+            
+            // if no debugger, find other patterns
+            if (!dbgMode &&
+                    new string[] { "select", "file" }.All(x => lastLine.Contains(x)))
+                stdinBar.EnableFilePicker();
+
+            // ask for input
+            Activate(); Focus();
+
+            stdinBar.Show();
+            // printing an empty line will cause the page to scroll to
+            // bottom again and not be covered by the input control
+            AppendText("", ScriptConsoleConfigs.DefaultBlock, record: false);
+            string inputText = stdinBar.ReadInput();
+            stdinBar.Hide();
+
+            // return input
+            return inputText;
         }
 
         private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e) {
@@ -704,6 +794,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
             var outputWindow = (ScriptConsole)sender;
+
+            outputWindow.stdinBar.CancelRead();
 
             ScriptConsoleManager.RemoveFromOutputList(this);
 

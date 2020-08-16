@@ -28,6 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // if this is the first run
             if (!RecoveredFromCache) {
                 // initialize
+                PythonEngine.ProgramName = "pyrevit";
                 using (Py.GIL()) {
                     if (!PythonEngine.IsInitialized)
                         PythonEngine.Initialize();
@@ -59,22 +60,31 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     scope.Exec(scriptContents);
                 }
                 catch (PythonException cpyex) {
-                    var traceBackParts = cpyex.StackTrace.Split(']');
-                    string pyTraceback = traceBackParts[0].Trim() + "]";
                     string cleanedPyTraceback = string.Empty;
-                    foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
-                        if (tbLine.Contains("File \"<string>\"")) {
-                            var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", runtime.ScriptSourceFile));
-                            cleanedPyTraceback += fixedTbLine;
-                            var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
-                            cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
+                    string pyNetTraceback = string.Empty;
+                    if (cpyex.StackTrace != null && cpyex.StackTrace != string.Empty) {
+                        var traceBackParts = cpyex.StackTrace.Split(']');
+                        int nextIdx = 0;
+                        // if stack trace contains file info, clean it up
+                        if (traceBackParts.Count() == 2) {
+                            nextIdx = 1;
+                            string pyTraceback = traceBackParts[0].Trim() + "]";
+                            cleanedPyTraceback = string.Empty;
+                            foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
+                                if (tbLine.Contains("File \"<string>\"")) {
+                                    var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", runtime.ScriptSourceFile));
+                                    cleanedPyTraceback += fixedTbLine;
+                                    var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
+                                    cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
+                                }
+                                else {
+                                    cleanedPyTraceback += tbLine;
+                                }
+                            }
                         }
-                        else {
-                            cleanedPyTraceback += tbLine;
-                        }
+                        // grab the dotnet cpython stack trace
+                        pyNetTraceback = traceBackParts[nextIdx].Trim();
                     }
-
-                    string pyNetTraceback = traceBackParts[1].Trim();
 
                     string traceMessage = string.Join(
                         "\n",
@@ -90,6 +100,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     traceMessage = traceMessage.NormalizeNewLine();
                     runtime.TraceMessage = traceMessage;
                     runtime.OutputStream.WriteError(traceMessage, ScriptEngineType.CPython);
+                    result = ScriptExecutorResultCodes.ExecutionException;
+                }
+                catch (Exception ex) {
+                    runtime.OutputStream.WriteError(ex.Message, ScriptEngineType.CPython);
                     result = ScriptExecutorResultCodes.ExecutionException;
                 }
                 finally {
@@ -163,7 +177,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void SetupStreams(ref ScriptRuntime runtime) {
             // set output stream
             PyObject sys = PythonEngine.ImportModule("sys");
-            sys.SetAttr("stdout", PyObject.FromManagedObject(runtime.OutputStream));
+            var baseStream = PyObject.FromManagedObject(runtime.OutputStream);
+            sys.SetAttr("stdout", baseStream);
+            sys.SetAttr("stdin", baseStream);
+            sys.SetAttr("stderr", baseStream);
         }
 
         private void SetupCaching(ref ScriptRuntime runtime) {

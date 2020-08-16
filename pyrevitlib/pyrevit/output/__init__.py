@@ -134,6 +134,10 @@ class PyRevitOutputWindow(object):
         return self.window.ClosedByUser
 
     @property
+    def last_line(self):
+        return self.window.GetLastLine()
+
+    @property
     def debug_mode(self):
         """Set debug mode on output window and stream.
 

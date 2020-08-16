@@ -90,8 +90,10 @@
     <Compile Include="..\Source\ScriptExecutor.cs">
       <Link>ScriptExecutor.cs</Link>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
+    <Compile Include="..\..\pyRevit\AssemblyCopyright.cs">
+      <Link>Properties\AssemblyCopyright.cs</Link>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\Resources\python_273_lib.zip">
       <Link>Resources\python_273_lib.zip</Link>

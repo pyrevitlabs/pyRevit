@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2026
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30330.147
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Common", "pyRevitLabs.Common\pyRevitLabs.Common.csproj", "{C5A03112-6EE1-415F-B53D-5D732D9F47AD}"
 EndProject
@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unit Tests", "Unit Tests\Un
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit", "pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj", "{595C5FC1-EA26-47A6-B78F-3A04D222963D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Emojis", "pyRevitLabs.Emojis\pyRevitLabs.Emojis.csproj", "{495994B5-044C-4B59-BD1D-D05683B443E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -98,6 +100,10 @@ Global
 		{595C5FC1-EA26-47A6-B78F-3A04D222963D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{595C5FC1-EA26-47A6-B78F-3A04D222963D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{595C5FC1-EA26-47A6-B78F-3A04D222963D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{495994B5-044C-4B59-BD1D-D05683B443E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{495994B5-044C-4B59-BD1D-D05683B443E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{495994B5-044C-4B59-BD1D-D05683B443E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{495994B5-044C-4B59-BD1D-D05683B443E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

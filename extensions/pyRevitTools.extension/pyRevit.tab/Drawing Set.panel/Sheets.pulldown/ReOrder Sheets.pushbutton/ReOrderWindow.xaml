@@ -72,7 +72,7 @@
                     Content="Re-Order"
                     Click="reorder_items"/>
         </Grid>
-        <Grid DockPanel.Dock="Left" Width="30" Margin="0,0,10,0">
+        <Grid x:Name="shift_buttons" DockPanel.Dock="Left" Width="30" Margin="0,0,10,0" IsEnabled="False">
             <Grid.RowDefinitions>
                 <RowDefinition />
                 <RowDefinition />
@@ -119,6 +119,7 @@
                   CanUserSortColumns="True"
                   HorizontalGridLinesBrush="#dedede"
                   VerticalGridLinesBrush="#dedede"
+                  SelectionChanged="sheet_selection_changed"
                   Sorting="sorting_changed">
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell" >

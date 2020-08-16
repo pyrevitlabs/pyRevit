@@ -239,7 +239,8 @@ def get_references():
         # pyrevit labs
         'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
         'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
-        'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit'
+        'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit',
+        'pyRevitLabs.Emojis',
         ]
 
     # another revit api
@@ -268,9 +269,10 @@ def _generate_runtime_asm():
             references=Array[str](
                 get_references()
                 ),
-            defines=Array[str](
-                ["REVIT{}".format(HOST_APP.version)]
-                )
+            defines=Array[str]([
+                "REVIT{}".format(HOST_APP.version),
+                "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
+                ])
             )
         # log results
         logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
@@ -281,7 +283,7 @@ def _generate_runtime_asm():
             return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
         # otherwise raise hell
         else:
-            raise PyRevitException("Error compiling runtime")
+            raise PyRevitException('\n'.join(msgs))
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',
