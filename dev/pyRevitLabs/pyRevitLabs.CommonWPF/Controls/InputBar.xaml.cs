@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -58,6 +59,9 @@ namespace pyRevitLabs.CommonWPF.Controls {
                     () => { },
                     System.Windows.Threading.DispatcherPriority.Background
                     );
+
+                // reduce cpu usage
+                Thread.Sleep(50);
 
                 lock (_inputLock) {
                     if (!_waiting)
