@@ -275,7 +275,7 @@ else:
 
     if selected_opt == 'All Lines':
         view_spec = None
-    elif selected_opt == 'Model/Symbolic Lines':
+    elif selected_opt == 'Model Lines':
         view_spec = False
     elif selected_opt == 'Detail Lines':
         view_spec = True
