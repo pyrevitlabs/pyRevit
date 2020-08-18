@@ -58,6 +58,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private string scriptSig = string.Empty;
+        private bool scriptDbg = false;
         private Assembly scriptAssm = null;
 
         public override void Init(ref ScriptRuntime runtime) {
@@ -71,9 +72,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // compile first
             // only if the signature doesn't match
             var errors = new List<string>();
-            if (scriptSig == null || runtime.ScriptSourceFileSignature != scriptSig) {
+            if (scriptSig == null || runtime.ScriptSourceFileSignature != scriptSig || scriptDbg != runtime.ScriptRuntimeConfigs.DebugMode) {
                 try {
                     scriptSig = runtime.ScriptSourceFileSignature;
+                    scriptDbg = runtime.ScriptRuntimeConfigs.DebugMode;
                     scriptAssm = CompileCLRScript(ref runtime, out errors);
                     if (scriptAssm == null) {
                         if (runtime.RuntimeType == ScriptRuntimeType.ExternalCommand) {
@@ -203,30 +205,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // determine which compiler to use
             switch (runtime.EngineType) {
                 case ScriptEngineType.CSharp:
-                    return CompileCSharp(runtime.ScriptSourceFile, outputAssembly, refFiles, defines, out errors);
+                    return CompileCSharp(runtime.ScriptSourceFile, outputAssembly, refFiles, defines, runtime.ScriptRuntimeConfigs.DebugMode, out errors);
                 case ScriptEngineType.VisualBasic:
-                    return CompileVB(runtime.ScriptSourceFile, outputAssembly, refFiles, defines, out errors);
+                    return CompileVB(runtime.ScriptSourceFile, outputAssembly, refFiles, defines, runtime.ScriptRuntimeConfigs.DebugMode, out errors);
                 default:
                     throw new PyRevitException("Specified language does not have a compiler.");
             }
         }
         
-        private static Assembly CompileCSharp(string sourceFile, string outputPath, List<string> refFiles, List<string> defines, out List<string> errors) {
+        private static Assembly CompileCSharp(string sourceFile, string outputPath, List<string> refFiles, List<string> defines, bool debug, out List<string> errors) {
             return pyRevitLabs.Common.CodeCompiler.CompileCSharpToAssembly(
                 sourceFiles: new string[] { sourceFile },
                 assemblyName: Path.GetFileName(outputPath),
                 references: refFiles,
                 defines: defines,
+                debug,
                 out errors
                 );
         }
 
-        private static Assembly CompileVB(string sourceFile, string outputPath, List<string> refFiles, List<string> defines, out List<string> errors) {
+        private static Assembly CompileVB(string sourceFile, string outputPath, List<string> refFiles, List<string> defines, bool debug, out List<string> errors) {
             return pyRevitLabs.Common.CodeCompiler.CompileVisualBasicToAssembly(
                 sourceFiles: new string[] { sourceFile },
                 assemblyName: Path.GetFileName(outputPath),
                 references: refFiles,
                 defines: defines.Select(x => new KeyValuePair<string, object>(x, null)),
+                debug,
                 out errors
                 );
         }
