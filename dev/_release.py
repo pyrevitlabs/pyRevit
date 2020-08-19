@@ -110,6 +110,11 @@ def _ensure_clean_tree():
         sys.exit(1)
 
 
+def _commit_changes(msg):
+    utils.system(['git', 'add', '--all'])
+    utils.system(['git', 'commit', '-m', msg])
+
+
 def create_release(args: Dict[str, str]):
     """Create pyRevit release (build all, create installers)"""
     utils.ensure_windows()
@@ -127,13 +132,15 @@ def create_release(args: Dict[str, str]):
     args["<ver>"] = release_ver
     props.set_ver(args)
 
-    # now build all projects
-    buildall.build_all(args)
-
     # update installers and get new product versions
     pyrevit_pc, pyrevitcli_pc = _installer_set_version(release_ver)
     _update_product_data(release_ver, pyrevit_pc)
     _update_product_data(release_ver, pyrevitcli_pc, cli=True)
+
+    _commit_changes(f"Updated version: {release_ver}")
+
+    # now build all projects
+    buildall.build_all(args)
 
     # sign everything
     _sign_binaries()
