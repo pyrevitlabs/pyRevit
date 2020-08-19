@@ -15,3 +15,5 @@ layout:
   - Test CPython Search Paths
   - Test CPython Events
   - Test CPython Debugger
+  - -----
+  - Test CLR Engine Debugger
