@@ -29,7 +29,6 @@
 
 """  # pylint: disable=line-too-long
 # - [ ] run tests?
-# - [ ] push translation files into pyRevit (airtable api)
 
 # pylint: disable=invalid-name,broad-except
 import logging

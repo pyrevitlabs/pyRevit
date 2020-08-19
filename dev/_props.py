@@ -111,6 +111,7 @@ def _update_toolbundle_locales(
     bundlefile_match = next(
         (x for x in os.listdir(bundle_path) if blfinder.match(x)), None
     )
+    bundle_name = op.splitext(op.basename(bundle_path))[0]
     # if bundle file exist, load and find the english title
     # search tool_locales for one with matching title
     # create the locale dict and update the existing
@@ -119,35 +120,30 @@ def _update_toolbundle_locales(
         # read existing bundle
         with open(bundle_file, "r") as bfile:
             bundle_dict = yaml.load(bfile, Loader=yaml.SafeLoader)
-        title = _extract_bundle_title(bundle_dict)
-        if title:
-            tlocale = _find_tlocale(title, tool_locales)
-            if tlocale:
-                title_dict = bundle_dict["title"]
-                if isinstance(title_dict, str):
-                    title_dict = {"en_us": title_dict}
-                # apply new values
-                title_dict.update(_prepare_title_data(tlocale.langs))
-                bundle_dict["title"] = title_dict
-                # write back changes
-                with open(bundle_file, "w") as bfile:
-                    yaml.dump(bundle_dict, bfile, allow_unicode=True)
-    # # otherwise if there is data for this bundle
-    # # create the bundle file and dump data
-    # else:
-    #     bundle_file = op.join(bundle_path, "bundle.yaml")
-    #     # grab name from bundle
-    #     title = op.splitext(op.basename(bundle_path))[0]
-    #     tlocale = _find_tlocale(title, tool_locales)
-    #     if tlocale:
-    #         bundle_dict = {"title": _prepare_title_data(tlocale.langs)}
-    #         with open(bundle_file, "w") as bfile:
-    #             yaml.dump(bundle_dict, bfile)
+        title = _extract_bundle_title(bundle_dict) or bundle_name
+        tlocale = _find_tlocale(title, tool_locales)
+        if tlocale:
+            title_dict = bundle_dict.get("title", {"en_us": title})
+            if isinstance(title_dict, str):
+                title_dict = {"en_us": title_dict}
+            # apply new values
+            title_dict.update(_prepare_title_data(tlocale.langs))
+            bundle_dict["title"] = title_dict
+            # write back changes
+            with open(bundle_file, "w") as bfile:
+                yaml.dump(bundle_dict, bfile, allow_unicode=True)
+    # otherwise if there is data for this bundle
+    # create the bundle file and dump data
+    else:
+        bundle_file = op.join(bundle_path, "bundle.yaml")
+        # grab name from bundle
+        tlocale = _find_tlocale(bundle_name, tool_locales)
+        if tlocale:
+            bundle_dict = {"title": _prepare_title_data(tlocale.langs)}
+            with open(bundle_file, "w") as bfile:
+                yaml.dump(bundle_dict, bfile)
 
 
-# TODO: find a list of all bundles with their names
-# TODO: for each tool locale, lookup the bundle
-# TODO: write in yaml files only?
 def update_locales(_: Dict[str, str]):
     """Update locale files across the extensions"""
     tool_locales = airtavolo.get_tool_locales()
