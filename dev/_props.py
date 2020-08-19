@@ -5,12 +5,12 @@ import os.path as op
 from typing import Dict, List
 import re
 import datetime
-import ast
 import yaml
 
 from scripts import configs
 from scripts import utils
 from scripts import airtavolo
+from scripts.airtavolo import ToolLocales
 
 
 def _modify_contents(files, finder, new_value):
@@ -65,7 +65,7 @@ def set_ver(args: Dict[str, str]):
         sys.exit(1)
 
 
-def _find_toolbundles(root_path) -> List[str]:
+def _find_tbundles(root_path) -> List[str]:
     tbfinder = re.compile(r".+\..+")
     scfinder = re.compile(r".*script\.py")
     tbundles = []
@@ -75,11 +75,11 @@ def _find_toolbundles(root_path) -> List[str]:
             if any(scfinder.match(x) for x in os.listdir(epath)):
                 tbundles.append(epath)
             else:
-                tbundles.extend(_find_toolbundles(epath))
+                tbundles.extend(_find_tbundles(epath))
     return tbundles
 
 
-def _extract_bundle_title(bundle_dict):
+def _extract_title(bundle_dict):
     title_data = bundle_dict.get("title", None)
     if isinstance(title_data, dict):
         # find english name
@@ -89,13 +89,13 @@ def _extract_bundle_title(bundle_dict):
         return title_data
 
 
-def _find_tlocale(bundle_title: str, tool_locales) -> airtavolo.ToolLocales:
+def _find_tlocale(bundle_title: str, tool_locales) -> ToolLocales:
     for tlocale in tool_locales:
         if bundle_title == tlocale.name:
             return tlocale
 
 
-def _prepare_title_data(langs_dict):
+def _prepare_title(langs_dict):
     tdata = {}
     lcode_finder = re.compile(r".+\s*\[(.+)\]")
     for lang, tvalue in langs_dict.items():
@@ -104,9 +104,7 @@ def _prepare_title_data(langs_dict):
     return tdata
 
 
-def _update_toolbundle_locales(
-    bundle_path, tool_locales: List[airtavolo.ToolLocales]
-):
+def _update_locales(bundle_path: str, tool_locales: List[ToolLocales]):
     blfinder = re.compile(r"(.*bundle\.yaml)")
     bundlefile_match = next(
         (x for x in os.listdir(bundle_path) if blfinder.match(x)), None
@@ -120,14 +118,14 @@ def _update_toolbundle_locales(
         # read existing bundle
         with open(bundle_file, "r") as bfile:
             bundle_dict = yaml.load(bfile, Loader=yaml.SafeLoader)
-        title = _extract_bundle_title(bundle_dict) or bundle_name
+        title = _extract_title(bundle_dict) or bundle_name
         tlocale = _find_tlocale(title, tool_locales)
         if tlocale:
             title_dict = bundle_dict.get("title", {"en_us": title})
             if isinstance(title_dict, str):
                 title_dict = {"en_us": title_dict}
             # apply new values
-            title_dict.update(_prepare_title_data(tlocale.langs))
+            title_dict.update(_prepare_title(tlocale.langs))
             bundle_dict["title"] = title_dict
             # write back changes
             with open(bundle_file, "w") as bfile:
@@ -139,7 +137,7 @@ def _update_toolbundle_locales(
         # grab name from bundle
         tlocale = _find_tlocale(bundle_name, tool_locales)
         if tlocale:
-            bundle_dict = {"title": _prepare_title_data(tlocale.langs)}
+            bundle_dict = {"title": _prepare_title(tlocale.langs)}
             with open(bundle_file, "w") as bfile:
                 yaml.dump(bundle_dict, bfile)
 
@@ -147,5 +145,5 @@ def _update_toolbundle_locales(
 def update_locales(_: Dict[str, str]):
     """Update locale files across the extensions"""
     tool_locales = airtavolo.get_tool_locales()
-    for tbundle in _find_toolbundles(configs.EXTENSIONS_PATH):
-        _update_toolbundle_locales(tbundle, tool_locales)
+    for tbundle in _find_tbundles(configs.EXTENSIONS_PATH):
+        _update_locales(tbundle, tool_locales)
