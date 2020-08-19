@@ -119,7 +119,7 @@ def create_release(args: Dict[str, str]):
     """Create pyRevit release (build all, create installers)"""
     utils.ensure_windows()
 
-    _ensure_clean_tree()
+    # _ensure_clean_tree()
 
     # run a check on all tools
     if not install.check(args):
@@ -137,7 +137,7 @@ def create_release(args: Dict[str, str]):
     _update_product_data(release_ver, pyrevit_pc)
     _update_product_data(release_ver, pyrevitcli_pc, cli=True)
 
-    _commit_changes(f"Updated version: {release_ver}")
+    # _commit_changes(f"Updated version: {release_ver}")
 
     # now build all projects
     buildall.build_all(args)
