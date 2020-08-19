@@ -1,6 +1,7 @@
 """Wrapping needed airtable api functions"""
 import os
 import logging
+from typing import List
 from collections import namedtuple
 import requests
 
@@ -24,7 +25,7 @@ def _call_airtable(url):
     return requests.get(url, headers=headers)
 
 
-def get_tool_locales():
+def get_tool_locales() -> List[ToolLocales]:
     """Download the language table from airtable source"""
     records = []
     offset = ""
@@ -39,6 +40,7 @@ def get_tool_locales():
                 fields = record["fields"]
                 rname = fields.get("Name (English US)", None)
                 if rname:
+                    fields.pop("Name (English US)")
                     records.append(ToolLocales(name=rname, langs=fields))
             if not offset:
                 break
