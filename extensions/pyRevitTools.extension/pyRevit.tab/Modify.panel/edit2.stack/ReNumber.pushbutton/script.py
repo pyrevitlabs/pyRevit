@@ -9,8 +9,6 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__author__ = "{{author}}"
-
 logger = script.get_logger()
 output = script.get_output()
 

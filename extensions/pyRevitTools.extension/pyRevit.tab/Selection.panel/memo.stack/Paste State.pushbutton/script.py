@@ -11,9 +11,6 @@ from pyrevit import forms, script
 import copypastestate
 
 
-__authors__ = ['Gui Talarico', '{{author}}', 'Alex Melnikov']
-
-
 # collect actions that are valid in this context
 available_actions = [
     x for x in copypastestate.get_actions()

@@ -5,9 +5,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__helpurl__ = '{{docpath}}b050tpp4vCE&t=42s'
-
-
 curview = revit.active_view
 
 

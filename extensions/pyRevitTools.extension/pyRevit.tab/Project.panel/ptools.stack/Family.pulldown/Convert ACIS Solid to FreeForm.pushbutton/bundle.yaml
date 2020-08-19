@@ -1,0 +1,14 @@
+tooltip: >-
+  Convert ACIS Solid to FreeForm Element
+
+
+  creates FreeForm elements from your selected imported acis SAT
+
+  solid geometry, so you can turn it into Void/Solid apply materials
+
+  easily and get access to its shape handles
+
+
+  Copyright (c) 2019 Frederic Beaupere
+
+  github.com/hdm-dt-fb

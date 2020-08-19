@@ -7,10 +7,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__context__ = "selection"
-__helpurl__ = "{{docpath}}-JDgiP3gK9Y"
-
-
 class ReValueItem(object):
     def __init__(self, eid, oldvalue, final=False):
         self.eid = eid

@@ -4,14 +4,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__doc__ = 'Uses the Worksharing tooltip to find out the element '\
-          '"owned" by the user in the current view.' \
-          'If current view is a sheet, the tools searches all the '\
-          'views placed on this sheet as well.' \
-          '"Owned" elements are the elements edited by the user '\
-          'since the last synchronize and release.'
-
-
 filteredlist = []
 viewlist = []
 

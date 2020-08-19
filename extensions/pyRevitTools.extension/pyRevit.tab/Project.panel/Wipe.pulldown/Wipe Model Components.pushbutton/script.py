@@ -8,16 +8,6 @@ from pyrevit import revit, DB
 from pyrevit import compat
 
 
-__doc__ = 'This tools helps you to remove extra unnecessary information in '\
-          'the model when sending to a contractor or consultant. '\
-          'Run the tools and select the categories that you\'d like '\
-          'to be removed from the model. Then hit \"Wipe Model\" and '\
-          'the process will go through each category and will ' \
-          'remove them. You might see some errors or warnings from Revit '\
-          '(since this is a very destructive) ' \
-          'process but generally they should not crash the script.'
-
-
 logger = script.get_logger()
 
 

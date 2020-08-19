@@ -7,9 +7,6 @@ Select horizontal reveals.
 from pyrevit import revit, DB
 
 
-__title__ = "Select Vertical/Horizontal Reveals"
-
-
 reveal_ids = []
 
 for el in DB.FilteredElementCollector(revit.doc)\

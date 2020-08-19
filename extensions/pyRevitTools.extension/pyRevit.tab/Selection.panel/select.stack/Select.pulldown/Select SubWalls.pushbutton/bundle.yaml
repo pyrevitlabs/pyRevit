@@ -1,0 +1,2 @@
+tooltip: Select a series of stacked walls. Run this tool and it will replace the selection with sub-walls of the selected stacked walls
+context: selection

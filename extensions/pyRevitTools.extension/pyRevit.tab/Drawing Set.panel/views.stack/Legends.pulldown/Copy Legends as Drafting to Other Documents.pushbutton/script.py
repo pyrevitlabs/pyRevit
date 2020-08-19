@@ -6,11 +6,6 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__helpurl__ = '{{docpath}}ThzcRM_Tj8g'
-__doc__ = 'Converts selected legend views to detail views and copies '\
-          'them to all projects currently open in Revit.'
-
-
 logger = script.get_logger()
 
 

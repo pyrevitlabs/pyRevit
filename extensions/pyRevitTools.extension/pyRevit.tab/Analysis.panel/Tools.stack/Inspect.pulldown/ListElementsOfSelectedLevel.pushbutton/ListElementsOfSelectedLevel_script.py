@@ -7,12 +7,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__title__ = 'List Elements of Selected Level(s)'
-__author__ = 'Frederic Beaupere'
-# __context__ = 'selection'
-__contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
 output = script.get_output()
 
 all_elements = DB.FilteredElementCollector(revit.doc)\

@@ -3,15 +3,6 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__title__ = 'Copy/Update Selected Viewports To Selected Sheets'
-
-__doc__ = 'Open the source sheet. Run this script and select destination '\
-          'sheets. Select Viewports and push Finish button on the '\
-          'properties bar. The selected views will be added to the '\
-          'destination sheets. If the view or schedule already exists on '\
-          'that sheet, the location and type will be updated.'
-
-
 logger = script.get_logger()
 
 

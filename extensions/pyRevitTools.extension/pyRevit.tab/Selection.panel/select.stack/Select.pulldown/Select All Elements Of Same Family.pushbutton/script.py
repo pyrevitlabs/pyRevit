@@ -2,11 +2,6 @@ from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 
 
-__context__ = 'selection'
-__doc__ = 'Selects all elements (in model) of the same family '\
-          'as the currently selected object.'
-
-
 matchlist = []
 
 selection = revit.get_selection()

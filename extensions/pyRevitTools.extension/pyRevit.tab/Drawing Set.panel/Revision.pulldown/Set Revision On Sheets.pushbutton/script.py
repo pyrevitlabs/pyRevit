@@ -4,11 +4,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__doc__ = 'Select a revision from the list of revisions and '\
-          'this script set that revision on all sheets in the '\
-          'model as an additional revision.'
-
-
 revisions = forms.select_revisions(button_name='Select Revision',
                                    multiple=True)
 

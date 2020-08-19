@@ -11,29 +11,6 @@ from pyrevit import script
 import patmaker
 
 
-__title__ = 'Make\nPattern'
-
-__helpurl__ = \
-    '{{docpath}}H7b8hjHbauE&t=8s&list=PLc_1PNcpnV57FWI6G8Cd09umHpSOzvamf'
-
-__doc__ = 'Draw your pattern tile in a detail view using detail lines, '\
-          'curves, circles or ellipses, or even filled regions.\n'\
-          'Select the pattern lines and curves '\
-          'and run this tool. Give the pattern a name and '\
-          'hit "Create Pattern". The tool asks you to pick the boundary '\
-          'corners of the pattern. The tool will process the input lines, '\
-          'approximates the curves and splines with smaller lines and '\
-          'finds the best angles for these lines and will '\
-          'generate a pattern. It also reads the patterns from selected '\
-          'filled regions and will combine with selected detail lines.'\
-          '\n\n'\
-          'TIP: You can export existing patterns if no lines are selected.'\
-          '\n\n'\
-          'TRICK: You can convert existing pattern types by selecting a '\
-          'filled region only and create the opposite pattern type '\
-          '(selected drafting filled region and create model pattern).'\
-
-
 logger = script.get_logger()
 
 selection = revit.get_selection()

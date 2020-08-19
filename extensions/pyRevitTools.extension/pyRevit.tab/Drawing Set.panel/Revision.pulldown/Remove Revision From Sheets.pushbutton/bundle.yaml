@@ -1,0 +1,5 @@
+tooltip: >-
+  Select a revision from the list of revisions
+
+  and this script will remove that revision from all sheets if it has not been "clouded" on the sheet
+title: Remove Revision From Sheets

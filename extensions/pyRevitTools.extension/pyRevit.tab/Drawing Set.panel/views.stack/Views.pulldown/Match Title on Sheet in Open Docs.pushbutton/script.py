@@ -1,11 +1,6 @@
 from pyrevit import revit, DB
 
 
-__doc__ = 'Matches the "Title On Sheet" value of all views in open documents '\
-          'to current document so all views with matching names will have '\
-          'matching "Title On Sheet" values.'
-
-
 def collect_views(input_doc):
     return DB.FilteredElementCollector(input_doc) \
            .OfCategory(DB.BuiltInCategory.OST_Views) \

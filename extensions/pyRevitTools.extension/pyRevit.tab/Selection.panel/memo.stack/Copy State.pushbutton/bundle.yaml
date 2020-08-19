@@ -1,0 +1,12 @@
+tooltip: >-
+  Copies the state of desired parameter of the active
+
+  view to memory. e.g. Visibility Graphics settings or
+
+  Zoom state. Run it and see how it works
+author: >-
+  Gui Talarico
+
+  {{author}}
+
+  Alex Melnikov

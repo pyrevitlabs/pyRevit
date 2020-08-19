@@ -23,12 +23,6 @@ from pyrevit.runtime.types import DocumentEventUtils
 import keynotesdb as kdb
 
 
-__title__ = "Manage\nKeynotes"
-__author__ = "{{author}}"
-__helpurl__ = "https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
-__min_revit_ver__ = 2014
-
-
 logger = script.get_logger()
 output = script.get_output()
 

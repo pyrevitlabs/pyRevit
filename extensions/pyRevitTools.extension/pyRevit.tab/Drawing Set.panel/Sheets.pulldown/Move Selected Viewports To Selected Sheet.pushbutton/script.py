@@ -4,13 +4,6 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__doc__ = 'Open the source sheet. Run this script and select destination '\
-          'sheet. Select Viewports and push Finish button on the '\
-          'properties bar. The selected views will be MOVED to '\
-          'the destination sheet.'
-
-
-
 cursheet = revit.active_view
 forms.check_viewtype(cursheet, DB.ViewType.DrawingSheet, exitscript=True)
 

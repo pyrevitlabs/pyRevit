@@ -5,15 +5,6 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__doc__ = 'This script removes all instances of the selected element '\
-          'Family and tries to convert the family into face host based. '\
-          'Only families of CommunicationDevices, DataDevices, '\
-          'DuctTerminal, ElectricalEquipment, ElectricalFixtures, '\
-          'FireAlarmDevices, LightingDevices, LightingFixtures, '\
-          'MechanicalEquipment, NurseCallDevices, PlumbingFixtures, '\
-          'SecurityDevices, Sprinklers, TelephoneDevices can be converted.'
-
-
 def delete_all_instances(target_family):
     family_instances = []
     try:

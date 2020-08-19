@@ -11,8 +11,6 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__context__ = 'selection'
-
 output = script.get_output()
 selection = revit.get_selection()
 

@@ -4,10 +4,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__doc__ = 'Copy selected revisions from current model ' \
-          'to selected open models.'
-
-
 selected_revisions = forms.select_revisions(button_name='Select Revision',
                                             multiple=True)
 if selected_revisions:

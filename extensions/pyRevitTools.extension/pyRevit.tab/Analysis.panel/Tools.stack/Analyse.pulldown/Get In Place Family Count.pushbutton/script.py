@@ -8,10 +8,6 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-__author__ = 'Jean-Marc Couffin'
-__contact__ = 'https://github.com/jmcouffin'
-
-
 output = script.get_output()
 
 

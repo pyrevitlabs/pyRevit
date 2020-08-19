@@ -1,0 +1,5 @@
+tooltip: "Print sheets in order from a sheet index.\n\nNote:\nWhen using the `Combine into one file` option,\nthe tool adds non-printable character u'\\u200e'\n(Left-To-Right Mark) at the start of the sheet names\nto push Revit's interenal printing engine to sort\nthe sheets correctly per the drawing index order. \n\nMake sure your drawings indices consider this\nwhen filtering for sheet numbers.\n\nShift-Click:\nShift-Clicking the tool will remove all\nnon-printable characters from the sheet numbers,\nin case an error in the tool causes these characters\nto remain."
+title: >-
+  Print
+
+  Sheets

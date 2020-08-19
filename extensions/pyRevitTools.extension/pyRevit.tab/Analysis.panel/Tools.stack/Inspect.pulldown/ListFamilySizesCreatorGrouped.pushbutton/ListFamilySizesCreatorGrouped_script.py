@@ -7,12 +7,6 @@ from collections import defaultdict
 from pyrevit import revit, DB
 
 
-__title__ = 'Lists Families Sizes Grouped by Creator'
-__author__ = 'Frederic Beaupere'
-__contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
-
 def convert_size(size_bytes):
     if size_bytes == 0:
         return "0B"

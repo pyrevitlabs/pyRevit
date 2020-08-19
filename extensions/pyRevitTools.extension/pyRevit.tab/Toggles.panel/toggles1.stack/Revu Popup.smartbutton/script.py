@@ -9,14 +9,6 @@ from pyrevit.coreutils.ribbon import ICON_MEDIUM
 logger = script.get_logger()
 
 
-__context__ = 'zero-doc'
-__title__ = 'Revu\nPopup'
-
-
-__doc__ = 'Enables and disables the Revu PDF Printer prompt for '\
-          'filename option. The Icon shows the current state of this setting.'
-
-
 # op.sep = '\\'
 driver_keys = []
 BBS_KEY_PATH = r'Software\Bluebeam Software'
