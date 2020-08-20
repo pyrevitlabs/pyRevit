@@ -319,11 +319,11 @@ namespace pyRevitLabs.DeffrelDB {
                 if (tableDef.IsHidden)
                     cleanedDLine = cleanedDLine.Replace(medataLineStart + mdataRecordSeparator, "");
                 var fieldValues = cleanedDLine.Split(new string[] { tableDef.FieldDelimiter }, StringSplitOptions.None);
+
                 var fieldValuesDict = new Dictionary<string, object>();
                 int fieldIndex = 0;
-
                 foreach (var field in tableDef.Fields) {
-                    fieldValuesDict.Add(field.Name, decodeFieldValue(fieldValueString: fieldValues[fieldIndex],
+                    fieldValuesDict.Add(field.Name, decodeFieldValue(fieldValueString: fieldValues.ElementAtOrDefault(fieldIndex),
                                                                      fieldType: field.FieldType));
                     fieldIndex++;
                 }
