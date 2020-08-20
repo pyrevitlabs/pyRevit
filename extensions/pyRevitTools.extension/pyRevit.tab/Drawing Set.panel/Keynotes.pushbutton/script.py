@@ -352,7 +352,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self._conn = kdb.connect(self._kfile)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message, exitscript=True)
+            forms.alert(toutex.Message,
+                        expanded="{}::__init__()".format(
+                            self.__class__.__name__),
+                        exitscript=True)
         except Exception as ex:
             logger.debug('Connection failed | %s' % ex)
             res = forms.alert(
@@ -382,7 +385,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 elif res == "Select a different keynote file":
                     self._change_kfile()
                 elif res == "Give me more info":
-                    script.open_url(__helpurl__)
+                    script.open_url(__helpurl__) #pylint: disable=undefined-variable
                     script.exit()
             else:
                 forms.alert("Keynote file is not yet converted.",
@@ -442,12 +445,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @postcmd_idx.setter
     def postcmd_idx(self, index):
-        # self.keynotetype_cb.ItemsSource = \
-        #     [str(x).replace('UI.PostableCommand', '')
-        #      for x in get_keynote_pcommands()]
-        # self.keynotetype_cb.SelectedIndex = index
-        postcmd_op = self.postcmd_options[index]
-        postcmd_op.IsChecked = True
+        if 0 < index < len(self.postcmd_options):
+            postcmd_op = self.postcmd_options[index]
+            postcmd_op.IsChecked = True
 
     @property
     def selected_keynote(self):
@@ -475,7 +475,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             return kdb.get_categories(self._conn)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            forms.alert(toutex.Message,
+                        expanded="{}::all_categories()".format(
+                            self.__class__.__name__))
             return []
 
     @property
@@ -483,7 +485,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             return kdb.get_keynotes(self._conn)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            forms.alert(toutex.Message,
+                        expanded="{}::all_keynotes()".format(
+                            self.__class__.__name__))
             return []
 
     @property
@@ -496,9 +500,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def get_used_keynote_elements(self):
         used_keys = defaultdict(list)
-        for knote in revit.query.get_used_keynotes(doc=revit.doc):
-            key = knote.Parameter[DB.BuiltInParameter.KEY_VALUE].AsString()
-            used_keys[key].append(knote.Id)
+        try:
+            for knote in revit.query.get_used_keynotes(doc=revit.doc):
+                key = knote.Parameter[DB.BuiltInParameter.KEY_VALUE].AsString()
+                used_keys[key].append(knote.Id)
+        except Exception as ex:
+            forms.alert(str(ex),
+                        expanded="{}::get_used_keynote_elements()".format(
+                            self.__class__.__name__))
         return used_keys
 
     def save_config(self):
@@ -605,7 +614,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._conn = kdb.connect(self._kfile)
             kdb.import_legacy_keynotes(self._conn, temp_kfile, skip_dup=True)
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message, exitscript=True)
+            forms.alert(toutex.Message,
+                        expanded="{}::_convert_existing()".format(
+                            self.__class__.__name__),
+                        exitscript=True)
 
     def _change_kfile(self):
         kfile = forms.pick_file('txt')
@@ -622,12 +634,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 except Exception as ckf_ex:
                     forms.alert(
                         "Error opening seleced keynote file.",
-                        sub_msg=str(ckf_ex)
+                        sub_msg=str(ckf_ex),
+                        expanded="{}::_change_kfile() [kdb.connect]".format(
+                            self.__class__.__name__)
                     )
 
                 return self._kfile
             except Exception as skex:
-                forms.alert(str(skex))
+                forms.alert(str(skex),
+                            expanded="{}::_change_kfile() [transaction]".format(
+                                self.__class__.__name__))
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -664,8 +680,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 active_tree = kdb.get_keynotes_tree(self._conn)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(
+                    toutex.Message,
+                    expanded="{}::_update_ktree_knotes() [timeout]".format(
+                        self.__class__.__name__))
                 active_tree = []
+            except Exception as ex:
+                forms.alert(
+                    "Error retrieving keynotes.",
+                    expanded="{}\n{}::_update_ktree_knotes()".format(
+                        str(ex),
+                        self.__class__.__name__),
+                    exitscript=True
+                    )
 
             selected_cat = self.selected_category
             # if the is a category selected, list its children
@@ -767,9 +794,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 # make sure to relaod on close
                 self._needs_update = True
         except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
+            forms.alert(toutex.Message,
+                        expanded="{}::add_category() [timeout]".format(
+                            self.__class__.__name__))
         except Exception as ex:
-            forms.alert(str(ex))
+            forms.alert(str(ex),
+                        expanded="{}::add_category()".format(
+                            self.__class__.__name__))
 
     def edit_category(self, sender, args):
         selected_category = self.selected_category
@@ -798,9 +829,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     # make sure to relaod on close
                     self._needs_update = True
                 except System.TimeoutException as toutex:
-                    forms.alert(toutex.Message)
+                    forms.alert(toutex.Message,
+                                expanded="{}::edit_category() [timeout]".format(
+                                    self.__class__.__name__))
                 except Exception as ex:
-                    forms.alert(str(ex))
+                    forms.alert(str(ex),
+                                expanded="{}::edit_category()".format(
+                                    self.__class__.__name__))
                 finally:
                     self._update_ktree()
                     if selected_keynote:
@@ -830,9 +865,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         # make sure to relaod on close
                         self._needs_update = True
                     except System.TimeoutException as toutex:
-                        forms.alert(toutex.Message)
+                        forms.alert(
+                            toutex.Message,
+                            expanded="{}::remove_category() [timeout]".format(
+                                self.__class__.__name__))
                     except Exception as ex:
-                        forms.alert(str(ex))
+                        forms.alert(str(ex),
+                                    expanded="{}::remove_category()".format(
+                                        self.__class__.__name__))
                     finally:
                         self._update_ktree(active_catkey=self._allcat)
 
@@ -845,10 +885,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             parent_key = self.selected_category.key
         # otherwise ask to select a parent category
         if not parent_key:
-            cat = forms.SelectFromList.show(self.all_categories,
-                                            title="Select Parent Category",
-                                            name_attr='text',
-                                            owner=self)
+            cat = forms.SelectFromList.show(
+                self.all_categories,
+                title="Select Parent Category",
+                name_attr='text',
+                item_container_template=self.Resources["treeViewItem"],
+                owner=self)
             if cat:
                 parent_key = cat.key
         # if parent key is available proceed to create keynote
@@ -860,9 +902,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 # make sure to relaod on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(toutex.Message,
+                            expanded="{}::add_keynote() [timeout]".format(
+                                self.__class__.__name__))
             except Exception as ex:
-                forms.alert(str(ex))
+                forms.alert(str(ex),
+                            expanded="{}::add_keynote()".format(
+                                self.__class__.__name__))
             finally:
                 self._update_ktree_knotes()
 
@@ -876,9 +922,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 # make sure to relaod on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(toutex.Message,
+                            expanded="{}::add_sub_keynote() [timeout]".format(
+                                self.__class__.__name__))
             except Exception as ex:
-                forms.alert(str(ex))
+                forms.alert(str(ex),
+                            expanded="{}::add_sub_keynote()".format(
+                                self.__class__.__name__))
             finally:
                 self._update_ktree_knotes()
 
@@ -894,9 +944,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 # make sure to relaod on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(toutex.Message,
+                            expanded="{}::duplicate_keynote() [timeout]".format(
+                                self.__class__.__name__))
             except Exception as ex:
-                forms.alert(str(ex))
+                forms.alert(str(ex),
+                            expanded="{}::duplicate_keynote()".format(
+                                self.__class__.__name__))
             finally:
                 self._update_ktree_knotes()
 
@@ -921,9 +975,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         # make sure to relaod on close
                         self._needs_update = True
                     except System.TimeoutException as toutex:
-                        forms.alert(toutex.Message)
+                        forms.alert(
+                            toutex.Message,
+                            expanded="{}::remove_keynote() [timeout]".format(
+                                self.__class__.__name__))
                     except Exception as ex:
-                        forms.alert(str(ex))
+                        forms.alert(
+                            str(ex),
+                            expanded="{}::remove_keynote()".format(
+                                self.__class__.__name__))
                     finally:
                         self._update_ktree_knotes()
 
@@ -938,9 +998,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 # make sure to relaod on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(toutex.Message,
+                            expanded="{}::edit_keynote() [timeout]".format(
+                                self.__class__.__name__))
             except Exception as ex:
-                forms.alert(str(ex))
+                forms.alert(str(ex),
+                            expanded="{}::edit_keynote()".format(
+                                self.__class__.__name__))
             finally:
                 self._update_ktree_knotes()
 
@@ -996,7 +1060,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         knote_key
                         )
                 except Exception as ex:
-                    forms.alert(str(ex))
+                    forms.alert(str(ex),
+                                expanded="{}::place_keynote()".format(
+                                    self.__class__.__name__))
 
     def enable_history(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -1027,10 +1093,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 kdb.import_legacy_keynotes(self._conn, kfile, skip_dup=res)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(toutex.Message,
+                            expanded="{}::import_keynotes() [timeout]".format(
+                                self.__class__.__name__))
             except Exception as ex:
                 logger.debug('Importing legacy keynotes failed | %s' % ex)
-                forms.alert(str(ex))
+                forms.alert(str(ex),
+                            expanded="{}::import_keynotes()".format(
+                                self.__class__.__name__))
             finally:
                 self._update_ktree(active_catkey=self._allcat)
                 self._update_ktree_knotes()
@@ -1042,7 +1112,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 kdb.export_legacy_keynotes(self._conn, kfile)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(toutex.Message,
+                            expanded="{}::export_keynotes()".format(
+                                self.__class__.__name__))
 
     def export_visible_keynotes(self, sender, args):
         kfile = forms.save_file('txt')
@@ -1056,7 +1128,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                            kfile,
                                            include_keys=include_list)
             except System.TimeoutException as toutex:
-                forms.alert(toutex.Message)
+                forms.alert(toutex.Message,
+                            expanded="{}::export_visible_keynotes()".format(
+                                self.__class__.__name__))
 
     def update_model(self, sender, args):
         self.Close()
@@ -1070,7 +1144,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self.save_config()
         except Exception as saveex:
             logger.debug('Saving configuration failed | %s' % saveex)
-            forms.alert(str(saveex))
+            forms.alert(str(saveex),
+                        expanded="{}::window_closing()".format(
+                            self.__class__.__name__))
 
         if self._conn:
             # manuall call dispose to release locks
@@ -1086,4 +1162,4 @@ try:
         reset_config=__shiftclick__ #pylint: disable=undefined-variable
         ).show(modal=True)
 except Exception as kmex:
-    forms.alert(str(kmex))
+    forms.alert(str(kmex), expanded="Creating keynote manager window")
