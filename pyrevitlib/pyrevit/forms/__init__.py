@@ -987,8 +987,12 @@ class GetValueWindow(TemplateUserInputWindow):
         """Handle string vlaue update event."""
         filtered_rvalues = \
             sorted([x for x in self.reserved_values
-                    if self.stringValue_tb.Text == str(x)],
+                    if self.stringValue_tb.Text == str(x)])
+        similar_rvalues = \
+            sorted([x for x in self.reserved_values
+                    if self.stringValue_tb.Text in str(x)],
                    reverse=True)
+        filtered_rvalues.extend(similar_rvalues)
         if filtered_rvalues:
             self.reservedValuesList.ItemsSource = filtered_rvalues
             self.show_element(self.reservedValuesListPanel)
