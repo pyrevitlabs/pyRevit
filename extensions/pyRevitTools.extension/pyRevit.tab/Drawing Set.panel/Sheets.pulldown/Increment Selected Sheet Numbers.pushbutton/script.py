@@ -17,7 +17,8 @@ selection = revit.get_selection()
 
 shift = 1
 
-selected_sheets = forms.select_sheets(title='Select Sheets')
+selected_sheets = forms.select_sheets(title='Select Sheets',
+                                      use_selection=True)
 if not selected_sheets:
     script.exit()
 
