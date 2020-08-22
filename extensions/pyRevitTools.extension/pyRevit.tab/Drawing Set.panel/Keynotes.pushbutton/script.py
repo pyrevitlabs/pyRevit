@@ -445,9 +445,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @postcmd_idx.setter
     def postcmd_idx(self, index):
-        if 0 < index < len(self.postcmd_options):
-            postcmd_op = self.postcmd_options[index]
-            postcmd_op.IsChecked = True
+        postcmd_op = self.postcmd_options[index if index else 0]
+        postcmd_op.IsChecked = True
 
     @property
     def selected_keynote(self):
