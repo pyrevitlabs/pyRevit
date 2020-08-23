@@ -109,6 +109,12 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         return self._cfg_file_path
 
     @property
+    def environment(self):
+        if not self.has_section(CONSTS.EnvConfigsSectionName):
+            self.add_section(CONSTS.EnvConfigsSectionName)
+        return self.get_section(CONSTS.EnvConfigsSectionName)
+
+    @property
     def core(self):
         if not self.has_section(CONSTS.ConfigsCoreSection):
             self.add_section(CONSTS.ConfigsCoreSection)
@@ -545,13 +551,6 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
-    def sources(self):
-        return self.environment.get_option(
-            CONSTS.EnvConfigsExtensionLookupSourcesKey,
-            default_value=[],
-        )
-
-    @property
     def respect_language_direction(self):
         return False
 
@@ -569,12 +568,12 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         Returns:
             :obj:`list`: list of strings. External user extension directories.
         """
-        dir_list = []
+        dir_list = set()
         if include_default:
             # add default ext path
-            dir_list.append(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            dir_list.add(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
         try:
-            dir_list.extend([
+            dir_list.update([
                 op.expandvars(op.normpath(x))
                 for x in self.core.get_option(
                     CONSTS.ConfigsUserExtensionsKey,
@@ -593,11 +592,19 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             :obj:`list`: list of strings. user extension directories.
 
         """
-        dir_list = []
+        dir_list = set()
         if op.exists(EXTENSIONS_DEFAULT_DIR):
-            dir_list.append(EXTENSIONS_DEFAULT_DIR)
-        dir_list.extend(self.get_thirdparty_ext_root_dirs())
-        return list(set(dir_list))
+            dir_list.add(EXTENSIONS_DEFAULT_DIR)
+        dir_list.update(self.get_thirdparty_ext_root_dirs())
+        return list(dir_list)
+
+    def get_ext_sources(self):
+        """Return a list of extension definition source files"""
+        ext_sources = self.environment.get_option(
+            CONSTS.EnvConfigsExtensionLookupSourcesKey,
+            default_value=[],
+        )
+        return list(set(ext_sources))
 
     def set_thirdparty_ext_root_dirs(self, path_list):
         """Updates list of external extension directories in config file
