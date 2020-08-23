@@ -108,11 +108,38 @@ def compare_props(src_element, tgt_element):
                 )
 
 # main
-source_element = None
-with forms.WarningBar(title="Pick source object:"):
-    source_element = revit.pick_element()
+# try use selected elements
+selected_elements = revit.get_selection().elements
+if len(selected_elements) == 1 and forms.alert("Use selected %s?" % ("view"
+        if isinstance(selected_elements[0], DB.View) else "element"),
+                                               yes=True, no=True):
+    source_element = selected_elements[0]
+    target_type = "Views" if isinstance(source_element, DB.View)\
+        else "Elements"
+else:
+    source_element = None
+    # ask for type of elements to match
+    # some are not selectable in graphical views
+    target_type = \
+        forms.CommandSwitchWindow.show(
+            ["Elements", "Views"],
+            message="Pick type of targets:")
+
+    # determine source element
+    if target_type == "Elements":
+        with forms.WarningBar(title="Pick source object:"):
+            source_element = revit.pick_element()
+    elif target_type == "Views":
+        source_element = \
+            forms.select_views(title="Select Source View", multiple=False)
 
 # grab parameters from source element
 if source_element:
-    target_element = revit.pick_element(message="Pick target element:")
-    compare_props(source_element, target_element)
+    target_element = None
+    if target_type == "Elements":
+        target_element = revit.pick_element(message="Pick target element:")
+    elif target_type == "Views":
+        target_element = \
+            forms.select_views(title="Select Target View", multiple=False)
+    if target_element:
+        compare_props(source_element, target_element)
