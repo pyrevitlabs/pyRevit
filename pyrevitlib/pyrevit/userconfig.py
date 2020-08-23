@@ -545,6 +545,13 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
+    def sources(self):
+        return self.environment.get_option(
+            CONSTS.EnvConfigsExtensionLookupSourcesKey,
+            default_value=[],
+        )
+
+    @property
     def respect_language_direction(self):
         return False
 

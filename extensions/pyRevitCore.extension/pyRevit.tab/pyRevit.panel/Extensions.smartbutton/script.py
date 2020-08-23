@@ -139,7 +139,7 @@ class ExtensionsWindow(forms.WPFWindow):
         """
 
         #pylint: disable=E1101,W0201
-        for ext_dir in ext_dirs_list:
+        for ext_dir in set(ext_dirs_list):
             ext_dir_install_menu_item = InstallPackageMenuItem()
             ext_dir_install_menu_item.install_path = ext_dir
             ext_dir_install_menu_item.Header = \
