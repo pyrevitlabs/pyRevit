@@ -136,22 +136,30 @@ if __shiftclick__:    #pylint: disable=undefined-variable
     logger.debug("Recalled data: %s", source_props)
 
 if not source_props:
-    source_element = None
+    # try use selected elements
+    selected_elements = revit.get_selection().elements
+    if len(selected_elements) == 1 and forms.alert("Use selected %s?" % ("view"
+            if isinstance(selected_elements[0], DB.View) else "element"),
+                                                   yes=True, no=True):
+        source_element = selected_elements[0]
+        target_type = "Views" if isinstance(source_element, DB.View)\
+            else "Elements"
+    else:
+        source_element = None
+        # ask for type of elements to match
+        # some are not selectable in graphical views
+        target_type = \
+            forms.CommandSwitchWindow.show(
+                ["Elements", "Views"],
+                message="Pick type of targets:")
 
-    # ask for type of elements to match
-    # some are not selectable in graphical views
-    target_type = \
-        forms.CommandSwitchWindow.show(
-            ["Elements", "Views"],
-            message="Pick type of targets:")
-
-    # determine source element
-    if target_type == "Elements":
-        with forms.WarningBar(title="Pick source object:"):
-            source_element = revit.pick_element()
-    elif target_type == "Views":
-        source_element = \
-            forms.select_views(title="Select Source View", multiple=False)
+        # determine source element
+        if target_type == "Elements":
+            with forms.WarningBar(title="Pick source object:"):
+                source_element = revit.pick_element()
+        elif target_type == "Views":
+            source_element = \
+                forms.select_views(title="Select Source View", multiple=False)
 
     # grab properties from source element
     if source_element:

@@ -10,7 +10,9 @@ logger = script.get_logger()
 
 
 def get_source_sheets():
-    sheet_elements = forms.select_sheets(button_name='Select TitleBlocks', use_selection=True)
+    sheet_elements = forms.select_sheets(button_name='Select TitleBlocks',
+                                         use_selection=True,
+                                         include_placeholder=False)
     if not sheet_elements:
         script.exit()
     return sheet_elements

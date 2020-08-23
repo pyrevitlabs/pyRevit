@@ -101,22 +101,23 @@ else:
 
 # fake load the family so we can get the symbols
 symbol_list = set()
-with revit.DryTransaction('Fake load'):
-    # remove existing family so we can load the original
-    revit.doc.Delete(family.Id)
-    # now load the original
-    ret_ref = clr.Reference[DB.Family]()
-    revit.doc.LoadFamily(fam_doc_path, ret_ref)
-    loaded_fam = ret_ref.Value
-    # get the symbols from the original
-    for sym_id in loaded_fam.GetFamilySymbolIds():
-        family_symbol = revit.doc.GetElement(sym_id)
-        family_symbol_name = revit.query.get_name(family_symbol)
-        sortable_sym = SmartSortableFamilyType(family_symbol_name)
-        logger.debug('Importable Type: {}'.format(sortable_sym))
-        symbol_list.add(sortable_sym)
-    # okay. we have all the symbols.
-    # DryTransaction will rollback all the changes
+with revit.ErrorSwallower():
+    with revit.DryTransaction('Fake load'):
+        # remove existing family so we can load the original
+        revit.doc.Delete(family.Id)
+        # now load the original
+        ret_ref = clr.Reference[DB.Family]()
+        revit.doc.LoadFamily(fam_doc_path, ret_ref)
+        loaded_fam = ret_ref.Value
+        # get the symbols from the original
+        for sym_id in loaded_fam.GetFamilySymbolIds():
+            family_symbol = revit.doc.GetElement(sym_id)
+            family_symbol_name = revit.query.get_name(family_symbol)
+            sortable_sym = SmartSortableFamilyType(family_symbol_name)
+            logger.debug('Importable Type: {}'.format(sortable_sym))
+            symbol_list.add(sortable_sym)
+        # okay. we have all the symbols.
+        # DryTransaction will rollback all the changes
 
 
 # ask user for required symbol and load into current document

@@ -74,11 +74,22 @@ def halftone():
             revit.doc.ActiveView.SetElementOverrides(el.Id, ogs)
 
 
+def set_element_overrides(el, ogs, recursive=False):
+    """Set element overrides for provided element including nested elements
+    and subgroups"""
+    if recursive and isinstance(el, DB.Group):
+        for el_nested in el.GetMemberIds():
+            set_element_overrides(revit.doc.GetElement(el_nested),
+                                  ogs,
+                                  recursive=True)
+    revit.doc.ActiveView.SetElementOverrides(el.Id, ogs)
+
+
 def reset_vg():
     with revit.Transaction('Reset Element Override'):
         for el in selection:
             ogs = DB.OverrideGraphicSettings()
-            revit.doc.ActiveView.SetElementOverrides(el.Id, ogs)
+            set_element_overrides(el, ogs, recursive=True)
 
 
 def solid_line():

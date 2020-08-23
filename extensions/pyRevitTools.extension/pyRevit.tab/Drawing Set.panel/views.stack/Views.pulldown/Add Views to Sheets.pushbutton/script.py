@@ -14,7 +14,7 @@ selected_views = forms.select_views(use_selection=True)
 if selected_views:
     logger.debug('Selected views: {}'.format(len(selected_views)))
     # get the destination sheets from user
-    dest_sheets = forms.select_sheets()
+    dest_sheets = forms.select_sheets(include_placeholder=False)
 
     if dest_sheets:
         logger.debug('Selected sheets: {}'.format(len(dest_sheets)))

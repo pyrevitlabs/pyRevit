@@ -8,7 +8,8 @@ revisions = forms.select_revisions(button_name='Select Revision',
                                    multiple=True)
 
 if revisions:
-    sheets = forms.select_sheets(button_name='Set Revision')
+    sheets = forms.select_sheets(button_name='Set Revision',
+                                 include_placeholder=False)
     if sheets:
         with revit.Transaction('Set Revision on Sheets'):
             updated_sheets = revit.update.update_sheet_revisions(revisions,

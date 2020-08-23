@@ -191,12 +191,8 @@ def colorize_grouptypes_in_views(views):
             colorize_grouptypes_in_view(view, groups_colors)
 
 
-selected_views = revit.get_selection().elements
-if not selected_views:
-    selected_views = [revit.active_view]
-
-target_views = [v for v in selected_views if isinstance(v, DB.View)]
+target_views = [v for v in revit.get_selection().elements
+                if isinstance(v, DB.View)]
 if not target_views:
-    forms.alert("No views were selected")
-else:
-    colorize_grouptypes_in_views(target_views)
+    target_views = [revit.active_view]
+colorize_grouptypes_in_views(target_views)
