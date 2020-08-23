@@ -9,10 +9,6 @@ from pyrevit import script
 from pyrevit.userconfig import user_config
 
 
-__context__ = 'zero-doc'
-__min_revit_ver__ = 2019
-
-
 output = script.get_output()
 
 COLOR_TAG_STYLE_TEMPLATE = \

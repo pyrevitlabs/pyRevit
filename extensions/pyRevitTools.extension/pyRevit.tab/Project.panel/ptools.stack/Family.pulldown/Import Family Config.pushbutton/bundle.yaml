@@ -1,0 +1,39 @@
+tooltip: >-
+  Import family configurations from yaml file and modify current family.
+
+
+  Family configuration file is expected to be a yaml file,
+
+  providing info about the parameters and types to be created.
+
+
+  The structure of this config file is as shown below:
+
+
+  parameters:
+          <parameter-name>:
+                  type: <Autodesk.Revit.DB.ParameterType>
+                  category: <Autodesk.Revit.DB.BuiltInParameterGroup>
+                  instance: <true|false>
+                  reporting: <true|false>
+                  formula: <str>
+                  default: <str>
+  types:
+          <type-name>:
+                  <parameter-name>: <value>
+                  <parameter-name>: <value>
+                  ...
+
+
+  Example:
+
+
+  parameters:
+          Shelf Height (Upper):
+                  type: Length
+                  category: PG_GEOMETRY
+                  instance: false
+  types:
+          24D"x36H":
+                  Shelf Height (Upper): 3'-0"
+author: '{{author}}'

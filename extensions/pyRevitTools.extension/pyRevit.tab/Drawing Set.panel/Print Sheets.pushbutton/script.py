@@ -33,8 +33,6 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-__title__ = 'Print\nSheets'
-
 logger = script.get_logger()
 config = script.get_config()
 

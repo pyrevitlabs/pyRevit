@@ -272,7 +272,8 @@ def _generate_runtime_asm():
             defines=Array[str]([
                 "REVIT{}".format(HOST_APP.version),
                 "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
-                ])
+                ]),
+            debug=False
             )
         # log results
         logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')

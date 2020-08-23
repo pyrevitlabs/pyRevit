@@ -1,4 +1,5 @@
 
+"""Shows the preferences window for pyRevit"""
 #pylint: disable=E0401,W0703,W0613,C0111,C0103
 import os
 import os.path as op
@@ -21,13 +22,6 @@ from pyrevit.userconfig import user_config
 from pyrevit import revit
 
 import pyrevitcore_globals
-
-
-__context__ = 'zero-doc'
-
-__doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
-          'pyRevit loads and set some basic parameters here.' \
-          '\n\nShift-Click:\nShows config file in explorer.'
 
 
 logger = script.get_logger()

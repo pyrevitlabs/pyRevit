@@ -5,13 +5,6 @@ from pyrevit import script
 from pyrevit import revit, DB
 
 
-__title__ = 'Lines Per View Counter'
-__author__ = 'Frederic Beaupere'
-__contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
-
-
 output = script.get_output()
 
 

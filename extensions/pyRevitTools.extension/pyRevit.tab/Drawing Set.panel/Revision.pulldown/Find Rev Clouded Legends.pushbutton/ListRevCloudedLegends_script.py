@@ -4,17 +4,6 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-__title__ = 'Find Legends with Revision Clouds'
-__author__ = 'Frederic Beaupere'
-__contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
-__doc__ = 'Lists all legends with revision clouds on them. '\
-          'Legends with revision clouds will not trigger the sheet '\
-          'index of the sheet they are placed on and '\
-          'that is why this tool is useful.'
-
-
 output = script.get_output()
 
 

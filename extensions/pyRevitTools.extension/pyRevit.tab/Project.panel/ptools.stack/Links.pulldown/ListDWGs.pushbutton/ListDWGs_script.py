@@ -1,12 +1,5 @@
 # -*- coding: UTF-8 -*-
 """Lists all linked and imported DWG instances with worksets and creator."""
-
-__title__ = 'List DWGs'
-__author__ = 'Frederic Beaupere'
-__contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
-
 import clr
 from collections import defaultdict
 

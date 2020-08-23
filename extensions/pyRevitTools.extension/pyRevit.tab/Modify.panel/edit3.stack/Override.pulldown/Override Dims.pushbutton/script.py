@@ -7,10 +7,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__authors__ = ['{{author}}', 'SILMAN']
-__context__ = 'OST_Dimensions'
-
-
 def grab_dims():
     dims = []
     for el in revit.get_selection():

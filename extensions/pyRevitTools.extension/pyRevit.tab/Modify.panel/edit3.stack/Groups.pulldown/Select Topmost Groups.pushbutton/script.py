@@ -10,8 +10,6 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__context__ = 'Selection'
-
 logger = script.get_logger()
 output = script.get_output()
 selection = revit.get_selection()

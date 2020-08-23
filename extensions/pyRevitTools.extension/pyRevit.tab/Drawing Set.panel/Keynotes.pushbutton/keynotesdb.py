@@ -2,7 +2,7 @@
 #pylint: disable=E0401,W0613
 import re
 import codecs
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 
 from pyrevit import HOST_APP
 from pyrevit import coreutils
@@ -64,8 +64,10 @@ class RKeynoteRegexFilter(RKeynoteFilter):
                  name="Regular Expression (Regex)",
                  regex=None,
                  negate=False):
-        self.name = (name + "{}").format(" [Exclude]" if negate else "")
-        self.code = ":notregex:" if negate else ":regex:"
+        super(RKeynoteRegexFilter, self).__init__(
+            name=(name + "{}").format(" [Exclude]" if negate else ""),
+            code=":notregex:" if negate else ":regex:"
+            )
         self.regex = regex or ""
 
     def format_term(self, exst_term):
@@ -78,8 +80,7 @@ class RKeynoteViewFilter(RKeynoteFilter):
     """Keynote smart regular expressions filter."""
 
     def __init__(self):
-        self.name = "Current View Only"
-        self.code = ":view:"
+        super(RKeynoteViewFilter, self).__init__("Current View Only", ":view:")
         self.keys = []
 
     def __contains__(self, knote_key):

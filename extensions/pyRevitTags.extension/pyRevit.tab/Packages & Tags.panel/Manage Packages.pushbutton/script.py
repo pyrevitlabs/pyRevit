@@ -12,10 +12,6 @@ import pkgexceptions
 from pkgcommits import CommitPointTypes, CommitTypes, Commit
 
 
-__title__ = 'Manage\nPackages'
-__author__ = '{{author}}'
-__helpurl__ = '{{docpath}}po0lCldSGmk'
-
 logger = script.get_logger()
 
 

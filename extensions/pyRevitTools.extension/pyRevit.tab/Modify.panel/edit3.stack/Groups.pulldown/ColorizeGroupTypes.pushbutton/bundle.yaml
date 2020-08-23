@@ -1,0 +1,14 @@
+tooltip: >-
+  Overrides graphics of groups instances on selected views or
+
+  active view in such way that all instances of the same group type
+
+  are marked with the same color. You can select multiple views before
+
+  running the tool to colorize the group types in all of them at once
+
+
+  Note:
+
+  Groups with only 1 instance on views will be colored in gray
+title: Colorize Group Types

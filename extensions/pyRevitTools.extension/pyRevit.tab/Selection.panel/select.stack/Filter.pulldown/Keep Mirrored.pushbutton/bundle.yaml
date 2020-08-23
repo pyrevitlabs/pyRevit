@@ -1,0 +1,8 @@
+tooltip: >-
+  Keep only mirrored elements in current selection
+
+
+  Shift-Click:
+
+  Keep only not-Mirrored
+context: selection

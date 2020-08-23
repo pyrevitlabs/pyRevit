@@ -7,8 +7,6 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-__beta__ = True
-
 logger = script.get_logger()
 
 

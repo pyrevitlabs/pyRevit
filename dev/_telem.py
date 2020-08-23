@@ -18,7 +18,7 @@ def _get_test_bin():
     bin_fname = "ts"
     if sys.platform == "win32":
         bin_fname = "ts.exe"
-    return configs.TELEMETRYSERVERPATH + bin_fname
+    return op.join(configs.TELEMETRYSERVERPATH, bin_fname)
 
 
 def _handle_break(signum, stack):   #pylint: disable=unused-argument

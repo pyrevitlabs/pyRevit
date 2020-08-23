@@ -1,0 +1,10 @@
+tooltip: >-
+  Selects group instances, which contain selected elements
+
+  By default excludes not-grouped elements from selection
+
+
+  Shift+Click:
+
+  Include not-grouped elements
+context: Selection

@@ -5,10 +5,6 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__title__ = 'Who did that??'
-__authors__ = ['{{author}}', 'Frederic Beaupere']
-
-
 def who_reloaded_keynotes():
     location = revit.doc.PathName
     if revit.doc.IsWorkshared:

@@ -1,0 +1,15 @@
+help_url: https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da
+tooltip: >-
+  Manage project keynotes.
+
+
+  Shift+Click:
+
+  Reset window configurations and open.
+title: >-
+  Manage
+
+  Keynotes
+min_revit_version: 2014
+author: '{{author}}'
+

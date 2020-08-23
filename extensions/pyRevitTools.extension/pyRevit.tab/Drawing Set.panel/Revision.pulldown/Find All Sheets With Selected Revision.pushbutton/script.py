@@ -1,9 +1,6 @@
 from pyrevit import revit, DB
 
 
-__doc__ = 'Select a revision cloud and this tool will list all '\
-          'the sheets revised under the same revision.'
-
 selection = revit.get_selection()
 
 selectedrevs = []

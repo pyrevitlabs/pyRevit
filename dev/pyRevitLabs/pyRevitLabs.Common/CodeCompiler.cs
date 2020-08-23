@@ -26,6 +26,7 @@ namespace pyRevitLabs.Common {
             string outputPath,
             IEnumerable<string> references,
             IEnumerable<string> defines,
+            bool debug,
             out List<string> messages
             ) {
             CS.CSharpCompilation compilation =
@@ -34,11 +35,22 @@ namespace pyRevitLabs.Common {
                     Path.GetFileName(outputPath),
                     references,
                     defines,
+                    debug,
                     out messages
                 );
 
             // compile and write results
-            var result = compilation.Emit(outputPath);
+            EmitResult result;
+            if (debug) {
+                string pdbName = Path.Combine(
+                    Path.GetDirectoryName(outputPath),
+                    Path.GetFileNameWithoutExtension(outputPath) + ".pdb"
+                    );
+                result = compilation.Emit(outputPath, pdbName);
+            }
+            else
+                result = compilation.Emit(outputPath);
+
             foreach (var diag in result.Diagnostics)
                 messages.Add(diag.ToString());
 
@@ -50,6 +62,7 @@ namespace pyRevitLabs.Common {
             string assemblyName,
             IEnumerable<string> references,
             IEnumerable<string> defines,
+            bool debug,
             out List<string> messages
             ) {
             var compilation = CreateCSharpCompilation(
@@ -57,29 +70,52 @@ namespace pyRevitLabs.Common {
                 assemblyName,
                 references,
                 defines,
+                debug,
                 out messages
                 );
+            
             // compile and write results
             var emitOpts = new EmitOptions();
-            using (var assmData = new MemoryStream())
-            using (var assmPdbData = new MemoryStream()) {
-                var result =
-                    compilation.Emit(
-                        peStream: assmData,
-                        pdbStream: assmPdbData,
-                        options: emitOpts
-                        );
-                foreach (var diag in result.Diagnostics)
-                    messages.Add(diag.ToString());
+            if (debug) {
+                using (var assmData = new MemoryStream())
+                using (var assmPdbData = new MemoryStream()) {
+                    var result =
+                        compilation.Emit(
+                            peStream: assmData,
+                            pdbStream: assmPdbData,
+                            options: emitOpts
+                            );
 
-                // load assembly from memory stream
-                assmData.Seek(0, SeekOrigin.Begin);
-                if (assmData.Length > 0)
-                    return Assembly.Load(
-                        assmData.ToArray(),
-                        assmPdbData.ToArray()
-                        );
+                    foreach (var diag in result.Diagnostics)
+                        messages.Add(diag.ToString());
+
+                    // load assembly from memory stream
+                    assmData.Seek(0, SeekOrigin.Begin);
+                    if (assmData.Length > 0)
+                        return Assembly.Load(
+                            assmData.ToArray(),
+                            assmPdbData.ToArray()
+                            );
+                }
             }
+            else {
+                using (var assmData = new MemoryStream()) {
+                    var result =
+                        compilation.Emit(
+                            peStream: assmData,
+                            options: emitOpts
+                            );
+
+                    foreach (var diag in result.Diagnostics)
+                        messages.Add(diag.ToString());
+
+                    // load assembly from memory stream
+                    assmData.Seek(0, SeekOrigin.Begin);
+                    if (assmData.Length > 0)
+                        return Assembly.Load(assmData.ToArray());
+                }
+            }
+
             return null;
         }
 
@@ -89,6 +125,7 @@ namespace pyRevitLabs.Common {
             string assemblyName,
             IEnumerable<string> references,
             IEnumerable<string> defines,
+            bool debug,
             out List<string> messages
             ) {
             // parse the source files
@@ -123,7 +160,7 @@ namespace pyRevitLabs.Common {
                 messages.Add($"Reference: {refPath}");
                 mdataRefs.Add(
                     AssemblyMetadata.CreateFromFile(refPath).GetReference()
-                    );    
+                    );
             }
 
             // compile options
@@ -131,7 +168,7 @@ namespace pyRevitLabs.Common {
                 new CS.CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                     .WithOverflowChecks(true)
                     .WithPlatform(Platform.X64)
-                    .WithOptimizationLevel(OptimizationLevel.Release);
+                    .WithOptimizationLevel(debug ? OptimizationLevel.Debug : OptimizationLevel.Release);
 
             // create compilation job
             return CS.CSharpCompilation.Create(
@@ -152,11 +189,12 @@ namespace pyRevitLabs.Common {
                 .Max();
 
         public static bool CompileVisualBasic(
-        IEnumerable<string> sourceFiles,
-        string outputPath,
-        IEnumerable<string> references,
-        IEnumerable<KeyValuePair<string, object>> defines,
-        out List<string> messages
+            IEnumerable<string> sourceFiles,
+            string outputPath,
+            IEnumerable<string> references,
+            IEnumerable<KeyValuePair<string, object>> defines,
+            bool debug,
+            out List<string> messages
         ) {
             VB.VisualBasicCompilation compilation =
                 CreateVisualBasicCompilation(
@@ -164,11 +202,22 @@ namespace pyRevitLabs.Common {
                     Path.GetFileName(outputPath),
                     references,
                     defines,
+                    debug,
                     out messages
                 );
 
             // compile and write results
-            var result = compilation.Emit(outputPath);
+            EmitResult result;
+            if (debug) {
+                string pdbName = Path.Combine(
+                    Path.GetDirectoryName(outputPath),
+                    Path.GetFileNameWithoutExtension(outputPath) + ".pdb"
+                    );
+                result = compilation.Emit(outputPath, pdbName);
+            }
+            else
+                result = compilation.Emit(outputPath);
+
             foreach (var diag in result.Diagnostics)
                 messages.Add(diag.ToString());
 
@@ -180,6 +229,7 @@ namespace pyRevitLabs.Common {
             string assemblyName,
             IEnumerable<string> references,
             IEnumerable<KeyValuePair<string, object>> defines,
+            bool debug,
             out List<string> messages
             ) {
             var compilation = CreateVisualBasicCompilation(
@@ -187,29 +237,52 @@ namespace pyRevitLabs.Common {
                 assemblyName,
                 references,
                 defines,
+                debug,
                 out messages
                 );
+
             // compile and write results
             var emitOpts = new EmitOptions();
-            using (var assmData = new MemoryStream())
-            using (var assmPdbData = new MemoryStream()) {
-                var result =
-                    compilation.Emit(
-                        peStream: assmData,
-                        pdbStream: assmPdbData,
-                        options: emitOpts
-                        );
-                foreach (var diag in result.Diagnostics)
-                    messages.Add(diag.ToString());
+            if (debug) {
+                using (var assmData = new MemoryStream())
+                using (var assmPdbData = new MemoryStream()) {
+                    var result =
+                        compilation.Emit(
+                            peStream: assmData,
+                            pdbStream: assmPdbData,
+                            options: emitOpts
+                            );
 
-                // load assembly from memory stream
-                assmData.Seek(0, SeekOrigin.Begin);
-                if (assmData.Length > 0)
-                    return Assembly.Load(
-                        assmData.ToArray(),
-                        assmPdbData.ToArray()
-                        );
+                    foreach (var diag in result.Diagnostics)
+                        messages.Add(diag.ToString());
+
+                    // load assembly from memory stream
+                    assmData.Seek(0, SeekOrigin.Begin);
+                    if (assmData.Length > 0)
+                        return Assembly.Load(
+                            assmData.ToArray(),
+                            assmPdbData.ToArray()
+                            );
+                }
             }
+            else {
+                using (var assmData = new MemoryStream()) {
+                    var result =
+                        compilation.Emit(
+                            peStream: assmData,
+                            options: emitOpts
+                            );
+
+                    foreach (var diag in result.Diagnostics)
+                        messages.Add(diag.ToString());
+
+                    // load assembly from memory stream
+                    assmData.Seek(0, SeekOrigin.Begin);
+                    if (assmData.Length > 0)
+                        return Assembly.Load(assmData.ToArray());
+                }
+            }
+
             return null;
         }
 
@@ -219,6 +292,7 @@ namespace pyRevitLabs.Common {
             string assemblyName,
             IEnumerable<string> references,
             IEnumerable<KeyValuePair<string, object>> defines,
+            bool debug,
             out List<string> messages
             ) {
             // parse the source files
@@ -261,7 +335,7 @@ namespace pyRevitLabs.Common {
                 new VB.VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                     .WithOverflowChecks(true)
                     .WithPlatform(Platform.X64)
-                    .WithOptimizationLevel(OptimizationLevel.Release);
+                    .WithOptimizationLevel(debug ? OptimizationLevel.Debug : OptimizationLevel.Release);
 
             // create compilation job
             return VB.VisualBasicCompilation.Create(

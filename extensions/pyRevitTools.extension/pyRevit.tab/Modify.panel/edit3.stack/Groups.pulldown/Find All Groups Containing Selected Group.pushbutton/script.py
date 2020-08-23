@@ -4,9 +4,6 @@ from pyrevit import framework
 from pyrevit import revit, DB
 
 
-__context__ = 'selection'
-
-
 selection = revit.get_selection()
 
 

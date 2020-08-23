@@ -1,0 +1,9 @@
+tooltip: >-
+  Match instance or type properties between elements and their types
+
+
+  Shift+Click:
+
+  Reapply the previous matched properties
+author: '{{author}}'
+

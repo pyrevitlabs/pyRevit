@@ -8,7 +8,7 @@
     directory for these tools to your system PATH. Run `check` to test
 
     Visual Studio:          for building labs (https://visualstudio.microsoft.com/downloads/)
-    ├── msbuild                 building C#
+    ├── msbuild                 building C# projects
     └── signtool                digitally signing binaries
     gcc                     for building sqlite package in telemetry server (http://mingw.org)
     go                      for building telemetry server (https://golang.org)
@@ -22,14 +22,13 @@
 
     Some of the commands call web APIs for necessary information.
     Access tokens must be set in env vars otherwise access will be
-    limited to github API rate limits:
+    limited to API rate limits:
 
     GITHUBAUTH              for accessing repo info on github
     AIRTABLEAUTH            for accessing shared tables on airtable
 
 """  # pylint: disable=line-too-long
 # - [ ] run tests?
-# - [ ] push translation files into pyRevit (airtable api)
 
 # pylint: disable=invalid-name,broad-except
 import logging

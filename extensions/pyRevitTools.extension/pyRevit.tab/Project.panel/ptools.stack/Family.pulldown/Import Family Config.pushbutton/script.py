@@ -44,9 +44,6 @@ from pyrevit import script
 from pyrevit.coreutils import yaml
 
 
-__author__ = "{{author}}"
-
-
 logger = script.get_logger()
 output = script.get_output()
 
