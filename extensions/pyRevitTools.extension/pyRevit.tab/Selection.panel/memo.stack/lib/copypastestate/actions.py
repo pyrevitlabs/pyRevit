@@ -232,7 +232,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
         # py2 filter does not support keyword arguments
         selected_views = revit.get_selection().only_views()
         if not selected_views:
-            selected_views = [revit.active_view]
+            selected_views = [revit.uidoc.ActiveGraphicalView]
         return list(filter(revit.query.is_cropable_view, selected_views))
 
     @staticmethod
@@ -676,7 +676,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
     def get_suitable_views():
         selected_views = revit.get_selection().only_views()
         if not selected_views:
-            selected_views = [revit.active_view]
+            selected_views = [revit.uidoc.ActiveGraphicalView]
         return [view for view in selected_views
                 if view.AreGraphicsOverridesAllowed()]
 

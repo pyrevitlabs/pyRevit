@@ -36,7 +36,9 @@ if __shiftclick__:
         forms.alert('Active view must be a sheet.')
         script.exit()
 else:
-    sel_sheets = forms.select_sheets(title='Select Sheets', use_selection=True)
+    sel_sheets = forms.select_sheets(title='Select Sheets',
+                                     use_selection = True,
+                                     include_placeholder=False)
 
 
 if sel_sheets:

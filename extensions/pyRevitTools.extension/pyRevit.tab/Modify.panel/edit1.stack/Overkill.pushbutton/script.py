@@ -216,20 +216,24 @@ class CurveGroupCollection(object):
                 return True
 
 
-def filter_curves(elements, view_specific=None):
+def filter_curves(elements, view_specific=None, room_sep_only=False):
     """Filter given curves for view specific."""
     filtered_elements = \
         revit.query.get_elements_by_class(DB.CurveElement, elements=elements) \
             if elements else []
     if view_specific is None:
-        return filtered_elements
+        if room_sep_only:
+            return [el for el in filtered_elements if el.Category and 
+                el.Category.Id == DB.BuiltInCategory.OST_RoomSeparationLines]
+        else:
+            return filtered_elements
     else:
         return [x for x in filtered_elements if x.ViewSpecific == view_specific]
 
 
 def ask_for_curve_type():
     # ask user for options and process
-    options = ['All Lines', 'Detail Lines', 'Model Lines']
+    options = ['All Lines', 'Detail Lines', 'Model Lines', 'Room Separators']
     switches = {'Consider Line Weights': True}
     selected_option, switches = \
         forms.CommandSwitchWindow.show(
@@ -248,11 +252,13 @@ def ask_consider_weight():
 
 def overkill_curves(curve_elements,
                     view_specific=None,
-                    include_style=True):
+                    include_style=True,
+                    room_sep_only=False):
     # collect comparison info on each detail-lines geomtery
     cgroup_collection = CurveGroupCollection(include_style=include_style)
     for curve_element in filter_curves(curve_elements,
-                                       view_specific=view_specific):
+                                       view_specific=view_specific,
+                                       room_sep_only=room_sep_only):
         cgroup_collection.extend(curve_element)
 
     del_count = 0
@@ -272,13 +278,16 @@ if selected_curves:
     overkill_curves(selected_curves, include_style=ask_consider_weight())
 else:
     selected_opt, incl_style = ask_for_curve_type()
-
+    room_sep_only = False
     if selected_opt == 'All Lines':
         view_spec = None
-    elif selected_opt == 'Model/Symbolic Lines':
+    elif selected_opt == 'Model Lines':
         view_spec = False
     elif selected_opt == 'Detail Lines':
         view_spec = True
+    elif selected_opt == 'Room Separators':
+        view_spec = False
+        room_sep_only = True
 
     if selected_opt:
         # collect all detail-lines in active view
@@ -287,5 +296,6 @@ else:
                                             view_id=revit.active_view.Id)
         overkill_curves(list(curve_collector),
                         view_specific=view_spec,
-                        include_style=incl_style)
+                        include_style=incl_style,
+                        room_sep_only=room_sep_only)
 
