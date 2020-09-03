@@ -185,7 +185,7 @@ def colorize_grouptypes_in_views(views):
     groups_colors = prepare_colors(groups_dict)
     logger.debug(groups_colors)
 
-    with revit.Transaction(__title__):
+    with revit.Transaction("Colorize Group Type"):
         for view in views:
             # apply overrides to each view
             colorize_grouptypes_in_view(view, groups_colors)
