@@ -26,7 +26,9 @@ for rev_cloud in rev_clouds:
 
 
 output.print_md("####LEGENDS WITH REVISION CLOUDS:")
-output.print_md('By: [{}]({})'.format(__author__, __contact__))
+output.print_md('By: [{}]({})'.format('Frederic Beaupere',
+                                      'https://github.com/frederic-beaupere'))
+
 
 for view_id in clouded_views:
     view = revit.doc.GetElement(view_id)
