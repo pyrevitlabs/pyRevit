@@ -34,8 +34,14 @@ def _load_host(d):
         return PyRevitHost(**d)
 
 
+def _encode_data(d):
+    main_dict = d._asdict()
+    main_dict["meta"] = main_dict["meta"]._asdict()
+    return main_dict
+
+
 def _valid_release(release):
-    return re.match(r"^\d{4}(.\d{1})?$", release)
+    return re.match(r"^\d{4}(.\d{1})?(.\d{1})?$", release)
 
 
 def _valid_version(version):
@@ -92,4 +98,4 @@ def add_hostdata(_: Dict[str, str]):
     )
 
     with open(configs.PYREVIT_HOSTS_DATAFILE, "w") as dfile:
-        json.dump([x._asdict() for x in hdata], dfile, indent=True)
+        json.dump([_encode_data(x) for x in hdata], dfile, indent=4)
