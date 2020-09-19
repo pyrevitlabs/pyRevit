@@ -50,3 +50,131 @@
 **↓** And when you are ready to deploy your tools to your team
 
 [pyRevit For Teams](https://www.notion.so/pyRevit-For-Teams-ddc6c312d6f6488691eed2ec7704fd97)
+
+# Staying Updated
+
+---
+
+Follow [pyRevit on Twitter](https://twitter.com/pyrevit) to stay notified about the upcoming changes and follow [pyRevit Release Notes](https://github.com/eirannejad/pyRevit/releases) for the breaking changes
+
+**↓** Check out the blog for news
+
+[Blog](https://www.notion.so/Blog-5bcadb69d8ab43c8ba5ee547e42a129f)
+
+**↓** And the future plans for pyRevit are laid out here
+
+[Roadmap](https://www.notion.so/Roadmap-8f353f66ffe94a5ea6676f0d3c5df5bd)
+
+# Dealing with Issues
+
+---
+
+Check the list of [Currently Open](https://github.com/eirannejad/pyRevit/issues) and [Previously Reported Issues](https://github.com/eirannejad/pyRevit/issues?q=is%3Aissue+is%3Aclosed) for anything similar to yours.
+
+**↓** See the FAQ page for questions
+
+[FAQs](https://www.notion.so/FAQs-70774c29e0ed41388f9a7857bc2e24dc)
+
+**↓** See the guide below on how to report new issues
+
+[Reporting New Issues](https://www.notion.so/Reporting-New-Issues-f1fdd62cf6074b318bfe8ddfbc2d8d98)
+
+# Getting Involved
+
+---
+
+**↓** Get involved with the community of developers, creating tools with and for pyRevit
+
+[Community](https://www.notion.so/Community-eb501192c78c4d2f884f0cc34532058e)
+
+## Share Your Passion
+
+**↓** Help making pyRevit better
+
+[Help with Documentation](https://www.notion.so/Help-with-Documentation-3ad04b6431a046a3bc9ca584eeea51fa)
+
+[Help Translate pyRevit](https://www.notion.so/Help-Translate-pyRevit-c26063a6c9824667a07c6a40b28c70d4)
+
+[Create Tutorials](https://www.notion.so/Create-Tutorials-d25685ddb11d4eb6a76001325715cfb5)
+
+[Share Revit Build Numbers](https://www.notion.so/Share-Revit-Build-Numbers-90817d95875c48d0accb802035bfcb68)
+
+## Share Your Code
+
+**↓** Help making pyRevit core and tools better
+
+[Improve pyRevit Core](https://www.notion.so/Improve-pyRevit-Core-109f014ece0043ed8e523605312b1305)
+
+[Contribute New Tools](https://www.notion.so/Contribute-New-Tools-800ecc0cee8e47b484f22359c4fe4307)
+
+[Share Your Extensions](https://www.notion.so/Share-Your-Extensions-48ff84d4eae846f4aa9567fca32ff4fe)
+
+[Bundle Shelf](https://www.notion.so/Bundle-Shelf-d1b57b18fd33426aa77d29de2e8b6cf7)
+
+## Share Your Coins
+
+**↓** Help making pyRevit financially stronger 
+
+[Support on Patreon](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
+
+[Supporters](https://www.notion.so/Supporters-4f3350243ba24dcd8228df6262723629)
+
+---
+
+**</>** with 🖤 in [Portland](https://en.m.wikipedia.org/wiki/Portland,_Oregon), Oregon
+
+Copyright Ⓒ 2014-2020 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
+
+No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher.
+
+---
+
+### Learning
+
+[HOW TO Guides](https://www.notion.so/HOW-TO-Guides-dc20e0e227b74d9bbc775699904152cb)
+
+[Developer Docs](https://www.notion.so/Developer-Docs-2c88f3ecccde422d9504e20b6b9e04f8)
+
+[pyRevit For Teams](https://www.notion.so/pyRevit-For-Teams-ddc6c312d6f6488691eed2ec7704fd97)
+
+[Resources](https://www.notion.so/Resources-70347230ff53497ea7fab3aa8b91f104)
+
+### Updates
+
+[Blog](https://www.notion.so/Blog-5bcadb69d8ab43c8ba5ee547e42a129f)
+
+[Roadmap](https://www.notion.so/Roadmap-8f353f66ffe94a5ea6676f0d3c5df5bd)
+
+### Share
+
+[Contribute New Tools](https://www.notion.so/Contribute-New-Tools-800ecc0cee8e47b484f22359c4fe4307)
+
+[Improve pyRevit Core](https://www.notion.so/Improve-pyRevit-Core-109f014ece0043ed8e523605312b1305)
+
+[Bundle Shelf](https://www.notion.so/Bundle-Shelf-d1b57b18fd33426aa77d29de2e8b6cf7)
+
+### Issues
+
+[FAQs](https://www.notion.so/FAQs-70774c29e0ed41388f9a7857bc2e24dc)
+
+[Reporting New Issues](https://www.notion.so/Reporting-New-Issues-f1fdd62cf6074b318bfe8ddfbc2d8d98)
+
+### Contribute
+
+[Community](https://www.notion.so/Community-eb501192c78c4d2f884f0cc34532058e)
+
+[Help with Documentation](https://www.notion.so/Help-with-Documentation-3ad04b6431a046a3bc9ca584eeea51fa)
+
+[Help Translate pyRevit](https://www.notion.so/Help-Translate-pyRevit-c26063a6c9824667a07c6a40b28c70d4)
+
+[Create Tutorials](https://www.notion.so/Create-Tutorials-d25685ddb11d4eb6a76001325715cfb5)
+
+[Share Revit Build Numbers](https://www.notion.so/Share-Revit-Build-Numbers-90817d95875c48d0accb802035bfcb68)
+
+### Support
+
+[Supporters](https://www.notion.so/Supporters-4f3350243ba24dcd8228df6262723629)
+
+[Support on Patreon](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
+
+[Credits](https://www.notion.so/Credits-8a2e990b0321414db1e1c41f87c83343)
