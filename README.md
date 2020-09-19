@@ -1,7 +1,8 @@
 <div align="center">
   <h1>pyRevit</h1>
   <h3>Rapid Application Development (RAD) Environment for Autodesk Revit®</h3>
-  <h5>It helps you quickly sketch out your automation and addon ideas, in whichever language that you are most comfortable with, inside the Revit environment and using its APIs. It also ships with an extensive set of powerful tools that showcase its capabilities as a development environment. Download and install pyRevit, launch Revit, and note the new pyRevit tab that includes these tools. pyRevit also ships with a handy CLI utility for customized configuration and deployment of your tools, and a telemetry server to monitor pyRevit usage across your teams.</h5>
+  <p>pyRevit helps you quickly sketch out your automation and addon ideas, in whichever language that you are most comfortable with, inside the Revit environment and using its APIs. It also ships with an extensive set of powerful tools that showcase its capabilities as a development environment. Download and install pyRevit, launch Revit, and note the new pyRevit tab that includes these tools. pyRevit also ships with a handy CLI utility for customized configuration and deployment of your tools, and a telemetry server to monitor pyRevit usage across your teams.</p>
+  
   [![GitHub issues](https://img.shields.io/github/issues/eirannejad/pyRevit.svg?style=for-the-badge)](https://github.com/eirannejad/pyRevit/issues)
   [![GitHub forks](https://img.shields.io/github/forks/eirannejad/pyRevit.svg?style=for-the-badge)](https://github.com/eirannejad/pyRevit/network)
   [![GitHub stars](https://img.shields.io/github/stars/eirannejad/pyRevit.svg?style=for-the-badge&colorB=red)](https://github.com/eirannejad/pyRevit/stargazers)
