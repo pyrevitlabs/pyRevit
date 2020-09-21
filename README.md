@@ -1,4 +1,4 @@
-<img src="static/logo/pyRevitLogo R5_WithTitle.svg" style="width:512px" />
+<img src="static/logo/pyRevitLogo R5_WithTitle.svg" width="768" />
 
 &nbsp;
 
