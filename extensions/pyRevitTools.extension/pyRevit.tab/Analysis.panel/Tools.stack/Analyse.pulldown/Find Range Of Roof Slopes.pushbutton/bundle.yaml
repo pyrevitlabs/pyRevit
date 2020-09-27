@@ -1,1 +1,1 @@
-tooltip: Lists all roof slopes in the model
+tooltip: Lists all roof slopes in the model. This tool analyzes the slopes defined in roofs created from a profile. Extrusion roofs and roofs created from Mass faces are not included in the analysis
