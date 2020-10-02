@@ -20,8 +20,9 @@ from pyrevit import script
 
 from pyrevit.runtime.types import DocumentEventUtils
 
-import keynotesdb as kdb
+from pyrevit.interop import adc
 
+import keynotesdb as kdb
 
 logger = script.get_logger()
 output = script.get_output()
@@ -333,7 +334,53 @@ class KeynoteManagerWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         # verify keynote file existence
-        self._kfile = revit.query.get_keynote_file(doc=revit.doc)
+        self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
+        self._kfile_handler = None
+        if not self._kfile:
+            self._kfile_ext = \
+                revit.query.get_external_keynote_file(doc=revit.doc)
+            self._kfile_handler = 'unknown'
+        # mak sure ADC is available
+        if self._kfile_handler == 'unknown':
+            if adc.is_available():
+                self._kfile_handler = 'adc'
+                # check if keynote file is being synced by ADC
+                # use the drive:// path for adc communications
+                # adc module takes both remote or local paths,
+                # but remote is faster lookup
+                local_kfile = adc.get_local_path(self._kfile_ext)
+                if local_kfile:
+                    # check is someone else has locked the file
+                    locked, owner = adc.is_locked(self._kfile_ext)
+                    if locked:
+                        forms.alert(
+                            "Keynote file is being modified and locked by "
+                            "{}. Please try again later".format(owner),
+                            exitscript=True
+                            )
+                    # force sync to get the latest contents
+                    adc.sync_file(self._kfile_ext)
+                    adc.lock_file(self._kfile_ext)
+                    # now that adc communication is done,
+                    # replace with local path
+                    self._kfile = local_kfile
+                else:
+                    forms.alert(
+                        "Can not get keynote file from {}".format(adc.ADC_NAME),
+                        exitscript=True
+                        )
+            else:
+                forms.alert(
+                    "This model is using a keynote file that seems to be "
+                    "managed by {long} ({short}). But {short} is not "
+                    "running, or is not installed. Please install/run the "
+                    "{short} and open the keynote manager again".format(
+                        long=adc.ADC_NAME, short=adc.ADC_SHORTNAME
+                        ),
+                    exitscript=True
+                    )
+
+        # byt this point we must have a local path to the keynote file
         if not self._kfile or not op.exists(self._kfile):
             self._kfile = None
             forms.alert("Keynote file is not accessible. "
@@ -1135,6 +1182,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.Close()
 
     def window_closing(self, sender, args):
+        # if keynote file is external, ask for unlock
+        if self._kfile_handler == 'adc':
+            # sync has already happened on last file write
+            adc.unlock_file(self._kfile_ext)
+
         if self._needs_update:
             with revit.Transaction('Update Keynotes'):
                 revit.update.update_linked_keynotes(doc=revit.doc)

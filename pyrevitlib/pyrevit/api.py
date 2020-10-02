@@ -27,9 +27,6 @@ from Autodesk.Revit import DB
 from Autodesk.Revit import UI
 
 
-BIM_360_SCHEMA = 'BIM 360://'
-
-
 def get_product_serial_number():
     """Return serial number of running host instance."""
     return UIFrameworkServices.InfoCenterService.ProductSerialNumber
@@ -44,14 +41,3 @@ def is_api_object(data_type):
     """Check if given object belongs to Revit API"""
     if hasattr(data_type, 'GetType'):
         return 'Autodesk.Revit.' in data_type.GetType().Namespace
-
-
-def expand_bim360_path(path):
-    """Converts BIM 360 to local path"""
-    if path.startswith(BIM_360_SCHEMA):
-        return op.expandvars(
-            op.normpath(
-                path.replace(BIM_360_SCHEMA, '%HOMEPATH%/BIM 360/')
-            )
-        )
-    return path
