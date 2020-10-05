@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -19,11 +20,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     idList.Add(new ElementId(Convert.ToInt32(strId)));
                 }
 
-                SelectElements(uiApp, idList);
+                SelectElements(uiApp, idList, parsedQuery.AllKeys.Contains("show") && parsedQuery["show"] == "true");
             }
         }
 
-        public static void SelectElements(UIApplication uiApp, List<ElementId> elementIds) {
+        public static void SelectElements(UIApplication uiApp, List<ElementId> elementIds, bool show) {
             var uidoc = uiApp.ActiveUIDocument;
 
             if (uidoc != null) {
@@ -72,7 +73,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                             elementIdsToIsolate.AddRange(elementIds);
                             // islolate the element, deselect, and zoom fit
-                            uidoc.ShowElements(elementIdsToIsolate);
+                            if (show)
+                                uidoc.ShowElements(elementIdsToIsolate);
                         }
                     }
                     // if element is a 3D element and does not have an owner view
@@ -82,7 +84,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         View view = (View)uidoc.ActiveView;
 
                         // islolate the element, deselect, and zoom fit
-                        uidoc.ShowElements(elementIds);
+                        if (show)
+                            uidoc.ShowElements(elementIds);
                     }
 
                 }
