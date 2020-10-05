@@ -394,7 +394,7 @@
                                     <Button Grid.Column="1"  Grid.Row="1"
                                             Margin="2,2,0,2"
                                             Content="{StaticResource duplicateKeynoteIcon}"
-                                            ToolTip="Duplicte selected keynote"
+                                            ToolTip="Duplicate selected keynote"
                                             Click="duplicate_keynote"/>
                                     <Button Grid.Column="0"  Grid.Row="2"
                                             IsEnabled="False"
