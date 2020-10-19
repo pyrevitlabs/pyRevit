@@ -31,9 +31,10 @@ def log(msg):
 
 def log_element(doc, eid):
     el = doc.GetElement(eid)
-    log("id={} name={} type={}".format(
+    log("id={} name={} type={} category={}".format(
         eid.IntegerValue,
         revit.query.get_name(el),
+        type(el),
         el.Category.Name if el.Category else "?"
         ))
 
