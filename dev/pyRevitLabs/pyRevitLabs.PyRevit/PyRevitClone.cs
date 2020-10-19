@@ -77,7 +77,7 @@ namespace pyRevitLabs.PyRevit {
             else {
                 return string.Format(
                     "{0} | Deploy: \"{1}\" | Branch: \"{2}\" | Version: \"{3}\" | Path: \"{4}\"",
-                    Name, Deployment.Name, Branch, ModuleVersion, ClonePath);
+                    Name, Deployment?.Name, Branch, ModuleVersion, ClonePath);
             }
         }
 

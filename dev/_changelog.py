@@ -101,6 +101,7 @@ CHANGE_GROUPS = [
     ChangeGroup(tag="runtime", header="Runtime"),
     ChangeGroup(tag="framework", header="Framework Updates"),
     ChangeGroup(tag="installer", header="Installer"),
+    ChangeGroup(tag="cli", header="Command Line Utility"),
     ChangeGroup(tag="bundles", header="Script bundles"),
     ChangeGroup(tag="tele", header="Telemetry"),
     ChangeGroup(tag="api", header="API"),
