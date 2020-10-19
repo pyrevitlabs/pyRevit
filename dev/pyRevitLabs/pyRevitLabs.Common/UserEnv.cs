@@ -52,7 +52,10 @@ namespace pyRevitLabs.Common {
 
         public static List<string> GetInstalledDotnetTargetPacks() {
             var targetPackPaths = new List<string>();
-            var frameworkPath = @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework";
+            var frameworkPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                @"Reference Assemblies\Microsoft\Framework\.NETFramework"
+                );
             foreach (string path in Directory.GetDirectories(frameworkPath))
                 if (Regex.Match(Path.GetFileName(path), @"\d\..+").Success)
                     targetPackPaths.Add(path);
@@ -61,7 +64,10 @@ namespace pyRevitLabs.Common {
 
         public static List<string> GetInstalledDotnetCoreTargetPacks() {
             var targetPackPaths = new List<string>();
-            var frameworkPath = @"C:\Program Files\dotnet\sdk";
+            var frameworkPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                @"dotnet\sdk"
+                );
             foreach (string path in Directory.GetDirectories(frameworkPath))
                 if (Regex.Match(Path.GetFileName(path), @"\d\..+").Success)
                     targetPackPaths.Add(path);
@@ -80,7 +86,8 @@ namespace pyRevitLabs.Common {
                 foreach (ManagementObject oReturn in oReturnCollection) {
                     return oReturn["UserName"].ToString();
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 logger.Debug("Failed to get logged in username. | {0}", ex.Message);
             }
             return null;
