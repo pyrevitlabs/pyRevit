@@ -229,7 +229,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        UpdateClone(bool allClones, string cloneName) {
+        UpdateClone(bool allClones, string cloneName, string username, string password) {
             // TODO: ask for closing running Revits
 
             // prepare a list of clones to be updated
@@ -260,7 +260,7 @@ namespace pyRevitCLI {
             // update clones that do not include this process
             foreach (var clone in targetClones) {
                 logger.Debug("Updating clone \"{0}\"", clone.Name);
-                PyRevitClones.Update(clone);
+                PyRevitClones.Update(clone, username, password);
             }
 
             // now update myClone if any, as last step

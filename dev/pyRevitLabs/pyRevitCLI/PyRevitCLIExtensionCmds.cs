@@ -209,11 +209,11 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        UpdateExtension(bool all, string extName) {
+        UpdateExtension(bool all, string extName, string username, string password) {
             if (all)
-                PyRevitExtensions.UpdateAllInstalledExtensions();
+                PyRevitExtensions.UpdateAllInstalledExtensions(username, password);
             else if (extName != null)
-                PyRevitExtensions.UpdateExtension(extName);
+                PyRevitExtensions.UpdateExtension(extName, username, password);
         }
     }
 }
