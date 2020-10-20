@@ -364,6 +364,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     # now that adc communication is done,
                     # replace with local path
                     self._kfile = local_kfile
+                    self.Title += ' (BIM360)'
                 else:
                     forms.alert(
                         "Can not get keynote file from {}".format(adc.ADC_NAME),
