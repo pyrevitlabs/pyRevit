@@ -173,7 +173,7 @@ class SettingsWindow(forms.WPFWindow):
                 logger.debug('Failed getting active cpython engine.')
                 self.cpythonEngines.IsEnabled = False
         else:
-            logger.error('Error determining current attached clone.')
+            logger.debug('Error determining current attached clone.')
             self.disable_element(self.availableEngines)
 
     def _setup_user_extensions_list(self):

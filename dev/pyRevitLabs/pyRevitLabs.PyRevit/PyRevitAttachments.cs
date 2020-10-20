@@ -124,13 +124,17 @@ namespace pyRevitLabs.PyRevit {
 
         // get all attachments for a revit version
         // @handled @logs
-        public static List<PyRevitAttachment> GetAllAttached(int revitYear) =>
-            GetAttachments().Where(x => x.Product.ProductYear == revitYear).OrderBy(x => x.AllUsers).ToList();
+        public static List<PyRevitAttachment> GetAllAttached(int revitYear) {
+            var attachments = GetAttachments().Where(x => x.Product.ProductYear == revitYear);
+            if (attachments.Count() > 0)
+                return attachments.OrderBy(x => x.AllUsers).ToList();
+            return new List<PyRevitAttachment>();
+        }            
 
         // get attachment for a revit version
         // @handled @logs
         public static PyRevitAttachment GetAttached(int revitYear) {
-            return GetAllAttached(revitYear)?.First();
+            return GetAllAttached(revitYear)?.FirstOrDefault();
         }
 
     }
