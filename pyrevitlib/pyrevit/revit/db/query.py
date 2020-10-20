@@ -1083,7 +1083,7 @@ def get_fillpattern_from_element(element, background=True, doc=None):
         return get_fpm_from_frtype(doc.GetElement(element.GetTypeId()))
 
 
-def get_keynote_file(doc=None):
+def get_local_keynote_file(doc=None):
     doc = doc or HOST_APP.doc
     knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
     if knote_table.IsExternalFileReference():
@@ -1091,13 +1091,24 @@ def get_keynote_file(doc=None):
         return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(
             knote_table_ref.GetAbsolutePath()
             )
-    elif knote_table.RefersToExternalResourceReferences():
+
+
+def get_external_keynote_file(doc=None):
+    doc = doc or HOST_APP.doc
+    knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
+    if knote_table.RefersToExternalResourceReferences():
         refs = knote_table.GetExternalResourceReferences()
         if refs:
             for ref_type, ref in dict(refs).items():
-                if 'CDX_FILE_ID' in dict(ref.GetReferenceInformation()) \
-                        and ref.HasValidDisplayPath():
-                    return api.expand_bim360_path(ref.InSessionPath)
+                if ref.HasValidDisplayPath():
+                    return ref.InSessionPath
+
+
+def get_keynote_file(doc=None):
+    doc = doc or HOST_APP.doc
+    local_path = get_local_keynote_file(doc=doc)
+    if not local_path:
+        return get_external_keynote_file(doc=doc)
 
 
 def get_used_keynotes(doc=None):
