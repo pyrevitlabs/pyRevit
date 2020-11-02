@@ -920,7 +920,10 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             else:
                 self.Close()
         elif args.Key == Input.Key.Enter:
-            self.process_option(self._get_active_button(), None)
+            active_button = self._get_active_button()
+            if active_button:
+                self.process_option(active_button, None)
+                args.Handled = True
         elif args.Key != Input.Key.Tab \
                 and args.Key != Input.Key.Space\
                 and args.Key != Input.Key.LeftShift\
@@ -1514,8 +1517,10 @@ class SearchPrompt(WPFWindow):
             self.Close()
         # Enter: close, returns matched response automatically
         elif args.Key == Input.Key.Enter:
-            self._setup_response(response=self._search_res)
-            self.Close()
+            if self.search_tb.Text != '':
+                self._setup_response(response=self._search_res)
+                args.Handled = True
+                self.Close()
         # Shift+Tab, Tab: Cycle through matches
         elif args.Key == Input.Key.Tab and shiftdown:
             self._result_index -= 1
