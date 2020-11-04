@@ -318,8 +318,7 @@ for family in families:
     if family.IsInPlace == True:
         inPlaceFamilyCount += 1
         # for graph
-        inPlaceFCategoryAcc = family.FamilyCategory.Name
-        inPlaceFCategory = inPlaceFCategoryAcc
+        inPlaceFCategory = family.FamilyCategory.Name
         if inPlaceFCategory not in graphFCatHeadings:
             graphFCatHeadings.append(inPlaceFCategory)
         graphFCatData.append(inPlaceFCategory)
@@ -497,9 +496,7 @@ for element in elcollector:
     worksetId = element.WorksetId
     worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
     if worksetKind == "UserWorkset":
-        worksetNameAcc = worksetTable.GetWorkset(worksetId).Name
-        # treating accents
-        worksetName = worksetNameAcc
+        worksetName = worksetTable.GetWorkset(worksetId).Name
         if worksetName not in worksetNames:
             worksetNames.append(worksetName)
         graphWorksetsData.append(worksetName)
