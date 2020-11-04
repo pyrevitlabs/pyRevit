@@ -4,7 +4,7 @@ __doc__ = 'Revit model quality check.'
 __author__ = 'David Vadkerti'
 
 from pyrevit import coreutils, script, DB
-from pyrevit import output
+from pyrevit import output, revit
 import unicodedata
 import datetime
 
@@ -31,19 +31,33 @@ colors = 10*["#ffc299","#ff751a","#cc5200","#ff6666","#ffd480","#b33c00","#ff884
             "#4d4d4d","#fff0d9","#ffc299","#ff751a","#cc5200","#ff6666","#ffd480","#b33c00","#ff884d","#d9d9d9","#9988bb","#4d4d4d","#e97800","#a6c844",
             "#4d4d4d","#fff0d9","#ffc299","#ff751a","#cc5200","#ff6666","#ffd480","#b33c00","#ff884d","#d9d9d9","#9988bb","#4d4d4d","#e97800","#a6c844",]
 
-
-# list of Warnings rated as critical (warnings which could distort quantities and schedules)
-criticalWarnings = ['Elements have duplicate "Type Mark" values',
-    'There are identical instances in the same place',
-    'Room Tag is outside of its Room',
-    'Multiple Rooms are in the same enclosed region',
-    'Multiple Areas are in the same enclosed region',
-    'One element is completely inside another',
-    'Room is not in a properly enclosed region',
-    'Room separation line is slightly off axis and may cause inaccuracies',
-    'Area is not in a properly enclosed region',
-    "Rectangular opening doesn't cut its host",
-    'Elements have duplicate "Number" values',]
+# citical warnings Guids
+criticalWarnings = [
+'6e1efefe-c8e0-483d-8482-150b9f1da21a',
+# 'Elements have duplicate "Number" values.',
+'6e1efefe-c8e0-483d-8482-150b9f1da21a',
+# 'Elements have duplicate "Type Mark" values.',
+'6e1efefe-c8e0-483d-8482-150b9f1da21a',
+# 'Elements have duplicate "Mark" values.',
+'b4176cef-6086-45a8-a066-c3fd424c9412',
+# 'There are identical instances in the same place',
+'4f0bba25-e17f-480a-a763-d97d184be18a',
+# 'Room Tag is outside of its Room',
+'505d84a1-67e4-4987-8287-21ad1792ffe9',
+# 'One element is completely inside another.',
+'8695a52f-2a88-4ca2-bedc-3676d5857af6',
+# 'Highlighted floors overlap.',
+'ce3275c6-1c51-402e-8de3-df3a3d566f5c',
+# 'Room is not in a properly enclosed region',
+'83d4a67c-818c-4291-adaf-f2d33064fea8',
+# 'Multiple Rooms are in the same enclosed region',
+'ce3275c6-1c51-402e-8de3-df3a3d566f5c',
+# 'Area is not in a properly enclosed region',
+'e4d98f16-24ac-4cbe-9d83-80245cf41f0a',
+# 'Multiple Areas are in the same enclosed region',
+'f657364a-e0b7-46aa-8c17-edd8e59683b9',
+# 'Room separation line is slightly off axis and may cause inaccuracies.''
+]
 
 # webpage with explanations of bad practices in revit maybe it could be configurable in the future?
 wikiArticle = "https://www.modelical.com/en/gdocs/revit-arc-best-practices/"
@@ -80,10 +94,6 @@ def path2fileName(file_path,divider):
   # print file_name
   return file_name
 
-# converts accented string to nonaccented string
-def accents2ascii(s):
-   return ''.join(c for c in unicodedata.normalize('NFD', s)
-                  if unicodedata.category(c) != 'Mn')
 
 output = script.get_output()
 output.set_height(1000)
@@ -154,7 +164,7 @@ viewCount = len(view_elements)
 
 copiedView = 0
 for view in view_elements:
-    viewName = view.LookupParameter('View Name')
+    viewNameString = revit.query.get_name(view)
     try:
         viewNameString = viewName.AsString()
         # print(viewNameString)
@@ -232,16 +242,21 @@ allWarningsCount = len(allWarnings_collector)
 
 # critical warnings
 criticalWarningCount = 0
-for criticalWarning in allWarnings_collector:
-    description = criticalWarning.GetDescriptionText()
-    # for warning type heading
-    try:
-        descLen = description.index(".")
-    # Few warnings have mistakenly no dot in the end.
-    except:
-        descLen = len(description)
-    descHeading = description[:descLen]
-    if descHeading in criticalWarnings:
+for warning in allWarnings_collector:
+    # description = warning.GetDescriptionText()
+    warningGuid = warning.GetFailureDefinitionId().Guid
+    # # for warning type heading
+    # try:
+    #     descLen = description.index(".")
+    # # Few warnings have mistakenly no dot in the end.
+    # except:
+    #     descLen = len(description)
+    # descHeading = description[:descLen]
+    # if descHeading in criticalWarnings:
+    #     criticalWarningCount += 1
+
+    # if warning Guid is in the list
+    if str(warningGuid) in criticalWarnings:
         criticalWarningCount += 1
 
 
@@ -303,7 +318,8 @@ for family in families:
     if family.IsInPlace == True:
         inPlaceFamilyCount += 1
         # for graph
-        inPlaceFCategory = family.FamilyCategory.Name
+        inPlaceFCategoryAcc = family.FamilyCategory.Name
+        inPlaceFCategory = inPlaceFCategoryAcc
         if inPlaceFCategory not in graphFCatHeadings:
             graphFCatHeadings.append(inPlaceFCategory)
         graphFCatData.append(inPlaceFCategory)
@@ -331,7 +347,7 @@ archTres = 0
 textNoteType_collector = FilteredElementCollector(doc).OfClass(TextNoteType).ToElements()
 textnoteWFcount = 0
 for textnote in textNoteType_collector:
-    widthFactor = textnote.LookupParameter('Width Factor').AsDouble()
+    widthFactor = textnote.get_Parameter(DB.BuiltInParameter.TEXT_WIDTH_SCALE).AsDouble()
     if widthFactor != 1:
         textnoteWFcount += 1
 
@@ -397,7 +413,7 @@ elementsTres = 1000000
 htmlRow4 = (dashboardRectMaker(detailGroupTypeCount,"Detail Group <br>Types",detailGroupTypeTres,wikiArticle)
     + dashboardRectMaker(detailGroupCount,"Detail Groups",detailGroupTres,wikiArticle) 
     + dashboardRectMaker(modelGroupTypeCount,"Model Group <br>Types",modelGroupTypeTres,wikiArticle)
-    +dashboardRectMaker(modelGroupCount,"Model Groups",modelGroupTres,wikiArticle) 
+    + dashboardRectMaker(modelGroupCount,"Model Groups",modelGroupTres,wikiArticle) 
     + dashboardRectMaker(noNameRefPCount,"NoName <br>Reference Planes",noNameRefPTres,wikiArticle)
     + dashboardRectMaker(elementCount,"Elements",elementsTres,wikiArticle))
 dashboardCenterMaker(htmlRow4)
@@ -411,21 +427,26 @@ graphCatHeadings = []
 graphCatData = []
 elements = FilteredElementCollector(doc).WhereElementIsNotElementType().ToElements()
 # categories we dont want to see since they are mostly not user created
-catBanlist = ['Shared Site','Project Information','Structural Load Cases','Sun Path','Color Fill Schema','HVAC Zones','HVAC Load Schedules','Building Type Settings',
-    'Space Type Settings','Survey Point','Project Base Point','Electrical Demand Factor Definitions','Electrical Load Classifications','Panel Schedule Templates - Branch Panel',
-    'Panel Schedule Templates - Data Panel','Panel Schedule Templates - Switchboard','Electrical Load Classification Parameter Element','Automatic Sketch Dimensions',]
-for i in elements:
+# catBanlist = ['Shared Site','Project Information','Structural Load Cases','Sun Path','Color Fill Schema','HVAC Zones','HVAC Load Schedules','Building Type Settings',
+#     'Space Type Settings','Survey Point','Project Base Point','Electrical Demand Factor Definitions','Electrical Load Classifications','Panel Schedule Templates - Branch Panel',
+#     'Panel Schedule Templates - Data Panel','Panel Schedule Templates - Switchboard','Electrical Load Classification Parameter Element','Automatic Sketch Dimensions',]
+catBanlist = [-2000110,-2003101,-2005210,-2009609,-2000552,-2008107,-2008121,-2008120,-2008119,-2001272,-2001271,-2008142,-2008143,-2008145,-2008147,-2008146,-2008148,-2000261,]
+   
+
+for element in elements:
     try:
-        category = i.Category.Name
+        category = element.Category.Name
+        categoryId = element.Category.Id.IntegerValue
         # filtering out DWGs and DXFs, categories from banlist
-        # filtering out categories with "<" and ")" since it makes errors in chart.js output and we dont need them
-        if category[-4:-2] != ".d" and category[-4:-2] != ".D" and category[0] != "<" and category[-1] != ")" and category not in catBanlist:
-            # category = accents2ascii(category)
+        # filtering out categories in catBanlist
+        # BuiltInCategory Ids are negative integers
+        if categoryId < 0 and categoryId not in catBanlist:
             if category not in graphCatHeadings:
                 graphCatHeadings.append(category)
             graphCatData.append(category)
     except:
         pass
+
 
 catSet=[]
 # sorting results in chart legend
@@ -433,6 +454,8 @@ graphCatHeadings.sort()
 for i in graphCatHeadings:
     count=graphCatData.count(i)        
     catSet.append(count)
+
+graphCatHeadings = [x.encode('UTF8') for x in graphCatHeadings]
 
 # for debugging
 # print graphCatHeadings
@@ -475,18 +498,20 @@ for element in elcollector:
     worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
     if worksetKind == "UserWorkset":
         worksetNameAcc = worksetTable.GetWorkset(worksetId).Name
-        # nonaccented version for chart
-        worksetName = accents2ascii(worksetNameAcc)
+        # treating accents
+        worksetName = worksetNameAcc
         if worksetName not in worksetNames:
             worksetNames.append(worksetName)
         graphWorksetsData.append(worksetName)
 # print worksetNames
 # sorting results in chart legend
 worksetNames.sort()
+
 worksetsSet=[]
 for i in worksetNames:
     count=graphWorksetsData.count(i)        
     worksetsSet.append(count)
+worksetNames = [x.encode('utf8') for x in worksetNames]
 
 # Worksets OUTPUT print chart only when file is workshared
 if len(worksetNames) > 0:
@@ -518,6 +543,9 @@ graphFCatHeadings.sort()
 for i in graphFCatHeadings:
     count=graphFCatData.count(i)        
     fCatSet.append(count)
+
+graphFCatData = [x.encode('utf8') for x in graphFCatData]
+graphFCatHeadings = [x.encode('utf8') for x in graphFCatHeadings]
 
 
 # categories OUTPUT
