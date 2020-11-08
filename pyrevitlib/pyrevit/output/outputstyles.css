@@ -184,3 +184,85 @@ tr:nth-child(odd) {
 .unittesterror {
 	border-bottom: 1px solid gray;
 }
+
+.dashboardRectNormal {
+	background-color: #a6c844;
+	font-size: 3em;
+	margin: 3px;
+	padding: 10px 8px 8px 8px;
+	color: #fff;
+	height: 80px;
+	min-width: 80px;
+	text-align: center;
+	display: inline-table;
+}
+
+.dashboardRectMediocre {
+	background-color: #fa0;
+	font-size: 3em;
+	margin: 3px;
+	padding: 10px 8px 8px 8px;
+	color: #fff;
+	height: 80px;
+	min-width: 80px;
+	text-align: center;
+	display: inline-table;
+}
+
+.dashboardRectMediocre:hover{
+	background-color: #bbb;
+}
+
+.dashboardRectCritical{
+	background-color: #a00;
+	font-size: 3em;
+	margin: 3px;
+	padding: 10px 8px 8px 8px;
+	color: #fff;
+	height: 80px;
+	min-width: 80px;
+	text-align: center;
+	display: inline-table;
+}
+
+.dashboardRectCritical:hover{
+	background-color: #bbb;
+}
+
+.dashboardSmall {
+	font-size: 0.4em;
+}
+
+.dashboardCenter {
+	text-align: center; 
+}
+
+.dashboardLink {
+   color: white;
+   text-decoration: none;
+   font-weight: normal;
+   padding: 0px;
+}
+
+.dashboardLink:hover {
+   color: white;
+   text-decoration: none;
+   background-color: #bbb;
+   font-weight: normal;
+   padding: 0px;
+}
+
+.dashboardNoLink {
+   color: white;
+   text-decoration: none;
+   font-weight: normal;
+   padding: 0px;
+}
+
+.dashboardNoLink:hover {
+   color: white;
+   text-decoration: none;
+   background-color:#fff;
+   font-weight: normal;
+   padding: 0px;
+}
