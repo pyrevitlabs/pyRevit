@@ -12,6 +12,17 @@ using pyRevitLabs.NLog;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.PyRevit {
+    public class PyRevitRunnerCommand {
+        public PyRevitRunnerCommand(string commandPath) => Path = commandPath;
+        
+        public override string ToString() {
+            return $"{Name} | \"{Path}\"";
+        }
+        
+        public string Name => System.IO.Path.GetFileName(Path).Replace(PyRevitConsts.ExtensionUICommandPostfix, "");
+        public string Path { get; }
+    }
+
     public class PyRevitRunnerExecEnv {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 

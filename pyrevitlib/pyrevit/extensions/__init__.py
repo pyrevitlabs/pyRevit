@@ -17,15 +17,9 @@ class LIBExtensionType:
     POSTFIX = '.lib'
 
 
-class RUNExtensionType:
-    ID = 'run'
-    POSTFIX = '.run'
-
-
 class ExtensionTypes:
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
-    RUN_EXTENSION = RUNExtensionType
 
     @classmethod
     def get_ext_types(cls):
@@ -34,11 +28,6 @@ class ExtensionTypes:
             if attr.endswith('_EXTENSION'):
                 ext_types.add(getattr(cls, attr))
         return ext_types
-
-    @classmethod
-    def is_cli_ext(cls, ext_type):
-        """Check if this is a pyRevit CLI extension."""
-        return ext_type == cls.RUN_EXTENSION
 
 
 # -----------------------------------------------------------------------------

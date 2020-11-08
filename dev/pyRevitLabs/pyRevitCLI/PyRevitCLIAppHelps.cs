@@ -177,7 +177,7 @@ namespace pyRevitCLI {
                         options: new Dictionary<string, string>() {
                             { "<extension_name>",       "Extension name to install" },
                             { "<repo_url>",             "Extension source git repo url" },
-                            { "ui | lib | run",         "Type of custom extension to install" },
+                            { "ui | lib",               "Type of custom extension to install" },
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
