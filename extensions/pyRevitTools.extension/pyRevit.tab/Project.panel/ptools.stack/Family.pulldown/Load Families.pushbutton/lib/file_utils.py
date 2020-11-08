@@ -1,5 +1,5 @@
 """ Module to search for files in a directory """
-
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
 import pathlib
 import itertools
@@ -69,5 +69,5 @@ class FileFinder:
         pattern : str
             Regular expression pattern
         """
-        self.paths = itertools.ifilterfalse(
+        self.paths = itertools.ifilterfalse(    #pylint: disable=no-member
             re.compile(pattern).match, self.paths)

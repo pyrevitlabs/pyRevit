@@ -1,10 +1,10 @@
-"""
-This tool gives you the option to load multiple Families from a folder and its subfolders.
+"""This tool gives you the option to load multiple Families from a folder and its subfolders.
 You can choose to load the Family with all its Types, or select Types for each Family.
 """
-
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import os
-from pyrevit import forms, script
+from pyrevit import forms
+from pyrevit import script
 
 # Custom modules in lib/
 from file_utils import FileFinder
@@ -52,8 +52,8 @@ logger.debug('Selected Families: {}'.format(selected_families))
 
 # Dictionary to look up FamilyLoader method by selected option
 family_loading_options = {
-    "Load all types": "load_all",
-    "Load types by selecting individually": "load_selective"}
+    "Load All Types Per Family": "load_all",
+    "Ask Which Types To Load Per Family": "load_selective"}
 selected_loading_option = forms.CommandSwitchWindow.show(
     family_loading_options.keys(),
     message='Select loading option:',)

@@ -1,5 +1,5 @@
 """ Module to load Family into project """
-
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import os
 import re
 
