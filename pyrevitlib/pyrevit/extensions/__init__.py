@@ -150,6 +150,7 @@ URL_BUTTON_POSTFIX = '.urlbutton'
 COMP_LIBRARY_DIR_NAME = 'lib'
 COMP_BIN_DIR_NAME = 'bin'
 COMP_HOOKS_DIR_NAME = 'hooks'
+COMP_CHECKS_DIR_NAME = 'checks'
 
 # unique ids
 UNIQUE_ID_SEPARATOR = '-'

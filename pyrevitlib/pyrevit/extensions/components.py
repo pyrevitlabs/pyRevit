@@ -409,6 +409,11 @@ class Extension(GenericUIContainer):
         hooks_path = op.join(self.directory, exts.COMP_HOOKS_DIR_NAME)
         self.hooks_path = hooks_path if op.exists(hooks_path) else None
 
+        # extensions can store preflight checks under
+        # checks/ inside the component folder
+        checks_path = op.join(self.directory, exts.COMP_CHECKS_DIR_NAME)
+        self.checks_path = checks_path if op.exists(checks_path) else None
+
         self.dir_hash_value = self._calculate_extension_dir_hash()
 
     @property
@@ -463,6 +468,10 @@ class Extension(GenericUIContainer):
     def get_hooks(self):
         hook_scripts = os.listdir(self.hooks_path) if self.hooks_path else []
         return [op.join(self.hooks_path, x) for x in hook_scripts]
+
+    def get_checks(self):
+        check_scripts = os.listdir(self.checks_path) if self.checks_path else []
+        return [op.join(self.checks_path, x) for x in check_scripts]
 
 
 # library extension class
