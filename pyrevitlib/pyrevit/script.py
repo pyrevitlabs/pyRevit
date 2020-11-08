@@ -573,7 +573,7 @@ def load_json(filepath):
         object: deserialized data
     """
     with codecs.open(filepath, 'r', "utf-8") as json_file:
-        return json_file.read()
+        return json.load(json_file)
 
 
 def dump_csv(data, filepath):
