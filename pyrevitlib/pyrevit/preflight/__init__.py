@@ -33,28 +33,27 @@ def _get_check_name(check_script):
 
 
 class PreflightCheck(object):
+    """Preflight Check"""
+
     def __init__(self, check_type, script_path):
-        self._check_type = check_type
-        self.name = getattr(self._check_type, "name", None) \
+        self.check_case = check_type
+        self.name = getattr(self.check_case, "name", None) \
             or _get_check_name(script_path)
         self.script_path = script_path
 
-    def init_check(self):
-        return self._check_type()
 
-
-def run_preflight_check(check, output=None):
+def run_preflight_check(check, doc, output):
     """Run a preflight check
 
     Args:
         check (PreflightCheck): preflight test case object
         output (pyrevit.output.PyRevitOutputWindow): output window wrapper
     """
-    check_case = check.init_check()
-    check_case.setUp()
-    check_case.startTest()
-    check_case.tearDown()
-    check_case.doCleanups()
+    check_case = check.check_case()
+    check_case.setUp(doc=doc, output=output)
+    check_case.startTest(doc=doc, output=output)
+    check_case.tearDown(doc=doc, output=output)
+    check_case.doCleanups(doc=doc, output=output)
 
 
 def get_all_preflight_checks():
