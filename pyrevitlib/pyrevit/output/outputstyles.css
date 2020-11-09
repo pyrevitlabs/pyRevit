@@ -135,12 +135,17 @@ tr:nth-child(odd) {
 	border-radius: 0;
 	color: #ffffff;
 	display: inline-block;
+    height: 14px;
 	font-size: 8pt;
 	margin: 2px;
 	padding: 2px 6px;
 	text-align: center;
 	text-decoration: none;
 	vertical-align: middle;
+}
+
+.elementlink:hover {
+	background-color: #ffc300;
 }
 
 .elementlink:visited {

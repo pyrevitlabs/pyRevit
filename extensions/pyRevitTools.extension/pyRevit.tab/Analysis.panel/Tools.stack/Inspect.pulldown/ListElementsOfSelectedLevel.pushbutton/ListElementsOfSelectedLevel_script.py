@@ -21,7 +21,9 @@ if not levels:
     forms.alert('At least one Level element must be selected.')
 else:
     output.print_md("####LIST ALL ELEMENTS ON SELECTED LEVEL(S):")
-    output.print_md('By: [{}]({})'.format(__author__, __contact__))
+    output.print_md('By: [{}]({})'.format('Frederic Beaupere',
+                                          'https://github.com/frederic-beaupere'))
+
 
     all_count = all_elements.Count
     print('\n' + str(all_count) + ' Elements found in project.')

@@ -20,7 +20,8 @@ for line in all_lines:
         detail_lines[view_id_int] += 1
 
 output.print_md("####LINE COUNT IN CURRENT VIEW:")
-output.print_md('By: [{}]({})'.format(__author__, __contact__))
+output.print_md('By: [{}]({})'.format('Frederic Beaupere',
+                                      'https://github.com/frederic-beaupere'))
 
 for line_count, view_id_int \
         in sorted(zip(detail_lines.values(), detail_lines.keys()),

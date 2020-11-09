@@ -20,7 +20,7 @@ Usage:
 	pyrevit clones commit <clone_name> [<commit_hash>] [--log=<log_file>]
 	pyrevit clones origin <clone_name> --reset [--log=<log_file>]
 	pyrevit clones origin <clone_name> [<origin_url>] [--log=<log_file>]
-	pyrevit clones update (--all | <clone_name>) [--log=<log_file>]
+	pyrevit clones update (--all | <clone_name>) [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit clones deployments <clone_name>
 	pyrevit clones engines <clone_name>
 	pyrevit attach --help
@@ -49,7 +49,7 @@ Usage:
 	pyrevit extensions sources [--help]
 	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
-	pyrevit extensions update (--all | <extension_name>) [--log=<log_file>]
+	pyrevit extensions update (--all | <extension_name>) [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit releases --help
 	pyrevit releases [--pre] [--notes]
 	pyrevit releases latest [--pre] [--notes]

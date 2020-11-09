@@ -38,7 +38,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 int index = 0;
                 var boundIndices = new List<int>();
                 // find the utf-16 string between two ascii \r\n
-                while (index < rawBasicInfoData.Length) {
+                while (index < rawBasicInfoData.Length - 1) {
                     if (rawBasicInfoData[index] == 0x0D && rawBasicInfoData[index + 1] == 0x0A)
                         boundIndices.Add(index);
                     index++;

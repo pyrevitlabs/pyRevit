@@ -155,23 +155,23 @@ class ViewSheetListItem(forms.Reactive):
             coreutils.cleanup_filename(value, windows_safe=True)
 
 
-class PrintSettingListItem(object):
+class PrintSettingListItem(forms.TemplateListItem):
     def __init__(self, print_settings=None):
-        self._psettings = print_settings
+        super(PrintSettingListItem, self).__init__(print_settings)
         self.is_compatible = \
-            True if isinstance(self._psettings, DB.InSessionPrintSetting) \
+            True if isinstance(self.item, DB.InSessionPrintSetting) \
                 else False
 
     @property
     def name(self):
-        if isinstance(self._psettings, DB.InSessionPrintSetting):
+        if isinstance(self.item, DB.InSessionPrintSetting):
             return "<In Session>"
         else:
-            return self._psettings.Name
+            return self.item.Name
 
     @property
     def print_settings(self):
-        return self._psettings
+        return self.item
 
     @property
     def print_params(self):
@@ -189,6 +189,10 @@ class PrintSettingListItem(object):
     @property
     def allows_variable_paper(self):
         return False
+
+    @property
+    def is_user_defined(self):
+        return not self.name.startswith('<')
 
 
 class VariablePaperPrintSettingListItem(PrintSettingListItem):
@@ -511,6 +515,12 @@ class PrintSheetsWindow(forms.WPFWindow):
         return self.printsettings_cb.SelectedItem
 
     @property
+    def has_print_settings(self):
+        # self.selected_print_setting implements __nonzero__
+        # manually check None-ness
+        return self.selected_print_setting is not None
+
+    @property
     def print_settings(self):
         return self.printsettings_cb.ItemsSource
 
@@ -690,7 +700,7 @@ class PrintSheetsWindow(forms.WPFWindow):
     def _update_combine_option(self):
         self.enable_element(self.combine_cb)
         if self.selected_doc.IsLinked \
-                or ((self.selected_schedule and self.selected_print_setting) 
+                or ((self.selected_schedule and self.has_print_settings) 
                     and self.selected_print_setting.allows_variable_paper):
             self.disable_element(self.combine_cb)
             self.combine_cb.IsChecked = False
@@ -1052,7 +1062,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             [DB.BuiltInCategory.OST_TitleBlocks],
             doc=self.selected_doc
         )
-        if self.selected_schedule and self.selected_print_setting:
+        if self.selected_schedule and self.has_print_settings:
             rev_cfg = DB.RevisionSettings.GetRevisionSettings(revit.doc)
             if self.selected_print_setting.allows_variable_paper:
                 sheet_printsettings = \
@@ -1150,6 +1160,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                             "by modifying the titleblock print setting")
                 return
 
+            all_psettings = \
+                [x for x in self.print_settings if x.is_user_defined]
             sheet_psettings = \
                 self.selected_printable_sheets[0].all_print_settings
             if sheet_psettings:
@@ -1160,10 +1172,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                             psettings=sheet_psettings
                             ),
                     'All Print Settings':
-                        self.print_settings
+                        all_psettings
                 }
             else:
-                options = self.print_settings or []
+                options = all_psettings or []
 
             if options:
                 psetting_item = forms.SelectFromList.show(
@@ -1177,7 +1189,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                     )
                 if psetting_item:
                     for sheet in self.selected_printable_sheets:
-                        sheet.print_settings = psetting_item.print_settings
+                        sheet.print_settings = psetting_item
             else:
                 forms.alert('There are no print settings in this model.')
 

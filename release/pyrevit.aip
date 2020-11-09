@@ -27,10 +27,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevit.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{ECFE3DF3-2276-4A11-BA07-9F166AFE4693} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{696310B4-5E37-4437-B047-20954E4B2814} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.8.2" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.3" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>
@@ -166,7 +166,8 @@
     <ROW Directory="ListElementsOfSelectedLevel.p_1_Dir" Directory_Parent="Inspect.pulldown_1_Dir" DefaultDir="LISTEL~1.PUS|ListElementsOfSelectedLevel.pushbutton"/>
     <ROW Directory="ListFamilySizeCreator.pushbut_1_Dir" Directory_Parent="Inspect.pulldown_1_Dir" DefaultDir="LISTFA~1.PUS|ListFamilySizeCreator.pushbutton"/>
     <ROW Directory="ListSelectionasClickableLinks_1_Dir" Directory_Parent="Select.pulldown_1_Dir" DefaultDir="LISTSE~1.PUS|List Selection as Clickable Links.pushbutton"/>
-    <ROW Directory="LoadMoreTypes.pushbutton_1_Dir" Directory_Parent="ptools2.stack_Dir" DefaultDir="LOADMO~1.PUS|Load More Types.pushbutton"/>
+    <ROW Directory="LoadFamilies.pushbutton_Dir" Directory_Parent="Family.pulldown_1_Dir" DefaultDir="LOADFA~1.PUS|Load Families.pushbutton"/>
+    <ROW Directory="LoadMoreTypes.pushbutton_Dir" Directory_Parent="Family.pulldown_1_Dir" DefaultDir="LOADMO~1.PUS|Load More Types.pushbutton"/>
     <ROW Directory="MAppend.pushbutton_1_Dir" Directory_Parent="mema.stack_Dir" DefaultDir="MAPPEN~1.PUS|MAppend.pushbutton"/>
     <ROW Directory="MClear.pushbutton_1_Dir" Directory_Parent="Memory.pulldown_1_Dir" DefaultDir="MCLEAR~1.PUS|MClear.pushbutton"/>
     <ROW Directory="MDeduct.pushbutton_1_Dir" Directory_Parent="Memory.pulldown_1_Dir" DefaultDir="MDEDUC~1.PUS|MDeduct.pushbutton"/>
@@ -355,6 +356,7 @@
     <ROW Directory="interop_Dir" Directory_Parent="pyrevit_Dir" DefaultDir="interop"/>
     <ROW Directory="lib_1_Dir" Directory_Parent="pyRevitCore.extension_Dir" DefaultDir="lib"/>
     <ROW Directory="lib_2_Dir" Directory_Parent="memo.stack_Dir" DefaultDir="lib"/>
+    <ROW Directory="lib_3_Dir" Directory_Parent="LoadFamilies.pushbutton_Dir" DefaultDir="lib"/>
     <ROW Directory="lib_4_Dir" Directory_Parent="Memory.pulldown_1_Dir" DefaultDir="lib"/>
     <ROW Directory="lib_Dir" Directory_Parent="pyRevitTags.extension_Dir" DefaultDir="lib"/>
     <ROW Directory="links.stack_Dir" Directory_Parent="pyRevit.panel_Dir" DefaultDir="LINKS~2.STA|links.stack"/>
@@ -629,6 +631,8 @@
     <ROW Component="bundle.yaml_4" ComponentId="{810106A5-6A16-41F1-A982-738C5C6B3CD3}" Directory_="rpwDocs.urlbutton_Dir" Attributes="0" KeyPath="bundle.yaml_7" Type="0"/>
     <ROW Component="bundle.yaml_5" ComponentId="{F2A276EF-5766-4017-8ABE-033D8F6E1866}" Directory_="toggles1.stack_Dir" Attributes="0" KeyPath="bundle.yaml_31" Type="0"/>
     <ROW Component="bundle.yaml_6" ComponentId="{9CEDE19F-652E-47F6-8442-8993905D16E8}" Directory_="Sessions.panel_Dir" Attributes="0" KeyPath="bundle.yaml_35" Type="0"/>
+    <ROW Component="bundle.yaml_7" ComponentId="{A85B7F4B-6818-450B-AB7F-7D2A9FD6B6A2}" Directory_="LoadFamilies.pushbutton_Dir" Attributes="0" KeyPath="bundle.yaml_226" Type="0"/>
+    <ROW Component="bundle.yaml_8" ComponentId="{CB88F440-3359-4FAF-A8D3-3B7D7E73FE03}" Directory_="LoadMoreTypes.pushbutton_Dir" Attributes="0" KeyPath="bundle.yaml_227" Type="0"/>
     <ROW Component="cacert.pem" ComponentId="{B817DEE7-3399-4316-8CD6-41B953F3C3EF}" Directory_="websocket_Dir" Attributes="0" KeyPath="cacert.pem_2" Type="0"/>
     <ROW Component="cacher_asc.py" ComponentId="{FB1123A2-FF3B-48C5-A240-EB00556A31E0}" Directory_="extensions_6_Dir" Attributes="0" KeyPath="cacher_asc.py" Type="0"/>
     <ROW Component="channel.py" ComponentId="{34578EB4-62C6-4EC0-88E3-E3DBD852EC63}" Directory_="slackclient_Dir" Attributes="0" KeyPath="channel.py" Type="0"/>
@@ -662,6 +666,7 @@
     <ROW Component="extension.json_4" ComponentId="{6D54E0D6-2C34-426F-8BFF-449E3E1B4D80}" Directory_="pyRevitTutor.extension_Dir" Attributes="0" KeyPath="extension.json_4" Type="0"/>
     <ROW Component="extensions.json" ComponentId="{582A5A66-CEA9-4ABC-971A-F3F0952524F6}" Directory_="extensions_Dir" Attributes="0" KeyPath="extensions.json" Type="0"/>
     <ROW Component="fake_fastnumbers.py" ComponentId="{831274A2-A4DF-43ED-9DB1-AD6E7568B58A}" Directory_="compat_Dir" Attributes="0" KeyPath="fake_fastnumbers.py" Type="0"/>
+    <ROW Component="family_utils.py" ComponentId="{845FBB09-BEC1-4922-BA1C-1DE7A45C0F58}" Directory_="lib_3_Dir" Attributes="0" KeyPath="family_utils.py" Type="0"/>
     <ROW Component="files.py" ComponentId="{53FE6F52-9A18-493C-86DE-BB2F7E8EC060}" Directory_="revit_Dir" Attributes="0" KeyPath="files.py" Type="0"/>
     <ROW Component="firsttransaction_script.py" ComponentId="{F2774182-93D0-4AD9-993D-75B27F7D81E1}" Directory_="Session4.pushbutton_Dir" Attributes="0" KeyPath="firsttransaction_script.py" Type="0"/>
     <ROW Component="git2106a5f2.dll" ComponentId="{1E9F9136-BBC9-46D5-8CF2-4BFB700A306B}" Directory_="bin_Dir" Attributes="256" KeyPath="git2106a5f2.dll"/>
@@ -708,7 +713,6 @@
     <ROW Component="icon.png_134" ComponentId="{11AECD6E-A34C-4136-85D4-CD2C0EB30564}" Directory_="WhoDidThat.pushbutton_1_Dir" Attributes="0" KeyPath="icon.png_145" Type="0"/>
     <ROW Component="icon.png_135" ComponentId="{459A2D91-D1B2-4A87-B249-E267D3DB093B}" Directory_="GetCentralPath.pushbutton_1_Dir" Attributes="0" KeyPath="icon.png_146" Type="0"/>
     <ROW Component="icon.png_136" ComponentId="{2594C7BB-DB6C-4493-B9ED-9BE65034ADF0}" Directory_="GetRVTInfo.pushbutton_1_Dir" Attributes="0" KeyPath="icon.png_147" Type="0"/>
-    <ROW Component="icon.png_137" ComponentId="{3817CCC2-7A41-4841-9B72-BF3865461BCE}" Directory_="LoadMoreTypes.pushbutton_1_Dir" Attributes="0" KeyPath="icon.png_148" Type="0"/>
     <ROW Component="icon.png_138" ComponentId="{FAF2416D-5E7E-45B9-996A-B141BAFCE8A1}" Directory_="MAppend.pushbutton_1_Dir" Attributes="0" KeyPath="icon.png_149" Type="0"/>
     <ROW Component="icon.png_139" ComponentId="{951EC2F7-642A-4385-B26B-EC913229F3AF}" Directory_="MRead.pushbutton_1_Dir" Attributes="0" KeyPath="icon.png_150" Type="0"/>
     <ROW Component="icon.png_14" ComponentId="{9776B3DA-314C-4C94-8E17-973BFEC1227A}" Directory_="WipeFamilyParameters.pushbutton_Dir" Attributes="0" KeyPath="icon.png_20" Type="0"/>
@@ -2614,8 +2618,6 @@
     <ROW File="script.py_154" Component_="icon.png_135" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Get Central Path.pushbutton\script.py" SelfReg="false"/>
     <ROW File="icon.png_147" Component_="icon.png_136" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Get RVT Info.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="script.py_155" Component_="icon.png_136" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Get RVT Info.pushbutton\script.py" SelfReg="false"/>
-    <ROW File="icon.png_148" Component_="icon.png_137" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Load More Types.pushbutton\icon.png" SelfReg="false"/>
-    <ROW File="script.py_156" Component_="icon.png_137" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Load More Types.pushbutton\script.py" SelfReg="false"/>
     <ROW File="icon.png_149" Component_="icon.png_138" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\mema.stack\MAppend.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="script.py_157" Component_="icon.png_138" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\mema.stack\MAppend.pushbutton\script.py" SelfReg="false"/>
     <ROW File="icon.png_150" Component_="icon.png_139" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\mema.stack\MRead.pushbutton\icon.png" SelfReg="false"/>
@@ -3089,7 +3091,6 @@
     <ROW File="bundle.yaml_164" Component_="icon.png_134" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Team.pulldown\Who Did That.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_165" Component_="icon.png_135" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Get Central Path.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_166" Component_="icon.png_136" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Get RVT Info.pushbutton\bundle.yaml" SelfReg="false"/>
-    <ROW File="bundle.yaml_167" Component_="icon.png_137" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools2.stack\Load More Types.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_168" Component_="script.py_1" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Wipe.pulldown\Wipe Attached Constraints.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_169" Component_="script.py_2" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Wipe.pulldown\Wipe Data Schema.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_170" Component_="icon.png_29" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Wipe.pulldown\Wipe Empty Elevation Tags.pushbutton\bundle.yaml" SelfReg="false"/>
@@ -3148,6 +3149,15 @@
     <ROW File="bundle.yaml_223" Component_="icon.png_167" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\tagstack.stack\Clear Tags.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_224" Component_="icon.png_168" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\tagstack.stack\Export Tagged.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_225" Component_="icon.png_169" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\tagstack.stack\Match Tags.pushbutton\bundle.yaml" SelfReg="false"/>
+    <ROW File="bundle.yaml_226" Component_="bundle.yaml_7" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load Families.pushbutton\bundle.yaml" SelfReg="false"/>
+    <ROW File="icon.png_26" Component_="bundle.yaml_7" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load Families.pushbutton\icon.png" SelfReg="false"/>
+    <ROW File="family_utils.py" Component_="family_utils.py" FileName="FAMILY~1.PY|family_utils.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load Families.pushbutton\lib\family_utils.py" SelfReg="false"/>
+    <ROW File="file_utils.py" Component_="family_utils.py" FileName="FILE_U~1.PY|file_utils.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load Families.pushbutton\lib\file_utils.py" SelfReg="false"/>
+    <ROW File="script.py_21" Component_="bundle.yaml_7" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load Families.pushbutton\script.py" SelfReg="false"/>
+    <ROW File="bundle.yaml_227" Component_="bundle.yaml_8" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load More Types.pushbutton\bundle.yaml" SelfReg="false"/>
+    <ROW File="icon.png_27" Component_="bundle.yaml_8" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load More Types.pushbutton\icon.png" SelfReg="false"/>
+    <ROW File="script.py_22" Component_="bundle.yaml_8" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load More Types.pushbutton\script.py" SelfReg="false"/>
+    <ROW File="adc.py" Component_="bbx.py_1" FileName="adc.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\interop\adc.py" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
@@ -3535,7 +3545,6 @@
     <ROW Feature_="MainFeature" Component_="icon.png_134"/>
     <ROW Feature_="MainFeature" Component_="icon.png_135"/>
     <ROW Feature_="MainFeature" Component_="icon.png_136"/>
-    <ROW Feature_="MainFeature" Component_="icon.png_137"/>
     <ROW Feature_="MainFeature" Component_="icon.png_138"/>
     <ROW Feature_="MainFeature" Component_="icon.png_139"/>
     <ROW Feature_="MainFeature" Component_="icon.png_14"/>
@@ -3795,6 +3804,9 @@
     <ROW Feature_="MainFeature" Component_="IronPython.Wpf.dll_1"/>
     <ROW Feature_="MainFeature" Component_="pyRevitLabs.Emojis.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.VisualBasic.dll"/>
+    <ROW Feature_="MainFeature" Component_="bundle.yaml_7"/>
+    <ROW Feature_="MainFeature" Component_="family_utils.py"/>
+    <ROW Feature_="MainFeature" Component_="bundle.yaml_8"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="pyRevit.exe" SourcePath="..\bin\pyRevit.ico" Index="0"/>

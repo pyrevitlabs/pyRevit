@@ -73,49 +73,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             extTelemetryEvent = ExternalEvent.Create(extTelemetryEventHandler);
         }
 
-        public static void SetHostInfo(object sender, ref EventTelemetryRecord record) {
-            // figure out who is the sender
-            UIControlledApplication uictrlapp = null;
-            UIApplication uiapp = null;
-            ControlledApplication ctrlapp = null;
-            Application app = null;
-
-            Type senderType = sender.GetType();
-            if (senderType == typeof(UIControlledApplication))
-                uictrlapp = (UIControlledApplication)sender;
-            else if (senderType == typeof(UIApplication))
-                uiapp = (UIApplication)sender;
-            else if (senderType == typeof(ControlledApplication))
-                ctrlapp = (ControlledApplication)sender;
-            else if (senderType == typeof(Application))
-                app = (Application)sender;
-
-            // set the host info based on the sender type
-            record.host_user = string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
-            record.username = string.Empty;
-            record.revit = string.Empty;
-            record.revitbuild = string.Empty;
-
-            if (uictrlapp != null) {
-                record.revit = uictrlapp.ControlledApplication.VersionNumber;
-                record.revitbuild = uictrlapp.ControlledApplication.VersionBuild;
-            }
-            else if (uiapp != null && uiapp.Application != null) {
-                record.username = uiapp.Application.Username;
-                record.revit = uiapp.Application.VersionNumber;
-                record.revitbuild = uiapp.Application.VersionBuild;
-            }
-            else if (ctrlapp != null) {
-                record.revit = ctrlapp.VersionNumber;
-                record.revitbuild = ctrlapp.VersionBuild;
-            }
-            else if (app != null) {
-                record.username = app.Username;
-                record.revit = app.VersionNumber;
-                record.revitbuild = app.VersionBuild;
-            }
-        }
-
         public static string GetParameterValue(Parameter param) {
             switch (param.StorageType) {
                 case StorageType.Double: return param.AsValueString();
@@ -273,8 +230,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // update general properties on record
             // host info
-            if (sender != null)
-                SetHostInfo(sender, ref eventTelemetryRecord);
+            if (sender != null) {
+                // set the host info based on the sender type
+                eventTelemetryRecord.host_user = string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
+                eventTelemetryRecord.username = Telemetry.GetRevitUser(sender);
+                eventTelemetryRecord.revit = Telemetry.GetRevitVersion(sender);
+                eventTelemetryRecord.revitbuild = Telemetry.GetRevitBuild(sender);
+            }
 
             // set pyrevit info
             eventTelemetryRecord.handler_id = HandlerId;
@@ -1154,7 +1116,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void SendJournalCommandExecutedTelemetry (UIApplication uiapp, object sender, object e) {
+        public void SendJournalCommandExecutedTelemetry(UIApplication uiapp, object sender, object e) {
             // grab document data
             var doc = uiapp.ActiveUIDocument != null ? uiapp.ActiveUIDocument.Document : null;
 
@@ -1171,8 +1133,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 args = new Dictionary<string, object> {
                         { "command_id",  args.CommandId },
                     }
-            }, sender, args);
-
+            }, uiapp, args);
         }
     }
 }

@@ -278,7 +278,9 @@ namespace pyRevitCLI {
                 else if (all("update"))
                     PyRevitCLICloneCmds.UpdateClone(
                         allClones: arguments["--all"].IsTrue,
-                        cloneName: TryGetValue("<clone_name>")
+                        cloneName: TryGetValue("<clone_name>"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
                         );
 
                 else
@@ -432,7 +434,9 @@ namespace pyRevitCLI {
                 else if (all("update"))
                     PyRevitCLIExtensionCmds.UpdateExtension(
                         all: arguments["--all"].IsTrue,
-                        extName: TryGetValue("<extension_name>")
+                        extName: TryGetValue("<extension_name>"),
+                        username: TryGetValue("--username"),
+                        password: TryGetValue("--password")
                     );
 
                 else if (IsHelpMode)

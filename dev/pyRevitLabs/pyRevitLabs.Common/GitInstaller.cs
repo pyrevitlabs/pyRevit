@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Web.UI.WebControls.Adapters;
 using LibGit2Sharp;
 using pyRevitLabs.NLog;
 
@@ -106,12 +106,19 @@ namespace pyRevitLabs.Common {
 
         // rebase current branch and pull from master
         // @handled @logs
-        public static UpdateStatus ForcedUpdate(string repoPath) {
+        public static UpdateStatus ForcedUpdate(string repoPath, string username, string password) {
             logger.Debug("Force updating repo \"{0}\"...", repoPath);
             try {
                 var repo = new Repository(repoPath);
                 var options = new PullOptions();
-                options.FetchOptions = new FetchOptions();
+                var fetchOpts = new FetchOptions();
+
+                // add username and password to clone options, if provided by user
+                if (username != null && password != null)
+                    fetchOpts.CredentialsProvider =
+                        (_url, _usernameFromUrl, _credTypes) => new UsernamePasswordCredentials { Username = username, Password = password };
+
+                options.FetchOptions = fetchOpts;
 
                 // before updating, let's first
                 // forced checkout to overwrite possible local changes
@@ -233,10 +240,12 @@ namespace pyRevitLabs.Common {
         // get the checkedout branch from repopath
         // @handled @logs
         public static string GetHeadCommit(string repoPath) {
+            string head = null;
             if (IsValidRepo(repoPath))
-                return new Repository(repoPath).Head.Tip.Id.ToString();
-            logger.Debug("Can not determine head commit hash for \"{0}\"", repoPath);
-            return null;
+                head = new Repository(repoPath).Head?.Tip?.Id.ToString();
+            if (head is null)
+                logger.Debug("Can not determine head commit hash for \"{0}\"", repoPath);
+            return head;
         }
 
         // get the checkedout branch from repopath

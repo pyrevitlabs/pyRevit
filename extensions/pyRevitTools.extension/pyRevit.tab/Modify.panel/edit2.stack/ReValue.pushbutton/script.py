@@ -17,7 +17,10 @@ class ReValueItem(object):
 
     def format_value(self, from_pattern, to_pattern):
         try:
-            if from_pattern and to_pattern:
+            if to_pattern is None:
+                to_pattern = ""
+
+            if from_pattern:
                 # if format contains pattern finders use reformatter
                 if any(x in from_pattern for x in ['{', '}']):
                     self.newvalue = \

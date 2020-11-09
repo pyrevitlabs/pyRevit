@@ -21,7 +21,8 @@ def listdwgs(current_view_only=False):
     workset_table = revit.doc.GetWorksetTable()
 
     output.print_md("## LINKED AND IMPORTED DWG FILES:")
-    output.print_md('By: [{}]({})'.format(__author__, __contact__))
+    output.print_md('By: [{}]({})'.format('Frederic Beaupere',
+                                          'https://github.com/frederic-beaupere'))
 
     for dwg in dwgs:
         if dwg.IsLinked:
