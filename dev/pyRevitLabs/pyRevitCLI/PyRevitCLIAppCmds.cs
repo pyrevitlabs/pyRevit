@@ -211,5 +211,19 @@ namespace pyRevitCLI {
             RevitProductData.Update();
             PyRevitProductData.Update();
         }
+
+        internal static void
+        RunDoctor(string args, bool dryRun = false) {
+            if (dryRun) args += " --dryrun";
+            
+            string doctorExe = Path.Combine(GetProcessPath(), "pyrevit-doctor.exe");
+            ProcessStartInfo cpyProcessInfo = new ProcessStartInfo(doctorExe) {
+                WorkingDirectory = GetProcessPath(),
+                Arguments = args,
+                UseShellExecute = false
+            };
+            var utilityProcess = Process.Start(cpyProcessInfo);
+            utilityProcess.WaitForExit();
+        }
     }
 }

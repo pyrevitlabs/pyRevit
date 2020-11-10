@@ -37,6 +37,7 @@ namespace pyRevitCLI {
                             { "detach",                 "Detach pyRevit clone from installed Revit" },
                             { "config",                 "Configure pyRevit for current user" },
                             { "run",                    "Run python script in Revit" },
+                            { "doctor",                 "Fix potential or real problems" },
                         },
                         helpCommands: new Dictionary<string, string>() {
                             { "wiki",                   "Open pyRevit Wiki" },
