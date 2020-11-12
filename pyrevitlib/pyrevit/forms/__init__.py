@@ -2317,6 +2317,8 @@ def select_family_parameters(family_doc,
                               labeled=family_param.Id in label_param_ids)
             )
 
+    param_defs.sort(key=lambda x: x.name)
+
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "FamilyParameterItemStyle.xaml")
         )
