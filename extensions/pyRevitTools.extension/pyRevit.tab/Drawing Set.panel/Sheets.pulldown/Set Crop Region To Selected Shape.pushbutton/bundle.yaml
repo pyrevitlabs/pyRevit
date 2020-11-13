@@ -1,0 +1,1 @@
+tooltip: Draw the desired crop boundary as a closed polygon on your sheet (using detail lines). Then select the bounday and the destination viewport and run the script. This script will apply the drafted boundary to the view of the selected viewport

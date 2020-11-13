@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>pyRevitRunner</RootNamespace>
     <AssemblyName>pyRevitRunner</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -18,11 +18,12 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\bin\engines\279\</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x64</PlatformTarget>
+    <IntermediateOutputPath>C:\Users\ehsan\AppData\Local\Temp\vsA697.tmp\Debug\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,6 +32,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <IntermediateOutputPath>C:\Users\ehsan\AppData\Local\Temp\vsA697.tmp\Release\</IntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="IronPython">
@@ -57,17 +59,11 @@
       <HintPath>..\..\..\bin\engines\279\Microsoft.Scripting.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Microsoft.Scripting.Metadata">
-      <HintPath>..\..\..\bin\engines\279\Microsoft.Scripting.Metadata.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="RevitAPI">
-      <HintPath>..\..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2018\RevitAPI.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>C:\Program Files\Autodesk\Revit 2021\RevitAPI.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPIUI">
-      <HintPath>..\..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2018\RevitAPIUI.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>C:\Program Files\Autodesk\Revit 2021\RevitAPIUI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -88,8 +84,10 @@
     <Compile Include="..\Source\ScriptExecutor.cs">
       <Link>ScriptExecutor.cs</Link>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
+    <Compile Include="..\..\pyRevit\AssemblyCopyright.cs">
+      <Link>Properties\AssemblyCopyright.cs</Link>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\Resources\python_279_lib.zip">
       <Link>Resources\python_279_lib.zip</Link>
@@ -97,7 +95,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>rd /S /Q "$(ProjectDir)\obj"
-signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 $(TargetPath)</PostBuildEvent>
+    <PostBuildEvent>signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 $(TargetPath)
+copy "$(TargetPath)" "$(ProjectDir)..\..\..\bin\engines\279\"</PostBuildEvent>
   </PropertyGroup>
 </Project>

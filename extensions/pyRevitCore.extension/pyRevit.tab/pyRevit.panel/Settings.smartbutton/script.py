@@ -1,4 +1,5 @@
 
+"""Shows the preferences window for pyRevit"""
 #pylint: disable=E0401,W0703,W0613,C0111,C0103
 import os
 import os.path as op
@@ -21,13 +22,6 @@ from pyrevit.userconfig import user_config
 from pyrevit import revit
 
 import pyrevitcore_globals
-
-
-__context__ = 'zero-doc'
-
-__doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
-          'pyRevit loads and set some basic parameters here.' \
-          '\n\nShift-Click:\nShows config file in explorer.'
 
 
 logger = script.get_logger()
@@ -92,11 +86,11 @@ class SettingsWindow(forms.WPFWindow):
         # check boxes for each version of Revit
         # this could be automated but it pushes me to verify and test
         # before actually adding a new Revit version to the list
-        self._addinfiles_cboxes = {'2016': self.revit2016_cb,
-                                   '2017': self.revit2017_cb,
+        self._addinfiles_cboxes = {'2017': self.revit2017_cb,
                                    '2018': self.revit2018_cb,
                                    '2019': self.revit2019_cb,
-                                   '2020': self.revit2020_cb}
+                                   '2020': self.revit2020_cb,
+                                   '2021': self.revit2021_cb}
 
         self.set_image_source(self.lognone, 'lognone.png')
         self.set_image_source(self.logverbose, 'logverbose.png')
@@ -179,7 +173,7 @@ class SettingsWindow(forms.WPFWindow):
                 logger.debug('Failed getting active cpython engine.')
                 self.cpythonEngines.IsEnabled = False
         else:
-            logger.error('Error determining current attached clone.')
+            logger.debug('Error determining current attached clone.')
             self.disable_element(self.availableEngines)
 
     def _setup_user_extensions_list(self):
@@ -499,6 +493,11 @@ class SettingsWindow(forms.WPFWindow):
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
 
+    def validate_telemetry_url(self, urlbox):
+        url = urlbox.Text
+        if url and not url.endswith("/"):
+            urlbox.Text = url + "/"
+
     def update_status_lights(self, status, serverbox, servermsg):
         """Update given status light by given status"""
         if status and status["status"] == "pass":
@@ -520,6 +519,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def telemetryserver_changed(self, sender, args):
         """Reset telemetry server status light"""
+        self.validate_telemetry_url(self.telemetryserver_tb)
         self.update_status_lights(
             None,
             self.telemetryserver_statusbox,
@@ -528,6 +528,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def apptelemetryserver_changed(self, sender, args):
         """Reset app telemetry server status light"""
+        self.validate_telemetry_url(self.apptelemetryserver_tb)
         self.update_status_lights(
             None,
             self.apptelemetryserver_statusbox,

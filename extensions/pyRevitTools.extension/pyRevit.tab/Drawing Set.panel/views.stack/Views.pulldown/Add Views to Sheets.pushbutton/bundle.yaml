@@ -1,0 +1,8 @@
+tooltip: >-
+  Adds the selected views (callouts, sections, elevations) to the selected sheets. Model views will only be added to the first selected sheet since they can not exist on multiple sheets. The command defaults to active view if no views are selected
+
+
+  Shift+Click:
+
+  Pick source views from list instead of selection or active view
+author: 'Dan Mapes'

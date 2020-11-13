@@ -8,16 +8,6 @@ from pyrevit import coreutils
 from pyrevit.coreutils import pyutils
 
 
-__context__ = 'selection'
-__doc__ = 'Sums up the values of selected parameter on selected elements. ' \
-          'This tool studies the selected elements and their associated '   \
-          'types and presents the user with a list of parameters that are ' \
-          'shared between the selected elements. Only parameters with '     \
-          'Double or Integer values are included.'
-
-__title__ = 'Sum Total'
-
-
 selection = revit.get_selection()
 
 logger = script.get_logger()

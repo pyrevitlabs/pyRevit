@@ -8,9 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("PyRevitLoader")]
 [assembly: AssemblyDescription("pyRevit Loader DLL for Autodesk Revit")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("pyRevit")]
 [assembly: AssemblyProduct("PyRevitLoader")]
-[assembly: AssemblyCopyright("Copyright © 2014-2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

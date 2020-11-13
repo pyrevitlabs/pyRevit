@@ -3,6 +3,7 @@
 Example:
     >>> from pyrevit.api import AdWindows
 """
+import os.path as op
 
 #pylint: disable=E0401,W0611,W0703,C0413
 from pyrevit.framework import clr

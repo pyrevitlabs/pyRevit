@@ -1,18 +1,24 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
-
-[packages]
-sphinx-rtd-theme = "*"
-pygments = "*"
-sphinx = "*"
-readthedocs-sphinx-ext = "*"
-"doc8" = "*"
 
 [dev-packages]
-pylint = "<2.0.0"
-rope = "*"
+mypy = "*"
+pylint = "*"
+black = "*"
+
+[packages]
+docopt = "*"
+requests = "*"
+pygount = "*"
+pyyaml = "*"
 
 [requires]
-python_version = "2.7"
+python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true
+
+[scripts]
+pyrevit = "python ./dev/pyrevit.py"

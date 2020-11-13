@@ -1,0 +1,6 @@
+tooltip: >-
+  Counts all lines in the model with matching style to the selected line
+
+
+  CTRL-Click: Lists every matching line
+context: selection

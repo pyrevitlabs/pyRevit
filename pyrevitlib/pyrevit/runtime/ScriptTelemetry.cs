@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 using pyRevitLabs.Common;
 
@@ -57,9 +57,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // setup a new telemetry record
             return new ScriptTelemetryRecord {
                 host_user = UserEnv.GetLoggedInUserName(),
-                username = runtime.App.Username,
-                revit = runtime.App.VersionNumber,
-                revitbuild = runtime.App.VersionBuild,
+                username = Telemetry.GetRevitUser(runtime.App),
+                revit = Telemetry.GetRevitVersion(runtime.App),
+                revitbuild = Telemetry.GetRevitBuild(runtime.App),
                 sessionid = runtime.SessionUUID,
                 pyrevit = runtime.PyRevitVersion,
                 clone = runtime.CloneName,

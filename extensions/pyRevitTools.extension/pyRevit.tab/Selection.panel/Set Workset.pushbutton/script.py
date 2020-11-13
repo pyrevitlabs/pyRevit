@@ -2,19 +2,7 @@
 This tool will set the active workset from the selected element's workset.
 Copyright (c) 2020 Jean-Marc Couffin
 https://github.com/jmcouffin
---------------------------------------------------------
-pyRevit Notice:
-Copyright (c) 2014-2020 Ehsan Iran-Nejad
-pyRevit: repository at https://github.com/eirannejad/pyRevit
 """
-
-__title__ = 'Set\nWorkset'
-__author__ = 'Jean-Marc Couffin'
-__context__ = 'selection'
-__contact__ = 'https://github.com/jmcouffin'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = 'Sets the active workset from the selection'
-
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import revit
 from pyrevit import forms

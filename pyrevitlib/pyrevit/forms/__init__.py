@@ -33,6 +33,7 @@ from pyrevit.framework import Input
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
+from pyrevit.framework import ObservableCollection
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
@@ -400,10 +401,11 @@ class TemplateUserInputWindow(WPFWindow):
         return dlg.response
 
 
-class TemplateListItem(object):
+class TemplateListItem(Reactive):
     """Base class for checkbox option wrapping another object."""
 
-    def __init__(self, orig_item, checked=False, checkable=True, name_attr=None):
+    def __init__(self, orig_item,
+                 checked=False, checkable=True, name_attr=None):
         """Initialize the checkbox option and wrap given obj.
 
         Args:
@@ -412,6 +414,7 @@ class TemplateListItem(object):
             checkable (bool): Use checkbox for items
             name_attr (str): Get this attribute of wrapped object as name
         """
+        super(TemplateListItem, self).__init__()
         self.item = orig_item
         self.state = checked
         self._nameattr = name_attr
@@ -444,6 +447,15 @@ class TemplateListItem(object):
         """Unwrap and return wrapped object."""
         return self.item
 
+    @reactive
+    def checked(self):
+        """Id checked"""
+        return self.state
+
+    @checked.setter
+    def checked(self, value):
+        self.state = value
+
     @property
     def checkable(self):
         """List Item CheckBox Visibility."""
@@ -453,11 +465,6 @@ class TemplateListItem(object):
     @checkable.setter
     def checkable(self, value):
         self._checkable = value
-
-    @classmethod
-    def is_checkbox(cls, item):
-        """Check if the object has all necessary attribs for a checkbox."""
-        return isinstance(item, TemplateListItem)
 
 
 class SelectFromList(TemplateUserInputWindow):
@@ -491,6 +498,8 @@ class SelectFromList(TemplateUserInputWindow):
             This options works in multiselect mode only. defaults to False
         filterfunc (function):
             filter function to be applied to context items.
+        resetfunc (function):
+            reset function to be called when user clicks on Reset button
         group_selector_title (str):
             title for list group selector. defaults to 'List Group'
         default_group (str): name of defautl group to be selected
@@ -542,6 +551,7 @@ class SelectFromList(TemplateUserInputWindow):
 
     @property
     def use_regex(self):
+        """Is using regex?"""
         return self.regexToggle_b.IsChecked
 
     def _setup(self, **kwargs):
@@ -568,6 +578,11 @@ class SelectFromList(TemplateUserInputWindow):
 
         # filter function?
         self.filter_func = kwargs.get('filterfunc', None)
+
+        # reset function?
+        self.reset_func = kwargs.get('resetfunc', None)
+        if self.reset_func:
+            self.show_element(self.reset_b)
 
         # context group title?
         self.ctx_groups_title = \
@@ -607,7 +622,7 @@ class SelectFromList(TemplateUserInputWindow):
             ctx_items = filter(self.filter_func, ctx_items)
 
         for item in ctx_items:
-            if TemplateListItem.is_checkbox(item):
+            if isinstance(item, TemplateListItem):
                 item.checkable = self.multiselect
                 new_ctx.append(item)
             else:
@@ -666,12 +681,15 @@ class SelectFromList(TemplateUserInputWindow):
                 )
             # filter out any match with score less than 80
             self.list_lb.ItemsSource = \
-                [x[0] for x in fuzzy_matches if x[1] >= 80]
+                ObservableCollection[TemplateListItem](
+                    [x[0] for x in fuzzy_matches if x[1] >= 80]
+                    )
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'
             self.toggleall_b.Content = 'Toggle All'
-            self.list_lb.ItemsSource = [x for x in self._get_active_ctx()]
+            self.list_lb.ItemsSource = \
+                ObservableCollection[TemplateListItem](self._get_active_ctx())
 
     @staticmethod
     def _unwrap_options(options):
@@ -696,20 +714,16 @@ class SelectFromList(TemplateUserInputWindow):
             return self._unwrap_options([self.list_lb.SelectedItem])[0]
 
     def _set_states(self, state=True, flip=False, selected=False):
-        all_items = self.list_lb.ItemsSource
         if selected:
             current_list = self.list_lb.SelectedItems
         else:
             current_list = self.list_lb.ItemsSource
         for checkbox in current_list:
+            # using .checked to push ui update
             if flip:
-                checkbox.state = not checkbox.state
+                checkbox.checked = not checkbox.checked
             else:
-                checkbox.state = state
-
-        # push list view to redraw
-        self.list_lb.ItemsSource = None
-        self.list_lb.ItemsSource = all_items
+                checkbox.checked = state
 
     def toggle_all(self, sender, args):    #pylint: disable=W0613
         """Handle toggle all button to toggle state of all check boxes."""
@@ -731,6 +745,11 @@ class SelectFromList(TemplateUserInputWindow):
         """Mark selected checkboxes as unchecked."""
         self._set_states(state=False, selected=True)
 
+    def button_reset(self, sender, args):#pylint: disable=W0613
+        if self.reset_func:
+            all_items = self.list_lb.ItemsSource
+            self.reset_func(all_items)
+
     def button_select(self, sender, args):    #pylint: disable=W0613
         """Handle select button click."""
         self.response = self._get_options()
@@ -746,6 +765,7 @@ class SelectFromList(TemplateUserInputWindow):
         self._list_options(option_filter=self.search_tb.Text)
 
     def toggle_regex(self, sender, args):
+        """Activate regex in search"""
         self.regexToggle_b.Content = \
             self.Resources['regexIcon'] if self.use_regex \
                 else self.Resources['filterIcon']
@@ -900,7 +920,10 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             else:
                 self.Close()
         elif args.Key == Input.Key.Enter:
-            self.process_option(self._get_active_button(), None)
+            active_button = self._get_active_button()
+            if active_button:
+                self.process_option(active_button, None)
+                args.Handled = True
         elif args.Key != Input.Key.Tab \
                 and args.Key != Input.Key.Space\
                 and args.Key != Input.Key.LeftShift\
@@ -967,8 +990,12 @@ class GetValueWindow(TemplateUserInputWindow):
         """Handle string vlaue update event."""
         filtered_rvalues = \
             sorted([x for x in self.reserved_values
+                    if self.stringValue_tb.Text == str(x)])
+        similar_rvalues = \
+            sorted([x for x in self.reserved_values
                     if self.stringValue_tb.Text in str(x)],
                    reverse=True)
+        filtered_rvalues.extend(similar_rvalues)
         if filtered_rvalues:
             self.reservedValuesList.ItemsSource = filtered_rvalues
             self.show_element(self.reservedValuesListPanel)
@@ -1490,8 +1517,10 @@ class SearchPrompt(WPFWindow):
             self.Close()
         # Enter: close, returns matched response automatically
         elif args.Key == Input.Key.Enter:
-            self._setup_response(response=self._search_res)
-            self.Close()
+            if self.search_tb.Text != '':
+                self._setup_response(response=self._search_res)
+                args.Handled = True
+                self.Close()
         # Shift+Tab, Tab: Cycle through matches
         elif args.Key == Input.Key.Tab and shiftdown:
             self._result_index -= 1
@@ -1979,6 +2008,7 @@ def select_open_docs(title='Select Open Documents',
                      button_name='OK',
                      width=DEFAULT_INPUTWINDOW_WIDTH,    #pylint: disable=W0613
                      multiple=True,
+                     check_more_than_one=True,
                      filterfunc=None):
     """Standard form for selecting open documents.
 
@@ -2002,7 +2032,8 @@ def select_open_docs(title='Select Open Documents',
     """
     # find open documents other than the active doc
     open_docs = [d for d in revit.docs if not d.IsLinked]    #pylint: disable=E1101
-    open_docs.remove(revit.doc)    #pylint: disable=E1101
+    if check_more_than_one:
+        open_docs.remove(revit.doc)    #pylint: disable=E1101
 
     if not open_docs:
         alert('Only one active document is found. '

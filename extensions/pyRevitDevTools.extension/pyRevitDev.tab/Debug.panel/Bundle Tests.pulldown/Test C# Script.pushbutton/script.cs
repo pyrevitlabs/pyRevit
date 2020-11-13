@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
@@ -18,6 +20,11 @@ namespace HelloWorld {
             logger.Debug("Logger works...");
             Console.WriteLine(execParams.ScriptPath);
 
+            Debugger.Break();
+            int m = 12;
+            Console.WriteLine(m);
+            Debugger.Break();
+
             TaskDialog.Show(execParams.CommandName, "Hello World from C#!");
 
             // test access to bundle path
@@ -36,7 +43,13 @@ namespace HelloWorld {
             }
 
             Console.WriteLine(execParams.UIButton.ToString());
+            Console.WriteLine($"New C# Features Work: {true}");
             Console.WriteLine(":thumbs_up:");
+
+            var inputString = Console.ReadLine();
+            Console.WriteLine($"echo: {inputString}");
+
+            Debugger.Log(0, "", "Testing debugger...\n");
 
             return Result.Succeeded;
         }

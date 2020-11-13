@@ -12,17 +12,6 @@ from pyrevit import script
 import pyrevit.extensions as exts
 
 
-__context__ = 'zero-doc'
-__title__ = {
-    'en_us': 'Search',
-    'fa': 'جستجو',
-    'bg': 'Търси',
-    'nl_nl': 'Zoek',
-    'fr_fr': 'Rechercher',
-    'de_de': 'Suche',
-}
-
-
 logger = script.get_logger()
 
 

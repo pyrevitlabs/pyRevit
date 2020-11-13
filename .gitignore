@@ -27,6 +27,7 @@ docs/_*
 __py*
 *.db
 .DS_Store
+Icon?
 
 # ignore sphinx files
 *.pyc
@@ -36,9 +37,13 @@ __py*
 
 # Release and installer files
 release/pyrevit*cache
+release/Prerequisites/*
 dist/
 *.back*.aip
 
 # ignore linter configs
 .vscode/.ropeproject/*
 !.vscode/.ropeproject/config.py
+
+# resilio sync
+.sync

@@ -1,0 +1,2 @@
+help_url: '{{docpath}}pIjDd4dZng0'
+tooltip: Reorients the current 3D view camera, perpendicular to the selected face. This tool will set a sketch plane over the selected face for 3d drawing

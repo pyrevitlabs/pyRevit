@@ -40,6 +40,34 @@
             "website": "https://github.com/apex-project/pyApex",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "lib",
+            "rocket_mode_compatible": "True",
+            "name": "Revitron",
+            "description": "A Revit API wrapper",
+            "author": "Marc Anton Dahmen",
+            "author_profile": "https://github.com/revitron",
+            "url": "https://github.com/revitron/revitron.git",
+            "website": "https://revitron.readthedocs.io/en/latest/",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "Revitron UI",
+            "description": "The Revitron UI extension for pyRevit",
+            "author": "Marc Anton Dahmen",
+            "author_profile": "https://github.com/revitron",
+            "url": "https://github.com/revitron/revitron-ui.git",
+            "website": "https://revitron-ui.readthedocs.io/en/latest/",
+            "image": "",
+            "dependencies": ["Revitron"]
         }
     ]
 }

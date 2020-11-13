@@ -1,0 +1,4 @@
+tooltip: >-
+  Reloads choosen Revit, CAD and DWG Links
+
+  Can reload links "locally" for workshared models

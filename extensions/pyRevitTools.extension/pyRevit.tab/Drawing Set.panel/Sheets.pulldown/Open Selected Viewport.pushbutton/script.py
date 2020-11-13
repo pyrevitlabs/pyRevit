@@ -2,11 +2,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__doc__ = 'Opens the view associated to the selected viewport. '\
-          'You can assign a shortcut to this tool and this is a '\
-          'quick way top open the views when working on sheets.'
-
-
 selection = revit.get_selection()
 
 # Opens the associated view with the selected viewport on a sheet.

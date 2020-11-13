@@ -2,11 +2,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__doc__ = 'Selects all revision clouds of a sepecific revision. '\
-          'This is helpful for setting a parameter or comment ' \
-          'on all the revision clouds at once.'
-
-
 def select_clouds(revision_element):
     cl = DB.FilteredElementCollector(revit.doc)
     revclouds = cl.OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\

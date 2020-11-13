@@ -35,19 +35,21 @@
         <StackPanel DockPanel.Dock="Top">
             <TextBlock Text="Select Order Parameter" />
             <ComboBox x:Name="orderparams_cb" Height="24" Margin="0,5,0,0" SelectionChanged="selection_changed"/>
-            <Expander Header="Group Index Numbers By" Margin="0,5,0,0">
-                <TextBlock TextWrapping="WrapWithOverflow" Margin="0,3,0,0" FontSize="12">
-                    <Bold>Usage</Bold>: Enter a regular expression pattern in this box. This pattern is used to detect changes in
+            <Border Background="{DynamicResource pyRevitAccentBrush}" CornerRadius="3" Margin="0,10,0,0" Padding="5">
+                <Expander Header="Guide" Foreground="White" Cursor="Help">
+                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,3,0,0" Foreground="White">
+                    Enter a regular expression pattern in this box. This pattern is used to detect changes in
                     Sheet Numbers and group indices. For example, to group using the discipline identifier in
                     Sheet Number (A in A1.00), use "([A-Z])\d". The () in pattern select the discipline identifier as a group
                     which is used to group sheet ranges.
                     <Hyperlink NavigateUri="https://regexr.com/" Click="handle_url_click">
                         See Regexr on how to use Regular Expressions
                     </Hyperlink>
-                </TextBlock>
-            </Expander>
+                    </TextBlock>
+                </Expander>
+            </Border>
             <TextBox x:Name="indexgroup_tb" Text=""
-                     Height="24" Margin="0,5,0,0" FontFamily="Consolas"
+                     Height="24" Margin="0,10,0,0" FontFamily="Consolas"
                      VerticalContentAlignment="Center"
                      TextChanged="grouping_pattern_changed"/>
             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
@@ -70,7 +72,7 @@
                     Content="Re-Order"
                     Click="reorder_items"/>
         </Grid>
-        <Grid DockPanel.Dock="Left" Width="30" Margin="0,0,10,0">
+        <Grid x:Name="shift_buttons" DockPanel.Dock="Left" Width="30" Margin="0,0,10,0" IsEnabled="False">
             <Grid.RowDefinitions>
                 <RowDefinition />
                 <RowDefinition />
@@ -117,6 +119,7 @@
                   CanUserSortColumns="True"
                   HorizontalGridLinesBrush="#dedede"
                   VerticalGridLinesBrush="#dedede"
+                  SelectionChanged="sheet_selection_changed"
                   Sorting="sorting_changed">
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell" >

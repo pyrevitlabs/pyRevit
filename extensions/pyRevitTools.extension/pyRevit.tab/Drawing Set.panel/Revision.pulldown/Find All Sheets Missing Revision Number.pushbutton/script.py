@@ -1,15 +1,6 @@
 from pyrevit import revit, DB
 
 
-__doc__ = 'Sometimes when a revision cloud is placed inside a view '\
-          '(instead of a sheet) and the view is placed on a sheet, '\
-          'the revision schedule on the sheet does not get updated '\
-          'with the revision number of the cloud inside the sheeted view. '\
-          'This script verifies that the sheet revision schedule is '\
-          'actually listing all the revisions shown inside '\
-          'the views of that sheet.'
-
-
 # Collecting all revisions
 revclouds = DB.FilteredElementCollector(revit.doc)\
               .OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\

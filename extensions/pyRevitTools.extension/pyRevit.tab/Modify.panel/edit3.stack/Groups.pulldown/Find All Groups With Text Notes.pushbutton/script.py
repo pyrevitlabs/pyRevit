@@ -2,10 +2,6 @@ from pyrevit import framework
 from pyrevit import revit, DB
 
 
-__doc__ = 'List all detail groups that include a text element inside them. '\
-          'This is helpful for spell checking.'
-
-
 grps = list(DB.FilteredElementCollector(revit.doc)
               .OfClass(framework.get_type(DB.Group))
               .ToElements())

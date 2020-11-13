@@ -44,9 +44,6 @@ from pyrevit import script
 from pyrevit.coreutils import yaml
 
 
-__author__ = "{{author}}"
-
-
 logger = script.get_logger()
 output = script.get_output()
 
@@ -183,11 +180,16 @@ def set_fparam_value(pvcfg, fparam):
         # resolve FamilyType value and get the symbol id
         fsym_id = get_symbol_id(pvcfg.value)
         fm.Set(fparam, fsym_id)
+
     elif fparam.StorageType == DB.StorageType.String:
         fm.Set(fparam, pvcfg.value)
-    elif fparam.StorageType == DB.StorageType.Integer \
-            and fparam.Definition.ParameterType.YesNo:
-        fm.Set(fparam, 1 if pvcfg.value.lower() == 'true' else 0)
+
+    elif fparam.StorageType == DB.StorageType.Integer:
+        if fparam.Definition.ParameterType == DB.ParameterType.YesNo:
+            fm.Set(fparam, 1 if pvcfg.value.lower() == 'true' else 0)
+        else:
+            fm.Set(fparam, int(pvcfg.value))
+
     else:
         fm.SetValueString(fparam, pvcfg.value)
 

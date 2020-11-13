@@ -1,33 +1,31 @@
-"""Lists all roof slopes in the model."""
+"""Lists all roof slopes in the model"""
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import script
 from pyrevit import revit, DB
 
-
 output = script.get_output()
-
-
-rooflist = DB.FilteredElementCollector(revit.doc)\
-             .OfCategory(DB.BuiltInCategory.OST_Roofs)\
-             .WhereElementIsNotElementType().ToElements()
-
 
 slopes = {}
 
-
-for el in rooflist:
-    slope_param = el.Parameter[DB.BuiltInParameter.ROOF_SLOPE]
-    if slope_param:
-        slope_value = slope_param.AsValueString()
-        if slope_value in slopes.keys():
-            slopes[slope_value].append(el.Id)
-        else:
-            slopes[slope_value] = [el.Id]
+for roof in revit.query.get_elements_by_categories(
+        [DB.BuiltInCategory.OST_Roofs]
+        ):
+    if isinstance(roof, DB.FootPrintRoof):
+        for roof_profile in roof.GetProfiles():
+            for curve in roof_profile:
+                if roof.DefinesSlope[curve]:
+                    slope_value = \
+                        revit.units.format_slope(roof.SlopeAngle[curve])
+                    if slope_value in slopes.keys():
+                        slopes[slope_value].append(roof.Id)
+                    else:
+                        slopes[slope_value] = [roof.Id]
 
 for sl, elids in slopes.items():
     print('SLOPE: {0}'.format(sl))
     print('ROOF ELEMENTS WITH THIS SLOPE:')
-    el_links = ''
+    element_links = ''
     for elid in elids:
-        el_links += output.linkify(elid)
-    print(el_links)
+        element_links += output.linkify(elid)
+    print(element_links)
     print('\n')

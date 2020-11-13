@@ -6,13 +6,6 @@ from pyrevit import UI
 from pyrevit import forms
 
 
-__context__ = 'zero-doc'
-__doc__ = 'Renames PDF sheets printed from Revit and removes the Central ' \
-          'model name from the PDF names. The tool will ask for a folder ' \
-          'containing the file.\n\n' \
-          'Shift-Click:\nRename files on Desktop'
-
-
 # if user shift-clicks, default to user desktop,
 # otherwise ask for a folder containing the PDF files
 if __shiftclick__:

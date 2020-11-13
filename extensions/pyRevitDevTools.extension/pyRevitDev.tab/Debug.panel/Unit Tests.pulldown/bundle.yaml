@@ -10,12 +10,13 @@ layout:
   - Script Module Tests
   - -----
   - Test Output Stream
+  - Test Input Stream
   - Test Multiple Outputs
   - Test UI Button
   - Test Independent Logging
   - -----
   - Test XAML
-  - Test Sensors
+  - Test Modeless (Sensors)
   - Test Progressbar
   - Test Charts
   - Test D3

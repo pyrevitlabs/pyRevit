@@ -3,11 +3,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__doc__ = 'Lists all sheets containing elements currently "owned" '\
-          'by the user. "Owned" elements are the elements' \
-          'by the user since the last synchronize and release.'
-
-
 sheetsnotsorted = DB.FilteredElementCollector(revit.doc)\
                     .OfCategory(DB.BuiltInCategory.OST_Sheets)\
                     .WhereElementIsNotElementType()\

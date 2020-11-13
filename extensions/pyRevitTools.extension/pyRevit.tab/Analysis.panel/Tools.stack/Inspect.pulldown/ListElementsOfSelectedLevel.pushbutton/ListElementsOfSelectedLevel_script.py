@@ -7,12 +7,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__title__ = 'List Elements of Selected Level(s)'
-__author__ = 'Frederic Beaupere'
-# __context__ = 'selection'
-__contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
 output = script.get_output()
 
 all_elements = DB.FilteredElementCollector(revit.doc)\
@@ -27,7 +21,9 @@ if not levels:
     forms.alert('At least one Level element must be selected.')
 else:
     output.print_md("####LIST ALL ELEMENTS ON SELECTED LEVEL(S):")
-    output.print_md('By: [{}]({})'.format(__author__, __contact__))
+    output.print_md('By: [{}]({})'.format('Frederic Beaupere',
+                                          'https://github.com/frederic-beaupere'))
+
 
     all_count = all_elements.Count
     print('\n' + str(all_count) + ' Elements found in project.')

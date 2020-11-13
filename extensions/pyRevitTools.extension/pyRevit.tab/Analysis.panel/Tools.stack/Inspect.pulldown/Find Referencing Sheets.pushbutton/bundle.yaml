@@ -1,0 +1,6 @@
+tooltip: >-
+  Find all sheets referencing the current view
+
+  Especially useful for finding legends
+author: '{{author}}'
+

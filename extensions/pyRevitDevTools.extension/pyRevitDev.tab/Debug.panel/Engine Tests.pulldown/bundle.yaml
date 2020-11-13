@@ -7,9 +7,13 @@ layout:
   - Test IronPython Search Paths
   - Test IronPython Threading
   - Test IronPython Events
+  - Test IronPython Debugger
   - -----
   - Test CPython Command
   - Test CPython Namespace
   - Test CPython Engine
   - Test CPython Search Paths
   - Test CPython Events
+  - Test CPython Debugger
+  - -----
+  - Test CLR Engine Debugger

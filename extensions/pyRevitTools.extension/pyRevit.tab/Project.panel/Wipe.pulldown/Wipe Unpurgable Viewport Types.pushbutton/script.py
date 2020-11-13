@@ -6,12 +6,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
-__doc__ = 'Asks user to select the viewport types to be converted and the '\
-          'viewport type to be replaced with. I made this tool to fix a '\
-          'problem with viewport types duplicating themselves '\
-          'during a project and would become unpurgable viewport types.'
-
-
 logger = script.get_logger()
 
 

@@ -1,0 +1,3 @@
+tooltip: Does its best at visually separating open documents
+min_revit_version: 2019
+context: zero-doc

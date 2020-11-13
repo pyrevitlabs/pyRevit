@@ -42,9 +42,6 @@ from pyrevit import script
 from pyrevit.coreutils import yaml
 
 
-__author__ = "{{author}}"
-
-
 logger = script.get_logger()
 output = script.get_output()
 
@@ -99,10 +96,12 @@ def get_param_typevalue(ftype, fparam):
     elif fparam.StorageType == DB.StorageType.String:
         fparam_value = ftype.AsString(fparam)
 
-    elif fparam.StorageType == DB.StorageType.Integer \
-            and fparam.Definition.ParameterType.YesNo:
-        fparam_value = \
-            'true' if ftype.AsInteger(fparam) == 1 else 'false'
+    elif fparam.StorageType == DB.StorageType.Integer:
+        if DB.ParameterType.YesNo == fparam.Definition.ParameterType:
+            fparam_value = \
+                'true' if ftype.AsInteger(fparam) == 1 else 'false'
+        else:
+            fparam_value = ftype.AsInteger(fparam)
 
     else:
         fparam_value = ftype.AsValueString(fparam)

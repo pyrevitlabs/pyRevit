@@ -1,0 +1,39 @@
+tooltip: >-
+  Export family configurations to yaml file.
+
+
+  Family configuration file is a yaml file,
+
+  providing info about the parameters and types defined in the family.
+
+
+  The structure of this config file is as shown below:
+
+
+  parameters:
+          <parameter-name>:
+                  type: <Autodesk.Revit.DB.ParameterType>
+                  category: <Autodesk.Revit.DB.BuiltInParameterGroup>
+                  instance: <true|false>
+                  reporting: <true|false>
+                  formula: <str>
+                  default: <str>
+  types:
+          <type-name>:
+                  <parameter-name>: <value>
+                  <parameter-name>: <value>
+                  ...
+
+
+  Example:
+
+
+  parameters:
+          Shelf Height (Upper):
+                  type: Length
+                  group: PG_GEOMETRY
+                  instance: false
+  types:
+          24D"x36H":
+                  Shelf Height (Upper): 3'-0"
+author: '{{author}}'

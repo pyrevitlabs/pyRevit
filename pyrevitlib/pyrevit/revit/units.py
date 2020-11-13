@@ -22,6 +22,24 @@ def format_area(area_value, doc=None):
                                      forEditing=False)
 
 
+def format_slope(slope_value, doc=None):
+    """Return formatted slope value in document units.
+
+    Args:
+        slope_value (float): slope value
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        str: formatted value
+    """
+    doc = doc or HOST_APP.doc
+    return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                     unitType=DB.UnitType.UT_Slope,
+                                     value=slope_value,
+                                     maxAccuracy=False,
+                                     forEditing=False)
+
+
 def _create_view_plane(view):
     """Get a plane parallel to a view
 

@@ -1,7 +1,6 @@
 """Prints calculated hash values for each extension."""
 
 __title__ = 'Get Extension\nHash Values'
-__highlight__= 'updated'
 __context__ = 'zero-doc'
 # __beta__ = True
 

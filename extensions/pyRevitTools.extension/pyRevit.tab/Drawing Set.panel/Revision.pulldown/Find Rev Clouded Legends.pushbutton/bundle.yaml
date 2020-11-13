@@ -1,0 +1,4 @@
+tooltip: Lists all legends with revision clouds on them. Legends with revision clouds will not trigger the sheet index of the sheet they are placed on and that is why this tool is useful
+title: Find Legends with Revision Clouds
+author: 'Frederic Beaupere'
+contact: 'https://github.com/frederic-beaupere'

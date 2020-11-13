@@ -432,16 +432,21 @@ def get_ext_packages(authorized_only=True):
     """
     extpkgs = []
     for ext_dir in user_config.get_ext_root_dirs():
-        extpkg_deffile = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
-        mlogger.debug('Looking for %s', extpkg_deffile)
-        # check for external ext def file
-        if op.exists(extpkg_deffile):
-            mlogger.debug('Found %s', extpkg_deffile)
-            _update_extpkgs(extpkg_deffile, extpkgs)
-        # check internals now
-        internal_extpkg_defs = _find_internal_extpkgs(ext_dir)
-        for int_def_file in internal_extpkg_defs:
-            _update_extpkgs(int_def_file, extpkgs)
+        # make a list of all availabe extension definition sources
+        # default is under the extensions directory that ships with pyrevit
+        extpkg_def_files = {op.join(ext_dir, PLUGIN_EXT_DEF_FILE)}
+        # add other sources added by the user (using the cli)
+        extpkg_def_files.update(user_config.get_ext_sources())
+        for extpkg_def_file in extpkg_def_files:
+            mlogger.debug('Looking for %s', extpkg_def_file)
+            # check for external ext def file
+            if op.exists(extpkg_def_file):
+                mlogger.debug('Found %s', extpkg_def_file)
+                _update_extpkgs(extpkg_def_file, extpkgs)
+            # check internals now
+            internal_extpkg_defs = _find_internal_extpkgs(ext_dir)
+            for int_def_file in internal_extpkg_defs:
+                _update_extpkgs(int_def_file, extpkgs)
 
     if authorized_only:
         return [x for x in extpkgs if x.user_has_access]

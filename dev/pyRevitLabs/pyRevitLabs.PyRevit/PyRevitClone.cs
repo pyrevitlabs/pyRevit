@@ -17,6 +17,10 @@ namespace pyRevitLabs.PyRevit {
         public string Url;
         public string BranchName;
         public string DeploymentName;
+
+        public override string ToString() {
+            return string.Format("Url: \"{0}\" | Branch: \"{1}\" | Deployment: \"{2}\"", Url, BranchName, DeploymentName);
+        }
     }
 
     public class PyRevitClone {
@@ -77,7 +81,7 @@ namespace pyRevitLabs.PyRevit {
             else {
                 return string.Format(
                     "{0} | Deploy: \"{1}\" | Branch: \"{2}\" | Version: \"{3}\" | Path: \"{4}\"",
-                    Name, Deployment.Name, Branch, ModuleVersion, ClonePath);
+                    Name, Deployment?.Name, Branch, ModuleVersion, ClonePath);
             }
         }
 
@@ -111,7 +115,7 @@ namespace pyRevitLabs.PyRevit {
 
         public string Commit => GetCommit(ClonePath);
 
-        public string ShortCommit => Commit.GetHashShort();
+        public string ShortCommit => Commit?.GetHashShort();
 
         public string Origin => GetOrigin(ClonePath);
 
@@ -459,7 +463,8 @@ namespace pyRevitLabs.PyRevit {
                     BranchName = contents[1] == string.Empty ? PyRevitLabsConsts.TragetBranch : contents[1],
                     DeploymentName = contents[2] == string.Empty ? null : contents[2]
                 };
-
+                logger.Debug(args);
+                
                 return args;
             }
             catch (Exception ex) {

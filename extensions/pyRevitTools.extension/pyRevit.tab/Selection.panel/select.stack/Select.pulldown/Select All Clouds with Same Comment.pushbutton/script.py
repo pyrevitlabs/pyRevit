@@ -3,11 +3,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__context__ = 'selection'
-__doc__ = 'Selects all revision clouds in the model with comment '\
-          'matching selected revision cloud.'
-
-
 selection = revit.get_selection()
 
 

@@ -1,0 +1,8 @@
+tooltip: >-
+  Renames PDF sheets printed from Revit and removes the Central model name from the PDF names. The tool will ask for a folder containing the file.
+
+
+  Shift-Click:
+
+  Rename files on Desktop
+context: zero-doc

@@ -6,6 +6,7 @@ from collections import namedtuple
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit import api
 from pyrevit import framework
 from pyrevit import compat
 from pyrevit.compat import safe_strtype
@@ -677,9 +678,9 @@ def get_all_schedules(doc=None):
     return filter(is_schedule, all_scheds)
 
 
-def get_view_by_name(view_name, doc=None):
+def get_view_by_name(view_name, view_types=None, doc=None):
     doc = doc or HOST_APP.doc
-    for view in get_all_views(doc=doc):
+    for view in get_all_views(doc=doc, view_types=view_types):
         if get_name(view) == view_name:
             return view
 
@@ -1082,13 +1083,32 @@ def get_fillpattern_from_element(element, background=True, doc=None):
         return get_fpm_from_frtype(doc.GetElement(element.GetTypeId()))
 
 
-def get_keynote_file(doc=None):
+def get_local_keynote_file(doc=None):
     doc = doc or HOST_APP.doc
     knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
-    knote_table_ref = knote_table.GetExternalFileReference()
-    return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(
-        knote_table_ref.GetAbsolutePath()
-        )
+    if knote_table.IsExternalFileReference():
+        knote_table_ref = knote_table.GetExternalFileReference()
+        return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(
+            knote_table_ref.GetAbsolutePath()
+            )
+
+
+def get_external_keynote_file(doc=None):
+    doc = doc or HOST_APP.doc
+    knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
+    if knote_table.RefersToExternalResourceReferences():
+        refs = knote_table.GetExternalResourceReferences()
+        if refs:
+            for ref_type, ref in dict(refs).items():
+                if ref.HasValidDisplayPath():
+                    return ref.InSessionPath
+
+
+def get_keynote_file(doc=None):
+    doc = doc or HOST_APP.doc
+    local_path = get_local_keynote_file(doc=doc)
+    if not local_path:
+        return get_external_keynote_file(doc=doc)
 
 
 def get_used_keynotes(doc=None):
@@ -1443,7 +1463,7 @@ def find_paper_sizes_by_dims(printer_name, paper_width, paper_height, doc=None):
     return paper_sizes
 
 
-def get_sheet_print_settings(tblock, printer_name, doc_psettings):
+def get_titleblock_print_settings(tblock, printer_name, doc_psettings):
     doc = tblock.Document
     # find paper sizes used in print settings of this doc
     page_width_param = tblock.Parameter[DB.BuiltInParameter.SHEET_WIDTH]
@@ -1469,13 +1489,14 @@ def get_sheet_print_settings(tblock, printer_name, doc_psettings):
     for doc_psetting in doc_psettings:
         try:
             pparams = doc_psetting.PrintParameters
-            if pparams.PaperSize.Name in paper_size_names \
+            if pparams.PaperSize \
+                    and pparams.PaperSize.Name in paper_size_names \
                     and (pparams.ZoomType == DB.ZoomType.Zoom
                          and pparams.Zoom == 100) \
                     and pparams.PageOrientation == page_orient:
                 all_tblock_psettings.add(doc_psetting)
-        except Exception:
-            pass
+        except Exception as ex:
+            mlogger.debug("incompatible psettings: %s", doc_psetting.Name)
     return sorted(all_tblock_psettings, key=lambda x: x.Name)
 
 

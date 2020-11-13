@@ -116,6 +116,15 @@ class RevitWrapper(types.ModuleType):
         """
         return doc.Close()
 
+    @staticmethod
+    def post_command(command_id):
+        """Request Revit to run a command
+
+        Args:
+            command_id (str): command identifier e.g. ID_REVIT_SAVE_AS_TEMPLATE
+        """
+        HOST_APP.post_command(command_id)
+
 
 class ErrorSwallower():
     """Suppresses warnings during script execution

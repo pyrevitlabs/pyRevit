@@ -6,9 +6,6 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__helpurl__ = '{{docpath}}ThzcRM_Tj8g'
-
-
 logger = script.get_logger()
 
 

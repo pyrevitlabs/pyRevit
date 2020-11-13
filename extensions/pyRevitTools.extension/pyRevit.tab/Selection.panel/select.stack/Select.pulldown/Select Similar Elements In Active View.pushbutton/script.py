@@ -7,7 +7,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit.framework import List
 
-__context__ = 'selection'
 
 if not __shiftclick__:
     # ensure active view is a graphical view

@@ -1,12 +1,5 @@
 # -*- coding: UTF-8 -*-
 """Lists all linked and imported DWG instances with worksets and creator."""
-
-__title__ = 'List DWGs'
-__author__ = 'Frederic Beaupere'
-__contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
-
 import clr
 from collections import defaultdict
 
@@ -28,7 +21,8 @@ def listdwgs(current_view_only=False):
     workset_table = revit.doc.GetWorksetTable()
 
     output.print_md("## LINKED AND IMPORTED DWG FILES:")
-    output.print_md('By: [{}]({})'.format(__author__, __contact__))
+    output.print_md('By: [{}]({})'.format('Frederic Beaupere',
+                                          'https://github.com/frederic-beaupere'))
 
     for dwg in dwgs:
         if dwg.IsLinked:

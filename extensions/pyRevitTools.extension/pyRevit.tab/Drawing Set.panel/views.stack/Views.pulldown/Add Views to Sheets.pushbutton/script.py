@@ -5,15 +5,6 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__author__ = 'Dan Mapes'
-__doc__ = 'Adds the selected views (callouts, sections, elevations) to the '\
-          'selected sheets. Model views will only be added to the first '\
-          'selected sheet since they can not exist on multiple sheets. ' \
-          'The command defaults to active view if no views are selected.' \
-          '\n\nShift+Click:\n' \
-          'Pick source views from list instead of selection or active view.'
-
-
 logger = script.get_logger()
 
 
@@ -23,7 +14,7 @@ selected_views = forms.select_views(use_selection=True)
 if selected_views:
     logger.debug('Selected views: {}'.format(len(selected_views)))
     # get the destination sheets from user
-    dest_sheets = forms.select_sheets()
+    dest_sheets = forms.select_sheets(include_placeholder=False)
 
     if dest_sheets:
         logger.debug('Selected sheets: {}'.format(len(dest_sheets)))

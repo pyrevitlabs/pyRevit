@@ -3,9 +3,6 @@
 from pyrevit import revit, DB
 from pyrevit import forms
 
-__title__ = "Cycle\nTypes"
-__author__ = "{{author}}\nGui Talarico"
-
 
 forms.check_familydoc(doc=revit.doc, exitscript=True)
 

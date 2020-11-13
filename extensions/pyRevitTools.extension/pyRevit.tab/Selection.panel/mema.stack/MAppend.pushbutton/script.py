@@ -4,14 +4,6 @@ from pyrevit import script
 from pyrevit import revit
 
 
-__context__ = 'Selection'
-__helpurl__ = '{{docpath}}pAM-ARIXXLw'
-__doc__ = 'Append current selection to memory.\n'\
-          'Works like the M+ button in a calculator. '\
-          'This is a project-dependent memory. Every project has its own '\
-          'selection memory saved in %appdata%/pyRevit folder as *.pym files.'
-
-
 datafile = script.get_document_data_file("SelList", "pym")
 
 

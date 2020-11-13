@@ -2,18 +2,23 @@ from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 
 
-__context__ = 'selection'
-__doc__ = 'Selects all elements (in model) of the same family '\
-          'as the currently selected object.'
-
-
 matchlist = []
+families_checked = []
 
 selection = revit.get_selection()
 
 for el in selection:
     try:
-        family = el.Symbol.Family
+        # allow to select Type (FamilySymbol) from ProjectBrowser
+        if isinstance(el, DB.FamilySymbol):
+            symbol = el
+        else:
+            symbol = el.Symbol
+        family = symbol.Family
+        # do not collect element of the same family twice
+        if family.Id in families_checked:
+            continue
+        families_checked.append(family.Id)
         symbolIdSet = family.GetFamilySymbolIds()
         for symid in symbolIdSet:
             cl = DB.FilteredElementCollector(revit.doc)\
