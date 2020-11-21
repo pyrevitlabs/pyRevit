@@ -2479,7 +2479,7 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         return alert(msg, *args, **kwargs)
 
 
-def pick_folder(title=None):
+def pick_folder(title=None, owner=None):
     """Show standard windows pick folder dialog.
 
     Args:
@@ -2493,7 +2493,14 @@ def pick_folder(title=None):
         fb_dlg.IsFolderPicker = True
         if title:
             fb_dlg.Title = title
-        if fb_dlg.ShowDialog() == CPDialogs.CommonFileDialogResult.Ok:
+
+        res = CPDialogs.CommonFileDialogResult.Cancel
+        if owner:
+            res = fb_dlg.ShowDialog(owner)
+        else:
+            res = fb_dlg.ShowDialog()
+
+        if res == CPDialogs.CommonFileDialogResult.Ok:
             return fb_dlg.FileName
     else:
         fb_dlg = Forms.FolderBrowserDialog()
