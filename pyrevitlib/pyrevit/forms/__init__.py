@@ -2236,6 +2236,8 @@ def select_parameters(src_element,
 
     if filterfunc:
         param_defs = filter(filterfunc, param_defs)
+    
+    param_defs.sort(key=lambda x: x.name)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
@@ -2314,6 +2316,8 @@ def select_family_parameters(family_doc,
                               builtin=family_param.Id.IntegerValue < 0,
                               labeled=family_param.Id in label_param_ids)
             )
+
+    param_defs.sort(key=lambda x: x.name)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "FamilyParameterItemStyle.xaml")
