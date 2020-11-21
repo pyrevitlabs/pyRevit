@@ -15,26 +15,14 @@ my_config = script.get_config("favourite_categories")
 
 # somehow DB.BuiltInCategory.OST_Truss does not have a corresponding DB.Category
 FREQUENTLY_SELECTED_CATEGORIES = [
-    DB.BuiltInCategory.OST_Areas,
-    DB.BuiltInCategory.OST_AreaTags,
     DB.BuiltInCategory.OST_AreaSchemeLines,
     DB.BuiltInCategory.OST_Columns,
     DB.BuiltInCategory.OST_StructuralColumns,
-    DB.BuiltInCategory.OST_Dimensions,
     DB.BuiltInCategory.OST_Doors,
     DB.BuiltInCategory.OST_Floors,
     DB.BuiltInCategory.OST_StructuralFraming,
-    DB.BuiltInCategory.OST_Furniture,
-    DB.BuiltInCategory.OST_Grids,
-    DB.BuiltInCategory.OST_Rooms,
-    DB.BuiltInCategory.OST_RoomTags,
-    DB.BuiltInCategory.OST_Truss,
     DB.BuiltInCategory.OST_Walls,
     DB.BuiltInCategory.OST_Windows,
-    DB.BuiltInCategory.OST_Ceilings,
-    DB.BuiltInCategory.OST_SectionBox,
-    DB.BuiltInCategory.OST_ElevationMarks,
-    DB.BuiltInCategory.OST_Parking
 ]
 
 
