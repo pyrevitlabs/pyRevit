@@ -21,10 +21,10 @@
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyrevitbanner.bmp" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevitcli.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{F0958CD1-EEF8-481D-871C-7501947EC650} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{EF5EC593-2F57-44D8-8456-CFB05247ADA0} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="4.8.3" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.4" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
@@ -96,6 +96,7 @@
     <ROW Component="pyRevitLabs.TargetApps.Revit.dll" ComponentId="{A9CA691C-CE20-4F1A-89EC-C6FC17BF5CFB}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.TargetApps.Revit.dll"/>
     <ROW Component="pyrevit.exe" ComponentId="{65B737C7-06F2-485E-9C00-7B41E5C84B87}" Directory_="APPDIR" Attributes="0" KeyPath="pyrevit.exe"/>
     <ROW Component="pyrevitautocomplete.exe" ComponentId="{34EC4D1D-C1C3-4FA6-A566-3D4FF1B5A764}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevitautocomplete.exe"/>
+    <ROW Component="pyrevitdoctor.exe" ComponentId="{60FB3E69-F4F7-464C-8B71-4557D84CDE53}" Directory_="APPDIR" Attributes="0" KeyPath="pyrevitdoctor.exe"/>
     <ROW Component="pyrevitstubsbuilder.exe" ComponentId="{CB24E7C0-1F7B-4C6E-B02E-5C39C787E41A}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevitstubsbuilder.exe"/>
     <ROW Component="pyrevittelemetryserver.exe" ComponentId="{51991C58-24A0-480B-9A3F-8D40FC6231EA}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevittelemetryserver.exe"/>
     <ROW Component="pyrevittoast.exe" ComponentId="{A7D691B8-D7DC-4BDB-9824-93B63E59F586}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevittoast.exe"/>
@@ -159,6 +160,7 @@
     <ROW File="System.Threading.Tasks.Extensions.dll" Component_="System.Threading.Tasks.Extensions.dll" FileName="SYSTEM~8.DLL|System.Threading.Tasks.Extensions.dll" Attributes="0" SourcePath="..\bin\System.Threading.Tasks.Extensions.dll" SelfReg="false"/>
     <ROW File="Microsoft.CodeAnalysis.VisualBasic.dll" Component_="Microsoft.CodeAnalysis.VisualBasic.dll" FileName="MICROS~5.DLL|Microsoft.CodeAnalysis.VisualBasic.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.VisualBasic.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.Emojis.dll" Component_="pyRevitLabs.Emojis.dll" FileName="PYREV~13.DLL|pyRevitLabs.Emojis.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.Emojis.dll" SelfReg="false"/>
+    <ROW File="pyrevitdoctor.exe" Component_="pyrevitdoctor.exe" FileName="PYREVI~5.EXE|pyrevit-doctor.exe" Attributes="0" SourcePath="..\bin\pyrevit-doctor.exe" SelfReg="false" DigSign="true"/>
     <ATTRIBUTE name="DontAddFileAttributes" value="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
@@ -344,6 +346,7 @@
     <ROW Feature_="MainFeature" Component_="System.Threading.Tasks.Extensions.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.VisualBasic.dll"/>
     <ROW Feature_="MainFeature" Component_="pyRevitLabs.Emojis.dll"/>
+    <ROW Feature_="MainFeature" Component_="pyrevitdoctor.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="pyrevit_cli.exe" SourcePath="..\bin\pyrevit_cli.ico" Index="0"/>
