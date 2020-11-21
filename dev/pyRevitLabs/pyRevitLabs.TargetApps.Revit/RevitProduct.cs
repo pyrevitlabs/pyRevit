@@ -83,6 +83,13 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<HostProductInfo> GetAllProductInfo() => _dstore.GetAllData();
 
         public static string GetBinaryLocation(string installPath) {
+            // starting with Revit 2021, install path might be some sort of relative e.g. "Revit 2021\"
+            if (!CommonUtils.VerifyPath(installPath)) {
+                logger.Debug("Can not verify install path: \"{0}\"", installPath);
+                installPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Autodesk", installPath);
+                logger.Debug("Using default install path: \"{0}\"", installPath);
+            }
+                
             var possibleLocations = new List<string>() {
                 Path.Combine(installPath, "Revit.exe"),
                 Path.Combine(installPath, "Program", "Revit.exe")
@@ -233,16 +240,17 @@ namespace pyRevitLabs.TargetApps.Revit {
             foreach (var key in uninstallKey.GetSubKeyNames()) {
                 var subkey = uninstallKey.OpenSubKey(key);
                 var appName = subkey.GetValue("DisplayName") as string;
-                logger.Debug("Analysing registered app: {0}", appName);
+                logger.Debug("Analysing registered app: {0} @ {1}", appName, subkey.Name);
                 if (appName != null && revitFinder.IsMatch(appName)) {
                     logger.Debug("App is a Revit product: {0}", appName);
                     try {
                         // collect info from reg key
                         var regName = subkey.GetValue("DisplayName") as string;
                         var regVersion = subkey.GetValue("DisplayVersion") as string;
-                        var regInstallPath = (subkey.GetValue("InstallLocation") as string).NormalizeAsPath();
+                        var regInstallPath = (subkey.GetValue("InstallLocation") as string);
                         int regLangCode = (int)subkey.GetValue("Language");
-                        var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath);
+                        // try to find binary location
+                        var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath)?.NormalizeAsPath();
                         logger.Debug("Version from registery key: \"{0}\"", regVersion);
                         logger.Debug("Install path from registery key: \"{0}\"", regInstallPath);
                         logger.Debug("Binary path from registery key: \"{0}\"", binaryFilePath);

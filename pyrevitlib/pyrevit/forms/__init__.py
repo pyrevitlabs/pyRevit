@@ -608,11 +608,13 @@ class SelectFromList(TemplateUserInputWindow):
         # nicely wrap and prepare context for presentation, then present
         self._prepare_context()
 
-        # list options now
-        self._list_options()
-
         # setup search and filter fields
         self.hide_element(self.clrsearch_b)
+
+        # active event listeners
+        self.search_tb.TextChanged += self.search_txt_changed
+        self.ctx_groups_selector_cb.SelectionChanged += self.selection_changed
+
         self.clear_search(None, None)
 
     def _prepare_context_items(self, ctx_items):
@@ -640,10 +642,9 @@ class SelectFromList(TemplateUserInputWindow):
             new_ctx = {}
             for ctx_grp, ctx_items in self._context.items():
                 new_ctx[ctx_grp] = self._prepare_context_items(ctx_items)
+            self._context = new_ctx
         else:
-            new_ctx = self._prepare_context_items(self._context)
-
-        self._context = new_ctx
+            self._context = self._prepare_context_items(self._context)
 
     def _update_ctx_groups(self, ctx_group_names):
         self.show_element(self.ctx_groups_dock)
@@ -762,6 +763,9 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             self.show_element(self.clrsearch_b)
 
+        self._list_options(option_filter=self.search_tb.Text)
+
+    def selection_changed(self, sender, args):
         self._list_options(option_filter=self.search_tb.Text)
 
     def toggle_regex(self, sender, args):
@@ -2236,6 +2240,8 @@ def select_parameters(src_element,
 
     if filterfunc:
         param_defs = filter(filterfunc, param_defs)
+    
+    param_defs.sort(key=lambda x: x.name)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
@@ -2314,6 +2320,8 @@ def select_family_parameters(family_doc,
                               builtin=family_param.Id.IntegerValue < 0,
                               labeled=family_param.Id in label_param_ids)
             )
+
+    param_defs.sort(key=lambda x: x.name)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "FamilyParameterItemStyle.xaml")
@@ -2475,7 +2483,7 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         return alert(msg, *args, **kwargs)
 
 
-def pick_folder(title=None):
+def pick_folder(title=None, owner=None):
     """Show standard windows pick folder dialog.
 
     Args:
@@ -2489,7 +2497,14 @@ def pick_folder(title=None):
         fb_dlg.IsFolderPicker = True
         if title:
             fb_dlg.Title = title
-        if fb_dlg.ShowDialog() == CPDialogs.CommonFileDialogResult.Ok:
+
+        res = CPDialogs.CommonFileDialogResult.Cancel
+        if owner:
+            res = fb_dlg.ShowDialog(owner)
+        else:
+            res = fb_dlg.ShowDialog()
+
+        if res == CPDialogs.CommonFileDialogResult.Ok:
             return fb_dlg.FileName
     else:
         fb_dlg = Forms.FolderBrowserDialog()

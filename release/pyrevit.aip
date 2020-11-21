@@ -27,10 +27,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevit.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{696310B4-5E37-4437-B047-20954E4B2814} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{CA4CAB91-D337-4A68-BCF7-D56B77327D3A} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.8.3" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.4" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>
@@ -166,6 +166,7 @@
     <ROW Directory="ListElementsOfSelectedLevel.p_1_Dir" Directory_Parent="Inspect.pulldown_1_Dir" DefaultDir="LISTEL~1.PUS|ListElementsOfSelectedLevel.pushbutton"/>
     <ROW Directory="ListFamilySizeCreator.pushbut_1_Dir" Directory_Parent="Inspect.pulldown_1_Dir" DefaultDir="LISTFA~1.PUS|ListFamilySizeCreator.pushbutton"/>
     <ROW Directory="ListSelectionasClickableLinks_1_Dir" Directory_Parent="Select.pulldown_1_Dir" DefaultDir="LISTSE~1.PUS|List Selection as Clickable Links.pushbutton"/>
+    <ROW Directory="ListTitleBlocksonSheets.pushbut_Dir" Directory_Parent="Sheets.pulldown_Dir" DefaultDir="LISTTI~1.PUS|List TitleBlocks on Sheets.pushbutton"/>
     <ROW Directory="LoadFamilies.pushbutton_Dir" Directory_Parent="Family.pulldown_1_Dir" DefaultDir="LOADFA~1.PUS|Load Families.pushbutton"/>
     <ROW Directory="LoadMoreTypes.pushbutton_Dir" Directory_Parent="Family.pulldown_1_Dir" DefaultDir="LOADMO~1.PUS|Load More Types.pushbutton"/>
     <ROW Directory="MAppend.pushbutton_1_Dir" Directory_Parent="mema.stack_Dir" DefaultDir="MAPPEN~1.PUS|MAppend.pushbutton"/>
@@ -257,7 +258,6 @@
     <ROW Directory="SelectSheets.pushbutton_Dir" Directory_Parent="Sheets.pulldown_Dir" DefaultDir="SELECT~2.PUS|Select Sheets.pushbutton"/>
     <ROW Directory="SelectSimilarElementsInActive_1_Dir" Directory_Parent="Select.pulldown_1_Dir" DefaultDir="SELECT~9.PUS|Select Similar Elements In Active View.pushbutton"/>
     <ROW Directory="SelectSubWalls.pushbutton_1_Dir" Directory_Parent="Select.pulldown_1_Dir" DefaultDir="SELEC~10.PUS|Select SubWalls.pushbutton"/>
-    <ROW Directory="SelectTitleBlocksonSheets.pushb_Dir" Directory_Parent="Sheets.pulldown_Dir" DefaultDir="SELECT~1.PUS|Select TitleBlocks on Sheets.pushbutton"/>
     <ROW Directory="SelectTopmostGroups.pushbutton_Dir" Directory_Parent="Groups.pulldown_Dir" DefaultDir="SELECT~1.PUS|Select Topmost Groups.pushbutton"/>
     <ROW Directory="Selection.panel_Dir" Directory_Parent="pyRevit.tab_2_Dir" DefaultDir="SELECT~1.PAN|Selection.panel"/>
     <ROW Directory="Session11.pushbutton_Dir" Directory_Parent="Sessions.panel_Dir" DefaultDir="SESSIO~3.PUS|Session 11.pushbutton"/>
@@ -633,6 +633,7 @@
     <ROW Component="bundle.yaml_6" ComponentId="{9CEDE19F-652E-47F6-8442-8993905D16E8}" Directory_="Sessions.panel_Dir" Attributes="0" KeyPath="bundle.yaml_35" Type="0"/>
     <ROW Component="bundle.yaml_7" ComponentId="{A85B7F4B-6818-450B-AB7F-7D2A9FD6B6A2}" Directory_="LoadFamilies.pushbutton_Dir" Attributes="0" KeyPath="bundle.yaml_226" Type="0"/>
     <ROW Component="bundle.yaml_8" ComponentId="{CB88F440-3359-4FAF-A8D3-3B7D7E73FE03}" Directory_="LoadMoreTypes.pushbutton_Dir" Attributes="0" KeyPath="bundle.yaml_227" Type="0"/>
+    <ROW Component="bundle.yaml_9" ComponentId="{837B12CE-649E-424D-94F2-3B91F26A8E89}" Directory_="ListTitleBlocksonSheets.pushbut_Dir" Attributes="0" KeyPath="bundle.yaml_167" Type="0"/>
     <ROW Component="cacert.pem" ComponentId="{B817DEE7-3399-4316-8CD6-41B953F3C3EF}" Directory_="websocket_Dir" Attributes="0" KeyPath="cacert.pem_2" Type="0"/>
     <ROW Component="cacher_asc.py" ComponentId="{FB1123A2-FF3B-48C5-A240-EB00556A31E0}" Directory_="extensions_6_Dir" Attributes="0" KeyPath="cacher_asc.py" Type="0"/>
     <ROW Component="channel.py" ComponentId="{34578EB4-62C6-4EC0-88E3-E3DBD852EC63}" Directory_="slackclient_Dir" Attributes="0" KeyPath="channel.py" Type="0"/>
@@ -766,7 +767,6 @@
     <ROW Component="icon.png_220" ComponentId="{C5769A6E-9150-4971-A8F5-DD4C1386B508}" Directory_="PinAllViewports.pushbutton_Dir" Attributes="0" KeyPath="icon.png_231" Type="0"/>
     <ROW Component="icon.png_221" ComponentId="{9208BF5D-CC6A-48AF-81B5-B00E0E382565}" Directory_="RenameSelectedSheets.pushbutton_Dir" Attributes="0" KeyPath="icon.png_232" Type="0"/>
     <ROW Component="icon.png_222" ComponentId="{CA019272-2D63-4646-A62C-8EDB61AED2C1}" Directory_="ReorderSelectedViewport.pushbut_Dir" Attributes="0" KeyPath="icon.png_233" Type="0"/>
-    <ROW Component="icon.png_223" ComponentId="{30B9FF40-ED8D-4894-B2F8-621C521C7419}" Directory_="SelectTitleBlocksonSheets.pushb_Dir" Attributes="0" KeyPath="icon.png_234" Type="0"/>
     <ROW Component="icon.png_224" ComponentId="{D2813548-39CD-40C2-B044-BCD766A3EA3F}" Directory_="SetCropRegionToSelectedShape.pu_Dir" Attributes="0" KeyPath="icon.png_235" Type="0"/>
     <ROW Component="icon.png_251" ComponentId="{48A16544-7CCC-4ADF-ADFA-7F780F2FBA75}" Directory_="D.pulldown_Dir" Attributes="0" KeyPath="icon.png_262" Type="0"/>
     <ROW Component="icon.png_252" ComponentId="{9028D4BC-4AD2-4FBA-AB51-B87C50BF4583}" Directory_="OrientSectionBoxToFace.pushbutt_Dir" Attributes="0" KeyPath="icon.png_263" Type="0"/>
@@ -884,6 +884,7 @@
     <ROW Component="pyrevitargs" ComponentId="{AAEF21C4-CB5C-42B9-BC12-A7A6BD9E99BE}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitfile" Type="0"/>
     <ROW Component="pyrevitautocomplete.exe" ComponentId="{8D5454E0-B165-4E7F-9645-D4E90E7F051F}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevitautocomplete.exe"/>
     <ROW Component="pyrevitcore_globals.py" ComponentId="{988FB6D6-DEA9-49EE-AFC0-59EAED2BE70B}" Directory_="lib_1_Dir" Attributes="0" KeyPath="pyrevitcore_globals.py" Type="0"/>
+    <ROW Component="pyrevitdoctor.exe" ComponentId="{D2366036-F15A-4205-A9B4-3BE785DA7683}" Directory_="bin_Dir" Attributes="0" KeyPath="pyrevitdoctor.exe"/>
     <ROW Component="pyrevitstubsbuilder.exe" ComponentId="{52379BF5-41B2-4570-A034-2AF417600F73}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevitstubsbuilder.exe"/>
     <ROW Component="pyrevittelemetryserver.exe" ComponentId="{B6854845-1733-4046-B422-3AC3D25C2146}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevittelemetryserver.exe"/>
     <ROW Component="pyrevittoast.exe" ComponentId="{EF1D7E18-9E01-4F5C-A727-04BCFFA31AD6}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevittoast.exe"/>
@@ -1058,8 +1059,6 @@
     <ROW File="script.py_304" Component_="icon.png_221" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Rename Selected Sheets.pushbutton\script.py" SelfReg="false"/>
     <ROW File="icon.png_233" Component_="icon.png_222" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Reorder Selected Viewport.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="script.py_305" Component_="icon.png_222" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Reorder Selected Viewport.pushbutton\script.py" SelfReg="false"/>
-    <ROW File="icon.png_234" Component_="icon.png_223" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Select TitleBlocks on Sheets.pushbutton\icon.png" SelfReg="false"/>
-    <ROW File="script.py_306" Component_="icon.png_223" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Select TitleBlocks on Sheets.pushbutton\script.py" SelfReg="false"/>
     <ROW File="icon.png_235" Component_="icon.png_224" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Set Crop Region To Selected Shape.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="script.py_307" Component_="icon.png_224" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Set Crop Region To Selected Shape.pushbutton\script.py" SelfReg="false"/>
     <ROW File="tooltip.swf_4" Component_="icon.png_224" FileName="tooltip.swf" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Set Crop Region To Selected Shape.pushbutton\tooltip.swf" SelfReg="false"/>
@@ -3019,7 +3018,6 @@
     <ROW File="bundle.yaml_92" Component_="icon.png_222" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Reorder Selected Viewport.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_93" Component_="icon.png_1" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\ReOrder Sheets.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_94" Component_="script.py_9" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Select Sheets.pushbutton\bundle.yaml" SelfReg="false"/>
-    <ROW File="bundle.yaml_95" Component_="icon.png_223" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Select TitleBlocks on Sheets.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_96" Component_="icon.png_224" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Set Crop Region To Selected Shape.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_97" Component_="script.py_98" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\View Ordering Tool.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_98" Component_="icon.png_71" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\views.stack\Legends.pulldown\Convert Drafting to Legend.pushbutton\bundle.yaml" SelfReg="false"/>
@@ -3158,6 +3156,11 @@
     <ROW File="icon.png_27" Component_="bundle.yaml_8" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load More Types.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="script.py_22" Component_="bundle.yaml_8" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\ptools.stack\Family.pulldown\Load More Types.pushbutton\script.py" SelfReg="false"/>
     <ROW File="adc.py" Component_="bbx.py_1" FileName="adc.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\interop\adc.py" SelfReg="false"/>
+    <ROW File="pyrevitdoctor.exe" Component_="pyrevitdoctor.exe" FileName="PYREVI~5.EXE|pyrevit-doctor.exe" Attributes="0" SourcePath="..\bin\pyrevit-doctor.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="bundle.yaml_167" Component_="bundle.yaml_9" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\List TitleBlocks on Sheets.pushbutton\bundle.yaml" SelfReg="false"/>
+    <ROW File="icon.png_28" Component_="bundle.yaml_9" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\List TitleBlocks on Sheets.pushbutton\icon.png" SelfReg="false"/>
+    <ROW File="script.py_23" Component_="bundle.yaml_9" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\List TitleBlocks on Sheets.pushbutton\script.py" SelfReg="false"/>
+    <ROW File="isolate_config.py" Component_="icon.png_153" FileName="ISOLAT~1.PY|isolate_config.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\select.stack\Isolate.pushbutton\isolate_config.py" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
@@ -3596,7 +3599,6 @@
     <ROW Feature_="MainFeature" Component_="icon.png_220"/>
     <ROW Feature_="MainFeature" Component_="icon.png_221"/>
     <ROW Feature_="MainFeature" Component_="icon.png_222"/>
-    <ROW Feature_="MainFeature" Component_="icon.png_223"/>
     <ROW Feature_="MainFeature" Component_="icon.png_224"/>
     <ROW Feature_="MainFeature" Component_="icon.png_251"/>
     <ROW Feature_="MainFeature" Component_="icon.png_252"/>
@@ -3807,6 +3809,8 @@
     <ROW Feature_="MainFeature" Component_="bundle.yaml_7"/>
     <ROW Feature_="MainFeature" Component_="family_utils.py"/>
     <ROW Feature_="MainFeature" Component_="bundle.yaml_8"/>
+    <ROW Feature_="MainFeature" Component_="pyrevitdoctor.exe"/>
+    <ROW Feature_="MainFeature" Component_="bundle.yaml_9"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="pyRevit.exe" SourcePath="..\bin\pyRevit.ico" Index="0"/>

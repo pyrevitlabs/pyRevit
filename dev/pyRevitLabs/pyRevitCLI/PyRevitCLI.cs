@@ -63,6 +63,7 @@ namespace pyRevitCLI {
         Caches,
         Config,
         Configs,
+        Doctor,
     }
 
     internal static class PyRevitCLI {
@@ -164,7 +165,7 @@ namespace pyRevitCLI {
         private static void ProcessArguments() {
             if (IsHelpUsagePatternMode) Console.WriteLine(UsagePatterns.Replace("\t", "    "));
 
-            else if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion();
+            else if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion(checkUpdates: true);
 
             else if (all("wiki")) CommonUtils.OpenUrl(PyRevitLabsConsts.WikiUrl);
 
@@ -826,6 +827,20 @@ namespace pyRevitCLI {
                             PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
                     }
                 }
+            }
+
+            else if (all("doctor")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppCmds.RunDoctor("--wrappedhelp");
+
+                else if (TryGetValue("<doctor_command>") is var doctorCommand && doctorCommand != null)
+                    PyRevitCLIAppCmds.RunDoctor(doctorCommand, dryRun: arguments["--dryrun"].IsTrue);
+                
+                else if (all("doctor", "--list"))
+                    PyRevitCLIAppCmds.RunDoctor("--list");
+
+                else
+                    PyRevitCLIAppCmds.RunDoctor("");
             }
 
             else if (IsHelpMode) PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);

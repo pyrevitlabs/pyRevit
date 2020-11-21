@@ -1,35 +1,15 @@
 """Isolates specific elements in current view and
-put the view in isolate element mode
-"""
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+put the view in isolate element mode"""
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit.framework import List
 from pyrevit import forms
 from pyrevit import revit, DB
 
-
-element_cats = {
-    "Area Lines": DB.BuiltInCategory.OST_AreaSchemeLines,
-    "Doors": DB.BuiltInCategory.OST_Doors,
-    "Room Separation Lines": DB.BuiltInCategory.OST_RoomSeparationLines,
-    "Walls": DB.BuiltInCategory.OST_Walls,
-    "Furniture": DB.BuiltInCategory.OST_Furniture,
-    "Furniture Systems": DB.BuiltInCategory.OST_FurnitureSystems,
-    "Plumbing Fixtures": DB.BuiltInCategory.OST_PlumbingFixtures,
-    "Columns": DB.BuiltInCategory.OST_Columns,
-    "Curtain Systems": DB.BuiltInCategory.OST_Curtain_Systems,
-    "Room Tags": None,
-    "Model Groups": None,
-    "Painted Elements": None,
-    "Model Elements": None,
-}
+import isolate_config
 
 
-selected_switch = forms.CommandSwitchWindow.show(
-    sorted(element_cats.keys()), message="Temporarily isolate elements of type:"
-)
-
-
-if selected_switch:
+def get_isolation_elements(selected_switch):
+    """Get elements to be isolated, by the selected option"""
     curview = revit.active_view
 
     if selected_switch == "Room Tags":
@@ -50,7 +30,7 @@ if selected_switch:
         allelements = []
         allelements.extend(rooms)
         allelements.extend(roomtags)
-        element_to_isolate = List[DB.ElementId](allelements)
+        return List[DB.ElementId](allelements)
 
     elif selected_switch == "Model Groups":
         elements = (
@@ -58,7 +38,6 @@ if selected_switch:
             .WhereElementIsNotElementType()
             .ToElementIds()
         )
-
         modelgroups = []
         expanded = []
         for elid in elements:
@@ -67,54 +46,82 @@ if selected_switch:
                 modelgroups.append(elid)
                 members = el.GetMemberIds()
                 expanded.extend(list(members))
-
         expanded.extend(modelgroups)
-        element_to_isolate = List[DB.ElementId](expanded)
+        return List[DB.ElementId](expanded)
 
     elif selected_switch == "Painted Elements":
-        element_set = []
-
+        element_to_isolate = List[DB.ElementId]()
         elements = (
             DB.FilteredElementCollector(revit.doc, curview.Id)
             .WhereElementIsNotElementType()
             .ToElementIds()
         )
-
         for elId in elements:
             el = revit.doc.GetElement(elId)
             if len(list(el.GetMaterialIds(True))) > 0:
-                element_set.append(elId)
+                element_to_isolate.Append(elId)
             elif isinstance(el, DB.Wall) and el.IsStackedWall:
                 memberWalls = el.GetStackedWallMemberIds()
                 for mwid in memberWalls:
                     mw = revit.doc.GetElement(mwid)
                     if len(list(mw.GetMaterialIds(True))) > 0:
-                        element_set.append(elId)
-        element_to_isolate = List[DB.ElementId](element_set)
+                        element_to_isolate.Append(elId)
+        return element_to_isolate
 
     elif selected_switch == "Model Elements":
+        element_to_isolate = []
+
         elements = (
             DB.FilteredElementCollector(revit.doc, curview.Id)
             .WhereElementIsNotElementType()
             .ToElementIds()
         )
-
-        element_to_isolate = []
         for elid in elements:
             el = revit.doc.GetElement(elid)
             if not el.ViewSpecific:  # and not isinstance(el, DB.Dimension):
                 element_to_isolate.append(elid)
 
-        element_to_isolate = List[DB.ElementId](element_to_isolate)
+        return List[DB.ElementId](element_to_isolate)
 
     else:
-        element_to_isolate = (
+        return (
             DB.FilteredElementCollector(revit.doc, curview.Id)
-            .OfCategory(element_cats[selected_switch])
+            .OfCategory(revit.query.get_builtincategory(selected_switch))
             .WhereElementIsNotElementType()
             .ToElementIds()
         )
 
-    # now that list of elements is ready, let's isolate them in the active view
-    with revit.Transaction("Isolate {}".format(selected_switch)):
-        curview.IsolateElementsTemporary(element_to_isolate)
+
+def ask_for_options():
+    """Ask for isolation options and isolate elements"""
+    element_cats = isolate_config.load_configs()
+
+    select_options = sorted(x.Name for x in element_cats) + [
+        "Room Tags",
+        "Model Groups",
+        "Painted Elements",
+        "Model Elements",
+    ]
+
+    selected_switch = forms.CommandSwitchWindow.show(
+        select_options, message="Temporarily isolate elements of type:"
+    )
+
+    if selected_switch:
+        curview = revit.active_view
+
+        with revit.TransactionGroup("Isolate {}".format(selected_switch)):
+            with revit.Transaction("Reset temporary hide/isolate"):
+                # reset temporary hide/isolate before filtering elements
+                curview.DisableTemporaryViewMode(
+                    DB.TemporaryViewMode.TemporaryHideIsolate
+                )
+            element_to_isolate = get_isolation_elements(selected_switch)
+            with revit.Transaction("Isolate {}".format(selected_switch)):
+                # now that list of elements is ready,
+                # let's isolate them in the active view
+                curview.IsolateElementsTemporary(element_to_isolate)
+
+
+if __name__ == "__main__":
+    ask_for_options()
