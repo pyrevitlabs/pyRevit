@@ -165,7 +165,7 @@ namespace pyRevitCLI {
         private static void ProcessArguments() {
             if (IsHelpUsagePatternMode) Console.WriteLine(UsagePatterns.Replace("\t", "    "));
 
-            else if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion();
+            else if (IsVersionMode) PyRevitCLIAppCmds.PrintVersion(checkUpdates: true);
 
             else if (all("wiki")) CommonUtils.OpenUrl(PyRevitLabsConsts.WikiUrl);
 

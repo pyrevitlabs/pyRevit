@@ -183,25 +183,33 @@ namespace pyRevitCLI {
 
         // cli specific commands
         internal static void
-        PrintVersion() {
+        PrintVersion(bool checkUpdates = false) {
             Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, PyRevitCLI.CLIVersion.ToString()));
-            if (CommonUtils.CheckInternetConnection()) {
-                var latestVersion = PyRevitReleases.GetLatestCLIReleaseVersion();
-                if (latestVersion != null) {
-                    logger.Debug("Latest release: {0}", latestVersion);
-                    if (PyRevitCLI.CLIVersion < latestVersion) {
-                        Console.WriteLine(
-                            string.Format(
-                                "Newer v{0} is available.\nGo to {1} to download the installer.",
-                                latestVersion,
-                                PyRevitLabsConsts.ReleasesUrl)
-                            );
+            if (checkUpdates) {
+                if (CommonUtils.CheckInternetConnection()) {
+                    try {
+                        var latestVersion = PyRevitReleases.GetLatestCLIReleaseVersion();
+
+                        if (latestVersion != null) {
+                            logger.Debug("Latest release: {0}", latestVersion);
+                            if (PyRevitCLI.CLIVersion < latestVersion) {
+                                Console.WriteLine(
+                                    string.Format(
+                                        "Newer v{0} is available.\nGo to {1} to download the installer.",
+                                        latestVersion,
+                                        PyRevitLabsConsts.ReleasesUrl)
+                                    );
+                            }
+                            else
+                                Console.WriteLine("You have the latest version.");
+                        }
+                        else
+                            logger.Debug("Failed getting latest release list OR no CLI releases.");
                     }
-                    else
-                        Console.WriteLine("You have the latest version.");
+                    catch (Exception getRelEx) {
+                        Console.WriteLine(getRelEx.Message);
+                    }
                 }
-                else
-                    logger.Debug("Failed getting latest release list OR no CLI releases.");
             }
         }
 

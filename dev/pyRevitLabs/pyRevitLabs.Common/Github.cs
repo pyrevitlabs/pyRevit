@@ -82,11 +82,16 @@ namespace pyRevitLabs.Common {
         public const string ArchiveInternalBranchPath = @"{0}-{1}";
         public const string APIArchiveURL = @"https://github.com/{0}/archive/{1}" + ArchiveFileExtension;
 
+        public static string AuthToken => Environment.GetEnvironmentVariable("GITHUBTOKEN");
+
         public static IEnumerable<T> GetReleasesFromAPI<T>(string endpoint, out string nextendpoint) {
             // make github api call and get a list of releases
             // https://developer.github.com/v3/repos/releases/
             HttpWebRequest request = CommonUtils.GetHttpWebRequest(endpoint);
-            //request.Headers.Add(HttpRequestHeader.Authorization, "token ???");
+            if (AuthToken is null)
+                throw new Exception("Missing authorization token. Set on GITHUBTOKEN env var");
+            
+            request.Headers.Add(HttpRequestHeader.Authorization, $"token {AuthToken}");
             var response = request.GetResponse();
 
             // extract list of  PyRevitRelease from json
@@ -95,7 +100,7 @@ namespace pyRevitLabs.Common {
                 releases = JsonConvert.DeserializeObject<IList<T>>(reader.ReadToEnd());
             }
 
-            var m = Regex.Match(response.Headers["Link"], "\\<(?<next>.+?)\\>;\\srel=\"next\"");
+            var m = Regex.Match(response.Headers["Link"], "\\<(?<next>[^<>]+?)\\>;\\srel=\"next\"");
             if (m.Success)
                 nextendpoint = m.Groups["next"].Value;
             else

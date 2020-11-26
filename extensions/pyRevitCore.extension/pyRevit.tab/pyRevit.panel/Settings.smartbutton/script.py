@@ -449,7 +449,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def addfolder(self, sender, args):
         """Callback method for adding extension folder to configs and list"""
-        new_path = forms.pick_folder()
+        new_path = forms.pick_folder(owner=self)
         if new_path:
             new_path = os.path.normpath(new_path)
 
@@ -479,7 +479,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def pick_telemetry_folder(self, sender, args):
         """Callback method for picking destination folder for telemetry files"""
-        new_path = forms.pick_folder()
+        new_path = forms.pick_folder(owner=self)
         if new_path:
             self.telemetryfile_tb.Text = os.path.normpath(new_path)
 
