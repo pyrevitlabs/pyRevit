@@ -17,10 +17,16 @@
         <Border x:Name="IsType" Background="LightGray" Height="16" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
             <TextBlock Text="Type" Foreground="DimGray" FontSize="10"/>
         </Border>
+        <Border x:Name="IsReadOnly" Background="{DynamicResource pyRevitAccentBrush}" Height="16" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
+            <TextBlock Text="Read-Only" Foreground="White" FontSize="10"/>
+        </Border>
     </WrapPanel>
     <ControlTemplate.Triggers>
         <DataTrigger Binding="{Binding Path=istype}" Value="True">
             <Setter TargetName="IsType" Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Path=isreadonly}" Value="True">
+            <Setter TargetName="IsReadOnly" Property="Visibility" Value="Visible"/>
         </DataTrigger>
     </ControlTemplate.Triggers>
 </ControlTemplate>
