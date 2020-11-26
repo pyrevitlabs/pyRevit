@@ -62,11 +62,12 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple('ParamDef', ['name', 'istype'])
+ParamDef = namedtuple('ParamDef', ['name', 'definition', 'istype'])
 """Parameter definition tuple.
 
 Attributes:
     name (str): parameter name
+    definition (Autodesk.Revit.DB.Definition): parameter definition object
     istype (bool): true if type parameter, otherwise false
 """
 
@@ -2188,7 +2189,8 @@ def select_parameters(src_element,
                       multiple=True,
                       filterfunc=None,
                       include_instance=True,
-                      include_type=True):
+                      include_type=True,
+                      exclude_readonly=True):
     """Standard form for selecting parameters from given element.
 
     Args:
@@ -2201,6 +2203,7 @@ def select_parameters(src_element,
             filter function to be applied to context items.
         include_instance (bool, optional): list instance parameters
         include_type (bool, optional): list type parameters
+        exclude_readonly (bool, optional): only shows parameters that are editable
 
     Returns:
         list[:obj:`ParamDef`]: list of paramdef objects
@@ -2220,22 +2223,31 @@ def select_parameters(src_element,
     if include_instance:
         # collect instance parameters
         param_defs.extend(
-            [ParamDef(name=x.Definition.Name, istype=False)
+            [ParamDef(name=x.Definition.Name,
+                      definition=x.Definition,
+                      istype=False)
              for x in src_element.Parameters
-             if not x.IsReadOnly and x.StorageType != non_storage_type]
+             if x.StorageType != non_storage_type]
         )
 
     if include_type:
         # collect type parameters
         src_type = revit.query.get_type(src_element)
         param_defs.extend(
-            [ParamDef(name=x.Definition.Name, istype=True)
+            [ParamDef(name=x.Definition.Name,
+                      definition=x.Definition,
+                      istype=True)
              for x in src_type.Parameters
-             if not x.IsReadOnly and x.StorageType != non_storage_type]
+             if x.StorageType != non_storage_type]
         )
+
+    if exclude_readonly:
+        param_defs = filter(lambda x: not x.IsReadOnly, param_defs)
 
     if filterfunc:
         param_defs = filter(filterfunc, param_defs)
+
+    param_defs.sort(key=lambda x: x.name)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
@@ -2314,6 +2326,8 @@ def select_family_parameters(family_doc,
                               builtin=family_param.Id.IntegerValue < 0,
                               labeled=family_param.Id in label_param_ids)
             )
+
+    param_defs.sort(key=lambda x: x.name)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "FamilyParameterItemStyle.xaml")
@@ -2583,7 +2597,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         sf_dlg.InitialDirectory = init_dir
     if title:
         of_dlg.Title = title
-    
+
     # setting default filename
     sf_dlg.FileName = default_name
 
@@ -2615,7 +2629,7 @@ def save_excel_file():
 
     Args:
         title (str): text to show in the title bar
-    
+
     Returns:
         str: file path
     """
