@@ -2256,8 +2256,6 @@ def select_parameters(src_element,
 
     param_defs.sort(key=lambda x: x.name)
 
-    param_defs.sort(key=lambda x: x.name)
-
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
         )
