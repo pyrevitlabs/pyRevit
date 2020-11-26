@@ -62,13 +62,13 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple('ParamDef', ['name', 'definition', 'istype', 'isreadonly'])
+ParamDef = namedtuple('ParamDef', ['name', 'istype', 'definition', 'isreadonly'])
 """Parameter definition tuple.
 
 Attributes:
     name (str): parameter name
-    definition (Autodesk.Revit.DB.Definition): parameter definition object
     istype (bool): true if type parameter, otherwise false
+    definition (Autodesk.Revit.DB.Definition): parameter definition object
     isreadonly (bool): true if the parameter value can't be edited
 """
 
@@ -2229,8 +2229,8 @@ def select_parameters(src_element,
         # collect instance parameters
         param_defs.extend(
             [ParamDef(name=x.Definition.Name,
-                      definition=x.Definition,
                       istype=False,
+                      definition=x.Definition,
                       isreadonly=x.IsReadOnly)
              for x in src_element.Parameters
              if x.StorageType != non_storage_type]
@@ -2241,8 +2241,8 @@ def select_parameters(src_element,
         src_type = revit.query.get_type(src_element)
         param_defs.extend(
             [ParamDef(name=x.Definition.Name,
-                      definition=x.Definition,
                       istype=True,
+                      definition=x.Definition,
                       isreadonly=x.IsReadOnly)
              for x in src_type.Parameters
              if x.StorageType != non_storage_type]
