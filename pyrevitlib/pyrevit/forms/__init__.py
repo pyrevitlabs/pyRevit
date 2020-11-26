@@ -62,13 +62,14 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple('ParamDef', ['name', 'definition', 'istype'])
+ParamDef = namedtuple('ParamDef', ['name', 'definition', 'istype', 'isreadonly'])
 """Parameter definition tuple.
 
 Attributes:
     name (str): parameter name
     definition (Autodesk.Revit.DB.Definition): parameter definition object
     istype (bool): true if type parameter, otherwise false
+    isreadonly (bool): true if the parameter value can't be edited
 """
 
 
@@ -2229,7 +2230,8 @@ def select_parameters(src_element,
         param_defs.extend(
             [ParamDef(name=x.Definition.Name,
                       definition=x.Definition,
-                      istype=False)
+                      istype=False,
+                      isreadonly=x.IsReadOnly)
              for x in src_element.Parameters
              if x.StorageType != non_storage_type]
         )
@@ -2240,17 +2242,18 @@ def select_parameters(src_element,
         param_defs.extend(
             [ParamDef(name=x.Definition.Name,
                       definition=x.Definition,
-                      istype=True)
+                      istype=True,
+                      isreadonly=x.IsReadOnly)
              for x in src_type.Parameters
              if x.StorageType != non_storage_type]
         )
 
     if exclude_readonly:
-        param_defs = filter(lambda x: not x.IsReadOnly, param_defs)
+        param_defs = filter(lambda x: not x.isreadonly, param_defs)
 
     if filterfunc:
         param_defs = filter(filterfunc, param_defs)
-    
+
     param_defs.sort(key=lambda x: x.name)
 
     param_defs.sort(key=lambda x: x.name)
