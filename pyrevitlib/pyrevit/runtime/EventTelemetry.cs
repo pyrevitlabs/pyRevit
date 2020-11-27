@@ -255,9 +255,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // now post the telemetry record
             if (envDict.AppTelemetryState) {
-                if (envDict.AppTelemetryState
-                        && envDict.AppTelemetryServerUrl != null
-                        && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
+                if (envDict.AppTelemetryServerUrl != null && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
                     new Task(() =>
                         Telemetry.PostTelemetryRecord(envDict.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
             }

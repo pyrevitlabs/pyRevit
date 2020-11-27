@@ -285,9 +285,13 @@ def setup_telemetry(session_id=None):
         telemetry_events.unregister_all_event_telemetries(telemetry_handler)
 
     set_apptelemetry_handler(new_telemetry_handler)
-    apptelemetry_event_flags = get_apptelemetry_event_flags()
-    # re-register events with new telemetry_handler
-    telemetry_events.register_event_telemetry(new_telemetry_handler,
-                                              apptelemetry_event_flags)
+    # register handlers only if telemetry system is active
+    if apptelemetry_state:
+        apptelemetry_event_flags = get_apptelemetry_event_flags()
+        # re-register events with new telemetry_handler
+        telemetry_events.register_event_telemetry(
+            new_telemetry_handler,
+            apptelemetry_event_flags
+        )
 
     user_config.save_changes()
