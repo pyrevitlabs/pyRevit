@@ -116,6 +116,8 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsTelemetryStatusDefault = false;
         public const string ConfigsTelemetryFileDirKey = "telemetry_file_dir";
         public const string ConfigsTelemetryServerUrlKey = "telemetry_server_url";
+        public const string ConfigsTelemetryIncludeHooksKey = "include_hooks";
+        public const bool ConfigsTelemetryIncludeHooksDefault = false;
         public const string ConfigsAppTelemetryStatusKey = "active_app";
         public const bool ConfigsAppTelemetryStatusDefault = false;
         public const string ConfigsAppTelemetryServerUrlKey = "apptelemetry_server_url";

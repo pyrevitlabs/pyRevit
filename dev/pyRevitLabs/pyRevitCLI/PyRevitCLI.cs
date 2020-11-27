@@ -727,6 +727,13 @@ namespace pyRevitCLI {
 
                     }
 
+                    else if (all("hooks")) {
+                        if (any("yes", "no"))
+                            PyRevitConfigs.SetTelemetryIncludeHooks(arguments["yes"].IsTrue);
+                        else
+                            Console.WriteLine(PyRevitConfigs.GetTelemetryIncludeHooks() ? "Sending telemetry for hooks" : "Not sending telemetry for hooks");
+                    }
+
                     else if (all("enable"))
                         PyRevitConfigs.EnableTelemetry();
 

@@ -326,6 +326,9 @@ namespace pyRevitCLI {
                         header: "Manage pyRevit configurations",
                         mgmtCommands: new Dictionary<string, string>() {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
+                            { "routes",                 "Routes configurations" },
+                            { "telemetry",              "Script Telemetry configurations" },
+                            { "apptelemetry",           "Application Telemetry configurations" },
                         },
                         commands: new Dictionary<string, string>() {
                             { "bincache",               "Enable/Disable binary cache for caching extension info" },
@@ -343,16 +346,14 @@ namespace pyRevitCLI {
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
                             { "colordocs",              "Enable/Disable Document Colorizer" },
                             { "tooltipdebuginfo",       "Enable/Disable showing tool debug info in extended tooltips" },
-                            { "routes",                 "Routes" },
-                            { "telemetry",              "Telemetry" },
-                            { "apptelemetry",           "Application Telemetry" },
                             { "outputcss",              "Output window styling" },
                         },
                         options: new Dictionary<string, string>() {
                             { "none | verbose | debug", "Debug log levels" },
                             { "enable | disable",       "Enable/Disable config option" },
                             { "Yes | No",               "Activate/Deactivate config option" },
-                            { "file | server",          "Set path for file logging or url for server logging" },
+                            { "file | server",          "Set path for file logging, or url for server logging" },
+                            { "hooks",                  "Activate/Deactivate telemetry for hooks" },
                             { "<css_path>",             "Target css file path for output styling" },
                             { "--lock",                 "Lock seed file by admin user" },
                             { "<option_path>",          "Custom option path formatted as \"section:option\"" },

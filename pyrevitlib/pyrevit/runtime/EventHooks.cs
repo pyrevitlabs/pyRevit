@@ -63,6 +63,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static int Execute(EventHook eventHook, object eventSender, object eventArgs) {
+            var env = new EnvDictionary();
             return ScriptExecutor.ExecuteScript(
                 scriptData: new ScriptData {
                     ScriptPath = eventHook.Script,
@@ -87,7 +88,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     ExecutedFromUI = false
                 },
                 scriptExecConfigs: new ScriptExecutorConfigs {
-                    SendTelemetry = false
+                    SendTelemetry = env.TelemetryState && env.TelemetryIncludeHooks
                 }
                 );
         }

@@ -320,6 +320,8 @@ class SettingsWindow(forms.WPFWindow):
         self.cur_telemetryfile_tb.IsReadOnly = True
         self.telemetryfile_tb.Text = \
             telemetry.get_telemetry_file_dir()
+        self.telemetry_hooks_cb.IsChecked = \
+            telemetry.get_telemetry_include_hooks()
 
         self.telemetryserver_tb.Text = \
             telemetry.get_telemetry_server_url()
@@ -711,6 +713,7 @@ class SettingsWindow(forms.WPFWindow):
         telemetry.set_telemetry_state(self.telemetry_cb.IsChecked)
         telemetry.set_telemetry_file_dir(self.telemetryfile_tb.Text)
         telemetry.set_telemetry_server_url(self.telemetryserver_tb.Text)
+        telemetry.set_telemetry_include_hooks(self.telemetry_hooks_cb.IsChecked)
         # host app telemetry
         telemetry.set_apptelemetry_state(self.apptelemetry_cb.IsChecked)
         telemetry.set_apptelemetry_server_url(self.apptelemetryserver_tb.Text)

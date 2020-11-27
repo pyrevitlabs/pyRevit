@@ -248,11 +248,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             #region Execute and log results
             // Executing the script and logging the results
             // Get script executor and Execute the script
+            var env = new EnvDictionary();
             int result = ScriptExecutor.ExecuteScript(
                 ScriptData,
                 ScriptRuntimeConfigs,
                 new ScriptExecutorConfigs {
-                    SendTelemetry = true
+                    SendTelemetry = env.TelemetryState
                 }
                 );
 

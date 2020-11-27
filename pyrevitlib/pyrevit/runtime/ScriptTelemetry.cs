@@ -90,23 +90,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static void LogScriptTelemetryRecord(ref ScriptRuntime runtime) {
-            var envDict = new EnvDictionary();
+            var env = new EnvDictionary();
 
             var record = MakeTelemetryRecord(ref runtime);
 
-            if (envDict.TelemetryState) {
-                if (envDict.TelemetryState
-                        && envDict.TelemetryServerUrl != null
-                        && !string.IsNullOrEmpty(envDict.TelemetryServerUrl))
-                    new Task(() =>
-                        Telemetry.PostTelemetryRecord(envDict.TelemetryServerUrl, record)).Start();
+            if (env.TelemetryServerUrl != null && !string.IsNullOrEmpty(env.TelemetryServerUrl))
+                new Task(() =>
+                    Telemetry.PostTelemetryRecord(env.TelemetryServerUrl, record)).Start();
 
-                if (envDict.TelemetryState
-                        && envDict.TelemetryFilePath != null
-                        && !string.IsNullOrEmpty(envDict.TelemetryFilePath))
-                    new Task(() =>
-                        Telemetry.WriteTelemetryRecord(envDict.TelemetryFilePath, record)).Start();
-            }
+            if (env.TelemetryFilePath != null && !string.IsNullOrEmpty(env.TelemetryFilePath))
+                new Task(() =>
+                    Telemetry.WriteTelemetryRecord(env.TelemetryFilePath, record)).Start();
         }
     }
 }

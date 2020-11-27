@@ -425,6 +425,20 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
+    def telemetry_include_hooks(self):
+        return self.telemetry.get_option(
+            CONSTS.ConfigsTelemetryIncludeHooksKey,
+            default_value=CONSTS.ConfigsTelemetryIncludeHooksDefault,
+        )
+
+    @telemetry_include_hooks.setter
+    def telemetry_include_hooks(self, state):
+        self.telemetry.set_option(
+            CONSTS.ConfigsTelemetryIncludeHooksKey,
+            value=state
+        )
+
+    @property
     def apptelemetry_status(self):
         return self.telemetry.get_option(
             CONSTS.ConfigsAppTelemetryStatusKey,

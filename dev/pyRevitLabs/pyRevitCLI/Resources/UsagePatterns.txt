@@ -93,6 +93,7 @@ Usage:
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
 	pyrevit configs telemetry (file | server) [<dest_path>] [--log=<log_file>]
+	pyrevit configs telemetry hooks [(yes | no)] [--log=<log_file>]
 	pyrevit configs apptelemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs apptelemetry flags [<flags>] [--log=<log_file>]
 	pyrevit configs apptelemetry server [<server_path>] [--log=<log_file>]

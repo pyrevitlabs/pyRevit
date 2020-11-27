@@ -398,8 +398,14 @@
                             </GroupBox>
                             <WrapPanel Margin="0,15,0,0">
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="telemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Send Script Telemetry</TextBlock>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Script Telemetry</TextBlock>
                             </WrapPanel>
+                            <GroupBox Header="Send Telemetry For" Padding="10" Margin="0,10,0,0">
+                                <WrapPanel>
+                                    <CheckBox Content="Command Bundles" IsEnabled="False" IsChecked="True"></CheckBox>
+                                    <CheckBox x:Name="telemetry_hooks_cb" Content="Hooks" Margin="15,0,0,0"></CheckBox>
+                                </WrapPanel>
+                            </GroupBox>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Script Telemetry Server URL or API Endpoint</TextBlock>
                                 <TextBox x:Name="telemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" 
@@ -442,7 +448,7 @@
                             </DockPanel>
                             <WrapPanel Margin="0,25,0,0">
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="apptelemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Send Application Telemetry</TextBlock>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Application Telemetry</TextBlock>
                             </WrapPanel>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
                                 Application Telemetry system, sends event information collected from event handlers to the telemetry server listed below. You can toggle event logging for each of the events listed blow.
