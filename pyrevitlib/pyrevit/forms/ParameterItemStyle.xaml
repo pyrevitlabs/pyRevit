@@ -1,13 +1,32 @@
 <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <WrapPanel>
-        <TextBlock Text="{Binding name}" Margin="10,0,0,0" />
+        <TextBlock Text="{Binding name}" Margin="10,0,0,0">
+            <TextBlock.ToolTip>
+                <TextBlock>
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="Parameter Type: {0}&#x0a;Parameter Group: {1}&#x0a;Built-In Parameter: {2}&#x0a;Parameter Id: {3}">
+                            <Binding Path="definition.ParameterType"/>
+                            <Binding Path="definition.ParameterGroup"/>
+                            <Binding Path="definition.BuiltInParameter"/>
+                            <Binding Path="definition.Id"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </TextBlock.ToolTip>
+        </TextBlock>
         <Border x:Name="IsType" Background="LightGray" Height="16" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
             <TextBlock Text="Type" Foreground="DimGray" FontSize="10"/>
+        </Border>
+        <Border x:Name="IsReadOnly" Background="{DynamicResource pyRevitAccentBrush}" Height="16" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
+            <TextBlock Text="Read-Only" Foreground="White" FontSize="10"/>
         </Border>
     </WrapPanel>
     <ControlTemplate.Triggers>
         <DataTrigger Binding="{Binding Path=istype}" Value="True">
             <Setter TargetName="IsType" Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Path=isreadonly}" Value="True">
+            <Setter TargetName="IsReadOnly" Property="Visibility" Value="Visible"/>
         </DataTrigger>
     </ControlTemplate.Triggers>
 </ControlTemplate>
