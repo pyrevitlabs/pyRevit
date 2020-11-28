@@ -157,7 +157,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public static class EventUtils {
-        private static JournalListener journalListerner = null;
+        private static JournalListener journalListener = null;
 
         private static Dictionary<EventType, string> eventNames = new Dictionary<EventType, string> {
             { EventType.UIApplication_ApplicationClosing,  "app-closing" },
@@ -252,17 +252,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static void ActivateJournalListener(UIApplication uiapp) {
-            if (journalListerner == null) {
-                journalListerner = new JournalListener(uiapp);
-                journalListerner.Start();
+            if (journalListener == null) {
+                journalListener = new JournalListener(uiapp);
+                journalListener.Start();
             }
         }
 
         private static void DeactivateJournalListener(UIApplication uiapp) {
             // shut down the listener only if it is not firing any events
-            if (journalListerner != null && !(journalListerner.JournalUpdateEvents || journalListerner.JournalCommandExecutedEvents)) {
-                journalListerner.Stop();
-                journalListerner = null;
+            if (journalListener != null && !(journalListener.JournalUpdateEvents || journalListener.JournalCommandExecutedEvents)) {
+                journalListener.Stop();
+                journalListener = null;
             }
         }
 
@@ -722,12 +722,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 case EventType.Application_JournalUpdated:
                     if (toggle_on) {
                         ActivateJournalListener(uiApp);
-                        journalListerner.OnJournalUpdate += hndlr.Application_JournalUpdated;
-                        journalListerner.JournalUpdateEvents = true;
+                        journalListener.OnJournalUpdate += hndlr.Application_JournalUpdated;
+                        journalListener.JournalUpdateEvents = true;
                     }
-                    else if (journalListerner != null) {
-                        journalListerner.OnJournalUpdate -= hndlr.Application_JournalUpdated;
-                        journalListerner.JournalUpdateEvents = false;
+                    else if (journalListener != null) {
+                        journalListener.OnJournalUpdate -= hndlr.Application_JournalUpdated;
+                        journalListener.JournalUpdateEvents = false;
                         DeactivateJournalListener(uiApp);
                     }
                     break;
@@ -735,12 +735,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 case EventType.Application_JournalCommandExecuted:
                     if (toggle_on) {
                         ActivateJournalListener(uiApp);
-                        journalListerner.OnJournalCommandExecuted += hndlr.Application_JournalCommandExecuted;
-                        journalListerner.JournalCommandExecutedEvents = true;
+                        journalListener.OnJournalCommandExecuted += hndlr.Application_JournalCommandExecuted;
+                        journalListener.JournalCommandExecutedEvents = true;
                     }
-                    else if (journalListerner != null) {
-                        journalListerner.OnJournalCommandExecuted -= hndlr.Application_JournalCommandExecuted;
-                        journalListerner.JournalCommandExecutedEvents = false;
+                    else if (journalListener != null) {
+                        journalListener.OnJournalCommandExecuted -= hndlr.Application_JournalCommandExecuted;
+                        journalListener.JournalCommandExecutedEvents = false;
                         DeactivateJournalListener(uiApp);
                     }
                     break;
