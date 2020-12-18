@@ -288,6 +288,16 @@ def checkModel(doc, output):
     except:
         pass
 
+    # RVTLinks
+    rvtlinks_id_collector = (
+        DB.FilteredElementCollector(doc)
+        .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
+        .WhereElementIsNotElementType()
+        .ToElementIds()
+    )
+    rvtlinksCount = len(rvtlinks_id_collector)
+    # print(str(rvtlinksCount)+" Revit Link")
+
     # sheets
     sheets_id_collector = (
         DB.FilteredElementCollector(doc)
@@ -388,6 +398,7 @@ def checkModel(doc, output):
     scheduleNotOnSheet = scheduleCount - len(schedulesOnSheet)
 
     # tresholds
+    rvtlinksTres = 100
     viewTres = 500
     viewNotOnSheetTres = viewCount * 0.2
     copiedViewTres = viewCount * 0.2
@@ -396,6 +407,7 @@ def checkModel(doc, output):
     schedulesNotOnSheetTres = scheduleCount * 0.3
 
     htmlRow1 = (
+        dashboardRectMaker(rvtlinksCount, "RVT Links", rvtlinksTres) + 
         dashboardRectMaker(viewCount, "Views", viewTres)
         + dashboardRectMaker(
             copiedView, "Copied Views", copiedViewTres
