@@ -237,6 +237,11 @@ def dashboardCenterMaker(value):
     html_code = "<div class='dashboardCenter'>" + content + "</div>"
     print(coreutils.prepare_html_str(html_code))
 
+def dashboardLeftMaker(value):
+    """dashboard HTMl maker - div for left aligning"""
+    content = str(value)
+    html_code = "<div class='dashboardLeft'>" + content + "</div>"
+    print(coreutils.prepare_html_str(html_code))
 
 def path2fileName(file_path, divider):
     """returns file name - everything in path from "\\" or "/" to the end"""
@@ -273,7 +278,7 @@ def checkModel(doc, output):
                 # detached file
                 printedName = file_path
     output.print_md("# MODEL CHECKER")
-    output.print_md("## " + printedName)
+
 
     # first JS to avoid error in IE output window when at first run
     # this is most likely not proper way
@@ -288,6 +293,11 @@ def checkModel(doc, output):
     except:
         pass
 
+    # RVT Links section header
+    output.print_md("## RVT Files<br />")
+    output.print_md("### Current file: " )
+    output.print_md(printedName)
+    
     # RVTLinks
     rvtlinks_id_collector = (
         DB.FilteredElementCollector(doc)
@@ -296,7 +306,41 @@ def checkModel(doc, output):
         .ToElementIds()
     )
     rvtlinksCount = len(rvtlinks_id_collector)
-    # print(str(rvtlinksCount)+" Revit Link")
+    # output.print_md(str(rvtlinksCount) +" Revit Links")
+
+        # RVTLinks pinned
+    rvtlinks_collector = (
+        DB.FilteredElementCollector(doc)
+        .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
+        .WhereElementIsNotElementType()
+        .ToElements()
+    )
+    rvtlinkspinnedCount, rvtlinksNames = [], []
+    for x in rvtlinks_collector:
+        rvtlinkspinnedCount.append(x.Pinned)
+        rvtlinksNames.append(x.Name)
+    rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
+    output.print_md("### " + str(rvtlinksCount) + " RVT Links")
+    output.print_md("<br />".join(rvtlinksNames))
+    # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
+    
+    # tresholds
+    rvtlinksTres = 100
+    rvtlinksPinnedTres =  -1
+    if rvtlinksCount == rvtlinkspinnedCountTrue :
+        rvtlinksPinnedTres = rvtlinksCount
+    else :
+        pass
+    output.print_md(str(rvtlinksPinnedTres))
+
+    htmlRow0 = (
+        dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
+        dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks pinned", rvtlinksPinnedTres)
+    )
+    dashboardLeftMaker(htmlRow0)
+
+    # Views section header
+    output.print_md("## Views / Sheets / Schedules")
 
     # sheets
     sheets_id_collector = (
@@ -398,7 +442,6 @@ def checkModel(doc, output):
     scheduleNotOnSheet = scheduleCount - len(schedulesOnSheet)
 
     # tresholds
-    rvtlinksTres = 100
     viewTres = 500
     viewNotOnSheetTres = viewCount * 0.2
     copiedViewTres = viewCount * 0.2
@@ -407,7 +450,6 @@ def checkModel(doc, output):
     schedulesNotOnSheetTres = scheduleCount * 0.3
 
     htmlRow1 = (
-        dashboardRectMaker(rvtlinksCount, "RVT Links", rvtlinksTres) + 
         dashboardRectMaker(viewCount, "Views", viewTres)
         + dashboardRectMaker(
             copiedView, "Copied Views", copiedViewTres
@@ -427,7 +469,7 @@ def checkModel(doc, output):
             schedulesNotOnSheetTres
         )
     )
-    dashboardCenterMaker(htmlRow1)
+    dashboardLeftMaker(htmlRow1)
 
     # warnings
     allWarnings_collector = doc.GetWarnings()
