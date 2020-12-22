@@ -585,9 +585,10 @@ def checkModel(doc, output):
         .OfClass(DB.ReferencePlane)
         .ToElements()
     )
+    RefPCount = len(refPlaneCollector)
     noNameRefPCount = 0
     for refPlane in refPlaneCollector:
-        if refPlane.Name == "Reference Plane":
+        if (refPlane.Name == "Reference Plane" or refPlane.Name == "Plan de référence"): # for french compatibility
             noNameRefPCount += 1
 
     # Element Count
@@ -646,6 +647,7 @@ def checkModel(doc, output):
     modelGroupTres = 200
     # Reference planes
     noNameRefPTres = 0
+    RefPTres = 20
     # Elements count
     elementsTres = 1000000
     
@@ -856,6 +858,11 @@ def checkModel(doc, output):
             noNameRefPCount,
             "NoName <br>Reference Planes",
             noNameRefPTres
+        )
+        + dashboardRectMaker(
+            RefPCount,
+            "Reference Planes",
+            RefPTres
         )
     )
     dashboardLeftMaker(htmlRowRefPlanes)
