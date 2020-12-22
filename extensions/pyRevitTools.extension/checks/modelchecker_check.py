@@ -279,7 +279,6 @@ def checkModel(doc, output):
                 printedName = file_path
     output.print_md("# MODEL CHECKER")
 
-
     # first JS to avoid error in IE output window when at first run
     # this is most likely not proper way
     try:
@@ -293,11 +292,9 @@ def checkModel(doc, output):
     except:
         pass
 
-    # RVT Links section header
-    output.print_md("## RVT Files<br />")
-    output.print_md("### Current file: " )
-    output.print_md(printedName)
-    
+    ### Collectors ###
+
+    ### RVTLinks collector
     # RVTLinks
     rvtlinks_id_collector = (
         DB.FilteredElementCollector(doc)
@@ -308,40 +305,23 @@ def checkModel(doc, output):
     rvtlinksCount = len(rvtlinks_id_collector)
     # output.print_md(str(rvtlinksCount) +" Revit Links")
 
-        # RVTLinks pinned
+    # RVTLinks pinned
     rvtlinks_collector = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
         .WhereElementIsNotElementType()
         .ToElements()
     )
+
     rvtlinkspinnedCount, rvtlinksNames = [], []
+
     for x in rvtlinks_collector:
         rvtlinkspinnedCount.append(x.Pinned)
         rvtlinksNames.append(x.Name)
     rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
-    output.print_md("### " + str(rvtlinksCount) + " RVT Links")
-    output.print_md("<br />".join(rvtlinksNames))
     # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
     
-    # tresholds
-    rvtlinksTres = 100
-    rvtlinksPinnedTres =  -1
-    if rvtlinksCount == rvtlinkspinnedCountTrue :
-        rvtlinksPinnedTres = rvtlinksCount
-    else :
-        pass
-    output.print_md(str(rvtlinksPinnedTres))
-
-    htmlRow0 = (
-        dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
-        dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks pinned", rvtlinksPinnedTres)
-    )
-    dashboardLeftMaker(htmlRow0)
-
-    # Views section header
-    output.print_md("## Views / Sheets / Schedules")
-
+    ### View collectors
     # sheets
     sheets_id_collector = (
         DB.FilteredElementCollector(doc)
@@ -360,10 +340,16 @@ def checkModel(doc, output):
         .ToElements()
     )
     scheduleCount = 0
+    ### scheduleNames = []
     for schedule in schedules_id_collector:
-        if schedule.Name[:19] != "<Revision Schedule>":
+        if (
+            schedule.Name[:19] != "<Revision Schedule>"
+            # to support french files
+            or schedule.Name[:28] != "<Nomenclature des révisions>"
+        ):
             scheduleCount += 1
-
+    ###        scheduleNames.append((schedule.Name))
+    ### output.print_md("<br />".join(scheduleNames))
     # views
     views_id_collector = (
         DB.FilteredElementCollector(doc)
@@ -381,8 +367,12 @@ def checkModel(doc, output):
                 viewNameString[-6:-2] == "Copy"
                 or viewNameString[-4:] == "Copy"
                 or viewNameString[:7] == "Section"
+                # to support french files
+                or viewNameString[-7:-2] == "Copie"
+                or viewNameString[-5:] == "Copie"
+                or viewNameString[-5:] == "Coupe"
+                
             ):
-                # if viewNameString[:7] == "Section":
                 copiedView += 1
         except:
             pass
@@ -409,7 +399,7 @@ def checkModel(doc, output):
 
     # schedules not on sheets
     schedulesOnSheet = []
-    scheduleCollector1 = (
+    ScheduleCollectorInstances = (
         DB.FilteredElementCollector(doc)
         .OfClass(DB.ScheduleSheetInstance)
         .WhereElementIsNotElementType()
@@ -431,7 +421,7 @@ def checkModel(doc, output):
                     schedulesOnSheet.append(schedName)
 
     # there is need to iterate class and category filter to get all schedule - UnionWith didn't work
-    for schedule in scheduleCollector1:
+    for schedule in ScheduleCollectorInstances:
         schedName = schedule.Name
         if schedName[:19] != "<Revision Schedule>":
             if schedName not in schedulesOnSheet:
@@ -441,35 +431,6 @@ def checkModel(doc, output):
                     schedulesOnSheet.append(schedName)
     scheduleNotOnSheet = scheduleCount - len(schedulesOnSheet)
 
-    # tresholds
-    viewTres = 500
-    viewNotOnSheetTres = viewCount * 0.2
-    copiedViewTres = viewCount * 0.2
-    sheetsTres = 500
-    scheduleTres = 500
-    schedulesNotOnSheetTres = scheduleCount * 0.3
-
-    htmlRow1 = (
-        dashboardRectMaker(viewCount, "Views", viewTres)
-        + dashboardRectMaker(
-            copiedView, "Copied Views", copiedViewTres
-        )
-        + dashboardRectMaker(sheetCount, "Sheets", sheetsTres)
-        + dashboardRectMaker(
-            scheduleCount, "Schedules", scheduleTres
-        )
-        + dashboardRectMaker(
-            viewsNotOnSheet,
-            "Views <br>not on Sheet",
-            viewNotOnSheetTres
-        )
-        + dashboardRectMaker(
-            scheduleNotOnSheet,
-            "Schedules <br>not on Sheet",
-            schedulesNotOnSheetTres
-        )
-    )
-    dashboardLeftMaker(htmlRow1)
 
     # warnings
     allWarnings_collector = doc.GetWarnings()
@@ -531,43 +492,7 @@ def checkModel(doc, output):
     dwgCount = len(dwg_collector)
     linkedDwg = dwgCount - importedDwg
 
-    # tresholds
-    warningsTres = 500
-    criticalWarningsTres = 0
-    materialsTres = 150
-    linePatternsTres = 100
-    importedDwgTres = 0
-    linkedDwgTres = viewCount / 2
-    dwgNotCurrentViewTres = 0
-
-    # dashboard row 2
-    htmlRow2 = (
-        dashboardRectMaker(
-            allWarningsCount, "Warnings", warningsTres
-        )
-        + dashboardRectMaker(
-            criticalWarningCount,
-            "Critical <br>Warnings",
-            criticalWarningsTres
-        )
-        + dashboardRectMaker(
-            materialCount, "Materials", materialsTres
-        )
-        + dashboardRectMaker(
-            linePatternCount, "Line Patterns", linePatternsTres
-        )
-        + dashboardRectMaker(
-            importedDwg, "Imported DWGs", importedDwgTres
-        )
-        + dashboardRectMaker(
-            linkedDwg, "Linked DWGs", linkedDwgTres
-        )
-        + dashboardRectMaker(
-            dwgNotCurrentView, "DWGs in 3D", dwgNotCurrentViewTres
-        )
-    )
-    dashboardCenterMaker(htmlRow2)
-
+   
     # families
     graphFCatHeadings = []
     graphFCatData = []
@@ -585,18 +510,6 @@ def checkModel(doc, output):
         if not family.IsParametric:
             NotParamFamiliesCount += 1
     familyCount = families.GetElementCount()
-
-    # tresholds
-    familiesTres = 500
-    if familyCount < 500:
-        inPlaceFamilyTres = familyCount * 0.2
-    else:
-        inPlaceFamilyTres = 500 * 0.2
-    notParamFamiliesTres = familyCount * 0.3
-    textnoteWFtres = 0
-    textnoteCaps = 0
-    rampTres = 0
-    archTres = 0
 
     # Text notes width factor != 1
     textNoteType_collector = (
@@ -637,36 +550,6 @@ def checkModel(doc, output):
         .WhereElementIsNotElementType()
         .GetElementCount()
     )
-
-    # dashboard row3
-    htmlRow3 = (
-        dashboardRectMaker(familyCount, "Families", familiesTres)
-        + dashboardRectMaker(
-            inPlaceFamilyCount,
-            "In Place <br>Families",
-            inPlaceFamilyTres
-        )
-        + dashboardRectMaker(
-            NotParamFamiliesCount,
-            "Families <br>not parametric",
-            notParamFamiliesTres
-        )
-        + dashboardRectMaker(
-            textnoteWFcount,
-            "Text - Width <br>Factor changed",
-            textnoteWFtres
-        )
-        + dashboardRectMaker(
-            capsCount, "Text - AllCaps", textnoteCaps
-        )
-        + dashboardRectMaker(ramp_collector, "Ramps", rampTres)
-        + dashboardRectMaker(
-            archColumn_collector,
-            "Architecural <br>Columns",
-            archTres
-        )
-    )
-    dashboardCenterMaker(htmlRow3)
 
     # detail groups
     detailGroupCount = (
@@ -714,42 +597,280 @@ def checkModel(doc, output):
         .GetElementCount()
     )
 
-    # tresholds
+    ### tresholds ###
+    # RVT links
+    rvtlinksTres = 100
+    rvtlinksPinnedTres =  -1 # The logic for threshold sometimes needs to be reverted
+    if rvtlinksCount == rvtlinkspinnedCountTrue :
+        rvtlinksPinnedTres = rvtlinksCount
+    else :
+        pass
+    # Views
+    viewTres = 500
+    viewNotOnSheetTres = viewCount * 0.2
+    copiedViewTres = viewCount * 0.2
+    # Sheets
+    sheetsTres = 500
+    # Schedules
+    scheduleTres = 500
+    schedulesNotOnSheetTres = scheduleCount * 0.3
+    # Warnings
+    warningsTres = 500
+    criticalWarningsTres = 0
+    # Materials
+    materialsTres = 150
+    # Line patterns
+    linePatternsTres = 100
+    # DWGs
+    importedDwgTres = 0
+    linkedDwgTres = viewCount / 2
+    dwgNotCurrentViewTres = 0
+    # Families
+    familiesTres = 500
+    if familyCount < 500:
+        inPlaceFamilyTres = familyCount * 0.2
+    else:
+        inPlaceFamilyTres = 500 * 0.2
+    notParamFamiliesTres = familyCount * 0.3
+    #TextNotes
+    textnoteWFtres = 0
+    textnoteCaps = 0
+     # Ramps
+    rampTres = 0
+    # Architectural columns
+    archTres = 0
+    # Groups
     detailGroupTypeTres = 30
     detailGroupTres = 500
     modelGroupTypeTres = 30
     modelGroupTres = 200
+    # Reference planes
     noNameRefPTres = 0
+    # Elements count
     elementsTres = 1000000
+    
+    ### Dashaboard starts here ###
 
-    # dashboard
-    htmlRow4 = (
+    ## RVT file dashboard section
+    output.print_md("## RVT Files<br />")
+    output.print_md("### Current file: " )
+    output.print_md(printedName)
+
+    ## RVT Links dashboard section
+    # print RVT links names
+    output.print_md("## RVT Links")
+    output.print_md("<br />".join(rvtlinksNames))
+    # Make row
+    htmlRowRVTlinks = (
+        dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
+        dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres)
+    )
+    dashboardLeftMaker(htmlRowRVTlinks)
+
+    ## Views dashboard section
+    # print Views section header
+    output.print_md("## Views")
+
+    # Make row
+    htmlRowViews = (
+        dashboardRectMaker(viewCount, "Views", viewTres)
+        + dashboardRectMaker(
+            copiedView, "Copied Views", copiedViewTres
+        )
+        + dashboardRectMaker(
+            viewsNotOnSheet,
+            "Views<br>not on Sheet",
+            viewNotOnSheetTres
+        )
+    )
+    dashboardLeftMaker(htmlRowViews)
+
+    ## Schedule dashboard section
+    # print Schedules section header
+    output.print_md("## Schedules")
+    
+    # Make row
+    htmlRowSchedules = (
+        dashboardRectMaker(
+            scheduleCount, "Schedules", scheduleTres
+        )
+        + dashboardRectMaker(
+            scheduleNotOnSheet,
+            "Schedules<br>not on Sheet",
+            schedulesNotOnSheetTres
+        )
+    )
+    dashboardLeftMaker(htmlRowSchedules)
+
+    ## Sheets dashboard section
+    # print Sheets section header
+    output.print_md("## Sheets")
+    
+    # Make row
+    htmlRowSheets = (
+        dashboardRectMaker(sheetCount, "Sheets", sheetsTres)
+    )
+    dashboardLeftMaker(htmlRowSheets)
+
+    ## Warnings dashboard section
+    # print Warnings section header
+    output.print_md("## Warnings")
+    # Make row
+    htmlRowWarnings = (
+        dashboardRectMaker(
+            allWarningsCount, "Warnings", warningsTres
+        )
+        + dashboardRectMaker(
+            criticalWarningCount,
+            "Critical <br>Warnings",
+            criticalWarningsTres
+        )
+    )
+    dashboardLeftMaker(htmlRowWarnings)
+
+    ## Materials dashboard section
+    # print Materials section header
+    output.print_md("## Materials")
+
+    # Make row
+    htmlRowMaterials = (
+        dashboardRectMaker(
+            materialCount, "Materials", materialsTres
+        )
+    )
+    dashboardLeftMaker(htmlRowMaterials)
+
+    ## Line patterns dashboard section
+    # print Line patterns section header
+    output.print_md("## Line patterns")
+
+    # Make row
+    htmlRowLinePatterns = (dashboardRectMaker(
+            linePatternCount, "Line Patterns", linePatternsTres
+        )
+    )
+    dashboardLeftMaker(htmlRowLinePatterns)
+
+    ## DWGs dashboard section
+    # print DWGs section header
+    output.print_md("## DWGs")
+
+    # Make row
+    htmlRowDWGs = (dashboardRectMaker(
+            importedDwg, "Imported DWGs", importedDwgTres
+        )
+        + dashboardRectMaker(
+            linkedDwg, "Linked DWGs", linkedDwgTres
+        )
+        + dashboardRectMaker(
+            dwgNotCurrentView, "DWGs in 3D", dwgNotCurrentViewTres
+        )
+    )
+    dashboardLeftMaker(htmlRowDWGs)
+
+    ## Loadable Families dashboard section
+    # print Loadable Families section header
+    output.print_md("## Loadable Families")
+   
+    # Make row
+    htmlRowLoadableFamilies = (
+        dashboardRectMaker(familyCount, "Families", familiesTres)
+        + dashboardRectMaker(
+            inPlaceFamilyCount,
+            "In Place <br>Families",
+            inPlaceFamilyTres
+        )
+        + dashboardRectMaker(
+            NotParamFamiliesCount,
+            "Families <br>not parametric",
+            notParamFamiliesTres
+        )
+    )
+    dashboardLeftMaker(htmlRowLoadableFamilies)
+
+    ## Text Notes dashboard section
+    # print Text Notes section header
+    output.print_md("## Text Notes")
+   
+    # Make row
+    htmlRowTextNotes = (dashboardRectMaker(
+            textnoteWFcount,
+            "Text - Width <br>Factor changed",
+            textnoteWFtres
+        )
+        + dashboardRectMaker(
+            capsCount, "Text - AllCaps", textnoteCaps
+        )
+    )
+    dashboardLeftMaker(htmlRowTextNotes)
+
+    ## System families dashboard section
+    # print System families section header
+    output.print_md("## System Families")
+   
+    # Make row
+    htmlRowTextNotes = (dashboardRectMaker(
+            ramp_collector, "Ramps", rampTres)
+        + dashboardRectMaker(
+            archColumn_collector,
+            "Architecural <br>Columns",
+            archTres
+        )
+    )
+    dashboardLeftMaker(htmlRowTextNotes)
+
+
+    ## Groups dashboard section
+    # print Groups section header
+    output.print_md("## Groups")
+    # Make row
+    htmlRowGroupsTypes = (
         dashboardRectMaker(
             detailGroupTypeCount,
             "Detail Group <br>Types",
             detailGroupTypeTres
         )
         + dashboardRectMaker(
-            detailGroupCount, "Detail Groups", detailGroupTres
-        )
-        + dashboardRectMaker(
             modelGroupTypeCount,
             "Model Group <br>Types",
             modelGroupTypeTres
         )
+    )
+    dashboardLeftMaker(htmlRowGroupsTypes)
+
+    htmlRowGroups = (dashboardRectMaker(
+            detailGroupCount, "Detail Groups", detailGroupTres
+        )
         + dashboardRectMaker(
             modelGroupCount, "Model Groups", modelGroupTres
         )
-        + dashboardRectMaker(
+    )
+    dashboardLeftMaker(htmlRowGroups)
+
+    ## Reference Planes dashboard section
+    # print Reference Planes section header
+    output.print_md("## Reference Planes")
+    # Make row
+    htmlRowRefPlanes = (
+        dashboardRectMaker(
             noNameRefPCount,
             "NoName <br>Reference Planes",
             noNameRefPTres
         )
-        + dashboardRectMaker(
+    )
+    dashboardLeftMaker(htmlRowRefPlanes)
+
+    ## Elements count dashboard section
+    # print Elements count section header
+    output.print_md("## Elements count")
+
+    # Make row
+    htmlRowElementsCount = (dashboardRectMaker(
             elementCount, "Elements", elementsTres
         )
     )
-    dashboardCenterMaker(htmlRow4)
+    dashboardLeftMaker(htmlRowElementsCount)
+
 
     # divider
     print("\n\n\n\n")
@@ -938,6 +1059,7 @@ def checkModel(doc, output):
         chartFCategories.set_height(200)
 
     chartFCategories.draw()
+
 
 
 class ModelChecker(PreflightTestCase):
