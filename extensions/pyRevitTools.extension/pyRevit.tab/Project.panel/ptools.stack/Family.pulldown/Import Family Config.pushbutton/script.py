@@ -50,6 +50,9 @@ from pyrevit import script
 
 from pyrevit.coreutils import yaml
 
+from Autodesk.Revit.DB.Electrical import ElectricalLoadClassification
+
+
 logger = script.get_logger()
 output = script.get_output()
 
@@ -68,6 +71,8 @@ PARAM_SECTION_DEFAULT = 'default'
 PARAM_SECTION_GUID = 'GUID'
 
 TYPES_SECTION_NAME = 'types'
+
+LOAD_CLASS_NOTIFIER = '_ELECTRICAL_LOAD_CLASSIFICATION'
 
 FAMILY_SYMBOL_SEPARATOR = ' : '
 TEMP_TYPENAME = "Default"
@@ -117,6 +122,17 @@ def get_symbol_id(symbol_name):
         symname = revit.query.get_name(fsym)
         if famname == fam_name and symname == sym_name:
             return fsym.Id
+
+
+def get_load_class_id(load_class_name):
+    for lc in DB.FilteredElementCollector(revit.doc)\
+                .OfClass(ElectricalLoadClassification)\
+                .ToElements():
+        if load_class_name == lc.Name:
+            return lc.Id
+    
+    # create a new load classification
+    return ElectricalLoadClassification.Create(revit.doc, load_class_name).Id
 
 
 def get_param_config(param_name, param_opts):
@@ -188,6 +204,14 @@ def set_fparam_value(pvcfg, fparam):
         # resolve FamilyType value and get the symbol id
         fsym_id = get_symbol_id(pvcfg.value)
         fm.Set(fparam, fsym_id)
+
+    # can not use the types to find the value because yaml turns it into a string so need some sort of notifier
+    elif pvcfg.value.startswith(LOAD_CLASS_NOTIFIER):
+        first_letter = len(LOAD_CLASS_NOTIFIER) + 1
+        load_class_name = pvcfg.value[first_letter:-1]
+        load_class_id = get_load_class_id(load_class_name)
+
+        fm.Set(fparam, load_class_id)
 
     elif fparam.StorageType == DB.StorageType.String:
         fm.Set(fparam, pvcfg.value)
@@ -294,7 +318,7 @@ def ensure_params(fconfig):
     # ensure all defined parameters exist
     param_cfgs = fconfig.get(PARAM_SECTION_NAME, None)
     if param_cfgs:
-        for pname, popts in param_cfgs.items():
+        for pname, popts in param_cfgs.items(): # going through the parameters in the yaml file
             ensure_param(pname, popts)
 
 
@@ -372,7 +396,7 @@ if __name__ == '__main__':
     family_cfg_file = get_config_file()
     if family_cfg_file:
         family_mgr = revit.doc.FamilyManager
-        family_configs = load_configs(family_cfg_file) # Dictionary with family parameters
+        family_configs = load_configs(family_cfg_file) # Dictionary with family parameters in yaml file
 
         defs_filename = family_cfg_file[:-4] + "txt"
         saved = HOST_APP.app.SharedParametersFilename

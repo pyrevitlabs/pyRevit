@@ -41,6 +41,7 @@ but family in the yaml file, it will remain shared.
 """
 #pylint: disable=import-error,invalid-name,broad-except
 # TODO: export parameter ordering
+# add more to commit message
 from collections import OrderedDict
 
 from pyrevit import revit, DB, HOST_APP
@@ -67,6 +68,7 @@ PARAM_SECTION_GUID = 'GUID' # For shared parameters
 
 TYPES_SECTION_NAME = 'types'
 
+LOAD_CLASS_NOTIFIER = '_ELECTRICAL_LOAD_CLASSIFICATION'
 
 FAMILY_SYMBOL_FORMAT = '{} : {}'
 
@@ -95,6 +97,12 @@ def get_symbol_name(symbol_id):
             )
 
 
+def get_load_class_name(load_class_id):
+    # load_class_id is an element id
+    load_class = revit.doc.GetElement(load_class_id)
+    return "{0}({1})".format(LOAD_CLASS_NOTIFIER, load_class.Name)
+
+
 def get_param_typevalue(ftype, fparam):
     fparam_value = None
     # extract value by param type
@@ -103,6 +111,11 @@ def get_param_typevalue(ftype, fparam):
                 DB.ParameterType.FamilyType:
         fparam_value = get_symbol_name(ftype.AsElementId(fparam))
 
+    elif fparam.StorageType == DB.StorageType.ElementId \
+            and fparam.Definition.ParameterType == \
+                DB.ParameterType.LoadClassification:
+        fparam_value = get_load_class_name(ftype.AsElementId(fparam))
+    
     elif fparam.StorageType == DB.StorageType.String:
         fparam_value = ftype.AsString(fparam)
 
