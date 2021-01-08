@@ -335,11 +335,10 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extend);
 
-                else if (any("ui", "lib", "run")) {
+                else if (any("ui", "lib")) {
                     PyRevitCLIExtensionCmds.Extend(
                         ui: arguments["ui"].IsTrue,
                         lib: arguments["lib"].IsTrue,
-                        run: arguments["run"].IsTrue,
                         extName: TryGetValue("<extension_name>"),
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
@@ -507,6 +506,8 @@ namespace pyRevitCLI {
             else if (all("run")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Run);
+                else if (all("commands"))
+                    PyRevitCLIRevitCmds.ListAvailableCommands();
                 else
                     PyRevitCLIRevitCmds.RunPythonCommand(
                         inputCommand: TryGetValue("<script_or_command_name>"),

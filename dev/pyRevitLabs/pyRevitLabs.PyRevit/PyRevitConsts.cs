@@ -136,8 +136,12 @@ namespace pyRevitLabs.PyRevit {
         public const string ExtensionDisabledKey = "disabled";
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
-        public const string ExtensionRunnerPostfix = ".run";
-        public const string ExtensionRunnerCommandPostfix = "_command.py";
+        public const string ExtensionUIBinDirName = "bin";
+        public const string ExtensionUILibDirName = "lib";
+        public const string ExtensionUIHooksDirName = "hooks";
+        public const string ExtensionUICommandsDirName = "commands";
+        public const string ExtensionUICommandPostfix = "_command.py";
+        public const string ExtensionUIChecksDirName = "checks";
         // bundles
         public const string BundleTabPostfix = ".tab";
         public const string BundlePanelPostfix = ".panel";

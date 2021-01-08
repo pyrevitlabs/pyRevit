@@ -80,14 +80,12 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        Extend(bool ui, bool lib, bool run, string extName, string destPath, string repoUrl, string branchName, string username, string password) {
+        Extend(bool ui, bool lib, string extName, string destPath, string repoUrl, string branchName, string username, string password) {
             PyRevitExtensionTypes extType = PyRevitExtensionTypes.Unknown;
             if (ui)
                 extType = PyRevitExtensionTypes.UIExtension;
             else if (lib)
                 extType = PyRevitExtensionTypes.LibraryExtension;
-            else if (run)
-                extType = PyRevitExtensionTypes.RunnerExtension;
 
             PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName, username, password);
         }

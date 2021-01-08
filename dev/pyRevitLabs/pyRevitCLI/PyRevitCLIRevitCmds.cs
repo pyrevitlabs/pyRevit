@@ -133,6 +133,27 @@ namespace pyRevitCLI {
         }
 
         internal static void
+        ListAvailableCommands() {
+            foreach (PyRevitClone clone in PyRevitClones.GetRegisteredClones()) {
+                PyRevitCLIAppCmds.PrintHeader($"Commands in Clone \"{clone.Name}\"");
+                foreach ( PyRevitExtension ext in clone.GetExtensions()) {
+                    if (ext.Type == PyRevitExtensionTypes.UIExtension) {
+                        foreach (PyRevitRunnerCommand cmd in ext.GetCommands())
+                            Console.WriteLine(cmd);
+                    }
+                }
+            }
+
+            foreach (PyRevitExtension ext in PyRevitExtensions.GetInstalledExtensions()) {
+                if (ext.Type == PyRevitExtensionTypes.UIExtension) {
+                    PyRevitCLIAppCmds.PrintHeader($"Commands in Extension \"{ext.Name}\"");
+                    foreach (PyRevitRunnerCommand cmd in ext.GetCommands())
+                        Console.WriteLine(cmd);
+                }
+            }
+        }
+
+        internal static void
         RunPythonCommand(string inputCommand, string targetFile, string revitYear, PyRevitRunnerOptions runOptions) {
             // determine if script or command
 
@@ -223,13 +244,13 @@ namespace pyRevitCLI {
 
                             foreach (PyRevitExtension ext in targetExtensions) {
                                 logger.Debug("Searching for run command in: \"{0}\"", ext.ToString());
-                                if (ext.Type == PyRevitExtensionTypes.RunnerExtension) {
+                                if (ext.Type == PyRevitExtensionTypes.UIExtension) {
                                     try {
-                                        var cmdScript = ext.GetRunCommand(inputCommand);
+                                        var cmdScript = ext.GetCommand(inputCommand);
                                         if (cmdScript != null) {
                                             logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
                                                          inputCommand, cmdScript);
-                                            commandScriptPath = cmdScript;
+                                            commandScriptPath = cmdScript.Path;
                                             break;
                                         }
                                     }

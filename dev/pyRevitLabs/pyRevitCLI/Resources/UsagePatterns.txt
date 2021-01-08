@@ -32,7 +32,7 @@ Usage:
 	pyrevit detach (--all | <revit_year>) [--log=<log_file>]
 	pyrevit extend (-h | --help)
 	pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
+	pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit extensions [(-h | --help)]
 	pyrevit extensions search <search_pattern>
 	pyrevit extensions (info | help ) <extension_name>
@@ -64,6 +64,7 @@ Usage:
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
 	pyrevit run (-h | --help)
+	pyrevit run commands
 	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit caches (-h | --help)
