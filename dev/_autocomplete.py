@@ -224,5 +224,5 @@ def build_autocmp(_: Dict[str, str]):
     target = op.abspath(configs.AUTOCOMPBIN)
     utils.system(["go", "fmt", configs.AUTOCOMP])
     utils.system(["go", "build", "-o", target, configs.AUTOCOMP])
-    print("Building autocomplete utility succompleted successfully")
+    print("Building autocomplete utility completed successfully")
     os.remove(configs.AUTOCOMP)
