@@ -277,7 +277,8 @@ def checkModel(doc, output):
             except:
                 # detached file
                 printedName = file_path
-    output.print_md("# MODEL CHECKER")
+    output.print_md("# **MODEL CHECKER**")
+    output.print_md("---")
 
     # first JS to avoid error in IE output window when at first run
     # this is most likely not proper way
@@ -302,6 +303,11 @@ def checkModel(doc, output):
         .WhereElementIsNotElementType()
         .ToElementIds()
     )
+    revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
+    rvtlinkdocs, rvtlinkdocsName = [], []
+    for i in revitLinksdoc:
+        rvtlinkdocs.append(i.GetLinkDocument())
+        rvtlinkdocsName.append(i.GetLinkDocument().Title)
     rvtlinksCount = len(rvtlinks_id_collector)
     # output.print_md(str(rvtlinksCount) +" Revit Links")
 
@@ -598,6 +604,33 @@ def checkModel(doc, output):
         .GetElementCount()
     )
 
+    def inner_lists(lst):
+        if all(isinstance(x, list) for x in lst):
+            return [x for inner in lst for x in inner_lists(inner)]
+        else:
+            return [lst]
+    #Get list of phases in Doc and RVT Links
+    #Get current document
+    linkdocPhasesName = []
+
+    def DocPhases(doc, links = []):
+    	#Get document phases
+    	docPhases = doc.Phases
+    	#Get document phases names
+    	docPhasesName = []
+    	for i in docPhases:
+    		docPhasesName.append(i.Name)
+    	#Get links phases
+        for x in links:
+            linkdocPhases = []
+            for y in x.Phases:
+                linkdocPhases.append(y.Name)
+            linkdocPhasesName.append(linkdocPhases)
+    	return docPhasesName, linkdocPhasesName
+
+    #Call for phases definition
+    phase = inner_lists(DocPhases(doc,rvtlinkdocs))
+
     ### tresholds ###
     # RVT links
     rvtlinksTres = 100
@@ -650,18 +683,24 @@ def checkModel(doc, output):
     RefPTres = 20
     # Elements count
     elementsTres = 1000000
+
     
     ### Dashaboard starts here ###
 
     ## RVT file dashboard section
-    output.print_md("## RVT Files<br />")
+    output.print_md("# RVT Files<br />")
     output.print_md("### Current file: " )
     output.print_md(printedName)
 
     ## RVT Links dashboard section
     # print RVT links names
-    output.print_md("## RVT Links")
-    output.print_md("<br />".join(rvtlinksNames))
+    output.print_md("# RVT Links")
+    rvtlinkdocsNameFormated = []
+    for i in rvtlinkdocsName:
+        rvtlinkdocsNameFormated.append([i])
+        for j in rvtlinkdocsNameFormated:
+            j.append(' ')
+    output.print_table(rvtlinkdocsNameFormated, columns=['Files list'], formats=None, title='', last_line_style='')
     # Make row
     htmlRowRVTlinks = (
         dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
@@ -671,7 +710,7 @@ def checkModel(doc, output):
 
     ## Views dashboard section
     # print Views section header
-    output.print_md("## Views")
+    output.print_md("# Views")
 
     # Make row
     htmlRowViews = (
@@ -689,7 +728,7 @@ def checkModel(doc, output):
 
     ## Schedule dashboard section
     # print Schedules section header
-    output.print_md("## Schedules")
+    output.print_md("# Schedules")
     
     # Make row
     htmlRowSchedules = (
@@ -706,7 +745,7 @@ def checkModel(doc, output):
 
     ## Sheets dashboard section
     # print Sheets section header
-    output.print_md("## Sheets")
+    output.print_md("# Sheets")
     
     # Make row
     htmlRowSheets = (
@@ -716,7 +755,7 @@ def checkModel(doc, output):
 
     ## Warnings dashboard section
     # print Warnings section header
-    output.print_md("## Warnings")
+    output.print_md("# Warnings")
     # Make row
     htmlRowWarnings = (
         dashboardRectMaker(
@@ -732,7 +771,7 @@ def checkModel(doc, output):
 
     ## Materials dashboard section
     # print Materials section header
-    output.print_md("## Materials")
+    output.print_md("# Materials")
 
     # Make row
     htmlRowMaterials = (
@@ -744,7 +783,7 @@ def checkModel(doc, output):
 
     ## Line patterns dashboard section
     # print Line patterns section header
-    output.print_md("## Line patterns")
+    output.print_md("# Line patterns")
 
     # Make row
     htmlRowLinePatterns = (dashboardRectMaker(
@@ -755,7 +794,7 @@ def checkModel(doc, output):
 
     ## DWGs dashboard section
     # print DWGs section header
-    output.print_md("## DWGs")
+    output.print_md("# DWGs")
 
     # Make row
     htmlRowDWGs = (dashboardRectMaker(
@@ -772,7 +811,7 @@ def checkModel(doc, output):
 
     ## Loadable Families dashboard section
     # print Loadable Families section header
-    output.print_md("## Loadable Families")
+    output.print_md("# Loadable Families")
    
     # Make row
     htmlRowLoadableFamilies = (
@@ -792,7 +831,7 @@ def checkModel(doc, output):
 
     ## Text Notes dashboard section
     # print Text Notes section header
-    output.print_md("## Text Notes")
+    output.print_md("# Text Notes")
    
     # Make row
     htmlRowTextNotes = (dashboardRectMaker(
@@ -808,7 +847,7 @@ def checkModel(doc, output):
 
     ## System families dashboard section
     # print System families section header
-    output.print_md("## System Families")
+    output.print_md("# System Families")
    
     # Make row
     htmlRowTextNotes = (dashboardRectMaker(
@@ -824,7 +863,7 @@ def checkModel(doc, output):
 
     ## Groups dashboard section
     # print Groups section header
-    output.print_md("## Groups")
+    output.print_md("# Groups")
     # Make row
     htmlRowGroupsTypes = (
         dashboardRectMaker(
@@ -851,7 +890,7 @@ def checkModel(doc, output):
 
     ## Reference Planes dashboard section
     # print Reference Planes section header
-    output.print_md("## Reference Planes")
+    output.print_md("# Reference Planes")
     # Make row
     htmlRowRefPlanes = (
         dashboardRectMaker(
@@ -869,7 +908,7 @@ def checkModel(doc, output):
 
     ## Elements count dashboard section
     # print Elements count section header
-    output.print_md("## Elements count")
+    output.print_md("# Elements count")
 
     # Make row
     htmlRowElementsCount = (dashboardRectMaker(
@@ -877,6 +916,13 @@ def checkModel(doc, output):
         )
     )
     dashboardLeftMaker(htmlRowElementsCount)
+
+    ## Phases dashboard section
+    # print Phases section header
+    output.print_md("# Phases\n")
+    rvtlinkdocsName.insert(0,printedName)
+    filePhases = rvtlinkdocsName,[','.join(i) for i in phase]
+    output.print_table(zip(*filePhases), columns=["File Name","Phases"], formats=None, title='', last_line_style='')
 
 
     # divider
@@ -944,7 +990,7 @@ def checkModel(doc, output):
     chartCategories.options.title = {
         "display": True,
         "text": "Element Count by Category",
-        "fontSize": 18,
+        "fontSize": 25,
         "fontColor": "#000",
         "fontStyle": "bold",
     }
@@ -1006,7 +1052,7 @@ def checkModel(doc, output):
         chartWorksets.options.title = {
             "display": True,
             "text": "Element Count by Workset",
-            "fontSize": 18,
+            "fontSize": 25,
             "fontColor": "#000",
             "fontStyle": "bold",
         }
@@ -1045,7 +1091,7 @@ def checkModel(doc, output):
     chartFCategories.options.title = {
         "display": True,
         "text": "InPlace Family Count by Category",
-        "fontSize": 18,
+        "fontSize": 25,
         "fontColor": "#000",
         "fontStyle": "bold",
     }
