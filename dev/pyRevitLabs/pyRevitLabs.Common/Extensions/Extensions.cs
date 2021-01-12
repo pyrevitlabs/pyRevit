@@ -120,18 +120,32 @@ namespace pyRevitLabs.Common.Extensions {
                 return sourceString;
         }
 
-        public static string NormalizeAsPath(this string path) {
-            //logger.Debug("Normalizing \"{0}\"", path);
-            var normedPath =
-                Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            var match = DriveLetterFinder.Match(normedPath);
-            if (match.Success) {
-                var driveLetter = match.Groups["drive"].Value + ":";
-                normedPath = normedPath.Replace(driveLetter, driveLetter.ToUpperInvariant());
-            }
+        public static bool IsLocalPath(this string path) {
+            Uri uriResult;
+            var validPath = Uri.TryCreate(path, UriKind.Absolute, out uriResult);
+            return validPath && uriResult.HostNameType == UriHostNameType.Unknown;
+        }
 
-            logger.Debug("Normalized as \"{0}\"", normedPath);
-            return normedPath;
+        public static string NormalizeAsPath(this string path) {
+            logger.Debug("Normalizing \"{0}\"", path);
+            
+            // determine if we are dealing with a uri or local path
+            if (path.IsLocalPath()) {
+                // if this is not a remote uri, normalize
+                    var normedPath =
+                        Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    var match = DriveLetterFinder.Match(normedPath);
+                    if (match.Success) {
+                        var driveLetter = match.Groups["drive"].Value + ":";
+                        normedPath = normedPath.Replace(driveLetter, driveLetter.ToUpperInvariant());
+                    }
+
+                    logger.Debug("Normalized as \"{0}\"", normedPath);
+                    return normedPath;
+            }
+            
+            logger.Debug("Path is not local. Skipping normalization \"{0}\"", path);
+            return path;   
         }
 
         public static Version ExtractVersion(this string version) {
