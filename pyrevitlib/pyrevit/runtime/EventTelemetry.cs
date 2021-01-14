@@ -1133,5 +1133,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
             }, uiapp, args);
         }
+
+        public void Application_IUpdater(object sender, UpdaterData d) {
+            throw new NotImplementedException();
+        }
     }
 }
