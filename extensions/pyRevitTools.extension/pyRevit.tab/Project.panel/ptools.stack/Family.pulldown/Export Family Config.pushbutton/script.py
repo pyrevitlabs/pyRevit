@@ -2,6 +2,9 @@
 
 Family configuration file is a yaml file,
 providing info about the parameters and types defined in the family.
+The shared parameters are exported to a txt file.
+In the yaml file, the shared parameters are distinguished
+by the presence of their GUID.
 
 The structure of this config file is as shown below:
 
@@ -30,17 +33,24 @@ parameters:
 types:
 	24D"x36H":
 		Shelf Height (Upper): 3'-0"
+
+Note: If a parameter is in the revit file and the yaml file, 
+but shared in one and family in the other, after import, 
+the parameter won't change. So if it was shared in the revit file, 
+but family in the yaml file, it will remain shared.
 """
 #pylint: disable=import-error,invalid-name,broad-except
 # TODO: export parameter ordering
+# add more to commit message
 from collections import OrderedDict
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, HOST_APP
 from pyrevit import forms
 from pyrevit import script
+from Autodesk.Revit import Exceptions
+from Autodesk.Revit.DB import ExternalDefinitionCreationOptions, Definition, Category
 
 from pyrevit.coreutils import yaml
-
 
 logger = script.get_logger()
 output = script.get_output()
@@ -54,9 +64,11 @@ PARAM_SECTION_INST = 'instance'
 PARAM_SECTION_REPORT = 'reporting'
 PARAM_SECTION_FORMULA = 'formula'
 PARAM_SECTION_DEFAULT = 'default'
+PARAM_SECTION_GUID = 'GUID' # For shared parameters
 
 TYPES_SECTION_NAME = 'types'
 
+LOAD_CLASS_NOTIFIER = '_ELECTRICAL_LOAD_CLASSIFICATION'
 
 FAMILY_SYMBOL_FORMAT = '{} : {}'
 
@@ -85,6 +97,12 @@ def get_symbol_name(symbol_id):
             )
 
 
+def get_load_class_name(load_class_id):
+    # load_class_id is an element id
+    load_class = revit.doc.GetElement(load_class_id)
+    return "{0}({1})".format(LOAD_CLASS_NOTIFIER, load_class.Name)
+
+
 def get_param_typevalue(ftype, fparam):
     fparam_value = None
     # extract value by param type
@@ -93,6 +111,11 @@ def get_param_typevalue(ftype, fparam):
                 DB.ParameterType.FamilyType:
         fparam_value = get_symbol_name(ftype.AsElementId(fparam))
 
+    elif fparam.StorageType == DB.StorageType.ElementId \
+            and fparam.Definition.ParameterType == \
+                DB.ParameterType.LoadClassification:
+        fparam_value = get_load_class_name(ftype.AsElementId(fparam))
+    
     elif fparam.StorageType == DB.StorageType.String:
         fparam_value = ftype.AsString(fparam)
 
@@ -166,7 +189,9 @@ def read_configs(selected_fparam_names,
     export_sparams = [SortableParam(x) for x in fm.GetParameters()
                       if x.Definition.Name in selected_fparam_names]
 
-    # grab all parameter defs
+    shared_param = []
+	
+	# Grab all parameter defs
     for sparam in sorted(export_sparams, reverse=True):
         fparam_name = sparam.fparam.Definition.Name
         fparam_type = sparam.fparam.Definition.ParameterType
@@ -174,27 +199,36 @@ def read_configs(selected_fparam_names,
         fparam_isinst = sparam.fparam.IsInstance
         fparam_isreport = sparam.fparam.IsReporting
         fparam_formula = sparam.fparam.Formula
+        fparam_shared = sparam.fparam.IsShared
+        fparam_GUID = sparam.fparam.GUID if fparam_shared else None
 
         cfgs_dict[PARAM_SECTION_NAME][fparam_name] = {
             PARAM_SECTION_TYPE: str(fparam_type),
             PARAM_SECTION_GROUP: str(fparam_group),
             PARAM_SECTION_INST: fparam_isinst,
             PARAM_SECTION_REPORT: fparam_isreport,
-            PARAM_SECTION_FORMULA: fparam_formula
+            PARAM_SECTION_FORMULA: fparam_formula,
+            PARAM_SECTION_GUID: fparam_GUID
         }
 
         # get the family category if param is FamilyType selector
         if fparam_type == DB.ParameterType.FamilyType:
             cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
                 get_famtype_famcat(sparam.fparam)
-
+                
+        # Check if the current family parameter is a shared parameter
+        if sparam.fparam.IsShared:
+            # Add to an array of sorted shared parameters
+            shared_param.append(sparam.fparam)
+    
     # include type configs?
     if include_types:
         include_type_configs(cfgs_dict, export_sparams)
     elif include_defaults:
         add_default_values(cfgs_dict, export_sparams)
-
-    return cfgs_dict
+		
+    # The array of sorted shared parameters and dictionary of family parameters is returned
+    return shared_param, cfgs_dict
 
 
 def get_config_file():
@@ -215,6 +249,19 @@ def get_parameters():
         title="Select Parameters",
         multiselect=True,
     ) or []
+
+
+def read_shared(sparams):
+    # Reads the shared parameters into a txt file
+    filename = HOST_APP.app.OpenSharedParameterFile()
+    definition_group = filename.Groups.Create("Exported Parameters")
+    for param in sparams:
+        external_definition_create_options = ExternalDefinitionCreationOptions(param.Definition.Name, param.Definition.ParameterType, GUID = param.GUID)
+
+        try:
+            definition = definition_group.Definitions.Create(external_definition_create_options)
+        except Exceptions.ArgumentException:
+            forms.alert("A parameter with the same GUID already exists. Parameter: {} will be ignored.".format(param.Definition.Name))
 
 
 if __name__ == '__main__':
@@ -240,10 +287,21 @@ if __name__ == '__main__':
                     yes=True, no=True
                 )
 
-            family_configs = \
+            shared_params, family_configs = \
                 read_configs(family_params,
                              include_types=inctypes,
                              include_defaults=incdefault)
 
             logger.debug(family_configs)
             save_configs(family_configs, family_cfg_file)
+	
+    # Checks to make sure there are shared parameters to export
+    if len(shared_params) > 0:
+        # By default, the txt file will have the same name as the yaml file
+        defs_filename = family_cfg_file[:-4] + "txt"
+        saved = HOST_APP.app.SharedParametersFilename
+        filename = open(defs_filename,"w")
+        filename.close()
+        HOST_APP.app.SharedParametersFilename = defs_filename
+        read_shared(shared_params)
+        HOST_APP.app.SharedParametersFilename = saved
