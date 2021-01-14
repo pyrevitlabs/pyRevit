@@ -104,6 +104,8 @@ CHANGE_GROUPS = [
     ChangeGroup(tag="cli", header="Command Line Utility"),
     ChangeGroup(tag="bundles", header="Script bundles"),
     ChangeGroup(tag="tele", header="Telemetry"),
+    ChangeGroup(tag="hook", header="Extension Hooks"),
+    ChangeGroup(tag="command", header="Extension Commands"),
     ChangeGroup(tag="api", header="API"),
     ChangeGroup(tag="", header="Misc Changes"),
 ]
