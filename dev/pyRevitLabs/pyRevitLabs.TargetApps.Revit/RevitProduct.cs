@@ -305,8 +305,10 @@ namespace pyRevitLabs.TargetApps.Revit {
                             // this can only come from registrys
                             revitProduct.LanguageCode = regLangCode;
 
-                            // add to list now
-                            installedRevits.Add(revitProduct);
+                            // add to list now, only if install location is verified
+                            string pLocation = revitProduct.InstallLocation;
+                            if (pLocation != null && pLocation != string.Empty)
+                                installedRevits.Add(revitProduct);
                         }
                         else {
                             logger.Debug("Can not determine Revit product.");
