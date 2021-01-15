@@ -261,6 +261,10 @@ def checkModel(doc, output):
         printedName = "Not saved file"
     else:
         # workshared file
+        project_info_collector = doc.ProjectInformation
+        projectNumber = project_info_collector.Number
+        projectName = project_info_collector.Name
+        projectClient = project_info_collector.ClientName
         try:
             central_path = revit.query.get_central_path(doc)
             try:
@@ -695,9 +699,9 @@ def checkModel(doc, output):
     ### Dashaboard starts here ###
 
     ## RVT file dashboard section
-    output.print_md("# RVT Files<br />")
-    output.print_md("### Current file: " )
-    output.print_md(printedName)
+    output.print_md("# RVT File<br />")
+    projectInfo = "Current file name: "+ printedName + "<br />Project Name: " + projectName + "<br />Project Number: " + str(projectNumber) + "<br />Client Name: " + projectClient
+    output.print_md(projectInfo)
 
     ## RVT Links dashboard section
     # print RVT links names
