@@ -1,15 +1,15 @@
-"""Import family configurations (including shared parameters) 
+"""Import family configurations (including shared parameters)
 from yaml file and modify current family.
 
 Family configuration file is expected to be a yaml file,
 providing info about the parameters and types to be created.
 
-The shared parameters are distinguished from the family parameters 
+The shared parameters are distinguished from the family parameters
 by the presence of a GUID in the YAML file.
-If a parameter in Revit has the same name as one in the YAML file, 
+If a parameter in Revit has the same name as one in the YAML file,
 the value or formula from the YAML file takes precedence.
-The parameters in Revit that are not in the YAML file, 
-will not be affected by the import. 
+The parameters in Revit that are not in the YAML file,
+will not be affected by the import.
 
 The structure of this config file is as shown below:
 
@@ -40,26 +40,21 @@ types:
 		Shelf Height (Upper): 3'-0"
 """
 #pylint: disable=import-error,invalid-name,broad-except
-
 from collections import namedtuple
+import codecs
 
 from pyrevit import coreutils
 from pyrevit import revit, DB, HOST_APP
 from pyrevit import forms
 from pyrevit import script
-
 from pyrevit.coreutils import yaml
-
-from Autodesk.Revit.DB.Electrical import ElectricalLoadClassification
 
 
 logger = script.get_logger()
 output = script.get_output()
 
 
-DEFAULT_TYPE = 'Text'
-DEFAULT_BIP_CATEGORY = 'PG_CONSTRUCTION'
-
+# yaml sections and keys ------------------------------------------------------
 PARAM_SECTION_NAME = 'parameters'
 PARAM_SECTION_TYPE = 'type'
 PARAM_SECTION_CAT = 'category'
@@ -68,14 +63,19 @@ PARAM_SECTION_INST = 'instance'
 PARAM_SECTION_REPORT = 'reporting'
 PARAM_SECTION_FORMULA = 'formula'
 PARAM_SECTION_DEFAULT = 'default'
-PARAM_SECTION_GUID = 'GUID'
+PARAM_SECTION_GUID = 'GUID' # To store unique if of shared parameters
 
 TYPES_SECTION_NAME = 'types'
 
-LOAD_CLASS_NOTIFIER = '_ELECTRICAL_LOAD_CLASSIFICATION'
+SHAREDPARAM_DEF = 'xref_sharedparams'
+# -----------------------------------------------------------------------------
+
+DEFAULT_TYPE = 'Text'
+DEFAULT_BIP_CATEGORY = 'PG_CONSTRUCTION'
 
 FAMILY_SYMBOL_SEPARATOR = ' : '
 TEMP_TYPENAME = "Default"
+
 
 ParamConfig = \
     namedtuple(
@@ -102,19 +102,24 @@ TypeConfig = \
 failed_params = []
 
 
-def get_symbol_id(symbol_name):
+def parse_familysymbol_refvalue(param_value):
     # translate family-symbol formatted name and find the loaded symbol
     # current implementation matches the repr to how Revit shows the value
     # famil-name : symbol-name
-    if FAMILY_SYMBOL_SEPARATOR not in symbol_name:
+    if FAMILY_SYMBOL_SEPARATOR not in param_value:
         logger.warning(
             'Family type parameter value must be formatted as '
             '<family-name> : <symbol-name> | incorrect format: %s',
-            symbol_name
+            param_value
         )
         return
 
-    fam_name, sym_name = symbol_name.split(FAMILY_SYMBOL_SEPARATOR)
+    return param_value.split(FAMILY_SYMBOL_SEPARATOR)
+
+
+def get_symbol_id(param_value):
+    fam_name, sym_name = parse_familysymbol_refvalue(param_value)
+
     for fsym in DB.FilteredElementCollector(revit.doc)\
                   .OfClass(DB.FamilySymbol)\
                   .ToElements():
@@ -124,15 +129,20 @@ def get_symbol_id(symbol_name):
             return fsym.Id
 
 
-def get_load_class_id(load_class_name):
-    for lc in DB.FilteredElementCollector(revit.doc)\
-                .OfClass(ElectricalLoadClassification)\
-                .ToElements():
-        if load_class_name == lc.Name:
-            return lc.Id
-    
-    # create a new load classification
-    return ElectricalLoadClassification.Create(revit.doc, load_class_name).Id
+def get_load_class_id(param_value):
+    load_class, load_class_name = parse_familysymbol_refvalue(param_value)
+    if load_class == "ELECTRICAL_LOAD_CLASS":
+        for lc in DB.FilteredElementCollector(revit.doc)\
+                    .OfClass(DB.ElectricalLoadClassification)\
+                    .ToElements():
+            if load_class_name == lc.Name:
+                return lc.Id
+
+        # if not found, create a new load classification
+        new_load_class = \
+            DB.ElectricalLoadClassification.Create(revit.doc, load_class_name)
+        if new_load_class:
+            return new_load_class.Id
 
 
 def get_param_config(param_name, param_opts):
@@ -156,7 +166,7 @@ def get_param_config(param_name, param_opts):
         param_opts.get(PARAM_SECTION_REPORT, 'false').lower() == 'true'
     param_formula = param_opts.get(PARAM_SECTION_FORMULA, None)
     param_default = param_opts.get(PARAM_SECTION_DEFAULT, None)
-    param_GUID = param_opts.get(PARAM_SECTION_GUID, "")
+    param_GUID = param_opts.get(PARAM_SECTION_GUID, None)
 
     if not param_bip_cat:
         logger.critical(
@@ -198,20 +208,18 @@ def set_fparam_value(pvcfg, fparam):
         logger.debug('skipping parameter with no value: %s', pvcfg.name)
         return
 
-    if fparam.StorageType == DB.StorageType.ElementId \
-            and fparam.Definition.ParameterType == \
-                DB.ParameterType.FamilyType:
-        # resolve FamilyType value and get the symbol id
-        fsym_id = get_symbol_id(pvcfg.value)
-        fm.Set(fparam, fsym_id)
+    if fparam.StorageType == DB.StorageType.ElementId:
+        if fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
+            # resolve FamilyType value and get the symbol id
+            fsym_id = get_symbol_id(pvcfg.value)
+            fm.Set(fparam, fsym_id)
 
-    # can not use the types to find the value because yaml turns it into a string so need some sort of notifier
-    elif pvcfg.value.startswith(LOAD_CLASS_NOTIFIER):
-        first_letter = len(LOAD_CLASS_NOTIFIER) + 1
-        load_class_name = pvcfg.value[first_letter:-1]
-        load_class_id = get_load_class_id(load_class_name)
-
-        fm.Set(fparam, load_class_id)
+            # can not use the types to find the value because yaml turns it
+            # into a string so need some sort of notifier
+        elif fparam.Definition.ParameterType == \
+                DB.ParameterType.LoadClassification:
+            load_class_id = get_load_class_id(pvcfg.value)
+            fm.Set(fparam, load_class_id)
 
     elif fparam.StorageType == DB.StorageType.String:
         fm.Set(fparam, pvcfg.value)
@@ -226,100 +234,130 @@ def set_fparam_value(pvcfg, fparam):
         fm.SetValueString(fparam, pvcfg.value)
 
 
-def ensure_param(param_name, param_opts):
+def ensure_param_value(fm, fparam, pcfg, param_name):
+    if pcfg.formula:
+        logger.debug('Setting formula for: %s', param_name)
+        try:
+            if any([x in pcfg.formula for x in failed_params]):
+                logger.error(
+                    'Can not set formula for: %s\n'
+                    'One of the failed parameters is used in formula.',
+                    pcfg.name,
+                )
+            else:
+                fm.SetFormula(fparam, pcfg.formula)
+        except Exception as formula_ex:
+            logger.error('Failed to set formula on: %s | %s',
+                            pcfg.name, formula_ex)
+    # or the default value if any
+    elif pcfg.default and not fparam.IsReporting:
+        logger.debug('Setting default value for: %s', param_name)
+        try:
+            set_fparam_value(
+                ParamValueConfig(name=pcfg.name, value=pcfg.default),
+                fparam
+                )
+        except Exception as defaultval_ex:
+            logger.error('Failed to set default value for: %s | %s',
+                            pcfg.name, defaultval_ex)
+
+    # is it reporting?
+    # if param has default value, it is already set
+    # value can not be set on reporting params
+    if pcfg.isreport and not pcfg.formula:
+        try:
+            fm.MakeReporting(fparam)
+        except Exception as makereport_ex:
+            logger.error('Failed to make reporting: %s | %s',
+                            pcfg.name, makereport_ex)
+
+
+def ensure_param(fm, pcfg, param_name):
     # Create family parameter based on name and options
-    fm = revit.doc.FamilyManager
-    if param_name and param_opts:
-        logger.debug('ensuring parameter: %s', param_name)
+    logger.debug('ensuring parameter: %s', param_name)
+    logger.debug(
+        '%s %s %s %s %s',
+        pcfg.bigroup,
+        pcfg.bitype,
+        '"%s"' % pcfg.famcat.Name if pcfg.famcat else None,
+        pcfg.isinst,
+        pcfg.formula
+    )
 
-        # extract param config from dict
-        pcfg = get_param_config(param_name, param_opts)
-
-        if pcfg:
-            logger.debug(
-                '%s %s %s %s %s',
-                pcfg.bigroup,
-                pcfg.bitype,
-                '"%s"' % pcfg.famcat.Name if pcfg.famcat else None,
-                pcfg.isinst,
-                pcfg.formula
-            )
-            isShared = pcfg.GUID != "" # When a parameter is shared (the GUID has a value and is not blank)
-            fparam = revit.query.get_family_parameter(param_name, revit.doc)
-            try:
-                if fparam:
-                    logger.info('The following parameter has been overridden by the YAML file: ' + fparam.Definition.Name)
-                if isShared:
-                    defs = HOST_APP.app.OpenSharedParameterFile().Groups["Exported Parameters"].Definitions # Opens the txt file
-                    matches = [d for d in defs if str(d.GUID) == pcfg.GUID] # Going through the yaml file looking for shared parameters
-                    assert len(matches) == 1 # Will throw an error if nothing matches or too many matches
-                    fparam = fm.AddParameter(matches[0],pcfg.bigroup,pcfg.isinst)
-                else:
-                    fparam = fm.AddParameter(
-                        pcfg.name,
-                        pcfg.bigroup,
-                        pcfg.famcat if pcfg.famcat else pcfg.bitype,
-                        pcfg.isinst
-                    )
-            except Exception as addparam_ex:
-                if pcfg.famcat:
-                    failed_params.append(pcfg.name)
+    fparam = revit.query.get_family_parameter(param_name, revit.doc)
+    if not fparam:
+        try:
+            # if param is shared the GUID exists and has a value
+            if pcfg.GUID is not None:
+                sparam_found = False
+                sparam_file = HOST_APP.app.OpenSharedParameterFile()
+                if sparam_file:
+                    for def_grp in sparam_file.Groups:
+                        if def_grp.Name == "Exported Parameters":
+                            for sparam_def in def_grp.Definitions:
+                                if str(sparam_def.GUID) == pcfg.GUID:
+                                    sparam_found = True
+                                    fparam = fm.AddParameter(
+                                        sparam_def,
+                                        pcfg.bigroup,
+                                        pcfg.isinst
+                                    )
+                if not sparam_found:
                     logger.error(
-                        'Error creating parameter: %s\n'
-                        'This parameter is a nested family selector. '
-                        'Make sure at least one nested family of type "%s" '
-                        'is already loaded in this family. | %s',
-                        pcfg.name,
-                        pcfg.famcat.Name,
-                        addparam_ex
+                        'Shared paramerter definition was not found '
+                        'for %s', param_name
                     )
+                    return
+            else:
+                fparam = fm.AddParameter(
+                    pcfg.name,
+                    pcfg.bigroup,
+                    pcfg.famcat if pcfg.famcat else pcfg.bitype,
+                    pcfg.isinst
+                )
+        except Exception as addparam_ex:
+            failed_params.append(pcfg.name)
+            if pcfg.famcat:
+                logger.error(
+                    'Error creating parameter: %s\n'
+                    'This parameter is a nested family selector. '
+                    'Make sure at least one nested family of type "%s" '
+                    'is already loaded in this family. | %s',
+                    pcfg.name,
+                    pcfg.famcat.Name,
+                    addparam_ex
+                )
+            else:
+                logger.error(
+                    'Error creating parameter: %s | %s',
+                    pcfg.name, addparam_ex
+                )
+            return
 
-            logger.debug('Created: %s', fparam)
-
-            # either set the formula
-            if pcfg.formula:
-                try:
-                    if any([x in pcfg.formula for x in failed_params]):
-                        logger.error(
-                            'Can not set formula for: %s\n'
-                            'One of the failed parameters is used in formula.',
-                            pcfg.name,
-                        )
-                    else:
-                        fm.SetFormula(fparam, pcfg.formula)
-                except Exception as formula_ex:
-                    logger.error('Failed to set formula on: %s | %s',
-                                 pcfg.name, formula_ex)
-            # or the default value if any
-            elif pcfg.default and not fparam.IsReporting:
-                try:
-                    set_fparam_value(
-                        ParamValueConfig(name=pcfg.name, value=pcfg.default),
-                        fparam
-                        )
-                except Exception as defaultval_ex:
-                    logger.error('Failed to set default value for: %s | %s',
-                                 pcfg.name, defaultval_ex)
-
-            # is it reporting?
-            # if param has default value, it is already set
-            # value can not be set on reporting params
-            if pcfg.isreport and not pcfg.formula:
-                try:
-                    fm.MakeReporting(fparam)
-                except Exception as makereport_ex:
-                    logger.error('Failed to make reporting: %s | %s',
-                                 pcfg.name, makereport_ex)
-
-            return fparam
+        logger.debug('Created: %s', fparam)
+    return fparam
 
 
 def ensure_params(fconfig):
-    # ensure all defined parameters exist
+    params_with_value = []
     param_cfgs = fconfig.get(PARAM_SECTION_NAME, None)
+    fm = revit.doc.FamilyManager
     if param_cfgs:
-        for pname, popts in param_cfgs.items(): # going through the parameters in the yaml file
-            ensure_param(pname, popts)
+        # going through the parameters in the yaml file
+        # and ensure all defined parameters exist
+        for pname, popts in param_cfgs.items():
+            if pname and popts:
+                # extract param config from dict
+                pcfg = get_param_config(pname, popts)
+                if pcfg:
+                    fparam = ensure_param(fm, pcfg, pname)
+                    if fparam and (pcfg.formula or pcfg.default):
+                        params_with_value.append((fparam, pcfg, pname))
+
+        # now that all params are created, try set the formula or default value
+        for param_info in params_with_value:
+            fparam, pcfg, pname = param_info
+            ensure_param_value(fm, fparam, pcfg, pname)
 
 
 def get_type_config(type_name, type_opts):
@@ -376,7 +414,7 @@ def ensure_types(fconfig):
                                     'parameter: %s', pvcfg.name
                                     )
                         else:
-                            logger.warning(
+                            logger.debug(
                                 'can not find parameter: %s', pvcfg.name
                                 )
 
@@ -391,21 +429,41 @@ def load_configs(parma_file):
     return yaml.load_as_dict(parma_file)
 
 
+def recover_sharedparam_defs(sharedparam_def_contents):
+    global family_cfg_file
+
+    # get a temporary text file to store the generated shared param data
+    temp_defs_filepath = \
+        script.get_instance_data_file(
+            file_id=coreutils.get_file_name(family_cfg_file),
+            add_cmd_name=True
+        )
+
+    revit.files.write_text(temp_defs_filepath, sharedparam_def_contents)
+
+    return temp_defs_filepath
+
+
 if __name__ == '__main__':
     forms.check_familydoc(exitscript=True)
     family_cfg_file = get_config_file()
     if family_cfg_file:
         family_mgr = revit.doc.FamilyManager
-        family_configs = load_configs(family_cfg_file) # Dictionary with family parameters in yaml file
+        # dict with family parameters in yaml file
+        family_configs = load_configs(family_cfg_file)
+        if SHAREDPARAM_DEF in family_configs:
+            sharedparam_file = \
+                recover_sharedparam_defs(family_configs[SHAREDPARAM_DEF])
+            # swap existing shared param with temp
+            existing_sharedparam_file = HOST_APP.app.SharedParametersFilename
+            HOST_APP.app.SharedParametersFilename = sharedparam_file
 
-        defs_filename = family_cfg_file[:-4] + "txt"
-        saved = HOST_APP.app.SharedParametersFilename
-        HOST_APP.app.SharedParametersFilename = defs_filename
+        logger.debug(family_configs)
+
         try:
-            logger.debug(family_configs)
             with revit.Transaction('Import Params from Config'):
                 # Remember current type
-                # If family does not have type, create a temp type, 
+                # if family does not have type, create a temp type,
                 # otherwise setting formula will fail
                 ctype = family_mgr.CurrentType
                 if not ctype:
@@ -417,7 +475,8 @@ if __name__ == '__main__':
                 # Restore current type
                 if ctype.Name != TEMP_TYPENAME:
                     family_mgr.CurrentType = ctype
+        except Exception as import_error:
+            logger.error(str(import_error))
         finally:
-            # Even if there is an error somewhere else in the file, 
-            # the rest of the file will always be imported
-            HOST_APP.app.SharedParametersFilename = saved
+            # make sure to restore the original shared param file
+            HOST_APP.app.SharedParametersFilename = existing_sharedparam_file
