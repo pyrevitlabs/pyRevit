@@ -303,29 +303,32 @@ def checkModel(doc, output):
         .WhereElementIsNotElementType()
         .ToElementIds()
     )
-    revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
     rvtlinkdocs, rvtlinkdocsName = [], []
-    for i in revitLinksdoc:
-        rvtlinkdocs.append(i.GetLinkDocument())
-        rvtlinkdocsName.append(i.GetLinkDocument().Title)
-    rvtlinksCount = len(rvtlinks_id_collector)
-    # output.print_md(str(rvtlinksCount) +" Revit Links")
+    if not len(rvtlinks_id_collector):
+        pass
+    else:
+        revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
+        for i in revitLinksdoc:
+            rvtlinkdocs.append(i.GetLinkDocument())
+            rvtlinkdocsName.append(i.GetLinkDocument().Title)
+        rvtlinksCount = len(rvtlinks_id_collector)
+        # output.print_md(str(rvtlinksCount) +" Revit Links")
 
-    # RVTLinks pinned
-    rvtlinks_collector = (
-        DB.FilteredElementCollector(doc)
-        .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
-        .WhereElementIsNotElementType()
-        .ToElements()
-    )
+        # RVTLinks pinned
+        rvtlinks_collector = (
+            DB.FilteredElementCollector(doc)
+            .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
 
-    rvtlinkspinnedCount, rvtlinksNames = [], []
+        rvtlinkspinnedCount, rvtlinksNames = [], []
 
-    for x in rvtlinks_collector:
-        rvtlinkspinnedCount.append(x.Pinned)
-        rvtlinksNames.append(x.Name)
-    rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
-    # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
+        for x in rvtlinks_collector:
+            rvtlinkspinnedCount.append(x.Pinned)
+            rvtlinksNames.append(x.Name)
+        rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
+        # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
     
     ### View collectors
     # sheets
@@ -635,10 +638,14 @@ def checkModel(doc, output):
     # RVT links
     rvtlinksTres = 100
     rvtlinksPinnedTres =  -1 # The logic for threshold sometimes needs to be reverted
-    if rvtlinksCount == rvtlinkspinnedCountTrue :
-        rvtlinksPinnedTres = rvtlinksCount
-    else :
+    
+    if not len(rvtlinks_id_collector):
         pass
+    else:
+        if rvtlinksCount == rvtlinkspinnedCountTrue :
+            rvtlinksPinnedTres = rvtlinksCount
+        else :
+            pass
     # Views
     viewTres = 500
     viewNotOnSheetTres = viewCount * 0.2
@@ -695,7 +702,7 @@ def checkModel(doc, output):
     ## RVT Links dashboard section
     # print RVT links names
     output.print_md("# RVT Links")
-    if rvtlinksNames == [] : 
+    if not len(rvtlinks_id_collector):
         output.print_md("No links")
     else:
         rvtlinkdocsNameFormated = []
