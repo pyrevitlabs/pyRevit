@@ -11,6 +11,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<RevitProcess> ListRunningRevits() {
             var runningRevits = new List<RevitProcess>();
 
+            // lets handle exceptions just in case user can not read processes
             try {
                 foreach (Process ps in Process.GetProcesses()) {
                     if (RevitProcess.IsRevitProcess(ps))
