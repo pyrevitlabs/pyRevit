@@ -18,7 +18,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                         runningRevits.Add(new RevitProcess(ps));
                 }
             }
-            catch { /* do nothing */ }
+            catch (Exception ex) {
+                logger.Debug($"Error getting Revit processes. | {ex}");
+            }
 
             return runningRevits;
         }
@@ -26,8 +28,13 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<RevitProcess> ListRunningRevits(Version revitVersion) {
             var runningRevits = new List<RevitProcess>();
             foreach (RevitProcess revit in ListRunningRevits()) {
-                if (revit.RevitProduct.Version == revitVersion)
-                    runningRevits.Add(revit);
+                try {
+                    if (revit.RevitProduct?.Version == revitVersion)
+                        runningRevits.Add(revit);
+                }
+                catch (Exception ex) {
+                    logger.Debug($"Error getting Revit process by Version: \"{revitVersion}\" | {ex}");
+                }
             }
             return runningRevits;
         }
@@ -35,8 +42,13 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<RevitProcess> ListRunningRevits(int revitYear) {
             var runningRevits = new List<RevitProcess>();
             foreach (RevitProcess revit in ListRunningRevits()) {
-                if (revit.RevitProduct.ProductYear == revitYear)
-                    runningRevits.Add(revit);
+                try {
+                    if (revit.RevitProduct?.ProductYear == revitYear)
+                        runningRevits.Add(revit);
+                }
+                catch (Exception ex) {
+                    logger.Debug($"Error getting Revit process by Year: \"{revitYear}\" | {ex}");
+                }
             }
             return runningRevits;
         }
