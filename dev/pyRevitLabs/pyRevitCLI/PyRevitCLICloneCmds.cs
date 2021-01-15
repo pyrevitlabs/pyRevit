@@ -112,9 +112,16 @@ namespace pyRevitCLI {
         DeleteClone(bool allClones, string cloneName, bool clearConfigs) {
             if (allClones)
                 PyRevitClones.DeleteAllClones(clearConfigs: clearConfigs);
-            else {
-                if (cloneName != null)
-                    PyRevitClones.Delete(PyRevitClones.GetRegisteredClone(cloneName), clearConfigs: clearConfigs);
+            else if (cloneName != null) {
+                // lets detach the clone if there is any attachments to it
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
+                foreach(var attachment in PyRevitAttachments.GetAttachments())
+                    if (attachment.Clone.Equals(clone)) {
+                        logger.Debug($"Detaching existing attachment: {attachment}");
+                        PyRevitAttachments.Detach(attachment.Product.ProductYear, attachment.AllUsers);
+                    }
+
+                PyRevitClones.Delete(clone, clearConfigs: clearConfigs);
             }
         }
 
