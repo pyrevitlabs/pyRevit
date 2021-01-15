@@ -15,11 +15,14 @@ def ask_for_preflight_checks():
     # ask user for test case
     selected_checks = forms.SelectFromList.show(
         preflight.get_all_preflight_checks(),
-        title='Select Preflight Check(s)',
-        button_name='Run Check(s)',
-        multiselect=True,
+        title='Select Preflight Check',
+        button_name='Run Check',
+        multiselect=False,
         checked_only=True,
-        height=400
+        height=400,
+        item_template=forms.utils.load_ctrl_template(
+            script.get_bundle_file('PreflightCheckTemplate.xaml')
+            )
         )
 
     if selected_checks:

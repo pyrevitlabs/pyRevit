@@ -1116,7 +1116,7 @@ def checkModel(doc, output):
 
 
 class ModelChecker(PreflightTestCase):
-    """Revit model quality check"""
+    """Revit Model Quality Checker"""
 
     name = "Model Checker"
     author = "David Vadkerti"
