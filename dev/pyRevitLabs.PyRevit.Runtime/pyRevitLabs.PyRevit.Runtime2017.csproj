@@ -149,6 +149,9 @@
     <Compile Include="..\..\pyrevitlib\pyrevit\runtime\IronRubyEngine.cs">
       <Link>Engines\IronRubyEngine.cs</Link>
     </Compile>
+    <Compile Include="..\..\pyrevitlib\pyrevit\runtime\UpdaterListener.cs">
+      <Link>Services\UpdaterListener.cs</Link>
+    </Compile>
     <Compile Include="..\..\pyrevitlib\pyrevit\runtime\JournalListener.cs">
       <Link>Services\JournalListener.cs</Link>
     </Compile>

@@ -104,6 +104,8 @@ CHANGE_GROUPS = [
     ChangeGroup(tag="cli", header="Command Line Utility"),
     ChangeGroup(tag="bundles", header="Script bundles"),
     ChangeGroup(tag="tele", header="Telemetry"),
+    ChangeGroup(tag="hook", header="Extension Hooks"),
+    ChangeGroup(tag="command", header="Extension Commands"),
     ChangeGroup(tag="api", header="API"),
     ChangeGroup(tag="", header="Misc Changes"),
 ]
@@ -117,7 +119,8 @@ def find_changes(gitlog_report: str):
     changes = []
     idx = 0
     changelines = gitlog_report.split("\n")
-    while idx < len(changelines):
+    report_length = len(changelines)
+    while idx < report_length:
         # extract hash and message
         cline = changelines[idx]
         chash, cmsg = cline.split(" ", 1)
@@ -129,6 +132,8 @@ def find_changes(gitlog_report: str):
         while not cline.startswith("/"):
             ccmt += cline
             idx += 1
+            if idx >= report_length:
+                break
             cline = changelines[idx]
         # add a new change
         changes.append(
