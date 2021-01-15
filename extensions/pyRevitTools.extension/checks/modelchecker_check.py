@@ -695,18 +695,21 @@ def checkModel(doc, output):
     ## RVT Links dashboard section
     # print RVT links names
     output.print_md("# RVT Links")
-    rvtlinkdocsNameFormated = []
-    for i in rvtlinkdocsName:
-        rvtlinkdocsNameFormated.append([i])
-        for j in rvtlinkdocsNameFormated:
-            j.append(' ')
-    output.print_table(rvtlinkdocsNameFormated, columns=['Files list'], formats=None, title='', last_line_style='')
-    # Make row
-    htmlRowRVTlinks = (
-        dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
-        dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres)
-    )
-    dashboardLeftMaker(htmlRowRVTlinks)
+    if rvtlinksNames == [] : 
+        output.print_md("No links")
+    else:
+        rvtlinkdocsNameFormated = []
+        for i in rvtlinkdocsName:
+            rvtlinkdocsNameFormated.append([i])
+            for j in rvtlinkdocsNameFormated:
+                j.append(' ')
+        output.print_table(rvtlinkdocsNameFormated, columns=['Files list'], formats=None, title='', last_line_style='')
+        # Make row
+        htmlRowRVTlinks = (
+            dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
+            dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres)
+        )
+        dashboardLeftMaker(htmlRowRVTlinks)
 
     ## Views dashboard section
     # print Views section header
