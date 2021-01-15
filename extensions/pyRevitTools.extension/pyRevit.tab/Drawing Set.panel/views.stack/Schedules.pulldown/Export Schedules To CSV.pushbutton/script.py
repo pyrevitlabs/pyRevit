@@ -75,7 +75,7 @@ if basefolder:
                     + '.csv'
                 sched.Export(basefolder, fname, vseop)
                 exported = op.join(basefolder, fname)
-                coreutils.correct_revittxt_encoding(exported)
+                revit.files.correct_text_encoding(exported)
                 output.print_md("**EXPORTED:** {0}"
                                 .format(revit.query.get_name(sched)))
                 print(exported)
