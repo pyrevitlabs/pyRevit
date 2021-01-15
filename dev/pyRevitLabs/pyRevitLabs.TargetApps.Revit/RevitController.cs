@@ -10,10 +10,15 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public static List<RevitProcess> ListRunningRevits() {
             var runningRevits = new List<RevitProcess>();
-            foreach (Process ps in Process.GetProcesses()) {
-                if (RevitProcess.IsRevitProcess(ps))
-                    runningRevits.Add(new RevitProcess(ps));
+
+            try {
+                foreach (Process ps in Process.GetProcesses()) {
+                    if (RevitProcess.IsRevitProcess(ps))
+                        runningRevits.Add(new RevitProcess(ps));
+                }
             }
+            catch { /* do nothing */ }
+
             return runningRevits;
         }
 
