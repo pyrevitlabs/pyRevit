@@ -83,9 +83,11 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<HostProductInfo> GetAllProductInfo() => _dstore.GetAllData();
 
         public static string GetBinaryLocation(string installPath) {
-            // starting with Revit 2021, install path might be some sort of relative e.g. "Revit 2021\"
+            // make sure installPath is not null
+            installPath = installPath ?? "";
             if (!CommonUtils.VerifyPath(installPath)) {
                 logger.Debug("Can not verify install path: \"{0}\"", installPath);
+                // starting with Revit 2021, install path might be some sort of relative e.g. "Revit 2021\"
                 installPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Autodesk", installPath);
                 logger.Debug("Using default install path: \"{0}\"", installPath);
             }
@@ -253,7 +255,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                         var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath)?.NormalizeAsPath();
                         logger.Debug("Version from registery key: \"{0}\"", regVersion);
                         logger.Debug("Install path from registery key: \"{0}\"", regInstallPath);
-                        logger.Debug("Binary path from registery key: \"{0}\"", binaryFilePath);
+                        logger.Debug("Binary path from registery key: \"{0}\"", binaryFilePath ?? "");
                         logger.Debug("Language code from registery key: \"{0}\"", regLangCode);
 
                         // attempt at finding revit product
