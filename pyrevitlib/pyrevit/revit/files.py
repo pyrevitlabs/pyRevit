@@ -2,6 +2,7 @@
 import os
 import os.path as op
 import re
+import codecs
 
 from pyrevit.coreutils.logger import get_logger
 
@@ -24,3 +25,17 @@ def cleanup_backups(main_revitfile):
             except Exception as osremove_err:
                 mlogger.error('Error backup file cleanup on: %s | %s',
                               file_path, osremove_err)
+
+
+
+def read_text(filepath):
+    """Safely read text files with Revit encoding"""
+    with codecs.open(filepath, 'r', 'utf_16_le') as text_file:
+        return text_file.read()
+
+
+def write_text(filepath, contents):
+    """Safely write text files with Revit encoding"""
+    # if 'utf_16_le' is specified, codecs will not write the BOM
+    with codecs.open(filepath, 'w', 'utf_16') as text_file:
+        text_file.write(contents)
