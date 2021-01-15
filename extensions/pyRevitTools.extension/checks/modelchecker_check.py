@@ -256,11 +256,14 @@ def checkModel(doc, output):
 
     # printing file name and heading
     name = doc.PathName
+    project_info_collector = doc.ProjectInformation
+    projectNumber = project_info_collector.Number
+    projectName = project_info_collector.Name
+    projectClient = project_info_collector.ClientName
     if len(name) == 0:
         # name = "Not saved file"
         printedName = "Not saved file"
     else:
-        # workshared file
         try:
             central_path = revit.query.get_central_path(doc)
             try:
@@ -303,29 +306,32 @@ def checkModel(doc, output):
         .WhereElementIsNotElementType()
         .ToElementIds()
     )
-    revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
     rvtlinkdocs, rvtlinkdocsName = [], []
-    for i in revitLinksdoc:
-        rvtlinkdocs.append(i.GetLinkDocument())
-        rvtlinkdocsName.append(i.GetLinkDocument().Title)
-    rvtlinksCount = len(rvtlinks_id_collector)
-    # output.print_md(str(rvtlinksCount) +" Revit Links")
+    if not len(rvtlinks_id_collector):
+        pass
+    else:
+        revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
+        for i in revitLinksdoc:
+            rvtlinkdocs.append(i.GetLinkDocument())
+            rvtlinkdocsName.append(i.GetLinkDocument().Title)
+        rvtlinksCount = len(rvtlinks_id_collector)
+        # output.print_md(str(rvtlinksCount) +" Revit Links")
 
-    # RVTLinks pinned
-    rvtlinks_collector = (
-        DB.FilteredElementCollector(doc)
-        .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
-        .WhereElementIsNotElementType()
-        .ToElements()
-    )
+        # RVTLinks pinned
+        rvtlinks_collector = (
+            DB.FilteredElementCollector(doc)
+            .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
 
-    rvtlinkspinnedCount, rvtlinksNames = [], []
+        rvtlinkspinnedCount, rvtlinksNames = [], []
 
-    for x in rvtlinks_collector:
-        rvtlinkspinnedCount.append(x.Pinned)
-        rvtlinksNames.append(x.Name)
-    rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
-    # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
+        for x in rvtlinks_collector:
+            rvtlinkspinnedCount.append(x.Pinned)
+            rvtlinksNames.append(x.Name)
+        rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
+        # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
     
     ### View collectors
     # sheets
@@ -635,10 +641,14 @@ def checkModel(doc, output):
     # RVT links
     rvtlinksTres = 100
     rvtlinksPinnedTres =  -1 # The logic for threshold sometimes needs to be reverted
-    if rvtlinksCount == rvtlinkspinnedCountTrue :
-        rvtlinksPinnedTres = rvtlinksCount
-    else :
+    
+    if not len(rvtlinks_id_collector):
         pass
+    else:
+        if rvtlinksCount == rvtlinkspinnedCountTrue :
+            rvtlinksPinnedTres = rvtlinksCount
+        else :
+            pass
     # Views
     viewTres = 500
     viewNotOnSheetTres = viewCount * 0.2
@@ -688,25 +698,28 @@ def checkModel(doc, output):
     ### Dashaboard starts here ###
 
     ## RVT file dashboard section
-    output.print_md("# RVT Files<br />")
-    output.print_md("### Current file: " )
-    output.print_md(printedName)
+    output.print_md("# RVT File<br />")
+    projectInfo = "Current file name: "+ printedName + "<br />Project Name: " + projectName + "<br />Project Number: " + str(projectNumber) + "<br />Client Name: " + projectClient
+    output.print_md(projectInfo)
 
     ## RVT Links dashboard section
     # print RVT links names
     output.print_md("# RVT Links")
-    rvtlinkdocsNameFormated = []
-    for i in rvtlinkdocsName:
-        rvtlinkdocsNameFormated.append([i])
-        for j in rvtlinkdocsNameFormated:
-            j.append(' ')
-    output.print_table(rvtlinkdocsNameFormated, columns=['Files list'], formats=None, title='', last_line_style='')
-    # Make row
-    htmlRowRVTlinks = (
-        dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
-        dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres)
-    )
-    dashboardLeftMaker(htmlRowRVTlinks)
+    if not len(rvtlinks_id_collector):
+        output.print_md("No links")
+    else:
+        rvtlinkdocsNameFormated = []
+        for i in rvtlinkdocsName:
+            rvtlinkdocsNameFormated.append([i])
+            for j in rvtlinkdocsNameFormated:
+                j.append(' ')
+        output.print_table(rvtlinkdocsNameFormated, columns=['Files list'], formats=None, title='', last_line_style='')
+        # Make row
+        htmlRowRVTlinks = (
+            dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
+            dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres)
+        )
+        dashboardLeftMaker(htmlRowRVTlinks)
 
     ## Views dashboard section
     # print Views section header
