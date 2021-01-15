@@ -256,15 +256,14 @@ def checkModel(doc, output):
 
     # printing file name and heading
     name = doc.PathName
+    project_info_collector = doc.ProjectInformation
+    projectNumber = project_info_collector.Number
+    projectName = project_info_collector.Name
+    projectClient = project_info_collector.ClientName
     if len(name) == 0:
         # name = "Not saved file"
         printedName = "Not saved file"
     else:
-        # workshared file
-        project_info_collector = doc.ProjectInformation
-        projectNumber = project_info_collector.Number
-        projectName = project_info_collector.Name
-        projectClient = project_info_collector.ClientName
         try:
             central_path = revit.query.get_central_path(doc)
             try:
