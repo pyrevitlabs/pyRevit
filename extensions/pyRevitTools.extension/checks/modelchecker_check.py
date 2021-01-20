@@ -1145,25 +1145,25 @@ class ModelChecker(PreflightTestCase):
     """
     Revit model quality check
     The QC tools returns you with the following data:
-    - Revit file: Name and Project Information
-    - Revit links: list, count and pinned status
-    - Views: number, number of copied views, number of views not on sheet
-    - Schedules: number and not on sheet number
-    - Sheets: number
-    - Warnings: Total number, Critical warnings list based on predefined list of critical warnings
-    - Materials count
-    - Line patterns count
-    - DWGs: Imported count, linked count, dwgs in 3D count
-    - Loadable families: count, in place family count, non parametric families count
-    - Text notes: with factor changed count, all caps text notes count
-    - System families: ramps count, architectural columns count
-    - Groups: detail group types count, detail group instances count, model group types count, model groups instances count
-    - Reference planes: not named count, ref planes count
-    - Elements count
-    - Phases: list of phases for current document and linked files
-    - Element count per category donut chart
-    - Element count per workset donut chart
-    - in place family count per category donut chart
+        Revit file: Name and Project Information
+        Revit links: list, count and pinned status
+        Views: number, number of copied views, number of views not on sheet
+        Schedules: number and not on sheet number
+        Sheets: number
+        Warnings: Total number, Critical warnings list based on predefined list of critical warnings
+        Materials count
+        Line patterns count
+        DWGs: Imported count, linked count, dwgs in 3D count
+        Loadable families: count, in place family count, non parametric families count
+        Text notes: with factor changed count, all caps text notes count
+        System families: ramps count, architectural columns count
+        Groups: detail group types count, detail group instances count, model group types count, model groups instances count
+        Reference planes: not named count, ref planes count
+        Elements count
+        Phases: list of phases for current document and linked files
+        Element count per category donut chart
+        Element count per workset donut chart
+        In place family count per category donut chart
     """
 
     name = "Model Checker"

@@ -50,7 +50,10 @@ class PreflightCheck(object):
             if extension_pkg:
                 self.author = extension_pkg.author
 
-        self.description = getattr(self.check_case, "__doc__", "")
+        desc_lines = getattr(self.check_case, "__doc__", "").strip().split('\n')
+        if desc_lines:
+            self.subtitle = desc_lines[0]
+            self.description = '\n'.join([x.strip() for x in desc_lines[1:]])
 
 
 def run_preflight_check(check, doc, output):

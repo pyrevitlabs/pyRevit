@@ -116,12 +116,25 @@
             </Grid>
             <Button x:Name="select_b" Content="" Height="32" Click="button_select" Margin="0,10,0,0"/>
         </StackPanel>
-        <ListView x:Name="list_lb"
-                  MouseDoubleClick="button_select"
-                  SelectionMode="Extended"
-                  HorizontalContentAlignment="Stretch"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                  ItemTemplate="{DynamicResource ItemContainerTemplate}"
-                  ItemsPanel="{DynamicResource ItemsPanelTemplate}" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="50" />
+                <ColumnDefinition x:Name="splitterCol" Width="Auto" />
+                <ColumnDefinition x:Name="infoCol" Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ListView x:Name="list_lb"
+                      Grid.Column="0"
+                      MouseDoubleClick="button_select"
+                      SelectionChanged="selected_item_changed"
+                      SelectionMode="Extended"
+                      HorizontalContentAlignment="Stretch"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ItemTemplate="{DynamicResource ItemContainerTemplate}"
+                      ItemsPanel="{DynamicResource ItemsPanelTemplate}" />
+            <GridSplitter x:Name="infoSplitter" Grid.Column="1" VerticalAlignment="Stretch"  HorizontalAlignment="Stretch" ResizeDirection="Columns" Visibility="Collapsed" />
+            <ScrollViewer x:Name="infoPanel" Grid.Column="2" Visibility="Collapsed">
+                <TextBlock x:Name="infoData" Margin="10,0,0,0" TextWrapping="Wrap" />
+            </ScrollViewer>
+        </Grid>
     </DockPanel>
 </Window>

@@ -18,8 +18,10 @@ def ask_for_preflight_checks():
         title="Select Preflight Check",
         button_name="Run Check",
         multiselect=False,
+        info_panel=True,
         checked_only=True,
         height=400,
+        width=750,
         item_template=forms.utils.load_ctrl_template(
             script.get_bundle_file("PreflightCheckTemplate.xaml")
         ),

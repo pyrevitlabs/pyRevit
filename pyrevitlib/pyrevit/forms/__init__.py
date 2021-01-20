@@ -494,6 +494,8 @@ class SelectFromList(TemplateUserInputWindow):
             object attribute that should be read as item name.
         multiselect (bool, optional):
             allow multi-selection (uses check boxes). defaults to False
+        info_panel (bool, optional):
+            show information panel and fill with .description property of item
         return_all (bool, optional):
             return all items. This is handly when some input items have states
             and the script needs to check the state changes on all items.
@@ -574,6 +576,9 @@ class SelectFromList(TemplateUserInputWindow):
             self.multiselect = False
             self.list_lb.SelectionMode = Controls.SelectionMode.Single
             self.hide_element(self.checkboxbuttons_g)
+
+        # info panel?
+        self.info_panel = kwargs.get('info_panel', False)
 
         # return checked items only?
         self.return_all = kwargs.get('return_all', False)
@@ -728,6 +733,19 @@ class SelectFromList(TemplateUserInputWindow):
             else:
                 checkbox.checked = state
 
+    def _toggle_info_panel(self, state=True):
+        if state:
+            # enable the info panel
+            self.splitterCol.Width = System.Windows.GridLength(8)
+            self.infoCol.Width = System.Windows.GridLength(self.Width/2)
+            self.show_element(self.infoSplitter)
+            self.show_element(self.infoPanel)
+        else:
+            self.splitterCol.Width = self.infoCol.Width = \
+                System.Windows.GridLength.Auto
+            self.hide_element(self.infoSplitter)
+            self.hide_element(self.infoPanel)
+
     def toggle_all(self, sender, args):    #pylint: disable=W0613
         """Handle toggle all button to toggle state of all check boxes."""
         self._set_states(flip=True)
@@ -760,6 +778,9 @@ class SelectFromList(TemplateUserInputWindow):
 
     def search_txt_changed(self, sender, args):    #pylint: disable=W0613
         """Handle text change in search box."""
+        if self.info_panel:
+            self._toggle_info_panel(state=False)
+
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
         else:
@@ -768,7 +789,16 @@ class SelectFromList(TemplateUserInputWindow):
         self._list_options(option_filter=self.search_tb.Text)
 
     def selection_changed(self, sender, args):
+        if self.info_panel:
+            self._toggle_info_panel(state=False)
+
         self._list_options(option_filter=self.search_tb.Text)
+
+    def selected_item_changed(self, sender, args):
+        if self.info_panel and self.list_lb.SelectedItem is not None:
+            self._toggle_info_panel(state=True)
+            self.infoData.Text = \
+                getattr(self.list_lb.SelectedItem, 'description', '')
 
     def toggle_regex(self, sender, args):
         """Activate regex in search"""
