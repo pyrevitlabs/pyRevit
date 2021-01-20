@@ -154,169 +154,152 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunPythonCommand(string inputCommand, string targetFile, string revitYear, PyRevitRunnerOptions runOptions) {
-            // determine if script or command
+        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false) {
+            // verify command
+            if (commandName is null || commandName == string.Empty)
+                throw new Exception("Command name must be provided.");
 
+            // try target revit year
+            int revitYearNumber = 0;
+            int.TryParse(revitYear, out revitYearNumber);
+
+            
+            // setup a list of models
             var modelFiles = new List<string>();
-            // make sure file exists
-            if (targetFile != null)
-                CommonUtils.VerifyFile(targetFile);
+            // if target file is a list of model paths
+            if (targetIsFileList) {
+                // attempt at reading the list file and grab the model files only
+                foreach (var modelPath in File.ReadAllLines(targetFile))
+                    modelFiles.Add(modelPath);
+            }
+            // otherwise just work on this model
+            else
+                modelFiles.Add(targetFile);
 
-            if (inputCommand != null) {
-                // determine target revit year
-                int revitYearNumber = 0;
-                // if revit year is not specified try to get from model file
-                if (revitYear is null) {
-                    if (targetFile != null) {
-                        try {
-                            revitYearNumber = new RevitModelFile(targetFile).RevitProduct.ProductYear;
-                            // collect model names also
-                            modelFiles.Add(targetFile);
-                        }
-                        catch (Exception ex) {
-                            logger.Error(
-                                "Revit version must be explicitly specifies if using a model list file. | {0}",
-                                ex.Message
-                                );
-                        }
+            
+            // verify all models are accessible
+            foreach (string modelFile in modelFiles)
+                if (!CommonUtils.VerifyFile(modelFile))
+                    throw new Exception($"Model does not exist at \"{modelFile}\"");
+
+
+            // determine which Revit version to launch
+            if (revitYearNumber != 0) {
+                foreach (string modelFile in modelFiles) {
+                    var modelInfo = new RevitModelFile(modelFile);
+
+                    // if specific revit version is provided, make sure model is not newer
+                    if (modelInfo.RevitProduct != null) {
+                        if (modelInfo.RevitProduct.ProductYear > revitYearNumber)
+                            throw new Exception($"Model at \"{modelFile}\" is newer than the specified version: {revitYearNumber}");
                     }
-                    // if no revit year and no model, run with latest revit
                     else
-                        revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
+                        throw new Exception($"Can not detect the Revit version of model at \"{modelFile}\". Model might be newer than specified version {revitYearNumber}.");
                 }
-                // otherwise, grab the year from argument
+            }
+            else
+                revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
+
+            // now run
+            if (revitYearNumber != 0) {
+                // determine attached clone
+                var attachment = PyRevitAttachments.GetAttached(revitYearNumber);
+                if (attachment is null)
+                    logger.Error($"pyRevit is not attached to Revit \"{revitYearNumber}\". " +
+                                  "Runner needs to use the attached clone and engine to execute the script.");
                 else {
-                    revitYearNumber = int.Parse(revitYear);
-                    // prepare model list of provided
-                    if (targetFile != null) {
-                        try {
-                            var modelVer = new RevitModelFile(targetFile).RevitProduct.ProductYear;
-                            if (revitYearNumber < modelVer)
-                                logger.Warn("Model is newer than the target Revit version.");
-                            else
-                                modelFiles.Add(targetFile);
+                    // determine script to run
+                    string commandScriptPath = null;
+
+                    if (!CommonUtils.VerifyPythonScript(commandName)) {
+                        logger.Debug("Input is not a script file \"{0}\"", commandName);
+                        logger.Debug("Attempting to find run command matching \"{0}\"", commandName);
+
+                        // try to find run command in attached clone being used for execution
+                        // if not found, try to get run command from all other installed extensions
+                        var targetExtensions = new List<PyRevitExtension>();
+                        if (attachment.Clone != null) {
+                            targetExtensions.AddRange(attachment.Clone.GetExtensions());
                         }
-                        catch {
-                            // attempt at reading the list file and grab the model files only
-                            foreach (var modelPath in File.ReadAllLines(targetFile)) {
-                                if (CommonUtils.VerifyFile(modelPath)) {
-                                    try {
-                                        var modelVer = new RevitModelFile(modelPath).RevitProduct.ProductYear;
-                                        if (revitYearNumber < modelVer)
-                                            logger.Warn("Model is newer than the target Revit version.");
-                                        else
-                                            modelFiles.Add(modelPath);
-                                    }
-                                    catch {
-                                        logger.Error("File is not a valid Revit file: \"{0}\"", modelPath);
+                        targetExtensions.AddRange(PyRevitExtensions.GetInstalledExtensions());
+
+                        foreach (PyRevitExtension ext in targetExtensions) {
+                            logger.Debug("Searching for run command in: \"{0}\"", ext.ToString());
+                            if (ext.Type == PyRevitExtensionTypes.UIExtension) {
+                                try {
+                                    var cmdScript = ext.GetCommand(commandName);
+                                    if (cmdScript != null) {
+                                        logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
+                                                        commandName, cmdScript);
+                                        commandScriptPath = cmdScript.Path;
+                                        break;
                                     }
                                 }
-                                else
-                                    logger.Error("File does not exist: \"{0}\"", modelPath);
+                                catch {
+                                    // does not include command
+                                    continue;
+                                }
                             }
                         }
                     }
-                }
+                    else
+                        commandScriptPath = commandName;
 
-                // now run
-                if (revitYearNumber != 0) {
-                    // determine attached clone
-                    var attachment = PyRevitAttachments.GetAttached(revitYearNumber);
-                    if (attachment is null)
-                        logger.Error("pyRevit is not attached to Revit \"{0}\". " +
-                                     "Runner needs to use the attached clone and engine to execute the script.",
-                                     revitYear);
-                    else {
-                        // determine script to run
-                        string commandScriptPath = null;
+                    // if command is not found, stop
+                    if (commandScriptPath is null)
+                        throw new PyRevitException(
+                            string.Format("Run command not found: \"{0}\"", commandName)
+                            );
 
-                        if (!CommonUtils.VerifyPythonScript(inputCommand)) {
-                            logger.Debug("Input is not a script file \"{0}\"", inputCommand);
-                            logger.Debug("Attempting to find run command matching \"{0}\"", inputCommand);
+                    // RUN!
+                    var execEnv = PyRevitRunner.Run(
+                        attachment,
+                        commandScriptPath,
+                        modelFiles,
+                        runOptions
+                    );
 
-                            // try to find run command in attached clone being used for execution
-                            // if not found, try to get run command from all other installed extensions
-                            var targetExtensions = new List<PyRevitExtension>();
-                            if (attachment.Clone != null) {
-                                targetExtensions.AddRange(attachment.Clone.GetExtensions());
-                            }
-                            targetExtensions.AddRange(PyRevitExtensions.GetInstalledExtensions());
+                    // print results (exec env)
+                    PyRevitCLIAppCmds.PrintHeader("Execution Environment");
+                    Console.WriteLine(string.Format("Execution Id: \"{0}\"", execEnv.ExecutionId));
+                    Console.WriteLine(string.Format("Product: {0}", execEnv.Revit));
+                    Console.WriteLine(string.Format("Clone: {0}", execEnv.Clone));
+                    Console.WriteLine(string.Format("Engine: {0}", execEnv.Engine));
+                    Console.WriteLine(string.Format("Script: \"{0}\"", execEnv.Script));
+                    Console.WriteLine(string.Format("Working Directory: \"{0}\"", execEnv.WorkingDirectory));
+                    Console.WriteLine(string.Format("Journal File: \"{0}\"", execEnv.JournalFile));
+                    Console.WriteLine(string.Format("Manifest File: \"{0}\"", execEnv.PyRevitRunnerManifestFile));
+                    Console.WriteLine(string.Format("Log File: \"{0}\"", execEnv.LogFile));
+                    // report whether the env was purge or not
+                    if (execEnv.Purged)
+                        Console.WriteLine("Execution env is successfully purged.");
 
-                            foreach (PyRevitExtension ext in targetExtensions) {
-                                logger.Debug("Searching for run command in: \"{0}\"", ext.ToString());
-                                if (ext.Type == PyRevitExtensionTypes.UIExtension) {
-                                    try {
-                                        var cmdScript = ext.GetCommand(inputCommand);
-                                        if (cmdScript != null) {
-                                            logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
-                                                         inputCommand, cmdScript);
-                                            commandScriptPath = cmdScript.Path;
-                                            break;
-                                        }
-                                    }
-                                    catch {
-                                        // does not include command
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                            commandScriptPath = inputCommand;
+                    // print target models
+                    if (execEnv.ModelPaths.Count() > 0) {
+                        PyRevitCLIAppCmds.PrintHeader("Target Models");
+                        foreach (var modelPath in execEnv.ModelPaths)
+                            Console.WriteLine(modelPath);
+                    }
 
-                        // if command is not found, stop
-                        if (commandScriptPath is null)
-                            throw new PyRevitException(
-                                string.Format("Run command not found: \"{0}\"", inputCommand)
-                                );
-
-                        // RUN!
-                        var execEnv = PyRevitRunner.Run(
-                            attachment,
-                            commandScriptPath,
-                            modelFiles,
-                            runOptions
-                        );
-
-                        // print results (exec env)
-                        PyRevitCLIAppCmds.PrintHeader("Execution Environment");
-                        Console.WriteLine(string.Format("Execution Id: \"{0}\"", execEnv.ExecutionId));
-                        Console.WriteLine(string.Format("Product: {0}", execEnv.Revit));
-                        Console.WriteLine(string.Format("Clone: {0}", execEnv.Clone));
-                        Console.WriteLine(string.Format("Engine: {0}", execEnv.Engine));
-                        Console.WriteLine(string.Format("Script: \"{0}\"", execEnv.Script));
-                        Console.WriteLine(string.Format("Working Directory: \"{0}\"", execEnv.WorkingDirectory));
-                        Console.WriteLine(string.Format("Journal File: \"{0}\"", execEnv.JournalFile));
-                        Console.WriteLine(string.Format("Manifest File: \"{0}\"", execEnv.PyRevitRunnerManifestFile));
-                        Console.WriteLine(string.Format("Log File: \"{0}\"", execEnv.LogFile));
-                        // report whether the env was purge or not
-                        if (execEnv.Purged)
-                            Console.WriteLine("Execution env is successfully purged.");
-
-                        // print target models
-                        if (execEnv.ModelPaths.Count() > 0) {
-                            PyRevitCLIAppCmds.PrintHeader("Target Models");
-                            foreach (var modelPath in execEnv.ModelPaths)
-                                Console.WriteLine(modelPath);
-                        }
-
-                        // print log file contents if exists
-                        if (File.Exists(execEnv.LogFile)) {
-                            PyRevitCLIAppCmds.PrintHeader("Execution Log");
-                            Console.WriteLine(File.ReadAllText(execEnv.LogFile));
-                        }
+                    // print log file contents if exists
+                    if (File.Exists(execEnv.LogFile)) {
+                        PyRevitCLIAppCmds.PrintHeader("Execution Log");
+                        Console.WriteLine(File.ReadAllText(execEnv.LogFile));
                     }
                 }
             }
+            
         }
 
         // privates:
         // print info on a revit model
         private static void PrintModelInfo(RevitModelFile model) {
-            Console.WriteLine(string.Format("Created in: {0} ({1}({2}))",
-                                model.RevitProduct.Name,
-                                model.RevitProduct.BuildNumber,
-                                model.RevitProduct.BuildTarget));
+            if (model.RevitProduct != null)
+                Console.WriteLine(
+                    $"Created in: {model.RevitProduct.Name} {model.RevitProduct.BuildNumber}({model.RevitProduct.BuildTarget})");
+            else
+                Console.WriteLine(model.BuildInfoLine);
+
             Console.WriteLine(string.Format("Workshared: {0}", model.IsWorkshared ? "Yes" : "No"));
             if (model.IsWorkshared)
                 Console.WriteLine(string.Format("Central Model Path: {0}", model.CentralModelPath));

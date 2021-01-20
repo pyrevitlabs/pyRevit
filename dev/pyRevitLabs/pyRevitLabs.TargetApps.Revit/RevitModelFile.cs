@@ -154,7 +154,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                 // Build: 20180806_1515(x64)
                 match = buildFieldRegex("Build: ", "build").Match(line);
                 if (match.Success) {
-                    var revitProduct = RevitProduct.LookupRevitProduct(line);
+                    BuildInfoLine = line;
+                    var revitProduct = RevitProduct.LookupRevitProduct(BuildInfoLine);
                     if (revitProduct != null)
                         RevitProduct = revitProduct;
                 }
@@ -277,6 +278,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public bool IsWorkshared { get; private set; } = false;
 
         public string LastSavedPath { get; private set; } = null;
+
+        public string BuildInfoLine { get; private set; } = null;
 
         public string CentralModelPath { get; private set; } = null;
 

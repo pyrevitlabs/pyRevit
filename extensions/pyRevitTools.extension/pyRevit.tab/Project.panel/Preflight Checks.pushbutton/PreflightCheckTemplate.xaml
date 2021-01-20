@@ -1,0 +1,8 @@
+<ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="10,0,0,0">
+        <TextBlock Text="{Binding name}" FontWeight="Medium" />
+        <TextBlock Text="{Binding description}" Margin="10,0,0,0" />
+        <TextBlock Foreground="DarkGray" Text="{Binding author, StringFormat=Author: {0}}" Margin="10,0,0,0" />
+        <TextBlock Foreground="DarkGray" Text="{Binding extension, StringFormat=Extension: {0}}" Margin="10,0,0,0" />
+    </StackPanel>
+</ControlTemplate>

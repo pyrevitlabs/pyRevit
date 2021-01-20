@@ -68,6 +68,20 @@
             "website": "https://revitron-ui.readthedocs.io/en/latest/",
             "image": "",
             "dependencies": ["Revitron"]
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pyStructure",
+            "description": "Extension for Revit Structure",
+            "author": "Shahabaz Sha",
+            "author_profile": "https://github.com/sampy23",
+            "url": "https://github.com/sampy23/pyStruct.extension",
+            "website": "",
+            "image": "",
+            "dependencies": []
         }
     ]
 }

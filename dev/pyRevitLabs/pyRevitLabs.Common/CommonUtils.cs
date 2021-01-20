@@ -220,8 +220,8 @@ namespace pyRevitLabs.Common {
 
             if (res == 0) {
                 CompoundFile cf = new CompoundFile(filePath);
-                CFStream foundStream = cf.RootStorage.TryGetStream(streamName);
-                if (foundStream != null) {
+                logger.Debug($"Found CF Root: {cf.RootStorage}");
+                if (cf.RootStorage.TryGetStream(streamName, out var foundStream)) {
                     byte[] streamData = foundStream.GetData();
                     cf.Close();
                     return streamData;
