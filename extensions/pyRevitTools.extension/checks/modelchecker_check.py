@@ -7,6 +7,7 @@ from pyrevit import script
 from pyrevit import revit, DB
 
 from pyrevit.preflight import PreflightTestCase
+from pyrevit.compat import safe_strtype
 
 
 # webpage with explanations of bad practices in revit maybe it could be configurable in the future?
@@ -326,7 +327,6 @@ def checkModel(doc, output):
         )
 
         rvtlinkspinnedCount, rvtlinksNames = [], []
-
         for x in rvtlinks_collector:
             rvtlinkspinnedCount.append(x.Pinned)
             rvtlinksNames.append(x.Name)
@@ -383,7 +383,7 @@ def checkModel(doc, output):
                 or viewNameString[-7:-2] == "Copie"
                 or viewNameString[-5:] == "Copie"
                 or viewNameString[-5:] == "Coupe"
-                
+
             ):
                 copiedView += 1
         except:
@@ -447,26 +447,23 @@ def checkModel(doc, output):
     # warnings
     allWarnings_collector = doc.GetWarnings()
     allWarningsCount = len(allWarnings_collector)
-    # print(str(allWarningsCount)+" Warnings")
-
     # critical warnings
     criticalWarningCount = 0
+    warnDescription, warnDescriptionHeadings = [], []
     for warning in allWarnings_collector:
-        # description = warning.GetDescriptionText()
         warningGuid = warning.GetFailureDefinitionId().Guid
-        # # for warning type heading
-        # try:
-        #     descLen = description.index(".")
-        # # Few warnings have mistakenly no dot in the end.
-        # except:
-        #     descLen = len(description)
-        # descHeading = description[:descLen]
-        # if descHeading in CRITICAL_WARNINGS:
-        #     criticalWarningCount += 1
-
+        warnDescription.append(warning.GetDescriptionText())
         # if warning Guid is in the list
         if str(warningGuid) in CRITICAL_WARNINGS:
             criticalWarningCount += 1
+    for i in warnDescription:
+        if i not in warnDescriptionHeadings:
+            warnDescriptionHeadings.append(i)
+    warnDescriptionHeadings.sort()
+    warnSet = []
+    for i in warnDescriptionHeadings:
+        count = warnDescription.count(i)
+        warnSet.append(count)
 
     # materials
     materialCount = (
@@ -504,7 +501,7 @@ def checkModel(doc, output):
     dwgCount = len(dwg_collector)
     linkedDwg = dwgCount - importedDwg
 
-   
+
     # families
     graphFCatHeadings = []
     graphFCatData = []
@@ -641,7 +638,7 @@ def checkModel(doc, output):
     # RVT links
     rvtlinksTres = 100
     rvtlinksPinnedTres =  -1 # The logic for threshold sometimes needs to be reverted
-    
+
     if not len(rvtlinks_id_collector):
         pass
     else:
@@ -694,7 +691,7 @@ def checkModel(doc, output):
     # Elements count
     elementsTres = 1000000
 
-    
+
     ### Dashaboard starts here ###
 
     ## RVT file dashboard section
@@ -742,7 +739,7 @@ def checkModel(doc, output):
     ## Schedule dashboard section
     # print Schedules section header
     output.print_md("# Schedules")
-    
+
     # Make row
     htmlRowSchedules = (
         dashboardRectMaker(
@@ -759,7 +756,7 @@ def checkModel(doc, output):
     ## Sheets dashboard section
     # print Sheets section header
     output.print_md("# Sheets")
-    
+
     # Make row
     htmlRowSheets = (
         dashboardRectMaker(sheetCount, "Sheets", sheetsTres)
@@ -781,6 +778,22 @@ def checkModel(doc, output):
         )
     )
     dashboardLeftMaker(htmlRowWarnings)
+    # warnings count per type doughnut
+    chartWarnings = output.make_doughnut_chart()
+    chartWarnings.options.title = {
+        "display": True,
+        "text": "Warning Count by Type",
+        "fontSize": 25,
+        "fontColor": "#000",
+        "fontStyle": "bold",
+        "position": "left"
+    }
+    chartWarnings.options.legend = {"position": "top", "fullWidth": False}
+    chartWarnings.data.labels = [x.encode('UTF-8') for x in warnDescriptionHeadings]
+    set_w = chartWarnings.data.new_dataset("Not Standard")
+    set_w.data = warnSet
+    set_w.backgroundColor = COLORS
+    chartWarnings.draw()
 
     ## Materials dashboard section
     # print Materials section header
@@ -825,7 +838,7 @@ def checkModel(doc, output):
     ## Loadable Families dashboard section
     # print Loadable Families section header
     output.print_md("# Loadable Families")
-   
+
     # Make row
     htmlRowLoadableFamilies = (
         dashboardRectMaker(familyCount, "Families", familiesTres)
@@ -845,7 +858,7 @@ def checkModel(doc, output):
     ## Text Notes dashboard section
     # print Text Notes section header
     output.print_md("# Text Notes")
-   
+
     # Make row
     htmlRowTextNotes = (dashboardRectMaker(
             textnoteWFcount,
@@ -861,7 +874,7 @@ def checkModel(doc, output):
     ## System families dashboard section
     # print System families section header
     output.print_md("# System Families")
-   
+
     # Make row
     htmlRowTextNotes = (dashboardRectMaker(
             ramp_collector, "Ramps", rampTres)
@@ -1129,7 +1142,29 @@ def checkModel(doc, output):
 
 
 class ModelChecker(PreflightTestCase):
-    """Revit Model Quality Checker"""
+    """
+    Revit model quality check
+    The QC tools returns you with the following data:
+    - Revit file: Name and Project Information
+    - Revit links: list, count and pinned status
+    - Views: number, number of copied views, number of views not on sheet
+    - Schedules: number and not on sheet number
+    - Sheets: number
+    - Warnings: Total number, Critical warnings list based on predefined list of critical warnings
+    - Materials count
+    - Line patterns count
+    - DWGs: Imported count, linked count, dwgs in 3D count
+    - Loadable families: count, in place family count, non parametric families count
+    - Text notes: with factor changed count, all caps text notes count
+    - System families: ramps count, architectural columns count
+    - Groups: detail group types count, detail group instances count, model group types count, model groups instances count
+    - Reference planes: not named count, ref planes count
+    - Elements count
+    - Phases: list of phases for current document and linked files
+    - Element count per category donut chart
+    - Element count per workset donut chart
+    - in place family count per category donut chart
+    """
 
     name = "Model Checker"
     author = "David Vadkerti"
