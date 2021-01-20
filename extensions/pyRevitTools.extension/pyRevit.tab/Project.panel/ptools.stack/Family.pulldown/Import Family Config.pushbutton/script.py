@@ -133,14 +133,14 @@ def get_load_class_id(param_value):
     load_class, load_class_name = parse_familysymbol_refvalue(param_value)
     if load_class == "ELECTRICAL_LOAD_CLASS":
         for lc in DB.FilteredElementCollector(revit.doc)\
-                    .OfClass(DB.ElectricalLoadClassification)\
+                    .OfClass(DB.Electrical.ElectricalLoadClassification)\
                     .ToElements():
             if load_class_name == lc.Name:
                 return lc.Id
 
         # if not found, create a new load classification
         new_load_class = \
-            DB.ElectricalLoadClassification.Create(revit.doc, load_class_name)
+            DB.Electrical.ElectricalLoadClassification.Create(revit.doc, load_class_name)
         if new_load_class:
             return new_load_class.Id
 
@@ -451,11 +451,11 @@ if __name__ == '__main__':
         family_mgr = revit.doc.FamilyManager
         # dict with family parameters in yaml file
         family_configs = load_configs(family_cfg_file)
+        existing_sharedparam_file = HOST_APP.app.SharedParametersFilename
         if SHAREDPARAM_DEF in family_configs:
             sharedparam_file = \
                 recover_sharedparam_defs(family_configs[SHAREDPARAM_DEF])
             # swap existing shared param with temp
-            existing_sharedparam_file = HOST_APP.app.SharedParametersFilename
             HOST_APP.app.SharedParametersFilename = sharedparam_file
 
         logger.debug(family_configs)
