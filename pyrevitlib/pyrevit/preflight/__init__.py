@@ -13,6 +13,7 @@ import imp
 import inspect
 
 from pyrevit.extensions import extensionmgr
+from pyrevit.extensions import extpackages as extpkg
 from pyrevit.preflight.case import PreflightTestCase
 
 
@@ -35,11 +36,21 @@ def _get_check_name(check_script):
 class PreflightCheck(object):
     """Preflight Check"""
 
-    def __init__(self, check_type, script_path):
+    def __init__(self, extension, check_type, script_path):
         self.check_case = check_type
         self.name = getattr(self.check_case, "name", None) \
             or _get_check_name(script_path)
         self.script_path = script_path
+
+        self.extension = extension.name
+        self.author = getattr(self.check_case, "author", None)
+        if not self.author:
+            self.author = "Unknown"
+            extension_pkg = extpkg.get_ext_package_by_name(extension.name)
+            if extension_pkg:
+                self.author = extension_pkg.author
+
+        self.description = getattr(self.check_case, "__doc__", "")
 
 
 def run_preflight_check(check, doc, output):
@@ -69,6 +80,6 @@ def get_all_preflight_checks():
             # extract the checks and wrap
             for check_type in _grab_test_types(check_mod):
                 preflight_checks.append(
-                    PreflightCheck(check_type, check_script)
-                    )
+                    PreflightCheck(ext, check_type, check_script)
+                )
     return preflight_checks

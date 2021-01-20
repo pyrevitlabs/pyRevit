@@ -327,13 +327,12 @@ def checkModel(doc, output):
         )
 
         rvtlinkspinnedCount, rvtlinksNames = [], []
-
         for x in rvtlinks_collector:
             rvtlinkspinnedCount.append(x.Pinned)
             rvtlinksNames.append(x.Name)
         rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
         # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
-
+    
     ### View collectors
     # sheets
     sheets_id_collector = (
@@ -714,7 +713,7 @@ def checkModel(doc, output):
         output.print_table(rvtlinkdocsNameFormated, columns=['Files list'], formats=None, title='', last_line_style='')
         # Make row
         htmlRowRVTlinks = (
-            dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) +
+            dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
             dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres)
         )
         dashboardLeftMaker(htmlRowRVTlinks)
@@ -1166,7 +1165,6 @@ class ModelChecker(PreflightTestCase):
     - Element count per workset donut chart
     - in place family count per category donut chart
     """
-
 
     name = "Model Checker"
     author = "David Vadkerti, Jean-Marc Couffin"

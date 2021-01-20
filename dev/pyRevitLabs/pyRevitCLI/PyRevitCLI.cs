@@ -508,16 +508,31 @@ namespace pyRevitCLI {
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Run);
                 else if (all("commands"))
                     PyRevitCLIRevitCmds.ListAvailableCommands();
-                else
-                    PyRevitCLIRevitCmds.RunPythonCommand(
-                        inputCommand: TryGetValue("<script_or_command_name>"),
-                        targetFile: TryGetValue("<model_file>"),
-                        revitYear: TryGetValue("--revit"),
-                        runOptions: new PyRevitRunnerOptions() {
-                            PurgeTempFiles = arguments["--purge"].IsTrue,
-                            ImportPath = TryGetValue("--import", null)
-                        }
-                    );
+                else {
+                    var modelList = TryGetValue("--models");
+                    if (modelList != null) {
+                        PyRevitCLIRevitCmds.RunExtensionCommand(
+                            commandName: TryGetValue("<script_or_command_name>"),
+                            targetFile: modelList,
+                            revitYear: TryGetValue("--revit"),
+                            runOptions: new PyRevitRunnerOptions() {
+                                PurgeTempFiles = arguments["--purge"].IsTrue,
+                                ImportPath = TryGetValue("--import", null)
+                            },
+                            targetIsFileList: true
+                        );
+                    }
+                    else
+                        PyRevitCLIRevitCmds.RunExtensionCommand(
+                            commandName: TryGetValue("<script_or_command_name>"),
+                            targetFile: TryGetValue("<model_file>"),
+                            revitYear: TryGetValue("--revit"),
+                            runOptions: new PyRevitRunnerOptions() {
+                                PurgeTempFiles = arguments["--purge"].IsTrue,
+                                ImportPath = TryGetValue("--import", null)
+                            }
+                        );
+                }
             }
 
             else if (all("caches")) {

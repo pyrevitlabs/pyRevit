@@ -167,6 +167,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\PreflightCheckTemplate.xaml">
+      <Link>Tools\PreflightCheckTemplate.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\pyrevitlib\pyrevit\forms\BaseWindow.xaml">
       <Link>Forms\BaseWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
