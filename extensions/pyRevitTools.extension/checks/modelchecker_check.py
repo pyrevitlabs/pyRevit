@@ -1169,7 +1169,7 @@ class ModelChecker(PreflightTestCase):
 
 
     name = "Model Checker"
-    author = "David Vadkerti"
+    author = "David Vadkerti, Jean-Marc Couffin"
 
     def setUp(self, doc, output):
         pass
