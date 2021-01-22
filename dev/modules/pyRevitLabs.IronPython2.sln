@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30804.86
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DLR", "DLR", "{BF166365-161B-405B-9673-1D5846C7F600}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Dynamic", "pyRevitLabs.dlr\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj", "{635343DA-4FE9-4696-92B2-87EDE708D316}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Scripting", "pyRevitLabs.dlr\Src\Microsoft.Scripting\Microsoft.Scripting.csproj", "{CCF80500-3EFF-4546-A858-5CA5CC684EDF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Scripting.Metadata", "pyRevitLabs.dlr\Src\Microsoft.Scripting.Metadata\Microsoft.Scripting.Metadata.csproj", "{FF6F5F89-5468-45A2-9D55-481A77128067}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython", "pyRevitLabs.ironpython2\Src\IronPython\IronPython.csproj", "{0C9A4EEF-A3C5-4B08-AD38-39E5D618AE16}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Modules", "pyRevitLabs.ironpython2\Src\IronPython.Modules\IronPython.Modules.csproj", "{4FB2A3BB-4D9F-4C59-AF3A-C6C0B36F5E4F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.SQLite", "pyRevitLabs.ironpython2\Src\IronPython.SQLite\IronPython.SQLite.csproj", "{CC1EA53F-62BC-4A5B-9770-9E7840AB711C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Wpf", "pyRevitLabs.ironpython2\Src\IronPython.Wpf\IronPython.Wpf.csproj", "{980049B3-806E-4ADF-8DF1-C8B0C2E81CD3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{635343DA-4FE9-4696-92B2-87EDE708D316}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{635343DA-4FE9-4696-92B2-87EDE708D316}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCF80500-3EFF-4546-A858-5CA5CC684EDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCF80500-3EFF-4546-A858-5CA5CC684EDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF6F5F89-5468-45A2-9D55-481A77128067}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF6F5F89-5468-45A2-9D55-481A77128067}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C9A4EEF-A3C5-4B08-AD38-39E5D618AE16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C9A4EEF-A3C5-4B08-AD38-39E5D618AE16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FB2A3BB-4D9F-4C59-AF3A-C6C0B36F5E4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FB2A3BB-4D9F-4C59-AF3A-C6C0B36F5E4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC1EA53F-62BC-4A5B-9770-9E7840AB711C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC1EA53F-62BC-4A5B-9770-9E7840AB711C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{980049B3-806E-4ADF-8DF1-C8B0C2E81CD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{980049B3-806E-4ADF-8DF1-C8B0C2E81CD3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{635343DA-4FE9-4696-92B2-87EDE708D316} = {BF166365-161B-405B-9673-1D5846C7F600}
+		{CCF80500-3EFF-4546-A858-5CA5CC684EDF} = {BF166365-161B-405B-9673-1D5846C7F600}
+		{FF6F5F89-5468-45A2-9D55-481A77128067} = {BF166365-161B-405B-9673-1D5846C7F600}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D8BF46F0-D963-42E1-8F59-FDEFCEAEA7E0}
+	EndGlobalSection
+EndGlobal

@@ -36,31 +36,31 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="IronPython">
-      <HintPath>..\..\..\bin\engines\277\IronPython.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY277\IronPython.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Modules">
-      <HintPath>..\..\..\bin\engines\277\IronPython.Modules.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY277\IronPython.Modules.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.SQLite">
-      <HintPath>..\..\..\bin\engines\277\IronPython.SQLite.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY277\IronPython.SQLite.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Wpf">
-      <HintPath>..\..\..\bin\engines\277\IronPython.Wpf.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY277\IronPython.Wpf.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY277\Microsoft.Dynamic.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Scripting">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Scripting.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY277\Microsoft.Scripting.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Scripting.Metadata">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Scripting.Metadata.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY277\Microsoft.Scripting.Metadata.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RevitAPI">
@@ -97,6 +97,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 $(TargetPath)
-copy "$(TargetPath)" "$(ProjectDir)..\..\..\bin\engines\277\"</PostBuildEvent>
+copy "$(TargetPath)" "$(ProjectDir)..\..\..\bin\engines\IPY277\"</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -5,12 +5,13 @@ import sys
 import json
 
 from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
+import pyrevit.engine as eng
 from pyrevit import framework
 from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
 from pyrevit.compat import safe_strtype
-from pyrevit import RUNTIME_DIR, ADDIN_RESOURCE_DIR
+from pyrevit import RUNTIME_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import logger
@@ -93,9 +94,12 @@ if not EXEC_PARAMS.doc_mode:
     # - runtime csharp files
     # - runtime engine version
     # - cpython engine version
+    mlogger.debug('Building on IronPython engine: %s', EXEC_PARAMS.engine_ver)
     BASE_TYPES_DIR_HASH = \
         coreutils.get_str_hash(
-            coreutils.calculate_dir_hash(INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER)
+            coreutils.calculate_dir_hash(
+                INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
+            )
             + EXEC_PARAMS.engine_ver
             + str(CPYTHON_ENGINE.Version)
             )[:HASH_CUTOFF_LENGTH]
@@ -138,10 +142,6 @@ def _get_source_files():
     source_files = all_sources.values()
     mlogger.debug('Source files to be compiled: %s', source_files)
     return source_files
-
-
-def _get_resource_file(resource_name):
-    return op.join(ADDIN_RESOURCE_DIR, resource_name)
 
 
 def _get_framework_module(fw_module):
@@ -230,8 +230,10 @@ def get_references():
         # legacy csharp/vb.net compiler
         'Microsoft.CSharp',
         # iron python engine
-        'Microsoft.Dynamic', 'Microsoft.Scripting',
-        'IronPython', 'IronPython.Modules',
+        '{prefix}Microsoft.Dynamic'.format(prefix=eng.EnginePrefix),
+        '{prefix}Microsoft.Scripting'.format(prefix=eng.EnginePrefix),
+        '{prefix}IronPython'.format(prefix=eng.EnginePrefix),
+        '{prefix}IronPython.Modules'.format(prefix=eng.EnginePrefix),
         # revit api
         'RevitAPI', 'RevitAPIUI', 'AdWindows', 'UIFramework',
         # pyrevit loader assembly

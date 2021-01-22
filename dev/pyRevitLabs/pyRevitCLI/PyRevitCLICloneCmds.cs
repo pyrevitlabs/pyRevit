@@ -276,43 +276,29 @@ namespace pyRevitCLI {
                                            + "Use installer to update.");
 
         }
-
+        
         internal static void
-        AttachClone(string cloneName,
-                    bool latest, bool dynamoSafe, string engineVersion,
+        AttachClone(PyRevitClone clone, string engineId,
                     string revitYear, bool installed, bool attached,
                     bool allUsers) {
-            var clone = PyRevitClones.GetRegisteredClone(cloneName);
+            var engine = clone.GetConfiguredEngine(engineId);
+            AttachClone(clone, engine.Version, revitYear, installed, attached, allUsers);
+        }
 
-            // grab engine version
-            int engineVer = 0;
-            int.TryParse(engineVersion, out engineVer);
-
-            if (latest) {
-                logger.Debug("Attaching on latest engine...");
-                var latestCloneEngine = 
-                    clone.GetEngines().Where(x => x.Runtime).OrderByDescending(x => x.Version).First();
-                logger.Debug(string.Format("Latest engine: {0}", latestCloneEngine));
-                if (latestCloneEngine != null)
-                    engineVer = latestCloneEngine.Version;
-                else
-                    throw new PyRevitException("Can not determine latest runtime engine for this clone.");
-            }
-            else if (dynamoSafe) {
-                logger.Debug("Attaching on dynamo-safe engine");
-                engineVer = PyRevitConsts.ConfigsDynamoCompatibleEnginerVer;
-            }
-
+        internal static void
+        AttachClone(PyRevitClone clone, PyRevitEngineVersion engineVersion,
+                    string revitYear, bool installed, bool attached,
+                    bool allUsers) {
             // decide targets revits to attach to
             int revitYearNumber = 0;
             if (installed)
                 foreach (var revit in RevitProduct.ListInstalledProducts())
-                    PyRevitAttachments.Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+                    PyRevitAttachments.Attach(revit.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
             else if (attached)
                 foreach (var attachment in PyRevitAttachments.GetAttachments())
-                    PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+                    PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
             else if (int.TryParse(revitYear, out revitYearNumber))
-                PyRevitAttachments.Attach(revitYearNumber, clone, engineVer: engineVer, allUsers: allUsers);
+                PyRevitAttachments.Attach(revitYearNumber, clone, engineVer: engineVersion, allUsers: allUsers);
         }
 
         internal static void
