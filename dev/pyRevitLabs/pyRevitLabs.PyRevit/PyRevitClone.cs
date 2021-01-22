@@ -288,7 +288,7 @@ namespace pyRevitLabs.PyRevit {
 
                     engines.Add(
                         new PyRevitEngine(
-                            engineVer: infoTable["version"].Get<int>(),
+                            engineVer: new PyRevitEngineVersion(infoTable["version"].Get<int>()),
                             runtime: infoTable.TryGetValue("runtime") != null ? infoTable["runtime"].Get<bool>() : true, // be flexible since its a new feature
                             enginePath: Path.Combine(clonePath, infoTable["path"].Get<string>()),
                             assemblyName: infoTable.TryGetValue("assembly") != null? infoTable["assembly"].Get<string>() : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
@@ -566,7 +566,7 @@ namespace pyRevitLabs.PyRevit {
                         if (engineVer >= 300)
                             runtime = false;
 
-                        engines.Add(new PyRevitEngine(engineVer, runtime, engineDir));
+                        engines.Add(new PyRevitEngine((PyRevitEngineVersion)engineVer, runtime, engineDir));
                     }
                 }
 

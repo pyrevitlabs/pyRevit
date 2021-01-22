@@ -285,8 +285,9 @@ namespace pyRevitCLI {
             var clone = PyRevitClones.GetRegisteredClone(cloneName);
 
             // grab engine version
-            int engineVer = 0;
-            int.TryParse(engineVersion, out engineVer);
+            PyRevitEngineVersion engineVer = PyRevitEngineVersion.Default;
+            if (int.TryParse(engineVersion, out var engVer))
+                engineVer = (PyRevitEngineVersion)engVer;
 
             if (latest) {
                 logger.Debug("Attaching on latest engine...");
@@ -300,7 +301,7 @@ namespace pyRevitCLI {
             }
             else if (dynamoSafe) {
                 logger.Debug("Attaching on dynamo-safe engine");
-                engineVer = PyRevitConsts.ConfigsDynamoCompatibleEnginerVer;
+                engineVer = (PyRevitEngineVersion)PyRevitConsts.ConfigsDynamoCompatibleEnginerVer;
             }
 
             // decide targets revits to attach to

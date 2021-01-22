@@ -26,6 +26,12 @@ namespace PyRevitLoader {
 
         public string Message { get; private set; } = null;
 
+#if DEFAULTENGINE
+        public static string EnginePrefix => "pyRevitLabs.";
+#else
+        public static string EnginePrefix => "";
+#endif
+
         public static string EngineVersion {
             get {
                 var assmVersion = Assembly.GetAssembly(typeof(ScriptExecutor)).GetName().Version;
