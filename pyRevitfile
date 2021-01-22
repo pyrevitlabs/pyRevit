@@ -6,7 +6,7 @@ version = 273
 runtime = true
 path = 'bin\engines\IPY273'
 assembly = 'pyRevitLoader.dll'
-description = 'Provided for backward-compatibility with Dynamo BIM <= 2.1.0'
+description = 'IronPython Engine'
 
 [engines.IPY277]
 kernel = 'IronPython'
@@ -14,7 +14,7 @@ version = 277
 runtime = true
 path = 'bin\engines\IPY277'
 assembly = 'pyRevitLoader.dll'
-description = 'Compatible with RevitPythonShell'
+description = 'IronPython Engine'
 
 [engines.IPY278]
 kernel = 'IronPython'
@@ -22,7 +22,7 @@ version = 278
 runtime = true
 path = 'bin\engines\IPY278'
 assembly = 'pyRevitLoader.dll'
-description = 'Provided for backward-compatibility with Dynamo BIM <= 2.1.0'
+description = 'IronPython Engine'
 
 [engines.IPY279]
 kernel = 'IronPython'
@@ -55,7 +55,7 @@ version = 378
 runtime = false
 path = 'bin\engines\CPY378'
 assembly = 'pyRevitLabs.PythonNet.dll'
-description = 'Alternative command execution engine'
+description = 'CPython Engine'
 
 [engines.CPY385]
 kernel = 'CPython'
@@ -63,7 +63,7 @@ version = 385
 runtime = false
 path = 'bin\engines\CPY385'
 assembly = 'pyRevitLabs.PythonNet.dll'
-description = 'Alternative command execution engine'
+description = 'CPython Engine'
 
 [deployments]
 core = ['bin',
