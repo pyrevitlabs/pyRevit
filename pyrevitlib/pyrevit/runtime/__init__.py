@@ -94,9 +94,12 @@ if not EXEC_PARAMS.doc_mode:
     # - runtime csharp files
     # - runtime engine version
     # - cpython engine version
+    mlogger.debug('Building on IronPython engine: %s', EXEC_PARAMS.engine_ver)
     BASE_TYPES_DIR_HASH = \
         coreutils.get_str_hash(
-            coreutils.calculate_dir_hash(INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER)
+            coreutils.calculate_dir_hash(
+                INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
+            )
             + EXEC_PARAMS.engine_ver
             + str(CPYTHON_ENGINE.Version)
             )[:HASH_CUTOFF_LENGTH]

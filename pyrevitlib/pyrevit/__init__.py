@@ -64,9 +64,8 @@ ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 
 # if loader module is available means pyRevit is being executed by Revit.
 import pyrevit.engine as eng
-if eng.ScriptExecutor:
-    ENGINES_DIR = \
-        op.join(BIN_DIR, 'engines', eng.ScriptExecutor.EngineVersion)
+if eng.EngineVersion != 000:
+    ENGINES_DIR = op.join(BIN_DIR, 'engines', eng.EngineVersion)
 # otherwise it might be under test, or documentation processing.
 # so let's keep the symbols but set to None (fake the symbols)
 else:

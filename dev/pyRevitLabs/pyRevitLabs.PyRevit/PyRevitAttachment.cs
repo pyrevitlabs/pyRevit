@@ -34,7 +34,7 @@ namespace pyRevitLabs.PyRevit {
                     "{0} | Product: \"{1}\" | Engine: {2} | Path: \"{3}\" | Manifest: \"{4}\"",
                     _clone.Name,
                     Product.Name,
-                    engine != null ? engine.Version : 0,
+                    engine != null ? $"{engine.Id} ({engine.Version})" : "?",
                     _clone.ClonePath,
                     Manifest.FilePath
                     );

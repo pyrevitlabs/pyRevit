@@ -291,17 +291,43 @@ namespace pyRevitCLI {
             else if (all("attach")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Attach);
-                else
-                    PyRevitCLICloneCmds.AttachClone(
-                        cloneName: TryGetValue("<clone_name>"),
-                        latest: arguments["latest"].IsTrue,
-                        dynamoSafe: arguments["dynamosafe"].IsTrue,
-                        engineVersion: TryGetValue("<engine_version>"),
-                        revitYear: TryGetValue("<revit_year>"),
-                        installed: arguments["--installed"].IsTrue,
-                        attached: arguments["--attached"].IsTrue,
-                        allUsers: arguments["--allusers"].IsTrue
-                        );
+                else {
+                    // get clone
+                    var clone = PyRevitClones.GetRegisteredClone(TryGetValue("<clone_name>"));
+
+                    // determine version
+                    var engStrVer = TryGetValue("<engine_version>");
+                    PyRevitEngineVersion engineVersion = null;
+                    if (arguments["default"].IsTrue)
+                        engineVersion = PyRevitEngineVersion.Default;
+                    else {
+                        // try parse the engine version as an integer e.g. 277 for 2.7.7
+                        if (int.TryParse(engStrVer, out var engIntVer))
+                            engineVersion = (PyRevitEngineVersion)engIntVer;                        
+                    }
+
+                    if (engineVersion is null) {
+                        // then engine must be an engine id
+                        PyRevitCLICloneCmds.AttachClone(
+                            clone: clone,
+                            engineId: engStrVer,
+                            revitYear: TryGetValue("<revit_year>"),
+                            installed: arguments["--installed"].IsTrue,
+                            attached: arguments["--attached"].IsTrue,
+                            allUsers: arguments["--allusers"].IsTrue
+                            );
+                    }
+                    else {
+                        PyRevitCLICloneCmds.AttachClone(
+                            clone: clone,
+                            engineVersion: engineVersion,
+                            revitYear: TryGetValue("<revit_year>"),
+                            installed: arguments["--installed"].IsTrue,
+                            attached: arguments["--attached"].IsTrue,
+                            allUsers: arguments["--allusers"].IsTrue
+                            );
+                    }
+                }
             }
 
             else if (all("detach")) {

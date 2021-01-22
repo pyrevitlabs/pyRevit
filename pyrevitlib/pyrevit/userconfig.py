@@ -295,7 +295,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def cpython_engine_version(self, version):
         self.core.set_option(
             CONSTS.ConfigsCPythonEngineKey,
-            value=version
+            value=int(version)
         )
 
     @property

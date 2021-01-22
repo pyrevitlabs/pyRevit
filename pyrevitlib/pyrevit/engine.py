@@ -14,8 +14,10 @@ try:
     import PyRevitLoader
     ScriptExecutor = PyRevitLoader.ScriptExecutor
     EnginePrefix = ScriptExecutor.EnginePrefix
+    EngineVersion = ScriptExecutor.EngineVersion
 except ImportError:
     # this means that pyRevit is _not_ being loaded from a pyRevit engine
     # e.g. when importing from RevitPythonShell
     PyRevitLoader = ScriptExecutor = None
     EnginePrefix = ''
+    EngineVersion = 000

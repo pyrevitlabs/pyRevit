@@ -43,31 +43,31 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="IKVM.Reflection">
-      <HintPath>..\..\..\bin\engines\default\IKVM.Reflection.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY2711PR\IKVM.Reflection.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython">
-      <HintPath>..\..\..\bin\engines\default\pyRevitLabs.IronPython.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Modules">
-      <HintPath>..\..\..\bin\engines\default\pyRevitLabs.IronPython.Modules.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.Modules.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.SQLite">
-      <HintPath>..\..\..\bin\engines\default\pyRevitLabs.IronPython.SQLite.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.SQLite.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Wpf">
-      <HintPath>..\..\..\bin\engines\default\pyRevitLabs.IronPython.Wpf.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\..\bin\engines\default\pyRevitLabs.Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Scripting">
-      <HintPath>..\..\..\bin\engines\default\pyRevitLabs.Microsoft.Scripting.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RevitAPI">
@@ -105,6 +105,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 $(TargetPath)
-copy "$(TargetPath)" "$(ProjectDir)..\..\..\bin\engines\default"</PostBuildEvent>
+copy "$(TargetPath)" "$(ProjectDir)..\..\..\bin\engines\IPY2711PR"</PostBuildEvent>
   </PropertyGroup>
 </Project>
