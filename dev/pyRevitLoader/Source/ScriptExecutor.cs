@@ -136,9 +136,15 @@ namespace PyRevitLoader {
         public void AddEmbeddedLib(ScriptEngine engine) {
             // use embedded python lib
             var asm = this.GetType().Assembly;
+#if DEFAULTENGINE
+            var resQuery = from name in asm.GetManifestResourceNames()
+                           where name.ToLowerInvariant().EndsWith("python_default_lib.zip")
+                           select name;
+#else
             var resQuery = from name in asm.GetManifestResourceNames()
                            where name.ToLowerInvariant().EndsWith(string.Format("python_{0}_lib.zip", EngineVersion))
                            select name;
+#endif
             var resName = resQuery.Single();
             var importer = new IronPython.Modules.ResourceMetaPathImporter(asm, resName);
             dynamic sys = IronPython.Hosting.Python.GetSysModule(engine);
