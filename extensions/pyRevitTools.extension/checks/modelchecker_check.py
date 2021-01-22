@@ -334,34 +334,9 @@ def checkModel(doc, output):
         # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
     
     ### View collectors
-    # sheets
-    sheets_id_collector = (
-        DB.FilteredElementCollector(doc)
-        .OfCategory(DB.BuiltInCategory.OST_Sheets)
-        .WhereElementIsNotElementType()
-        .ToElementIds()
-    )
-    sheetCount = len(sheets_id_collector)
-    # print(str(sheetCount)+" Sheets")
 
-    # schedules
-    schedules_id_collector = (
-        DB.FilteredElementCollector(doc)
-        .OfCategory(DB.BuiltInCategory.OST_Schedules)
-        .WhereElementIsNotElementType()
-        .ToElements()
-    )
-    scheduleCount = 0
-    ### scheduleNames = []
-    for schedule in schedules_id_collector:
-        if (
-            schedule.Name[:19] != "<Revision Schedule>"
-            # to support french files
-            or schedule.Name[:28] != "<Nomenclature des révisions>"
-        ):
-            scheduleCount += 1
-    ###        scheduleNames.append((schedule.Name))
-    ### output.print_md("<br />".join(scheduleNames))
+
+    
     # views
     views_id_collector = (
         DB.FilteredElementCollector(doc)
@@ -389,6 +364,16 @@ def checkModel(doc, output):
         except:
             pass
 
+    # sheets
+    sheets_id_collector = (
+        DB.FilteredElementCollector(doc)
+        .OfCategory(DB.BuiltInCategory.OST_Sheets)
+        .WhereElementIsNotElementType()
+        .ToElementIds()
+    )
+    sheetCount = len(sheets_id_collector)
+    # print(str(sheetCount)+" Sheets")
+
     sheets_collector = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_Sheets)
@@ -408,6 +393,36 @@ def checkModel(doc, output):
         except:
             pass
     viewsNotOnSheet = viewCount - len(viewsOnSheet)
+
+    # view Templates
+    views = DB.FilteredElementCollector(doc).OfClass(DB.View)
+    appliedTemplates = [v.ViewTemplateId for v in views]
+    viewTemplates = [v for v in views if v.IsTemplate == True]
+    unusedViewTemplates = []
+    for v in viewTemplates:
+        if v.Id not in appliedTemplates:
+            unusedViewTemplates.append(v.Name)
+    unusedViewTemplatesCount = (len(unusedViewTemplates))
+
+
+    # schedules
+    schedules_id_collector = (
+        DB.FilteredElementCollector(doc)
+        .OfCategory(DB.BuiltInCategory.OST_Schedules)
+        .WhereElementIsNotElementType()
+        .ToElements()
+    )
+    scheduleCount = 0
+    ### scheduleNames = []
+    for schedule in schedules_id_collector:
+        if (
+            schedule.Name[:19] != "<Revision Schedule>"
+            # to support french files
+            or schedule.Name[:28] != "<Nomenclature des révisions>"
+        ):
+            scheduleCount += 1
+    ###        scheduleNames.append((schedule.Name))
+    ### output.print_md("<br />".join(scheduleNames))
 
     # schedules not on sheets
     schedulesOnSheet = []
@@ -442,7 +457,6 @@ def checkModel(doc, output):
                     # print schedule.Id
                     schedulesOnSheet.append(schedName)
     scheduleNotOnSheet = scheduleCount - len(schedulesOnSheet)
-
 
     # warnings
     allWarnings_collector = doc.GetWarnings()
@@ -650,6 +664,9 @@ def checkModel(doc, output):
     viewTres = 500
     viewNotOnSheetTres = viewCount * 0.2
     copiedViewTres = viewCount * 0.2
+    # View Templates
+    viewTemplatesTres = 500
+    unusedViewTemplateTres = len(viewTemplates) * 0.2
     # Sheets
     sheetsTres = 500
     # Schedules
@@ -701,6 +718,7 @@ def checkModel(doc, output):
 
     ## RVT Links dashboard section
     # print RVT links names
+    output.print_md("---")
     output.print_md("# RVT Links")
     if not len(rvtlinks_id_collector):
         output.print_md("No links")
@@ -718,6 +736,7 @@ def checkModel(doc, output):
         )
         dashboardLeftMaker(htmlRowRVTlinks)
 
+    output.print_md("---")
     ## Views dashboard section
     # print Views section header
     output.print_md("# Views")
@@ -733,6 +752,18 @@ def checkModel(doc, output):
             "Views<br>not on Sheet",
             viewNotOnSheetTres
         )
+    )
+    dashboardLeftMaker(htmlRowViews)
+
+    ## ViewTemplates dashboard section
+    # print ViewTemplates section header
+    output.print_md("# View Templates")
+
+    # Make row
+    htmlRowViews = (
+        dashboardRectMaker(len(viewTemplates), "View Templates", viewTemplatesTres)
+        + dashboardRectMaker(unusedViewTemplatesCount, "Unused View Templates", unusedViewTemplateTres)
+
     )
     dashboardLeftMaker(htmlRowViews)
 
@@ -855,6 +886,48 @@ def checkModel(doc, output):
     )
     dashboardLeftMaker(htmlRowLoadableFamilies)
 
+    if inPlaceFamilyCount != 0:
+            # INPLACE CATEGORY GRAPH
+        fCatSet = []
+        # sorting results in chart legend
+        graphFCatHeadings.sort()
+        for i in graphFCatHeadings:
+            count = graphFCatData.count(i)
+            fCatSet.append(count)
+
+        graphFCatData = [x.encode("utf8") for x in graphFCatData]
+        graphFCatHeadings = [x.encode("utf8") for x in graphFCatHeadings]
+
+        # categories OUTPUT
+        chartFCategories = output.make_doughnut_chart()
+        chartFCategories.options.title = {
+            "display": True,
+            "text": "InPlace Family Count by Category",
+            "fontSize": 25,
+            "fontColor": "#000",
+            "fontStyle": "bold",
+            "position": "left"
+        }
+        chartFCategories.data.labels = graphFCatHeadings
+        set_a = chartFCategories.data.new_dataset("Not Standard")
+        set_a.data = fCatSet
+
+        set_a.backgroundColor = COLORS
+        # chartFCategories.randomize_colors()
+        # scaling graph according to categories count - size of graph is
+        # measured with legend which can be quite complex
+        catFCount = len(graphFCatHeadings)
+        if catFCount < 15:
+            chartFCategories.set_height(100)
+        elif catFCount < 30:
+            chartFCategories.set_height(160)
+        else:
+            chartFCategories.set_height(200)
+
+        chartFCategories.draw()
+    else:
+        pass
+
     ## Text Notes dashboard section
     # print Text Notes section header
     output.print_md("# Text Notes")
@@ -932,6 +1005,13 @@ def checkModel(doc, output):
     )
     dashboardLeftMaker(htmlRowRefPlanes)
 
+    ## Phases dashboard section
+    # print Phases section header
+    output.print_md("# Phases\n")
+    rvtlinkdocsName.insert(0,printedName)
+    filePhases = rvtlinkdocsName,[','.join(i) for i in phase]
+    output.print_table(zip(*filePhases), columns=["File Name","Phases"], formats=None, title='', last_line_style='')
+
     ## Elements count dashboard section
     # print Elements count section header
     output.print_md("# Elements count")
@@ -942,14 +1022,6 @@ def checkModel(doc, output):
         )
     )
     dashboardLeftMaker(htmlRowElementsCount)
-
-    ## Phases dashboard section
-    # print Phases section header
-    output.print_md("# Phases\n")
-    rvtlinkdocsName.insert(0,printedName)
-    filePhases = rvtlinkdocsName,[','.join(i) for i in phase]
-    output.print_table(zip(*filePhases), columns=["File Name","Phases"], formats=None, title='', last_line_style='')
-
 
     # divider
     print("\n\n\n\n")
@@ -1097,49 +1169,6 @@ def checkModel(doc, output):
             chartWorksets.set_height(200)
 
         chartWorksets.draw()
-
-    # divider
-    print("\n\n\n\n")
-
-    # INPLACE CATEGORY GRAPH
-    fCatSet = []
-    # sorting results in chart legend
-    graphFCatHeadings.sort()
-    for i in graphFCatHeadings:
-        count = graphFCatData.count(i)
-        fCatSet.append(count)
-
-    graphFCatData = [x.encode("utf8") for x in graphFCatData]
-    graphFCatHeadings = [x.encode("utf8") for x in graphFCatHeadings]
-
-    # categories OUTPUT
-    chartFCategories = output.make_doughnut_chart()
-    chartFCategories.options.title = {
-        "display": True,
-        "text": "InPlace Family Count by Category",
-        "fontSize": 25,
-        "fontColor": "#000",
-        "fontStyle": "bold",
-    }
-    chartFCategories.data.labels = graphFCatHeadings
-    set_a = chartFCategories.data.new_dataset("Not Standard")
-    set_a.data = fCatSet
-
-    set_a.backgroundColor = COLORS
-    # chartFCategories.randomize_colors()
-    # scaling graph according to categories count - size of graph is
-    # measured with legend which can be quite complex
-    catFCount = len(graphFCatHeadings)
-    if catFCount < 15:
-        chartFCategories.set_height(100)
-    elif catFCount < 30:
-        chartFCategories.set_height(160)
-    else:
-        chartFCategories.set_height(200)
-
-    chartFCategories.draw()
-
-
 
 class ModelChecker(PreflightTestCase):
     """
