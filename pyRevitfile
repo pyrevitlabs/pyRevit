@@ -45,6 +45,15 @@ assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'Latest Stable IronPython Engine'
 
+[engines.DEFAULT]
+kernel = 'IronPython'
+version = 2711
+runtime = true
+path = 'bin\engines\default'
+assembly = 'pyRevitLoader.dll'
+compatproducts = []
+description = 'Custom pyRevit IronPython Engine (v2.7.11)'
+
 [engines.CPY378]
 kernel = 'CPython'
 version = 378
