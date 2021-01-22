@@ -17,7 +17,7 @@ DEVPATH = op.join(ROOT, "dev")
 LABS = op.join(DEVPATH, "pyRevitLabs/pyRevitLabs.sln")
 LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
 CPYTHONRUNTIME = op.join(
-    DEVPATH, "modules/pyRevitLabs.Python.Net/src/runtime/Python.Runtime.csproj"
+    DEVPATH, "modules/pyRevitLabs.Python.Net.sln"
 )
 
 # cli autocomplete files
