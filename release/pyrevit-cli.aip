@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="15.2" version="17.3" Modules="professional" RootPath="." Language="en" Id="{1EA8C788-EF81-496E-9716-ABCD117C40CC}" Backup="false">
+<DOCUMENT Type="Advanced Installer" CreateVersion="15.2" version="17.4.1" Modules="professional" RootPath="." Language="en" Id="{1EA8C788-EF81-496E-9716-ABCD117C40CC}" Backup="false">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
     <ROW Name="SkipBuildResCheck" Value="true"/>
   </COMPONENT>
