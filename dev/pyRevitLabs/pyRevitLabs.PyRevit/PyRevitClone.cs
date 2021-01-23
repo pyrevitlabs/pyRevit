@@ -31,7 +31,7 @@ namespace pyRevitLabs.PyRevit {
             "git", "pyrevit",
             "blog", "docs", "source", "youtube", "support", "env", "clone", "clones",
             "add", "forget", "rename", "delete", "branch", "commit", "version",
-            "attach", "attatched", "latest", "dynamosafe", "detached",
+            "attach", "attatched", "detached",
             "extend", "extensions", "search", "install", "uninstall", "update", "paths", "revits",
             "config", "configs", "logs", "none", "verbose", "debug", "allowremotedll", "checkupdates",
             "autoupdate", "rocketmode", "filelogging", "loadbeta", "telemetry", "enable", "disable",
