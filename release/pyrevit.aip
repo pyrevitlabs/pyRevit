@@ -390,7 +390,6 @@
     <ROW Directory="pyRevit.tab_2_Dir" Directory_Parent="pyRevitTools.extension_Dir" DefaultDir="pyRevit.tab"/>
     <ROW Directory="pyRevit.tab_Dir" Directory_Parent="pyRevitCore.extension_Dir" DefaultDir="pyRevit.tab"/>
     <ROW Directory="pyRevitCore.extension_Dir" Directory_Parent="extensions_Dir" DefaultDir="PYREVI~1.EXT|pyRevitCore.extension"/>
-    <ROW Directory="pyRevitRun.run_Dir" Directory_Parent="extensions_Dir" DefaultDir="PYREVI~1.RUN|pyRevitRun.run"/>
     <ROW Directory="pyRevitTags.extension_Dir" Directory_Parent="extensions_Dir" DefaultDir="PYREVI~2.EXT|pyRevitTags.extension"/>
     <ROW Directory="pyRevitTools.extension_Dir" Directory_Parent="extensions_Dir" DefaultDir="PYREVI~3.EXT|pyRevitTools.extension"/>
     <ROW Directory="pyRevitTutor.extension_Dir" Directory_Parent="extensions_Dir" DefaultDir="PYREVI~4.EXT|pyRevitTutor.extension"/>
@@ -677,7 +676,6 @@
     <ROW Component="entries.py" ComponentId="{B64E2CBF-7049-4EFC-A361-7D4D0A6DB18C}" Directory_="rjm_Dir" Attributes="0" KeyPath="entries.py" Type="0"/>
     <ROW Component="exceptions.py" ComponentId="{0A5C40F0-9115-4C39-9D9A-69FD288FFAFB}" Directory_="pytz_Dir" Attributes="0" KeyPath="exceptions.py_10" Type="0"/>
     <ROW Component="extension.json" ComponentId="{4D4F11F7-BD50-463A-815A-07869178C441}" Directory_="pyRevitTags.extension_Dir" Attributes="0" KeyPath="extension.json" Type="0"/>
-    <ROW Component="extension.json_1" ComponentId="{2FE45874-D665-4CBD-A8C5-4363829B2BCE}" Directory_="pyRevitRun.run_Dir" Attributes="0" KeyPath="extension.json_1" Type="0"/>
     <ROW Component="extension.json_3" ComponentId="{B9ADBAC9-3EC5-474F-B930-0896A35A48F9}" Directory_="pyRevitTools.extension_Dir" Attributes="0" KeyPath="extension.json_3" Type="0"/>
     <ROW Component="extension.json_4" ComponentId="{6D54E0D6-2C34-426F-8BFF-449E3E1B4D80}" Directory_="pyRevitTutor.extension_Dir" Attributes="0" KeyPath="extension.json_4" Type="0"/>
     <ROW Component="extensions.json" ComponentId="{582A5A66-CEA9-4ABC-971A-F3F0952524F6}" Directory_="extensions_Dir" Attributes="0" KeyPath="extensions.json" Type="0"/>
@@ -2403,8 +2401,6 @@
     <ROW File="pyRevitLabs.TargetApps.AutoCAD.dll" Component_="pyRevitLabs.TargetApps.AutoCAD.dll" FileName="PYREVI~9.DLL|pyRevitLabs.TargetApps.AutoCAD.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.AutoCAD.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.TargetApps.Navisworks.dll" Component_="pyRevitLabs.TargetApps.Navisworks.dll" FileName="PYREV~10.DLL|pyRevitLabs.TargetApps.Navisworks.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Navisworks.dll" SelfReg="false"/>
     <ROW File="pyrevit_cli.ico" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~2.ICO|pyrevit_cli.ico" Attributes="0" SourcePath="..\bin\pyrevit_cli.ico" SelfReg="false"/>
-    <ROW File="extension.json_1" Component_="extension.json_1" FileName="EXTENS~1.JSO|extension.json" Attributes="0" SourcePath="..\extensions\pyRevitRun.run\extension.json" SelfReg="false"/>
-    <ROW File="make3dview_command.py" Component_="extension.json_1" FileName="MAKE3D~1.PY|make3dview_command.py" Attributes="0" SourcePath="..\extensions\pyRevitRun.run\make3dview_command.py" SelfReg="false"/>
     <ROW File="pyRevitLabs.NLog.dll" Component_="pyRevitLabs.NLog.dll" FileName="PYREV~11.DLL|pyRevitLabs.NLog.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.NLog.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.PyRevit.dll" Component_="pyRevitLabs.PyRevit.dll" FileName="PYREV~12.DLL|pyRevitLabs.PyRevit.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.PyRevit.dll" SelfReg="false"/>
     <ROW File="pyrevit_outputwindow.png" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.PNG|pyrevit_outputwindow.png" Attributes="0" SourcePath="..\bin\pyrevit_outputwindow.png" SelfReg="false"/>
@@ -3514,7 +3510,6 @@
     <ROW Feature_="MainFeature" Component_="entries.py"/>
     <ROW Feature_="MainFeature" Component_="exceptions.py"/>
     <ROW Feature_="MainFeature" Component_="extension.json"/>
-    <ROW Feature_="MainFeature" Component_="extension.json_1"/>
     <ROW Feature_="MainFeature" Component_="extension.json_3"/>
     <ROW Feature_="MainFeature" Component_="extension.json_4"/>
     <ROW Feature_="MainFeature" Component_="extensions.json"/>
@@ -3983,6 +3978,5 @@
     <ROW Directory_="pyrevitlib_Dir" SourcePath="..\pyrevitlib" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store" ExcludeFlags="6" FileAddOptions="4"/>
     <ROW Directory_="sitepackages_Dir" SourcePath="..\site-packages" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store" ExcludeFlags="6" FileAddOptions="4"/>
     <ROW Directory_="pyRevitTags.extension_Dir" SourcePath="..\extensions\pyRevitTags.extension" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store" ExcludeFlags="6" FileAddOptions="4"/>
-    <ROW Directory_="pyRevitRun.run_Dir" SourcePath="..\extensions\pyRevitRun.run" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store" ExcludeFlags="6" FileAddOptions="4"/>
   </COMPONENT>
 </DOCUMENT>
