@@ -123,7 +123,7 @@ namespace pyRevitLabs.Common.Extensions {
         public static bool IsLocalPath(this string path) {
             Uri uriResult;
             var validPath = Uri.TryCreate(path, UriKind.Absolute, out uriResult);
-            return validPath && uriResult.HostNameType == UriHostNameType.Unknown;
+            return validPath && (uriResult.HostNameType <= UriHostNameType.Basic);
         }
 
         public static string NormalizeAsPath(this string path) {
