@@ -124,8 +124,6 @@ HIGHLIGHT_SCRIPT_PARAM = '__highlight__'
 CLEAN_ENGINE_SCRIPT_PARAM = '__cleanengine__'
 FULLFRAME_ENGINE_PARAM = '__fullframeengine__'
 PERSISTENT_ENGINE_PARAM = '__persistentengine__'
-LINK_BUTTON_ASSEMBLY = '__assembly__'
-LINK_BUTTON_COMMAND_CLASS = '__commandclass__'
 
 # -----------------------------------------------------------------------------
 # supported bundles
@@ -136,8 +134,6 @@ INVOKE_BUTTON_POSTFIX = '.invokebutton'
 PUSH_BUTTON_POSTFIX = '.pushbutton'
 SMART_BUTTON_POSTFIX = '.smartbutton'
 PULLDOWN_BUTTON_POSTFIX = '.pulldown'
-STACK2_BUTTON_POSTFIX = '.stack2'
-STACK3_BUTTON_POSTFIX = '.stack3'
 STACK_BUTTON_POSTFIX = '.stack'
 SPLIT_BUTTON_POSTFIX = '.splitbutton'
 SPLITPUSH_BUTTON_POSTFIX = '.splitpushbutton'
@@ -156,7 +152,6 @@ COMP_CHECKS_DIR_NAME = 'checks'
 UNIQUE_ID_SEPARATOR = '-'
 
 # bundle layout elements
-DEFAULT_LAYOUT_FILE_NAME = '_layout'
 SEPARATOR_IDENTIFIER = '---'
 SLIDEOUT_IDENTIFIER = '>>>'
 
@@ -217,4 +212,4 @@ HELP_FILE_PATTERN = r'.*help\..+'
 # -----------------------------------------------------------------------------
 # Command bundle defaults
 CTX_SELETION = 'selection'
-CTX_ZERODOC = ['zero-doc', 'zerodoc']
+CTX_ZERODOC = 'zero-doc'

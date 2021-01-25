@@ -119,19 +119,9 @@ class ExtensionPackage:
             safe_strtype(info_dict.get('builtin',
                                        self.builtin)).lower() == 'true'
 
-        # show deprecation warning on author-url
-        if 'enable' in info_dict:
-            self.default_enabled = safe_strtype(
-                info_dict.get('enable', self.default_enabled)
-                ).lower() == 'true'
-            mlogger.deprecate(
-                "Naming of \"enable\" property in extension.json files "
-                "has changed. Please revise your extension.json files to "
-                "use \"default_enabled\" (with underscore) instead. | %s", self)
-        else:
-            self.default_enabled = safe_strtype(
-                info_dict.get('default_enabled', self.default_enabled)
-                ).lower() == 'true'
+        self.default_enabled = safe_strtype(
+            info_dict.get('default_enabled', self.default_enabled)
+            ).lower() == 'true'
 
         self.name = info_dict.get('name', self.name)
         self.description = info_dict.get('description', self.description)
@@ -165,17 +155,8 @@ class ExtensionPackage:
         self.image = info_dict.get('image', self.image)
         self.author = info_dict.get('author', self.author)
 
-        # show deprecation warning on author-url
-        if 'author-url' in info_dict:
-            self.author_profile = info_dict.get('author-url',
-                                                self.author_profile)
-            mlogger.deprecate(
-                "Naming of \"author-url\" property in extension.json files "
-                "has changed. Please revise your extension.json files to "
-                "use \"author_profile\" (with underscore) instead. | %s", self)
-        else:
-            self.author_profile = info_dict.get('author_profile',
-                                                self.author_profile)
+        self.author_profile = info_dict.get('author_profile',
+                                            self.author_profile)
         # update list dependencies
         depends = info_dict.get('dependencies', [])
         if depends:

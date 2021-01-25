@@ -66,18 +66,6 @@ class RevitWrapper(types.ModuleType):
         return HOST_APP.docs
 
     @property
-    def activeview(self):
-        mlogger.deprecate(
-            "revit.active_view is deprecated. use revit.active_view instead.")
-        return HOST_APP.active_view
-
-    @activeview.setter
-    def activeview(self, value):
-        mlogger.deprecate(
-            "revit.active_view is deprecated. use revit.active_view instead.")
-        HOST_APP.active_view = value
-
-    @property
     def active_view(self):
         return HOST_APP.active_view
 
@@ -88,12 +76,6 @@ class RevitWrapper(types.ModuleType):
     @property
     def servers(self):
         return HOST_APP.available_servers
-
-    @staticmethod
-    def get_project_info():
-        mlogger.deprecate('Method revit.get_project_info() is deprecated. '
-                          'Use revit.query.get_project_info() instead.')
-        return query.get_project_info()
 
     @staticmethod
     def open_doc(doc_path):
