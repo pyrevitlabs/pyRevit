@@ -304,17 +304,18 @@ def checkModel(doc, output):
     rvtlinks_id_collector = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
-        .WhereElementIsNotElementType()
-        .ToElementIds()
+        .WhereElementIsElementType()
+        .ToElements()
     )
     rvtlinkdocs, rvtlinkdocsName = [], []
-    if not len(rvtlinks_id_collector):
-        pass
-    else:
+    
+    if len(rvtlinks_id_collector):
         revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
         for i in revitLinksdoc:
-            rvtlinkdocs.append(i.GetLinkDocument())
-            rvtlinkdocsName.append(i.GetLinkDocument().Title)
+            if i.GetLinkDocument():
+                rvtlinkdocsName.append(i.GetLinkDocument().Title)
+            else:
+                rvtlinkdocsName.append("Document not loaded")
         rvtlinksCount = len(rvtlinks_id_collector)
         # output.print_md(str(rvtlinksCount) +" Revit Links")
 
@@ -332,6 +333,8 @@ def checkModel(doc, output):
             rvtlinksNames.append(x.Name)
         rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
         # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
+    else:
+        pass
     
     ### View collectors
 
@@ -798,33 +801,36 @@ def checkModel(doc, output):
     # print Warnings section header
     output.print_md("# Warnings")
     # Make row
-    htmlRowWarnings = (
-        dashboardRectMaker(
-            allWarningsCount, "Warnings", warningsTres
+    if allWarningsCount != 0:
+        htmlRowWarnings = (
+            dashboardRectMaker(
+                allWarningsCount, "Warnings", warningsTres
+            )
+            + dashboardRectMaker(
+                criticalWarningCount,
+                "Critical <br>Warnings",
+                criticalWarningsTres
+            )
         )
-        + dashboardRectMaker(
-            criticalWarningCount,
-            "Critical <br>Warnings",
-            criticalWarningsTres
-        )
-    )
-    dashboardLeftMaker(htmlRowWarnings)
-    # warnings count per type doughnut
-    chartWarnings = output.make_doughnut_chart()
-    chartWarnings.options.title = {
-        "display": True,
-        "text": "Warning Count by Type",
-        "fontSize": 25,
-        "fontColor": "#000",
-        "fontStyle": "bold",
-        "position": "left"
-    }
-    chartWarnings.options.legend = {"position": "top", "fullWidth": False}
-    chartWarnings.data.labels = [x.encode('UTF-8') for x in warnDescriptionHeadings]
-    set_w = chartWarnings.data.new_dataset("Not Standard")
-    set_w.data = warnSet
-    set_w.backgroundColor = COLORS
-    chartWarnings.draw()
+        dashboardLeftMaker(htmlRowWarnings)
+        # warnings count per type doughnut
+        chartWarnings = output.make_doughnut_chart()
+        chartWarnings.options.title = {
+            "display": True,
+            "text": "Warning Count by Type",
+            "fontSize": 25,
+            "fontColor": "#000",
+            "fontStyle": "bold",
+            "position": "left"
+        }
+        chartWarnings.options.legend = {"position": "top", "fullWidth": False}
+        chartWarnings.data.labels = [x.encode('UTF-8') for x in warnDescriptionHeadings]
+        set_w = chartWarnings.data.new_dataset("Not Standard")
+        set_w.data = warnSet
+        set_w.backgroundColor = COLORS
+        chartWarnings.draw()
+    else:
+        output.print_md("No warnings, good job!")
 
     ## Materials dashboard section
     # print Materials section header
