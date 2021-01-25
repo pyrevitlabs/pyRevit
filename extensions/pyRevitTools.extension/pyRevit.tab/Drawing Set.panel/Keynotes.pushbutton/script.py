@@ -341,7 +341,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 revit.query.get_external_keynote_file(doc=revit.doc)
             self._kfile_handler = 'unknown'
         # mak sure ADC is available
-        if self._kfile_handler == 'unknown':
+        if self._kfile_ext and self._kfile_handler == 'unknown':
             if adc.is_available():
                 self._kfile_handler = 'adc'
                 # check if keynote file is being synced by ADC
