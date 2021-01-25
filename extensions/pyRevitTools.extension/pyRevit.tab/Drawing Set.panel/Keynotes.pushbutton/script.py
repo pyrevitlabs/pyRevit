@@ -336,6 +336,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # verify keynote file existence
         self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
         self._kfile_handler = None
+        self._kfile_ext = None
         if not self._kfile:
             self._kfile_ext = \
                 revit.query.get_external_keynote_file(doc=revit.doc)
