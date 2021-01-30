@@ -336,7 +336,8 @@ namespace pyRevitCLI {
                 else
                     PyRevitCLICloneCmds.DetachClone(
                         revitYear: TryGetValue("<revit_year>"),
-                        all: arguments["--all"].IsTrue
+                        all: arguments["--all"].IsTrue,
+                        currentAndAllUsers: true
                         );
             }
 

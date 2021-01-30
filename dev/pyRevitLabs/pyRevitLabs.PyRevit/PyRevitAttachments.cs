@@ -69,16 +69,16 @@ namespace pyRevitLabs.PyRevit {
 
         // detach pyrevit attachment
         // @handled @logs
-        public static void Detach(PyRevitAttachment attachment) {
+        public static void Detach(PyRevitAttachment attachment, bool currentAndAllUsers = false) {
             logger.Debug("Detaching from Revit {0}", attachment.Product.ProductYear);
-            Detach(attachment.Product.ProductYear);
+            Detach(attachment.Product.ProductYear, currentAndAllUsers);
         }
 
         // detach from all attached revits
         // @handled @logs
-        public static void DetachAll() {
+        public static void DetachAll(bool currentAndAllUsers = false) {
             foreach (var attachment in GetAttachments()) {
-                Detach(attachment);
+                Detach(attachment, currentAndAllUsers);
             }
         }
 

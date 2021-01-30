@@ -302,7 +302,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        DetachClone(string revitYear, bool all) {
+        DetachClone(string revitYear, bool all, bool currentAndAllUsers = false) {
             if (revitYear != null) {
                 int revitYearNumber = 0;
                 if (int.TryParse(revitYear, out revitYearNumber))
@@ -311,7 +311,7 @@ namespace pyRevitCLI {
                     throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
             }
             else if (all)
-                PyRevitAttachments.DetachAll();
+                PyRevitAttachments.DetachAll(currentAndAllUsers);
         }
 
         internal static void
