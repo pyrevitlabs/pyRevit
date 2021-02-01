@@ -333,112 +333,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name, reset_config=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        # verify keynote file existence
-        self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
+        # setup keynote ref attrs
+        self._kfile = None
         self._kfile_handler = None
         self._kfile_ext = None
-        if not self._kfile:
-            self._kfile_ext = \
-                revit.query.get_external_keynote_file(doc=revit.doc)
-            self._kfile_handler = 'unknown'
-        # mak sure ADC is available
-        if self._kfile_ext and self._kfile_handler == 'unknown':
-            if adc.is_available():
-                self._kfile_handler = 'adc'
-                # check if keynote file is being synced by ADC
-                # use the drive:// path for adc communications
-                # adc module takes both remote or local paths,
-                # but remote is faster lookup
-                local_kfile = adc.get_local_path(self._kfile_ext)
-                if local_kfile:
-                    # check is someone else has locked the file
-                    locked, owner = adc.is_locked(self._kfile_ext)
-                    if locked:
-                        forms.alert(
-                            "Keynote file is being modified and locked by "
-                            "{}. Please try again later".format(owner),
-                            exitscript=True
-                            )
-                    # force sync to get the latest contents
-                    adc.sync_file(self._kfile_ext)
-                    adc.lock_file(self._kfile_ext)
-                    # now that adc communication is done,
-                    # replace with local path
-                    self._kfile = local_kfile
-                    self.Title += ' (BIM360)'
-                else:
-                    forms.alert(
-                        "Can not get keynote file from {}".format(adc.ADC_NAME),
-                        exitscript=True
-                        )
-            else:
-                forms.alert(
-                    "This model is using a keynote file that seems to be "
-                    "managed by {long} ({short}). But {short} is not "
-                    "running, or is not installed. Please install/run the "
-                    "{short} and open the keynote manager again".format(
-                        long=adc.ADC_NAME, short=adc.ADC_SHORTNAME
-                        ),
-                    exitscript=True
-                    )
 
-        # byt this point we must have a local path to the keynote file
-        if not self._kfile or not op.exists(self._kfile):
-            self._kfile = None
-            forms.alert("Keynote file is not accessible. "
-                        "Please select a keynote file.")
-            self._change_kfile()
-
-        # if a keynote file is still not set, return
-        if not self._kfile:
-            raise Exception('Keynote file is not setup.')
-
-        # if a keynote file is still not set, return
-        if not os.access(self._kfile, os.W_OK):
-            raise Exception('Keynote file is read-only.')
-
-        self._conn = None
-        try:
-            self._conn = kdb.connect(self._kfile)
-        except System.TimeoutException as toutex:
-            forms.alert(toutex.Message,
-                        expanded="{}::__init__()".format(
-                            self.__class__.__name__),
-                        exitscript=True)
-        except Exception as ex:
-            logger.debug('Connection failed | %s' % ex)
-            res = forms.alert(
-                "Existing keynote file needs to be converted to "
-                "a format usable by this tool. The resulting keynote "
-                "file is still readble by Revit and could be shared "
-                "with other projects. Users should NOT be making changes to "
-                "the existing keynote file during the conversion process.\n"
-                "Are you sure you want to convert?",
-                options=["Convert",
-                         "Select a different keynote file",
-                         "Give me more info"])
-            if res:
-                if res == "Convert":
-                    try:
-                        self._convert_existing()
-                        forms.alert("Conversion completed!")
-                        if not self._conn:
-                            forms.alert(
-                                "Launch the tool again to manage keynotes.",
-                                exitscript=True
-                                )
-                    except Exception as convex:
-                        logger.debug('Legacy conversion failed | %s' % convex)
-                        forms.alert("Conversion failed! %s" % convex,
-                                    exitscript=True)
-                elif res == "Select a different keynote file":
-                    self._change_kfile()
-                elif res == "Give me more info":
-                    script.open_url(__helpurl__) #pylint: disable=undefined-variable
-                    script.exit()
-            else:
-                forms.alert("Keynote file is not yet converted.",
-                            exitscript=True)
+        # detemine the keyntoe file. Sets 
+        self._determine_kfile()
+        self._connect_kfile()
 
         self._cache = []
         self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
@@ -652,6 +554,129 @@ class KeynoteManagerWindow(forms.WPFWindow):
         else:
             self.search_term = ""
 
+    def _determine_kfile(self):
+        # verify keynote file existence
+        self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
+        self._kfile_handler = None
+        self._kfile_ext = None
+        if not self._kfile:
+            self._kfile_ext = \
+                revit.query.get_external_keynote_file(doc=revit.doc)
+            self._kfile_handler = 'unknown'
+        # mak sure ADC is available
+        if self._kfile_ext and self._kfile_handler == 'unknown':
+            if adc.is_available():
+                self._kfile_handler = 'adc'
+                # check if keynote file is being synced by ADC
+                # use the drive:// path for adc communications
+                # adc module takes both remote or local paths,
+                # but remote is faster lookup
+                local_kfile = adc.get_local_path(self._kfile_ext)
+                if local_kfile:
+                    # check is someone else has locked the file
+                    locked, owner = adc.is_locked(self._kfile_ext)
+                    if locked:
+                        forms.alert(
+                            "Keynote file is being modified and locked by "
+                            "{}. Please try again later".format(owner),
+                            exitscript=True
+                            )
+                    # force sync to get the latest contents
+                    adc.sync_file(self._kfile_ext)
+                    adc.lock_file(self._kfile_ext)
+                    # now that adc communication is done,
+                    # replace with local path
+                    self._kfile = local_kfile
+                    self.Title += ' (BIM360)'   #pylint: disable=no-member
+                else:
+                    forms.alert(
+                        "Can not get keynote file from {}".format(adc.ADC_NAME),
+                        exitscript=True
+                        )
+            else:
+                forms.alert(
+                    "This model is using a keynote file that seems to be "
+                    "managed by {long} ({short}). But {short} is not "
+                    "running, or is not installed. Please install/run the "
+                    "{short} and open the keynote manager again".format(
+                        long=adc.ADC_NAME, short=adc.ADC_SHORTNAME
+                        ),
+                    exitscript=True
+                    )
+
+    def _change_kfile(self):
+        kfile = forms.pick_file('txt')
+        if kfile:
+            logger.debug('Setting keynote file: %s' % kfile)
+            try:
+                with revit.Transaction("Set Keynote File"):
+                    revit.update.set_keynote_file(kfile, doc=revit.doc)
+            except Exception as skex:
+                forms.alert(str(skex),
+                            expanded="{}::_change_kfile() [transaction]".format(
+                                self.__class__.__name__))
+
+    def _connect_kfile(self):
+        # by this point we must have a local path to the keynote file
+        if not self._kfile or not op.exists(self._kfile):
+            self._kfile = None
+            forms.alert("Keynote file is not accessible. "
+                        "Please select a keynote file.")
+            self._change_kfile()
+            self._determine_kfile()
+
+        # if a keynote file is still not set, return
+        if not self._kfile:
+            raise Exception('Keynote file is not setup.')
+
+        # if a keynote file is still not set, return
+        if not os.access(self._kfile, os.W_OK):
+            raise Exception('Keynote file is read-only.')
+
+        self._conn = None
+        try:
+            self._conn = kdb.connect(self._kfile)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message,
+                        expanded="{}::__init__()".format(
+                            self.__class__.__name__),
+                        exitscript=True)
+        except Exception as ex:
+            logger.debug('Connection failed | %s' % ex)
+            res = forms.alert(
+                "Existing keynote file needs to be converted to "
+                "a format usable by this tool. The resulting keynote "
+                "file is still readble by Revit and could be shared "
+                "with other projects. Users should NOT be making changes to "
+                "the existing keynote file during the conversion process.\n"
+                "Are you sure you want to convert?",
+                options=["Convert",
+                         "Select a different keynote file",
+                         "Give me more info"])
+            if res:
+                if res == "Convert":
+                    try:
+                        self._convert_existing()
+                        forms.alert("Conversion completed!")
+                        if not self._conn:
+                            forms.alert(
+                                "Launch the tool again to manage keynotes.",
+                                exitscript=True
+                                )
+                    except Exception as convex:
+                        logger.debug('Legacy conversion failed | %s' % convex)
+                        forms.alert("Conversion failed! %s" % convex,
+                                    exitscript=True)
+                elif res == "Select a different keynote file":
+                    self._change_kfile()
+                    self._determine_kfile()
+                elif res == "Give me more info":
+                    script.open_url(__helpurl__) #pylint: disable=undefined-variable
+                    script.exit()
+            else:
+                forms.alert("Keynote file is not yet converted.",
+                            exitscript=True)
+
     def _convert_existing(self):
         # make a copy of exsing
         temp_kfile = op.join(op.dirname(self._kfile),
@@ -666,32 +691,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         expanded="{}::_convert_existing()".format(
                             self.__class__.__name__),
                         exitscript=True)
-
-    def _change_kfile(self):
-        kfile = forms.pick_file('txt')
-        if kfile:
-            logger.debug('Setting keynote file: %s' % kfile)
-            try:
-                with revit.Transaction("Set Keynote File"):
-                    revit.update.set_keynote_file(kfile, doc=revit.doc)
-                self._kfile = revit.query.get_keynote_file(doc=revit.doc)
-
-                # attempt at opening the selected file.
-                try:
-                    self._conn = kdb.connect(self._kfile)
-                except Exception as ckf_ex:
-                    forms.alert(
-                        "Error opening seleced keynote file.",
-                        sub_msg=str(ckf_ex),
-                        expanded="{}::_change_kfile() [kdb.connect]".format(
-                            self.__class__.__name__)
-                    )
-
-                return self._kfile
-            except Exception as skex:
-                forms.alert(str(skex),
-                            expanded="{}::_change_kfile() [transaction]".format(
-                                self.__class__.__name__))
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -1122,10 +1121,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         forms.alert("Not yet implemented. Coming soon.")
 
     def change_keynote_file(self, sender, args):
-        if self._change_kfile():
-            # make sure to relaod on close
-            self._needs_update = True
-            self.Close()
+        self._change_kfile()
+        self._determine_kfile()
+        self._connect_kfile()
+        # make sure to reload on close
+        self._needs_update = True
+        self.Close()
 
     def show_keynote_file(self, sender, args):
         coreutils.show_entry_in_explorer(self._kfile)
