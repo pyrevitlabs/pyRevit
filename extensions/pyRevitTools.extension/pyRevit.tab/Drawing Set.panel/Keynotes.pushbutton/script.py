@@ -28,6 +28,9 @@ logger = script.get_logger()
 output = script.get_output()
 
 
+HELP_URL = "https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
+
+
 def get_keynote_pcommands():
     return list(reversed(
         [x for x in coreutils.get_enum_values(UI.PostableCommand)
@@ -328,7 +331,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._kfile_handler = None
         self._kfile_ext = None
 
-        # detemine the keyntoe file. Sets 
+        # detemine the keynote file, and connect
+        self._conn = None
         self._determine_kfile()
         self._connect_kfile()
 
@@ -628,7 +632,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not os.access(self._kfile, os.W_OK):
             raise Exception('Keynote file is read-only.')
 
-        self._conn = None
         try:
             self._conn = kdb.connect(self._kfile)
         except System.TimeoutException as toutex:
@@ -666,18 +669,26 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._change_kfile()
                     self._determine_kfile()
                 elif res == "Give me more info":
-                    script.open_url(__helpurl__) #pylint: disable=undefined-variable
+                    script.open_url(HELP_URL) #pylint: disable=undefined-variable
                     script.exit()
             else:
                 forms.alert("Keynote file is not yet converted.",
                             exitscript=True)
 
+    def _empty_file(self, filepath):
+        open(filepath, 'w').close()
+
     def _convert_existing(self):
-        # make a copy of exsing
-        temp_kfile = op.join(op.dirname(self._kfile),
-                             op.basename(self._kfile) + '.bak')
+        # make a copy of the original keynote file
+        temp_kfile = \
+            script.get_universal_data_file(op.basename(self._kfile), '.bak')
+        if op.exists(temp_kfile):
+            script.remove_data_file(temp_kfile)
         shutil.copy(self._kfile, temp_kfile)
-        os.remove(self._kfile)
+        # don't delete files in keynotes folder
+        # usually they're on network or synced drives and the IO is slow
+        self._empty_file(self._kfile)
+        # import the keynotes from the backup into the emptied keynote file
         try:
             self._conn = kdb.connect(self._kfile)
             kdb.import_legacy_keynotes(self._conn, temp_kfile, skip_dup=True)
