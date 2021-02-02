@@ -43,7 +43,7 @@ def build_telem(args: Dict[str, str]):
 
     print("Updating telemetry server dependencies...")
     report = utils.system(
-        ["go", "get", "-d", r".\..."],
+        ["go", "get", r"./..."],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
     )
     if report:
@@ -60,7 +60,7 @@ def build_telem(args: Dict[str, str]):
         ["go", "build", "-o", output_bin, op.abspath(configs.TELEMETRYSERVER)],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
     )
-    print("Building telemetry server succompleted successfully")
+    print("Building telemetry server completed successfully")
 
 
 def start_telem(_: Dict[str, str]):

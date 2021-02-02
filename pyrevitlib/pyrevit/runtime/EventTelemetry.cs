@@ -226,7 +226,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         // event management ------------------------------------------------------------------------------------------
         public void LogEventTelemetryRecord(EventTelemetryRecord eventTelemetryRecord, object sender, object args) {
-            var envDict = new EnvDictionary();
+            var env = new EnvDictionary();
 
             // update general properties on record
             // host info
@@ -254,12 +254,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // now post the telemetry record
-            if (envDict.AppTelemetryState) {
-                if (envDict.AppTelemetryState
-                        && envDict.AppTelemetryServerUrl != null
-                        && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
+            if (env.AppTelemetryState) {
+                if (env.AppTelemetryServerUrl != null && !string.IsNullOrEmpty(env.AppTelemetryServerUrl))
                     new Task(() =>
-                        Telemetry.PostTelemetryRecord(envDict.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
+                        Telemetry.PostTelemetryRecord(env.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
             }
         }
 
@@ -1134,6 +1132,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         { "command_id",  args.CommandId },
                     }
             }, uiapp, args);
+        }
+
+        public void Application_IUpdater(object sender, UpdaterData d) {
+            throw new NotImplementedException();
         }
     }
 }

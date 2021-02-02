@@ -63,6 +63,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static int Execute(EventHook eventHook, object eventSender, object eventArgs) {
+            var env = new EnvDictionary();
             return ScriptExecutor.ExecuteScript(
                 scriptData: new ScriptData {
                     ScriptPath = eventHook.Script,
@@ -87,7 +88,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     ExecutedFromUI = false
                 },
                 scriptExecConfigs: new ScriptExecutorConfigs {
-                    SendTelemetry = false
+                    SendTelemetry = env.TelemetryState && env.TelemetryIncludeHooks
                 }
                 );
         }
@@ -424,6 +425,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void Application_JournalCommandExecuted(object sender, CommandExecutedArgs e) {
             ExecuteEventHooks(EventType.Application_JournalCommandExecuted, sender, e);
+        }
+
+        public void Application_IUpdater(object sender, UpdaterData d) {
+            ExecuteEventHooks(EventType.Application_IUpdater, sender, d);
         }
     }
 }

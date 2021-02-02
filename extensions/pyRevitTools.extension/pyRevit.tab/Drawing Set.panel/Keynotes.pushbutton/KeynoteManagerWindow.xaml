@@ -166,13 +166,19 @@
                     <ColumnDefinition MinWidth="30" Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
+                <WrapPanel x:Name="catTag" Visibility="Collapsed" Grid.Column="0">
+                    <Border Background="Black" Height="16" MinWidth="24">
+                        <TextBlock Text="{Binding Path=key}" Foreground="White" FontSize="12" FontWeight="Medium" Margin="5,-1,0,0"/>
+                    </Border>
+                    <Polygon Points="0,0 0,16 8,8" Fill="Black" />
+                </WrapPanel>
+                <TextBlock x:Name="keyTag" Text="{Binding Path=key}" FontWeight="Medium" Margin="5,-1,0,0" Visibility="Collapsed"/>
                 <WrapPanel Grid.Column="1" >
-                    <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" Padding="0" TextWrapping="Wrap" />
+                    <TextBlock x:Name="keyText" Text="{Binding Path=text}" Margin="10,0,0,0" Padding="0" TextWrapping="Wrap" />
                     <Border x:Name="usedCount"
                             Background="White" BorderBrush="LightGray" BorderThickness="1"
-                            Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" ToolTip="{Binding Path=tooltip}">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="DimGray" FontSize="10">
+                            Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="5,0,5,0" Visibility="Collapsed" ToolTip="{Binding Path=tooltip}">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="DimGray" FontSize="10" Margin="0,-1,0,0">
                             <TextBlock.Text>
                                 <MultiBinding StringFormat="{}{0}x">
                                     <Binding Path="used_count"/>
@@ -181,7 +187,7 @@
                         </TextBlock>
                     </Border>
                     <Border x:Name="ownerId" Background="Red" Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="10">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="10" Margin="0,-1,0,0">
                             <TextBlock.Text>
                                 <MultiBinding StringFormat=" {0} is editing...">
                                     <Binding Path="owner"/>
@@ -197,6 +203,13 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Path=used}" Value="True">
                     <Setter TargetName="usedCount" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=is_category}" Value="True">
+                    <Setter TargetName="catTag" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="keyText" Property="FontWeight" Value="Medium" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=is_category}" Value="False">
+                    <Setter TargetName="keyTag" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </HierarchicalDataTemplate.Triggers>
         </HierarchicalDataTemplate>
@@ -226,7 +239,7 @@
                     </Button>
                 </StackPanel>
             </DockPanel>
-            <ComboBox x:Name="categories_tv" DockPanel.Dock="Top" BorderBrush="LightGray" Height="25" Margin="0,10,0,0"
+            <ComboBox x:Name="categories_tv" DockPanel.Dock="Top" BorderBrush="LightGray" Height="28" Margin="0,10,0,0"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling"
                       ItemTemplate="{StaticResource treeViewItem}"
@@ -332,17 +345,16 @@
                                         ToolTip="Remove selected category"
                                         Click="remove_category"/>
                                 <Button Grid.Column="0" Grid.Row="1"
-                                        IsEnabled="False"
                                         Margin="2,2,2,0"
                                         Content="{StaticResource rekeyCategoryIcon}"
                                         ToolTip="Change key for selected category"
                                         Click="rekey_category"/>
-                                <Button Grid.Column="1" Grid.Row="1"
+                                <!--<Button Grid.Column="1" Grid.Row="1"
                                         IsEnabled="False"
                                         Content="{StaticResource historyCategoryIcon}"
                                         Margin="2,2,0,0"
                                         ToolTip="Show category change history"
-                                        Click="show_category_history"/>
+                                        Click="show_category_history"/>-->
                             </Grid>
                         </Grid>
                     </GroupBox>
@@ -356,7 +368,7 @@
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions >
                                     <RowDefinition Height="78" />
-                                    <RowDefinition Height="78" />
+                                    <RowDefinition Height="39" />
                                 </Grid.RowDefinitions>
                                 <Button x:Name="keynoteAdd" Grid.Column="0" Grid.Row="0"
                                         Margin="0,0,2,2"
@@ -364,7 +376,7 @@
                                         ToolTip="Add a new keynote"
                                         Click="add_keynote"/>
                                 <Grid x:Name="keynoteEditButtons" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
-                                      Height="156"
+                                      Height="117"
                                       IsEnabled="False">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition />
@@ -374,7 +386,7 @@
                                         <RowDefinition />
                                         <RowDefinition />
                                         <RowDefinition />
-                                        <RowDefinition />
+                                        <!--<RowDefinition />-->
                                     </Grid.RowDefinitions>
                                     <Button Grid.Column="0" Grid.Row="0"
                                             Margin="2,0,2,2"
@@ -396,38 +408,37 @@
                                             Content="{StaticResource duplicateKeynoteIcon}"
                                             ToolTip="Duplicate selected keynote"
                                             Click="duplicate_keynote"/>
-                                    <Button Grid.Column="0"  Grid.Row="2"
-                                            IsEnabled="False"
-                                            Margin="2,2,2,2"
+                                    <Button Grid.Column="1"  Grid.Row="2"
+                                            Margin="2,2,0,0"
                                             Content="{StaticResource rekeyKeynoteIcon}"
                                             ToolTip="Change key of selected keynote"
                                             Click="rekey_keynote"/>
-                                    <Button Grid.Column="1"  Grid.Row="2"
+                                    <!--<Button Grid.Column="1"  Grid.Row="2"
                                             IsEnabled="False"
                                             Margin="2,2,0,2"
                                             Content="{StaticResource historyKeynoteIcon}"
                                             ToolTip="Show keynote change history"
-                                            Click="show_keynote_history"/>
-                                    <Button Grid.Column="0" Grid.Row="3"
+                                            Click="show_keynote_history"/>-->
+                                    <Button Grid.Column="0" Grid.Row="2"
                                             Margin="2,2,2,0"
                                             Content="{StaticResource findKeynoteIcon}"
                                             ToolTip="Find instances of selected keynote"
                                             Click="show_keynote"/>
-                                    <Border Grid.Column="1" Grid.Row="3"
+                                    <!--<Border Grid.Column="1" Grid.Row="3"
                                             Margin="2,2,0,0"
-                                            BorderThickness="1" BorderBrush="LightGray" />
+                                            BorderThickness="1" BorderBrush="LightGray" />-->
                                 </Grid>
                             </Grid>
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="Keynote Tags" Margin="0,10,0,0" Padding="5">
+                    <GroupBox Header="Place" Margin="0,10,0,0" Padding="5">
                         <StackPanel>
                             <RadioButton x:Name="userknote_rb" Content="User Keynotes" Margin="0,0,0,5"/>
                             <RadioButton x:Name="elementknote_rb" Content="Element Keynotes" Margin="0,0,0,5"/>
                             <RadioButton x:Name="materialknote_rb" Content="Material Keynotes" />
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="Keynotes History" Margin="0,10,0,0" Padding="5">
+                    <GroupBox Header="Keynotes History" Margin="0,10,0,0" Padding="5" Visibility="Collapsed">
                         <StackPanel >
                             <Button Content="Enable History"
                                     IsEnabled="False"

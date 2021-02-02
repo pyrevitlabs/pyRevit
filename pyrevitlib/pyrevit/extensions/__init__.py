@@ -17,15 +17,9 @@ class LIBExtensionType:
     POSTFIX = '.lib'
 
 
-class RUNExtensionType:
-    ID = 'run'
-    POSTFIX = '.run'
-
-
 class ExtensionTypes:
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
-    RUN_EXTENSION = RUNExtensionType
 
     @classmethod
     def get_ext_types(cls):
@@ -34,11 +28,6 @@ class ExtensionTypes:
             if attr.endswith('_EXTENSION'):
                 ext_types.add(getattr(cls, attr))
         return ext_types
-
-    @classmethod
-    def is_cli_ext(cls, ext_type):
-        """Check if this is a pyRevit CLI extension."""
-        return ext_type == cls.RUN_EXTENSION
 
 
 # -----------------------------------------------------------------------------
@@ -135,8 +124,6 @@ HIGHLIGHT_SCRIPT_PARAM = '__highlight__'
 CLEAN_ENGINE_SCRIPT_PARAM = '__cleanengine__'
 FULLFRAME_ENGINE_PARAM = '__fullframeengine__'
 PERSISTENT_ENGINE_PARAM = '__persistentengine__'
-LINK_BUTTON_ASSEMBLY = '__assembly__'
-LINK_BUTTON_COMMAND_CLASS = '__commandclass__'
 
 # -----------------------------------------------------------------------------
 # supported bundles
@@ -147,8 +134,6 @@ INVOKE_BUTTON_POSTFIX = '.invokebutton'
 PUSH_BUTTON_POSTFIX = '.pushbutton'
 SMART_BUTTON_POSTFIX = '.smartbutton'
 PULLDOWN_BUTTON_POSTFIX = '.pulldown'
-STACK2_BUTTON_POSTFIX = '.stack2'
-STACK3_BUTTON_POSTFIX = '.stack3'
 STACK_BUTTON_POSTFIX = '.stack'
 SPLIT_BUTTON_POSTFIX = '.splitbutton'
 SPLITPUSH_BUTTON_POSTFIX = '.splitpushbutton'
@@ -161,12 +146,12 @@ URL_BUTTON_POSTFIX = '.urlbutton'
 COMP_LIBRARY_DIR_NAME = 'lib'
 COMP_BIN_DIR_NAME = 'bin'
 COMP_HOOKS_DIR_NAME = 'hooks'
+COMP_CHECKS_DIR_NAME = 'checks'
 
 # unique ids
 UNIQUE_ID_SEPARATOR = '-'
 
 # bundle layout elements
-DEFAULT_LAYOUT_FILE_NAME = '_layout'
 SEPARATOR_IDENTIFIER = '---'
 SLIDEOUT_IDENTIFIER = '>>>'
 
@@ -227,4 +212,4 @@ HELP_FILE_PATTERN = r'.*help\..+'
 # -----------------------------------------------------------------------------
 # Command bundle defaults
 CTX_SELETION = 'selection'
-CTX_ZERODOC = ['zero-doc', 'zerodoc']
+CTX_ZERODOC = 'zero-doc'

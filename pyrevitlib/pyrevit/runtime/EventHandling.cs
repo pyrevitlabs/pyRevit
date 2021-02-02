@@ -80,6 +80,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // pyRevit-defined events
         Application_JournalUpdated,
         Application_JournalCommandExecuted,
+        Application_IUpdater,
     }
 
     public interface IEventTypeHandler {
@@ -154,10 +155,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // custom events. These are called from a non-main thread
         void Application_JournalUpdated(object sender, JournalUpdateArgs e);
         void Application_JournalCommandExecuted(object sender, CommandExecutedArgs e);
+
+        void Application_IUpdater(object sender, UpdaterData d);
     }
 
     public static class EventUtils {
-        private static JournalListener journalListerner = null;
+        private static JournalListener journalListener = null;
+        private static UpdaterListener updaterListener = null;
 
         private static Dictionary<EventType, string> eventNames = new Dictionary<EventType, string> {
             { EventType.UIApplication_ApplicationClosing,  "app-closing" },
@@ -211,6 +215,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             { EventType.AddInCommandBinding_Executed, "command-exec" },
             { EventType.Application_JournalUpdated, "journal-updated" },
             { EventType.Application_JournalCommandExecuted, "journal-command-exec" },
+            { EventType.Application_IUpdater, "doc-updater" },
         };
 
         public static string GetEventName(EventType eventType) {
@@ -252,17 +257,38 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static void ActivateJournalListener(UIApplication uiapp) {
-            if (journalListerner == null) {
-                journalListerner = new JournalListener(uiapp);
-                journalListerner.Start();
+            if (journalListener == null) {
+                journalListener = new JournalListener(uiapp);
+                journalListener.Start();
             }
         }
 
         private static void DeactivateJournalListener(UIApplication uiapp) {
             // shut down the listener only if it is not firing any events
-            if (journalListerner != null && !(journalListerner.JournalUpdateEvents || journalListerner.JournalCommandExecutedEvents)) {
-                journalListerner.Stop();
-                journalListerner = null;
+            if (journalListener != null && !(journalListener.JournalUpdateEvents || journalListener.JournalCommandExecutedEvents)) {
+                journalListener.Stop();
+                journalListener = null;
+            }
+        }
+
+        private static void ActivateUpdaterListener() {
+            if (updaterListener == null) {
+                updaterListener = new UpdaterListener();
+                UpdaterRegistry.RegisterUpdater(updaterListener);
+                UpdaterRegistry.AddTrigger(
+                    updaterListener.GetUpdaterId(),
+                    new ElementCategoryFilter(BuiltInCategory.INVALID, inverted: true),
+                    Element.GetChangeTypeAny());
+            }
+        }
+
+        private static void DeactivateUpdaterListener() {
+            // shut down the listener only if it is not firing any events
+            if (updaterListener != null) {
+                var updaterId = updaterListener.GetUpdaterId();
+                UpdaterRegistry.RemoveAllTriggers(updaterId);
+                UpdaterRegistry.UnregisterUpdater(updaterId);
+                updaterListener = null;
             }
         }
 
@@ -722,12 +748,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 case EventType.Application_JournalUpdated:
                     if (toggle_on) {
                         ActivateJournalListener(uiApp);
-                        journalListerner.OnJournalUpdate += hndlr.Application_JournalUpdated;
-                        journalListerner.JournalUpdateEvents = true;
+                        journalListener.OnJournalUpdate += hndlr.Application_JournalUpdated;
+                        journalListener.JournalUpdateEvents = true;
                     }
-                    else if (journalListerner != null) {
-                        journalListerner.OnJournalUpdate -= hndlr.Application_JournalUpdated;
-                        journalListerner.JournalUpdateEvents = false;
+                    else if (journalListener != null) {
+                        journalListener.OnJournalUpdate -= hndlr.Application_JournalUpdated;
+                        journalListener.JournalUpdateEvents = false;
                         DeactivateJournalListener(uiApp);
                     }
                     break;
@@ -735,13 +761,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 case EventType.Application_JournalCommandExecuted:
                     if (toggle_on) {
                         ActivateJournalListener(uiApp);
-                        journalListerner.OnJournalCommandExecuted += hndlr.Application_JournalCommandExecuted;
-                        journalListerner.JournalCommandExecutedEvents = true;
+                        journalListener.OnJournalCommandExecuted += hndlr.Application_JournalCommandExecuted;
+                        journalListener.JournalCommandExecutedEvents = true;
                     }
-                    else if (journalListerner != null) {
-                        journalListerner.OnJournalCommandExecuted -= hndlr.Application_JournalCommandExecuted;
-                        journalListerner.JournalCommandExecutedEvents = false;
+                    else if (journalListener != null) {
+                        journalListener.OnJournalCommandExecuted -= hndlr.Application_JournalCommandExecuted;
+                        journalListener.JournalCommandExecutedEvents = false;
                         DeactivateJournalListener(uiApp);
+                    }
+                    break;
+
+                case EventType.Application_IUpdater:
+                    if (toggle_on) {
+                        ActivateUpdaterListener();
+                        updaterListener.OnUpdaterExecute += hndlr.Application_IUpdater;
+                    }
+                    else if (updaterListener != null) {
+                        updaterListener.OnUpdaterExecute -= hndlr.Application_IUpdater;
+                        DeactivateUpdaterListener();
                     }
                     break;
             }

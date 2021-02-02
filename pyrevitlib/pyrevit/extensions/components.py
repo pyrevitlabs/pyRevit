@@ -38,32 +38,8 @@ class NoScriptButton(GenericUICommand):
         # using classname otherwise exceptions in superclasses won't show
         GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
         self.assembly = self.command_class = None
-        # to support legacy linkbutton types using python global var convention
-        # if has python script, read metadata
-        if self.script_language == exts.PYTHON_LANG:
-            try:
-                # reading script file content to extract parameters
-                script_content = \
-                    coreutils.ScriptFileParser(self.script_file)
-
-                self.assembly = \
-                    script_content.extract_param(exts.LINK_BUTTON_ASSEMBLY)
-
-                self.command_class = \
-                    script_content.extract_param(exts.LINK_BUTTON_COMMAND_CLASS)
-
-                if self.assembly or self.command_class:
-                    mlogger.deprecate(
-                        "Creating link buttons using \"__assembly__\" "
-                        "and \"__commandclass__\" global "
-                        "variables inside a python file is deprecated. "
-                        "use bundle.yaml instead. | %s", self)
-
-            except PyRevitException as err:
-                mlogger.error(err)
-
-        # otherwise read metadata from metadata file
-        elif self.meta:
+        # read metadata from metadata file
+        if self.meta:
             # get the target assembly from metadata
             self.assembly = \
                 self.meta.get(exts.MDATA_LINK_BUTTON_ASSEMBLY, None)
@@ -260,29 +236,6 @@ class StackButtonGroup(GenericStack):
     type_id = exts.STACK_BUTTON_POSTFIX
 
 
-class StackTwoButtonGroup(GenericStack):
-    type_id = exts.STACK2_BUTTON_POSTFIX
-
-    def __init__(self, cmp_path=None):
-        GenericStack.__init__(self, cmp_path=cmp_path)
-        if cmp_path:
-            mlogger.deprecate(
-                ".stack2 and .stack3 bundles are deprecated and "
-                "will be removed in the next major release. "
-                "use .stack bundles instead | %s", self)
-
-
-class StackThreeButtonGroup(GenericStack):
-    type_id = exts.STACK3_BUTTON_POSTFIX
-
-    def __init__(self, cmp_path=None):
-        GenericStack.__init__(self, cmp_path=cmp_path)
-        if cmp_path:
-            mlogger.deprecate(
-                ".stack2 and .stack3 bundles are deprecated and "
-                "will be removed in the next major release. "
-                "use .stack bundles instead | %s", self)
-
 
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
 class Panel(GenericUIContainer):
@@ -396,7 +349,6 @@ class Extension(GenericUIContainer):
         patfile += '|(\\' + exts.CONTENT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'
-        patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
         return coreutils.calculate_dir_hash(self.directory, pat, patfile)
 
     def _update_from_directory(self):   #pylint: disable=W0221
@@ -408,6 +360,11 @@ class Extension(GenericUIContainer):
         # hooks/ inside the component folder
         hooks_path = op.join(self.directory, exts.COMP_HOOKS_DIR_NAME)
         self.hooks_path = hooks_path if op.exists(hooks_path) else None
+
+        # extensions can store preflight checks under
+        # checks/ inside the component folder
+        checks_path = op.join(self.directory, exts.COMP_CHECKS_DIR_NAME)
+        self.checks_path = checks_path if op.exists(checks_path) else None
 
         self.dir_hash_value = self._calculate_extension_dir_hash()
 
@@ -463,6 +420,10 @@ class Extension(GenericUIContainer):
     def get_hooks(self):
         hook_scripts = os.listdir(self.hooks_path) if self.hooks_path else []
         return [op.join(self.hooks_path, x) for x in hook_scripts]
+
+    def get_checks(self):
+        check_scripts = os.listdir(self.checks_path) if self.checks_path else []
+        return [op.join(self.checks_path, x) for x in check_scripts]
 
 
 # library extension class

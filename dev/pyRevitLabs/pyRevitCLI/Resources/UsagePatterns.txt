@@ -24,7 +24,7 @@ Usage:
 	pyrevit clones deployments <clone_name>
 	pyrevit clones engines <clone_name>
 	pyrevit attach (-h | --help)
-	pyrevit attach <clone_name> (latest | dynamosafe | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
+	pyrevit attach <clone_name> (default | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
 	pyrevit attached [<revit_year>] [(-h | --help)]
 	pyrevit switch (-h | --help)
 	pyrevit switch <clone_name> [<revit_year>]
@@ -32,7 +32,7 @@ Usage:
 	pyrevit detach (--all | <revit_year>) [--log=<log_file>]
 	pyrevit extend (-h | --help)
 	pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit extend (ui | lib | run) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
+	pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
 	pyrevit extensions [(-h | --help)]
 	pyrevit extensions search <search_pattern>
 	pyrevit extensions (info | help ) <extension_name>
@@ -64,7 +64,9 @@ Usage:
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
 	pyrevit run (-h | --help)
+	pyrevit run commands
 	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--import=<import_path>]
+	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--purge] [--import=<import_path>]
 	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit caches (-h | --help)
 	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
@@ -93,6 +95,7 @@ Usage:
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
 	pyrevit configs telemetry (file | server) [<dest_path>] [--log=<log_file>]
+	pyrevit configs telemetry hooks [(yes | no)] [--log=<log_file>]
 	pyrevit configs apptelemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs apptelemetry flags [<flags>] [--log=<log_file>]
 	pyrevit configs apptelemetry server [<server_path>] [--log=<log_file>]

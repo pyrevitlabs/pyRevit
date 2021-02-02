@@ -1109,6 +1109,7 @@ def get_keynote_file(doc=None):
     local_path = get_local_keynote_file(doc=doc)
     if not local_path:
         return get_external_keynote_file(doc=doc)
+    return local_path
 
 
 def get_used_keynotes(doc=None):

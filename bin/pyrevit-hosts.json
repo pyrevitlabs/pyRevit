@@ -1354,5 +1354,17 @@
         "build": "20200909_1515",
         "target": "x64",
         "notes": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021updates_2021_1_1_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021updates_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2021.1.2",
+        "version": "21.1.20.44",
+        "build": "20201109_1530",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021updates_html"
     }
 ]

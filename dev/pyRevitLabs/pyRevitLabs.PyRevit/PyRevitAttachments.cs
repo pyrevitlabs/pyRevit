@@ -24,7 +24,7 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static void Attach(int revitYear,
                                   PyRevitClone clone,
-                                  int engineVer,
+                                  PyRevitEngineVersion engineVer,
                                   bool allUsers = false,
                                   bool force = false) {
             // make the addin manifest file
@@ -50,12 +50,12 @@ namespace pyRevitLabs.PyRevit {
                     );
             }
             else
-                throw new PyRevitException(string.Format("Engine {0} can not be used as runtime.", engineVer));
+                throw new PyRevitException($"Engine {engineVer} can not be used as runtime.");
         }
 
         // attach clone to all installed revit versions
         // @handled @logs
-        public static void AttachToAll(PyRevitClone clone, int engineVer = 000, bool allUsers = false) {
+        public static void AttachToAll(PyRevitClone clone, PyRevitEngineVersion engineVer, bool allUsers = false) {
             foreach (var revit in RevitProduct.ListInstalledProducts())
                 Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
         }
@@ -69,16 +69,16 @@ namespace pyRevitLabs.PyRevit {
 
         // detach pyrevit attachment
         // @handled @logs
-        public static void Detach(PyRevitAttachment attachment) {
+        public static void Detach(PyRevitAttachment attachment, bool currentAndAllUsers = false) {
             logger.Debug("Detaching from Revit {0}", attachment.Product.ProductYear);
-            Detach(attachment.Product.ProductYear);
+            Detach(attachment.Product.ProductYear, currentAndAllUsers);
         }
 
         // detach from all attached revits
         // @handled @logs
-        public static void DetachAll() {
+        public static void DetachAll(bool currentAndAllUsers = false) {
             foreach (var attachment in GetAttachments()) {
-                Detach(attachment);
+                Detach(attachment, currentAndAllUsers);
             }
         }
 

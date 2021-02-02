@@ -75,9 +75,12 @@ from System.Runtime.Serialization import FormatterServices
 
 from System.Linq import Enumerable
 
+import pyrevit.engine as eng
 
 wpf = None
-clr.AddReference('IronPython.Wpf')
+clr.AddReference(
+    '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+    )
 if compat.PY3:
     import IronPython
     wpf = IronPython.Modules.Wpf

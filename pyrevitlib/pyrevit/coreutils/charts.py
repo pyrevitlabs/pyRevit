@@ -160,14 +160,9 @@ class PyRevitOutputChart(object):
 
     def _setup_charts(self):
         cur_head = self._output.get_head_html()
-        if CHARTS_JS_PATH not in cur_head:
-            self._output.inject_script(
-                '',
-                {
-                    'src': CHARTS_JS_PATH.format(version=self._version),
-                    'async': 'false',
-                    'defer': 'false'}
-                )
+        charts_js_path = CHARTS_JS_PATH.format(version=self._version)
+        if charts_js_path not in cur_head:
+            self._output.inject_script('', {'src': charts_js_path})
 
     @staticmethod
     def _make_canvas_unique_id():

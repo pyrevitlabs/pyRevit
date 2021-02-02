@@ -114,6 +114,7 @@ COMMANDS = [
     Command(name="update", target="year", args=[], run=props.set_year),
     Command(name="update", target="locales", args=[], run=props.update_locales),
     Command(name="set", target="version", args=["<ver>"], run=props.set_ver),
+    Command(name="set", target="year", args=[], run=props.set_year),
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),

@@ -168,6 +168,10 @@ class RKeynote(object):
             return self._filtered_children
         return self._children
 
+    @property
+    def is_category(self):
+        return not self.parent_key
+
     def has_children(self):
         return len(self.children)
 
@@ -315,6 +319,21 @@ def connect(keynotes_file, username=None):
     return conn
 
 
+# batch processing ------------------------------------------------------------
+
+
+class BulkAction(object):
+    def __init__(self, conn, target=KEYNOTES_DB):
+        self._conn = conn
+        self._target = target
+    
+    def __enter__(self):
+        self._conn.BEGIN(self._target)
+
+    def __exit__(self, exception, exception_value, traceback):
+        self._conn.END()
+
+
 # query functions -------------------------------------------------------------
 
 
@@ -420,16 +439,17 @@ def update_category_title(conn, key, new_title):
                       {CATEGORY_TITLE_FIELD: new_title})
 
 
+def update_category_key(conn, key, new_key):
+    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key,
+                      {CATEGORY_KEY_FIELD: new_key})
+
+
 def mark_category_under_edited(conn, key):
     conn.BEGIN(KEYNOTES_DB, CATEGORIES_TABLE, key)
 
 
 def remove_category(conn, key):
     conn.DropRecord(KEYNOTES_DB, CATEGORIES_TABLE, key)
-
-
-def rekey_category(conn, key, new_key):
-    raise NotImplementedError()
 
 
 # keynotes --------------------------------------------------------------------
@@ -485,10 +505,6 @@ def move_keynote(conn, key, new_parent):
         )
 
 
-def rekey_keynote(conn, key, new_key):
-    raise NotImplementedError()
-
-
 # import export ---------------------------------------------------------------
 
 
@@ -531,23 +547,25 @@ def _import_keynotes_from_lines(conn, lines, skip_dup=False):
 
 
 def import_legacy_keynotes(conn, src_legacy_keynotes_file, skip_dup=False):
-    knote_lines = None
+    # determine encoding
+    encoding = 'ascii'
+    if coreutils.check_encoding_bom(src_legacy_keynotes_file,
+                                    bom_bytes=codecs.BOM_UTF16):
+        encoding = 'utf_16_le'
+    elif coreutils.check_encoding_bom(src_legacy_keynotes_file,
+                                      bom_bytes=codecs.BOM_UTF8):
+        encoding = 'utf-8'
+
     try:
-        mlogger.debug('Attempt opening file with utf-16 encoding...')
-        legacy_kfile = codecs.open(src_legacy_keynotes_file, 'r', 'utf_16')
-        knote_lines = legacy_kfile.readlines()
-    except Exception:
-        mlogger.debug('Failed opening with utf-16 encoding : %s',
-                      src_legacy_keynotes_file)
-        try:
-            mlogger.debug('Attempt opening file with utf-8 encoding...')
-            legacy_kfile = codecs.open(src_legacy_keynotes_file, 'r', 'utf_8')
+        mlogger.debug('Opening file with {} encoding...'.format(encoding))
+        knote_lines = None
+        with codecs.open(src_legacy_keynotes_file, 'r', encoding) \
+                as legacy_kfile:
             knote_lines = legacy_kfile.readlines()
-        except Exception:
-            mlogger.debug('Failed opening with utf-8 encoding : %s',
-                          src_legacy_keynotes_file)
-            raise Exception('Unknown file encoding. Supported encodings are '
-                            'UTF-8 and UTF-16 (UCS-2 LE)')
+    except Exception:
+        mlogger.debug('Failed opening : %s', src_legacy_keynotes_file)
+        raise Exception('Unknown file encoding. Supported encodings are '
+                        'ASCII, UTF-8, and UTF-16 (UCS-2 LE)')
 
     if legacy_kfile:
         conn.BEGIN(KEYNOTES_DB)

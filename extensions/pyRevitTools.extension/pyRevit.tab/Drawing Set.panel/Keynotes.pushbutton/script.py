@@ -28,6 +28,9 @@ logger = script.get_logger()
 output = script.get_output()
 
 
+HELP_URL = "https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
+
+
 def get_keynote_pcommands():
     return list(reversed(
         [x for x in coreutils.get_enum_values(UI.PostableCommand)
@@ -162,11 +165,6 @@ class EditRecordWindow(forms.WPFWindow):
                             'Category must have a title.')
                 return False
             try:
-                # update category key if changed
-                if self.active_key != self._rkeynote.key:
-                    self._res = kdb.rekey_category(self._conn,
-                                                   self._rkeynote.key,
-                                                   self.active_key)
                 # update category title if changed
                 if self.active_text != self._rkeynote.text:
                     kdb.update_category_title(self._conn,
@@ -202,11 +200,6 @@ class EditRecordWindow(forms.WPFWindow):
                 forms.alert('Existing text is removed. Keynote must have text.')
                 return False
             try:
-                # update keynote key if changed
-                if self.active_key != self._rkeynote.key:
-                    self._res = kdb.rekey_keynote(self._conn,
-                                                  self._rkeynote.key,
-                                                  self.active_key)
                 # update keynote title if changed
                 if self.active_text != self._rkeynote.text:
                     kdb.update_keynote_text(self._conn,
@@ -333,111 +326,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name, reset_config=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        # verify keynote file existence
-        self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
+        # setup keynote ref attrs
+        self._kfile = None
         self._kfile_handler = None
-        if not self._kfile:
-            self._kfile_ext = \
-                revit.query.get_external_keynote_file(doc=revit.doc)
-            self._kfile_handler = 'unknown'
-        # mak sure ADC is available
-        if self._kfile_handler == 'unknown':
-            if adc.is_available():
-                self._kfile_handler = 'adc'
-                # check if keynote file is being synced by ADC
-                # use the drive:// path for adc communications
-                # adc module takes both remote or local paths,
-                # but remote is faster lookup
-                local_kfile = adc.get_local_path(self._kfile_ext)
-                if local_kfile:
-                    # check is someone else has locked the file
-                    locked, owner = adc.is_locked(self._kfile_ext)
-                    if locked:
-                        forms.alert(
-                            "Keynote file is being modified and locked by "
-                            "{}. Please try again later".format(owner),
-                            exitscript=True
-                            )
-                    # force sync to get the latest contents
-                    adc.sync_file(self._kfile_ext)
-                    adc.lock_file(self._kfile_ext)
-                    # now that adc communication is done,
-                    # replace with local path
-                    self._kfile = local_kfile
-                    self.Title += ' (BIM360)'
-                else:
-                    forms.alert(
-                        "Can not get keynote file from {}".format(adc.ADC_NAME),
-                        exitscript=True
-                        )
-            else:
-                forms.alert(
-                    "This model is using a keynote file that seems to be "
-                    "managed by {long} ({short}). But {short} is not "
-                    "running, or is not installed. Please install/run the "
-                    "{short} and open the keynote manager again".format(
-                        long=adc.ADC_NAME, short=adc.ADC_SHORTNAME
-                        ),
-                    exitscript=True
-                    )
+        self._kfile_ext = None
 
-        # byt this point we must have a local path to the keynote file
-        if not self._kfile or not op.exists(self._kfile):
-            self._kfile = None
-            forms.alert("Keynote file is not accessible. "
-                        "Please select a keynote file.")
-            self._change_kfile()
-
-        # if a keynote file is still not set, return
-        if not self._kfile:
-            raise Exception('Keynote file is not setup.')
-
-        # if a keynote file is still not set, return
-        if not os.access(self._kfile, os.W_OK):
-            raise Exception('Keynote file is read-only.')
-
+        # detemine the keynote file, and connect
         self._conn = None
-        try:
-            self._conn = kdb.connect(self._kfile)
-        except System.TimeoutException as toutex:
-            forms.alert(toutex.Message,
-                        expanded="{}::__init__()".format(
-                            self.__class__.__name__),
-                        exitscript=True)
-        except Exception as ex:
-            logger.debug('Connection failed | %s' % ex)
-            res = forms.alert(
-                "Existing keynote file needs to be converted to "
-                "a format usable by this tool. The resulting keynote "
-                "file is still readble by Revit and could be shared "
-                "with other projects. Users should NOT be making changes to "
-                "the existing keynote file during the conversion process.\n"
-                "Are you sure you want to convert?",
-                options=["Convert",
-                         "Select a different keynote file",
-                         "Give me more info"])
-            if res:
-                if res == "Convert":
-                    try:
-                        self._convert_existing()
-                        forms.alert("Conversion completed!")
-                        if not self._conn:
-                            forms.alert(
-                                "Launch the tool again to manage keynotes.",
-                                exitscript=True
-                                )
-                    except Exception as convex:
-                        logger.debug('Legacy conversion failed | %s' % convex)
-                        forms.alert("Conversion failed! %s" % convex,
-                                    exitscript=True)
-                elif res == "Select a different keynote file":
-                    self._change_kfile()
-                elif res == "Give me more info":
-                    script.open_url(__helpurl__) #pylint: disable=undefined-variable
-                    script.exit()
-            else:
-                forms.alert("Keynote file is not yet converted.",
-                            exitscript=True)
+        self._determine_kfile()
+        self._connect_kfile()
 
         self._cache = []
         self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
@@ -501,9 +398,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
         return self.keynotes_tv.SelectedItem
 
     @property
+    def active_category(self):
+        # grab active category in selector
+        return self.categories_tv.SelectedItem
+
+    @property
     def selected_category(self):
         # grab selected category
-        cat = self.categories_tv.SelectedItem
+        cat = self.active_category
         if cat:
             # verify category is not all-categories item
             if cat != self._allcat:
@@ -578,7 +480,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         new_postcmd_dict[self._kfile] = self.postcmd_idx
         self._config.set_option('last_postcmd_idx', new_postcmd_dict)
 
-        # save self.selected_category
+        # save self.active_category
         new_category_dict = {}
         # cleanup removed keynote files
         for kfile, lc_value in self._config.get_option('last_category',
@@ -586,8 +488,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if op.exists(kfile):
                 new_category_dict[kfile] = lc_value
         new_category_dict[self._kfile] = ''
-        if self.selected_category:
-            new_category_dict[self._kfile] = self.selected_category.key
+        if self.active_category:
+            new_category_dict[self._kfile] = self.active_category.key
         self._config.set_option('last_category', new_category_dict)
 
         # save self.search_term
@@ -651,20 +553,55 @@ class KeynoteManagerWindow(forms.WPFWindow):
         else:
             self.search_term = ""
 
-    def _convert_existing(self):
-        # make a copy of exsing
-        temp_kfile = op.join(op.dirname(self._kfile),
-                             op.basename(self._kfile) + '.bak')
-        shutil.copy(self._kfile, temp_kfile)
-        os.remove(self._kfile)
-        try:
-            self._conn = kdb.connect(self._kfile)
-            kdb.import_legacy_keynotes(self._conn, temp_kfile, skip_dup=True)
-        except System.TimeoutException as toutex:
-            forms.alert(toutex.Message,
-                        expanded="{}::_convert_existing()".format(
-                            self.__class__.__name__),
-                        exitscript=True)
+    def _determine_kfile(self):
+        # verify keynote file existence
+        self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
+        self._kfile_handler = None
+        self._kfile_ext = None
+        if not self._kfile:
+            self._kfile_ext = \
+                revit.query.get_external_keynote_file(doc=revit.doc)
+            self._kfile_handler = 'unknown'
+        # mak sure ADC is available
+        if self._kfile_ext and self._kfile_handler == 'unknown':
+            if adc.is_available():
+                self._kfile_handler = 'adc'
+                # check if keynote file is being synced by ADC
+                # use the drive:// path for adc communications
+                # adc module takes both remote or local paths,
+                # but remote is faster lookup
+                local_kfile = adc.get_local_path(self._kfile_ext)
+                if local_kfile:
+                    # check is someone else has locked the file
+                    locked, owner = adc.is_locked(self._kfile_ext)
+                    if locked:
+                        forms.alert(
+                            "Keynote file is being modified and locked by "
+                            "{}. Please try again later".format(owner),
+                            exitscript=True
+                            )
+                    # force sync to get the latest contents
+                    adc.sync_file(self._kfile_ext)
+                    adc.lock_file(self._kfile_ext)
+                    # now that adc communication is done,
+                    # replace with local path
+                    self._kfile = local_kfile
+                    self.Title += ' (BIM360)'   #pylint: disable=no-member
+                else:
+                    forms.alert(
+                        "Can not get keynote file from {}".format(adc.ADC_NAME),
+                        exitscript=True
+                        )
+            else:
+                forms.alert(
+                    "This model is using a keynote file that seems to be "
+                    "managed by {long} ({short}). But {short} is not "
+                    "running, or is not installed. Please install/run the "
+                    "{short} and open the keynote manager again".format(
+                        long=adc.ADC_NAME, short=adc.ADC_SHORTNAME
+                        ),
+                    exitscript=True
+                    )
 
     def _change_kfile(self):
         kfile = forms.pick_file('txt')
@@ -673,24 +610,93 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 with revit.Transaction("Set Keynote File"):
                     revit.update.set_keynote_file(kfile, doc=revit.doc)
-                self._kfile = revit.query.get_keynote_file(doc=revit.doc)
-
-                # attempt at opening the selected file.
-                try:
-                    self._conn = kdb.connect(self._kfile)
-                except Exception as ckf_ex:
-                    forms.alert(
-                        "Error opening seleced keynote file.",
-                        sub_msg=str(ckf_ex),
-                        expanded="{}::_change_kfile() [kdb.connect]".format(
-                            self.__class__.__name__)
-                    )
-
-                return self._kfile
             except Exception as skex:
                 forms.alert(str(skex),
                             expanded="{}::_change_kfile() [transaction]".format(
                                 self.__class__.__name__))
+
+    def _connect_kfile(self):
+        # by this point we must have a local path to the keynote file
+        if not self._kfile or not op.exists(self._kfile):
+            self._kfile = None
+            forms.alert("Keynote file is not accessible. "
+                        "Please select a keynote file.")
+            self._change_kfile()
+            self._determine_kfile()
+
+        # if a keynote file is still not set, return
+        if not self._kfile:
+            raise Exception('Keynote file is not setup.')
+
+        # if a keynote file is still not set, return
+        if not os.access(self._kfile, os.W_OK):
+            raise Exception('Keynote file is read-only.')
+
+        try:
+            self._conn = kdb.connect(self._kfile)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message,
+                        expanded="{}::__init__()".format(
+                            self.__class__.__name__),
+                        exitscript=True)
+        except Exception as ex:
+            logger.debug('Connection failed | %s' % ex)
+            res = forms.alert(
+                "Existing keynote file needs to be converted to "
+                "a format usable by this tool. The resulting keynote "
+                "file is still readble by Revit and could be shared "
+                "with other projects. Users should NOT be making changes to "
+                "the existing keynote file during the conversion process.\n"
+                "Are you sure you want to convert?",
+                options=["Convert",
+                         "Select a different keynote file",
+                         "Give me more info"])
+            if res:
+                if res == "Convert":
+                    try:
+                        self._convert_existing()
+                        forms.alert("Conversion completed!")
+                        if not self._conn:
+                            forms.alert(
+                                "Launch the tool again to manage keynotes.",
+                                exitscript=True
+                                )
+                    except Exception as convex:
+                        logger.debug('Legacy conversion failed | %s' % convex)
+                        forms.alert("Conversion failed! %s" % convex,
+                                    exitscript=True)
+                elif res == "Select a different keynote file":
+                    self._change_kfile()
+                    self._determine_kfile()
+                elif res == "Give me more info":
+                    script.open_url(HELP_URL) #pylint: disable=undefined-variable
+                    script.exit()
+            else:
+                forms.alert("Keynote file is not yet converted.",
+                            exitscript=True)
+
+    def _empty_file(self, filepath):
+        open(filepath, 'w').close()
+
+    def _convert_existing(self):
+        # make a copy of the original keynote file
+        temp_kfile = \
+            script.get_universal_data_file(op.basename(self._kfile), '.bak')
+        if op.exists(temp_kfile):
+            script.remove_data_file(temp_kfile)
+        shutil.copy(self._kfile, temp_kfile)
+        # don't delete files in keynotes folder
+        # usually they're on network or synced drives and the IO is slow
+        self._empty_file(self._kfile)
+        # import the keynotes from the backup into the emptied keynote file
+        try:
+            self._conn = kdb.connect(self._kfile)
+            kdb.import_legacy_keynotes(self._conn, temp_kfile, skip_dup=True)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message,
+                        expanded="{}::_convert_existing()".format(
+                            self.__class__.__name__),
+                        exitscript=True)
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -705,6 +711,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if self.categories_tv.ItemsSource:
                 last_idx = self.categories_tv.SelectedIndex
 
+        self.categories_tv.ItemsSource = None
         self.categories_tv.ItemsSource = categories
         self.categories_tv.SelectedIndex = last_idx
 
@@ -791,6 +798,27 @@ class KeynoteManagerWindow(forms.WPFWindow):
         else:
             self.keynoteEditButtons.IsEnabled = False
 
+    def _pick_new_key(self):
+        try:
+            categories = kdb.get_categories(self._conn)
+            keynotes = kdb.get_keynotes(self._conn)
+            locks = kdb.get_locks(self._conn)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return
+
+        # collect existing keys
+        reserved_keys = [x.key for x in categories]
+        reserved_keys.extend([x.key for x in keynotes])
+        reserved_keys.extend([x.LockTargetRecordKey for x in locks])
+        # ask for a unique new key
+        new_key = forms.ask_for_unique_string(
+            prompt='Enter a Unique Key',
+            title='Choose New Key',
+            reserved_values=reserved_keys,
+            owner=self)
+        return new_key
+
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
         logger.debug('New search term: %s', self.search_term)
@@ -838,7 +866,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                  kdb.EDIT_MODE_ADD_CATEG).show()
             if new_cat:
                 self.selected_category = new_cat.key
-                # make sure to relaod on close
+                # make sure to reload on close
                 self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message,
@@ -873,7 +901,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     EditRecordWindow(self, self._conn,
                                      kdb.EDIT_MODE_EDIT_CATEG,
                                      rkeynote=target_keynote).show()
-                    # make sure to relaod on close
+                    # make sure to reload on close
                     self._needs_update = True
                 except System.TimeoutException as toutex:
                     forms.alert(toutex.Message,
@@ -889,7 +917,57 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         self._update_ktree_knotes()
 
     def rekey_category(self, sender, args):
-        forms.alert("Not yet implemented. Coming soon.")
+        selected_category = self.selected_category
+        selected_keynote = self.selected_keynote
+
+        # determine where the category is coming from
+        # selected category in drop-down
+        if selected_category:
+            target_keynote = selected_category
+        # or selected category in keynotes list
+        elif selected_keynote and not selected_keynote.parent_key:
+            target_keynote = selected_keynote
+
+        if target_keynote:
+            # if category is locked
+            if target_keynote.locked:
+                forms.alert('Category is locked and is being edited by {}. '
+                            'Wait until their changes are committed.'
+                            .format('\"%s\"' % target_keynote.owner
+                                    if target_keynote.owner
+                                    else 'and unknown user'))
+            # or any of its children are locked
+            elif any(x.locked for x in target_keynote.children):
+                forms.alert('At least one keynote in this category is locked. '
+                            'Wait until the changes are committed.')
+            else:
+                try:
+                    from_key = selected_keynote.key
+                    to_key = self._pick_new_key()
+                    if to_key and to_key != from_key:
+                        # update category to new key
+                        kdb.update_category_key(self._conn, from_key, to_key)
+                        # update all children to new key
+                        with kdb.BulkAction(self._conn):
+                            for ckey in target_keynote.children:
+                                kdb.move_keynote(self._conn, ckey.key, to_key)
+                        # fix all keynote refs in the model
+                        self.rekey_keynote_refs(from_key, to_key)
+                    # make sure to reload on close
+                    self._needs_update = True
+                except System.TimeoutException as toutex:
+                    forms.alert(
+                        toutex.Message,
+                        expanded="{}::rekey_category() [timeout]".format(
+                            self.__class__.__name__))
+                except Exception as ex:
+                    forms.alert(str(ex),
+                                expanded="{}::rekey_category()".format(
+                                    self.__class__.__name__))
+                finally:
+                    self._update_ktree()
+                    if selected_keynote:
+                        self._update_ktree_knotes()
 
     def remove_category(self, sender, args):
         # TODO: ask user which category to move the subkeynotes or delete?
@@ -909,7 +987,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                yes=True, no=True):
                     try:
                         kdb.remove_category(self._conn, selected_category.key)
-                        # make sure to relaod on close
+                        # make sure to reload on close
                         self._needs_update = True
                     except System.TimeoutException as toutex:
                         forms.alert(
@@ -946,7 +1024,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(self, self._conn,
                                  kdb.EDIT_MODE_ADD_KEYNOTE,
                                  pkey=parent_key).show()
-                # make sure to relaod on close
+                # make sure to reload on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message,
@@ -966,7 +1044,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(self, self._conn,
                                  kdb.EDIT_MODE_ADD_KEYNOTE,
                                  pkey=selected_keynote.key).show()
-                # make sure to relaod on close
+                # make sure to reload on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message,
@@ -988,7 +1066,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     kdb.EDIT_MODE_ADD_KEYNOTE,
                     text=self.selected_keynote.text,
                     pkey=self.selected_keynote.parent_key).show()
-                # make sure to relaod on close
+                # make sure to reload on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message,
@@ -1019,7 +1097,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                yes=True, no=True):
                     try:
                         kdb.remove_keynote(self._conn, selected_keynote.key)
-                        # make sure to relaod on close
+                        # make sure to reload on close
                         self._needs_update = True
                     except System.TimeoutException as toutex:
                         forms.alert(
@@ -1042,7 +1120,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._conn,
                     kdb.EDIT_MODE_EDIT_KEYNOTE,
                     rkeynote=self.selected_keynote).show()
-                # make sure to relaod on close
+                # make sure to reload on close
                 self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message,
@@ -1056,7 +1134,45 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._update_ktree_knotes()
 
     def rekey_keynote(self, sender, args):
-        forms.alert("Not yet implemented. Coming soon.")
+        selected_keynote = self.selected_keynote
+        # if any of its children are locked
+        if any(x.locked for x in selected_keynote.children):
+            forms.alert('At least one child keynote of this keynote is locked. '
+                        'Wait until the changes are committed.')
+        else:
+            try:
+                from_key = selected_keynote.key
+                to_key = self._pick_new_key()
+                if to_key and to_key != from_key:
+                    # update keynote to new key
+                    kdb.update_keynote_key(self._conn, from_key, to_key)
+                    # update all children to new key
+                    with kdb.BulkAction(self._conn):
+                        for ckey in selected_keynote.children:
+                            kdb.move_keynote(self._conn, ckey.key, to_key)
+                    # fix all keynote refs in the model
+                    self.rekey_keynote_refs(from_key, to_key)
+                # make sure to reload on close
+                self._needs_update = True
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message,
+                            expanded="{}::rekey_keynote() [timeout]".format(
+                                self.__class__.__name__))
+            except Exception as ex:
+                forms.alert(str(ex),
+                            expanded="{}::rekey_keynote()".format(
+                                self.__class__.__name__))
+            finally:
+                self._update_ktree_knotes()
+
+    def rekey_keynote_refs(self, from_key, to_key):
+        with revit.Transaction("Rekey Keynote {}".format(from_key)):
+            for kid in self.get_used_keynote_elements().get(from_key, []):
+                kel = revit.doc.GetElement(kid)
+                if kel:
+                    key_param = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
+                    if key_param:
+                        key_param.Set(to_key)
 
     def show_keynote(self, sender, args):
         if self.selected_keynote:
@@ -1121,10 +1237,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         forms.alert("Not yet implemented. Coming soon.")
 
     def change_keynote_file(self, sender, args):
-        if self._change_kfile():
-            # make sure to relaod on close
-            self._needs_update = True
-            self.Close()
+        self._change_kfile()
+        self._determine_kfile()
+        self._connect_kfile()
+        # make sure to reload on close
+        self._needs_update = True
+        self.Close()
 
     def show_keynote_file(self, sender, args):
         coreutils.show_entry_in_explorer(self._kfile)

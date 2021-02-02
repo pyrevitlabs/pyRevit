@@ -337,7 +337,9 @@ class GenericUIContainer(GenericUIComponent):
         # default is layout in metadata, the older layout file is deprecate
         # and is for fallback only
         if not self.parse_layout_metadata():
-            self.parse_layout_file()
+            mlogger.debug('Container does not have layout file defined: %s',
+                self)
+
 
     def _apply_layout_directive(self, directive, component):
         # if matching directive found, process the directive
@@ -416,19 +418,6 @@ class GenericUIContainer(GenericUIComponent):
         if layout:
             self.parse_layout_items(layout)
             return True
-
-    def parse_layout_file(self):
-        layout_filepath = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
-        if op.exists(layout_filepath):
-            mlogger.deprecate(
-                "\"_layout\" file is deprecated. "
-                "use bundle.yaml instead. | %s", self)
-            with codecs.open(layout_filepath, 'r', 'utf-8') as layout_file:
-                self.parse_layout_items(layout_file.read().splitlines())
-                return True
-        else:
-            mlogger.debug('Container does not have layout file defined: %s',
-                          self)
 
     def contains(self, item_name):
         return any([x.name == item_name for x in self.components])
@@ -622,17 +611,12 @@ class GenericUICommand(GenericUIComponent):
 
         # panel buttons should be active always
         if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:
-            self.context = exts.CTX_ZERODOC[0]
+            self.context = exts.CTX_ZERODOC
         else:
             self.context = \
                 self.meta.get(exts.MDATA_COMMAND_CONTEXT, None)
             if isinstance(self.context, list):
                 self.context = coreutils.join_strings(self.context)
-
-            if self.context and exts.CTX_ZERODOC[1] in self.context:
-                mlogger.deprecate(
-                    "\"zerodoc\" context is deprecated. "
-                    "use \"zero-doc\" instead. | %s", self)
 
     def _read_bundle_metadata_from_python_script(self):
         try:
@@ -689,17 +673,12 @@ class GenericUICommand(GenericUIComponent):
 
             # panel buttons should be active always
             if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:
-                self.context = exts.CTX_ZERODOC[0]
+                self.context = exts.CTX_ZERODOC
             else:
                 self.context = \
                     script_content.extract_param(exts.COMMAND_CONTEXT_PARAM)
                 if isinstance(self.context, list):
                     self.context = coreutils.join_strings(self.context)
-
-                if self.context and exts.CTX_ZERODOC[1] in self.context:
-                    mlogger.deprecate(
-                        "\"zerodoc\" context is deprecated. "
-                        "use \"zero-doc\" instead. | %s", self)
 
         except Exception as parse_err:
             mlogger.log_parse_except(self.script_file, parse_err)

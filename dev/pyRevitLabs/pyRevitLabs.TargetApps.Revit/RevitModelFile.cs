@@ -31,42 +31,50 @@ namespace pyRevitLabs.TargetApps.Revit {
             var rawBasicInfoData = CommonUtils.GetStructuredStorageStream(FilePath, "BasicFileInfo");
 
             // dump stream data
-            logger.Debug("Stream Dump in HEX: \"{0}\"", BitConverter.ToString(rawBasicInfoData));
-            logger.Debug("Stream Dump in ASCII: \"{0}\"", Encoding.ASCII.GetString(rawBasicInfoData));
+            logger.Debug("Stream Dump in HEX:\n\"{0}\"", BitConverter.ToString(rawBasicInfoData));
+            logger.Debug("Stream Dump in ASCII:\n\"{0}\"", Encoding.ASCII.GetString(rawBasicInfoData));
 
             if (rawBasicInfoData != null) {
                 int index = 0;
                 var boundIndices = new List<int>();
                 // find the utf-16 string between two ascii \r\n
-                while (index < rawBasicInfoData.Length - 1) {
+                while (index + 1 < rawBasicInfoData.Length) {
                     if (rawBasicInfoData[index] == 0x0D && rawBasicInfoData[index + 1] == 0x0A)
                         boundIndices.Add(index);
                     index++;
                 }
-                //cleanup array
-                int lastBoundIndex = boundIndices.Count - 1;
-                var utf16Stream =
-                    rawBasicInfoData.Skip(boundIndices[lastBoundIndex - 1] + 2)
-                                    .Take(boundIndices[lastBoundIndex] - boundIndices[lastBoundIndex - 1] - 2)
-                                    .ToArray();
-                // fix ASCII value reprs
-                // replace False with UTF-16 LE False
-                utf16Stream = CommonUtils.ReplaceBytes(
-                    utf16Stream,
-                    //           F     a     l     s     e     null
-                    new byte[] { 0x46, 0x61, 0x6C, 0x73, 0x65, 0x00 },
-                    //           F           a           l           s           e
-                    new byte[] { 0x46, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x73, 0x00, 0x65, 0x00 }
-                    );
 
-                // replace True with UTF-16 LE True
-                utf16Stream = CommonUtils.ReplaceBytes(
-                    utf16Stream,
-                    //           T     r     u     e     null
-                    new byte[] { 0x54, 0x72, 0x75, 0x65, 0x00 },
-                    //           T           r           u           e
-                    new byte[] { 0x54, 0x00, 0x72, 0x00, 0x75, 0x00, 0x65, 0x00 }
-                    );
+                //cleanup array
+                byte[] utf16Stream;
+                // apply data corrections in legacy Revit file formats
+                if (boundIndices.Count >= 2) {
+                    int lastBoundIndex = boundIndices.Count - 1;
+                    utf16Stream =
+                        rawBasicInfoData.Skip(boundIndices[lastBoundIndex - 1] + 2)
+                                        .Take(boundIndices[lastBoundIndex] - boundIndices[lastBoundIndex - 1] - 2)
+                                        .ToArray();
+                    // fix ASCII value reprs
+                    // replace False with UTF-16 LE False
+                    utf16Stream = CommonUtils.ReplaceBytes(
+                        utf16Stream,
+                        //           F     a     l     s     e     null
+                        new byte[] { 0x46, 0x61, 0x6C, 0x73, 0x65, 0x00 },
+                        //           F           a           l           s           e
+                        new byte[] { 0x46, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x73, 0x00, 0x65, 0x00 }
+                        );
+
+                    // replace True with UTF-16 LE True
+                    utf16Stream = CommonUtils.ReplaceBytes(
+                        utf16Stream,
+                        //           T     r     u     e     null
+                        new byte[] { 0x54, 0x72, 0x75, 0x65, 0x00 },
+                        //           T           r           u           e
+                        new byte[] { 0x54, 0x00, 0x72, 0x00, 0x75, 0x00, 0x65, 0x00 }
+                        );
+                }
+                else {
+                    utf16Stream = rawBasicInfoData.ToArray();
+                }
 
                 // take the string between the last two ascii \r\n
                 var baseInfoString = Encoding.GetEncoding("UTF-16").GetString(utf16Stream);
@@ -154,7 +162,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                 // Build: 20180806_1515(x64)
                 match = buildFieldRegex("Build: ", "build").Match(line);
                 if (match.Success) {
-                    var revitProduct = RevitProduct.LookupRevitProduct(line);
+                    BuildInfoLine = line;
+                    var revitProduct = RevitProduct.LookupRevitProduct(BuildInfoLine);
                     if (revitProduct != null)
                         RevitProduct = revitProduct;
                 }
@@ -178,6 +187,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                 }
 
                 // Project Spark File: 0
+
+                // Revit LT File: False
 
                 // Central Model Identity: 00000000-0000-0000-0000-000000000000
 
@@ -212,6 +223,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 // Model Identity: 00000000-0000-0000-0000-000000000000
 
                 // IsSingleUserCloudModel: 慆獬e
+                // Model is singleUserCloudModel: False
 
                 // Author: Autodesk Revit
             }
@@ -277,6 +289,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public bool IsWorkshared { get; private set; } = false;
 
         public string LastSavedPath { get; private set; } = null;
+
+        public string BuildInfoLine { get; private set; } = null;
 
         public string CentralModelPath { get; private set; } = null;
 

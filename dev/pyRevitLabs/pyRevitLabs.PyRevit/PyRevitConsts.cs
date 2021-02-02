@@ -116,6 +116,8 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsTelemetryStatusDefault = false;
         public const string ConfigsTelemetryFileDirKey = "telemetry_file_dir";
         public const string ConfigsTelemetryServerUrlKey = "telemetry_server_url";
+        public const string ConfigsTelemetryIncludeHooksKey = "include_hooks";
+        public const bool ConfigsTelemetryIncludeHooksDefault = false;
         public const string ConfigsAppTelemetryStatusKey = "active_app";
         public const bool ConfigsAppTelemetryStatusDefault = false;
         public const string ConfigsAppTelemetryServerUrlKey = "apptelemetry_server_url";
@@ -134,8 +136,12 @@ namespace pyRevitLabs.PyRevit {
         public const string ExtensionDisabledKey = "disabled";
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
-        public const string ExtensionRunnerPostfix = ".run";
-        public const string ExtensionRunnerCommandPostfix = "_command.py";
+        public const string ExtensionUIBinDirName = "bin";
+        public const string ExtensionUILibDirName = "lib";
+        public const string ExtensionUIHooksDirName = "hooks";
+        public const string ExtensionUICommandsDirName = "commands";
+        public const string ExtensionUICommandPostfix = "_command.py";
+        public const string ExtensionUIChecksDirName = "checks";
         // bundles
         public const string BundleTabPostfix = ".tab";
         public const string BundlePanelPostfix = ".panel";

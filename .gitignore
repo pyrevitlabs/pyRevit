@@ -47,3 +47,6 @@ dist/
 
 # resilio sync
 .sync
+
+# misc
+.idea

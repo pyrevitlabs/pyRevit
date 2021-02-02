@@ -32,7 +32,7 @@ def create_avail_type(extension, cmd_component, module_builder=None):
                 cmd_component=cmd_component
                 )
 
-        elif context_str in exts.CTX_ZERODOC:
+        elif context_str == exts.CTX_ZERODOC:
             bundletypemaker.create_zerodoc_avail_type(
                 module_builder=module_builder,
                 cmd_component=cmd_component
