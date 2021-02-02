@@ -1,6 +1,12 @@
 [
  {
   "product": "pyRevit",
+  "release": "4.8.5",
+  "version": "4.8.5",
+  "key": "{F13EA93D-4DB1-4149-A86A-B0EFE54ED6AC}"
+ },
+ {
+  "product": "pyRevit",
   "release": "4.8.4",
   "version": "4.8.4",
   "key": "{CA4CAB91-D337-4A68-BCF7-D56B77327D3A}"
@@ -214,6 +220,12 @@
   "release": "4.6.1",
   "version": "4.6.1",
   "key": "{EF91A585-DC0C-43B8-B88B-4C130F430E84}"
+ },
+ {
+  "product": "pyRevit CLI",
+  "release": "4.8.5",
+  "version": "4.8.5",
+  "key": "{AA15AF8E-2D65-40EF-A9E6-C920D83984E0}"
  },
  {
   "product": "pyRevit CLI",
