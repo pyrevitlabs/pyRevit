@@ -319,6 +319,21 @@ def connect(keynotes_file, username=None):
     return conn
 
 
+# batch processing ------------------------------------------------------------
+
+
+class BulkAction(object):
+    def __init__(self, conn, target=KEYNOTES_DB):
+        self._conn = conn
+        self._target = target
+    
+    def __enter__(self):
+        self._conn.BEGIN(self._target)
+
+    def __exit__(self, exception, exception_value, traceback):
+        self._conn.END()
+
+
 # query functions -------------------------------------------------------------
 
 
@@ -424,16 +439,17 @@ def update_category_title(conn, key, new_title):
                       {CATEGORY_TITLE_FIELD: new_title})
 
 
+def update_category_key(conn, key, new_key):
+    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key,
+                      {CATEGORY_KEY_FIELD: new_key})
+
+
 def mark_category_under_edited(conn, key):
     conn.BEGIN(KEYNOTES_DB, CATEGORIES_TABLE, key)
 
 
 def remove_category(conn, key):
     conn.DropRecord(KEYNOTES_DB, CATEGORIES_TABLE, key)
-
-
-def rekey_category(conn, key, new_key):
-    raise NotImplementedError()
 
 
 # keynotes --------------------------------------------------------------------
@@ -487,10 +503,6 @@ def move_keynote(conn, key, new_parent):
         key,
         {KEYNOTES_PARENTKEY_FIELD: new_parent}
         )
-
-
-def rekey_keynote(conn, key, new_key):
-    raise NotImplementedError()
 
 
 # import export ---------------------------------------------------------------
