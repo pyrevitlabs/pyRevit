@@ -168,6 +168,10 @@ class RKeynote(object):
             return self._filtered_children
         return self._children
 
+    @property
+    def is_category(self):
+        return not self.parent_key
+
     def has_children(self):
         return len(self.children)
 
