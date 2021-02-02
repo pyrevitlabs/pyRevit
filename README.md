@@ -132,6 +132,6 @@ Check the list of [Currently Open](https://github.com/eirannejad/pyRevit/issues)
 
 **</>** with 🖤 in [Portland](https://en.m.wikipedia.org/wiki/Portland,_Oregon), Oregon
 
-Copyright Ⓒ 2014-2020 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
+Copyright © 2014-2021 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
 
 No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher.

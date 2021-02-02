@@ -59,6 +59,7 @@ COPYRIGHT_FILES = [
     op.join(DEVPATH, "pyRevit/AssemblyCopyright.cs"),
     op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
     op.join(DOCS_DIR, "conf.py"),
+    op.join(ROOT, "README.md"),
 ]
 
 # all source file locations that are part of pyRevit project
