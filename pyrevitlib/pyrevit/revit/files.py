@@ -6,6 +6,7 @@ import codecs
 
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.labs import TargetApps
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -57,3 +58,7 @@ def write_text(filepath, contents):
     # if 'utf_16_le' is specified, codecs will not write the BOM
     with codecs.open(filepath, 'w', 'utf_16') as text_file:
         text_file.write(contents)
+
+
+def get_file_info(filepath):
+    return TargetApps.Revit.RevitModelFile(filepath)

@@ -28,6 +28,7 @@ from pyrevit.revit import serverutils
 from pyrevit.revit import geom
 from pyrevit.revit import units
 from pyrevit.revit import features
+from pyrevit.revit import bim360
 
 
 #pylint: disable=W0703,C0302,C0103
