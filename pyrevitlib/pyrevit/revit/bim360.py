@@ -76,15 +76,16 @@ def get_collab_caches():
     ))
     mlogger.debug('cache root: %s', collab_root)
     collab_caches = []
-    for cache_root in os.listdir(collab_root):
-        cache_root_path = op.join(collab_root, cache_root)
-        for cache_inst in os.listdir(cache_root_path):
-            cache_inst_path = op.join(cache_root_path, cache_inst)
-            mlogger.debug('cache inst: %s', cache_inst_path)
-            if op.isdir(cache_inst_path):
-                collab_caches.append(
-                    CollabCache(cache_inst_path)
-                    )
+    if op.exists(collab_root):
+        for cache_root in os.listdir(collab_root):
+            cache_root_path = op.join(collab_root, cache_root)
+            for cache_inst in os.listdir(cache_root_path):
+                cache_inst_path = op.join(cache_root_path, cache_inst)
+                mlogger.debug('cache inst: %s', cache_inst_path)
+                if op.isdir(cache_inst_path):
+                    collab_caches.append(
+                        CollabCache(cache_inst_path)
+                        )
     return collab_caches
 
 
