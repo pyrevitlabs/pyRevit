@@ -24,26 +24,23 @@ class CacheModelItem(forms.TemplateListItem):
             ' [ Linked ]' if self.linked else ''
             )
 
-try:
-    cmodels = []
-    # grab collab caches
-    for cc in bim360.get_collab_caches():
-        # add models
-        cmodels.extend(
-            [CacheModelItem(x) for x in cc.cache_models]
-            )
-        # and linked models
-        cmodels.extend(
-            [CacheModelItem(x, linked=True) for x in cc.cache_linked_models]
-            )
-    
-    # ask user for which model to delete
-    selected_cmodels = forms.SelectFromList.show(cmodels, multiselect=True)
-    if selected_cmodels:
-        # delete each selected cache
-        for cm in selected_cmodels:
-            logger.info('Deleting %s', cm)
-            bim360.clear_model_cache(cm)
-            
-except:
-    nomodels = forms.alert('No Collaboration Cache for this version of Revit', title='pyRevit - Wipe Collaboration Cache', ok=True, cancel=False)
+
+cmodels = []
+# grab collab caches
+for cc in bim360.get_collab_caches():
+    # add models
+    cmodels.extend(
+        [CacheModelItem(x) for x in cc.cache_models]
+        )
+    # and linked models
+    cmodels.extend(
+        [CacheModelItem(x, linked=True) for x in cc.cache_linked_models]
+        )
+
+# ask user for which model to delete
+selected_cmodels = forms.SelectFromList.show(cmodels, multiselect=True)
+if selected_cmodels:
+    # delete each selected cache
+    for cm in selected_cmodels:
+        logger.info('Deleting %s', cm)
+        bim360.clear_model_cache(cm)
