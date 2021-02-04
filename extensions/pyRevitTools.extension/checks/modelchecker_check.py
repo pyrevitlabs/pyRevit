@@ -304,41 +304,36 @@ def checkModel(doc, output):
     rvtlinks_id_collector = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
-        .WhereElementIsElementType()
+        .WhereElementIsNotElementType()
         .ToElements()
     )
-    rvtlinkdocs, rvtlinkdocsName = [], []
-    
+    rvtlinkdocs = [i.GetLinkDocument() for i in DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)]
+
+    rvtlinkdocsName, rvtlink_instance_name =  [], []
     if len(rvtlinks_id_collector):
-        revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
-        for i in revitLinksdoc:
-            if i.GetLinkDocument():
-                rvtlinkdocsName.append(i.GetLinkDocument().Title)
-            else:
-                rvtlinkdocsName.append("Document not loaded")
+        for i in rvtlinks_id_collector:
+            rvtlinkdocsName.append(revit.query.get_name(i).split(' : ')[0])
+            rvtlink_instance_name.append(revit.query.get_name(i).split(' : ')[1])
+
         rvtlinksCount = len(rvtlinks_id_collector)
         # output.print_md(str(rvtlinksCount) +" Revit Links")
 
         # RVTLinks pinned
-        rvtlinks_collector = (
-            DB.FilteredElementCollector(doc)
-            .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
-            .WhereElementIsNotElementType()
-            .ToElements()
-        )
 
-        rvtlinkspinnedCount, rvtlinksNames = [], []
-        for x in rvtlinks_collector:
+        rvtlinkspinnedCount, rvtlink_instance_pinned = [], []
+        for x in rvtlinks_id_collector:
             rvtlinkspinnedCount.append(x.Pinned)
-            rvtlinksNames.append(x.Name)
+        for i in rvtlinkspinnedCount:
+            if i==True:
+                rvtlink_instance_pinned.append('Pinned')
+            else:
+                rvtlink_instance_pinned.append('UnPinned')
         rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
         # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
     else:
         pass
-    
+
     ### View collectors
-
-
     
     # views
     views_id_collector = (
@@ -643,9 +638,12 @@ def checkModel(doc, output):
     	#Get links phases
         for x in links:
             linkdocPhases = []
-            for y in x.Phases:
-                linkdocPhases.append(y.Name)
-            linkdocPhasesName.append(linkdocPhases)
+            try:
+                for y in x.Phases:
+                    linkdocPhases.append(y.Name)
+                linkdocPhasesName.append(linkdocPhases)
+            except:
+                linkdocPhasesName.append(['Link Unloaded'])
     	return docPhasesName, linkdocPhasesName
 
     #Call for phases definition
@@ -726,12 +724,13 @@ def checkModel(doc, output):
     if not len(rvtlinks_id_collector):
         output.print_md("No links")
     else:
-        rvtlinkdocsNameFormated = []
-        for i in rvtlinkdocsName:
-            rvtlinkdocsNameFormated.append([i])
-            for j in rvtlinkdocsNameFormated:
-                j.append(' ')
-        output.print_table(rvtlinkdocsNameFormated, columns=['Files list'], formats=None, title='', last_line_style='')
+        rvtlinkdocsNameFormated, rvtlink_instance_name_formated = [], []
+        for i, j in zip(rvtlinkdocsName, rvtlink_instance_name):
+            rvtlinkdocsNameFormated.append(i)
+            rvtlink_instance_name_formated.append(j)
+        rvtlinks_data = zip(*[rvtlinkdocsNameFormated, rvtlink_instance_name_formated, rvtlink_instance_pinned])
+
+        output.print_table(rvtlinks_data, columns=['Instance File Name', 'Instance Name', 'Pinned status'], formats=None, title='', last_line_style='')
         # Make row
         htmlRowRVTlinks = (
             dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
@@ -1016,7 +1015,7 @@ def checkModel(doc, output):
     output.print_md("# Phases\n")
     rvtlinkdocsName.insert(0,printedName)
     filePhases = rvtlinkdocsName,[','.join(i) for i in phase]
-    output.print_table(zip(*filePhases), columns=["File Name","Phases"], formats=None, title='', last_line_style='')
+    output.print_table(zip(*filePhases), columns=["Instance File Name","Phases"], formats=None, title='', last_line_style='')
 
     ## Elements count dashboard section
     # print Elements count section header
