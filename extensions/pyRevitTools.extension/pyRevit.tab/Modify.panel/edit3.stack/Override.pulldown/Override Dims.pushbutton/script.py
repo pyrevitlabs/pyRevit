@@ -1,4 +1,5 @@
-"""Provides options for overriding values on selected dimensions."""
+""" Provides options for overriding values on selected dimensions. """
+# coding=utf-8
 
 from collections import OrderedDict
 
@@ -36,6 +37,10 @@ def set_dim_overrides(dims, txn_name='Dimension Overrides',
             if suffix is not None:
                 seg.Suffix = suffix
 
+"""
+Edit or add functions below to make them available in pyrevit. If you need special characters, like umlauts, use utf-8 encoding, like this:
+u'Ö'
+"""           
 
 def bake_dim_value():
     with revit.Transaction('Overrride dims value'):
@@ -170,8 +175,8 @@ def set_to_ro():
 def set_to_ro_below():
     set_dim_overrides(grab_dims(), txn_name='RO Dims',
                       below='R.O.')
-
-
+   
+    
 options = OrderedDict()
 options['Reset Dimension Overrides'] = clear_overrides
 options['Bake Dimension Value'] = bake_dim_value
