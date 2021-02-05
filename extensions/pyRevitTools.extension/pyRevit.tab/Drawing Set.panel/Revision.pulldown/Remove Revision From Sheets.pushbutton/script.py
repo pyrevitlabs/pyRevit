@@ -14,7 +14,7 @@ revisions = forms.select_revisions(button_name='Select Revision',
 logger.debug(revisions)
 
 if revisions:
-    sheets = forms.select_sheets(button_name='Set Revision',
+    sheets = forms.select_sheets(button_name='Remove Revisions',
                                  include_placeholder=True)
     if sheets:
         with revit.Transaction('Remove Revision from Sheets'):
