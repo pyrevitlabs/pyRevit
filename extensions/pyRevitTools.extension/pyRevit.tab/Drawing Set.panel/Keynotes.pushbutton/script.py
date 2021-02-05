@@ -681,7 +681,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def _convert_existing(self):
         # make a copy of the original keynote file
         temp_kfile = \
-            script.get_universal_data_file(op.basename(self._kfile), '.bak')
+            script.get_data_file(op.basename(self._kfile), 'bak')
         if op.exists(temp_kfile):
             script.remove_data_file(temp_kfile)
         shutil.copy(self._kfile, temp_kfile)
@@ -697,6 +697,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         expanded="{}::_convert_existing()".format(
                             self.__class__.__name__),
                         exitscript=True)
+        finally:
+            script.remove_data_file(temp_kfile)
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
