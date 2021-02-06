@@ -92,10 +92,9 @@ def _make_ui_title(button):
 
 
 def _make_full_class_name(asm_name, class_name):
-    if asm_name is None or class_name is None:
-        return None
-    else:
+    if asm_name and class_name:
         return '{}.{}'.format(asm_name, class_name)
+    return None
 
 
 def _set_highlights(button, ui_item):
@@ -310,11 +309,12 @@ def _produce_ui_linkbutton(ui_maker_params):
                 return None
             linked_asm = linked_asm_list[0]
 
+        linked_asm_name = linked_asm.GetName().Name
         parent_ui_item.create_push_button(
             button_name=linkbutton.name,
             asm_location=linked_asm.Location,
             class_name=_make_full_class_name(
-                linked_asm.GetName().Name,
+                linked_asm_name,
                 linkbutton.command_class
                 ),
             icon_path=linkbutton.icon_file or parent.icon_file,
@@ -323,7 +323,10 @@ def _produce_ui_linkbutton(ui_maker_params):
                                                        ext_asm_info.name),
             tooltip_media=linkbutton.media_file,
             ctxhelpurl=linkbutton.help_url,
-            avail_class_name=linkbutton.avail_class_name,
+            avail_class_name=_make_full_class_name(
+                linked_asm_name,
+                linkbutton.avail_command_class
+                ),
             update_if_exists=True,
             ui_title=_make_ui_title(linkbutton))
         linkbutton_ui = parent_ui_item.button(linkbutton.name)
