@@ -88,6 +88,14 @@ class LinkButton(NoScriptButton):
             needs_commandclass=True
             )
 
+        if self.context:
+            mlogger.warn(
+                "Linkbutton bundles do not support \"context:\". "
+                "Use \"availability_class:\" instead and specify name of "
+                "availability class in target assembly | %s", self
+                )
+            self.context = None
+
 
 class InvokeButton(NoScriptButton):
     type_id = exts.INVOKE_BUTTON_POSTFIX
