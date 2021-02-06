@@ -57,26 +57,23 @@
     <Reference Include="System.Windows.Interactivity">
       <HintPath>..\..\bin\System.Windows.Interactivity.dll</HintPath>
     </Reference>
-    <Reference Include="IKVM.Reflection">
-      <HintPath>..\..\bin\engines\2710\IKVM.Reflection.dll</HintPath>
-    </Reference>
     <Reference Include="IronPython">
-      <HintPath>..\..\bin\engines\2710\IronPython.dll</HintPath>
+      <HintPath>..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.Modules">
-      <HintPath>..\..\bin\engines\2710\IronPython.Modules.dll</HintPath>
+      <HintPath>..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.Modules.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.SQLite">
-      <HintPath>..\..\bin\engines\2710\IronPython.SQLite.dll</HintPath>
+      <HintPath>..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.SQLite.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.Wpf">
-      <HintPath>..\..\bin\engines\2710\IronPython.Wpf.dll</HintPath>
+      <HintPath>..\..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\bin\engines\2710\Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\bin\engines\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting">
-      <HintPath>..\..\bin\engines\2710\Microsoft.Scripting.dll</HintPath>
+      <HintPath>..\..\bin\engines\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLabs.Common">
       <HintPath>..\..\bin\pyRevitLabs.Common.dll</HintPath>
@@ -100,7 +97,7 @@
       <HintPath>..\..\bin\pyRevitLabs.TargetApps.Revit.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLoader">
-      <HintPath>..\..\bin\engines\2710\pyRevitLoader.dll</HintPath>
+      <HintPath>..\..\bin\engines\IPY2711PR\pyRevitLoader.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLabs.PythonNet">
       <HintPath>..\modules\pyRevitLabs.Python.Net/src/runtime/bin/pyRevitLabs.PythonNet.dll</HintPath>
