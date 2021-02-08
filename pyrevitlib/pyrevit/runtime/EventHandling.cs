@@ -938,6 +938,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
+    [Flags]
+    public enum TabColoringStyle {
+        TopBarLight,
+        TopBarHeavy,
+        BorderLight,
+        BorderHeavy,
+        BackgroundFill,
+    }
+
     public static class DocumentTabEventUtils {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -946,9 +955,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static bool IsUpdatingDocumentTabs { get; private set; }
         private static object UpdateLock = new object();
 
-        // updating view tab colors
-        public static Dictionary<long, Brush> DocumentBrushes;
-        public static List<SolidColorBrush> DocumentBrushTheme = new List<SolidColorBrush> {
+        public static TabColoringStyle ProjectTabStyle { get; set; } = TabColoringStyle.TopBarLight;
+        public static TabColoringStyle FamilyTabStyle { get; set; } = TabColoringStyle.BorderLight;
+        public static uint HeavyThinkness { get; set; } = 2;
+        public static List<SolidColorBrush> TabColoringTheme { get; set; } =
+            new List<SolidColorBrush> {
                 PyRevitConsts.PyRevitAccentBrush,
                 PyRevitConsts.PyRevitBackgroundBrush,
                 Brushes.Gray,
@@ -961,6 +972,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 Brushes.DeepPink,
                 Brushes.White
             };
+
+        public static Dictionary<long, Brush> DocumentBrushes;
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public static Xceed.Wpf.AvalonDock.DockingManager GetDockingManager(UIApplication uiapp) {
@@ -1081,7 +1094,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                 docBrush = DocumentBrushes[docId];
                             }
                             else {
-                                foreach (Brush brush in DocumentBrushTheme) {
+                                foreach (Brush brush in TabColoringTheme) {
                                     if (!DocumentBrushes.ContainsValue(brush)) {
                                         docBrush = brush;
                                         break;
