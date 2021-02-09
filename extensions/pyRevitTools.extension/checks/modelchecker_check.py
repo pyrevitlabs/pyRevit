@@ -688,9 +688,11 @@ def checkModel(doc, output):
     familiesTres = 500
     if familyCount < 500:
         inPlaceFamilyTres = familyCount * 0.2
+        genericModelTres = familyCount * 0.2
     else:
-        inPlaceFamilyTres = 500 * 0.2
-    notParamFamiliesTres = familyCount * 0.3
+        inPlaceFamilyTres = familiesTres * 0.2
+        genericModelTres = familiesTres * 0.2
+    notParamFamiliesTres = familyCount * 0.3 
     #TextNotes
     textnoteWFtres = 0
     textnoteCaps = 0
@@ -875,6 +877,64 @@ def checkModel(doc, output):
     # print Loadable Families section header
     output.print_md("# Loadable Families")
 
+    # data for category graph
+    graphCatHeadings = []
+    graphCatData = []
+    elements = (
+        DB.FilteredElementCollector(doc)
+        .WhereElementIsNotElementType()
+        .ToElements()
+    )
+
+    catBanlist = [
+        -2000110,
+        -2003101,
+        -2005210,
+        -2009609,
+        -2000552,
+        -2008107,
+        -2008121,
+        -2008120,
+        -2008119,
+        -2001272,
+        -2001271,
+        -2008142,
+        -2008143,
+        -2008145,
+        -2008147,
+        -2008146,
+        -2008148,
+        -2000261,
+    ]
+    generic_model_elements = []
+    generic_model_elements_count = 0
+    for element in elements:
+        try:
+            category = element.Category.Name
+            categoryId = element.Category.Id.IntegerValue
+            # filtering out DWGs and DXFs, categories from banlist
+            # filtering out categories in catBanlist
+            # DB.BuiltInCategory Ids are negative integers
+            if categoryId < 0 and categoryId not in catBanlist:
+                if category not in graphCatHeadings:
+                    graphCatHeadings.append(category)
+                graphCatData.append(category)
+            if categoryId == -2000151:
+                generic_model_elements.append(category)
+        except:
+            pass
+    # Generic model count
+    generic_model_elements_count = len(generic_model_elements)
+    catSet = []
+    # sorting results in chart legend
+    graphCatHeadings.sort()
+    for i in graphCatHeadings:
+        count = graphCatData.count(i)
+        catSet.append(count)
+    
+
+    graphCatHeadings = [x.encode("UTF8") for x in graphCatHeadings]
+
     # Make row
     htmlRowLoadableFamilies = (
         dashboardRectMaker(familyCount, "Families", familiesTres)
@@ -888,8 +948,14 @@ def checkModel(doc, output):
             "Families <br>not parametric",
             notParamFamiliesTres
         )
+        + dashboardRectMaker(
+            generic_model_elements_count, 
+            "Generic models", 
+            genericModelTres    
+        )
     )
     dashboardLeftMaker(htmlRowLoadableFamilies)
+
 
     if inPlaceFamilyCount != 0:
             # INPLACE CATEGORY GRAPH
@@ -1030,63 +1096,6 @@ def checkModel(doc, output):
 
     # divider
     print("\n\n\n\n")
-
-    # data for category graph
-    graphCatHeadings = []
-    graphCatData = []
-    elements = (
-        DB.FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .ToElements()
-    )
-
-    catBanlist = [
-        -2000110,
-        -2003101,
-        -2005210,
-        -2009609,
-        -2000552,
-        -2008107,
-        -2008121,
-        -2008120,
-        -2008119,
-        -2001272,
-        -2001271,
-        -2008142,
-        -2008143,
-        -2008145,
-        -2008147,
-        -2008146,
-        -2008148,
-        -2000261,
-    ]
-
-    for element in elements:
-        try:
-            category = element.Category.Name
-            categoryId = element.Category.Id.IntegerValue
-            # filtering out DWGs and DXFs, categories from banlist
-            # filtering out categories in catBanlist
-            # DB.BuiltInCategory Ids are negative integers
-            if categoryId < 0 and categoryId not in catBanlist:
-                if category not in graphCatHeadings:
-                    graphCatHeadings.append(category)
-                graphCatData.append(category)
-        except:
-            pass
-
-    catSet = []
-    # sorting results in chart legend
-    graphCatHeadings.sort()
-    for i in graphCatHeadings:
-        count = graphCatData.count(i)
-        catSet.append(count)
-
-    graphCatHeadings = [x.encode("UTF8") for x in graphCatHeadings]
-
-    # for debugging
-    # print graphCatHeadings
-    # print catSet
 
     # categories OUTPUT
     chartCategories = output.make_doughnut_chart()

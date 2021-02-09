@@ -272,7 +272,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         const string SEP = "|";
 
         // is any selection required?
-        private bool selectionRequired = false;
+        private bool _selection = false;
+
+        // acceptable document types
+        enum DocumentType {
+            Any,
+            Project,
+            Family
+        }
+        private DocumentType _docType = DocumentType.Any;
 
         // list of acceptable view types
         private HashSet<ViewType> _activeViewTypes = new HashSet<ViewType>();
@@ -302,63 +310,77 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // first process the tokens for custom directives
             // remove processed tokens and move to next step
             foreach (string token in new List<string>(contextTokens)) {
+                bool processed = false;
                 switch (token.ToLower()) {
                     // selection token requires selected elements
                     case "selection":
-                        selectionRequired = true;
-                        contextTokens.Remove(token); break;
+                        _selection = true;
+                        processed = true; break;
+
+                    // document typw
+                    case "doc-project":
+                        _docType = DocumentType.Project;
+                        processed = true; break;
+                    case "doc-family":
+                        _docType = DocumentType.Family;
+                        processed = true; break;
+
                     // active-* tokens require a certain type of active view
                     case "active-drafting-view":
                         _activeViewTypes.Add(ViewType.DraftingView);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-detail-view":
                         _activeViewTypes.Add(ViewType.Detail);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-plan-view":
                         _activeViewTypes.Add(ViewType.FloorPlan);
                         _activeViewTypes.Add(ViewType.CeilingPlan);
                         _activeViewTypes.Add(ViewType.AreaPlan);
                         _activeViewTypes.Add(ViewType.EngineeringPlan);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-floor-plan":
                         _activeViewTypes.Add(ViewType.FloorPlan);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-rcp-plan":
                         _activeViewTypes.Add(ViewType.CeilingPlan);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-structural-plan":
                         _activeViewTypes.Add(ViewType.EngineeringPlan);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-area-plan":
                         _activeViewTypes.Add(ViewType.AreaPlan);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-elevation-view":
                         _activeViewTypes.Add(ViewType.Elevation);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-section-view":
                         _activeViewTypes.Add(ViewType.Section);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-3d-view":
                         _activeViewTypes.Add(ViewType.ThreeD);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-sheet":
                         _activeViewTypes.Add(ViewType.DrawingSheet);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-legend":
                         _activeViewTypes.Add(ViewType.Legend);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-schedule":
                         _activeViewTypes.Add(ViewType.PanelSchedule);
                         _activeViewTypes.Add(ViewType.ColumnSchedule);
                         _activeViewTypes.Add(ViewType.Schedule);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-panel-schedule":
                         _activeViewTypes.Add(ViewType.PanelSchedule);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                     case "active-column-schedule":
                         _activeViewTypes.Add(ViewType.ColumnSchedule);
-                        contextTokens.Remove(token); break;
+                        processed = true; break;
                 }
+
+                // remove token if captured
+                if (processed)
+                    contextTokens.Remove(token);
             }
 
             // first pass processed and removed the processed tokens
@@ -373,14 +395,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // assume that the remaining tokens are category names and create a comparison string
-            _contextCatNameHash = string.Join(SEP, contextTokens);
+            if (contextTokens.Count > 0)
+                _contextCatNameHash = string.Join(SEP, contextTokens);
         }
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
             // check selection
-            if (selectionRequired && selectedCategories.IsEmpty)
+            if (_selection && selectedCategories.IsEmpty)
                 return false;
 
+            // check document type
+            switch (_docType) {
+                case DocumentType.Project:
+                    if (uiApp != null && uiApp.ActiveUIDocument != null
+                        && uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                        return false;
+                    break;
+                case DocumentType.Family:
+                    if (uiApp != null && uiApp.ActiveUIDocument != null
+                        && !uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                        return false;
+                    break;
+            }
+
+            // check view types
             try {
 #if (REVIT2013 || REVIT2014)
                 // check active views
@@ -400,7 +438,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 
                 // the rest are category comparisons so if no categories are selected return false
-                if (selectedCategories.IsEmpty)
+                if (_contextCatNameHash != null && selectedCategories.IsEmpty)
                     return false;
 
                 // make a hash of selected category ids
