@@ -3,9 +3,6 @@
 from pyrevit import revit, DB
 from pyrevit import forms
 
-
-forms.check_familydoc(doc=revit.doc, exitscript=True)
-
 family_mgr = revit.doc.FamilyManager
 family_types = sorted([x.Name for x in family_mgr.Types])
 if family_mgr.CurrentType:
