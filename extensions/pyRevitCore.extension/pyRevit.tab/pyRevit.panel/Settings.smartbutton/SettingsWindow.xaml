@@ -647,11 +647,11 @@
                                                 <ColumnDefinition Width="26" />
                                                 <ColumnDefinition Width="31" />
                                                 <ColumnDefinition Width="40" />
-                                                <ColumnDefinition Width="200" />
+                                                <ColumnDefinition Width="160" />
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
                                             <Button Grid.Column="1" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                            <Label Grid.Column="2" Content="Filter" />
+                                            <Label Grid.Column="2" Content="Filter" HorizontalAlignment="Right" />
                                             <TextBox Grid.Column="3" Margin="5,0,0,0" VerticalContentAlignment="Center"/>
                                         </Grid>
                                         <TextBlock DockPanel.Dock="Left" Text="By Filter (Regex)" VerticalAlignment="Center" Margin="0,0,10,0" Width="85" />
@@ -685,11 +685,13 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="26" />
                                                     <ColumnDefinition Width="31" />
-                                                    <ColumnDefinition Width="200" />
+                                                    <ColumnDefinition Width="40" />
+                                                    <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
                                                 <Button Grid.Column="0" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
                                                 <Button Grid.Column="1" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                                <TextBox Grid.Column="2" Margin="5,0,0,0" Text="Enter TitleFilter" VerticalContentAlignment="Center"/>
+                                                <Label Grid.Column="2" Content="Filter" HorizontalAlignment="Right" />
+                                                <TextBox Grid.Column="3" Margin="5,0,0,0" VerticalContentAlignment="Center"/>
                                             </Grid>
                                             <TextBlock DockPanel.Dock="Left" Text="By Filter (Regex)" VerticalAlignment="Center" Margin="0,0,10,0" Width="85" />
                                             <ListView MinHeight="24" Background="Transparent" ItemsPanel="{StaticResource swatchPanel}" ItemContainerStyle="{StaticResource swatchPanelItem}">
