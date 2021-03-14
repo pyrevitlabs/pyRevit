@@ -745,7 +745,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                                    doc=self.selected_doc):
                 for idx, sheet in enumerate(target_sheets):
                     rvtsheet = sheet.revit_sheet
+                    # removing any NPC from previous failed prints
+                    if NPC in rvtsheet.SheetNumber:
+                        rvtsheet.SheetNumber = rvtsheet.SheetNumber.replace(NPC, '')
+                    # create a list of the existing sheet numbers
                     original_sheetnums.append(rvtsheet.SheetNumber)
+                    # add a prefix (NPC) for sorting purposes
                     rvtsheet.SheetNumber = \
                         NPC * (idx + 1) + rvtsheet.SheetNumber
                     if sheet.printable:
