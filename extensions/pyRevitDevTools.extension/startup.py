@@ -17,9 +17,10 @@ errors are printed from pyRevit commands.
 #pylint: disable=missing-docstring
 import sys
 import time
+import os.path as op
 
 from pyrevit import HOST_APP, framework
-from pyrevit import revit, DB
+from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import routes
 
@@ -137,3 +138,33 @@ def post_date_id(request, year, month, day, pid):
             "post_id_type": type(pid).__name__
         }
     }
+
+
+# test dockable panel =========================================================
+from pyrevit.framework import Windows
+from pyrevit.framework import wpf
+from pyrevit.coreutils import Guid
+
+
+class DockableExample (Windows.Controls.Page):
+    def __init__(self, xaml_file):
+        wpf.LoadComponent(self, op.join(op.dirname(__file__), xaml_file))
+
+    def do_something(self, sender, args):
+        forms.alert("DockableExample Action")
+
+
+
+class DockableExamplePanelProvider (UI.IDockablePaneProvider):
+    def SetupDockablePane(self, data):
+        # https://apidocs.co/apps/revit/2021.1/cde36571-ccf1-f628-9e34-6a720388d348.htm
+        data.FrameworkElement = DockableExample("DockableExample.xaml")
+        data.VisibleByDefault = True
+
+
+DOCKABLE_PANE_ID = UI.DockablePaneId(Guid.NewGuid())
+HOST_APP.uiapp.RegisterDockablePane(
+    DOCKABLE_PANE_ID,
+    "pyRevit Dockable Panel Example",
+    DockableExamplePanelProvider()
+)
