@@ -9,7 +9,8 @@ views = [revit.doc.GetElement(v.ViewId) for v in uiviews]
 views_to_keep = forms.SelectFromList.show(
     [forms.ViewOption(view) for view in views],
     multiselect=True,
-    title='Select views to keep open'
+    title="Select Views To Keep Open",
+    button_name="Keep Selected and Close Others"
     )
 
 if views_to_keep:
