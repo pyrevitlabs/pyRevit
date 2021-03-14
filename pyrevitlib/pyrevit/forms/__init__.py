@@ -2668,7 +2668,7 @@ def pick_excel_file(save=False, title=None):
                      title=title)
 
 
-def save_excel_file():
+def save_excel_file(title=None):
     """File save dialog for an excel file.
 
     Args:
