@@ -747,7 +747,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                     rvtsheet = sheet.revit_sheet
                     # removing any NPC from previous failed prints
                     if NPC in rvtsheet.SheetNumber:
-                        rvtsheet.SheetNumber = rvtsheet.SheetNumber.replace(NPC, '')
+                        rvtsheet.SheetNumber = \
+                            rvtsheet.SheetNumber.replace(NPC, '')
                     # create a list of the existing sheet numbers
                     original_sheetnums.append(rvtsheet.SheetNumber)
                     # add a prefix (NPC) for sorting purposes
