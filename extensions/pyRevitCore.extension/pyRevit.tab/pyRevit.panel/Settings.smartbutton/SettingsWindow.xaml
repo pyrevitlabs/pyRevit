@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
-        Height="1050" Width="700"
+        Height="800" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -89,7 +89,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
                         <Border Name="Border" Padding="1" SnapsToDevicePixels="true" Background="Transparent" BorderThickness="1">
-                            <Border Width="18" Height="18" Background="Gray" BorderThickness="0"></Border>
+                            <Border Width="18" Height="18" Background="{Binding color}" BorderThickness="0"></Border>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -541,7 +541,7 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="UI / UX" IsExpanded="True" Margin="10px">
+                <Expander Header="UI / UX" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10,10,10,0">
                         <TextBlock TextWrapping="WrapWithOverflow">
                             This section provides all the settings related to User Interface (UI) and User Experience (UX).
@@ -562,142 +562,141 @@
                         <GroupBox Header="Tab Coloring" Margin="0,10,0,0" Padding="10">
                             <StackPanel>
                                 <TextBlock DockPanel.Dock="Top" Margin="0,0,0,5" FontWeight="Medium">Coloring Style</TextBlock>
-                                <DockPanel>
-                                    <StackPanel DockPanel.Dock="Right" Width="250">
-                                        <DockPanel>
-                                            <Label Content="Project Tab Style" Width="100"/>
-                                            <ComboBox SelectedIndex="0">
-                                                <ComboBoxItem Content="Top Bar - Light" />
-                                                <ComboBoxItem Content="Top Bar - Medium" />
-                                                <ComboBoxItem Content="Top Bar - Heavy" />
-                                                <ComboBoxItem Content="Border - Light" />
-                                                <ComboBoxItem Content="Border - Medium" />
-                                                <ComboBoxItem Content="Border - Heavy" />
-                                                <ComboBoxItem Content="Background Fill" />
-                                            </ComboBox>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,10,0,0">
-                                            <Label Content="Family Tab Style" Width="100"/>
-                                            <ComboBox SelectedIndex="0">
-                                                <ComboBoxItem Content="Top Bar - Light" />
-                                                <ComboBoxItem Content="Top Bar - Medium" />
-                                                <ComboBoxItem Content="Top Bar - Heavy" />
-                                                <ComboBoxItem Content="Border - Light" />
-                                                <ComboBoxItem Content="Border - Medium" />
-                                                <ComboBoxItem Content="Border - Heavy" />
-                                                <ComboBoxItem Content="Background Fill" />
-                                            </ComboBox>
-                                        </DockPanel>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,5,0,5">
-                                        <CheckBox x:Name="colordocs_cb" Content="Colorize Open Documents" IsChecked="False" IsEnabled="True" />
-                                        <CheckBox x:Name="sortdocs_cb" Content="Sort Open Tabs by " IsChecked="False" IsEnabled="True" Margin="0,5,0,0"/>
-                                    </StackPanel>
-                                </DockPanel>
-                                <Grid Margin="0,10,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition />
-                                        <ColumnDefinition />
-                                        <ColumnDefinition />
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Border x:Name="tabProjA" Grid.Column="0" Width="150" Height="25" HorizontalAlignment="Left" BorderBrush="Black" BorderThickness="0,1,0,0" Background="White">
-                                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Project - View 1</TextBlock>
-                                    </Border>
-                                    <Border x:Name="tabProjB" Grid.Column="1" Width="150" Height="25" HorizontalAlignment="Left" BorderBrush="Black" BorderThickness="0,1,0,0" Background="LightGray">
-                                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Project - View 2</TextBlock>
-                                    </Border>
-                                    <Border x:Name="tabProjC" Grid.Column="2" Width="150" Height="25" HorizontalAlignment="Left" BorderBrush="Black" BorderThickness="0,1,0,0" Background="LightGray">
-                                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Next Project</TextBlock>
-                                    </Border>
-                                    <Border x:Name="tabProjD" Grid.Column="3" Margin="0,0,0,0" Width="150" Height="25" HorizontalAlignment="Left" BorderBrush="Black" BorderThickness="1" Background="LightGray">
-                                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Family</TextBlock>
-                                    </Border>
-                                </Grid>
+                                <StackPanel Margin="0,5,0,5">
+                                    <CheckBox x:Name="colordocs_cb" Content="Colorize Open Documents" IsChecked="False" IsEnabled="True" />
+                                    <CheckBox x:Name="sortdocs_cb" Content="Keep Open Tabs Sorted By Document " IsChecked="False" IsEnabled="False" Margin="0,5,0,0"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,10,0,0">
+                                    <Grid Margin="10,10,10,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <WrapPanel Grid.Column="0">
+                                            <Label Content="Project Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
+                                            <ComboBox x:Name="project_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="name"/>
+                                        </WrapPanel>
+                                        <WrapPanel Grid.Column="1" >
+                                            <Label Content="Family Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
+                                            <ComboBox x:Name="family_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="name"/>
+                                        </WrapPanel>
+                                    </Grid>
+                                    <Grid Margin="10,10,10,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition />
+                                            <ColumnDefinition />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Border x:Name="tabProjA" Grid.Column="0" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="0,1,0,0" Background="White" SnapsToDevicePixels="True">
+                                            <TextBlock x:Name="tabProjATitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Project 1 - View</TextBlock>
+                                        </Border>
+                                        <Border x:Name="tabProjB" Grid.Column="1" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="0,1,0,0" Background="LightGray" SnapsToDevicePixels="True">
+                                            <TextBlock x:Name="tabProjBTitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Project 2 - View</TextBlock>
+                                        </Border>
+                                        <Border x:Name="tabFamilyA" Grid.Column="2" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="0,1,0,0" Background="LightGray" SnapsToDevicePixels="True">
+                                            <TextBlock x:Name="tabFamilyATitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Family 1 - View</TextBlock>
+                                        </Border>
+                                        <Border x:Name="tabFamilyB" Grid.Column="3" Margin="0,0,0,0" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="1" Background="LightGray" SnapsToDevicePixels="True">
+                                            <TextBlock x:Name="tabFamilyBTitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Family 2 - View</TextBlock>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
                                 <StackPanel Margin="0,10,0,10">
                                     <TextBlock Margin="0,0,0,5" FontWeight="Medium">Coloring Theme</TextBlock>
                                     <TextBlock Foreground="Gray" Margin="0,0,0,10" TextWrapping="Wrap">
                                         Select a series of colors to be applied to project tabs as they open.
                                         <LineBreak />
-                                        Colors in the "By Order" group will be applied to documents by order.
+                                        Colors in the "By Order" group will be applied to tabs by order.
                                         <LineBreak />
-                                        Colors in "By Filter" group will be applied to documents matching the given "Title" filter
+                                        Colors in "By Filter" group will be applied to tabs matching the given name filter. If a filter matches
+                                        any of the tab names, the by-filter color will take priority over the by-order color of that tab.
                                     </TextBlock>
                                     <DockPanel>
                                         <Grid DockPanel.Dock="Right" Margin="5,0,0,0" >
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="26" />
                                                 <ColumnDefinition Width="31" />
-                                                <ColumnDefinition Width="200" />
+                                                <ColumnDefinition Width="240" />
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                            <Button Grid.Column="1" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
+                                            <Button Grid.Column="0" Width="26" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_ordercolor" />
+                                            <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_ordercolor" />
                                         </Grid>
-                                        <TextBlock DockPanel.Dock="Left" Text="By Order" VerticalAlignment="Center" Margin="0,0,10,0" Width="85" />
-                                        <ListView MinHeight="24" Background="Transparent" ItemsPanel="{StaticResource swatchPanel}" ItemContainerStyle="{StaticResource swatchPanelItem}">
-                                            <ListViewItem />
-                                            <ListViewItem />
-                                            <ListViewItem />
-                                            <ListViewItem />
-                                        </ListView>
+                                        <TextBlock DockPanel.Dock="Left" Text="By Order" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                        <ListView x:Name="doc_ordercolor_lb"
+                                                  MinHeight="26" Background="Transparent"
+                                                  ItemsPanel="{StaticResource swatchPanel}"
+                                                  ItemContainerStyle="{StaticResource swatchPanelItem}"
+                                                  SelectionChanged="selected_ordercolor_changed"
+                                                  MouseDoubleClick="doc_ordercolor_changecolor"
+                                                  />
                                     </DockPanel>
                                     <DockPanel Margin="0,10,0,0">
                                         <Grid DockPanel.Dock="Right" Margin="5,0,0,0" >
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="26" />
                                                 <ColumnDefinition Width="31" />
-                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="80" />
                                                 <ColumnDefinition Width="160" />
                                             </Grid.ColumnDefinitions>
-                                            <Button Grid.Column="0" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                            <Button Grid.Column="1" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                            <Label Grid.Column="2" Content="Filter" HorizontalAlignment="Right" />
-                                            <TextBox Grid.Column="3" Margin="5,0,0,0" VerticalContentAlignment="Center"/>
+                                            <Button Grid.Column="0" Width="26" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_filtercolor" />
+                                            <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_filtercolor" />
+                                            <Label Grid.Column="2" Content="Filter (Regex)" HorizontalAlignment="Right" />
+                                            <TextBox x:Name="filtercolor_filter_tb" TextChanged="filtercolor_filter_changed" Grid.Column="3" Margin="5,0,0,0" MinHeight="26" VerticalContentAlignment="Center"/>
+                                            <Ellipse x:Name="filtercolor_filter_warn" Visibility="Hidden" ToolTip="Bad Regex" Grid.Column="3" Fill="Red" Width="8" Height="8" HorizontalAlignment="Right" Margin="0,0,8,0" />
                                         </Grid>
-                                        <TextBlock DockPanel.Dock="Left" Text="By Filter (Regex)" VerticalAlignment="Center" Margin="0,0,10,0" Width="85" />
-                                        <ListView MinHeight="24" Background="Transparent" ItemsPanel="{StaticResource swatchPanel}" ItemContainerStyle="{StaticResource swatchPanelItem}">
-                                            <ListBoxItem />
-                                            <ListBoxItem />
-                                        </ListView>
+                                        <TextBlock DockPanel.Dock="Left" Text="By Filter" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                        <ListView x:Name="doc_filtercolor_lb"
+                                                  MinHeight="26" Background="Transparent"
+                                                  ItemsPanel="{StaticResource swatchPanel}"
+                                                  ItemContainerStyle="{StaticResource swatchPanelItem}"
+                                                  SelectionChanged="selected_filtercolor_changed"
+                                                  MouseDoubleClick="doc_filtercolor_changecolor"
+                                                  />
                                     </DockPanel>
-                                    <CheckBox x:Name="usefamilytheme_cb" Content="Use Separate Theme for Families" IsChecked="False" IsEnabled="True" Margin="0,15,0,10"/>
+                                    <CheckBox x:Name="usefamilytheme_cb" Checked="tabstyling_changed" Unchecked="tabstyling_changed" Content="Use Separate Theme for Families" IsChecked="False" IsEnabled="True" Margin="0,15,0,10"/>
                                     <StackPanel x:Name="familyThemePanel" IsEnabled="{Binding ElementName=usefamilytheme_cb, Path=IsChecked}">
                                         <DockPanel>
                                             <Grid DockPanel.Dock="Right" Margin="5,0,0,0" >
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="26" />
                                                     <ColumnDefinition Width="31" />
-                                                    <ColumnDefinition Width="200" />
+                                                    <ColumnDefinition Width="240" />
                                                 </Grid.ColumnDefinitions>
-                                                <Button Grid.Column="0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                                <Button Grid.Column="1" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
+                                                <Button Grid.Column="0" Width="26" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_family_ordercolor" />
+                                                <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_family_ordercolor" />
                                             </Grid>
-                                            <TextBlock DockPanel.Dock="Left" Text="By Order" VerticalAlignment="Center" Margin="0,0,10,0" Width="85" />
-                                            <ListView MinHeight="24" Background="Transparent" ItemsPanel="{StaticResource swatchPanel}" ItemContainerStyle="{StaticResource swatchPanelItem}">
-                                                <ListBoxItem />
-                                                <ListBoxItem />
-                                                <ListBoxItem />
-                                                <ListBoxItem />
-                                            </ListView>
+                                            <TextBlock DockPanel.Dock="Left" Text="By Order" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                            <ListView x:Name="doc_family_ordercolor_lb"
+                                                      MinHeight="26" Background="Transparent"
+                                                      ItemsPanel="{StaticResource swatchPanel}"
+                                                      ItemContainerStyle="{StaticResource swatchPanelItem}"
+                                                      SelectionChanged="selected_family_ordercolor_changed"
+                                                      MouseDoubleClick="doc_family_ordercolor_changecolor"
+                                                      />
                                         </DockPanel>
                                         <DockPanel Margin="0,10,0,0">
                                             <Grid DockPanel.Dock="Right" Margin="5,0,0,0" >
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="26" />
                                                     <ColumnDefinition Width="31" />
-                                                    <ColumnDefinition Width="40" />
+                                                    <ColumnDefinition Width="80" />
                                                     <ColumnDefinition Width="160" />
                                                 </Grid.ColumnDefinitions>
-                                                <Button Grid.Column="0" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                                <Button Grid.Column="1" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray"></Button>
-                                                <Label Grid.Column="2" Content="Filter" HorizontalAlignment="Right" />
-                                                <TextBox Grid.Column="3" Margin="5,0,0,0" VerticalContentAlignment="Center"/>
+                                                <Button Grid.Column="0" Width="26" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_family_filtercolor" />
+                                                <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_family_filtercolor" />
+                                                <Label Grid.Column="2" Content="Filter (Regex)" HorizontalAlignment="Right" />
+                                                <TextBox x:Name="family_filtercolor_filter_tb" TextChanged="family_filtercolor_filter_changed" Grid.Column="3" Margin="5,0,0,0" MinHeight="26" VerticalContentAlignment="Center"/>
+                                                <Ellipse x:Name="family_filtercolor_filter_warn" Visibility="Hidden" ToolTip="Bad Regex" Grid.Column="3" Fill="Red" Width="8" Height="8" HorizontalAlignment="Right" Margin="0,0,8,0" />
                                             </Grid>
-                                            <TextBlock DockPanel.Dock="Left" Text="By Filter (Regex)" VerticalAlignment="Center" Margin="0,0,10,0" Width="85" />
-                                            <ListView MinHeight="24" Background="Transparent" ItemsPanel="{StaticResource swatchPanel}" ItemContainerStyle="{StaticResource swatchPanelItem}">
-                                                <ListBoxItem />
-                                                <ListBoxItem />
-                                            </ListView>
+                                            <TextBlock DockPanel.Dock="Left" Text="By Filter" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                            <ListView x:Name="doc_family_filtercolor_lb"
+                                                      MinHeight="26" Background="Transparent"
+                                                      ItemsPanel="{StaticResource swatchPanel}"
+                                                      ItemContainerStyle="{StaticResource swatchPanelItem}"
+                                                      SelectionChanged="selected_family_filtercolor_changed"
+                                                      MouseDoubleClick="doc_family_filtercolor_changecolor"
+                                                      />
                                         </DockPanel>
                                     </StackPanel>
                                 </StackPanel>
