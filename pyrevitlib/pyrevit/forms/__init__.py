@@ -3059,12 +3059,10 @@ def ask_for_color(default=None):
             int(default[6:8], 16)
         )
     color_picker.FullOpen = True
-    color_picker.ShowDialog()
-    if color_picker.Color:
+    if color_picker.ShowDialog() == Forms.DialogResult.OK:
         c = color_picker.Color
         c_hex = ''.join('{:02X}'.format(int(x)) for x in [c.A, c.R, c.G, c.B])
         return '#' + c_hex
-    return None
 
 
 def inform_wip():
