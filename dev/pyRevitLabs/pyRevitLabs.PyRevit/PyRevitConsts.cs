@@ -176,10 +176,15 @@ namespace pyRevitLabs.PyRevit {
         // methods
         public static string FindConfigFileInDirectory(string sourcePath) {
             var configMatcher = new Regex(ConfigsFileRegexPattern, RegexOptions.IgnoreCase);
-            if (CommonUtils.VerifyPath(sourcePath))
-                foreach (string subFile in Directory.GetFiles(sourcePath))
-                    if (configMatcher.IsMatch(Path.GetFileName(subFile)))
-                        return subFile;
+            // capture exceptions that might occur getting the files under sourcePath
+            // 
+            try {
+                if (CommonUtils.VerifyPath(sourcePath))
+                    foreach (string subFile in Directory.GetFiles(sourcePath))
+                        if (configMatcher.IsMatch(Path.GetFileName(subFile)))
+                            return subFile;
+            }
+            catch { }
             return null;
         }
 
