@@ -1,10 +1,14 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Reflection;
+using MEDIA = System.Windows.Media;
 
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
@@ -938,13 +942,110 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    [Flags]
-    public enum TabColoringStyle {
-        TopBarLight,
-        TopBarHeavy,
-        BorderLight,
-        BorderHeavy,
-        BackgroundFill,
+    public class TabColoringColor {
+        public SolidColorBrush Brush { get; set; }
+        public Regex TitleFilter { get; set; }
+
+        public TabColoringColor(SolidColorBrush brush, string filter = null) {
+            Brush = brush;
+            try {
+                if (filter is string regexFilter)
+                    TitleFilter = new Regex(regexFilter);
+            } catch {
+            }
+        }
+
+        private static int _counter = 1;
+        public void SetDefaultFilter(string prefix) {
+            TitleFilter = new Regex($"{prefix} {_counter}");
+            _counter ++;
+        }
+    }
+
+    public class TabColoringStyle {
+        public string Name { get; private set; }
+        public Thickness BorderThinkness = new Thickness();
+        public bool FillBackground = false;
+
+        public TabColoringStyle(string name) => Name = name;
+
+        public static readonly Thickness DefaultBorderThickness = new Thickness();
+        public static readonly Brush DefaultBorderBrush = Brushes.White;
+        public static readonly Brush DefaultBackground = Brushes.LightGray;
+        public static readonly Brush DefaultForeground = Brushes.Black;
+        public static readonly Brush LightForeground = Brushes.White;
+
+        public static void Reset(TabItem tab) {
+            tab.BorderThickness = DefaultBorderThickness;
+            tab.BorderBrush = DefaultBorderBrush;
+            tab.Background = DefaultBackground;
+            tab.Foreground = DefaultForeground;
+        }
+
+        public bool Apply(TabItem tab, TabColoringColor color) {
+            //string title = ((Xceed.Wpf.AvalonDock.Layout.LayoutDocument)tab.Header).Title;
+
+            // if tab title does not match the filter
+            // do not do anything
+            //if (color.TitleFilter is Regex filter)
+            //    if (!filter.IsMatch(title))
+            //        return false;
+
+            //if (FillBackground) {
+            //    MEDIA.Color c = color.Brush.Color;
+            //    float luminance = 0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B;
+            //    tab.Background = color.Brush;
+            //    tab.Foreground = luminance > 127.0f ? DefaultForeground : LightForeground;
+            //}
+            //else {
+            //    tab.Background = DefaultBackground;
+            //    tab.Foreground = DefaultForeground;
+            //}
+
+            //tab.BorderBrush = color.Brush;
+            //tab.BorderThickness = BorderThinkness;
+
+            return true;
+        }
+    }
+
+    public class TabColoringTheme {
+        public bool SortDocTabs { get; set; } = false;
+
+        public TabColoringStyle TabStyle { get; set; }
+        public TabColoringStyle FamilyTabStyle { get; set; }
+        public List<TabColoringColor> TabOrderColors { get; set; }
+        public List<TabColoringColor> TabFilterColors { get; set; }
+        
+        public bool UseFamilyTheme { get; set; }
+        public List<TabColoringColor> FamilyTabOrderColors { get; set; }
+        public List<TabColoringColor> FamilyTabFilterColors { get; set; }
+
+        public static readonly List<Brush> DefaultBrushes = new List<Brush> {
+            PyRevitConsts.PyRevitAccentBrush,
+            PyRevitConsts.PyRevitBackgroundBrush,
+            Brushes.Blue,
+            Brushes.SaddleBrown,
+            Brushes.Gold,
+            Brushes.DarkTurquoise,
+            Brushes.OrangeRed,
+            Brushes.Aqua,
+            Brushes.YellowGreen,
+            Brushes.DeepPink
+        };
+
+        public static readonly List<TabColoringStyle> AvailableStyles = new List<TabColoringStyle> {
+            new TabColoringStyle("Top Bar - Light") { BorderThinkness = new Thickness(0,1,0,0) },
+            new TabColoringStyle("Top Bar - Medium") { BorderThinkness = new Thickness(0,1,0,0) },
+            new TabColoringStyle("Top Bar - Heavy") { BorderThinkness = new Thickness(0,1,0,0) },
+            new TabColoringStyle("Border - Light") { BorderThinkness = new Thickness(1) },
+            new TabColoringStyle("Border - Medium") { BorderThinkness = new Thickness(1) },
+            new TabColoringStyle("Border - Heavy") { BorderThinkness = new Thickness(1) },
+            new TabColoringStyle("Background Fill") { BorderThinkness = new Thickness(0), FillBackground = true },
+        };
+
+        public static readonly uint DefaultTabColoringStyleIndex = 0;
+        public static readonly uint DefaultFamilyTabColoringStyleIndex = 3;
     }
 
     public static class DocumentTabEventUtils {
@@ -955,25 +1056,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static bool IsUpdatingDocumentTabs { get; private set; }
         private static object UpdateLock = new object();
 
-        public static TabColoringStyle ProjectTabStyle { get; set; } = TabColoringStyle.TopBarLight;
-        public static TabColoringStyle FamilyTabStyle { get; set; } = TabColoringStyle.BorderLight;
-        public static uint HeavyThinkness { get; set; } = 2;
-        public static List<SolidColorBrush> TabColoringTheme { get; set; } =
-            new List<SolidColorBrush> {
-                PyRevitConsts.PyRevitAccentBrush,
-                PyRevitConsts.PyRevitBackgroundBrush,
-                Brushes.Gray,
-                Brushes.SaddleBrown,
-                Brushes.Gold,
-                Brushes.DarkTurquoise,
-                Brushes.OrangeRed,
-                Brushes.Aqua,
-                Brushes.YellowGreen,
-                Brushes.DeepPink,
-                Brushes.White
-            };
 
-        public static Dictionary<long, Brush> DocumentBrushes;
+        public static TabColoringTheme TabColoringTheme { get; set; }
+
+        public static Dictionary<long, TabColoringColor> DocumentColors;
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public static Xceed.Wpf.AvalonDock.DockingManager GetDockingManager(UIApplication uiapp) {
@@ -1034,7 +1120,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             lock (UpdateLock) {
                 if (!IsUpdatingDocumentTabs) {
                     UIApp = uiapp;
-                    DocumentBrushes = new Dictionary<long, Brush>();
+                    DocumentColors = new Dictionary<long, TabColoringColor>();
                     IsUpdatingDocumentTabs = true;
 
                     var docMgr = GetDockingManager(UIApp);
@@ -1048,7 +1134,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (IsUpdatingDocumentTabs) {
                     UpdateDocumentTabGroups(clear: true);
                     IsUpdatingDocumentTabs = false;
-                    DocumentBrushes.Clear();
+                    DocumentColors.Clear();
 
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
@@ -1068,58 +1154,69 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     if (docTabGroup != null) {
                         var docTabs = GetDocumentTabs(docTabGroup);
 
-                        // if clear is requested, reset the tabs
-                        if (clear) {
-                            foreach (TabItem tab in docTabs) {
-                                tab.BorderBrush = Brushes.White;
-                                tab.BorderThickness = new System.Windows.Thickness();
-                            }
+                        // reset the tab coloring
+                        foreach (TabItem tab in docTabs)
+                            TabColoringStyle.Reset(tab);
+
+                        // if clear is requested, return from here
+                        if (clear)
                             return;
-                        }
 
-                        // update doc tabs
-                        var newDocBrushes = new Dictionary<long, Brush>();
+                        // grab the brush to use by document index
+                        var theme = TabColoringTheme;
 
+                        // collect ids of family documents
+                        var allDocs = new List<long>();
+                        var projDocs = new List<long>();
+                        var familyDocs = new List<long>();
                         foreach (Document doc in UIApp.Application.Documents) {
                             // skip linked docs. they don't have tabs
                             if (doc.IsLinked)
                                 continue;
+                            
+                            var docId = GetAPIDocumentId(doc);
+                            allDocs.Add(docId);
+                            if (doc.IsFamilyDocument)
+                                familyDocs.Add(docId);
+                            else
+                                projDocs.Add(docId);
+                        }
 
-                            // get doc id
-                            long docId = GetAPIDocumentId(doc);
+                        // go over each tab and determine
+                        var docColors = new Dictionary<long, TabColoringColor>();
+                        foreach (TabItem tab in docTabs) {
+                            long docId = GetTabDocumentId(tab);
 
-                            // determine which brush to use for this doc
-                            Brush docBrush = null;
-                            if (DocumentBrushes.ContainsKey(docId)) {
-                                docBrush = DocumentBrushes[docId];
+                            if (theme.UseFamilyTheme && familyDocs.Contains(docId)) {
+
                             }
                             else {
-                                foreach (Brush brush in TabColoringTheme) {
-                                    if (!DocumentBrushes.ContainsValue(brush)) {
-                                        docBrush = brush;
-                                        break;
-                                    }
+                                // determine what style to use base on tab document type
+                                var tstyle = familyDocs.Contains(docId) ? theme.FamilyTabStyle : theme.TabStyle;
+                                
+                                // apply colors by filter
+                                foreach (var fcolor in theme.TabFilterColors) {
+                                    if (tstyle.Apply(tab, fcolor))
+                                        // move on to the next tab
+                                        continue;
                                 }
-                                DocumentBrushes[docId] = docBrush;
-                            }
 
-                            // apply the brush to all doc tabs
-                            if (docBrush != null) {
-                                newDocBrushes[docId] = docBrush;
-                                foreach (TabItem tab in docTabs) {
-                                    if (GetTabDocumentId(tab) == docId) {
-                                        tab.BorderBrush = docBrush;
-                                        if (doc.IsFamilyDocument)
-                                            tab.BorderThickness = new System.Windows.Thickness(1);
-                                        else
-                                            tab.BorderThickness = new System.Windows.Thickness(0, 1, 0, 0);
+                                // now apply colors by order
+                                var clrCount = theme.TabOrderColors.Count;
+                                if (docColors.TryGetValue(docId, out var docColor))
+                                    tstyle.Apply(tab, docColor);
+                                else {
+                                    var docIndex = allDocs.IndexOf(docId);
+                                    if (docIndex < clrCount) {
+                                        var ocolor = theme.TabOrderColors[docIndex];
+                                        tstyle.Apply(tab, ocolor);
+                                        docColors[docId] = ocolor;
                                     }
                                 }
                             }
                         }
 
-                        // update brush list
-                        DocumentBrushes = newDocBrushes;
+                        DocumentColors = docColors;
                     }
                 }
             }

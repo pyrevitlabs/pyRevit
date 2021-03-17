@@ -61,28 +61,6 @@ def toggle_infocenter():
     return is_infocenter_visible()
 
 
-def toggle_doc_colorizer(state):
-    uiapp = HOST_APP.uiapp
-    if HOST_APP.is_newer_than(2018):
-        # cancel out the colorizer from previous runtime version
-        current_tabcolorizer = \
-            envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
-        if current_tabcolorizer:
-            current_tabcolorizer.StopGroupingDocumentTabs()
-
-        # start or stop the document colorizer
-        if state:
-            types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
-        else:
-            types.DocumentTabEventUtils.StopGroupingDocumentTabs()
-
-        # set the new colorizer
-        envvars.set_pyrevit_env_var(
-            envvars.TABCOLORIZER_ENVVAR,
-            types.DocumentTabEventUtils
-            )
-
-
 def get_ribbon_roottype():
     ap_assm = clr.GetClrType(ap.Windows.RibbonTabList).Assembly
     for apt in ap_assm.GetTypes():

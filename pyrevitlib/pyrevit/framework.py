@@ -32,6 +32,7 @@ from System import EventHandler
 from System import Array, IntPtr, Enum, Byte
 from System import Convert
 from System.Text import Encoding
+from System.Text.RegularExpressions import Regex
 from System.Collections import ObjectModel
 from System.Collections.ObjectModel import ObservableCollection
 from System.Collections import IEnumerator, IEnumerable

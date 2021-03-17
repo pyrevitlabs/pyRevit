@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
-        Height="800" Width="700"
+        Height="1200" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -89,7 +89,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
                         <Border Name="Border" Padding="1" SnapsToDevicePixels="true" Background="Transparent" BorderThickness="1">
-                            <Border Width="18" Height="18" Background="{Binding color}" BorderThickness="0"></Border>
+                            <Border Width="18" Height="18" Background="{Binding Brush}" BorderThickness="0"></Border>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -541,7 +541,7 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="UI / UX" IsExpanded="False" Margin="10px">
+                <Expander Header="UI / UX" IsExpanded="True" Margin="10px">
                     <StackPanel Margin="10,10,10,0">
                         <TextBlock TextWrapping="WrapWithOverflow">
                             This section provides all the settings related to User Interface (UI) and User Experience (UX).
@@ -574,11 +574,11 @@
                                         </Grid.ColumnDefinitions>
                                         <WrapPanel Grid.Column="0">
                                             <Label Content="Project Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
-                                            <ComboBox x:Name="project_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="name"/>
+                                            <ComboBox x:Name="project_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
                                         </WrapPanel>
                                         <WrapPanel Grid.Column="1" >
                                             <Label Content="Family Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
-                                            <ComboBox x:Name="family_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="name"/>
+                                            <ComboBox x:Name="family_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
                                         </WrapPanel>
                                     </Grid>
                                     <Grid Margin="10,10,10,0">
