@@ -18,6 +18,7 @@ using Autodesk.Revit.UI.Events;
 using UIFramework;
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
+using Xceed.Wpf.AvalonDock.Layout;
 using Xceed.Wpf.AvalonDock.Controls;
 #endif
 
@@ -977,7 +978,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public bool Apply(TabItem tab, TabColoringColor color) {
-            string title = ((Xceed.Wpf.AvalonDock.Layout.LayoutDocument)tab.Header).Title;
+            string title = ((LayoutDocument)tab.Header).Title;
 
             //if tab title does not match the filter
             // do not do anything
@@ -1044,6 +1045,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public static class DocumentTabEventUtils {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        static string lastTabState = string.Empty;
 
         public static UIApplication UIApp { get; private set; }
 
@@ -1079,6 +1081,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<LayoutDocumentPaneControl>();
         }
 
+        public static DocumentPaneTabPanel GetDocumentTabsPane(LayoutDocumentPaneGroupControl docTabGroup) {
+            return docTabGroup?.FindVisualChildren<DocumentPaneTabPanel>()?.FirstOrDefault();
+        }
+
         public static IEnumerable<TabItem> GetDocumentTabs(LayoutDocumentPaneControl docPane) {
             if (docPane != null) {
                 return docPane.FindVisualChildren<TabItem>();
@@ -1091,6 +1097,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return docTabGroup.FindVisualChildren<TabItem>();
             }
             return new List<TabItem>();
+        }
+
+        public static string GetTabItemId(TabItem tab) {
+            return $"{((LayoutDocument)tab.Header).Title}+{tab.GetHashCode()}";
         }
 
         public static long GetTabDocumentId(TabItem tab) {
@@ -1114,14 +1124,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             lock (UpdateLock) {
                 if (!IsUpdatingDocumentTabs) {
                     UIApp = uiapp;
+                    lastTabState = string.Empty;
                     DocumentColors = new Dictionary<long, TabColoringColor>();
                     IsUpdatingDocumentTabs = true;
 
-                    //var docMgr = GetDockingManager(UIApp);
-                    //docMgr.LayoutUpdated += UpdateDockingManagerLayout;
-                    var docTabGroup = GetDocumentTabGroup(UIApp);
-                    if (docTabGroup != null)
-                        docTabGroup.LayoutUpdated += UpdateDockingManagerLayout;
+                    var docMgr = GetDockingManager(UIApp);
+                    docMgr.LayoutUpdated += UpdateDockingManagerLayout;
                 }
             }
         }
@@ -1129,15 +1137,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static void StopGroupingDocumentTabs() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
-                    UpdateDocumentTabGroups(clear: true);
+                    ClearDocumentTabGroups();
+                    
                     IsUpdatingDocumentTabs = false;
                     DocumentColors.Clear();
+                    lastTabState = string.Empty;
 
-                    //var docMgr = GetDockingManager(UIApp);
-                    //docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
-                    var docTabGroup = GetDocumentTabGroup(UIApp);
-                    if (docTabGroup != null)
-                        docTabGroup.LayoutUpdated -= UpdateDockingManagerLayout;
+                    var docMgr = GetDockingManager(UIApp);
+                    docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
                 }
             }
         }
@@ -1146,24 +1153,43 @@ namespace PyRevitLabs.PyRevit.Runtime {
             UpdateDocumentTabGroups();
         }
 
-        private static void UpdateDocumentTabGroups(bool clear = false) {
+        private static void ClearDocumentTabGroups() {
+            lock (UpdateLock) {
+                var docTabGroup = GetDocumentTabGroup(UIApp);
+                if (docTabGroup != null) {
+                    var docTabs = GetDocumentTabs(docTabGroup);
+                    // dont do anything if there are no tabs
+                    if (docTabs.Count() == 0)
+                        return;
+
+                    foreach (TabItem tab in docTabs)
+                        TabColoringStyle.Reset(tab);
+                }
+            }
+        }
+
+        private static void UpdateDocumentTabGroups() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
                     // get the ui tabs
                     var docTabGroup = GetDocumentTabGroup(UIApp);
                     if (docTabGroup != null) {
                         var docTabs = GetDocumentTabs(docTabGroup);
+                        
                         // dont do anything if there are no tabs
                         if (docTabs.Count() == 0)
                             return;
-
-                        // reset the tab coloring
-                        //foreach (TabItem tab in docTabs)
-                        //    TabColoringStyle.Reset(tab);
-
-                        // if clear is requested, return from here
-                        if (clear)
+                        
+                        // dont do anything if it is the same tabs as before
+                        string newState = string.Join(";", docTabs.Select(t => GetTabItemId(t)));
+                        if (newState == lastTabState)
                             return;
+                        else
+                            lastTabState = newState;
+                        
+                        // reset the tab coloring
+                        foreach (TabItem tab in docTabs)
+                            TabColoringStyle.Reset(tab);
 
                         // grab the brush to use by document index
                         var theme = TabColoringTheme;
@@ -1202,10 +1228,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                 // apply colors by filter
                                 bool filtered = false;
                                 foreach (var fcolor in theme.TabFilterColors) {
-                                    //if (tstyle.Apply(tab, fcolor)) {
-                                    //    filtered = true;
-                                    //    break;
-                                    //}
+                                    if (tstyle.Apply(tab, fcolor)) {
+                                        filtered = true;
+                                        break;
+                                    }
                                 }
 
                                 // if filter is applied to the tab, move on to next
@@ -1215,13 +1241,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                 // otherwise apply colors by order
                                 var clrCount = theme.TabOrderColors.Count;
                                 if (docColors.TryGetValue(docId, out var docColor)) {
-                                    //tstyle.Apply(tab, docColor);
+                                    tstyle.Apply(tab, docColor);
                                 }
                                 else {
                                     var docIndex = allDocs.IndexOf(docId);
                                     if (docIndex < clrCount) {
                                         var ocolor = theme.TabOrderColors[docIndex];
-                                        //tstyle.Apply(tab, ocolor);
+                                        tstyle.Apply(tab, ocolor);
                                         docColors[docId] = ocolor;
                                     }
                                 }
@@ -1229,7 +1255,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         }
 
                         DocumentColors = docColors;
-                        TaskDialog.Show("Updated", "!!");
                     }
                 }
             }
