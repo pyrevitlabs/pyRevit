@@ -12,6 +12,7 @@ def _str_to_brush(color_hex):
         Media.ColorConverter.ConvertFromString(color_hex)
     )
 
+
 def _str_from_brush(solid_brush):
     color = solid_brush.Color
     color_hex = ''.join(
@@ -32,39 +33,70 @@ def _get_sort_colorize_docs(tabcfgs):
     return tabcfgs.get_option('sort_colorize_docs', False)
 
 
+def _set_sort_colorize_docs(tabcfgs, theme):
+    tabcfgs.sort_colorize_docs = theme.SortDocTabs
+
+
 def _get_tab_ordercolors(tabcfgs):
-    tab_colors = tabcfgs.get_option(
-            'tab_colors',
-            list(types.TabColoringTheme.DefaultBrushes)
-            )
+    default_colors = \
+        [_str_from_brush(b) for b in types.TabColoringTheme.DefaultBrushes]
+    tab_colors = tabcfgs.get_option('tab_colors', default_colors)
     return List[types.TabColoringColor](
-        [types.TabColoringColor(x) for x in tab_colors]
+        [types.TabColoringColor(_str_to_brush(c)) for c in tab_colors]
         )
+
+
+def _set_tab_ordercolors(tabcfgs, theme):
+    tabcfgs.tab_colors = \
+        [_str_from_brush(c.Brush) for c in theme.TabOrderColors]
 
 
 def _get_tab_filtercolors(tabcfgs):
     tab_filtercolors = tabcfgs.get_option('tab_filtercolors', {})
     return List[types.TabColoringColor](
-        [types.TabColoringColor(x, f) for x, f in tab_filtercolors.items()]
+        [types.TabColoringColor(_str_to_brush(c), f)
+         for c, f in tab_filtercolors.items()]
     )
+
+
+def _set_tab_filtercolors(tabcfgs, theme):
+    tabcfgs.tab_filtercolors = \
+        {_str_from_brush(c.Brush):str(c.TitleFilter)
+         for c in theme.TabFilterColors}
 
 
 def _get_use_family_colorize_theme(tabcfgs):
     return tabcfgs.get_option('use_family_colorize_theme', False)
 
 
+def _set_use_family_colorize_theme(tabcfgs, theme):
+    tabcfgs.use_family_colorize_theme = theme.UseFamilyTheme
+
+
 def _get_family_ordercolors(tabcfgs):
     family_colors = tabcfgs.get_option('family_colors', [])
     return List[types.TabColoringColor](
-        [types.TabColoringColor(x) for x in family_colors]
+        [types.TabColoringColor(_str_to_brush(c)) for c in family_colors]
     )
+
+
+def _set_family_ordercolors(tabcfgs, theme):
+    tabcfgs.family_colors = \
+        [_str_from_brush(c.Brush) for c in theme.FamilyTabOrderColors]
 
 
 def _get_family_filtercolors(tabcfgs):
     fam_filtercolors = tabcfgs.get_option('family_filtercolors', {})
     return List[types.TabColoringColor](
-        [types.TabColoringColor(x, f) for x, f in fam_filtercolors.items()]
+        [types.TabColoringColor(_str_to_brush(c), f)
+         for c, f in fam_filtercolors.items()]
     )
+
+
+def _set_family_filtercolors(tabcfgs, theme):
+    tabcfgs.family_filtercolors = \
+        {_str_from_brush(c.Brush):str(c.TitleFilter)
+         for c in theme.FamilyTabFilterColors}
 
 
 def _get_tabstyle(tabcfgs):
@@ -75,12 +107,22 @@ def _get_tabstyle(tabcfgs):
     return types.TabColoringTheme.AvailableStyles[tabstyle_index]
 
 
+def _set_tabstyle(tabcfgs, theme):
+    tabcfgs.tabstyle_index = \
+        types.TabColoringTheme.AvailableStyles.IndexOf(theme.TabStyle)
+
+
 def _get_family_tabstyle(tabcfgs):
     family_tabstyle_index = tabcfgs.get_option(
         'family_tabstyle_index',
         types.TabColoringTheme.DefaultFamilyTabColoringStyleIndex
         )
     return types.TabColoringTheme.AvailableStyles[family_tabstyle_index]
+
+
+def _set_family_tabstyle(tabcfgs, theme):
+    tabcfgs.family_tabstyle_index = \
+        types.TabColoringTheme.AvailableStyles.IndexOf(theme.FamilyTabStyle)
 
 
 def get_tabcoloring_theme(usercfg):
@@ -100,12 +142,29 @@ def get_tabcoloring_theme(usercfg):
     return theme
 
 
+def set_tabcoloring_theme(usercfg, theme):
+    tabcfgs = _get_tabcoloring_cfgs(usercfg)
+
+    _set_sort_colorize_docs(tabcfgs, theme)
+    _set_tabstyle(tabcfgs, theme)
+    _set_family_tabstyle(tabcfgs, theme)
+
+    _set_tab_ordercolors(tabcfgs, theme)
+    _set_tab_filtercolors(tabcfgs, theme)
+
+    _set_use_family_colorize_theme(tabcfgs, theme)
+    _set_family_ordercolors(tabcfgs, theme)
+    _set_family_filtercolors(tabcfgs, theme)
+
+
 def get_tab_ordercolor(theme, index):
     return _str_from_brush(theme.TabOrderColors[index].Brush)
 
 
 def add_tab_ordercolor(theme, color):
-    theme.TabOrderColors.Add(types.TabColoringColor(color))
+    theme.TabOrderColors.Add(
+        types.TabColoringColor(_str_to_brush(color))
+        )
 
 
 def remove_tab_ordercolor(theme, index):
@@ -118,8 +177,8 @@ def update_tab_ordercolor(theme, index, color):
 
 
 def get_tab_filtercolor(theme, index):
-    tc = theme.TabOrderColors[index]
-    color = tc.Color
+    tc = theme.TabFilterColors[index]
+    color = tc.Brush.Color
     color_hex = ''.join(
         '{:02X}'.format(int(x)) for x in
         [color.A, color.R, color.G, color.B]
@@ -127,10 +186,9 @@ def get_tab_filtercolor(theme, index):
     return '#' + color_hex, str(tc.TitleFilter)
 
 
-def add_tab_filtercolor(theme, color, title_filter, filter_prefix=None):
-    fc = theme.TabFilterColors.Add(types.TabColoringColor(color, title_filter))
-    if isinstance(filter_prefix, str):
-        fc.SetDefaultFilter(filter_prefix)
+def add_tab_filtercolor(theme, color, title_filter):
+    fc = types.TabColoringColor(_str_to_brush(color), title_filter)
+    theme.TabFilterColors.Add(fc)
 
 
 def remove_tab_filtercolor(theme, index):
@@ -160,10 +218,20 @@ def remove_family_filtercolor(theme, color):
     pass
 
 
-def toggle_doc_colorizer(usercfg, theme=None):
-    uiapp = HOST_APP.uiapp
-    theme = theme or get_tabcoloring_theme(usercfg)
+def update_tabstyle(theme, tab_style):
+    for ts in types.TabColoringTheme.AvailableStyles:
+        if ts.Name == tab_style.Name:
+            theme.TabStyle = ts
 
+
+def update_family_tabstyle(theme, tab_style):
+    for ts in types.TabColoringTheme.AvailableStyles:
+        if ts.Name == tab_style.Name:
+            theme.FamilyTabStyle = ts
+
+
+def toggle_doc_colorizer(usercfg):
+    uiapp = HOST_APP.uiapp
     if HOST_APP.is_newer_than(2018):
         # cancel out the colorizer from previous runtime version
         current_tabcolorizer = \
@@ -172,6 +240,8 @@ def toggle_doc_colorizer(usercfg, theme=None):
             current_tabcolorizer.StopGroupingDocumentTabs()
 
         # start or stop the document colorizer
+        types.DocumentTabEventUtils.TabColoringTheme = \
+            get_tabcoloring_theme(usercfg)
         if usercfg.colorize_docs:
             types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
         else:

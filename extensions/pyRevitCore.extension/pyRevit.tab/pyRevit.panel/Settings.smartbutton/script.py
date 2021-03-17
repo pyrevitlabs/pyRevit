@@ -205,6 +205,7 @@ class SettingsWindow(forms.WPFWindow):
         # tab style color themes
         theme = tabs.get_tabcoloring_theme(user_config)
         self.tab_theme = theme
+        self.filtercolor_counter = 1
 
         self.doc_ordercolor_lb.ItemsSource = theme.TabOrderColors
         self.doc_filtercolor_lb.ItemsSource = theme.TabFilterColors
@@ -216,7 +217,7 @@ class SettingsWindow(forms.WPFWindow):
         self.project_tabstyle_cb.SelectedItem = theme.TabStyle
 
         self.family_tabstyle_cb.ItemsSource = theme.AvailableStyles
-        self.family_tabstyle_cb.SelectedIndex = theme.FamilyTabStyle
+        self.family_tabstyle_cb.SelectedItem = theme.FamilyTabStyle
 
         self.sortdocs_cb.IsChecked = theme.SortDocTabs
         self.usefamilytheme_cb.IsChecked = theme.UseFamilyTheme
@@ -622,6 +623,18 @@ class SettingsWindow(forms.WPFWindow):
 
     # tab styles
     def tabstyling_changed(self, sender, args):
+        # update theme settings
+        self.tab_theme.SortDocTabs = self.sortdocs_cb.IsChecked
+        self.tab_theme.UseFamilyTheme = self.usefamilytheme_cb.IsChecked
+        if self.project_tabstyle_cb.SelectedItem:
+            tabs.update_tabstyle(
+                self.tab_theme, self.project_tabstyle_cb.SelectedItem
+                )
+        if self.family_tabstyle_cb.SelectedItem:
+            tabs.update_family_tabstyle(
+                self.tab_theme, self.family_tabstyle_cb.SelectedItem
+                )
+        # refresh previews
         self.update_tab_previews()
 
     def prompt_for_color(self, default=None):
@@ -634,14 +647,16 @@ class SettingsWindow(forms.WPFWindow):
         color = self.prompt_for_color()
         if color:
             tabs.add_tab_ordercolor(self.tab_theme, color)
-            self.doc_ordercolor_lb.ItemsSource = self.tab_theme.TabOrderColors
+            self.doc_ordercolor_lb.ItemsSource = \
+                list(self.tab_theme.TabOrderColors)
             self.update_tab_previews()
 
     def remove_ordercolor(self, sender, args):
         selected_ordercolor_idx = self.doc_ordercolor_lb.SelectedIndex
         if selected_ordercolor_idx >= 0:
             tabs.remove_tab_ordercolor(self.tab_theme, selected_ordercolor_idx)
-            self.doc_ordercolor_lb.ItemsSource = self.tab_theme.TabOrderColors
+            self.doc_ordercolor_lb.ItemsSource = \
+                list(self.tab_theme.TabOrderColors)
             new_count = len(self.tab_theme.TabOrderColors)
             new_index = \
                 selected_ordercolor_idx \
@@ -664,7 +679,8 @@ class SettingsWindow(forms.WPFWindow):
                     selected_ordercolor_idx,
                     new_color
                     )
-            self.doc_ordercolor_lb.ItemsSource = self.tab_theme.TabOrderColors
+            self.doc_ordercolor_lb.ItemsSource = \
+                list(self.tab_theme.TabOrderColors)
             self.update_tab_previews()
 
     def add_filtercolor(self, sender, args):
@@ -673,10 +689,11 @@ class SettingsWindow(forms.WPFWindow):
             tabs.add_tab_filtercolor(
                 self.tab_theme,
                 color,
-                self.filtercolor_filter_tb.Text,
-                filter_prefix="Project"
+                "Project %s" % self.filtercolor_counter
                 )
-            self.doc_ordercolor_lb.ItemsSource = self.tab_theme.TabFilterColors
+            self.doc_filtercolor_lb.ItemsSource = \
+                list(self.tab_theme.TabFilterColors)
+            self.filtercolor_counter += 1
             self.update_tab_previews()
 
     def remove_filtercolor(self, sender, args):
@@ -686,14 +703,15 @@ class SettingsWindow(forms.WPFWindow):
                 self.tab_theme,
                 selected_filtercolor_idx
                 )
-            self.filtercolor_filter_tb.Text = ""
-            self.doc_ordercolor_lb.ItemsSource = self.tab_theme.TabFilterColors
+            self.doc_filtercolor_lb.ItemsSource = \
+                list(self.tab_theme.TabFilterColors)
             new_count = len(self.tab_theme.TabFilterColors)
             new_index = \
                 selected_filtercolor_idx \
                     if selected_filtercolor_idx < new_count else (new_count - 1)
             self.doc_filtercolor_lb.SelectedIndex = new_index
-            self.update_tab_previews()
+            # updateing filter text will trigger a preview
+            self.filtercolor_filter_tb.Text = ""
 
     def selected_filtercolor_changed(self, sender, args):
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
@@ -704,10 +722,10 @@ class SettingsWindow(forms.WPFWindow):
             self.filtercolor_filter_tb.Text = title_filter
 
     def filtercolor_filter_changed(self, sender, args):
+        self.hide_element(self.filtercolor_filter_warn)
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
         if selected_filtercolor_idx >= 0:
             try:
-                self.hide_element(self.filtercolor_filter_warn)
                 re.compile(self.filtercolor_filter_tb.Text)
                 tabs.update_tab_filtercolor(
                     self.tab_theme,
@@ -715,7 +733,7 @@ class SettingsWindow(forms.WPFWindow):
                     title_filter=self.filtercolor_filter_tb.Text
                     )
                 self.update_tab_previews()
-            except Exception:
+            except Exception as ex:
                 self.show_element(self.filtercolor_filter_warn)
 
     def doc_filtercolor_changecolor(self, sender, args):
@@ -731,7 +749,8 @@ class SettingsWindow(forms.WPFWindow):
                     selected_filtercolor_idx,
                     color=color
                     )
-            self.doc_filtercolor_lb.ItemsSource = self.tab_theme.TabFilterColors
+            self.doc_filtercolor_lb.ItemsSource = \
+                list(self.tab_theme.TabFilterColors)
             self.update_tab_previews()
 
     # familt order and filter colors
@@ -880,30 +899,30 @@ class SettingsWindow(forms.WPFWindow):
             prj_tabstyle = \
                 list(self.project_tabstyle_cb.ItemsSource)[prj_tabstyle_idx]
 
-            # project preview controls
-            prj_tab_ctrls = [
-                (self.tabProjA, self.tabProjATitle),
-                (self.tabProjB, self.tabProjBTitle),
-            ]
+            # # project preview controls
+            # prj_tab_ctrls = [
+            #     (self.tabProjA, self.tabProjATitle),
+            #     (self.tabProjB, self.tabProjBTitle),
+            # ]
 
-            # reset all
-            for tab_ctrls in prj_tab_ctrls:
-                tab_ctrl, tab_ctrl_title = tab_ctrls
-                SettingsWindow.reset_tab_preview(tab_ctrl, tab_ctrl_title)
+            # # reset all
+            # for tab_ctrls in prj_tab_ctrls:
+            #     tab_ctrl, tab_ctrl_title = tab_ctrls
+            #     SettingsWindow.reset_tab_preview(tab_ctrl, tab_ctrl_title)
 
-            # apply by order - project
-            for idx, tab_ctrls in enumerate(prj_tab_ctrls):
-                tab_ctrl, tab_ctrl_title = tab_ctrls
-                if idx < proj_colors_count:
-                    tab_color = proj_colors[idx]
-                    prj_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
-                last_prj_tabstyle_idx += 1
+            # # apply by order - project
+            # for idx, tab_ctrls in enumerate(prj_tab_ctrls):
+            #     tab_ctrl, tab_ctrl_title = tab_ctrls
+            #     if idx < proj_colors_count:
+            #         tab_color = proj_colors[idx]
+            #         prj_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
+            #     last_prj_tabstyle_idx += 1
 
-            # apply by filter - project
-            for tab_color in proj_filtercolors:
-                for idx, tab_ctrls in enumerate(prj_tab_ctrls):
-                    tab_ctrl, tab_ctrl_title = tab_ctrls
-                    prj_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
+            # # apply by filter - project
+            # for tab_color in proj_filtercolors:
+            #     for idx, tab_ctrls in enumerate(prj_tab_ctrls):
+            #         tab_ctrl, tab_ctrl_title = tab_ctrls
+            #         prj_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
 
 
         # family_colors = list(self.doc_family_ordercolor_lb.ItemsSource)
@@ -1015,43 +1034,10 @@ class SettingsWindow(forms.WPFWindow):
                             'want to reload now?', yes=True, no=True)
         # colorize docs
         user_config.colorize_docs = self.colordocs_cb.IsChecked
-        tabs.toggle_doc_colorizer(
-            user_config.colorize_docs,
-            theme=self.tab_theme
-            )
 
         # save colorize theme
-        # ctheme_cfg = user_config.get_section("tabcoloring")
-        # ctheme_cfg.sort_colorize_docs = self.sortdocs_cb.IsChecked
-        # ctheme_cfg.use_family_colorize_theme = self.usefamilytheme_cb.IsChecked
-
-        # ctheme_cfg.project_tabstyle_index = self.project_tabstyle_cb.SelectedIndex
-        # ctheme_cfg.family_tabstyle_index = self.family_tabstyle_cb.SelectedIndex
-        # if self.doc_ordercolor_lb.ItemsSource:
-        #     ctheme_cfg.proj_colors = \
-        #         [x.color for x in self.doc_ordercolor_lb.ItemsSource]
-        # else:
-        #     ctheme_cfg.proj_colors = []
-
-        # if self.doc_filtercolor_lb.ItemsSource:
-        #     ctheme_cfg.proj_filtercolors = \
-        #         {x.color:x.color_filter
-        #          for x in self.doc_filtercolor_lb.ItemsSource}
-        # else:
-        #     ctheme_cfg.proj_filtercolors = {}
-
-        # if self.doc_family_ordercolor_lb.ItemsSource:
-        #     ctheme_cfg.family_colors = \
-        #         [x.color for x in self.doc_family_ordercolor_lb.ItemsSource]
-        # else:
-        #     ctheme_cfg.family_colors = []
-
-        # if self.doc_family_filtercolor_lb.ItemsSource:
-        #     ctheme_cfg.family_filtercolors = \
-        #         {x.color:x.color_filter
-        #          for x in self.doc_family_filtercolor_lb.ItemsSource}
-        # else:
-        #     ctheme_cfg.family_filtercolors = {}
+        tabs.set_tabcoloring_theme(user_config, self.tab_theme)
+        tabs.toggle_doc_colorizer(user_config)
 
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
-        Height="1200" Width="700"
+        Height="800" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -541,7 +541,7 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="UI / UX" IsExpanded="True" Margin="10px">
+                <Expander Header="UI / UX" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10,10,10,0">
                         <TextBlock TextWrapping="WrapWithOverflow">
                             This section provides all the settings related to User Interface (UI) and User Experience (UX).
@@ -562,11 +562,11 @@
                         <GroupBox Header="Tab Coloring" Margin="0,10,0,0" Padding="10">
                             <StackPanel>
                                 <TextBlock DockPanel.Dock="Top" Margin="0,0,0,5" FontWeight="Medium">Coloring Style</TextBlock>
-                                <StackPanel Margin="0,5,0,5">
-                                    <CheckBox x:Name="colordocs_cb" Content="Colorize Open Documents" IsChecked="False" IsEnabled="True" />
-                                    <CheckBox x:Name="sortdocs_cb" Content="Keep Open Tabs Sorted By Document " IsChecked="False" IsEnabled="False" Margin="0,5,0,0"/>
+                                <CheckBox x:Name="colordocs_cb" Margin="0,5,0,0" Content="Colorize Open Documents" IsChecked="False" IsEnabled="True" />
+                                <StackPanel Margin="0,0,0,5" IsEnabled="{Binding ElementName=colordocs_cb, Path=IsChecked}">
+                                    <CheckBox x:Name="sortdocs_cb" Content="Keep Open Tabs Sorted By Document " IsChecked="False" IsEnabled="False" Checked="tabstyling_changed" Unchecked="tabstyling_changed" Margin="0,5,0,0"/>
                                 </StackPanel>
-                                <StackPanel Margin="0,10,0,0">
+                                <StackPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=colordocs_cb, Path=IsChecked}">
                                     <Grid Margin="10,10,10,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition />
@@ -602,7 +602,7 @@
                                         </Border>
                                     </Grid>
                                 </StackPanel>
-                                <StackPanel Margin="0,10,0,10">
+                                <StackPanel Margin="0,10,0,10" IsEnabled="{Binding ElementName=colordocs_cb, Path=IsChecked}">
                                     <TextBlock Margin="0,0,0,5" FontWeight="Medium">Coloring Theme</TextBlock>
                                     <TextBlock Foreground="Gray" Margin="0,0,0,10" TextWrapping="Wrap">
                                         Select a series of colors to be applied to project tabs as they open.

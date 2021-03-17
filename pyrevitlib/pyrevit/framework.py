@@ -69,6 +69,7 @@ from System.Windows import Media
 from System.Windows import Threading
 from System.Windows import Interop
 from System.Windows import Input
+from System.Windows import Data
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 from System import Math
 from System.Management import ManagementObjectSearcher
