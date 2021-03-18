@@ -33,20 +33,22 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 if __name__ == '__main__':
     if __shiftclick__: #pylint: disable=undefined-variable
         print("Active: %s" % tabs.get_doc_colorizer_state())
-        styled_docs = tabs.get_styled_docs()
-        if styled_docs:
-            print("Count: %s" % len(styled_docs))
-            for sdoc in styled_docs:
-                color = tabs.hex_from_brush(sdoc.Rule.Brush)[-6:]
+        style_slots = tabs.get_styled_docs()
+        if style_slots:
+            index = 0
+            print("Count: %s" % len(style_slots))
+            for slot in style_slots:
+                color = tabs.hex_from_brush(slot.Rule.Brush)[-6:]
                 output.add_style(
-                    COLOR_TAG_STYLE_TEMPLATE.format(sdoc.Index, color)
+                    COLOR_TAG_STYLE_TEMPLATE.format(index, color)
                     )
-                color_tag = COLOR_TAG_HTML_TEMPLATE.format(color, sdoc.Index)
+                color_tag = COLOR_TAG_HTML_TEMPLATE.format(color, index)
                 output.print_html(
-                    'Index: {} Id: {} with {}'.format(
-                        sdoc.Index, sdoc.Id, color_tag
+                    'Slot: {} Id: {} with {}'.format(
+                        index, slot.Id, color_tag
                         )
                     )
+                index += 1
     else:
         is_active = tabs.toggle_doc_colorizer()
         script.toggle_icon(is_active)

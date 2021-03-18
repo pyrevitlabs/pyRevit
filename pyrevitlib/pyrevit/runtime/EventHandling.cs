@@ -943,6 +943,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
+    // https://tinyurl.com/yj8x4azp
     public class HSLColor {
         public readonly double h, s, l, a;
 
@@ -1054,11 +1055,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    public class TabStyleRule {
+    public class TabColoringRule {
         public SolidColorBrush Brush { get; set; }
         public Regex TitleFilter { get; set; }
 
-        public TabStyleRule(SolidColorBrush brush, string filter = null) {
+        public TabColoringRule(SolidColorBrush brush, string filter = null) {
             Brush = brush;
             try {
                 if (filter is string regexFilter)
@@ -1089,7 +1090,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static readonly Brush DefaultForeground = Brushes.Black;
         public static readonly Brush LightForeground = Brushes.White;
 
-        public Style CreateStyle(TabItem tab, TabStyleRule rule) {
+        public Style CreateStyle(TabItem tab, TabColoringRule rule) {
             // create a style based on given control
             Style tabStyle = new Style(typeof(TabItem), tab.Style);
             var mouseOverTrigger = new Trigger {
@@ -1114,12 +1115,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     new Setter { Property = TabItem.BackgroundProperty, Value = rule.Brush }
                 );
 
+                var bgHightlightBrush = new SolidColorBrush(hslColor.Lighten(1.1).ToRgb());
                 mouseOverTrigger.Setters.Add(
-                    new Setter { Property = TabItem.BackgroundProperty, Value = new SolidColorBrush(hslColor.Lighten(1.2).ToRgb()) }
+                    new Setter { Property = TabItem.BackgroundProperty, Value = bgHightlightBrush }
                 );
 
                 selectedDt.Setters.Add(
-                    new Setter { Property = TabItem.BackgroundProperty, Value = new SolidColorBrush(hslColor.Lighten(1.2).ToRgb()) }
+                    new Setter { Property = TabItem.BackgroundProperty, Value = bgHightlightBrush }
                     );
 
                 tabStyle.Setters.Add(
@@ -1132,19 +1134,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
             tabStyle.Setters.Add(
                 new Setter { Property = TabItem.BorderBrushProperty, Value = rule.Brush }
             );
-            mouseOverTrigger.Setters.Add(
-                new Setter { Property = TabItem.BorderBrushProperty, Value = new SolidColorBrush(hslColor.Lighten(0.8).ToRgb()) }
-            );
-            selectedDt.Setters.Add(
-                new Setter { Property = TabItem.BorderBrushProperty, Value = new SolidColorBrush(hslColor.Lighten(0.8).ToRgb()) }
-                );
-            
             tabStyle.Setters.Add(
                 new Setter { Property = TabItem.BorderThicknessProperty, Value = BorderThinkness }
             );
+
+            var borderHighlightBrush = new SolidColorBrush(hslColor.Lighten(0.9).ToRgb());
+            var selectedThickness = BorderThinkness;
+            selectedThickness.Bottom = 0;
             selectedDt.Setters.Add(
-                new Setter { Property = TabItem.BorderThicknessProperty, Value = BorderThinkness }
+                new Setter { Property = TabItem.BorderThicknessProperty, Value = FillBackground ? new Thickness(1,1,1,0) : selectedThickness }
+            );
+            if (FillBackground) {
+                selectedDt.Setters.Add(
+                    new Setter { Property = TabItem.BorderBrushProperty, Value = Brushes.White }
                 );
+
+            } else {
+                selectedDt.Setters.Add(
+                    new Setter { Property = TabItem.BorderBrushProperty, Value = borderHighlightBrush }
+                );
+            }
+
+            mouseOverTrigger.Setters.Add(
+                new Setter { Property = TabItem.BorderBrushProperty, Value = borderHighlightBrush }
+            );
 
             tabStyle.Triggers.Add(selectedDt);
             tabStyle.Triggers.Add(mouseOverTrigger);
@@ -1154,20 +1167,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class TabColoringTheme {
-        public class StyledDocument {
+        public class RuleSlot {
+            public RuleSlot(TabColoringRule rule) => Rule = rule;
+
             public long Id { get; set; }
-            public int Index { get; set; }
             public bool IsFamily { get; set; }
-            public TabStyleRule Rule { get; set; }
-            public List<string> Views { get; } = new List<string>();
+            public TabColoringRule Rule { get; private set; }
+
+            public void Clear() {
+                Id = -1;
+                IsFamily = false;
+            }
         }
 
         public bool SortDocTabs { get; set; } = false;
 
         public TabColoringStyle TabStyle { get; set; }
         public TabColoringStyle FamilyTabStyle { get; set; }
-        public List<TabStyleRule> TabOrderRules { get; set; }
-        public List<TabStyleRule> TabFilterRules { get; set; }
+        public List<TabColoringRule> TabOrderRules { get; set; }
+        public List<TabColoringRule> TabFilterRules { get; set; }
 
         public static readonly List<Brush> DefaultBrushes = new List<Brush> {
             PyRevitConsts.PyRevitAccentBrush,
@@ -1197,9 +1215,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         string _lastTabState = string.Empty;
         Dictionary<TabItem, Style> _tabOrigStyles = new Dictionary<TabItem, Style>();
-        List<StyledDocument> _docColors = new List<StyledDocument>();
+        List<RuleSlot> _ruleSlots = new List<RuleSlot>();
 
-        public List<StyledDocument> StyledDocuments => _docColors.ToList();
+        public List<RuleSlot> StyledDocuments => _ruleSlots.ToList();
 
         static string GetTabUniqueId(TabItem tab) {
             return $"{((LayoutDocument)tab.Header).Title}+{tab.GetHashCode()}+{tab.IsSelected}";
@@ -1232,6 +1250,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 
             // collect ids of family documents
+            var allDocs = new List<long>();
             var familyDocs = new List<long>();
             foreach (Document doc in uiApp.Application.Documents) {
                 // skip linked docs. they don't have tabs
@@ -1239,9 +1258,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     continue;
 
                 var docId = GetAPIDocumentId(doc);
+                allDocs.Add(docId);
                 if (doc.IsFamilyDocument)
                     familyDocs.Add(docId);
             }
+
+            // cleanup styling for docs that do no exists anymore
+            // empty this before setting new styles so empty slots can be taken
+            var removedDocs = _ruleSlots.Where(d => !allDocs.Contains(d.Id)).ToList();
+            foreach (RuleSlot rslot in removedDocs)
+                rslot.Clear();
+
+            // cleanup any recorded tabs that do not exist anymore
+            var removedTabs = _tabOrigStyles.Keys.Where(t => !docTabs.Contains(t)).ToList();
+            foreach (TabItem tab in removedTabs)
+                _tabOrigStyles.Remove(tab);
 
             // go over each tab and determine
             foreach (TabItem tab in docTabs) {
@@ -1256,12 +1287,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     isFamilyTab: familyDocs.Contains(docId)
                 );
             }
-
-            // cleanup any recorded tab that does not exist anymore
-            var removedTabs = _tabOrigStyles.Keys.Where(t => !docTabs.Contains(t)).ToList();
-            foreach (TabItem tab in removedTabs)
-                _tabOrigStyles.Remove(tab);
-
         }
         
         void Set(TabItem tab, long docId, bool isFamilyTab) {
@@ -1286,25 +1311,43 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (filtered) return;
 
             // otherwise apply colors by order
-            var styledDoc = _docColors.Where(d => d.Id == docId).FirstOrDefault();
-            if (styledDoc is StyledDocument) {
-                Style style = tstyle.CreateStyle(tab, styledDoc.Rule);
+            var docSlot = _ruleSlots.Where(d => d.Id == docId).FirstOrDefault();
+            if (docSlot is RuleSlot) {
+                Style style = tstyle.CreateStyle(tab, docSlot.Rule);
                 tab.Style = style;
-                styledDoc.Views.Add(title);
             }
             else {
-                var colorCount = TabOrderRules.Count;
-                var ruleIndex = _docColors.Count();
-                if (ruleIndex < colorCount) {
-                    var rule = TabOrderRules[ruleIndex];
-                    Style style = tstyle.CreateStyle(tab, rule);
-                    var newStyledDoc = new StyledDocument {
+                RuleSlot slot = null;
+
+                if (_ruleSlots != null && _ruleSlots.Count() >= 1) {
+                    int nextRuleIndex = _ruleSlots.Count();
+                    if (nextRuleIndex >= TabOrderRules.Count) {
+                        var firstEmptySlot = _ruleSlots.Where(r => r.Id == -1).FirstOrDefault();
+                        if (firstEmptySlot is RuleSlot) {
+                            slot = firstEmptySlot;
+                            slot.Id = docId;
+                            slot.IsFamily = isFamilyTab;
+                        }
+                    }
+                    else {
+                        slot = new RuleSlot(TabOrderRules[nextRuleIndex]) {
+                            Id = docId,
+                            IsFamily = isFamilyTab,
+                        };
+                        _ruleSlots.Add(slot);
+                    }
+                }
+                else {
+                    slot = new RuleSlot(TabOrderRules.FirstOrDefault()) {
                         Id = docId,
                         IsFamily = isFamilyTab,
-                        Rule = rule
                     };
-                    newStyledDoc.Views.Add(title);
-                    _docColors.Add(newStyledDoc);
+                    _ruleSlots.Add(slot);
+                }
+
+
+                if (slot is RuleSlot) {
+                    Style style = tstyle.CreateStyle(tab, slot.Rule);
                     tab.Style = style;
                 }
             }
@@ -1317,6 +1360,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _tabOrigStyles.Clear();
             _lastTabState = string.Empty;
         }
+    
+        public void InitSlots(TabColoringTheme theme) {
+            // copy the reserved slots in previous theme to new one
+            _ruleSlots.Clear();
+            int ruleCount = TabOrderRules.Count();
+            if (ruleCount > 0) {
+                int index = 0;
+                foreach (RuleSlot slot in theme._ruleSlots) {
+                    if (index >= ruleCount)
+                        break;
+                    
+                    _ruleSlots.Add(
+                        new RuleSlot(TabOrderRules[index]) {
+                            Id = slot.Id,
+                            IsFamily = slot.IsFamily
+                        }
+                    );
+                    index++;
+                }
+            }
+        }
     }
 
     public static class DocumentTabEventUtils {
@@ -1328,7 +1392,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         static object UpdateLock = new object();
 
-        public static TabColoringTheme TabColoringTheme { get; set; }
+        static TabColoringTheme _tabColoringTheme = null;
+        public static TabColoringTheme TabColoringTheme {
+            get => _tabColoringTheme;
+            set {
+                // copy the reserved slots in previous theme to new one
+                if (value is TabColoringTheme && _tabColoringTheme != null)
+                    value.InitSlots(_tabColoringTheme);
+                _tabColoringTheme = value;
+            }
+        }
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public static Xceed.Wpf.AvalonDock.DockingManager GetDockingManager(UIApplication uiapp) {

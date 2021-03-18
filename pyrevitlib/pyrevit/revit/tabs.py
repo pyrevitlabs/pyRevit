@@ -41,8 +41,8 @@ def _get_tab_ordercolors(tabcfgs):
     default_colors = \
         [hex_from_brush(b) for b in types.TabColoringTheme.DefaultBrushes]
     tab_colors = tabcfgs.get_option('tab_colors', default_colors)
-    return List[types.TabStyleRule](
-        [types.TabStyleRule(hex_to_brush(c)) for c in tab_colors]
+    return List[types.TabColoringRule](
+        [types.TabColoringRule(hex_to_brush(c)) for c in tab_colors]
         )
 
 
@@ -53,8 +53,8 @@ def _set_tab_ordercolors(tabcfgs, theme):
 
 def _get_tab_filtercolors(tabcfgs):
     tab_filtercolors = tabcfgs.get_option('tab_filtercolors', {})
-    return List[types.TabStyleRule](
-        [types.TabStyleRule(hex_to_brush(c), f)
+    return List[types.TabColoringRule](
+        [types.TabColoringRule(hex_to_brush(c), f)
          for c, f in tab_filtercolors.items()]
     )
 
@@ -122,7 +122,7 @@ def get_tab_ordercolor(theme, index):
 
 def add_tab_ordercolor(theme, color):
     theme.TabOrderRules.Add(
-        types.TabStyleRule(hex_to_brush(color))
+        types.TabColoringRule(hex_to_brush(color))
         )
 
 
@@ -146,7 +146,7 @@ def get_tab_filtercolor(theme, index):
 
 
 def add_tab_filtercolor(theme, color, title_filter):
-    fc = types.TabStyleRule(hex_to_brush(color), title_filter)
+    fc = types.TabColoringRule(hex_to_brush(color), title_filter)
     theme.TabFilterRules.Add(fc)
 
 
@@ -195,15 +195,21 @@ def toggle_doc_colorizer():
 def init_doc_colorizer(usercfg):
     uiapp = HOST_APP.uiapp
     if HOST_APP.is_newer_than(2018):
-        # cancel out the colorizer from previous runtime version
         current_tabcolorizer = \
             envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
+
+        new_theme = get_tabcoloring_theme(usercfg)
+
+        # cancel out the colorizer from previous runtime version
         if current_tabcolorizer:
+            # TODO: adopt the previous slots state
+            # prev_theme = current_tabcolorizer.TabColoringTheme
+            # if prev_theme:
+            #     new_theme.InitSlots(prev_theme)
             current_tabcolorizer.StopGroupingDocumentTabs()
 
         # start or stop the document colorizer
-        types.DocumentTabEventUtils.TabColoringTheme = \
-            get_tabcoloring_theme(usercfg)
+        types.DocumentTabEventUtils.TabColoringTheme = new_theme
         if usercfg.colorize_docs:
             types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
         else:
