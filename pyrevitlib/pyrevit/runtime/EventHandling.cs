@@ -943,17 +943,135 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    public class TabColoringColor {
+    public class HSLColor {
+        public readonly double h, s, l, a;
+
+        public HSLColor(double h, double s, double l, double a) {
+            this.h = h;
+            this.s = s;
+            this.l = l;
+            this.a = a;
+        }
+
+        public HSLColor(System.Windows.Media.Color rgb) {
+            RgbToHls(rgb.R, rgb.G, rgb.B, out h, out l, out s);
+            a = rgb.A / 255.0;
+        }
+
+        public System.Windows.Media.Color ToRgb() {
+            int r, g, b;
+            HlsToRgb(h, l, s, out r, out g, out b);
+            return System.Windows.Media.Color.FromArgb((byte)(a * 255.0), (byte)r, (byte)g, (byte)b);
+        }
+
+        public HSLColor Lighten(double amount) {
+            return new HSLColor(h, s, Clamp(l * amount, 0, 1), a);
+        }
+
+        private static double Clamp(double value, double min, double max) {
+            if (value < min)
+                return min;
+            if (value > max)
+                return max;
+
+            return value;
+        }
+
+        // Convert an RGB value into an HLS value.
+        static void RgbToHls(int r, int g, int b,
+            out double h, out double l, out double s) {
+            // Convert RGB to a 0.0 to 1.0 range.
+            double double_r = r / 255.0;
+            double double_g = g / 255.0;
+            double double_b = b / 255.0;
+
+            // Get the maximum and minimum RGB components.
+            double max = double_r;
+            if (max < double_g) max = double_g;
+            if (max < double_b) max = double_b;
+
+            double min = double_r;
+            if (min > double_g) min = double_g;
+            if (min > double_b) min = double_b;
+
+            double diff = max - min;
+            l = (max + min) / 2;
+            if (Math.Abs(diff) < 0.00001) {
+                s = 0;
+                h = 0;  // H is really undefined.
+            }
+            else {
+                if (l <= 0.5) s = diff / (max + min);
+                else s = diff / (2 - max - min);
+
+                double r_dist = (max - double_r) / diff;
+                double g_dist = (max - double_g) / diff;
+                double b_dist = (max - double_b) / diff;
+
+                if (double_r == max) h = b_dist - g_dist;
+                else if (double_g == max) h = 2 + r_dist - b_dist;
+                else h = 4 + g_dist - r_dist;
+
+                h = h * 60;
+                if (h < 0) h += 360;
+            }
+        }
+
+        // Convert an HLS value into an RGB value.
+        static void HlsToRgb(double h, double l, double s,
+            out int r, out int g, out int b) {
+            double p2;
+            if (l <= 0.5) p2 = l * (1 + s);
+            else p2 = l + s - l * s;
+
+            double p1 = 2 * l - p2;
+            double double_r, double_g, double_b;
+            if (s == 0) {
+                double_r = l;
+                double_g = l;
+                double_b = l;
+            }
+            else {
+                double_r = QqhToRgb(p1, p2, h + 120);
+                double_g = QqhToRgb(p1, p2, h);
+                double_b = QqhToRgb(p1, p2, h - 120);
+            }
+
+            // Convert RGB to the 0 to 255 range.
+            r = (int)(double_r * 255.0);
+            g = (int)(double_g * 255.0);
+            b = (int)(double_b * 255.0);
+        }
+
+        private static double QqhToRgb(double q1, double q2, double hue) {
+            if (hue > 360) hue -= 360;
+            else if (hue < 0) hue += 360;
+
+            if (hue < 60) return q1 + (q2 - q1) * hue / 60;
+            if (hue < 180) return q2;
+            if (hue < 240) return q1 + (q2 - q1) * (240 - hue) / 60;
+            return q1;
+        }
+    }
+
+    public class TabStyleRule {
         public SolidColorBrush Brush { get; set; }
         public Regex TitleFilter { get; set; }
 
-        public TabColoringColor(SolidColorBrush brush, string filter = null) {
+        public TabStyleRule(SolidColorBrush brush, string filter = null) {
             Brush = brush;
             try {
                 if (filter is string regexFilter)
                     TitleFilter = new Regex(regexFilter);
-            } catch {
             }
+            catch {
+            }
+        }
+
+        public bool IsMatch(string tabTitle) {
+            if (TitleFilter is Regex filter)
+                return filter.IsMatch(tabTitle);
+            return false;
         }
     }
 
@@ -966,55 +1084,90 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static readonly Thickness DefaultBorderThickness = new Thickness();
         public static readonly Brush DefaultBorderBrush = Brushes.White;
-        public static readonly Brush DefaultBackground = Brushes.LightGray;
+        public static readonly Brush DefaultBackground = Brushes.Transparent;
+        public static readonly Brush DefaultSelectedBackground = Brushes.White;
         public static readonly Brush DefaultForeground = Brushes.Black;
         public static readonly Brush LightForeground = Brushes.White;
 
-        public static void Reset(TabItem tab) {
-            tab.BorderThickness = DefaultBorderThickness;
-            tab.BorderBrush = DefaultBorderBrush;
-            tab.Background = DefaultBackground;
-            tab.Foreground = DefaultForeground;
-        }
+        public Style CreateStyle(TabItem tab, TabStyleRule rule) {
+            // create a style based on given control
+            Style tabStyle = new Style(typeof(TabItem), tab.Style);
+            var mouseOverTrigger = new Trigger {
+                Property = TabItem.IsMouseOverProperty,
+                Value = true
+            };
 
-        public bool Apply(TabItem tab, TabColoringColor color) {
-            string title = ((LayoutDocument)tab.Header).Title;
+            var selectedDt = new Trigger {
+                Property = TabItem.IsSelectedProperty,
+                Value = true
+            };
 
-            //if tab title does not match the filter
-            // do not do anything
-            if (color.TitleFilter is Regex filter)
-                if (!filter.IsMatch(title))
-                    return false;
+            var hslColor = new HSLColor(rule.Brush.Color);
 
+            // apply the new styling
             if (FillBackground) {
-                MEDIA.Color c = color.Brush.Color;
+                MEDIA.Color c = rule.Brush.Color;
                 float luminance = 0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B;
-                tab.Background = color.Brush;
-                tab.Foreground = luminance > 127.0f ? DefaultForeground : LightForeground;
-            }
-            else {
-                tab.Background = DefaultBackground;
-                tab.Foreground = DefaultForeground;
+                var forgeround = luminance > 127.0f ? DefaultForeground : LightForeground;
+
+                tabStyle.Setters.Add(
+                    new Setter { Property = TabItem.BackgroundProperty, Value = rule.Brush }
+                );
+
+                mouseOverTrigger.Setters.Add(
+                    new Setter { Property = TabItem.BackgroundProperty, Value = new SolidColorBrush(hslColor.Lighten(1.2).ToRgb()) }
+                );
+
+                selectedDt.Setters.Add(
+                    new Setter { Property = TabItem.BackgroundProperty, Value = new SolidColorBrush(hslColor.Lighten(1.2).ToRgb()) }
+                    );
+
+                tabStyle.Setters.Add(
+                    new Setter { Property = TabItem.ForegroundProperty, Value = forgeround }
+                );
+
+                tabStyle.Resources["ClientAreaForegroundBrush"] = forgeround;
             }
 
-            tab.BorderBrush = color.Brush;
-            tab.BorderThickness = BorderThinkness;
+            tabStyle.Setters.Add(
+                new Setter { Property = TabItem.BorderBrushProperty, Value = rule.Brush }
+            );
+            mouseOverTrigger.Setters.Add(
+                new Setter { Property = TabItem.BorderBrushProperty, Value = new SolidColorBrush(hslColor.Lighten(0.8).ToRgb()) }
+            );
+            selectedDt.Setters.Add(
+                new Setter { Property = TabItem.BorderBrushProperty, Value = new SolidColorBrush(hslColor.Lighten(0.8).ToRgb()) }
+                );
+            
+            tabStyle.Setters.Add(
+                new Setter { Property = TabItem.BorderThicknessProperty, Value = BorderThinkness }
+            );
+            selectedDt.Setters.Add(
+                new Setter { Property = TabItem.BorderThicknessProperty, Value = BorderThinkness }
+                );
 
-            return true;
+            tabStyle.Triggers.Add(selectedDt);
+            tabStyle.Triggers.Add(mouseOverTrigger);
+
+            return tabStyle;
         }
     }
 
     public class TabColoringTheme {
+        public class StyledDocument {
+            public long Id { get; set; }
+            public int Index { get; set; }
+            public bool IsFamily { get; set; }
+            public TabStyleRule Rule { get; set; }
+            public List<string> Views { get; } = new List<string>();
+        }
+
         public bool SortDocTabs { get; set; } = false;
 
         public TabColoringStyle TabStyle { get; set; }
         public TabColoringStyle FamilyTabStyle { get; set; }
-        public List<TabColoringColor> TabOrderColors { get; set; }
-        public List<TabColoringColor> TabFilterColors { get; set; }
-        
-        public bool UseFamilyTheme { get; set; }
-        public List<TabColoringColor> FamilyTabOrderColors { get; set; }
-        public List<TabColoringColor> FamilyTabFilterColors { get; set; }
+        public List<TabStyleRule> TabOrderRules { get; set; }
+        public List<TabStyleRule> TabFilterRules { get; set; }
 
         public static readonly List<Brush> DefaultBrushes = new List<Brush> {
             PyRevitConsts.PyRevitAccentBrush,
@@ -1036,26 +1189,146 @@ namespace PyRevitLabs.PyRevit.Runtime {
             new TabColoringStyle("Border - Light") { BorderThinkness = new Thickness(1) },
             new TabColoringStyle("Border - Medium") { BorderThinkness = new Thickness(2) },
             new TabColoringStyle("Border - Heavy") { BorderThinkness = new Thickness(3) },
-            new TabColoringStyle("Background Fill") { BorderThinkness = new Thickness(0), FillBackground = true },
+            new TabColoringStyle("Background Fill") { BorderThinkness = new Thickness(2), FillBackground = true },
         };
 
         public static readonly uint DefaultTabColoringStyleIndex = 0;
         public static readonly uint DefaultFamilyTabColoringStyleIndex = 3;
+
+        string _lastTabState = string.Empty;
+        Dictionary<TabItem, Style> _tabOrigStyles = new Dictionary<TabItem, Style>();
+        List<StyledDocument> _docColors = new List<StyledDocument>();
+
+        public List<StyledDocument> StyledDocuments => _docColors.ToList();
+
+        static string GetTabUniqueId(TabItem tab) {
+            return $"{((LayoutDocument)tab.Header).Title}+{tab.GetHashCode()}+{tab.IsSelected}";
+        }
+
+        static long GetTabDocumentId(TabItem tab) {
+            return (
+                (MFCMDIFrameHost)(
+                    (MFCMDIChildFrameControl)(
+                        (Xceed.Wpf.AvalonDock.Layout.LayoutDocument)tab.Content
+                    ).Content
+                ).Content
+            ).document.ToInt64();
+        }
+
+        static long GetAPIDocumentId(Document doc) {
+            MethodInfo getMFCDocMethod = doc.GetType().GetMethod("getMFCDoc", BindingFlags.Instance | BindingFlags.NonPublic);
+            object mfcDoc = getMFCDocMethod.Invoke(doc, new object[] { });
+            MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
+            return ((IntPtr)ptfValMethod.Invoke(mfcDoc, new object[] { })).ToInt64();
+        }
+
+        public void SetTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
+            // dont do anything if it is the same tabs as before
+            string newState = string.Join(";", docTabs.Select(t => GetTabUniqueId(t)));
+            if (newState == _lastTabState)
+                return;
+            else
+                _lastTabState = newState;
+
+
+            // collect ids of family documents
+            var familyDocs = new List<long>();
+            foreach (Document doc in uiApp.Application.Documents) {
+                // skip linked docs. they don't have tabs
+                if (doc.IsLinked)
+                    continue;
+
+                var docId = GetAPIDocumentId(doc);
+                if (doc.IsFamilyDocument)
+                    familyDocs.Add(docId);
+            }
+
+            // go over each tab and determine
+            foreach (TabItem tab in docTabs) {
+                long docId = GetTabDocumentId(tab);
+
+                if (!_tabOrigStyles.ContainsKey(tab))
+                    _tabOrigStyles[tab] = tab.Style;
+
+                Set(
+                    tab: tab,
+                    docId: docId,
+                    isFamilyTab: familyDocs.Contains(docId)
+                );
+            }
+
+            // cleanup any recorded tab that does not exist anymore
+            var removedTabs = _tabOrigStyles.Keys.Where(t => !docTabs.Contains(t)).ToList();
+            foreach (TabItem tab in removedTabs)
+                _tabOrigStyles.Remove(tab);
+
+        }
+        
+        void Set(TabItem tab, long docId, bool isFamilyTab) {
+            // determine style
+            TabColoringStyle tstyle = isFamilyTab ? FamilyTabStyle : TabStyle;
+
+            string title = ((LayoutDocument)tab.Header).Title;
+            
+            // apply colors by filter
+            bool filtered = false;
+            foreach (var rule in TabFilterRules) {
+                //if tab title does not match the filter do not do anything
+                if (!rule.IsMatch(title))
+                    continue;
+
+                tab.Style = tstyle.CreateStyle(tab, rule);
+                filtered = true;
+                break;
+            }
+
+            // if filter is applied to the tab, move on to next
+            if (filtered) return;
+
+            // otherwise apply colors by order
+            var styledDoc = _docColors.Where(d => d.Id == docId).FirstOrDefault();
+            if (styledDoc is StyledDocument) {
+                Style style = tstyle.CreateStyle(tab, styledDoc.Rule);
+                tab.Style = style;
+                styledDoc.Views.Add(title);
+            }
+            else {
+                var colorCount = TabOrderRules.Count;
+                var ruleIndex = _docColors.Count();
+                if (ruleIndex < colorCount) {
+                    var rule = TabOrderRules[ruleIndex];
+                    Style style = tstyle.CreateStyle(tab, rule);
+                    var newStyledDoc = new StyledDocument {
+                        Id = docId,
+                        IsFamily = isFamilyTab,
+                        Rule = rule
+                    };
+                    newStyledDoc.Views.Add(title);
+                    _docColors.Add(newStyledDoc);
+                    tab.Style = style;
+                }
+            }
+        }
+
+        public void ClearTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
+            foreach (TabItem tab in docTabs)
+                if (_tabOrigStyles.TryGetValue(tab, out var tabStyle))
+                    tab.Style = tabStyle;
+            _tabOrigStyles.Clear();
+            _lastTabState = string.Empty;
+        }
     }
 
     public static class DocumentTabEventUtils {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        static string lastTabState = string.Empty;
+        static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public static UIApplication UIApp { get; private set; }
 
         public static bool IsUpdatingDocumentTabs { get; private set; }
-        private static object UpdateLock = new object();
 
+        static object UpdateLock = new object();
 
         public static TabColoringTheme TabColoringTheme { get; set; }
-
-        public static Dictionary<long, TabColoringColor> DocumentColors;
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public static Xceed.Wpf.AvalonDock.DockingManager GetDockingManager(UIApplication uiapp) {
@@ -1099,33 +1372,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<TabItem>();
         }
 
-        public static string GetTabItemId(TabItem tab) {
-            return $"{((LayoutDocument)tab.Header).Title}+{tab.GetHashCode()}";
-        }
-
-        public static long GetTabDocumentId(TabItem tab) {
-            return (
-                        (MFCMDIFrameHost)(
-                            (MFCMDIChildFrameControl)(
-                                (Xceed.Wpf.AvalonDock.Layout.LayoutDocument)tab.Content
-                            ).Content
-                        ).Content
-                    ).document.ToInt64();
-        }
-
-        public static long GetAPIDocumentId(Document doc) {
-            MethodInfo getMFCDocMethod = doc.GetType().GetMethod("getMFCDoc", BindingFlags.Instance | BindingFlags.NonPublic);
-            object mfcDoc = getMFCDocMethod.Invoke(doc, new object[] { });
-            MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
-            return ((IntPtr)ptfValMethod.Invoke(mfcDoc, new object[] { })).ToInt64();
-        }
-
         public static void StartGroupingDocumentTabs(UIApplication uiapp) {
             lock (UpdateLock) {
                 if (!IsUpdatingDocumentTabs) {
                     UIApp = uiapp;
-                    lastTabState = string.Empty;
-                    DocumentColors = new Dictionary<long, TabColoringColor>();
                     IsUpdatingDocumentTabs = true;
 
                     var docMgr = GetDockingManager(UIApp);
@@ -1137,23 +1387,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static void StopGroupingDocumentTabs() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
-                    ClearDocumentTabGroups();
-                    
-                    IsUpdatingDocumentTabs = false;
-                    DocumentColors.Clear();
-                    lastTabState = string.Empty;
-
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
+
+                    ClearDocumentTabGroups();
+
+                    IsUpdatingDocumentTabs = false;
                 }
             }
         }
 
-        private static void UpdateDockingManagerLayout(object sender, EventArgs e) {
+        static void UpdateDockingManagerLayout(object sender, EventArgs e) {
             UpdateDocumentTabGroups();
         }
 
-        private static void ClearDocumentTabGroups() {
+        static void ClearDocumentTabGroups() {
             lock (UpdateLock) {
                 var docTabGroup = GetDocumentTabGroup(UIApp);
                 if (docTabGroup != null) {
@@ -1162,99 +1410,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     if (docTabs.Count() == 0)
                         return;
 
-                    foreach (TabItem tab in docTabs)
-                        TabColoringStyle.Reset(tab);
+                    // reset tabs
+                    if (TabColoringTheme is TabColoringTheme theme)
+                        theme.ClearTheme(UIApp, docTabs);
                 }
             }
         }
 
-        private static void UpdateDocumentTabGroups() {
+        static void UpdateDocumentTabGroups() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
                     // get the ui tabs
                     var docTabGroup = GetDocumentTabGroup(UIApp);
                     if (docTabGroup != null) {
                         var docTabs = GetDocumentTabs(docTabGroup);
-                        
+
                         // dont do anything if there are no tabs
                         if (docTabs.Count() == 0)
                             return;
-                        
-                        // dont do anything if it is the same tabs as before
-                        string newState = string.Join(";", docTabs.Select(t => GetTabItemId(t)));
-                        if (newState == lastTabState)
-                            return;
-                        else
-                            lastTabState = newState;
-                        
-                        // reset the tab coloring
-                        foreach (TabItem tab in docTabs)
-                            TabColoringStyle.Reset(tab);
 
-                        // grab the brush to use by document index
-                        var theme = TabColoringTheme;
-                        if (theme is null)
-                            return;
-
-                        // collect ids of family documents
-                        var allDocs = new List<long>();
-                        var projDocs = new List<long>();
-                        var familyDocs = new List<long>();
-                        foreach (Document doc in UIApp.Application.Documents) {
-                            // skip linked docs. they don't have tabs
-                            if (doc.IsLinked)
-                                continue;
-
-                            var docId = GetAPIDocumentId(doc);
-                            allDocs.Add(docId);
-                            if (doc.IsFamilyDocument)
-                                familyDocs.Add(docId);
-                            else
-                                projDocs.Add(docId);
-                        }
-
-                        // go over each tab and determine
-                        var docColors = new Dictionary<long, TabColoringColor>();
-                        foreach (TabItem tab in docTabs) {
-                            long docId = GetTabDocumentId(tab);
-
-                            if (theme.UseFamilyTheme && familyDocs.Contains(docId)) {
-
-                            }
-                            else {
-                                // determine what style to use base on tab document type
-                                var tstyle = familyDocs.Contains(docId) ? theme.FamilyTabStyle : theme.TabStyle;
-
-                                // apply colors by filter
-                                bool filtered = false;
-                                foreach (var fcolor in theme.TabFilterColors) {
-                                    if (tstyle.Apply(tab, fcolor)) {
-                                        filtered = true;
-                                        break;
-                                    }
-                                }
-
-                                // if filter is applied to the tab, move on to next
-                                if (filtered)
-                                    continue;
-
-                                // otherwise apply colors by order
-                                var clrCount = theme.TabOrderColors.Count;
-                                if (docColors.TryGetValue(docId, out var docColor)) {
-                                    tstyle.Apply(tab, docColor);
-                                }
-                                else {
-                                    var docIndex = allDocs.IndexOf(docId);
-                                    if (docIndex < clrCount) {
-                                        var ocolor = theme.TabOrderColors[docIndex];
-                                        tstyle.Apply(tab, ocolor);
-                                        docColors[docId] = ocolor;
-                                    }
-                                }
-                            }
-                        }
-
-                        DocumentColors = docColors;
+                        // update tabs
+                        if (TabColoringTheme is TabColoringTheme theme)
+                            theme.SetTheme(UIApp, docTabs);
                     }
                 }
             }

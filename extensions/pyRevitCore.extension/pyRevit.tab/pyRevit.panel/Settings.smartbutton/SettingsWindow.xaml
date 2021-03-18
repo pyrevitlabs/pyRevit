@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
-        Height="800" Width="700"
+        Height="1000" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -654,51 +654,6 @@
                                                   MouseDoubleClick="doc_filtercolor_changecolor"
                                                   />
                                     </DockPanel>
-                                    <CheckBox x:Name="usefamilytheme_cb" Checked="tabstyling_changed" Unchecked="tabstyling_changed" Content="Use Separate Theme for Families" IsChecked="False" IsEnabled="True" Margin="0,15,0,10"/>
-                                    <StackPanel x:Name="familyThemePanel" IsEnabled="{Binding ElementName=usefamilytheme_cb, Path=IsChecked}">
-                                        <DockPanel>
-                                            <Grid DockPanel.Dock="Right" Margin="5,0,0,0" >
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="26" />
-                                                    <ColumnDefinition Width="31" />
-                                                    <ColumnDefinition Width="240" />
-                                                </Grid.ColumnDefinitions>
-                                                <Button Grid.Column="0" Width="26" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_family_ordercolor" />
-                                                <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_family_ordercolor" />
-                                            </Grid>
-                                            <TextBlock DockPanel.Dock="Left" Text="By Order" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
-                                            <ListView x:Name="doc_family_ordercolor_lb"
-                                                      MinHeight="26" Background="Transparent"
-                                                      ItemsPanel="{StaticResource swatchPanel}"
-                                                      ItemContainerStyle="{StaticResource swatchPanelItem}"
-                                                      SelectionChanged="selected_family_ordercolor_changed"
-                                                      MouseDoubleClick="doc_family_ordercolor_changecolor"
-                                                      />
-                                        </DockPanel>
-                                        <DockPanel Margin="0,10,0,0">
-                                            <Grid DockPanel.Dock="Right" Margin="5,0,0,0" >
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="26" />
-                                                    <ColumnDefinition Width="31" />
-                                                    <ColumnDefinition Width="80" />
-                                                    <ColumnDefinition Width="160" />
-                                                </Grid.ColumnDefinitions>
-                                                <Button Grid.Column="0" Width="26" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_family_filtercolor" />
-                                                <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_family_filtercolor" />
-                                                <Label Grid.Column="2" Content="Filter (Regex)" HorizontalAlignment="Right" />
-                                                <TextBox x:Name="family_filtercolor_filter_tb" TextChanged="family_filtercolor_filter_changed" Grid.Column="3" Margin="5,0,0,0" MinHeight="26" VerticalContentAlignment="Center"/>
-                                                <Ellipse x:Name="family_filtercolor_filter_warn" Visibility="Hidden" ToolTip="Bad Regex" Grid.Column="3" Fill="Red" Width="8" Height="8" HorizontalAlignment="Right" Margin="0,0,8,0" />
-                                            </Grid>
-                                            <TextBlock DockPanel.Dock="Left" Text="By Filter" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
-                                            <ListView x:Name="doc_family_filtercolor_lb"
-                                                      MinHeight="26" Background="Transparent"
-                                                      ItemsPanel="{StaticResource swatchPanel}"
-                                                      ItemContainerStyle="{StaticResource swatchPanelItem}"
-                                                      SelectionChanged="selected_family_filtercolor_changed"
-                                                      MouseDoubleClick="doc_family_filtercolor_changecolor"
-                                                      />
-                                        </DockPanel>
-                                    </StackPanel>
                                 </StackPanel>
                                 <TextBlock Foreground="#ffffff" Margin="0,10,0,0">
                                         <Hyperlink NavigateUri="https://www.parallaxteam.com/apps/" Click="handle_url_click">

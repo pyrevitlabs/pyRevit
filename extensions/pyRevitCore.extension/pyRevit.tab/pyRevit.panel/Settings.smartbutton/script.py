@@ -21,7 +21,6 @@ from pyrevit.coreutils import envvars
 from pyrevit.coreutils import apidocs
 from pyrevit.coreutils import applocales
 from pyrevit.userconfig import user_config
-from pyrevit import revit
 from pyrevit.revit import tabs
 
 import pyrevitcore_globals
@@ -207,10 +206,8 @@ class SettingsWindow(forms.WPFWindow):
         self.tab_theme = theme
         self.filtercolor_counter = 1
 
-        self.doc_ordercolor_lb.ItemsSource = theme.TabOrderColors
-        self.doc_filtercolor_lb.ItemsSource = theme.TabFilterColors
-        self.doc_family_ordercolor_lb.ItemsSource = theme.FamilyTabOrderColors
-        self.doc_family_filtercolor_lb.ItemsSource = theme.FamilyTabFilterColors
+        self.doc_ordercolor_lb.ItemsSource = theme.TabOrderRules
+        self.doc_filtercolor_lb.ItemsSource = theme.TabFilterRules
 
         # tab styles (must set after the color themes)
         self.project_tabstyle_cb.ItemsSource = theme.AvailableStyles
@@ -220,7 +217,6 @@ class SettingsWindow(forms.WPFWindow):
         self.family_tabstyle_cb.SelectedItem = theme.FamilyTabStyle
 
         self.sortdocs_cb.IsChecked = theme.SortDocTabs
-        self.usefamilytheme_cb.IsChecked = theme.UseFamilyTheme
 
         # output settings
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
@@ -625,7 +621,6 @@ class SettingsWindow(forms.WPFWindow):
     def tabstyling_changed(self, sender, args):
         # update theme settings
         self.tab_theme.SortDocTabs = self.sortdocs_cb.IsChecked
-        self.tab_theme.UseFamilyTheme = self.usefamilytheme_cb.IsChecked
         if self.project_tabstyle_cb.SelectedItem:
             tabs.update_tabstyle(
                 self.tab_theme, self.project_tabstyle_cb.SelectedItem
@@ -648,7 +643,7 @@ class SettingsWindow(forms.WPFWindow):
         if color:
             tabs.add_tab_ordercolor(self.tab_theme, color)
             self.doc_ordercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabOrderColors)
+                list(self.tab_theme.TabOrderRules)
             self.update_tab_previews()
 
     def remove_ordercolor(self, sender, args):
@@ -656,8 +651,8 @@ class SettingsWindow(forms.WPFWindow):
         if selected_ordercolor_idx >= 0:
             tabs.remove_tab_ordercolor(self.tab_theme, selected_ordercolor_idx)
             self.doc_ordercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabOrderColors)
-            new_count = len(self.tab_theme.TabOrderColors)
+                list(self.tab_theme.TabOrderRules)
+            new_count = len(self.tab_theme.TabOrderRules)
             new_index = \
                 selected_ordercolor_idx \
                     if selected_ordercolor_idx < new_count else (new_count - 1)
@@ -680,7 +675,7 @@ class SettingsWindow(forms.WPFWindow):
                     new_color
                     )
             self.doc_ordercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabOrderColors)
+                list(self.tab_theme.TabOrderRules)
             self.update_tab_previews()
 
     def add_filtercolor(self, sender, args):
@@ -692,7 +687,7 @@ class SettingsWindow(forms.WPFWindow):
                 "Project %s" % self.filtercolor_counter
                 )
             self.doc_filtercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabFilterColors)
+                list(self.tab_theme.TabFilterRules)
             self.filtercolor_counter += 1
             self.update_tab_previews()
 
@@ -704,8 +699,8 @@ class SettingsWindow(forms.WPFWindow):
                 selected_filtercolor_idx
                 )
             self.doc_filtercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabFilterColors)
-            new_count = len(self.tab_theme.TabFilterColors)
+                list(self.tab_theme.TabFilterRules)
+            new_count = len(self.tab_theme.TabFilterRules)
             new_index = \
                 selected_filtercolor_idx \
                     if selected_filtercolor_idx < new_count else (new_count - 1)
@@ -750,134 +745,8 @@ class SettingsWindow(forms.WPFWindow):
                     color=color
                     )
             self.doc_filtercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabFilterColors)
+                list(self.tab_theme.TabFilterRules)
             self.update_tab_previews()
-
-    # familt order and filter colors
-    def add_family_ordercolor(self, sender, args):
-        pass
-        # color = self.prompt_for_color()
-        # if color:
-        #     family_order_colors = \
-        #         list(self.doc_family_ordercolor_lb.ItemsSource)
-        #     family_order_colors.append(
-        #         DocumentTabColor(color)
-        #     )
-        #     self.doc_family_ordercolor_lb.ItemsSource = family_order_colors
-        #     self.update_tab_previews()
-
-    def remove_family_ordercolor(self, sender, args):
-        pass
-        # selected_family_ordercolor_idx = \
-        #     self.doc_family_ordercolor_lb.SelectedIndex
-        # if selected_family_ordercolor_idx >= 0:
-        #     family_order_colors = \
-        #         list(self.doc_family_ordercolor_lb.ItemsSource)
-        #     family_order_colors.pop(selected_family_ordercolor_idx)
-        #     self.doc_family_ordercolor_lb.ItemsSource = family_order_colors
-        #     new_count = len(family_order_colors)
-        #     new_index = \
-        #         selected_family_ordercolor_idx \
-        #             if selected_family_ordercolor_idx < new_count \
-        #             else (new_count - 1)
-        #     self.doc_family_ordercolor_lb.SelectedIndex = new_index
-        #     self.update_tab_previews()
-
-    def selected_family_ordercolor_changed(self, sender, args):
-        pass
-
-    def doc_family_ordercolor_changecolor(self, sender, args):
-        pass
-        # selected_family_ordercolor_idx = \
-        #     self.doc_family_ordercolor_lb.SelectedIndex
-        # if selected_family_ordercolor_idx >= 0:
-        #     family_order_colors = \
-        #         list(self.doc_family_ordercolor_lb.ItemsSource)
-        #     family_order_color = family_order_colors[selected_family_ordercolor_idx]
-        #     color = self.prompt_for_color(family_order_color.color)
-        #     if color:
-        #         family_order_colors[selected_family_ordercolor_idx] = \
-        #             DocumentTabColor(color)
-        #     self.doc_family_ordercolor_lb.ItemsSource = family_order_colors
-        #     self.update_tab_previews()
-
-    def add_family_filtercolor(self, sender, args):
-        pass
-        # color = self.prompt_for_color()
-        # if color:
-        #     family_filter_colors = \
-        #         list(self.doc_family_filtercolor_lb.ItemsSource)
-        #     tab_filtercolor = \
-        #         DocumentTabColor(color, self.family_filtercolor_filter_tb.Text)
-        #     if not self.family_filtercolor_filter_tb.Text:
-        #         tab_filtercolor.set_default_filter("Family")
-        #     family_filter_colors.append(tab_filtercolor)
-        #     self.doc_family_filtercolor_lb.ItemsSource = family_filter_colors
-        #     self.update_tab_previews()
-
-    def remove_family_filtercolor(self, sender, args):
-        pass
-        # selected_family_filtercolor_idx = \
-        #     self.doc_family_filtercolor_lb.SelectedIndex
-        # if selected_family_filtercolor_idx >= 0:
-        #     family_filter_colors = \
-        #         list(self.doc_family_filtercolor_lb.ItemsSource)
-        #     family_filter_colors.pop(selected_family_filtercolor_idx)
-        #     self.family_filtercolor_filter_tb.Text = ""
-        #     self.doc_family_filtercolor_lb.ItemsSource = family_filter_colors
-        #     new_count = len(family_filter_colors)
-        #     new_index = \
-        #         selected_family_filtercolor_idx \
-        #             if selected_family_filtercolor_idx < new_count \
-        #             else (new_count - 1)
-        #     self.doc_family_filtercolor_lb.SelectedIndex = new_index
-        #     self.update_tab_previews()
-
-    def selected_family_filtercolor_changed(self, sender, args):
-        pass
-        # selected_family_filtercolor_idx = \
-        #     self.doc_family_filtercolor_lb.SelectedIndex
-        # if selected_family_filtercolor_idx >= 0:
-        #     family_filter_color = \
-        #         list(self.doc_family_filtercolor_lb.ItemsSource)[
-        #             selected_family_filtercolor_idx
-        #             ]
-        #     self.family_filtercolor_filter_tb.Text = \
-        #         family_filter_color.color_filter
-
-    def family_filtercolor_filter_changed(self, sender, args):
-        pass
-        # selected_family_filtercolor_idx = \
-        #     self.doc_family_filtercolor_lb.SelectedIndex
-        # if selected_family_filtercolor_idx >= 0:
-        #     family_filter_color = \
-        #         list(self.doc_family_filtercolor_lb.ItemsSource)[
-        #             selected_family_filtercolor_idx
-        #             ]
-        #     try:
-        #         self.hide_element(self.family_filtercolor_filter_warn)
-        #         re.compile(self.family_filtercolor_filter_tb.Text)
-        #         family_filter_color.color_filter = \
-        #             self.family_filtercolor_filter_tb.Text
-        #         self.update_tab_previews()
-        #     except Exception:
-        #         self.show_element(self.family_filtercolor_filter_warn)
-
-    def doc_family_filtercolor_changecolor(self, sender, args):
-        pass
-        # selected_family_filtercolor_idx = \
-        #     self.doc_family_filtercolor_lb.SelectedIndex
-        # if selected_family_filtercolor_idx >= 0:
-        #     family_filter_colors = \
-        #         list(self.doc_family_filtercolor_lb.ItemsSource)
-        #     family_filter_color = \
-        #         family_filter_colors[selected_family_filtercolor_idx]
-        #     color = self.prompt_for_color(family_filter_color.color)
-        #     if color:
-        #         family_filter_colors[selected_family_filtercolor_idx] = \
-        #             DocumentTabColor(color, family_filter_color.color_filter)
-        #     self.doc_family_filtercolor_lb.ItemsSource = family_filter_colors
-        #     self.update_tab_previews()
 
     # tab previews
     @staticmethod
@@ -885,7 +754,6 @@ class SettingsWindow(forms.WPFWindow):
         control.BorderThickness = Windows.Thickness(0,0,0,0)
         control.Background = Media.SolidColorBrush(Media.Colors.LightGray)
         control_title.Foreground = Media.SolidColorBrush(Media.Colors.Black)
-
 
     def update_tab_previews(self):
         proj_colors = list(self.doc_ordercolor_lb.ItemsSource)
@@ -1037,7 +905,7 @@ class SettingsWindow(forms.WPFWindow):
 
         # save colorize theme
         tabs.set_tabcoloring_theme(user_config, self.tab_theme)
-        tabs.toggle_doc_colorizer(user_config)
+        tabs.init_doc_colorizer(user_config)
 
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)

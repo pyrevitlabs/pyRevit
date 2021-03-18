@@ -149,7 +149,7 @@ def _perform_onsessionloadcomplete_ops():
 
     # activate internal handlers
     # toggle doc colorizer
-    revit.tabs.toggle_doc_colorizer(user_config)
+    revit.tabs.init_doc_colorizer(user_config)
 
     # activate runtime routes server
     if user_config.routes_server:
