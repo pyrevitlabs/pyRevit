@@ -773,7 +773,6 @@ class SettingsWindow(forms.WPFWindow):
                     coloring_rule = coloring_rules[idx]
                     style = prj_tabstyle.CreateStyle(tab_ctrl, coloring_rule)
                     tab_ctrl.Style = style
-                    tab_ctrl.BorderThickness = prj_tabstyle.BorderThinkness
 
         # current project tab style
         family_tabstyle = self.family_tabstyle_cb.SelectedItem
