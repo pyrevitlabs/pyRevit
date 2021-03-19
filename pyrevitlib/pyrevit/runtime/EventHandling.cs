@@ -1361,9 +1361,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _lastTabState = string.Empty;
         }
     
-        public void InitSlots(TabColoringTheme theme) {
+        internal void InitSlots(TabColoringTheme theme) {
             // copy the reserved slots in previous theme to new one
-            _ruleSlots.Clear();
             int ruleCount = TabOrderRules.Count();
             if (ruleCount > 0) {
                 int index = 0;

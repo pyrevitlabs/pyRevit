@@ -44,8 +44,11 @@ if __name__ == '__main__':
                     )
                 color_tag = COLOR_TAG_HTML_TEMPLATE.format(color, index)
                 output.print_html(
-                    'Slot: {} Id: {} with {}'.format(
-                        index, slot.Id, color_tag
+                    'Slot: {} Id: {} with {}{}'.format(
+                        index,
+                        slot.Id,
+                        color_tag,
+                        ' (Family)' if slot.IsFamily else ''
                         )
                     )
                 index += 1
