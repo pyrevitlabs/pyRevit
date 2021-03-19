@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
-        Height="800" Width="700"
+        Height="800" Width="700" MinWidth="600" MinHeight="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -78,6 +78,19 @@
             </Setter>
         </Style>
 
+        <Style x:Key="revitTab" TargetType="{x:Type TabItem}">
+            <Setter Property="Template" Value="{DynamicResource revitTabTemplate}" />
+        </Style>
+
+        <ControlTemplate x:Key="revitTabTemplate" TargetType="{x:Type TabItem}">
+            <Border Height="25" SnapsToDevicePixels="True"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    Background="{TemplateBinding Background}">
+                <TextBlock Text="{TemplateBinding Header}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+        </ControlTemplate>
+        
         <ItemsPanelTemplate x:Key="swatchPanel">
             <WrapPanel />
         </ItemsPanelTemplate>
@@ -571,43 +584,37 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition />
                                             <ColumnDefinition />
+                                            <ColumnDefinition Width="5" />
+                                            <ColumnDefinition />
+                                            <ColumnDefinition />
                                         </Grid.ColumnDefinitions>
-                                        <WrapPanel Grid.Column="0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition />
+                                            <RowDefinition />
+                                            <RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <DockPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0">
                                             <Label Content="Project Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
                                             <ComboBox x:Name="project_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
-                                        </WrapPanel>
-                                        <WrapPanel Grid.Column="1" >
+                                        </DockPanel>
+                                        <DockPanel Grid.Column="3" Grid.ColumnSpan="2" Grid.Row="0">
                                             <Label Content="Family Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
                                             <ComboBox x:Name="family_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
-                                        </WrapPanel>
-                                    </Grid>
-                                    <Grid Margin="10,10,10,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition />
-                                            <ColumnDefinition />
-                                            <ColumnDefinition />
-                                            <ColumnDefinition />
-                                        </Grid.ColumnDefinitions>
-                                        <Border x:Name="tabProjA" Grid.Column="0" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="0,1,0,0" Background="White" SnapsToDevicePixels="True">
-                                            <TextBlock x:Name="tabProjATitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Project 1 - View</TextBlock>
-                                        </Border>
-                                        <Border x:Name="tabProjB" Grid.Column="1" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="0,1,0,0" Background="LightGray" SnapsToDevicePixels="True">
-                                            <TextBlock x:Name="tabProjBTitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Project 2 - View</TextBlock>
-                                        </Border>
-                                        <Border x:Name="tabFamilyA" Grid.Column="2" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="0,1,0,0" Background="LightGray" SnapsToDevicePixels="True">
-                                            <TextBlock x:Name="tabFamilyATitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Family 1 - View</TextBlock>
-                                        </Border>
-                                        <Border x:Name="tabFamilyB" Grid.Column="3" Margin="0,0,0,0" Height="25" HorizontalAlignment="Stretch" BorderBrush="Black" BorderThickness="1" Background="LightGray" SnapsToDevicePixels="True">
-                                            <TextBlock x:Name="tabFamilyBTitle" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="Black">Family 2 - View</TextBlock>
-                                        </Border>
+                                        </DockPanel>
+                                        <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" BorderThickness="1,1,1,0" BorderBrush="LightGray" Height="10" Margin="0,5,0,5"/>
+                                        <Border Grid.Column="3" Grid.ColumnSpan="2" Grid.Row="1" BorderThickness="1,1,1,0" BorderBrush="LightGray" Height="10" Margin="0,5,0,5"/>
+                                        <TabItem x:Name="tabProjA" Grid.Column="0" Grid.Row="2" Style="{StaticResource revitTab}" Header="Project 1" />
+                                        <TabItem x:Name="tabProjB" Grid.Column="1" Grid.Row="2" Style="{StaticResource revitTab}" Header="Project 2" />
+                                        <TabItem x:Name="tabFamilyA" Grid.Column="3" Grid.Row="2" Style="{StaticResource revitTab}" Header="Family 1" />
+                                        <TabItem x:Name="tabFamilyB" Grid.Column="4" Grid.Row="2" Style="{StaticResource revitTab}" Header="Family 2" />
                                     </Grid>
                                 </StackPanel>
                                 <StackPanel Margin="0,10,0,10" IsEnabled="{Binding ElementName=colordocs_cb, Path=IsChecked}">
                                     <TextBlock Margin="0,0,0,5" FontWeight="Medium">Coloring Theme</TextBlock>
                                     <TextBlock Foreground="Gray" Margin="0,0,0,10" TextWrapping="Wrap">
-                                        Select a series of colors to be applied to project tabs as they open.
+                                        Select a series of colors to be applied to document tabs as they open.
                                         <LineBreak />
-                                        Colors in the "By Order" group will be applied to tabs by order.
+                                        Colors in the "By Order" group will be applied to documents in order they open. When all the colors are used, no more tab coloring will be applied.
                                         <LineBreak />
                                         Colors in "By Filter" group will be applied to tabs matching the given name filter. If a filter matches
                                         any of the tab names, the by-filter color will take priority over the by-order color of that tab.

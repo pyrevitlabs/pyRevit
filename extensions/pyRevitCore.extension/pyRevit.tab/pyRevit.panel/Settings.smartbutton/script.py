@@ -7,7 +7,6 @@ import re
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.framework import System, Windows, Controls, Documents
-from pyrevit.framework import Media
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
@@ -276,16 +275,19 @@ class SettingsWindow(forms.WPFWindow):
                     ))
                 tblock.Inlines.Add(
                     Documents.Run(
-                        "Tracks execution of commands from active journal file. Includes:\n"))
+                        "Tracks execution of commands from active "
+                        "journal file. Includes:\n"))
                 tblock.Inlines.Add(
                     Documents.Run(
                         "  Builtin Commands (e.g. ID_OBJECTS_WALL)\n"))
                 tblock.Inlines.Add(
                     Documents.Run(
-                        "  Thirdparty Commands (e.g. CustomCtrl_%CustomCtrl_%Site Designer%Modify%Sidewalk)\n"))
+                        "  Thirdparty Commands (e.g. CustomCtrl_%CustomCtrl_"
+                        "%Site Designer%Modify%Sidewalk)\n"))
                 tblock.Inlines.Add(
                     Documents.Run(
-                        "  pyRevit Commands (e.g. CustomCtrl_%CustomCtrl_%pyRevit%pyRevit%Settings)\n"))
+                        "  pyRevit Commands (e.g. CustomCtrl_%CustomCtrl_"
+                        "%pyRevit%pyRevit%Settings)\n"))
 
             # otherwise prepare the option for the event type
             elif event_type in supportedEvents:
@@ -641,7 +643,7 @@ class SettingsWindow(forms.WPFWindow):
     def add_ordercolor(self, sender, args):
         color = self.prompt_for_color()
         if color:
-            tabs.add_tab_ordercolor(self.tab_theme, color)
+            tabs.add_tab_orderrule(self.tab_theme, color)
             self.doc_ordercolor_lb.ItemsSource = \
                 list(self.tab_theme.TabOrderRules)
             self.update_tab_previews()
@@ -649,7 +651,7 @@ class SettingsWindow(forms.WPFWindow):
     def remove_ordercolor(self, sender, args):
         selected_ordercolor_idx = self.doc_ordercolor_lb.SelectedIndex
         if selected_ordercolor_idx >= 0:
-            tabs.remove_tab_ordercolor(self.tab_theme, selected_ordercolor_idx)
+            tabs.remove_tab_orderrule(self.tab_theme, selected_ordercolor_idx)
             self.doc_ordercolor_lb.ItemsSource = \
                 list(self.tab_theme.TabOrderRules)
             new_count = len(self.tab_theme.TabOrderRules)
@@ -665,11 +667,11 @@ class SettingsWindow(forms.WPFWindow):
     def doc_ordercolor_changecolor(self, sender, args):
         selected_ordercolor_idx = self.doc_ordercolor_lb.SelectedIndex
         if selected_ordercolor_idx >= 0:
-            current_color = \
-                tabs.get_tab_ordercolor(self.tab_theme, selected_ordercolor_idx)
-            new_color = self.prompt_for_color(current_color)
+            rule_color = \
+                tabs.get_tab_orderrule(self.tab_theme, selected_ordercolor_idx)
+            new_color = self.prompt_for_color(rule_color)
             if new_color:
-                tabs.update_tab_ordercolor(
+                tabs.update_tab_orderrule(
                     self.tab_theme,
                     selected_ordercolor_idx,
                     new_color
@@ -681,7 +683,7 @@ class SettingsWindow(forms.WPFWindow):
     def add_filtercolor(self, sender, args):
         color = self.prompt_for_color()
         if color:
-            tabs.add_tab_filtercolor(
+            tabs.add_tab_filterrule(
                 self.tab_theme,
                 color,
                 "Project %s" % self.filtercolor_counter
@@ -694,7 +696,7 @@ class SettingsWindow(forms.WPFWindow):
     def remove_filtercolor(self, sender, args):
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
         if selected_filtercolor_idx >= 0:
-            tabs.remove_tab_filtercolor(
+            tabs.remove_tab_filterrule(
                 self.tab_theme,
                 selected_filtercolor_idx
                 )
@@ -711,10 +713,10 @@ class SettingsWindow(forms.WPFWindow):
     def selected_filtercolor_changed(self, sender, args):
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
         if selected_filtercolor_idx >= 0:
-            _, title_filter = \
-                tabs.get_tab_filtercolor(self.tab_theme,
+            _, rule_title_filter = \
+                tabs.get_tab_filterrule(self.tab_theme,
                                          selected_filtercolor_idx)
-            self.filtercolor_filter_tb.Text = title_filter
+            self.filtercolor_filter_tb.Text = rule_title_filter
 
     def filtercolor_filter_changed(self, sender, args):
         self.hide_element(self.filtercolor_filter_warn)
@@ -722,24 +724,24 @@ class SettingsWindow(forms.WPFWindow):
         if selected_filtercolor_idx >= 0:
             try:
                 re.compile(self.filtercolor_filter_tb.Text)
-                tabs.update_tab_filtercolor(
+                tabs.update_tab_filterrule(
                     self.tab_theme,
                     selected_filtercolor_idx,
                     title_filter=self.filtercolor_filter_tb.Text
                     )
                 self.update_tab_previews()
-            except Exception as ex:
+            except Exception:
                 self.show_element(self.filtercolor_filter_warn)
 
     def doc_filtercolor_changecolor(self, sender, args):
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
         if selected_filtercolor_idx >= 0:
-            color, _ = \
-                tabs.get_tab_filtercolor(self.tab_theme,
+            rule_color, _ = \
+                tabs.get_tab_filterrule(self.tab_theme,
                                          selected_filtercolor_idx)
-            color = self.prompt_for_color(color)
+            color = self.prompt_for_color(rule_color)
             if color:
-                tabs.update_tab_filtercolor(
+                tabs.update_tab_filterrule(
                     self.tab_theme,
                     selected_filtercolor_idx,
                     color=color
@@ -749,90 +751,44 @@ class SettingsWindow(forms.WPFWindow):
             self.update_tab_previews()
 
     # tab previews
-    @staticmethod
-    def reset_tab_preview(control, control_title):
-        control.BorderThickness = Windows.Thickness(0,0,0,0)
-        control.Background = Media.SolidColorBrush(Media.Colors.LightGray)
-        control_title.Foreground = Media.SolidColorBrush(Media.Colors.Black)
-
     def update_tab_previews(self):
-        proj_colors = list(self.doc_ordercolor_lb.ItemsSource)
-        proj_colors_count = len(proj_colors)
-        proj_filtercolors = list(self.doc_filtercolor_lb.ItemsSource)
+        coloring_rules = list(self.doc_ordercolor_lb.ItemsSource)
+        coloring_rules_count = len(coloring_rules)
+        # project preview controls
+        prj_tab_ctrls = [self.tabProjA, self.tabProjB]
+        # project preview controls
+        family_tab_ctrls = [self.tabFamilyA, self.tabFamilyB]
 
-        last_prj_tabstyle_idx = 0
-        prj_tabstyle_idx = self.project_tabstyle_cb.SelectedIndex
-        if prj_tabstyle_idx >= 0:
-            # current project tab style
-            prj_tabstyle = \
-                list(self.project_tabstyle_cb.ItemsSource)[prj_tabstyle_idx]
+        # current project tab style
+        prj_tabstyle = self.project_tabstyle_cb.SelectedItem
+        if prj_tabstyle:
 
-            # # project preview controls
-            # prj_tab_ctrls = [
-            #     (self.tabProjA, self.tabProjATitle),
-            #     (self.tabProjB, self.tabProjBTitle),
-            # ]
+            # reset all
+            for tab_ctrl in prj_tab_ctrls:
+                tab_ctrl.Style = self.Resources["revitTab"]
 
-            # # reset all
-            # for tab_ctrls in prj_tab_ctrls:
-            #     tab_ctrl, tab_ctrl_title = tab_ctrls
-            #     SettingsWindow.reset_tab_preview(tab_ctrl, tab_ctrl_title)
+            # apply by order - project
+            for idx, tab_ctrl in enumerate(prj_tab_ctrls):
+                if idx < coloring_rules_count:
+                    coloring_rule = coloring_rules[idx]
+                    style = prj_tabstyle.CreateStyle(tab_ctrl, coloring_rule)
+                    tab_ctrl.Style = style
+                    tab_ctrl.BorderThickness = prj_tabstyle.BorderThinkness
 
-            # # apply by order - project
-            # for idx, tab_ctrls in enumerate(prj_tab_ctrls):
-            #     tab_ctrl, tab_ctrl_title = tab_ctrls
-            #     if idx < proj_colors_count:
-            #         tab_color = proj_colors[idx]
-            #         prj_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
-            #     last_prj_tabstyle_idx += 1
+        # current project tab style
+        family_tabstyle = self.family_tabstyle_cb.SelectedItem
+        if family_tabstyle:
 
-            # # apply by filter - project
-            # for tab_color in proj_filtercolors:
-            #     for idx, tab_ctrls in enumerate(prj_tab_ctrls):
-            #         tab_ctrl, tab_ctrl_title = tab_ctrls
-            #         prj_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
+            # reset all
+            for tab_ctrl in family_tab_ctrls:
+                tab_ctrl.Style = self.Resources["revitTab"]
 
-
-        # family_colors = list(self.doc_family_ordercolor_lb.ItemsSource)
-        # family_colors_count = len(family_colors)
-        # family_filtercolors = list(self.doc_family_filtercolor_lb.ItemsSource)
-
-        # if not self.usefamilytheme_cb.IsChecked:
-        #     family_colors = proj_colors
-        #     family_colors_count = proj_colors_count
-        #     family_filtercolors = proj_filtercolors
-        # else:
-        #     last_prj_tabstyle_idx = 0
-
-        # family_tabstyle_idx = self.family_tabstyle_cb.SelectedIndex
-        # if family_tabstyle_idx >= 0:
-        #     # current family tab style
-        #     family_tabstyle = \
-        #         list(self.family_tabstyle_cb.ItemsSource)[family_tabstyle_idx]
-
-        #     # family preview controls
-        #     family_tab_ctrls = [
-        #         (self.tabFamilyA, self.tabFamilyATitle),
-        #         (self.tabFamilyB, self.tabFamilyBTitle),
-        #     ]
-
-        #     # reset all
-        #     for tab_ctrls in family_tab_ctrls:
-        #         tab_ctrl, tab_ctrl_title = tab_ctrls
-        #         SettingsWindow.reset_tab_preview(tab_ctrl, tab_ctrl_title)
-
-        #     # apply by order - project
-        #     for idx, tab_ctrls in enumerate(family_tab_ctrls):
-        #         tab_ctrl, tab_ctrl_title = tab_ctrls
-        #         if idx + last_prj_tabstyle_idx < family_colors_count:
-        #             tab_color = family_colors[idx + last_prj_tabstyle_idx]
-        #             family_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
-
-        #     # apply by filter - project
-        #     for tab_color in family_filtercolors:
-        #         for idx, tab_ctrls in enumerate(family_tab_ctrls):
-        #             tab_ctrl, tab_ctrl_title = tab_ctrls
-        #             family_tabstyle.apply(tab_ctrl, tab_ctrl_title, tab_color)
+            # apply by order - project
+            for idx, tab_ctrl in enumerate(family_tab_ctrls):
+                if idx < coloring_rules_count:
+                    coloring_rule = coloring_rules[idx + len(prj_tab_ctrls)]
+                    style = family_tabstyle.CreateStyle(tab_ctrl, coloring_rule)
+                    tab_ctrl.Style = style
 
     # save configs
     def _save_core_options(self):
@@ -841,7 +797,7 @@ class SettingsWindow(forms.WPFWindow):
 
         # set config values to values set in ui items
         user_config.check_updates = self.checkupdates_cb.IsChecked
-        
+
         user_config.rocket_mode = self.rocketmode_cb.IsChecked
 
         if self.verbose_rb.IsChecked:
@@ -979,7 +935,7 @@ class SettingsWindow(forms.WPFWindow):
         telemetry.setup_telemetry()
 
     def _reload(self):
-        from pyrevit.loader.sessionmgr import execute_command
+        from pyrevit.loader.sessionmgr import execute_command #pylint: disable=import-outside-toplevel
         execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
     def save_settings(self, sender, args):

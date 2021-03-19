@@ -33,7 +33,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 if __name__ == '__main__':
     if __shiftclick__: #pylint: disable=undefined-variable
         print("Active: %s" % tabs.get_doc_colorizer_state())
-        style_slots = tabs.get_styled_docs()
+        style_slots = tabs.get_styled_slots()
         if style_slots:
             index = 0
             print("Count: %s" % len(style_slots))

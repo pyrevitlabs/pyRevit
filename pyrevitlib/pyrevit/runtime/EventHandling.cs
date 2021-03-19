@@ -969,7 +969,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new HSLColor(h, s, Clamp(l * amount, 0, 1), a);
         }
 
-        private static double Clamp(double value, double min, double max) {
+        public float Luminance {
+            get {
+                var c = ToRgb();
+                return 0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B;
+            }
+        }
+
+        static double Clamp(double value, double min, double max) {
             if (value < min)
                 return min;
             if (value > max)
@@ -1044,7 +1051,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             b = (int)(double_b * 255.0);
         }
 
-        private static double QqhToRgb(double q1, double q2, double hue) {
+        static double QqhToRgb(double q1, double q2, double hue) {
             if (hue > 360) hue -= 360;
             else if (hue < 0) hue += 360;
 
@@ -1053,6 +1060,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (hue < 240) return q1 + (q2 - q1) * (240 - hue) / 60;
             return q1;
         }
+    
     }
 
     public class TabColoringRule {
@@ -1078,8 +1086,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public class TabColoringStyle {
         public string Name { get; private set; }
-        public Thickness BorderThinkness = new Thickness();
-        public bool FillBackground = false;
+        
+        public Thickness BorderThickness { get; set; } = new Thickness();
+        public bool FillBackground { get; set; } = false;
 
         public TabColoringStyle(string name) => Name = name;
 
@@ -1090,77 +1099,81 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static readonly Brush DefaultForeground = Brushes.Black;
         public static readonly Brush LightForeground = Brushes.White;
 
-        public Style CreateStyle(TabItem tab, TabColoringRule rule) {
+        public Style CreateStyle(TabItem ctrl, TabColoringRule rule) {
             // create a style based on given control
-            Style tabStyle = new Style(typeof(TabItem), tab.Style);
-            var mouseOverTrigger = new Trigger {
+            Style tabStyle = new Style(typeof(TabItem), ctrl.Style);
+
+            // setup hsl color for color modifications
+            var hslColor = new HSLColor(rule.Brush.Color);
+
+            // triggers
+            var triggerSelected = new Trigger {
+                Property = TabItem.IsSelectedProperty,
+                Value = true
+            };
+            var triggerMouseOver = new Trigger {
                 Property = TabItem.IsMouseOverProperty,
                 Value = true
             };
 
-            var selectedDt = new Trigger {
-                Property = TabItem.IsSelectedProperty,
-                Value = true
-            };
-
-            var hslColor = new HSLColor(rule.Brush.Color);
-
-            // apply the new styling
+            // apply background styling
             if (FillBackground) {
-                MEDIA.Color c = rule.Brush.Color;
-                float luminance = 0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B;
-                var forgeround = luminance > 127.0f ? DefaultForeground : LightForeground;
-
                 tabStyle.Setters.Add(
                     new Setter { Property = TabItem.BackgroundProperty, Value = rule.Brush }
                 );
 
+                // highlighitng on triggers
                 var bgHightlightBrush = new SolidColorBrush(hslColor.Lighten(1.1).ToRgb());
-                mouseOverTrigger.Setters.Add(
+                triggerMouseOver.Setters.Add(
                     new Setter { Property = TabItem.BackgroundProperty, Value = bgHightlightBrush }
                 );
-
-                selectedDt.Setters.Add(
+                triggerSelected.Setters.Add(
                     new Setter { Property = TabItem.BackgroundProperty, Value = bgHightlightBrush }
                     );
 
+                // forground based on background
+                var forgeround = hslColor.Luminance > 127.0f ? DefaultForeground : LightForeground;
                 tabStyle.Setters.Add(
                     new Setter { Property = TabItem.ForegroundProperty, Value = forgeround }
                 );
-
+                // setting forground on the "close" inner button
                 tabStyle.Resources["ClientAreaForegroundBrush"] = forgeround;
             }
 
+            // apply border styling
             tabStyle.Setters.Add(
                 new Setter { Property = TabItem.BorderBrushProperty, Value = rule.Brush }
             );
             tabStyle.Setters.Add(
-                new Setter { Property = TabItem.BorderThicknessProperty, Value = BorderThinkness }
+                new Setter { Property = TabItem.BorderThicknessProperty, Value = BorderThickness }
             );
 
+            // highlighting borders on triggers
             var borderHighlightBrush = new SolidColorBrush(hslColor.Lighten(0.9).ToRgb());
-            var selectedThickness = BorderThinkness;
-            selectedThickness.Bottom = 0;
-            selectedDt.Setters.Add(
+            // selected tab hides the bottom border
+            var selectedThickness = new Thickness(BorderThickness.Left, BorderThickness.Top, BorderThickness.Right, 0);
+            triggerSelected.Setters.Add(
                 new Setter { Property = TabItem.BorderThicknessProperty, Value = FillBackground ? new Thickness(1,1,1,0) : selectedThickness }
             );
+
+            // apply border highlighting only when background is active, otherwise the difference is not visible
             if (FillBackground) {
-                selectedDt.Setters.Add(
+                triggerSelected.Setters.Add(
                     new Setter { Property = TabItem.BorderBrushProperty, Value = Brushes.White }
                 );
-
             } else {
-                selectedDt.Setters.Add(
+                triggerSelected.Setters.Add(
                     new Setter { Property = TabItem.BorderBrushProperty, Value = borderHighlightBrush }
                 );
             }
 
-            mouseOverTrigger.Setters.Add(
+            triggerMouseOver.Setters.Add(
                 new Setter { Property = TabItem.BorderBrushProperty, Value = borderHighlightBrush }
             );
 
-            tabStyle.Triggers.Add(selectedDt);
-            tabStyle.Triggers.Add(mouseOverTrigger);
+            // add triggers to style
+            tabStyle.Triggers.Add(triggerSelected);
+            tabStyle.Triggers.Add(triggerMouseOver);
 
             return tabStyle;
         }
@@ -1168,11 +1181,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public class TabColoringTheme {
         public class RuleSlot {
+            public TabColoringRule Rule { get; private set; }
+            
             public RuleSlot(TabColoringRule rule) => Rule = rule;
 
             public long Id { get; set; }
             public bool IsFamily { get; set; }
-            public TabColoringRule Rule { get; private set; }
 
             public void Clear() {
                 Id = -1;
@@ -1201,20 +1215,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
         };
 
         public static readonly List<TabColoringStyle> AvailableStyles = new List<TabColoringStyle> {
-            new TabColoringStyle("Top Bar - Light") { BorderThinkness = new Thickness(0,1,0,0) },
-            new TabColoringStyle("Top Bar - Medium") { BorderThinkness = new Thickness(0,2,0,0) },
-            new TabColoringStyle("Top Bar - Heavy") { BorderThinkness = new Thickness(0,3,0,0) },
-            new TabColoringStyle("Border - Light") { BorderThinkness = new Thickness(1) },
-            new TabColoringStyle("Border - Medium") { BorderThinkness = new Thickness(2) },
-            new TabColoringStyle("Border - Heavy") { BorderThinkness = new Thickness(3) },
-            new TabColoringStyle("Background Fill") { BorderThinkness = new Thickness(2), FillBackground = true },
+            new TabColoringStyle("Top Bar - Light") { BorderThickness = new Thickness(0,1,0,0) },
+            new TabColoringStyle("Top Bar - Medium") { BorderThickness = new Thickness(0,2,0,0) },
+            new TabColoringStyle("Top Bar - Heavy") { BorderThickness = new Thickness(0,3,0,0) },
+            new TabColoringStyle("Border - Light") { BorderThickness = new Thickness(1) },
+            new TabColoringStyle("Border - Medium") { BorderThickness = new Thickness(2) },
+            new TabColoringStyle("Border - Heavy") { BorderThickness = new Thickness(3) },
+            new TabColoringStyle("Background Fill") { BorderThickness = new Thickness(2), FillBackground = true },
         };
 
         public static readonly uint DefaultTabColoringStyleIndex = 0;
         public static readonly uint DefaultFamilyTabColoringStyleIndex = 3;
 
+        // keep a unique hash for the state of open tabs
+        // this helps refreshing the tab styling only once
         string _lastTabState = string.Empty;
+        
+        // storage for tab original styles set. this is used when resetting tabs
         Dictionary<TabItem, Style> _tabOrigStyles = new Dictionary<TabItem, Style>();
+        
+        // used slots for coloring rules
         List<RuleSlot> _ruleSlots = new List<RuleSlot>();
 
         public List<RuleSlot> StyledDocuments => _ruleSlots.ToList();
@@ -1250,22 +1270,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 
             // collect ids of family documents
-            var allDocs = new List<long>();
-            var familyDocs = new List<long>();
+            var docIds = new List<long>();
+            var familyDocIds = new List<long>();
             foreach (Document doc in uiApp.Application.Documents) {
                 // skip linked docs. they don't have tabs
                 if (doc.IsLinked)
                     continue;
 
                 var docId = GetAPIDocumentId(doc);
-                allDocs.Add(docId);
+                docIds.Add(docId);
                 if (doc.IsFamilyDocument)
-                    familyDocs.Add(docId);
+                    familyDocIds.Add(docId);
             }
 
             // cleanup styling for docs that do no exists anymore
             // empty this before setting new styles so empty slots can be taken
-            var removedDocs = _ruleSlots.Where(d => !allDocs.Contains(d.Id)).ToList();
+            var removedDocs = _ruleSlots.Where(d => !docIds.Contains(d.Id)).ToList();
             foreach (RuleSlot rslot in removedDocs)
                 rslot.Clear();
 
@@ -1274,17 +1294,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             foreach (TabItem tab in removedTabs)
                 _tabOrigStyles.Remove(tab);
 
-            // go over each tab and determine
+            // go over each tab and apply style
             foreach (TabItem tab in docTabs) {
                 long docId = GetTabDocumentId(tab);
 
+                // store original style, if it has not been stored yet
                 if (!_tabOrigStyles.ContainsKey(tab))
                     _tabOrigStyles[tab] = tab.Style;
 
+                // set style
                 Set(
                     tab: tab,
                     docId: docId,
-                    isFamilyTab: familyDocs.Contains(docId)
+                    isFamilyTab: familyDocIds.Contains(docId)
                 );
             }
         }
@@ -1311,17 +1333,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (filtered) return;
 
             // otherwise apply colors by order
+            // if a rule for this doc exist, use that
             var docSlot = _ruleSlots.Where(d => d.Id == docId).FirstOrDefault();
             if (docSlot is RuleSlot) {
                 Style style = tstyle.CreateStyle(tab, docSlot.Rule);
                 tab.Style = style;
             }
+            // otherwise determine next rule to use
             else {
                 RuleSlot slot = null;
 
+                // if rule slots has space for more slots,
                 if (_ruleSlots != null && _ruleSlots.Count() >= 1) {
                     int nextRuleIndex = _ruleSlots.Count();
+                    // if rules slots are full
                     if (nextRuleIndex >= TabOrderRules.Count) {
+                        // but have a previously used slot with no doc (slot was used but doc is closed now)
                         var firstEmptySlot = _ruleSlots.Where(r => r.Id == -1).FirstOrDefault();
                         if (firstEmptySlot is RuleSlot) {
                             slot = firstEmptySlot;
@@ -1329,6 +1356,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             slot.IsFamily = isFamilyTab;
                         }
                     }
+                    // otherwise create a new slot with the next rule
                     else {
                         slot = new RuleSlot(TabOrderRules[nextRuleIndex]) {
                             Id = docId,
@@ -1337,6 +1365,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         _ruleSlots.Add(slot);
                     }
                 }
+                // otherwise, create the first slot, with the first rule
                 else {
                     slot = new RuleSlot(TabOrderRules.FirstOrDefault()) {
                         Id = docId,
@@ -1346,6 +1375,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
 
+                // if a slot is found, use the rule to create a new override
+                // framework style for the tab control
                 if (slot is RuleSlot) {
                     Style style = tstyle.CreateStyle(tab, slot.Rule);
                     tab.Style = style;
@@ -1395,7 +1426,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static TabColoringTheme TabColoringTheme {
             get => _tabColoringTheme;
             set {
-                // copy the reserved slots in previous theme to new one
+                // when a new theme is applied, it should adopt the previous slots
+                // with the new rules
                 if (value is TabColoringTheme && _tabColoringTheme != null)
                     value.InitSlots(_tabColoringTheme);
                 _tabColoringTheme = value;
