@@ -21,6 +21,7 @@ from pyrevit.revit.db.pickling import *
 from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
 from pyrevit.revit import ui
+from pyrevit.revit import tabs
 from pyrevit.revit import events
 from pyrevit.revit import report
 from pyrevit.revit import files

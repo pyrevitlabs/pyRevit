@@ -7,6 +7,7 @@ from pyrevit.runtime.types import DocumentTabEventUtils
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 from pyrevit import script
 from pyrevit.userconfig import user_config
+from pyrevit.revit import tabs
 
 
 output = script.get_output()
@@ -31,21 +32,26 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 
 if __name__ == '__main__':
     if __shiftclick__: #pylint: disable=undefined-variable
-        print("Active: %s" % DocumentTabEventUtils.IsUpdatingDocumentTabs)
-        if DocumentTabEventUtils.DocumentBrushes:
-            print("Count: %s" % DocumentTabEventUtils.DocumentBrushes.Count)
+        print("Active: %s" % tabs.get_doc_colorizer_state())
+        style_slots = tabs.get_styled_slots()
+        if style_slots:
             index = 0
-            for k, v in dict(DocumentTabEventUtils.DocumentBrushes).items():
-                color = re.findall(r'\#(.+)\]', repr(v))[0].lower()[-6:]
-                output.add_style(COLOR_TAG_STYLE_TEMPLATE.format(index, color))
+            print("Count: %s" % len(style_slots))
+            for slot in style_slots:
+                color = tabs.hex_from_brush(slot.Rule.Brush)[-6:]
+                output.add_style(
+                    COLOR_TAG_STYLE_TEMPLATE.format(index, color)
+                    )
                 color_tag = COLOR_TAG_HTML_TEMPLATE.format(color, index)
                 output.print_html(
-                    'Doc Id: {} with {}'.format(str(k), color_tag)
+                    'Slot: {} Id: {} with {}{}'.format(
+                        index,
+                        slot.Id,
+                        color_tag,
+                        ' (Family)' if slot.IsFamily else ''
+                        )
                     )
                 index += 1
     else:
-        if DocumentTabEventUtils.IsUpdatingDocumentTabs:
-            DocumentTabEventUtils.StopGroupingDocumentTabs()
-        else:
-            DocumentTabEventUtils.StartGroupingDocumentTabs(HOST_APP.uiapp)
-        script.toggle_icon(DocumentTabEventUtils.IsUpdatingDocumentTabs)
+        is_active = tabs.toggle_doc_colorizer()
+        script.toggle_icon(is_active)

@@ -3034,6 +3034,37 @@ def ask_to_use_selected(type_name, count=None, multiple=True):
     return alert(message % report, yes=True, no=True)
 
 
+def ask_for_color(default=None):
+    """Show system color picker and ask for color
+
+    Args:
+        default (str): default color in HEX ARGB e.g. #ff808080
+        val (type): desc
+
+    Returns:
+        str: selected color in HEX ARGB e.g. #ff808080, or None if cancelled
+
+    Example:
+        >>> forms.ask_for_color()
+        ... '#ff808080'
+    """
+    # colorDlg.Color
+    color_picker = Forms.ColorDialog()
+    if default:
+        default = default.replace('#', '')
+        color_picker.Color = System.Drawing.Color.FromArgb(
+            int(default[:2], 16),
+            int(default[2:4], 16),
+            int(default[4:6], 16),
+            int(default[6:8], 16)
+        )
+    color_picker.FullOpen = True
+    if color_picker.ShowDialog() == Forms.DialogResult.OK:
+        c = color_picker.Color
+        c_hex = ''.join('{:02X}'.format(int(x)) for x in [c.A, c.R, c.G, c.B])
+        return '#' + c_hex
+
+
 def inform_wip():
     """Show work-in-progress prompt to user and exit script.
 
