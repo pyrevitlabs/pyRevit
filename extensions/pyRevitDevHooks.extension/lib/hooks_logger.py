@@ -6,6 +6,9 @@ USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
 HOOK_LOGS = op.join(USER_DESKTOP, 'hooks.log')
 
 
+from pyrevit import revit
+
+
 def _timestamp():
     return datetime.datetime.now().strftime("%m%j%H%M%S%f")
 
@@ -32,16 +35,8 @@ def _get_hook_parts(hook_script):
 def log_hook(hook_file, data, log_doc_access=False):
     hook_name, hook_target = _get_hook_parts(hook_file)
     # collect document element count as doc access test if requested
-    doc = None
-    if log_doc_access:
-        from pyrevit import revit
-        if revit.doc:
-            doc = revit.doc
-        elif hasattr(__eventargs__, 'GetDocument'):
-            doc = __eventargs__.GetDocument()
-    count = None
-    if doc:
-        count = len(revit.query.get_all_elements(doc=doc))
+    doc = revit.doc if log_doc_access else None
+    count = len(revit.query.get_all_elements(doc=doc)) if doc else 0
 
     # write log record with data
     record_str = "{} [{}] ".format(_timestamp(), hook_name)

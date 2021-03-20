@@ -1,7 +1,7 @@
 import types
 import sys
 
-from pyrevit import EXEC_PARAMS, HOST_APP
+from pyrevit import EXEC_PARAMS, HOST_APP, DOCS
 from pyrevit import PyRevitException
 from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
@@ -61,11 +61,11 @@ class RevitWrapper(types.ModuleType):
 
     @property
     def doc(self):
-        return HOST_APP.doc
+        return DOCS.doc
 
     @property
     def docs(self):
-        return HOST_APP.docs
+        return DOCS.docs
 
     @property
     def active_view(self):

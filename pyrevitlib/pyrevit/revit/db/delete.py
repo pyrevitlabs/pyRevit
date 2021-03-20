@@ -1,4 +1,4 @@
-from pyrevit import HOST_APP
+from pyrevit import DOCS
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
@@ -10,13 +10,13 @@ def clear_sheet_revisions(sheet):
 
 
 def delete_elements(element_list, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     element_ids = ensure.ensure_element_ids(element_list)
     return doc.Delete(List[DB.ElementId](element_ids))
 
 
 def delete_revision(rvt_rev, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     return doc.Delete(rvt_rev.Id)
 
 

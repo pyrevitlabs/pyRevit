@@ -518,6 +518,19 @@ class _ExecutorParams(object):
         if self.script_runtime_cfgs:
             return self.script_runtime_cfgs.EventArgs
 
+    @property
+    def event_doc(self):
+        """``DB.Document``: Return document set in event args if available."""
+        if self.event_args:
+            if hasattr(self.event_args, 'Document'):
+                return getattr(self.event_args, 'Document')
+            elif hasattr(self.event_args, 'ActiveDocument'):
+                return getattr(self.event_args, 'ActiveDocument')
+            elif hasattr(self.event_args, 'CurrentDocument'):
+                return getattr(self.event_args, 'CurrentDocument')
+            elif hasattr(self.event_args, 'GetDocument'):
+                return self.event_args.GetDocument()
+
     @property   # read-only
     def needs_refreshed_engine(self):
         """bool: Check if command needs a newly refreshed IronPython engine."""
@@ -682,6 +695,26 @@ class _ExecutorParams(object):
 # create an instance of _ExecutorParams wrapping current runtime.
 EXEC_PARAMS = _ExecutorParams()
 
+
+# -----------------------------------------------------------------------------
+# type to safely get document instance from app or event args
+# -----------------------------------------------------------------------------
+
+class _DocsGetter(object):
+    """Instance to safely get document from HOST_APP instance or EXEC_PARAMS"""
+
+    @property
+    def doc(self):
+        """Active document"""
+        return HOST_APP.doc or EXEC_PARAMS.event_doc
+
+    @property
+    def docs(self):
+        """List of active documents"""
+        return HOST_APP.docs
+
+
+DOCS = _DocsGetter()
 
 # -----------------------------------------------------------------------------
 # config user environment paths
