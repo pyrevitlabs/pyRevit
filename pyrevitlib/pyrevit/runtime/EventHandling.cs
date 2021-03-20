@@ -1239,6 +1239,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public List<RuleSlot> StyledDocuments => _ruleSlots.ToList();
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         static string GetTabUniqueId(TabItem tab) {
             return $"{((LayoutDocument)tab.Header).Title}+{tab.GetHashCode()}+{tab.IsSelected}";
         }
@@ -1247,7 +1248,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return (
                 (MFCMDIFrameHost)(
                     (MFCMDIChildFrameControl)(
-                        (Xceed.Wpf.AvalonDock.Layout.LayoutDocument)tab.Content
+                        (LayoutDocument)tab.Content
                     ).Content
                 ).Content
             ).document.ToInt64();
@@ -1259,7 +1260,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
             return ((IntPtr)ptfValMethod.Invoke(mfcDoc, new object[] { })).ToInt64();
         }
-
         public void SetTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
             // dont do anything if it is the same tabs as before
             string newState = string.Join(";", docTabs.Select(t => GetTabUniqueId(t)));
@@ -1383,6 +1383,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
         }
+#endif
 
         public void ClearTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
             foreach (TabItem tab in docTabs)
