@@ -91,6 +91,11 @@ class ViewSheetListItem(forms.Reactive):
                  print_settings=None, rev_settings=None):
         self._sheet = view_sheet
         self._tblock = view_tblock
+        if self._tblock:
+            self._tblock_type = \
+                view_sheet.Document.GetElement(view_tblock.GetTypeId())
+        else:
+            self._tblock_type = None
         self.name = self._sheet.Name
         self.number = self._sheet.SheetNumber
         self.issue_date = \
@@ -128,6 +133,10 @@ class ViewSheetListItem(forms.Reactive):
     @property
     def revit_tblock(self):
         return self._tblock
+
+    @property
+    def revit_tblock_type(self):
+        return self._tblock_type
 
     @forms.reactive
     def print_settings(self):
@@ -914,7 +923,9 @@ class PrintSheetsWindow(forms.WPFWindow):
             template=template,
             value_type='tblock_param',
             value_getter=lambda x: revit.query.get_param_value(
-                revit.query.get_param(sheet.revit_tblock, x)
+                    revit.query.get_param(sheet.revit_tblock, x)
+                ) or revit.query.get_param_value(
+                    revit.query.get_param(sheet.revit_tblock_type, x)
                 )
         )
 
