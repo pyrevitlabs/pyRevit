@@ -270,10 +270,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public abstract class ScriptCommandExtendedAvail : IExternalCommandAvailability {
         // separators
-        static readonly char CONTEXT_CONDITION_ALL_SEP = '&';
-        static readonly char CONTEXT_CONDITION_ANY_SEP = '|';
-        static readonly char CONTEXT_CONDITION_EXACT_SEP = ';';
-        static readonly char CONTEXT_CONDITION_NOT = '!';
+        const char CONTEXT_CONDITION_ALL_SEP = '&';
+        const char CONTEXT_CONDITION_ANY_SEP = '|';
+        const char CONTEXT_CONDITION_EXACT_SEP = ';';
+        const char CONTEXT_CONDITION_NOT = '!';
 
         // category name separator for comparisons
         const string SEP = "|";
@@ -714,20 +714,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         class AllCondition : CompoundCondition {
             public override string Separator => new string(new char[] { CONTEXT_CONDITION_ALL_SEP });
+
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 return Conditions.All(c => c.IsMatch(uiApp, selectedCategories));
             }
         }
 
         class AnyCondition: CompoundCondition {
-            public override string Separator => "|";
+            public override string Separator => new string(new char[] { CONTEXT_CONDITION_ANY_SEP });
+
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 return Conditions.Any(c => c.IsMatch(uiApp, selectedCategories));
             }
         }
 
         class ExactCondition: CompoundCondition {
-            public override string Separator => ";";
+            public override string Separator => new string(new char[] { CONTEXT_CONDITION_EXACT_SEP });
+
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 var catConditions = Conditions.OfType<CategoryCondition>();
                 
