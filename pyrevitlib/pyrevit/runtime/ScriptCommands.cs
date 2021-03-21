@@ -45,6 +45,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 string cmdExtension,
                 string cmdUniqueName,
                 string cmdControlId,
+                string cmdContext,
                 string engineCfgs) {
             ScriptData = new ScriptData {
                 ScriptPath = scriptSource,
@@ -54,6 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 CommandName = cmdName,
                 CommandBundle = cmdBundle,
                 CommandExtension = cmdExtension,
+                CommandContext = cmdContext,
                 HelpSource = helpSource,
                 Tooltip = tooltip,
             };
@@ -168,6 +170,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (argumentsText == null || argumentsText == string.Empty)
                     copyArguments.IsEnabled = false;
 
+                // menu item to copy command context strings
+                MenuItem copyContext = new MenuItem();
+                copyContext.IsEnabled = !string.IsNullOrEmpty(ScriptData.CommandContext);
+                copyContext.Header = "Copy Context Condition";
+                copyContext.ToolTip = ScriptData.CommandContext;
+                copyContext.Click += delegate {
+                    try {
+                        var contextCondition = ScriptCommandExtendedAvail.FromContextDefinition(ScriptData.CommandContext);
+                        System.Windows.Forms.Clipboard.SetText(contextCondition.ToString());
+                    }
+                    catch (Exception ex) {
+                        System.Windows.Forms.Clipboard.SetText(
+                            $"Error occured while compiling context \"{ScriptData.CommandContext}\" | {ex.Message}"
+                            );
+                    }
+                };
+                pyRevitCmdContextMenu.Items.Add(copyContext);
+
                 // menu item to copy engine configs
                 MenuItem copyEngineConfigs = new MenuItem();
                 string engineCfgs = ScriptRuntimeConfigs.EngineConfigs;
@@ -279,6 +299,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         const string SEP = "|";
 
         public ScriptCommandExtendedAvail(string contextString) {
+            ContextCondition = FromContextDefinition(contextString);
+        }
+
+        public static Condition FromContextDefinition(string contextString) {
             /*
             * Context string format is a list of tokens joined by either & or | but not both
             * and grouped inside (). Groups can also be joined by either & or | but not both
@@ -369,10 +393,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             condition.Conditions = collectedConditions;
             condition.IsRoot = true;
-            ContextCondition = condition;
+            return condition;
         }
 
-        abstract class Condition {
+        public abstract class Condition {
             public bool IsRoot { get; set; } = false;
             public bool IsNot { get; set; } = false;
             public abstract bool IsMatch(UIApplication uiApp, CategorySet selectedCategories);
@@ -525,16 +549,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 switch (_docType) {
                     case DocumentType.Project:
                         if (uiApp != null && uiApp.ActiveUIDocument != null
-                            && uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                            return false;
+                                && uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                            return IsNot ? true : false;
                         break;
                     case DocumentType.Family:
                         if (uiApp != null && uiApp.ActiveUIDocument != null
-                            && !uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                            return false;
+                                && !uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                            return IsNot ? true : false;
                         break;
                 }
-                return true;
+                return IsNot ? false : true;
             }
 
             public override bool Equals(object obj) {
@@ -575,14 +599,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     if (_viewTypes.Count > 0) {
                         if (uiApp != null && uiApp.ActiveUIDocument != null
                             && !_viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
-                            return false;
+                            return IsNot ? true : false;
                     }
 #endif
                 }
                 // say no if any errors occured, otherwise Revit will not call this method again if exceptions
                 // are bubbled up
                 catch {}
-                return false;
+                return IsNot ? true : false;
             }
 
             public override bool Equals(object obj) {
@@ -614,24 +638,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 if (selectedCategories.IsEmpty)
-                    return false;
+                    return IsNot ? true : false;
 
                 try {
                     foreach (Category category in selectedCategories)
                     if (category.Id.IntegerValue == _categoryId)
-                        return true;
+                            return IsNot ? false : true;
                 }
                 catch { }
 
-                return false;
+                return IsNot ? true : false;
             }
 
             public override bool IsMatch(Category category) {
+                bool res = false;
                 try {
-                    return category.Id.IntegerValue == _categoryId;
+                    res = category.Id.IntegerValue == _categoryId;
                 }
                 catch { }
-                return false;
+                return IsNot ? !res : res;
             }
 
             public override bool Equals(object obj) {
@@ -659,22 +684,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 if (selectedCategories.IsEmpty)
-                    return false;
+                    return IsNot ? true : false;
                 try {
                     foreach (Category category in selectedCategories)
                         if (_categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase))
-                            return true;
+                            return IsNot ? false : true;
                 } catch { }
 
-                return false;
+                return IsNot ? true : false;
             }
 
             public override bool IsMatch(Category category) {
+                bool res = false;
                 try {
-                    return _categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase);
+                    res = _categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase);
                 }
                 catch { }
-                return false;
+                return IsNot ? !res : res;
             }
 
             public override bool Equals(object obj) {
@@ -699,7 +725,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public override string Keyword => "zero-doc";
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
-                return true;
+                return IsNot ? false : true;
             }
         }
 
@@ -708,7 +734,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 // check selection
-                return !selectedCategories.IsEmpty;
+                bool res = !selectedCategories.IsEmpty;
+                return IsNot ? !res : res;
             }
         }
 
@@ -716,7 +743,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public override string Separator => new string(new char[] { CONTEXT_CONDITION_ALL_SEP });
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
-                return Conditions.All(c => c.IsMatch(uiApp, selectedCategories));
+                bool res = Conditions.All(c => c.IsMatch(uiApp, selectedCategories));
+                return IsNot ? !res : res;
             }
         }
 
@@ -724,7 +752,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public override string Separator => new string(new char[] { CONTEXT_CONDITION_ANY_SEP });
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
-                return Conditions.Any(c => c.IsMatch(uiApp, selectedCategories));
+                bool res = Conditions.Any(c => c.IsMatch(uiApp, selectedCategories));
+                return IsNot ? !res : res;
             }
         }
 
@@ -736,18 +765,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 
                 // test if all category conditions are ALL in selectedCategories
                 if (!catConditions.All(c => c.IsMatch(uiApp, selectedCategories)))
-                    return false;
+                    return IsNot ? true : false;
                 
                 // test if there is no selectedCategories that isnt matching ANY condition
                 foreach (Category cat in selectedCategories)
                     if (!catConditions.Any(c => c.IsMatch(cat)))
-                        return false;
+                        return IsNot ? true : false;
 
-                return true;
+                return IsNot ? false : true;
             }
         }
 
-        Condition ContextCondition = null;
+        public Condition ContextCondition = null;
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
             if (ContextCondition is Condition ctx)

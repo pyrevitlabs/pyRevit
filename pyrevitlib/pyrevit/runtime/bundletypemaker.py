@@ -24,6 +24,7 @@ def create_bundle_type(
         bundle_extension_name,
         bundle_unique_name,
         bundle_control_id,
+        bundle_context,
         engine_cfgs,
     ):
     runtime.create_type(
@@ -42,6 +43,7 @@ def create_bundle_type(
         bundle_extension_name,
         bundle_unique_name,
         bundle_control_id,
+        bundle_context,
         engine_cfgs)
 
 
@@ -68,6 +70,7 @@ def create_executor_type(extension, module_builder, cmd_component, eng_cfgs=''):
         bundle_extension_name=extension.name,
         bundle_unique_name=cmd_component.unique_name,
         bundle_control_id=cmd_component.control_id,
+        bundle_context=cmd_component.context or "",
         engine_cfgs=eng_cfgs
         )
 
