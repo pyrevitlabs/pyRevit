@@ -106,6 +106,9 @@ try:
 except Exception:
     pass
 
+clr.AddReference('pyRevitLabs.Emojis')
+import pyRevitLabs.Emojis as Emojis
+
 
 # do not import anything from pyrevit before this
 from pyrevit import BIN_DIR
