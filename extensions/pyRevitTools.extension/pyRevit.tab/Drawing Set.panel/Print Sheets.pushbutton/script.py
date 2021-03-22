@@ -470,6 +470,105 @@ class EditNamingFormatsWindow(forms.WPFWindow):
         self.ShowDialog()
 
 
+class ScheduleSheetList(object):
+    def __init__(self, view_shedule):
+        self.doc = view_shedule.Document
+        self.name = view_shedule.Name
+        self.schedule = view_shedule
+
+    def get_sheets(self, doc):
+        return self._get_ordered_schedule_sheets(doc)
+
+    def _get_schedule_text_data(self, view_shedule):
+        schedule_data_file = \
+            script.get_instance_data_file(str(view_shedule.Id.IntegerValue))
+        vseop = DB.ViewScheduleExportOptions()
+        vseop.TextQualifier = coreutils.get_enum_none(DB.ExportTextQualifier)
+        view_shedule.Export(op.dirname(schedule_data_file),
+                             op.basename(schedule_data_file),
+                             vseop)
+
+        sched_data = []
+        try:
+            with codecs.open(schedule_data_file, 'r', EXPORT_ENCODING) \
+                    as sched_data_file:
+                return [x.strip() for x in sched_data_file.readlines()]
+        except Exception as open_err:
+            logger.error('Error opening sheet index export: %s | %s',
+                         schedule_data_file, open_err)
+            return sched_data
+
+    def _order_sheets_by_schedule_data(self, view_shedule, sheet_list):
+        sched_data = self._get_schedule_text_data(view_shedule)
+
+        if not sched_data:
+            return sheet_list
+
+        ordered_sheets_dict = {}
+        for sheet in sheet_list:
+            logger.debug('finding index for: %s', sheet.SheetNumber)
+            for line_no, data_line in enumerate(sched_data):
+                match_pattern = r'(^|.*\t){}(\t.*|$)'.format(sheet.SheetNumber)
+                matches_sheet = re.match(match_pattern, data_line)
+                logger.debug('match: %s', matches_sheet)
+                try:
+                    if matches_sheet:
+                        ordered_sheets_dict[line_no] = sheet
+                        break
+                    if not sheet.CanBePrinted:
+                        logger.debug('Sheet %s is not printable.',
+                                     sheet.SheetNumber)
+                except Exception:
+                    continue
+
+        sorted_keys = sorted(ordered_sheets_dict.keys())
+        return [ordered_sheets_dict[x] for x in sorted_keys]
+
+    def _get_ordered_schedule_sheets(self, doc):
+        if doc == self.doc:
+            sheets = DB.FilteredElementCollector(self.doc,
+                                                 self.schedule.Id)\
+                    .OfClass(framework.get_type(DB.ViewSheet))\
+                    .WhereElementIsNotElementType()\
+                    .ToElements()
+
+            return self._order_sheets_by_schedule_data(
+                self.schedule,
+                sheets
+                )
+        return []
+
+
+class AllSheetsList(object):
+    @property
+    def name(self):
+        return "<All Sheets>"
+
+    def get_sheets(self, doc):
+        return DB.FilteredElementCollector(doc)\
+                 .OfClass(framework.get_type(DB.ViewSheet))\
+                 .WhereElementIsNotElementType()\
+                 .ToElements()
+
+
+class UnlistedSheetsList(object):
+    @property
+    def name(self):
+        return "<Unlisted Sheets>"
+
+    def get_sheets(self, doc):
+        scheduled_param_id = DB.ElementId(DB.BuiltInParameter.SHEET_SCHEDULED)
+        param_prov = DB.ParameterValueProvider(scheduled_param_id)
+        param_equality = DB.FilterNumericEquals()
+        value_rule = DB.FilterIntegerRule(param_prov, param_equality, 0)
+        param_filter = DB.ElementParameterFilter(value_rule)
+        return DB.FilteredElementCollector(doc)\
+                 .OfClass(framework.get_type(DB.ViewSheet))\
+                 .WherePasses(param_filter) \
+                 .WhereElementIsNotElementType()\
+                 .ToElements()
+
+
 class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
@@ -493,7 +592,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 return opened_doc
 
     @property
-    def selected_schedule(self):
+    def selected_sheetlist(self):
         return self.schedules_cb.SelectedItem
 
     # misc
@@ -571,65 +670,6 @@ class PrintSheetsWindow(forms.WPFWindow):
         return [x for x in self.selected_sheets if x.printable]
 
     # private utils
-    def _get_schedule_text_data(self, schedule_view):
-        schedule_data_file = \
-            script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
-        vseop = DB.ViewScheduleExportOptions()
-        vseop.TextQualifier = coreutils.get_enum_none(DB.ExportTextQualifier)
-        schedule_view.Export(op.dirname(schedule_data_file),
-                             op.basename(schedule_data_file),
-                             vseop)
-
-        sched_data = []
-        try:
-            with codecs.open(schedule_data_file, 'r', EXPORT_ENCODING) \
-                    as sched_data_file:
-                return [x.strip() for x in sched_data_file.readlines()]
-        except Exception as open_err:
-            logger.error('Error opening sheet index export: %s | %s',
-                         schedule_data_file, open_err)
-            return sched_data
-
-    def _order_sheets_by_schedule_data(self, schedule_view, sheet_list):
-        sched_data = self._get_schedule_text_data(schedule_view)
-
-        if not sched_data:
-            return sheet_list
-
-        ordered_sheets_dict = {}
-        for sheet in sheet_list:
-            logger.debug('finding index for: %s', sheet.SheetNumber)
-            for line_no, data_line in enumerate(sched_data):
-                match_pattern = r'(^|.*\t){}(\t.*|$)'.format(sheet.SheetNumber)
-                matches_sheet = re.match(match_pattern, data_line)
-                logger.debug('match: %s', matches_sheet)
-                try:
-                    if matches_sheet:
-                        ordered_sheets_dict[line_no] = sheet
-                        break
-                    if not sheet.CanBePrinted:
-                        logger.debug('Sheet %s is not printable.',
-                                     sheet.SheetNumber)
-                except Exception:
-                    continue
-
-        sorted_keys = sorted(ordered_sheets_dict.keys())
-        return [ordered_sheets_dict[x] for x in sorted_keys]
-
-    def _get_ordered_schedule_sheets(self):
-        if self.selected_doc == self.selected_schedule.Document:
-            sheets = DB.FilteredElementCollector(self.selected_doc,
-                                                 self.selected_schedule.Id)\
-                    .OfClass(framework.get_type(DB.ViewSheet))\
-                    .WhereElementIsNotElementType()\
-                    .ToElements()
-
-            return self._order_sheets_by_schedule_data(
-                self.selected_schedule,
-                sheets
-                )
-        return []
-
     def _is_sheet_index(self, schedule_view):
         return self.sheet_cat_id == schedule_view.Definition.CategoryId \
                and not schedule_view.IsTemplate
@@ -640,7 +680,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                       .WhereElementIsNotElementType()\
                       .ToElements()
 
-        return [sched for sched in schedules if self._is_sheet_index(sched)]
+        return [
+            ScheduleSheetList(s) for s in schedules
+            if self._is_sheet_index(s)
+            ]
 
     def _get_printmanager(self):
         try:
@@ -726,13 +769,20 @@ class PrintSheetsWindow(forms.WPFWindow):
     def _update_combine_option(self):
         self.enable_element(self.combine_cb)
         if self.selected_doc.IsLinked \
-                or ((self.selected_schedule and self.has_print_settings)
+                or ((self.selected_sheetlist and self.has_print_settings)
                     and self.selected_print_setting.allows_variable_paper):
             self.disable_element(self.combine_cb)
             self.combine_cb.IsChecked = False
 
     def _setup_sheet_list(self):
-        self.schedules_cb.ItemsSource = self._get_sheet_index_list()
+        sheet_indices  = self._get_sheet_index_list()
+        sheet_indices.append(
+            AllSheetsList()
+            )
+        sheet_indices.append(
+            UnlistedSheetsList()
+            )
+        self.schedules_cb.ItemsSource = sheet_indices
         self.schedules_cb.SelectedIndex = 0
         if self.schedules_cb.ItemsSource:
             self.enable_element(self.schedules_cb)
@@ -915,7 +965,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             if sheet.printable:
                 print_filepath = op.join(USER_DESKTOP, sheet.print_filename)
                 print_mgr.PrintToFileName = print_filepath
-                    
+
                 if self._verify_print_filename(sheet.name, print_filepath):
                     print_mgr.SubmitPrint(sheet.revit_sheet)
             else:
@@ -1117,7 +1167,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             [DB.BuiltInCategory.OST_TitleBlocks],
             doc=self.selected_doc
         )
-        if self.selected_schedule and self.has_print_settings:
+        if self.selected_sheetlist and self.has_print_settings:
             rev_cfg = DB.RevisionSettings.GetRevisionSettings(revit.doc)
             if self.selected_print_setting.allows_variable_paper:
                 sheet_printsettings = \
@@ -1137,7 +1187,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                             x.SheetNumber,
                             None),
                         rev_settings=rev_cfg)
-                    for x in self._get_ordered_schedule_sheets()
+                    for x in self.selected_sheetlist.get_sheets(
+                        doc=self.selected_doc
+                        )
                     ]
             else:
                 print_settings = self.selected_print_setting.print_settings
@@ -1152,7 +1204,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                             set_by_param=False
                         ),
                         rev_settings=rev_cfg)
-                    for x in self._get_ordered_schedule_sheets()
+                    for x in self.selected_sheetlist.get_sheets(
+                        doc=self.selected_doc
+                        )
                     ]
         self._update_combine_option()
         # self._update_index_slider()
