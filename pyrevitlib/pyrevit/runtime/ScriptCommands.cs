@@ -549,19 +549,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 // check document type
-                switch (_docType) {
-                    case DocumentType.Project:
-                        if (uiApp != null && uiApp.ActiveUIDocument != null
-                                && uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                            return IsNot ? true : false;
-                        break;
-                    case DocumentType.Family:
-                        if (uiApp != null && uiApp.ActiveUIDocument != null
-                                && !uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                            return IsNot ? true : false;
-                        break;
+                if (uiApp != null && uiApp.ActiveUIDocument != null) {
+                    switch (_docType) {
+                        case DocumentType.Project:
+                            if (uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                                return IsNot ? true : false;
+                            break;
+                        case DocumentType.Family:
+                            if (!uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                                return IsNot ? true : false;
+                            break;
+                    }
+                    return IsNot ? false : true;
                 }
-                return IsNot ? false : true;
+                return IsNot ? true : false;
             }
 
             public override bool Equals(object obj) {
