@@ -385,11 +385,11 @@
                                         Content="{StaticResource addKeynoteIcon}"
                                         ToolTip="Add a new keynote"
                                         Click="add_keynote"/>
-                                <Button Grid.Column="0" Grid.Row="2"
-                                            Margin="0,2,2,0"
-                                            Content="{StaticResource findKeynoteIcon}"
-                                            ToolTip="Find instances of selected keynote"
-                                            Click="show_keynote"/>
+                                <Button x:Name="keynoteSearch" Grid.Column="0" Grid.Row="2"
+                                        Margin="0,2,2,0" IsEnabled="False"
+                                        Content="{StaticResource findKeynoteIcon}"
+                                        ToolTip="Find instances of selected keynote"
+                                        Click="show_keynote"/>
                                 <Grid x:Name="keynoteEditButtons" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
                                       Height="117"
                                       IsEnabled="False">

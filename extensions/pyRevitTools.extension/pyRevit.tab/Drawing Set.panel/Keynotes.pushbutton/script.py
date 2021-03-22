@@ -795,10 +795,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 and not self.selected_keynote.locked:
             self.keynoteEditButtons.IsEnabled = \
                 bool(self.selected_keynote.parent_key)
+            self.keynoteSearch.IsEnabled = self.keynoteEditButtons.IsEnabled
             self.catEditButtons.IsEnabled = \
                 not self.keynoteEditButtons.IsEnabled
         else:
             self.keynoteEditButtons.IsEnabled = False
+            self.keynoteSearch.IsEnabled = False
 
     def _pick_new_key(self):
         try:
