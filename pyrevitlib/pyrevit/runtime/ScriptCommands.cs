@@ -178,7 +178,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 copyContext.Click += delegate {
                     try {
                         var contextCondition = ScriptCommandExtendedAvail.FromContextDefinition(ScriptData.CommandContext);
-                        System.Windows.Forms.Clipboard.SetText(contextCondition.ToString());
+                        System.Windows.Forms.Clipboard.SetText(
+                            $"Original: {ScriptData.CommandContext}\n" +
+                            $"Compiled: {contextCondition}"
+                            );
                     }
                     catch (Exception ex) {
                         System.Windows.Forms.Clipboard.SetText(
@@ -587,21 +590,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 try {
+                    // check active views
+                    if (_viewTypes.Count > 0) {
+                        if (uiApp != null && uiApp.ActiveUIDocument != null
 #if (REVIT2013 || REVIT2014)
-                    // check active views
-                    if (_viewTypes.Count > 0) {
-                        if (uiApp != null && uiApp.ActiveUIDocument != null
                             && !_viewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType))
-                            return false;
-                    }
 #else
-                    // check active views
-                    if (_viewTypes.Count > 0) {
-                        if (uiApp != null && uiApp.ActiveUIDocument != null
                             && !_viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
+#endif
                             return IsNot ? true : false;
                     }
-#endif
+                    return IsNot ? false : true;
                 }
                 // say no if any errors occured, otherwise Revit will not call this method again if exceptions
                 // are bubbled up
