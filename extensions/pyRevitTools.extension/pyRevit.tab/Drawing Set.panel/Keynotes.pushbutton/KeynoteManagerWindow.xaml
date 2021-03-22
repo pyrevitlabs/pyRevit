@@ -109,6 +109,16 @@
             </Path>
         </Canvas>
 
+        <Canvas x:Key="reCatKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="2" Canvas.Left="2"
+                  Data="M11,13.5V21.5H3V13.5H11M12,2L17.5,11H6.5L12,2M17.5,13C20,13 22,15 22,17.5C22,20 20,22 17.5,22C15,22 13,20 13,17.5C13,15 15,13 17.5,13Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
         <Canvas x:Key="historyKeynoteIcon" Width="24" Height="24">
             <Path Canvas.Top="2" Canvas.Left="2"
                   Data="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3"
@@ -375,6 +385,11 @@
                                         Content="{StaticResource addKeynoteIcon}"
                                         ToolTip="Add a new keynote"
                                         Click="add_keynote"/>
+                                <Button Grid.Column="0" Grid.Row="2"
+                                            Margin="0,2,2,0"
+                                            Content="{StaticResource findKeynoteIcon}"
+                                            ToolTip="Find instances of selected keynote"
+                                            Click="show_keynote"/>
                                 <Grid x:Name="keynoteEditButtons" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
                                       Height="117"
                                       IsEnabled="False">
@@ -408,22 +423,22 @@
                                             Content="{StaticResource duplicateKeynoteIcon}"
                                             ToolTip="Duplicate selected keynote"
                                             Click="duplicate_keynote"/>
-                                    <Button Grid.Column="1"  Grid.Row="2"
-                                            Margin="2,2,0,0"
+                                    <Button Grid.Column="0"  Grid.Row="2"
+                                            Margin="2,2,2,0"
                                             Content="{StaticResource rekeyKeynoteIcon}"
                                             ToolTip="Change key of selected keynote"
                                             Click="rekey_keynote"/>
+                                    <Button Grid.Column="1"  Grid.Row="2"
+                                            Margin="2,2,0,0"
+                                            Content="{StaticResource reCatKeynoteIcon}"
+                                            ToolTip="Change category of selected keynote"
+                                            />
                                     <!--<Button Grid.Column="1"  Grid.Row="2"
                                             IsEnabled="False"
                                             Margin="2,2,0,2"
                                             Content="{StaticResource historyKeynoteIcon}"
                                             ToolTip="Show keynote change history"
                                             Click="show_keynote_history"/>-->
-                                    <Button Grid.Column="0" Grid.Row="2"
-                                            Margin="2,2,2,0"
-                                            Content="{StaticResource findKeynoteIcon}"
-                                            ToolTip="Find instances of selected keynote"
-                                            Click="show_keynote"/>
                                     <!--<Border Grid.Column="1" Grid.Row="3"
                                             Margin="2,2,0,0"
                                             BorderThickness="1" BorderBrush="LightGray" />-->
