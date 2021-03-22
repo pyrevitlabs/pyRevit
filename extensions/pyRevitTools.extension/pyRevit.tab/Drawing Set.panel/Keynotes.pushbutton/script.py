@@ -821,6 +821,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
             owner=self)
         return new_key
 
+    def _pick_category(self):
+        return forms.SelectFromList.show(
+            self.all_categories,
+            title="Select Parent Category",
+            name_attr='text',
+            item_container_template=self.Resources["treeViewItem"],
+            owner=self
+            )
+
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
         logger.debug('New search term: %s', self.search_term)
@@ -1012,12 +1021,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             parent_key = self.selected_category.key
         # otherwise ask to select a parent category
         if not parent_key:
-            cat = forms.SelectFromList.show(
-                self.all_categories,
-                title="Select Parent Category",
-                name_attr='text',
-                item_container_template=self.Resources["treeViewItem"],
-                owner=self)
+            cat = self._pick_category()
             if cat:
                 parent_key = cat.key
         # if parent key is available proceed to create keynote
@@ -1175,6 +1179,31 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     key_param = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
                     if key_param:
                         key_param.Set(to_key)
+
+    def recat_keynote(self, sender, args):
+        selected_keynote = self.selected_keynote
+        # if any of its children are locked
+        if any(x.locked for x in selected_keynote.children):
+            forms.alert('At least one child keynote of this keynote is locked. '
+                        'Wait until the changes are committed.')
+        else:
+            try:
+                from_cat = selected_keynote.parent_key
+                to_cat = self._pick_category()
+                if to_cat and to_cat.key != from_cat:
+                    kdb.move_keynote(self._conn, selected_keynote.key, to_cat.key)
+                # make sure to reload on close
+                self._needs_update = True
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message,
+                            expanded="{}::recat_keynote() [timeout]".format(
+                                self.__class__.__name__))
+            except Exception as ex:
+                forms.alert(str(ex),
+                            expanded="{}::recat_keynote()".format(
+                                self.__class__.__name__))
+            finally:
+                self._update_ktree_knotes()
 
     def show_keynote(self, sender, args):
         if self.selected_keynote:

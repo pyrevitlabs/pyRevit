@@ -432,7 +432,7 @@
                                             Margin="2,2,0,0"
                                             Content="{StaticResource reCatKeynoteIcon}"
                                             ToolTip="Change category of selected keynote"
-                                            />
+                                            Click="recat_keynote" />
                                     <!--<Button Grid.Column="1"  Grid.Row="2"
                                             IsEnabled="False"
                                             Margin="2,2,0,2"
