@@ -83,7 +83,7 @@
         </Style>
 
         <ControlTemplate x:Key="revitTabTemplate" TargetType="{x:Type TabItem}">
-            <Border Height="25" SnapsToDevicePixels="True"
+            <Border Height="20" SnapsToDevicePixels="True"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
                     Background="{TemplateBinding Background}">
