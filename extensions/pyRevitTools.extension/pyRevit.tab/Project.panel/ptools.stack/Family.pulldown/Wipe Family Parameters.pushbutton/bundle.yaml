@@ -1,3 +1,4 @@
+context: doc-family
 tooltip: >-
   This script removes all custom parameters that has not been used
 

@@ -2,26 +2,23 @@
 from collections import OrderedDict
 import codecs
 
-from pyrevit.framework import StringReader
+from pyrevit.framework import StringReader, KeyValuePair
 from pyrevit.labs import libyaml
 
 
 def _convert_yamldotnet_to_dict(ynode, level=0):
-    # logger.debug('{}* Processing: {}'.format(' '*level, type(ynode)))
-    if hasattr(ynode, 'Children'):
+    if isinstance(ynode, libyaml.RepresentationModel.YamlMappingNode):
         d = OrderedDict()
-        value_childs = []
         for child in ynode.Children:
-            # logger.debug('{}+ Child: {}'.format(' '*level, child))
-            if hasattr(child, 'Key') and hasattr(child, 'Value'):
-                d[child.Key.Value] = \
-                    _convert_yamldotnet_to_dict(child.Value, level=level+1)
-            elif hasattr(child, 'Value'):
-                val = child.Value
-                value_childs.append(val)
-        return value_childs or d
-    else:
-        # logger.debug('{}- Child: {}'.format(' '*level, ynode.Value))
+            if isinstance(child, KeyValuePair[libyaml.RepresentationModel.YamlNode, libyaml.RepresentationModel.YamlNode]):
+                d[child.Key.Value] = _convert_yamldotnet_to_dict(child.Value, level=level+1)
+        return d
+    elif isinstance(ynode, libyaml.RepresentationModel.YamlSequenceNode):
+        v = []
+        for child in ynode.Children:
+            v.append(_convert_yamldotnet_to_dict(child, level=level+1))
+        return v
+    elif isinstance(ynode, libyaml.RepresentationModel.YamlScalarNode):
         return ynode.Value
 
 

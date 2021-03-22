@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Input;
 using System.Windows.Controls;
 
@@ -44,6 +45,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 string cmdExtension,
                 string cmdUniqueName,
                 string cmdControlId,
+                string cmdContext,
                 string engineCfgs) {
             ScriptData = new ScriptData {
                 ScriptPath = scriptSource,
@@ -53,6 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 CommandName = cmdName,
                 CommandBundle = cmdBundle,
                 CommandExtension = cmdExtension,
+                CommandContext = cmdContext,
                 HelpSource = helpSource,
                 Tooltip = tooltip,
             };
@@ -167,6 +170,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (argumentsText == null || argumentsText == string.Empty)
                     copyArguments.IsEnabled = false;
 
+                // menu item to copy command context strings
+                MenuItem copyContext = new MenuItem();
+                copyContext.IsEnabled = !string.IsNullOrEmpty(ScriptData.CommandContext);
+                copyContext.Header = "Copy Context Condition";
+                copyContext.ToolTip = ScriptData.CommandContext;
+                copyContext.Click += delegate {
+                    try {
+                        var contextCondition = ScriptCommandExtendedAvail.FromContextDefinition(ScriptData.CommandContext);
+                        System.Windows.Forms.Clipboard.SetText(
+                            $"Original: {ScriptData.CommandContext}\n" +
+                            $"Compiled: {contextCondition}"
+                            );
+                    }
+                    catch (Exception ex) {
+                        System.Windows.Forms.Clipboard.SetText(
+                            $"Error occured while compiling context \"{ScriptData.CommandContext}\" | {ex.Message}"
+                            );
+                    }
+                };
+                pyRevitCmdContextMenu.Items.Add(copyContext);
+
                 // menu item to copy engine configs
                 MenuItem copyEngineConfigs = new MenuItem();
                 string engineCfgs = ScriptRuntimeConfigs.EngineConfigs;
@@ -268,226 +292,495 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
 
     public abstract class ScriptCommandExtendedAvail : IExternalCommandAvailability {
+        // separators
+        const char CONTEXT_CONDITION_ALL_SEP = '&';
+        const char CONTEXT_CONDITION_ANY_SEP = '|';
+        const char CONTEXT_CONDITION_EXACT_SEP = ';';
+        const char CONTEXT_CONDITION_NOT = '!';
+
         // category name separator for comparisons
         const string SEP = "|";
 
-        // is any selection required?
-        private bool _selection = false;
-
-        // acceptable document types
-        enum DocumentType {
-            Any,
-            Project,
-            Family
-        }
-        private DocumentType _docType = DocumentType.Any;
-
-        // list of acceptable view types
-        private HashSet<ViewType> _activeViewTypes = new HashSet<ViewType>();
-
-        // category comparison string (e.g. wallsdoors)
-        private string _contextCatNameHash = null;
-        // builtin category comparison list
-        private HashSet<int> _contextCatIdsHash = new HashSet<int>();
-
         public ScriptCommandExtendedAvail(string contextString) {
-            // NOTE:
-            // docs have builtin categories
-            // docs might have custom categories with non-english names
-            // the compare mechanism is providing methods to cover both conditions
-            // compare mechanism stores integer ids for builtin categories
-            // compare mechanism stores strings for custom category names
-            //   avail methods don't have access to doc object so the category names must be stored as string
+            ContextCondition = FromContextDefinition(contextString);
+        }
 
-            // get the tokens out of the string (it could only have one token)
-            // contextString in a ;-separated list of tokens
-            List<string> contextTokens = new List<string>();
-            foreach (string contextToken in contextString.Split(Path.PathSeparator))
-                contextTokens.Add(contextToken.ToLower());
-            // keep them sorted for comparison
-            contextTokens.Sort();
+        public static Condition FromContextDefinition(string contextString) {
+            /*
+            * Context string format is a list of tokens joined by either & or | but not both
+            * and grouped inside (). Groups can also be joined by either & or | but not both
+            * Context strings can not be nested
+            * Examples: a,b,c are tokens
+            * (a)
+            * (a&b&c)
+            * (a|b|c)
+            * (a|b|c)&(a&b&c)
+            * (a|b|c)|(a&b&c)
+            */
 
-            // first process the tokens for custom directives
-            // remove processed tokens and move to next step
-            foreach (string token in new List<string>(contextTokens)) {
-                bool processed = false;
+            // parse context string
+            CompoundCondition condition = new AllCondition();
+            var collectedConditions = new HashSet<Condition>();
+
+            bool capturingSubCondition = false;
+            bool subConditionIsNot = false;
+            CompoundCondition subCondition = new AllCondition();
+            var  collectedSubConditions = new HashSet<Condition>();
+
+            bool capturingToken = false;
+            string currentToken = string.Empty;
+
+            Action captureToken = () => {
+                if (capturingToken && currentToken != string.Empty) {
+                    if (Condition.FromToken(currentToken) is Condition condition)
+                        collectedSubConditions.Add(condition);
+                    currentToken = string.Empty;
+                }
+            };
+
+            Action captureSubConditions = () => {
+                if (capturingSubCondition) {
+                    if (collectedSubConditions.Count > 0) {
+                        subCondition.Conditions = collectedSubConditions;
+                        subCondition.IsNot = subConditionIsNot;
+                        collectedConditions.Add(subCondition);
+                    }
+                    collectedSubConditions = new HashSet<Condition>();
+                    capturingSubCondition = false;
+                    subConditionIsNot = false;
+                }
+            };
+
+            foreach(char c in contextString) {
+                switch (c) {
+                    // sub conditions
+                    case '(':
+                        if (capturingSubCondition)
+                            captureToken();
+                        else {
+                            capturingSubCondition = true;
+                            capturingToken = true;
+                        }
+                        continue;
+                    case ')':
+                        captureToken();
+                        captureSubConditions();
+                        continue;
+
+                    // (sub)condition types
+                    case CONTEXT_CONDITION_ALL_SEP:
+                        captureToken();
+                        if (capturingSubCondition) subCondition = new AllCondition();
+                        else condition = new AllCondition();
+                        continue;
+                    case CONTEXT_CONDITION_ANY_SEP:
+                        captureToken();
+                        if (capturingSubCondition) subCondition = new AnyCondition();
+                        else condition = new AnyCondition();
+                        continue;
+                    case CONTEXT_CONDITION_EXACT_SEP:
+                        captureToken();
+                        if (capturingSubCondition) subCondition = new ExactCondition();
+                        else condition = new ExactCondition();
+                        continue;
+
+                    case CONTEXT_CONDITION_NOT:
+                        if (!capturingSubCondition) subConditionIsNot = true;
+                        continue;
+
+                    // tokens
+                    default:
+                        if (capturingToken) currentToken += c; continue;
+                }
+            }
+
+            condition.Conditions = collectedConditions;
+            condition.IsRoot = true;
+            return condition;
+        }
+
+        public abstract class Condition {
+            public bool IsRoot { get; set; } = false;
+            public bool IsNot { get; set; } = false;
+            public abstract bool IsMatch(UIApplication uiApp, CategorySet selectedCategories);
+
+            public static Condition FromToken(string token) {
+                // check for reserved tokens first
                 switch (token.ToLower()) {
+                    case "zero-doc":
+                        return new ZeroDocCondition();
+
                     // selection token requires selected elements
                     case "selection":
-                        _selection = true;
-                        processed = true; break;
+                        return new SelectionCondition();
 
-                    // document typw
+                    // document type
                     case "doc-project":
-                        _docType = DocumentType.Project;
-                        processed = true; break;
+                        return new DocumentTypeCondition(
+                            DocumentTypeCondition.DocumentType.Project
+                            );
                     case "doc-family":
-                        _docType = DocumentType.Family;
-                        processed = true; break;
+                        return new DocumentTypeCondition(
+                            DocumentTypeCondition.DocumentType.Family
+                            );
 
                     // active-* tokens require a certain type of active view
                     case "active-drafting-view":
-                        _activeViewTypes.Add(ViewType.DraftingView);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.DraftingView);
                     case "active-detail-view":
-                        _activeViewTypes.Add(ViewType.Detail);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.Detail);
                     case "active-plan-view":
-                        _activeViewTypes.Add(ViewType.FloorPlan);
-                        _activeViewTypes.Add(ViewType.CeilingPlan);
-                        _activeViewTypes.Add(ViewType.AreaPlan);
-                        _activeViewTypes.Add(ViewType.EngineeringPlan);
-                        processed = true; break;
+                        return new ViewTypeCondition(
+                            new ViewType[] {
+                                ViewType.FloorPlan,
+                                ViewType.CeilingPlan,
+                                ViewType.AreaPlan,
+                                ViewType.EngineeringPlan
+                                }
+                            );
                     case "active-floor-plan":
-                        _activeViewTypes.Add(ViewType.FloorPlan);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.FloorPlan);
                     case "active-rcp-plan":
-                        _activeViewTypes.Add(ViewType.CeilingPlan);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.CeilingPlan);
                     case "active-structural-plan":
-                        _activeViewTypes.Add(ViewType.EngineeringPlan);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.EngineeringPlan);
                     case "active-area-plan":
-                        _activeViewTypes.Add(ViewType.AreaPlan);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.AreaPlan);
                     case "active-elevation-view":
-                        _activeViewTypes.Add(ViewType.Elevation);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.Elevation);
                     case "active-section-view":
-                        _activeViewTypes.Add(ViewType.Section);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.Section);
                     case "active-3d-view":
-                        _activeViewTypes.Add(ViewType.ThreeD);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.ThreeD);
                     case "active-sheet":
-                        _activeViewTypes.Add(ViewType.DrawingSheet);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.DrawingSheet);
                     case "active-legend":
-                        _activeViewTypes.Add(ViewType.Legend);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.Legend);
                     case "active-schedule":
-                        _activeViewTypes.Add(ViewType.PanelSchedule);
-                        _activeViewTypes.Add(ViewType.ColumnSchedule);
-                        _activeViewTypes.Add(ViewType.Schedule);
-                        processed = true; break;
+                        return new ViewTypeCondition(
+                            new ViewType[] {
+                                ViewType.PanelSchedule,
+                                ViewType.ColumnSchedule,
+                                ViewType.Schedule
+                                }
+                            );
                     case "active-panel-schedule":
-                        _activeViewTypes.Add(ViewType.PanelSchedule);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.PanelSchedule);
                     case "active-column-schedule":
-                        _activeViewTypes.Add(ViewType.ColumnSchedule);
-                        processed = true; break;
+                        return new ViewTypeCondition(ViewType.ColumnSchedule);
                 }
 
-                // remove token if captured
-                if (processed)
-                    contextTokens.Remove(token);
-            }
-
-            // first pass processed and removed the processed tokens
-            // second, process tokens for builtin categories
-            // if any tokens left
-            foreach (string token in new List<string>(contextTokens)) {
+                // check for custom tokens next
+                // NOTE:
+                // docs have builtin categories
+                // docs might have custom categories with non-english names
+                // the compare mechanism is providing methods to cover both conditions
+                // compare mechanism stores integer ids for builtin categories
+                // compare mechanism stores strings for custom category names
+                //   avail methods don't have access to doc object so the category names must be stored as string
                 BuiltInCategory bic = BuiltInCategory.INVALID;
-                if (Enum.TryParse(token, true, out bic) && bic != 0 && bic != BuiltInCategory.INVALID) {
-                    _contextCatIdsHash.Add((int)bic);
-                    contextTokens.Remove(token);
-                }
+                if (Enum.TryParse(token, true, out bic) && bic != 0 && bic != BuiltInCategory.INVALID)
+                    return new BuiltinCategoryCondition((int)bic);
+
+                // assume the token must be a custom category name
+                return new CustomCategoryCondition(token);
             }
 
-            // assume that the remaining tokens are category names and create a comparison string
-            if (contextTokens.Count > 0)
-                _contextCatNameHash = string.Join(SEP, contextTokens);
+            public abstract override bool Equals(object obj);
+            public abstract override int GetHashCode();
+            public abstract override string ToString();
         }
 
-        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
-            // check selection
-            if (_selection && selectedCategories.IsEmpty)
+        abstract class KeywordCondition : Condition {
+            public abstract string Keyword { get; }
+
+            public override bool Equals(object obj) {
+                if (obj is KeywordCondition)
+                    return true;
                 return false;
-
-            // check document type
-            switch (_docType) {
-                case DocumentType.Project:
-                    if (uiApp != null && uiApp.ActiveUIDocument != null
-                        && uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                        return false;
-                    break;
-                case DocumentType.Family:
-                    if (uiApp != null && uiApp.ActiveUIDocument != null
-                        && !uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                        return false;
-                    break;
             }
 
-            // check view types
-            try {
-#if (REVIT2013 || REVIT2014)
-                // check active views
-                if (_activeViewTypes.Count > 0) {
-                    if (uiApp != null && uiApp.ActiveUIDocument != null
-                        && !_activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType))
-                        return false;
-                }
-#else
-                // check active views
-                if (_activeViewTypes.Count > 0) {
-                    if (uiApp != null && uiApp.ActiveUIDocument != null
-                        && !_activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
-                        return false;
-                }
-#endif
+            public override int GetHashCode() {
+                return Keyword.GetHashCode();
+            }
 
+            public override string ToString() {
+                return Keyword;
+            }
+        }
 
-                // the rest are category comparisons so if no categories are selected return false
-                if (_contextCatNameHash != null && selectedCategories.IsEmpty)
+        abstract class CompoundCondition: Condition {
+            public abstract string Separator { get; }
+
+            public HashSet<Condition> Conditions = new HashSet<Condition>();
+
+            public override bool Equals(object obj) {
+                if (obj is HashSet<Condition> conditions)
+                    return new HashSet<Condition>(Conditions.Except(conditions)).Count == 0;
+                else if (obj is CompoundCondition compCond)
+                    return new HashSet<Condition>(Conditions.Except(compCond.Conditions)).Count == 0;
+                else
                     return false;
-
-                // make a hash of selected category ids
-                var selectedCatIdsHash = new HashSet<int>();
-                foreach (Category rvt_cat in selectedCategories)
-                    selectedCatIdsHash.Add(rvt_cat.Id.IntegerValue);
-
-                // make a hash of selected category names
-                var selectedCategoryNames = new List<string>();
-                foreach (Category rvt_cat in selectedCategories)
-                    selectedCategoryNames.Add(rvt_cat.Name.ToLower());
-                selectedCategoryNames.Sort();
-                string selectedCatNameHash = string.Join(SEP, selectedCategoryNames);
-
-                // user might have added a combination of category names and builtin categories
-                // test each possibility
-                // if both builtin categories and category names are specified
-                if (_contextCatIdsHash.Count > 0 && _contextCatNameHash != null) {
-                    // test select inclusion in context (test selected is not bigger than context)
-                    foreach(Category rvt_cat in selectedCategories) {
-                        if (!_contextCatIdsHash.Contains(rvt_cat.Id.IntegerValue)
-                                && !_contextCatNameHash.Contains(rvt_cat.Name.ToLower()))
-                            return false;
-                    }
-
-                    // test context inclusion in selected (test context is not bigger than selected)
-                    foreach (int catId in _contextCatIdsHash)
-                        if (!selectedCatIdsHash.Contains(catId))
-                            return false;
-                    foreach (string catName in _contextCatNameHash.Split(SEP.ToCharArray()))
-                        if (!selectedCatNameHash.Contains(catName))
-                            return false;
-                }
-                // if only builtin categories
-                else if (_contextCatIdsHash.Count > 0 && _contextCatNameHash == null) {
-                    if (!_contextCatIdsHash.SetEquals(selectedCatIdsHash))
-                        return false;
-                }
-                // if only category names
-                else if (_contextCatIdsHash.Count == 0 && _contextCatNameHash != null) {
-                    if (selectedCatNameHash != _contextCatNameHash)
-                        return false;
-                }
-
-                return true;
             }
-            // say no if any errors occured, otherwise Revit will not call this method again if exceptions
-            // are bubbled up
-            catch { return false; }
+
+            public override int GetHashCode() {
+                return Conditions.GetHashCode();
+            }
+
+            public override string ToString() {
+                if (IsRoot)
+                    return string.Join(Separator, Conditions);
+                else
+                    return (IsNot ? "!" : "") + "(" + string.Join(Separator, Conditions) + ")";
+            }
+        }
+
+        class DocumentTypeCondition : Condition {
+            // acceptable document types
+            public enum DocumentType {
+                Any,
+                Project,
+                Family
+            }
+
+            DocumentType _docType = DocumentType.Any;
+
+            public DocumentTypeCondition(DocumentType docType = DocumentType.Any) => _docType = docType;
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                // check document type
+                switch (_docType) {
+                    case DocumentType.Project:
+                        if (uiApp != null && uiApp.ActiveUIDocument != null
+                                && uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                            return IsNot ? true : false;
+                        break;
+                    case DocumentType.Family:
+                        if (uiApp != null && uiApp.ActiveUIDocument != null
+                                && !uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                            return IsNot ? true : false;
+                        break;
+                }
+                return IsNot ? false : true;
+            }
+
+            public override bool Equals(object obj) {
+                if (obj is DocumentType docType)
+                    return _docType == docType;
+                else if (obj is DocumentTypeCondition docTypeCond)
+                    return _docType == docTypeCond._docType;
+                else
+                    return false;
+            }
+
+            public override int GetHashCode() {
+                return _docType.GetHashCode();
+            }
+
+            public override string ToString() {
+                return _docType.ToString();
+            }
+        }
+
+        class ViewTypeCondition : Condition {
+            HashSet<ViewType> _viewTypes;
+
+            public ViewTypeCondition(ViewType viewType) => _viewTypes = new HashSet<ViewType> { viewType };
+            public ViewTypeCondition(ViewType[] viewTypes) => _viewTypes = new HashSet<ViewType> (viewTypes);
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                try {
+                    // check active views
+                    if (_viewTypes.Count > 0) {
+                        if (uiApp != null && uiApp.ActiveUIDocument != null
+#if (REVIT2013 || REVIT2014)
+                            && !_viewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType))
+#else
+                            && !_viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
+#endif
+                            return IsNot ? true : false;
+                    }
+                    return IsNot ? false : true;
+                }
+                // say no if any errors occured, otherwise Revit will not call this method again if exceptions
+                // are bubbled up
+                catch {}
+                return IsNot ? true : false;
+            }
+
+            public override bool Equals(object obj) {
+                if (obj is HashSet<ViewType> viewTypes)
+                    return new HashSet<ViewType>(_viewTypes.Except(viewTypes)).Count == 0;
+                else if (obj is ViewTypeCondition viewTypeCond)
+                    return new HashSet<ViewType>(_viewTypes.Except(viewTypeCond._viewTypes)).Count == 0;
+                else
+                    return false;
+            }
+
+            public override int GetHashCode() {
+                return _viewTypes.GetHashCode();
+            }
+
+            public override string ToString() {
+                return string.Join(";", _viewTypes);
+            }
+        }
+
+        abstract class CategoryCondition : Condition {
+            public abstract bool IsMatch(Category category);
+        }
+
+        class BuiltinCategoryCondition : CategoryCondition {
+            int _categoryId = -1;
+
+            public BuiltinCategoryCondition(int categoryId) => _categoryId = categoryId;
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                if (selectedCategories.IsEmpty)
+                    return IsNot ? true : false;
+
+                try {
+                    foreach (Category category in selectedCategories)
+                    if (category.Id.IntegerValue == _categoryId)
+                            return IsNot ? false : true;
+                }
+                catch { }
+
+                return IsNot ? true : false;
+            }
+
+            public override bool IsMatch(Category category) {
+                bool res = false;
+                try {
+                    res = category.Id.IntegerValue == _categoryId;
+                }
+                catch { }
+                return IsNot ? !res : res;
+            }
+
+            public override bool Equals(object obj) {
+                if (obj is int categoryId)
+                    return _categoryId == categoryId;
+                else if (obj is BuiltinCategoryCondition builtinCatCond)
+                    return _categoryId == builtinCatCond._categoryId;
+                else
+                    return false;
+            }
+
+            public override int GetHashCode() {
+                return _categoryId.GetHashCode();
+            }
+
+            public override string ToString() {
+                return _categoryId.ToString();
+            }
+        }
+
+        class CustomCategoryCondition : CategoryCondition {
+            string _categoryName = string.Empty;
+
+            public CustomCategoryCondition(string categoryName) => _categoryName = categoryName.ToLower();
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                if (selectedCategories.IsEmpty)
+                    return IsNot ? true : false;
+                try {
+                    foreach (Category category in selectedCategories)
+                        if (_categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase))
+                            return IsNot ? false : true;
+                } catch { }
+
+                return IsNot ? true : false;
+            }
+
+            public override bool IsMatch(Category category) {
+                bool res = false;
+                try {
+                    res = _categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase);
+                }
+                catch { }
+                return IsNot ? !res : res;
+            }
+
+            public override bool Equals(object obj) {
+                if (obj is string categoryName)
+                    return _categoryName.Equals(categoryName, StringComparison.InvariantCultureIgnoreCase);
+                else if (obj is CustomCategoryCondition catCond)
+                    return _categoryName.Equals(catCond._categoryName, StringComparison.InvariantCultureIgnoreCase);
+                else
+                    return false;
+            }
+
+            public override int GetHashCode() {
+                return _categoryName.GetHashCode();
+            }
+
+            public override string ToString() {
+                return _categoryName;
+            }
+        }
+
+        class ZeroDocCondition : KeywordCondition {
+            public override string Keyword => "zero-doc";
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                return IsNot ? false : true;
+            }
+        }
+
+        class SelectionCondition : KeywordCondition {
+            public override string Keyword => "selection";
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                // check selection
+                bool res = !selectedCategories.IsEmpty;
+                return IsNot ? !res : res;
+            }
+        }
+
+        class AllCondition : CompoundCondition {
+            public override string Separator => new string(new char[] { CONTEXT_CONDITION_ALL_SEP });
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                bool res = Conditions.All(c => c.IsMatch(uiApp, selectedCategories));
+                return IsNot ? !res : res;
+            }
+        }
+
+        class AnyCondition: CompoundCondition {
+            public override string Separator => new string(new char[] { CONTEXT_CONDITION_ANY_SEP });
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                bool res = Conditions.Any(c => c.IsMatch(uiApp, selectedCategories));
+                return IsNot ? !res : res;
+            }
+        }
+
+        class ExactCondition: CompoundCondition {
+            public override string Separator => new string(new char[] { CONTEXT_CONDITION_EXACT_SEP });
+
+            public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
+                var catConditions = Conditions.OfType<CategoryCondition>();
+                
+                // test if all category conditions are ALL in selectedCategories
+                if (!catConditions.All(c => c.IsMatch(uiApp, selectedCategories)))
+                    return IsNot ? true : false;
+                
+                // test if there is no selectedCategories that isnt matching ANY condition
+                foreach (Category cat in selectedCategories)
+                    if (!catConditions.Any(c => c.IsMatch(cat)))
+                        return IsNot ? true : false;
+
+                return IsNot ? false : true;
+            }
+        }
+
+        public Condition ContextCondition = null;
+
+        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
+            if (ContextCondition is Condition ctx)
+                return ctx.IsMatch(uiApp, selectedCategories);
+            return false;
         }
     }
 
