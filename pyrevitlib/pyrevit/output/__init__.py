@@ -62,7 +62,9 @@ def set_stylesheet(stylesheet):
     if op.isfile(stylesheet):
         envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
                                     stylesheet)
-        user_config.output_stylesheet = stylesheet
+        # do not store this setting forcefully
+        # each repo should default to its own stylesheet
+        # user_config.output_stylesheet = stylesheet
 
 
 def get_stylesheet():
