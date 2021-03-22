@@ -27,10 +27,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevit.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{F13EA93D-4DB1-4149-A86A-B0EFE54ED6AC} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{32B7C208-2ACC-4D2B-9C75-5BAEE22E7F85} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.8.5" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.6" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>
@@ -3211,6 +3211,7 @@
     <ROW File="bundle.yaml_163" Component_="bundle.yaml_21" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\views.stack\Views.pulldown\Close Views.pushbutton\bundle.yaml" SelfReg="false"/>
     <ROW File="icon.png_43" Component_="bundle.yaml_21" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\views.stack\Views.pulldown\Close Views.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="script.py_46" Component_="bundle.yaml_21" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\views.stack\Views.pulldown\Close Views.pushbutton\script.py" SelfReg="false"/>
+    <ROW File="tabs.py" Component_="files.py" FileName="tabs.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\revit\tabs.py" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
