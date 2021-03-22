@@ -1218,14 +1218,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             new TabColoringStyle("Top Bar - Light") { BorderThickness = new Thickness(0,1,0,0) },
             new TabColoringStyle("Top Bar - Medium") { BorderThickness = new Thickness(0,2,0,0) },
             new TabColoringStyle("Top Bar - Heavy") { BorderThickness = new Thickness(0,3,0,0) },
+            new TabColoringStyle("Top Bar - Heavier") { BorderThickness = new Thickness(0,4,0,0) },
             new TabColoringStyle("Border - Light") { BorderThickness = new Thickness(1) },
             new TabColoringStyle("Border - Medium") { BorderThickness = new Thickness(2) },
             new TabColoringStyle("Border - Heavy") { BorderThickness = new Thickness(3) },
+            new TabColoringStyle("Border - Heavier") { BorderThickness = new Thickness(4) },
             new TabColoringStyle("Background Fill") { BorderThickness = new Thickness(2), FillBackground = true },
         };
 
         public static readonly uint DefaultTabColoringStyleIndex = 0;
-        public static readonly uint DefaultFamilyTabColoringStyleIndex = 3;
+        public static readonly uint DefaultFamilyTabColoringStyleIndex = 4;
 
         // keep a unique hash for the state of open tabs
         // this helps refreshing the tab styling only once
