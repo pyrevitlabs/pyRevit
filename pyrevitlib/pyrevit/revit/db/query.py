@@ -253,7 +253,7 @@ def get_elements_by_parameter(param_name, param_value,
 def get_elements_by_param_value(param_name, param_value,
                                 inverse=False, doc=None):
     doc = doc or DOCS.doc
-    param_id = get_project_parameter_id(param_name)
+    param_id = get_project_parameter_id(param_name, doc)
     if param_id:
         pvprov = DB.ParameterValueProvider(param_id)
         pfilter = DB.FilterStringEquals()
@@ -461,8 +461,9 @@ def get_project_parameters(doc=None):
     return pp_list
 
 
-def get_project_parameter_id(param_name):
-    for project_param in get_project_parameters():
+def get_project_parameter_id(param_name, doc=None):
+    doc = doc or DOCS.doc
+    for project_param in get_project_parameters(doc):
         if project_param.name == param_name:
             return project_param.param_id
     raise PyRevitException('Parameter not found: {}'.format(param_name))
@@ -739,8 +740,9 @@ def get_doc_categories(doc=None, include_subcats=True):
     return all_cats
 
 
-def get_schedule_categories():
-    all_cats = get_doc_categories()
+def get_schedule_categories(doc=None):
+    doc = doc or DOCS.doc
+    all_cats = get_doc_categories(doc)
     cats = []
     for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
         for cat in all_cats:
@@ -749,8 +751,9 @@ def get_schedule_categories():
     return cats
 
 
-def get_key_schedule_categories():
-    all_cats = get_doc_categories()
+def get_key_schedule_categories(doc=None):
+    doc = doc or DOCS.doc
+    all_cats = get_doc_categories(doc)
     cats = []
     for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
         for cat in all_cats:
@@ -759,8 +762,9 @@ def get_key_schedule_categories():
     return cats
 
 
-def get_takeoff_categories():
-    all_cats = get_doc_categories()
+def get_takeoff_categories(doc=None):
+    doc = doc or DOCS.doc
+    all_cats = get_doc_categories(doc)
     cats = []
     for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
         for cat in all_cats:
@@ -771,7 +775,7 @@ def get_takeoff_categories():
 
 def get_category(cat_name_or_builtin, doc=None):
     doc = doc or DOCS.doc
-    all_cats = get_doc_categories()
+    all_cats = get_doc_categories(doc)
     if isinstance(cat_name_or_builtin, str):
         for cat in all_cats:
             if cat.Name == cat_name_or_builtin:
