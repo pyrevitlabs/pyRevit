@@ -1392,7 +1392,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _tabOrigStyles.Clear();
             _lastTabState = string.Empty;
         }
-    
+
+        internal void ResetSlots() {
+            _ruleSlots.Clear();
+            _lastTabState = string.Empty;
+        }
+
         internal void InitSlots(TabColoringTheme theme) {
             // copy the reserved slots in previous theme to new one
             int ruleCount = TabOrderRules.Count();
@@ -1501,6 +1506,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
         }
+
+        public static void ResetGroupingDocumentTabs() => _tabColoringTheme?.ResetSlots();
 
         static void UpdateDockingManagerLayout(object sender, EventArgs e) {
             UpdateDocumentTabGroups();

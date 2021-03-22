@@ -210,6 +210,11 @@ def toggle_doc_colorizer():
     return types.DocumentTabEventUtils.IsUpdatingDocumentTabs
 
 
+def reset_doc_colorizer():
+    """Reset document colorizer"""
+    types.DocumentTabEventUtils.ResetGroupingDocumentTabs()
+
+
 def init_doc_colorizer(usercfg):
     """Initialize document colorizer from settings"""
     uiapp = HOST_APP.uiapp
