@@ -1,7 +1,7 @@
 """Helper functions to update info and elements in Revit."""
 import os.path as op
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, DOCS
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
@@ -19,7 +19,7 @@ def set_name(element, new_name):
 
 
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     # make sure revisions is a list
     if not isinstance(revisions, list):
         revisions = [revisions]
@@ -46,7 +46,7 @@ def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
 
 
 def update_revision_alphanumeric(token_list, prefix='', postfix='', doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     alphalist = List[str]()
     for token in token_list:
         alphalist.Add(str(token))
@@ -56,14 +56,14 @@ def update_revision_alphanumeric(token_list, prefix='', postfix='', doc=None):
 
 
 def update_revision_numeric(starting_int, prefix='', postfix='', doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     num_cfg = DB.NumericRevisionSettings(starting_int, prefix, postfix)
     rev_cfg = DB.RevisionSettings.GetRevisionSettings(doc)
     rev_cfg.SetNumericRevisionSettings(num_cfg)
 
 
 def update_revision_numbering(per_sheet=False, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     rev_cfg = DB.RevisionSettings.GetRevisionSettings(doc)
     rev_cfg.RevisionNumbering = \
         DB.RevisionNumbering.PerSheet if per_sheet else \
@@ -90,19 +90,19 @@ def toggle_category_visibility(view, subcat, hidden=None):
 
 
 def rename_workset(workset, new_name, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     DB.WorksetTable.RenameWorkset(doc, workset.Id, new_name)
 
 
 def update_linked_keynotes(doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     ktable = DB.KeynoteTable.GetKeynoteTable(doc)
     ktable.Reload(None)
 
 
 # https://forum.dynamobim.com/t/load-assemblycodetable-keynotetable/23944/2
 def set_keynote_file(keynote_file, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     if op.exists(keynote_file):
         mpath = \
             DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(keynote_file)
@@ -143,7 +143,7 @@ def set_active_workset(workset_id, doc=None):
         workset_id (DB.WorksetId): target workset id
         doc (DB.Document, optional): target document. defaults to active
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     if doc.IsWorkshared:
         workset_table = doc.GetWorksetTable()
         workset_table.SetActiveWorksetId(workset_id)

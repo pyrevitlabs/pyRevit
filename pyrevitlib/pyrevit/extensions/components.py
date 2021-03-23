@@ -37,7 +37,7 @@ class NoScriptButton(GenericUICommand):
     def __init__(self, cmp_path=None, needs_commandclass=False):
         # using classname otherwise exceptions in superclasses won't show
         GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
-        self.assembly = self.command_class = None
+        self.assembly = self.command_class = self.avail_command_class = None
         # read metadata from metadata file
         if self.meta:
             # get the target assembly from metadata
@@ -47,6 +47,10 @@ class NoScriptButton(GenericUICommand):
             # get the target command class from metadata
             self.command_class = \
                 self.meta.get(exts.MDATA_LINK_BUTTON_COMMAND_CLASS, None)
+
+            # get the target command class from metadata
+            self.avail_command_class = \
+                self.meta.get(exts.MDATA_LINK_BUTTON_AVAIL_COMMAND_CLASS, None)
 
             # for invoke buttons there is no script source so
             # assign the metadata file to the script
@@ -83,6 +87,14 @@ class LinkButton(NoScriptButton):
             cmp_path=cmp_path,
             needs_commandclass=True
             )
+
+        if self.context:
+            mlogger.warn(
+                "Linkbutton bundles do not support \"context:\". "
+                "Use \"availability_class:\" instead and specify name of "
+                "availability class in target assembly | %s", self
+                )
+            self.context = None
 
 
 class InvokeButton(NoScriptButton):

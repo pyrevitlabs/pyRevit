@@ -1,6 +1,6 @@
 layout:
-  - Copy Selected Viewports To Selected Sheets
-  - Move Selected Viewports To Selected Sheet
+  - Copy Views
+  - Move Views
   - Pin All Viewports
   - Reorder Selected Viewport
   - -----

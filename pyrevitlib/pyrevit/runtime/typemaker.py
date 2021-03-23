@@ -17,6 +17,12 @@ mlogger = logger.get_logger(__name__)
 
 
 def create_avail_type(extension, cmd_component, module_builder=None):
+    if cmd_component.type_id == exts.LINK_BUTTON_POSTFIX:
+        mlogger.debug(
+            'Skipped creating availability type for: %s', cmd_component
+            )
+        return
+
     # create command availability class for this command
     mlogger.debug('Creating availability type for: %s', cmd_component)
     # set the name of the created type

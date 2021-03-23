@@ -14,8 +14,8 @@ from functools import wraps
 import datetime
 import webbrowser
 
-from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR, PyRevitCPythonNotSupported
-from pyrevit import PyRevitException, PyRevitCPythonNotSupported
+from pyrevit import HOST_APP, EXEC_PARAMS, DOCS, BIN_DIR
+from pyrevit import PyRevitCPythonNotSupported, PyRevitException, PyRevitCPythonNotSupported
 import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 
@@ -1690,7 +1690,7 @@ def select_revisions(title='Select Revision',
         ... [<Autodesk.Revit.DB.Revision object>,
         ...  <Autodesk.Revit.DB.Revision object>]
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
 
@@ -1744,7 +1744,7 @@ def select_sheets(title='Select Sheets',
         ... [<Autodesk.Revit.DB.ViewSheet object>,
         ...  <Autodesk.Revit.DB.ViewSheet object>]
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
 
     # check for previously selected sheets
     if use_selection:
@@ -1838,7 +1838,7 @@ def select_views(title='Select Views',
         ... [<Autodesk.Revit.DB.View object>,
         ...  <Autodesk.Revit.DB.View object>]
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
 
     # check for previously selected sheets
     if use_selection:
@@ -1905,7 +1905,7 @@ def select_levels(title='Select Levels',
         ... [<Autodesk.Revit.DB.Level object>,
         ...  <Autodesk.Revit.DB.Level object>]
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
 
     # check for previously selected sheets
     if use_selection:
@@ -1973,7 +1973,7 @@ def select_viewtemplates(title='Select View Templates',
         ... [<Autodesk.Revit.DB.View object>,
         ...  <Autodesk.Revit.DB.View object>]
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     all_viewtemplates = revit.query.get_all_view_templates(doc=doc)
 
     if filterfunc:
@@ -2020,7 +2020,7 @@ def select_schedules(title='Select Schedules',
         ... [<Autodesk.Revit.DB.ViewSchedule object>,
         ...  <Autodesk.Revit.DB.ViewSchedule object>]
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     all_schedules = revit.query.get_all_schedules(doc=doc)
 
     if filterfunc:
@@ -2116,7 +2116,7 @@ def select_titleblocks(title='Select Titleblock',
         >>> forms.select_titleblocks()
         ... <Autodesk.Revit.DB.ElementId object>
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     titleblocks = DB.FilteredElementCollector(doc)\
                     .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
                     .WhereElementIsElementType()\
@@ -2338,7 +2338,7 @@ def select_family_parameters(family_doc,
         ... )
         ... [<DB.FamilyParameter >, <DB.FamilyParameter >]
     """
-    family_doc = family_doc or HOST_APP.doc
+    family_doc = family_doc or DOCS.doc
     family_params = revit.query.get_family_parameters(family_doc)
     # get all params used in labeles
     label_param_ids = \
@@ -2668,7 +2668,7 @@ def pick_excel_file(save=False, title=None):
                      title=title)
 
 
-def save_excel_file():
+def save_excel_file(title=None):
     """File save dialog for an excel file.
 
     Args:
@@ -2690,7 +2690,7 @@ def check_workshared(doc=None, message='Model is not workshared.'):
     Returns:
         bool: True if doc is workshared
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     if not doc.IsWorkshared:
         alert(message, warn_icon=True)
         return False
@@ -2730,7 +2730,7 @@ def check_familydoc(doc=None, family_cat=None, exitscript=False):
         >>> forms.check_familydoc(doc=revit.doc, family_cat='Data Devices')
         ... True
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     family_cat = revit.query.get_category(family_cat)
     if doc.IsFamilyDocument and family_cat:
         if doc.OwnerFamily.FamilyCategory.Id == family_cat.Id:
@@ -2760,7 +2760,7 @@ def check_modeldoc(doc=None, exitscript=False):
         >>> forms.check_modeldoc(doc=revit.doc)
         ... True
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     if not doc.IsFamilyDocument:
         return True
 
@@ -3032,6 +3032,37 @@ def ask_to_use_selected(type_name, count=None, multiple=True):
     if count is not None:
         report = '{} {}'.format(count, report)
     return alert(message % report, yes=True, no=True)
+
+
+def ask_for_color(default=None):
+    """Show system color picker and ask for color
+
+    Args:
+        default (str): default color in HEX ARGB e.g. #ff808080
+        val (type): desc
+
+    Returns:
+        str: selected color in HEX ARGB e.g. #ff808080, or None if cancelled
+
+    Example:
+        >>> forms.ask_for_color()
+        ... '#ff808080'
+    """
+    # colorDlg.Color
+    color_picker = Forms.ColorDialog()
+    if default:
+        default = default.replace('#', '')
+        color_picker.Color = System.Drawing.Color.FromArgb(
+            int(default[:2], 16),
+            int(default[2:4], 16),
+            int(default[4:6], 16),
+            int(default[6:8], 16)
+        )
+    color_picker.FullOpen = True
+    if color_picker.ShowDialog() == Forms.DialogResult.OK:
+        c = color_picker.Color
+        c_hex = ''.join('{:02X}'.format(int(x)) for x in [c.A, c.R, c.G, c.B])
+        return '#' + c_hex
 
 
 def inform_wip():

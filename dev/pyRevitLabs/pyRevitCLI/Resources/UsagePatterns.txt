@@ -8,7 +8,7 @@ Usage:
 	pyrevit clone (-h | --help)
 	pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
 	pyrevit clone <clone_name> --image=<image_url> [--dest=<dest_path>] [--log=<log_file>]
-	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
+	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit clones [(-h | --help)]
 	pyrevit clones (info | open) <clone_name>
 	pyrevit clones add <clone_name> <clone_path> [--force] [--log=<log_file>]
@@ -20,7 +20,7 @@ Usage:
 	pyrevit clones commit <clone_name> [<commit_hash>] [--log=<log_file>]
 	pyrevit clones origin <clone_name> --reset [--log=<log_file>]
 	pyrevit clones origin <clone_name> [<origin_url>] [--log=<log_file>]
-	pyrevit clones update (--all | <clone_name>) [--log=<log_file>] [--username=<username>] [--password=<password>]
+	pyrevit clones update (--all | <clone_name>) [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit clones deployments <clone_name>
 	pyrevit clones engines <clone_name>
 	pyrevit attach (-h | --help)
@@ -32,7 +32,7 @@ Usage:
 	pyrevit detach (--all | <revit_year>) [--log=<log_file>]
 	pyrevit extend (-h | --help)
 	pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [--username=<username>] [--password=<password>]
+	pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit extensions [(-h | --help)]
 	pyrevit extensions search <search_pattern>
 	pyrevit extensions (info | help ) <extension_name>
@@ -49,7 +49,7 @@ Usage:
 	pyrevit extensions sources [(-h | --help)]
 	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
-	pyrevit extensions update (--all | <extension_name>) [--log=<log_file>] [--username=<username>] [--password=<password>]
+	pyrevit extensions update (--all | <extension_name>) [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit releases (-h | --help)
 	pyrevit releases [--pre] [--notes]
 	pyrevit releases latest [--pre] [--notes]

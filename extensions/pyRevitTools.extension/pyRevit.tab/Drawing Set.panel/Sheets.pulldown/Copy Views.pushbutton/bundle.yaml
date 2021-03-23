@@ -1,2 +1,2 @@
 tooltip: Open the source sheet. Run this script and select destination sheets. Select Viewports and push Finish button on the properties bar. The selected views will be added to the destination sheets. If the view or schedule already exists on that sheet, the location and type will be updated
-title: Copy/Update Selected Viewports To Selected Sheets
+title: Copy Viewports (Legends) To Other Sheets

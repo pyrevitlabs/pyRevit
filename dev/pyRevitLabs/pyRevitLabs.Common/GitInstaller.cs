@@ -31,6 +31,36 @@ namespace pyRevitLabs.Common {
         UpToDate,
     }
 
+    public abstract class GitInstallerCredentials {
+        public abstract bool IsValid();
+        public abstract Credentials GetCredentials();
+    }
+    
+    public class GitInstallerUsernamePasswordCredentials : GitInstallerCredentials {
+        public string Username { get; set; }
+        public string Password { get; set; }
+
+        public override Credentials GetCredentials() {
+            return new UsernamePasswordCredentials { Username = Username, Password = Password };
+        }
+
+        public override bool IsValid() {
+            return Username != null && Password != null;
+        }
+    }
+    public class GitInstallerAccessTokenCredentials : GitInstallerCredentials {
+        public string Username { get; set; } = "pyrevit-cli";
+        public string AccessToken { get; set; }
+
+        public override Credentials GetCredentials() {
+            return new UsernamePasswordCredentials { Username = Username, Password = AccessToken };
+        }
+
+        public override bool IsValid() {
+            return Username != null && AccessToken != null;
+        }
+    }
+
     public static class GitInstaller {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -43,14 +73,13 @@ namespace pyRevitLabs.Common {
         // public methods
         // clone a repo to given destination
         // @handled @logs
-        public static Repository Clone(string repoPath, string branchName, string destPath, string username, string password, bool checkout = true) {
+        public static Repository Clone(string repoPath, string branchName, string destPath, GitInstallerCredentials creds, bool checkout = true) {
             // build options and clone
             var cloneOps = new CloneOptions() { Checkout = checkout, BranchName = branchName };
 
             // add username and password to clone options, if provided by user
-            if (username != null && password != null)
-                cloneOps.CredentialsProvider =
-                    (_url, _usernameFromUrl, _credTypes) => new UsernamePasswordCredentials { Username = username, Password = password };
+            if (creds is GitInstallerCredentials && creds.IsValid())
+                cloneOps.CredentialsProvider = (_url, _usernameFromUrl, _credTypes) => creds.GetCredentials();
 
             try
             {
@@ -106,7 +135,7 @@ namespace pyRevitLabs.Common {
 
         // rebase current branch and pull from master
         // @handled @logs
-        public static UpdateStatus ForcedUpdate(string repoPath, string username, string password) {
+        public static UpdateStatus ForcedUpdate(string repoPath, GitInstallerCredentials creds) {
             logger.Debug("Force updating repo \"{0}\"...", repoPath);
             try {
                 var repo = new Repository(repoPath);
@@ -114,9 +143,8 @@ namespace pyRevitLabs.Common {
                 var fetchOpts = new FetchOptions();
 
                 // add username and password to clone options, if provided by user
-                if (username != null && password != null)
-                    fetchOpts.CredentialsProvider =
-                        (_url, _usernameFromUrl, _credTypes) => new UsernamePasswordCredentials { Username = username, Password = password };
+                if (creds is GitInstallerCredentials && creds.IsValid())
+                    fetchOpts.CredentialsProvider = (_url, _usernameFromUrl, _credTypes) => creds.GetCredentials();
 
                 options.FetchOptions = fetchOpts;
 

@@ -48,7 +48,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, string username, string password) {
+        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, GitInstallerCredentials credentials) {
             // FIXME: implement image
             if (cloneName != null) {
                 // if deployment requested or image path is provided
@@ -68,8 +68,7 @@ namespace pyRevitCLI {
                         branchName: branchName,
                         repoUrl: repoUrl,
                         destPath: destPath,
-                        username: username,
-                        password: password
+                        credentials: credentials
                         );
             }
         }
@@ -236,7 +235,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        UpdateClone(bool allClones, string cloneName, string username, string password) {
+        UpdateClone(bool allClones, string cloneName, GitInstallerCredentials credentials) {
             // TODO: ask for closing running Revits
 
             // prepare a list of clones to be updated
@@ -267,7 +266,7 @@ namespace pyRevitCLI {
             // update clones that do not include this process
             foreach (var clone in targetClones) {
                 logger.Debug("Updating clone \"{0}\"", clone.Name);
-                PyRevitClones.Update(clone, username, password);
+                PyRevitClones.Update(clone, credentials);
             }
 
             // now update myClone if any, as last step

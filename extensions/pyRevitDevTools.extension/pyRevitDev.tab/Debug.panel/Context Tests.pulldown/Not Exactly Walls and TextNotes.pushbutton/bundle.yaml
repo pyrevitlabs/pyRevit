@@ -1,0 +1,4 @@
+context:
+  not_exact:
+    - OST_Walls
+    - OST_TextNotes

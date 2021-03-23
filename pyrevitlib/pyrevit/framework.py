@@ -32,11 +32,13 @@ from System import EventHandler
 from System import Array, IntPtr, Enum, Byte
 from System import Convert
 from System.Text import Encoding
+from System.Text.RegularExpressions import Regex
 from System.Collections import ObjectModel
 from System.Collections.ObjectModel import ObservableCollection
 from System.Collections import IEnumerator, IEnumerable
 from System.Collections.Generic import List, Dictionary
 from System.Collections.Generic import IList, IDictionary
+from System.Collections.Generic import KeyValuePair
 from System import DateTime, DateTimeOffset
 
 from System import Diagnostics
@@ -68,6 +70,7 @@ from System.Windows import Media
 from System.Windows import Threading
 from System.Windows import Interop
 from System.Windows import Input
+from System.Windows import Data
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 from System import Math
 from System.Management import ManagementObjectSearcher
@@ -103,6 +106,9 @@ try:
     import pyRevitLabs.Json as NSJson
 except Exception:
     pass
+
+clr.AddReference('pyRevitLabs.Emojis')
+import pyRevitLabs.Emojis as Emojis
 
 
 # do not import anything from pyrevit before this

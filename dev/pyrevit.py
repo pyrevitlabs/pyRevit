@@ -104,6 +104,7 @@ COMMANDS = [
     Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
     Command(name="build", target="telem", args=[], run=telem.build_telem),
     Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
+    Command(name="build", target="installers", args=[], run=release.build_installers),
     Command(name="clean", target="labs", args=[], run=buildall.build_clean),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),

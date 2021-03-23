@@ -1,6 +1,6 @@
 import sys
 
-from pyrevit import HOST_APP, PyRevitException
+from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework
 from pyrevit.framework import clr
 from pyrevit import coreutils
@@ -56,7 +56,7 @@ def create_param_from_definition(param_def,
                                  type_param=False,
                                  allow_vary_betwen_groups=False, #pylint: disable=unused-argument
                                  doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     # verify and create category set
     if category_list:
         category_set = query.get_category_set(category_list, doc=doc)
@@ -89,7 +89,7 @@ def create_shared_param(param_id_or_name,
                         type_param=False,
                         allow_vary_betwen_groups=False,
                         doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     # get define shared parameters
     # this is where we grab the ExternalDefinition for the parameter
     msp_list = query.get_defined_sharedparams()
@@ -118,7 +118,7 @@ def create_shared_param(param_id_or_name,
 #                              type_param=False,
 #                              allow_vary_betwen_groups=False,
 #                              doc=None):
-#     doc = doc or HOST_APP.doc
+#     doc = doc or DOCS.doc
 #     # setup the stupid hacky way to create the project parameter
 #     # https://forums.autodesk.com/t5/revit-api-forum/create-project-parameter-not-shared-parameter/td-p/5150182
 #     # record the existing shared param file
@@ -156,7 +156,7 @@ def create_new_project(template=None, imperial=True):
 
 def create_revision(description=None, by=None, to=None, date=None,
                     alphanum=False, nonum=False, doc=None):
-    new_rev = DB.Revision.Create(doc or HOST_APP.doc)
+    new_rev = DB.Revision.Create(doc or DOCS.doc)
     new_rev.Description = description
     new_rev.IssuedBy = by or ''
     new_rev.IssuedTo = to or ''
@@ -220,7 +220,7 @@ def copy_viewtemplates(viewtemplates, src_doc, dest_doc):
 
 def create_sheet(sheet_num, sheet_name,
                  titleblock_id=DB.ElementId.InvalidElementId, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     mlogger.debug('Creating sheet: %s - %s', sheet_num, sheet_name)
     mlogger.debug('Titleblock id is: %s', titleblock_id)
     newsheet = DB.ViewSheet.Create(doc, titleblock_id)
@@ -230,7 +230,7 @@ def create_sheet(sheet_num, sheet_name,
 
 
 def create_3d_view(view_name, isometric=True, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     nview = query.get_view_by_name(view_name, doc=doc)
     if not nview:
         default_3dview_type = \
@@ -259,7 +259,7 @@ def create_revision_sheetset(revisions,
                              name_format='Revision {}',
                              match_any=True,
                              doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     # get printed printmanager
     printmanager = doc.PrintManager
     printmanager.PrintRange = DB.PrintRange.Select
@@ -305,7 +305,7 @@ def create_revision_sheetset(revisions,
 
 
 def load_family(family_file, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     mlogger.debug('Loading family from: %s', family_file)
     ret_ref = clr.Reference[DB.Family]()
     return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
@@ -314,7 +314,7 @@ def load_family(family_file, doc=None):
 def enable_worksharing(levels_workset_name='Shared Levels and Grids',
                        default_workset_name='Workset1',
                        doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     if not doc.IsWorkshared:
         if doc.CanEnableWorksharing:
             doc.EnableWorksharing(levels_workset_name, default_workset_name)
@@ -324,7 +324,7 @@ def enable_worksharing(levels_workset_name='Shared Levels and Grids',
 
 
 def create_workset(workset_name, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     if not doc.IsWorkshared:
         raise PyRevitException('Document is not workshared.')
 
@@ -332,7 +332,7 @@ def create_workset(workset_name, doc=None):
 
 
 def create_filledregion(filledregion_name, fillpattern_element, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     filledregion_types = DB.FilteredElementCollector(doc) \
                            .OfClass(DB.FilledRegionType)
     for filledregion_type in filledregion_types:
@@ -354,7 +354,7 @@ def create_text_type(name,
                      underline=False,
                      with_factor=1.0,
                      doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     tnote_typeid = doc.GetDefaultElementTypeId(DB.ElementTypeGroup.TextNoteType)
     tnote_type = doc.GetElement(tnote_typeid)
     spec_tnote_type = tnote_type.Duplicate(name)
@@ -382,7 +382,7 @@ def create_param_value_filter(filter_name,
                               exclude=False,
                               category_list=None,
                               doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
 
     if HOST_APP.is_newer_than(2019, or_equal=True):
         rules = None

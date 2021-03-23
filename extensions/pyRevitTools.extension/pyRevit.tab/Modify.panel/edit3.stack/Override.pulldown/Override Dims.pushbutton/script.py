@@ -1,9 +1,10 @@
-"""Provides options for overriding values on selected dimensions."""
+# coding=utf-8
+""" Provides options for overriding values on selected dimensions. """
+#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 
 from collections import OrderedDict
 
-from pyrevit.framework import List
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit import forms
 
 
@@ -35,6 +36,11 @@ def set_dim_overrides(dims, txn_name='Dimension Overrides',
                 seg.Prefix = prefix
             if suffix is not None:
                 seg.Suffix = suffix
+
+
+# Edit or add functions below to make them available in pyrevit ---------------
+# If you need special characters, like umlauts,
+# use utf-8 encoding, like this: u'Ö'
 
 
 def bake_dim_value():

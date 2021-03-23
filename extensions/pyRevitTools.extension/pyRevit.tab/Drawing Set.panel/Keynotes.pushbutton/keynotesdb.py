@@ -4,7 +4,7 @@ import re
 import codecs
 from collections import defaultdict
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, DOCS
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import framework
@@ -235,7 +235,7 @@ class RKeynote(object):
         return self_pass or self._filtered_children
 
     def update_used(self, used_keysdict, doc=None):
-        doc = doc or HOST_APP.doc
+        doc = doc or DOCS.doc
         # update count, and tooltip
         if self.key in used_keysdict:
             self.used = True

@@ -62,7 +62,9 @@ def set_stylesheet(stylesheet):
     if op.isfile(stylesheet):
         envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
                                     stylesheet)
-        user_config.output_stylesheet = stylesheet
+        # do not store this setting forcefully
+        # each repo should default to its own stylesheet
+        # user_config.output_stylesheet = stylesheet
 
 
 def get_stylesheet():
@@ -190,6 +192,8 @@ class PyRevitOutputWindow(object):
         # inject the script into head
         head_el = self._get_head_element()
         head_el.AppendChild(html_element)
+        if self.window:
+            self.window.WaitReadyBrowser()
 
     def inject_to_body(self, element_tag, element_contents, attribs=None):
         """Inject html element to current html body of the output window.
@@ -216,6 +220,8 @@ class PyRevitOutputWindow(object):
         # inject the script into body
         body_el = self._get_body_element()
         body_el.AppendChild(html_element)
+        if self.window:
+            self.window.WaitReadyBrowser()
 
     def inject_script(self, script_code, attribs=None, body=False):
         """Inject script tag into current head (or body) of the output window.

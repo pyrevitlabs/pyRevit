@@ -139,7 +139,7 @@
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>
-                                        <TextBlock Text="{Binding Name}" />
+                                        <TextBlock Text="{Binding name}" />
                                     </Grid>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>

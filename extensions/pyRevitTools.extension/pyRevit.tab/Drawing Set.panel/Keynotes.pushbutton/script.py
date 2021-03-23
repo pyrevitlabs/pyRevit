@@ -681,7 +681,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def _convert_existing(self):
         # make a copy of the original keynote file
         temp_kfile = \
-            script.get_universal_data_file(op.basename(self._kfile), '.bak')
+            script.get_data_file(op.basename(self._kfile), 'bak')
         if op.exists(temp_kfile):
             script.remove_data_file(temp_kfile)
         shutil.copy(self._kfile, temp_kfile)
@@ -697,6 +697,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         expanded="{}::_convert_existing()".format(
                             self.__class__.__name__),
                         exitscript=True)
+        finally:
+            script.remove_data_file(temp_kfile)
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -793,10 +795,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 and not self.selected_keynote.locked:
             self.keynoteEditButtons.IsEnabled = \
                 bool(self.selected_keynote.parent_key)
+            self.keynoteSearch.IsEnabled = self.keynoteEditButtons.IsEnabled
             self.catEditButtons.IsEnabled = \
                 not self.keynoteEditButtons.IsEnabled
         else:
             self.keynoteEditButtons.IsEnabled = False
+            self.keynoteSearch.IsEnabled = False
 
     def _pick_new_key(self):
         try:
@@ -818,6 +822,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
             reserved_values=reserved_keys,
             owner=self)
         return new_key
+
+    def _pick_category(self):
+        return forms.SelectFromList.show(
+            self.all_categories,
+            title="Select Parent Category",
+            name_attr='text',
+            item_container_template=self.Resources["treeViewItem"],
+            owner=self
+            )
 
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
@@ -1010,12 +1023,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             parent_key = self.selected_category.key
         # otherwise ask to select a parent category
         if not parent_key:
-            cat = forms.SelectFromList.show(
-                self.all_categories,
-                title="Select Parent Category",
-                name_attr='text',
-                item_container_template=self.Resources["treeViewItem"],
-                owner=self)
+            cat = self._pick_category()
             if cat:
                 parent_key = cat.key
         # if parent key is available proceed to create keynote
@@ -1173,6 +1181,31 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     key_param = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
                     if key_param:
                         key_param.Set(to_key)
+
+    def recat_keynote(self, sender, args):
+        selected_keynote = self.selected_keynote
+        # if any of its children are locked
+        if any(x.locked for x in selected_keynote.children):
+            forms.alert('At least one child keynote of this keynote is locked. '
+                        'Wait until the changes are committed.')
+        else:
+            try:
+                from_cat = selected_keynote.parent_key
+                to_cat = self._pick_category()
+                if to_cat and to_cat.key != from_cat:
+                    kdb.move_keynote(self._conn, selected_keynote.key, to_cat.key)
+                # make sure to reload on close
+                self._needs_update = True
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message,
+                            expanded="{}::recat_keynote() [timeout]".format(
+                                self.__class__.__name__))
+            except Exception as ex:
+                forms.alert(str(ex),
+                            expanded="{}::recat_keynote()".format(
+                                self.__class__.__name__))
+            finally:
+                self._update_ktree_knotes()
 
     def show_keynote(self, sender, args):
         if self.selected_keynote:

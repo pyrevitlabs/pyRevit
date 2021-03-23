@@ -204,8 +204,7 @@ namespace pyRevitCLI {
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
                         destPath: TryGetValue("--dest"),
-                        username: TryGetValue("--username"),
-                        password: TryGetValue("--password")
+                        credentials: TryGetCredentials()
                     );
             }
 
@@ -278,11 +277,10 @@ namespace pyRevitCLI {
 
                 else if (all("update"))
                     PyRevitCLICloneCmds.UpdateClone(
-                        allClones: arguments["--all"].IsTrue,
-                        cloneName: TryGetValue("<clone_name>"),
-                        username: TryGetValue("--username"),
-                        password: TryGetValue("--password")
-                        );
+                            allClones: arguments["--all"].IsTrue,
+                            cloneName: TryGetValue("<clone_name>"),
+                            credentials: TryGetCredentials()
+                            );
 
                 else
                     PyRevitCLICloneCmds.PrintClones();
@@ -362,7 +360,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extend);
 
-                else if (any("ui", "lib")) {
+                else if (any("ui", "lib"))
                     PyRevitCLIExtensionCmds.Extend(
                         ui: arguments["ui"].IsTrue,
                         lib: arguments["lib"].IsTrue,
@@ -370,10 +368,8 @@ namespace pyRevitCLI {
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
                         branchName: TryGetValue("--branch"),
-                        username: TryGetValue("--username"),
-                        password: TryGetValue("--password")
+                        credentials: TryGetCredentials()
                     );
-                }
 
                 else
                     PyRevitCLIExtensionCmds.Extend(
@@ -460,11 +456,10 @@ namespace pyRevitCLI {
 
                 else if (all("update"))
                     PyRevitCLIExtensionCmds.UpdateExtension(
-                        all: arguments["--all"].IsTrue,
-                        extName: TryGetValue("<extension_name>"),
-                        username: TryGetValue("--username"),
-                        password: TryGetValue("--password")
-                    );
+                            all: arguments["--all"].IsTrue,
+                            extName: TryGetValue("<extension_name>"),
+                            credentials: TryGetCredentials()
+                        );
 
                 else if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Extensions);
@@ -919,6 +914,21 @@ namespace pyRevitCLI {
 
         internal static string TryGetValue(string key, string defaultValue = null) {
             return arguments[key] != null ? arguments[key].Value as string : defaultValue;
+        }
+
+        internal static GitInstallerCredentials TryGetCredentials() {
+            GitInstallerCredentials credentials = null;
+            if (TryGetValue("--password") is string password)
+                credentials = new GitInstallerUsernamePasswordCredentials {
+                    Username = TryGetValue("--username"),
+                    Password = password
+                };
+            else if (TryGetValue("--token") is string accessToken)
+                credentials = new GitInstallerAccessTokenCredentials {
+                    AccessToken = accessToken
+                };
+
+            return credentials;
         }
 
         // private:
