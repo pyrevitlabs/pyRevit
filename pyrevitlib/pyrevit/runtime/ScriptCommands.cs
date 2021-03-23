@@ -173,14 +173,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // menu item to copy command context strings
                 MenuItem copyContext = new MenuItem();
                 copyContext.IsEnabled = !string.IsNullOrEmpty(ScriptData.CommandContext);
-                copyContext.Header = "Copy Context Condition";
+                copyContext.Header = "Copy Context Filter";
                 copyContext.ToolTip = ScriptData.CommandContext;
                 copyContext.Click += delegate {
                     try {
-                        var contextCondition = ScriptCommandExtendedAvail.FromContextDefinition(ScriptData.CommandContext);
+                        var contextFilter = ScriptCommandExtendedAvail.FromContextDefinition(ScriptData.CommandContext);
                         System.Windows.Forms.Clipboard.SetText(
                             $"Original: {ScriptData.CommandContext}\n" +
-                            $"Compiled: {contextCondition}"
+                            $"Compiled: {contextFilter}"
                             );
                     }
                     catch (Exception ex) {
@@ -302,10 +302,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         const string SEP = "|";
 
         public ScriptCommandExtendedAvail(string contextString) {
-            ContextCondition = FromContextDefinition(contextString);
+            CompiledContextFilter = FromContextDefinition(contextString);
         }
 
-        public static Condition FromContextDefinition(string contextString) {
+        public static ContextFilter FromContextDefinition(string contextString) {
             /*
             * Context string format is a list of tokens joined by either & or | but not both
             * and grouped inside (). Groups can also be joined by either & or | but not both
@@ -319,7 +319,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             */
 
             // parse context string
-            CompoundCondition condition = new AllCondition();
+            bool supportsZeroDoc = false;
+            ContextFilter ctxFilter = new ContextFilter();
             var collectedConditions = new HashSet<Condition>();
 
             bool capturingSubCondition = false;
@@ -332,8 +333,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             Action captureToken = () => {
                 if (capturingToken && currentToken != string.Empty) {
-                    if (Condition.FromToken(currentToken) is Condition condition)
+                    if (Condition.FromToken(currentToken) is Condition condition) {
+                        if (condition is ZeroDocCondition)
+                            supportsZeroDoc = true;
                         collectedSubConditions.Add(condition);
+                    }
                     currentToken = string.Empty;
                 }
             };
@@ -371,17 +375,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     case CONTEXT_CONDITION_ALL_SEP:
                         captureToken();
                         if (capturingSubCondition) subCondition = new AllCondition();
-                        else condition = new AllCondition();
+                        else ctxFilter.Condition = new AllCondition();
                         continue;
                     case CONTEXT_CONDITION_ANY_SEP:
                         captureToken();
                         if (capturingSubCondition) subCondition = new AnyCondition();
-                        else condition = new AnyCondition();
+                        else ctxFilter.Condition = new AnyCondition();
                         continue;
                     case CONTEXT_CONDITION_EXACT_SEP:
                         captureToken();
                         if (capturingSubCondition) subCondition = new ExactCondition();
-                        else condition = new ExactCondition();
+                        else ctxFilter.Condition = new ExactCondition();
                         continue;
 
                     case CONTEXT_CONDITION_NOT:
@@ -394,14 +398,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
 
-            condition.Conditions = collectedConditions;
-            condition.IsRoot = true;
-            return condition;
+
+            ctxFilter.Condition.Conditions = collectedConditions;
+            ctxFilter.EnsureActiveDocument = !supportsZeroDoc;
+            return ctxFilter;
         }
 
         public abstract class Condition {
             public bool IsRoot { get; set; } = false;
-            public bool IsNot { get; set; } = false;
+            
+            public static bool HasDocument(UIApplication uiApp) => uiApp != null && uiApp.ActiveUIDocument != null;
+
+            public static bool HasSelection(UIApplication uiApp, CategorySet selectedCategories) => HasDocument(uiApp) && !selectedCategories.IsEmpty;
+
             public abstract bool IsMatch(UIApplication uiApp, CategorySet selectedCategories);
 
             public static Condition FromToken(string token) {
@@ -499,25 +508,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public abstract override string ToString();
         }
 
-        abstract class KeywordCondition : Condition {
-            public abstract string Keyword { get; }
-
-            public override bool Equals(object obj) {
-                if (obj is KeywordCondition)
-                    return true;
-                return false;
-            }
-
-            public override int GetHashCode() {
-                return Keyword.GetHashCode();
-            }
-
-            public override string ToString() {
-                return Keyword;
-            }
-        }
-
-        abstract class CompoundCondition: Condition {
+        public abstract class CompoundCondition: Condition {
+            public bool IsNot { get; set; } = false;
+            
             public abstract string Separator { get; }
 
             public HashSet<Condition> Conditions = new HashSet<Condition>();
@@ -559,34 +552,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
                 // check document type
-                if (uiApp != null && uiApp.ActiveUIDocument != null) {
+                if (HasDocument(uiApp)) {
                     switch (_docType) {
                         case DocumentType.Project:
                             if (uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                                return IsNot ? true : false;
+                                return false;
                             break;
                         case DocumentType.WorksharedProject:
                             if (uiApp.ActiveUIDocument.Document.IsFamilyDocument || !uiApp.ActiveUIDocument.Document.IsWorkshared)
-                                return IsNot ? true : false;
+                                return false;
                             break;
                         case DocumentType.CloudProject:
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || (REVIT2019 && !REVIT2019_1) )
                             if (uiApp.ActiveUIDocument.Document.IsFamilyDocument || !uiApp.ActiveUIDocument.Document.IsModelInCloud)
-                                return IsNot ? true : false;
+                                return false;
                             break;
 #else
-                            if (uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                                return IsNot ? true : false;
-                            break;
+                            return false;
 #endif
                         case DocumentType.Family:
                             if (!uiApp.ActiveUIDocument.Document.IsFamilyDocument)
-                                return IsNot ? true : false;
+                                return false;
                             break;
                     }
-                    return IsNot ? false : true;
+                    return true;
                 }
-                return IsNot ? true : false;
+                else
+                    return false;
             }
 
             public override bool Equals(object obj) {
@@ -617,20 +609,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 try {
                     // check active views
                     if (_viewTypes.Count > 0) {
-                        if (uiApp != null && uiApp.ActiveUIDocument != null
+                        if (HasDocument(uiApp))
 #if (REVIT2013 || REVIT2014)
-                            && !_viewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType))
+                            return _viewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType);
 #else
-                            && !_viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
+                            return _viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType);
 #endif
-                            return IsNot ? true : false;
                     }
-                    return IsNot ? false : true;
+                    else
+                        return true;
                 }
                 // say no if any errors occured, otherwise Revit will not call this method again if exceptions
                 // are bubbled up
                 catch {}
-                return IsNot ? true : false;
+                return false;
             }
 
             public override bool Equals(object obj) {
@@ -661,26 +653,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public BuiltinCategoryCondition(int categoryId) => _categoryId = categoryId;
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
-                if (selectedCategories.IsEmpty)
-                    return IsNot ? true : false;
-
-                try {
-                    foreach (Category category in selectedCategories)
-                    if (category.Id.IntegerValue == _categoryId)
-                            return IsNot ? false : true;
+                if (HasSelection(uiApp, selectedCategories)) {
+                    try {
+                        foreach (Category category in selectedCategories)
+                            if (category.Id.IntegerValue == _categoryId)
+                                return true;
+                    }
+                    catch { }
                 }
-                catch { }
 
-                return IsNot ? true : false;
+                return false;
             }
 
             public override bool IsMatch(Category category) {
-                bool res = false;
                 try {
-                    res = category.Id.IntegerValue == _categoryId;
+                    return category.Id.IntegerValue == _categoryId;
                 }
                 catch { }
-                return IsNot ? !res : res;
+                return false;
             }
 
             public override bool Equals(object obj) {
@@ -707,24 +697,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public CustomCategoryCondition(string categoryName) => _categoryName = categoryName.ToLower();
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
-                if (selectedCategories.IsEmpty)
-                    return IsNot ? true : false;
-                try {
-                    foreach (Category category in selectedCategories)
-                        if (_categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase))
-                            return IsNot ? false : true;
-                } catch { }
-
-                return IsNot ? true : false;
+                if (HasSelection(uiApp, selectedCategories)) {
+                    try {
+                        foreach (Category category in selectedCategories)
+                            if (_categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase))
+                                return true;
+                    }
+                    catch { }
+                }
+                
+                return false;
             }
 
             public override bool IsMatch(Category category) {
-                bool res = false;
                 try {
-                    res = _categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase);
+                    return _categoryName.Equals(category.Name, StringComparison.InvariantCultureIgnoreCase);
                 }
                 catch { }
-                return IsNot ? !res : res;
+                return false;
             }
 
             public override bool Equals(object obj) {
@@ -745,11 +735,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        abstract class KeywordCondition : Condition {
+            public abstract string Keyword { get; }
+
+            public override bool Equals(object obj) {
+                if (obj is KeywordCondition)
+                    return true;
+                return false;
+            }
+
+            public override int GetHashCode() {
+                return Keyword.GetHashCode();
+            }
+
+            public override string ToString() {
+                return Keyword;
+            }
+        }
+
         class ZeroDocCondition : KeywordCondition {
             public override string Keyword => "zero-doc";
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
-                return IsNot ? false : true;
+                return true;
             }
         }
 
@@ -757,9 +765,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public override string Keyword => "selection";
 
             public override bool IsMatch(UIApplication uiApp, CategorySet selectedCategories) {
-                // check selection
-                bool res = !selectedCategories.IsEmpty;
-                return IsNot ? !res : res;
+                return HasSelection(uiApp, selectedCategories);
             }
         }
 
@@ -800,11 +806,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public Condition ContextCondition = null;
+        public class ContextFilter {
+            public bool EnsureActiveDocument { get; set; } = true;
+            public CompoundCondition Condition { get; set; } = new AllCondition();
+
+            public override string ToString() {
+                return Condition?.ToString();
+            }
+        }
+
+        public ContextFilter CompiledContextFilter = null;
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
-            if (ContextCondition is Condition ctx)
-                return ctx.IsMatch(uiApp, selectedCategories);
+            if (CompiledContextFilter is ContextFilter ctxFilter) {
+                if (ctxFilter.EnsureActiveDocument && !Condition.HasDocument(uiApp))
+                    return false;
+                return ctxFilter.Condition.IsMatch(uiApp, selectedCategories);
+            }
             return false;
         }
     }

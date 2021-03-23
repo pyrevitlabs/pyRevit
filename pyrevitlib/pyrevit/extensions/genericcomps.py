@@ -611,7 +611,7 @@ class GenericUICommand(GenericUIComponent):
 
         # panel buttons should be active always
         if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:
-            self.context = exts.CTX_ZERODOC
+            self.context = self._parse_context_directives(exts.CTX_ZERODOC)
         else:
             self.context = \
                 self.meta.get(exts.MDATA_COMMAND_CONTEXT, None)
@@ -748,12 +748,12 @@ class GenericUICommand(GenericUIComponent):
 
             # panel buttons should be active always
             if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:
-                self.context = exts.CTX_ZERODOC
+                self.context = self._parse_context_directives(exts.CTX_ZERODOC)
             else:
                 self.context = \
                     script_content.extract_param(exts.COMMAND_CONTEXT_PARAM)
-                if isinstance(self.context, list):
-                    self.context = coreutils.join_strings(self.context)
+                if self.context:
+                    self.context = self._parse_context_directives(self.context)
 
         except Exception as parse_err:
             mlogger.log_parse_except(self.script_file, parse_err)
