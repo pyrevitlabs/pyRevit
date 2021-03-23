@@ -419,6 +419,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         return new DocumentTypeCondition(
                             DocumentTypeCondition.DocumentType.Project
                             );
+                    case "doc-workshared":
+                        return new DocumentTypeCondition(
+                            DocumentTypeCondition.DocumentType.WorksharedProject
+                            );
+                    case "doc-cloud":
+                        return new DocumentTypeCondition(
+                            DocumentTypeCondition.DocumentType.CloudProject
+                            );
                     case "doc-family":
                         return new DocumentTypeCondition(
                             DocumentTypeCondition.DocumentType.Family
@@ -540,6 +548,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             public enum DocumentType {
                 Any,
                 Project,
+                WorksharedProject,
+                CloudProject,
                 Family
             }
 
@@ -555,6 +565,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             if (uiApp.ActiveUIDocument.Document.IsFamilyDocument)
                                 return IsNot ? true : false;
                             break;
+                        case DocumentType.WorksharedProject:
+                            if (uiApp.ActiveUIDocument.Document.IsFamilyDocument || !uiApp.ActiveUIDocument.Document.IsWorkshared)
+                                return IsNot ? true : false;
+                            break;
+                        case DocumentType.CloudProject:
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || (REVIT2019 && !REVIT2019_1) )
+                            if (uiApp.ActiveUIDocument.Document.IsFamilyDocument || !uiApp.ActiveUIDocument.Document.IsModelInCloud)
+                                return IsNot ? true : false;
+                            break;
+#else
+                            if (uiApp.ActiveUIDocument.Document.IsFamilyDocument)
+                                return IsNot ? true : false;
+                            break;
+#endif
                         case DocumentType.Family:
                             if (!uiApp.ActiveUIDocument.Document.IsFamilyDocument)
                                 return IsNot ? true : false;
