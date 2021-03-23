@@ -784,7 +784,7 @@ class SettingsWindow(forms.WPFWindow):
 
             # apply by order - project
             for idx, tab_ctrl in enumerate(family_tab_ctrls):
-                if idx < coloring_rules_count:
+                if idx + len(prj_tab_ctrls) < coloring_rules_count:
                     coloring_rule = coloring_rules[idx + len(prj_tab_ctrls)]
                     style = family_tabstyle.CreateStyle(tab_ctrl, coloring_rule)
                     tab_ctrl.Style = style
