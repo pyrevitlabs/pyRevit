@@ -1549,3 +1549,17 @@ def get_element_workset(element):
     workset_table = doc.GetWorksetTable()
     if element.WorksetId != DB.WorksetId.InvalidWorksetId:
         return workset_table.GetWorkset(element.WorksetId)
+
+
+def get_geometry(element, include_invisible=False):
+    geom_opts = DB.Options()
+    geom_opts.IncludeNonVisibleObjects = include_invisible
+    geom_objs = []
+    for gobj in element.Geometry[geom_opts]:
+        if isinstance(gobj, DB.GeometryInstance):
+            inst_geom = gobj.GetInstanceGeometry()
+            geom_objs.extend(list(inst_geom))
+        else:
+            geom_objs.append(gobj)
+    return geom_objs
+
