@@ -96,7 +96,6 @@ COMMANDS = [
     Command(name="check", target="", args=[], run=install.check),
     # main release command
     Command(name="release", target="", args=["<tag>"], run=release.create_release),
-    Command(name="rebuild", target="", args=[], run=release.build_installers),
     # individual release steps for testing
     Command(name="changelog", target="", args=["<tag>"], run=clog.report_clog),
     Command(name="build", target="all", args=[], run=buildall.build_all),
@@ -105,6 +104,7 @@ COMMANDS = [
     Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
     Command(name="build", target="telem", args=[], run=telem.build_telem),
     Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
+    Command(name="build", target="installers", args=[], run=release.build_installers),
     Command(name="clean", target="labs", args=[], run=buildall.build_clean),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),

@@ -107,6 +107,7 @@ def _commit_changes(msg):
 
 
 def build_installers(args: Dict[str, str]):
+    """Build pyRevit and CLI installers"""
     installer = "advancedinstaller.com"
     for script in [configs.PYREVIT_AIPFILE, configs.PYREVIT_CLI_AIPFILE]:
         print(f"Building installer {script}")
