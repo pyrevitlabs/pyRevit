@@ -40,10 +40,12 @@ def _set_sort_colorize_docs(tabcfgs, theme):
     tabcfgs.sort_colorize_docs = theme.SortDocTabs
 
 
-def _get_tab_orderrules(tabcfgs):
+def _get_tab_orderrules(tabcfgs, default=False):
     default_colors = \
         [hex_from_brush(b) for b in types.TabColoringTheme.DefaultBrushes]
-    tab_colors = tabcfgs.get_option('tab_colors', default_colors)
+    tab_colors = default_colors
+    if not default:
+        tab_colors = tabcfgs.get_option('tab_colors', default_colors)
     return List[types.TabColoringRule](
         [types.TabColoringRule(hex_to_brush(c)) for c in tab_colors]
         )
@@ -107,6 +109,12 @@ def get_tabcoloring_theme(usercfg):
     theme.TabFilterRules = _get_tab_filterrules(tabcfgs)
 
     return theme
+
+
+def reset_tab_ordercolors(usercfg, theme):
+    """Reset tab order colors to internal default"""
+    tabcfgs = _get_tabcoloring_cfgs(usercfg)
+    theme.TabOrderRules = _get_tab_orderrules(tabcfgs, default=True)
 
 
 def set_tabcoloring_theme(usercfg, theme):

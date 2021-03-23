@@ -661,6 +661,13 @@ class SettingsWindow(forms.WPFWindow):
             self.doc_ordercolor_lb.SelectedIndex = new_index
             self.update_tab_previews()
 
+    def reset_ordercolors(self, sender, args):
+        tabs.reset_tab_ordercolors(user_config, self.tab_theme)
+        new_rules = list(self.tab_theme.TabOrderRules)
+        if new_rules:
+            self.doc_ordercolor_lb.ItemsSource = new_rules
+            self.update_tab_previews()
+
     def selected_ordercolor_changed(self, sender, args):
         pass
 
