@@ -96,6 +96,7 @@ COMMANDS = [
     Command(name="check", target="", args=[], run=install.check),
     # main release command
     Command(name="release", target="", args=["<tag>"], run=release.create_release),
+    Command(name="rebuild", target="", args=[], run=release.build_installers),
     # individual release steps for testing
     Command(name="changelog", target="", args=["<tag>"], run=clog.report_clog),
     Command(name="build", target="all", args=[], run=buildall.build_all),
