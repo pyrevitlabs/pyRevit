@@ -40,7 +40,7 @@ from pyrevit.forms import utils
 from pyrevit.forms import toaster
 from pyrevit import versionmgr
 
-import pyevent
+import pyevent #pylint: disable=import-error
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -175,7 +175,7 @@ class WPFWindow(framework.Windows.Window):
         if set_owner:
             self.setup_owner()
         self.setup_icon()
-        self.setup_resources()
+        WPFWindow.setup_resources(self)
         if handle_esc:
             self.setup_default_handlers()
 
@@ -183,35 +183,36 @@ class WPFWindow(framework.Windows.Window):
         wih = Interop.WindowInteropHelper(self)
         wih.Owner = AdWindows.ComponentManager.ApplicationWindow
 
-    def setup_resources(self):
+    @staticmethod
+    def setup_resources(wpf_ctrl):
         #2c3e50
-        self.Resources['pyRevitDarkColor'] = \
+        wpf_ctrl.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
 
         #23303d
-        self.Resources['pyRevitDarkerDarkColor'] = \
+        wpf_ctrl.Resources['pyRevitDarkerDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)
 
         #ffffff
-        self.Resources['pyRevitButtonColor'] = \
+        wpf_ctrl.Resources['pyRevitButtonColor'] = \
             Media.Color.FromArgb(0xFF, 0xff, 0xff, 0xff)
 
         #f39c12
-        self.Resources['pyRevitAccentColor'] = \
+        wpf_ctrl.Resources['pyRevitAccentColor'] = \
             Media.Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12)
 
-        self.Resources['pyRevitDarkBrush'] = \
-            Media.SolidColorBrush(self.Resources['pyRevitDarkColor'])
-        self.Resources['pyRevitAccentBrush'] = \
-            Media.SolidColorBrush(self.Resources['pyRevitAccentColor'])
+        wpf_ctrl.Resources['pyRevitDarkBrush'] = \
+            Media.SolidColorBrush(wpf_ctrl.Resources['pyRevitDarkColor'])
+        wpf_ctrl.Resources['pyRevitAccentBrush'] = \
+            Media.SolidColorBrush(wpf_ctrl.Resources['pyRevitAccentColor'])
 
-        self.Resources['pyRevitDarkerDarkBrush'] = \
-            Media.SolidColorBrush(self.Resources['pyRevitDarkerDarkColor'])
+        wpf_ctrl.Resources['pyRevitDarkerDarkBrush'] = \
+            Media.SolidColorBrush(wpf_ctrl.Resources['pyRevitDarkerDarkColor'])
 
-        self.Resources['pyRevitButtonForgroundBrush'] = \
-            Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
+        wpf_ctrl.Resources['pyRevitButtonForgroundBrush'] = \
+            Media.SolidColorBrush(wpf_ctrl.Resources['pyRevitButtonColor'])
 
-        self.Resources['pyRevitRecognizesAccessKey'] = \
+        wpf_ctrl.Resources['pyRevitRecognizesAccessKey'] = \
             DEFAULT_RECOGNIZE_ACCESS_KEY
 
     def setup_default_handlers(self):
@@ -244,7 +245,8 @@ class WPFWindow(framework.Windows.Window):
         """Show modal window."""
         return self.ShowDialog()
 
-    def set_image_source(self, wpf_element, image_file):
+    @staticmethod
+    def set_image_source_file(wpf_element, image_file):
         """Set source file for image element.
 
         Args:
@@ -259,6 +261,15 @@ class WPFWindow(framework.Windows.Window):
                     )
         else:
             wpf_element.Source = utils.bitmap_from_file(image_file)
+
+    def set_image_source(self, wpf_element, image_file):
+        """Set source file for image element.
+
+        Args:
+            element_name (System.Windows.Controls.Image): xaml image element
+            image_file (str): image file path
+        """
+        WPFWindow.set_image_source_file(wpf_element, image_file)
 
     def dispatch(self, func, *args, **kwargs):
         if framework.get_current_thread_id() == self.thread_id:
@@ -343,6 +354,187 @@ class WPFWindow(framework.Windows.Window):
     def handle_url_click(self, sender, args): #pylint: disable=unused-argument
         """Callback for handling click on package website url"""
         return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
+
+
+class WPFPanel(framework.Windows.Controls.Page):
+    r"""WPF panel base class for all pyRevit dockable panels.
+
+    panel_id (str) must be set on the type to dockable panel uuid
+    panel_source (str): xaml source filepath
+
+    Example:
+        >>> from pyrevit import forms
+        >>> class MyPanel(forms.WPFPanel):
+        ...     panel_id = "181e05a4-28f6-4311-8a9f-d2aa528c8755"
+        ...     panel_source = "MyPanel.xaml"
+
+        >>> forms.register_dockable_panel(MyPanel)
+        >>> # then from the button that needs to open the panel
+        >>> forms.open_dockable_panel("181e05a4-28f6-4311-8a9f-d2aa528c8755")
+    """
+
+    panel_id = None
+    panel_source = None
+
+    def __init__(self):
+        """Initialize WPF panel and resources."""
+        if not self.panel_id:
+            raise PyRevitException("\"panel_id\" property is not set")
+        if not self.panel_source:
+            raise PyRevitException("\"panel_source\" property is not set")
+
+        if not op.exists(self.panel_source):
+            wpf.LoadComponent(self,
+                              os.path.join(EXEC_PARAMS.command_path,
+                              self.panel_source))
+        else:
+            wpf.LoadComponent(self, self.panel_source)
+
+        # set properties
+        self.thread_id = framework.get_current_thread_id()
+        WPFWindow.setup_resources(self)
+
+    def set_image_source(self, wpf_element, image_file):
+        """Set source file for image element.
+
+        Args:
+            element_name (System.Windows.Controls.Image): xaml image element
+            image_file (str): image file path
+        """
+        WPFWindow.set_image_source_file(wpf_element, image_file)
+
+    @staticmethod
+    def hide_element(*wpf_elements):
+        """Collapse elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be collaped
+        """
+        WPFPanel.hide_element(*wpf_elements)
+
+    @staticmethod
+    def show_element(*wpf_elements):
+        """Show collapsed elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be set to visible.
+        """
+        WPFPanel.show_element(*wpf_elements)
+
+    @staticmethod
+    def toggle_element(*wpf_elements):
+        """Toggle visibility of elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be toggled.
+        """
+        WPFPanel.toggle_element(*wpf_elements)
+
+    @staticmethod
+    def disable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        WPFPanel.disable_element(*wpf_elements)
+
+    @staticmethod
+    def enable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        WPFPanel.enable_element(*wpf_elements)
+
+    def handle_url_click(self, sender, args): #pylint: disable=unused-argument
+        """Callback for handling click on package website url"""
+        return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
+
+
+class _WPFPanelProvider(UI.IDockablePaneProvider):
+    """Internal Panel provider for panels"""
+
+    def __init__(self, panel_type, default_visible=True):
+        self._panel_type = panel_type
+        self._default_visible = default_visible
+
+    def SetupDockablePane(self, data):
+        """Setup forms.WPFPanel set on this instance"""
+        # TODO: need to implement panel data
+        # https://apidocs.co/apps/revit/2021.1/98157ec2-ab26-6ab7-2933-d1b4160ba2b8.htm
+        data.FrameworkElement = self._panel_type()
+        data.VisibleByDefault = self._default_visible
+
+
+def register_dockable_panel(panel_type, default_visible=True):
+    """Register dockable panel
+
+    Args:
+        panel_type (forms.WPFPanel): dockable panel type
+        default_visible (bool, optional):
+            whether panel should be visible by default
+    """
+    if not issubclass(panel_type, WPFPanel):
+        raise PyRevitException(
+            "Dockable pane must be a subclass of forms.WPFPanel"
+            )
+
+    panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    dockable_panel_id = UI.DockablePaneId(panel_uuid)
+    HOST_APP.uiapp.RegisterDockablePane(
+        dockable_panel_id,
+        panel_type.panel_title,
+        _WPFPanelProvider(panel_type, default_visible)
+    )
+
+
+def open_dockable_panel(panel_type_or_id):
+    """Open previously registered dockable panel
+
+    Args:
+        panel_type_or_id (forms.WPFPanel, str): panel type or id
+    """
+    toggle_dockable_panel(panel_type_or_id, True)
+
+
+def close_dockable_panel(panel_type_or_id):
+    """Close previously registered dockable panel
+
+    Args:
+        panel_type_or_id (forms.WPFPanel, str): panel type or id
+    """
+    toggle_dockable_panel(panel_type_or_id, False)
+
+
+def toggle_dockable_panel(panel_type_or_id, state):
+    """Toggle previously registered dockable panel
+
+    Args:
+        panel_type_or_id (forms.WPFPanel, str): panel type or id
+    """
+    dpanel_id = None
+    if isinstance(panel_type_or_id, str):
+        panel_id = coreutils.Guid.Parse(panel_type_or_id)
+        dpanel_id = UI.DockablePaneId(panel_id)
+    elif issubclass(panel_type_or_id, WPFPanel):
+        panel_id = coreutils.Guid.Parse(panel_type_or_id.panel_id)
+        dpanel_id = UI.DockablePaneId(panel_id)
+    else:
+        raise PyRevitException("Given type is not a forms.WPFPanel")
+
+    if dpanel_id:
+        if UI.DockablePane.PaneIsRegistered(dpanel_id):
+            dockable_panel = HOST_APP.uiapp.GetDockablePane(dpanel_id)
+            if state:
+                dockable_panel.Show()
+            else:
+                dockable_panel.Hide()
+        else:
+            raise PyRevitException(
+                "Panel with id \"%s\" is not registered" % panel_type_or_id
+                )
 
 
 class TemplateUserInputWindow(WPFWindow):

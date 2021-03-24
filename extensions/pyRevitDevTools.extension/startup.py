@@ -141,30 +141,14 @@ def post_date_id(request, year, month, day, pid):
 
 
 # test dockable panel =========================================================
-from pyrevit.framework import Windows
-from pyrevit.framework import wpf
-from pyrevit.coreutils import Guid
 
-
-class DockableExample (Windows.Controls.Page):
-    def __init__(self, xaml_file):
-        wpf.LoadComponent(self, op.join(op.dirname(__file__), xaml_file))
+class DockableExample(forms.WPFPanel):
+    panel_title = "pyRevit Dockable Panel Title"
+    panel_id = "3110e336-f81c-4927-87da-4e0d30d4d64a"
+    panel_source = op.join(op.dirname(__file__), "DockableExample.xaml")
 
     def do_something(self, sender, args):
-        forms.alert("DockableExample Action")
+        forms.alert("Voila!!!")
 
 
-
-class DockableExamplePanelProvider (UI.IDockablePaneProvider):
-    def SetupDockablePane(self, data):
-        # https://apidocs.co/apps/revit/2021.1/cde36571-ccf1-f628-9e34-6a720388d348.htm
-        data.FrameworkElement = DockableExample("DockableExample.xaml")
-        data.VisibleByDefault = True
-
-
-DOCKABLE_PANE_ID = UI.DockablePaneId(Guid.NewGuid())
-HOST_APP.uiapp.RegisterDockablePane(
-    DOCKABLE_PANE_ID,
-    "pyRevit Dockable Panel Example",
-    DockableExamplePanelProvider()
-)
+forms.register_dockable_panel(DockableExample)
