@@ -178,7 +178,9 @@ def _new_session():
         ui_ext.configure()
 
         # collect all module references from extensions
-        ui_ext_modules = ui_ext.get_all_modules()
+        ui_ext_modules = []
+        ui_ext_modules.extend(ui_ext.get_extension_modules())
+        ui_ext_modules.extend(ui_ext.get_command_modules())
         # make sure they are all loaded
         assmutils.load_asm_files(ui_ext_modules)
         # and update env information
