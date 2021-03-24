@@ -81,14 +81,27 @@ from System.Linq import Enumerable
 import pyrevit.engine as eng
 
 wpf = None
-clr.AddReference(
-    '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
-    )
+wpf_dllname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+wpf_dllpath = op.join(eng.EnginePath, wpf_dllname)
+clr.AddReferenceToFileAndPath(wpf_dllpath)
+
 if compat.PY3:
     import IronPython
     wpf = IronPython.Modules.Wpf
 else:
     import wpf
+
+
+sqlite3 = None
+sqlite3_dllname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
+sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_dllname)
+clr.AddReferenceToFileAndPath(sqlite3_dllpath)
+
+if compat.PY3:
+    import sqlite3
+else:
+    import sqlite3
+
 
 CPDialogs = None
 try:
