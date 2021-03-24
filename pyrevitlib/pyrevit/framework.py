@@ -78,11 +78,16 @@ from System.Runtime.Serialization import FormatterServices
 
 from System.Linq import Enumerable
 
+
+ASSEMBLY_FILE_TYPE = 'dll'
+ASSEMBLY_FILE_EXT = '.dll'
+
+
 import pyrevit.engine as eng
 
 wpf = None
-wpf_dllname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
-wpf_dllpath = op.join(eng.EnginePath, wpf_dllname)
+wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
 clr.AddReferenceToFileAndPath(wpf_dllpath)
 
 if compat.PY3:
@@ -93,8 +98,8 @@ else:
 
 
 sqlite3 = None
-sqlite3_dllname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
-sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_dllname)
+sqlite3_assmname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
+sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_assmname + ASSEMBLY_FILE_EXT)
 clr.AddReferenceToFileAndPath(sqlite3_dllpath)
 
 if compat.PY3:
@@ -126,9 +131,6 @@ import pyRevitLabs.Emojis as Emojis
 
 # do not import anything from pyrevit before this
 from pyrevit import BIN_DIR
-
-
-ASSEMBLY_FILE_TYPE = 'dll'
 
 
 def get_type(fw_object):
