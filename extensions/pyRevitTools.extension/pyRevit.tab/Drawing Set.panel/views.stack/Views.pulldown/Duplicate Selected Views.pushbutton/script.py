@@ -17,7 +17,6 @@ def duplicate_views(viewlist, dupop):
     with revit.Transaction('Duplicate selected views'):
         for el in viewlist:
             try:
-                print(dupop).ToString()
                 dup_view_ids.append(el.Duplicate(dupop))
             except Exception as duplerr:
                 logger.error('Error duplicating view "{}" | {}'
