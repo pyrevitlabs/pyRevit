@@ -871,8 +871,11 @@ class SettingsWindow(forms.WPFWindow):
 
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
-        if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():
+        default_stylesheet = output.get_default_stylesheet()
+        if self.cur_stylesheet_tb.Text != default_stylesheet:
             user_config.output_stylesheet = self.cur_stylesheet_tb.Text
+        elif user_config.output_stylesheet != default_stylesheet:
+            user_config.output_stylesheet = None
         # pyrevit gui settings
         if self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info \
                 and not self.reload_requested:
