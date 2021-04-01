@@ -548,24 +548,33 @@ def _import_keynotes_from_lines(conn, lines, skip_dup=False):
 
 def import_legacy_keynotes(conn, src_legacy_keynotes_file, skip_dup=False):
     # determine encoding
-    encoding = 'ascii'
+    encodings = ['Windows-1252', 'ISO-8859-1', 'ascii']
     if coreutils.check_encoding_bom(src_legacy_keynotes_file,
                                     bom_bytes=codecs.BOM_UTF16):
-        encoding = 'utf_16_le'
+        encodings = ['utf_16_le']
     elif coreutils.check_encoding_bom(src_legacy_keynotes_file,
                                       bom_bytes=codecs.BOM_UTF8):
-        encoding = 'utf-8'
+        encodings = ['utf-8']
 
-    try:
-        mlogger.debug('Opening file with {} encoding...'.format(encoding))
-        knote_lines = None
-        with codecs.open(src_legacy_keynotes_file, 'r', encoding) \
-                as legacy_kfile:
-            knote_lines = legacy_kfile.readlines()
-    except Exception:
-        mlogger.debug('Failed opening : %s', src_legacy_keynotes_file)
-        raise Exception('Unknown file encoding. Supported encodings are '
-                        'ASCII, UTF-8, and UTF-16 (UCS-2 LE)')
+    last_encoding_idx = len(encodings) - 1
+    for idx, encoding in enumerate(encodings):
+        try:
+            mlogger.debug(
+                'Attempt to open keynote file with \"%s\" encoding...',
+                encoding
+                )
+            knote_lines = None
+            with codecs.open(src_legacy_keynotes_file, 'r', encoding) \
+                    as legacy_kfile:
+                knote_lines = legacy_kfile.readlines()
+                break
+        except Exception:
+            if idx == last_encoding_idx:
+                mlogger.debug('Failed opening : %s', src_legacy_keynotes_file)
+                raise Exception('Unknown file encoding. Supported encodings '
+                                'are ASCII, UTF-8, and UTF-16 (UCS-2 LE)')
+            else:
+                continue
 
     if legacy_kfile:
         conn.BEGIN(KEYNOTES_DB)

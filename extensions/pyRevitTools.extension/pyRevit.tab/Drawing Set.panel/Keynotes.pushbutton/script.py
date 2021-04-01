@@ -4,6 +4,7 @@ Shift+Click:
 Reset window configurations and open.
 """
 #pylint: disable=E0401,W0613,C0111,C0103,C0302,W0703
+#pylint: disable=raise-missing-from
 import os
 import os.path as op
 import shutil
@@ -684,19 +685,31 @@ class KeynoteManagerWindow(forms.WPFWindow):
             script.get_data_file(op.basename(self._kfile), 'bak')
         if op.exists(temp_kfile):
             script.remove_data_file(temp_kfile)
-        shutil.copy(self._kfile, temp_kfile)
-        # don't delete files in keynotes folder
-        # usually they're on network or synced drives and the IO is slow
-        self._empty_file(self._kfile)
+        try:
+            shutil.copy(self._kfile, temp_kfile)
+        except Exception:
+            raise Exception("Error backing up existing keynote file")
+
+        try:
+            # don't delete files in keynotes folder
+            # usually they're on network or synced drives and the IO is slow
+            self._empty_file(self._kfile)
+        except Exception:
+            raise Exception("Error preparing new keynote file")
+
         # import the keynotes from the backup into the emptied keynote file
         try:
             self._conn = kdb.connect(self._kfile)
             kdb.import_legacy_keynotes(self._conn, temp_kfile, skip_dup=True)
         except System.TimeoutException as toutex:
+            shutil.copy(temp_kfile, self._kfile)
             forms.alert(toutex.Message,
                         expanded="{}::_convert_existing()".format(
                             self.__class__.__name__),
                         exitscript=True)
+        except Exception as ex:
+            shutil.copy(temp_kfile, self._kfile)
+            raise ex
         finally:
             script.remove_data_file(temp_kfile)
 
