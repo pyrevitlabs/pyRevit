@@ -11,6 +11,7 @@ Usage:
 	pyrevit clone <clone_name> [--dest=<dest_path>] [--source=<repo_url>] [--branch=<branch_name>] [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit clones [(-h | --help)]
 	pyrevit clones (info | open) <clone_name>
+	pyrevit clones add this <clone_name> [--force] [--log=<log_file>]
 	pyrevit clones add <clone_name> <clone_path> [--force] [--log=<log_file>]
 	pyrevit clones forget (--all | <clone_name>) [--log=<log_file>]
 	pyrevit clones rename <clone_name> <clone_new_name> [--log=<log_file>]
