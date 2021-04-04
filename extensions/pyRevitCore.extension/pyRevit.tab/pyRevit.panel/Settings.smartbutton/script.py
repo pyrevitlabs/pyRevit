@@ -384,16 +384,20 @@ class SettingsWindow(forms.WPFWindow):
                             attachments[rvt_ver].Product,
                             ''
                             )
-                    checkbox.IsEnabled = True
-                    checkbox.IsChecked = True
                 else:
                     checkbox.Content = \
                         self._make_product_name(
                             attachments[rvt_ver].Product,
-                            '<Current version>'
+                            '<current>'
                             )
+
+                checkbox.IsChecked = True
+                if attachments[rvt_ver].AttachmentType == \
+                        PyRevit.PyRevitAttachmentType.AllUsers:
                     checkbox.IsEnabled = False
-                    checkbox.IsChecked = True
+                    checkbox.Content += " <all users>"
+                else:
+                    checkbox.IsEnabled = True
             else:
                 if rvt_ver in installed_revits:
                     checkbox.Content = \
@@ -417,8 +421,11 @@ class SettingsWindow(forms.WPFWindow):
         # update active engine
         attachment = user_config.get_current_attachment()
         if attachment:
-            all_users = attachment.AttachmentType == \
-                PyRevit.PyRevitAttachmentType.AllUsers
+            # if attachment is for all users dont attempt at making changes
+            # user probably does not have write access and this fails
+            if attachment.AttachmentType == \
+                    PyRevit.PyRevitAttachmentType.AllUsers:
+                return
 
             # notify use to restart if engine has changed
             if self.availableEngines.SelectedItem:
@@ -431,7 +438,7 @@ class SettingsWindow(forms.WPFWindow):
                     int(HOST_APP.version),
                     attachment.Clone,
                     new_engine,
-                    all_users
+                    False
                     )
 
                 # now setup the attachments for other versions
@@ -442,7 +449,7 @@ class SettingsWindow(forms.WPFWindow):
                                 int(rvt_ver),
                                 attachment.Clone,
                                 new_engine,
-                                all_users
+                                False
                                 )
                         else:
                             PyRevit.PyRevitAttachments.Detach(int(rvt_ver))
