@@ -534,7 +534,8 @@
                         <TextBlock x:Name="revitversions_tb" TextWrapping="WrapWithOverflow">
                             You can disable or enable pyRevit for installed
                             Revit versions from here. This effectively removes the
-                            pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.
+                            pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders. Note that attachment to any of Revit versions listed here will be read-only and can not be changed, if it is 
+                            marked with &lt;current&gt; or &lt;all users&gt;
                         </TextBlock>
                         <CheckBox x:Name="revit2021_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
                             Autodesk Revit 2021
@@ -624,10 +625,12 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="26" />
                                                 <ColumnDefinition Width="31" />
-                                                <ColumnDefinition Width="240" />
+                                                <ColumnDefinition Width="50" />
+                                                <ColumnDefinition Width="190" />
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Width="26" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_ordercolor" />
                                             <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_ordercolor" />
+                                            <Button Grid.Column="2" Margin="5,0,0,0" Content="Reset" Padding="0,-3,0,0" Background="White" BorderBrush="DarkGray" Click="reset_ordercolors" />
                                         </Grid>
                                         <TextBlock DockPanel.Dock="Left" Text="By Order" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
                                         <ListView x:Name="doc_ordercolor_lb"

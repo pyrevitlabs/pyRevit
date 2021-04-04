@@ -75,20 +75,50 @@ from System.Windows.Media import Imaging, SolidColorBrush, Color
 from System import Math
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
-
 from System.Linq import Enumerable
 
 import pyrevit.engine as eng
 
+
+ASSEMBLY_FILE_TYPE = 'dll'
+ASSEMBLY_FILE_EXT = '.dll'
+
+
+ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
+ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
+clr.AddReferenceToFileAndPath(ipy_dllpath)
+
+import IronPython
+
+# WPF
 wpf = None
-clr.AddReference(
-    '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
-    )
-if compat.PY3:
-    import IronPython
-    wpf = IronPython.Modules.Wpf
-else:
+wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
+try:
+    clr.AddReference(wpf_assmname)
+    if compat.PY3:
+        wpf = IronPython.Modules.Wpf
+    else:
+        import wpf
+except Exception:
+    clr.AddReferenceToFileAndPath(wpf_dllpath)
     import wpf
+
+
+# SQLite
+sqlite3 = None
+sqlite3_assmname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
+sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_assmname + ASSEMBLY_FILE_EXT)
+try:
+    clr.AddReference(sqlite3_assmname)
+    if compat.PY3:
+        sqlite3 = IronPython.SQLite
+    else:
+        import sqlite3
+except Exception:
+    clr.AddReferenceToFileAndPath(sqlite3_dllpath)
+    import sqlite3
+
 
 CPDialogs = None
 try:
@@ -113,9 +143,6 @@ import pyRevitLabs.Emojis as Emojis
 
 # do not import anything from pyrevit before this
 from pyrevit import BIN_DIR
-
-
-ASSEMBLY_FILE_TYPE = 'dll'
 
 
 def get_type(fw_object):

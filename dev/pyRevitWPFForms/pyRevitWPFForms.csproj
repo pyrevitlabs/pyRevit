@@ -67,6 +67,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\extensions\pyRevitDevTools.extension\DockableExample.xaml">
+      <Link>Dev\DockableExample.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Engine Tests.pulldown\Test Persistent Engine.pushbutton\NonModalWindow.xaml">
       <Link>Dev\NonModalWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>

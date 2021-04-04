@@ -47,7 +47,7 @@
                 </Border>
             </StackPanel>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding revision}" Value="">
+                <DataTrigger Binding="{Binding revision.is_set}" Value="False">
                     <Setter TargetName="revinfo" Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
             </DataTemplate.Triggers>

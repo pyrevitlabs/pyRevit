@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 sphinx-rtd-theme = "*"
-pygments = "*"
+pygments = ">=2.7.4"
 sphinx = "*"
 readthedocs-sphinx-ext = "*"
 "doc8" = "*"

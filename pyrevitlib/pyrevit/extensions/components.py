@@ -420,7 +420,18 @@ class Extension(GenericUIContainer):
             for component in self:
                 component.configure(cfg_dict)
 
-    def get_all_modules(self):
+    def get_extension_modules(self):
+        modules = []
+        if self.binary_path and op.exists(self.binary_path):
+            for item in os.listdir(self.binary_path):
+                item_path = op.join(self.binary_path, item)
+                item_name = item.lower()
+                if op.isfile(item_path) \
+                        and item_name.endswith(framework.ASSEMBLY_FILE_TYPE):
+                    modules.append(item_path)
+        return modules
+
+    def get_command_modules(self):
         referenced_modules = set()
         for cmd in self.get_all_commands():
             for module in cmd.modules:

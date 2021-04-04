@@ -1198,8 +1198,38 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public TabColoringStyle TabStyle { get; set; }
         public TabColoringStyle FamilyTabStyle { get; set; }
-        public List<TabColoringRule> TabOrderRules { get; set; }
-        public List<TabColoringRule> TabFilterRules { get; set; }
+        
+        public List<TabColoringRule> _tabOrderRules = default;
+        public List<TabColoringRule> TabOrderRules {
+            get {
+                if (_tabOrderRules is null)
+                    _tabOrderRules = new List<TabColoringRule>();
+                return _tabOrderRules;
+            }
+
+            set {
+                if (value is null)
+                    _tabOrderRules = new List<TabColoringRule>();
+                else
+                    _tabOrderRules = value;
+            }
+        }
+
+        public List<TabColoringRule> _tabFilterRules = default;
+        public List<TabColoringRule> TabFilterRules {
+            get {
+                if (_tabFilterRules is null)
+                    _tabFilterRules = new List<TabColoringRule>();
+                return _tabFilterRules;
+            }
+
+            set {
+                if (value is null)
+                    _tabFilterRules = new List<TabColoringRule>();
+                else
+                    _tabFilterRules = value;
+            }
+        }
 
         public static readonly List<Brush> DefaultBrushes = new List<Brush> {
             PyRevitConsts.PyRevitAccentBrush,
@@ -1214,6 +1244,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             Brushes.DeepPink
         };
 
+        public static readonly uint DefaultTabColoringStyleIndex = 0;
+        public static readonly uint DefaultFamilyTabColoringStyleIndex = 4;
+
         public static readonly List<TabColoringStyle> AvailableStyles = new List<TabColoringStyle> {
             new TabColoringStyle("Top Bar - Light") { BorderThickness = new Thickness(0,1,0,0) },
             new TabColoringStyle("Top Bar - Medium") { BorderThickness = new Thickness(0,2,0,0) },
@@ -1226,8 +1259,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             new TabColoringStyle("Background Fill") { BorderThickness = new Thickness(2), FillBackground = true },
         };
 
-        public static readonly uint DefaultTabColoringStyleIndex = 0;
-        public static readonly uint DefaultFamilyTabColoringStyleIndex = 4;
 
         // keep a unique hash for the state of open tabs
         // this helps refreshing the tab styling only once
@@ -1369,11 +1400,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 // otherwise, create the first slot, with the first rule
                 else {
-                    slot = new RuleSlot(TabOrderRules.FirstOrDefault()) {
-                        Id = docId,
-                        IsFamily = isFamilyTab,
-                    };
-                    _ruleSlots.Add(slot);
+                    if (TabOrderRules.Count > 0) {
+                        slot = new RuleSlot(TabOrderRules.First()) {
+                            Id = docId,
+                            IsFamily = isFamilyTab,
+                        };
+                        _ruleSlots.Add(slot);
+                    }
                 }
 
 

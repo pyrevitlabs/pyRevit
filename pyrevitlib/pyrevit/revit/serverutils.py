@@ -1,7 +1,7 @@
 """Helper functions for working with revit server."""
 
 from collections import namedtuple
-import sqlite3
+from pyrevit.framework import sqlite3
 
 from pyrevit import DB
 

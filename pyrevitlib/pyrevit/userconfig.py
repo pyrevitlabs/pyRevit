@@ -321,10 +321,13 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @output_stylesheet.setter
     def output_stylesheet(self, stylesheet_filepath):
-        self.core.set_option(
-            CONSTS.ConfigsOutputStyleSheet,
-            value=stylesheet_filepath
-        )
+        if stylesheet_filepath:
+            self.core.set_option(
+                CONSTS.ConfigsOutputStyleSheet,
+                value=stylesheet_filepath
+            )
+        else:
+            self.core.remove_option(CONSTS.ConfigsOutputStyleSheet)
 
     @property
     def routes_host(self):

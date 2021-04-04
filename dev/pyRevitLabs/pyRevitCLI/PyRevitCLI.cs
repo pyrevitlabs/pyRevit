@@ -80,6 +80,7 @@ namespace pyRevitCLI {
         internal static bool IsHelpUsagePatternMode = false;
 
         // cli version property
+        public static string CLIPath => Assembly.GetExecutingAssembly().Location;
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
 
         // cli entry point:
@@ -218,12 +219,20 @@ namespace pyRevitCLI {
                 else if (all("open"))
                     PyRevitCLICloneCmds.OpenClone(TryGetValue("<clone_name>"));
 
-                else if (all("add"))
-                    PyRevitCLICloneCmds.RegisterClone(
-                        TryGetValue("<clone_name>"),
-                        TryGetValue("<clone_path>"),
-                        force: arguments["--force"].IsTrue
-                        );
+                else if (all("add")) {
+                    if(all("this"))
+                        PyRevitCLICloneCmds.RegisterClone(
+                            TryGetValue("<clone_name>"),
+                            Path.GetDirectoryName(CLIPath),
+                            force: arguments["--force"].IsTrue
+                            );
+                    else
+                        PyRevitCLICloneCmds.RegisterClone(
+                            TryGetValue("<clone_name>"),
+                            TryGetValue("<clone_path>"),
+                            force: arguments["--force"].IsTrue
+                            );
+                }
 
                 else if (all("forget"))
                     PyRevitCLICloneCmds.ForgetClone(

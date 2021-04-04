@@ -384,16 +384,20 @@ class SettingsWindow(forms.WPFWindow):
                             attachments[rvt_ver].Product,
                             ''
                             )
-                    checkbox.IsEnabled = True
-                    checkbox.IsChecked = True
                 else:
                     checkbox.Content = \
                         self._make_product_name(
                             attachments[rvt_ver].Product,
-                            '<Current version>'
+                            '<current>'
                             )
+
+                checkbox.IsChecked = True
+                if attachments[rvt_ver].AttachmentType == \
+                        PyRevit.PyRevitAttachmentType.AllUsers:
                     checkbox.IsEnabled = False
-                    checkbox.IsChecked = True
+                    checkbox.Content += " <all users>"
+                else:
+                    checkbox.IsEnabled = True
             else:
                 if rvt_ver in installed_revits:
                     checkbox.Content = \
@@ -417,8 +421,11 @@ class SettingsWindow(forms.WPFWindow):
         # update active engine
         attachment = user_config.get_current_attachment()
         if attachment:
-            all_users = attachment.AttachmentType == \
-                PyRevit.PyRevitAttachmentType.AllUsers
+            # if attachment is for all users dont attempt at making changes
+            # user probably does not have write access and this fails
+            if attachment.AttachmentType == \
+                    PyRevit.PyRevitAttachmentType.AllUsers:
+                return
 
             # notify use to restart if engine has changed
             if self.availableEngines.SelectedItem:
@@ -431,7 +438,7 @@ class SettingsWindow(forms.WPFWindow):
                     int(HOST_APP.version),
                     attachment.Clone,
                     new_engine,
-                    all_users
+                    False
                     )
 
                 # now setup the attachments for other versions
@@ -442,7 +449,7 @@ class SettingsWindow(forms.WPFWindow):
                                 int(rvt_ver),
                                 attachment.Clone,
                                 new_engine,
-                                all_users
+                                False
                                 )
                         else:
                             PyRevit.PyRevitAttachments.Detach(int(rvt_ver))
@@ -661,6 +668,13 @@ class SettingsWindow(forms.WPFWindow):
             self.doc_ordercolor_lb.SelectedIndex = new_index
             self.update_tab_previews()
 
+    def reset_ordercolors(self, sender, args):
+        tabs.reset_tab_ordercolors(user_config, self.tab_theme)
+        new_rules = list(self.tab_theme.TabOrderRules)
+        if new_rules:
+            self.doc_ordercolor_lb.ItemsSource = new_rules
+            self.update_tab_previews()
+
     def selected_ordercolor_changed(self, sender, args):
         pass
 
@@ -784,7 +798,7 @@ class SettingsWindow(forms.WPFWindow):
 
             # apply by order - project
             for idx, tab_ctrl in enumerate(family_tab_ctrls):
-                if idx < coloring_rules_count:
+                if idx + len(prj_tab_ctrls) < coloring_rules_count:
                     coloring_rule = coloring_rules[idx + len(prj_tab_ctrls)]
                     style = family_tabstyle.CreateStyle(tab_ctrl, coloring_rule)
                     tab_ctrl.Style = style
@@ -864,8 +878,11 @@ class SettingsWindow(forms.WPFWindow):
 
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
-        if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():
+        default_stylesheet = output.get_default_stylesheet()
+        if self.cur_stylesheet_tb.Text != default_stylesheet:
             user_config.output_stylesheet = self.cur_stylesheet_tb.Text
+        elif user_config.output_stylesheet != default_stylesheet:
+            user_config.output_stylesheet = None
         # pyrevit gui settings
         if self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info \
                 and not self.reload_requested:

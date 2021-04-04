@@ -198,8 +198,9 @@ namespace pyRevitLabs.PyRevit {
         // @reviewed
         public static string ConfigFilePath {
             get {
-                var cfgFile = FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath);
-                return cfgFile != null ? cfgFile : Path.Combine(PyRevitLabsConsts.PyRevitPath, DefaultConfigsFileName);
+                string configRoot = UserEnv.IsRunAsElevated() ? PyRevitLabsConsts.PyRevitProgramDataPath : PyRevitLabsConsts.PyRevitPath;
+                var cfgFile = FindConfigFileInDirectory(configRoot);
+                return cfgFile != null ? cfgFile : Path.Combine(configRoot, DefaultConfigsFileName);
             }
         }
 

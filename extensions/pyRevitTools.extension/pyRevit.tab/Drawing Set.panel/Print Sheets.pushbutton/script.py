@@ -53,7 +53,8 @@ AvailableDoc = namedtuple('AvailableDoc', ['name', 'hash', 'linked'])
 
 NamingFormatter = namedtuple('NamingFormatter', ['template', 'desc'])
 
-SheetRevision = namedtuple('SheetRevision', ['number', 'desc', 'date'])
+SheetRevision = namedtuple('SheetRevision', ['number', 'desc', 'date', 'is_set'])
+UNSET_REVISION = SheetRevision(number=None, desc=None, date=None, is_set=False)
 
 TitleBlockPrintSettings = \
     namedtuple('TitleBlockPrintSettings', ['psettings', 'set_by_param'])
@@ -125,13 +126,14 @@ class ViewSheetListItem(forms.Reactive):
             rev_settings.RevisionNumbering == DB.RevisionNumbering.PerSheet \
             if rev_settings else False
         cur_rev = revit.query.get_current_sheet_revision(self._sheet)
-        self.revision = ''
+        self.revision = UNSET_REVISION
         if cur_rev:
             on_sheet = self._sheet if per_sheet_revisions else None
             self.revision = SheetRevision(
                 number=revit.query.get_rev_number(cur_rev, sheet=on_sheet),
                 desc=cur_rev.Description,
-                date=cur_rev.RevisionDate
+                date=cur_rev.RevisionDate,
+                is_set=True
             )
 
     @property

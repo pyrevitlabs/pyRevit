@@ -93,6 +93,11 @@ namespace pyRevitLabs.Common {
             return null;
         }
 
+        public static bool IsRunAsElevated() {
+            WindowsIdentity id = WindowsIdentity.GetCurrent();
+            return id.Owner != id.User;
+        }
+
         public static bool IsRunAsAdmin() {
             WindowsIdentity id = WindowsIdentity.GetCurrent();
             WindowsPrincipal principal = new WindowsPrincipal(id);
