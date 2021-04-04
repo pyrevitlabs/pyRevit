@@ -13,6 +13,7 @@ using LibGit2Sharp;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 using System.Linq;
+using System.Threading;
 
 namespace pyRevitLabs.Common {
     public static class CommonUtils {
@@ -27,6 +28,44 @@ namespace pyRevitLabs.Common {
             if (filePath != null && filePath != string.Empty)
                 return System.IO.File.Exists(filePath);
             return false;
+        }
+
+        // https://stackoverflow.com/a/937558/2350244
+        public static bool IsFileLocked(FileInfo file) {
+            try {
+                using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None)) {
+                    stream.Close();
+                }
+            }
+            catch (IOException) {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+                return true;
+            }
+
+            //file is not locked
+            return false;
+        }
+
+        public static void VerifyFileAccessible(string filePath) {
+            // make sure file is accessible,
+            // try multiple times and wait a little in between
+            // fail after trying
+            var finfo = new FileInfo(filePath);
+
+            uint tries = 3;
+            do {
+                if (IsFileLocked(finfo)) {
+                    Thread.Sleep(200);
+                    tries--;
+                }
+                else
+                    return;
+            } while (tries > 0);
+
+            throw new PyRevitException("File is not accessible");
         }
 
         public static bool VerifyPath(string path) {
@@ -157,8 +196,8 @@ namespace pyRevitLabs.Common {
                     //    while (client.IsBusy) ;
                     //}
                     //else {
-                        logger.Debug("Downloading \"{0}\"", url);
-                        client.DownloadFile(url, destPath);
+                    logger.Debug("Downloading \"{0}\"", url);
+                    client.DownloadFile(url, destPath);
                     //}
                 }
             }

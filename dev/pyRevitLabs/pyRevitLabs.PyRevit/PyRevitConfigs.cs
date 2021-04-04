@@ -65,6 +65,7 @@ namespace pyRevitLabs.PyRevit {
             try {
                 if (File.Exists(sourceFile)) {
                     CommonUtils.EnsureFile(targetFile);
+                    CommonUtils.VerifyFileAccessible(targetFile);
                     File.Copy(sourceFile, targetFile, true);
 
                     if (makeCurrentUserAsOwner) {
