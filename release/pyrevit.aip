@@ -27,10 +27,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevit.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{32B7C208-2ACC-4D2B-9C75-5BAEE22E7F85} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{FED5DEF7-8D3B-4832-BB3E-55C10FCF9ACF} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.8.6" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.7" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>

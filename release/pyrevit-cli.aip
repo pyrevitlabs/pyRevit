@@ -21,10 +21,10 @@
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyrevitbanner.bmp" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevitcli.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{AB14082F-168E-45DE-98A7-7C99DB00FFE7} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{E61BB97E-6FF1-4706-A92E-D9F38EB9C77B} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="4.8.6" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.7" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
@@ -80,7 +80,6 @@
     <ROW Component="System.Windows.Interactivity.dll" ComponentId="{32ABD954-5434-47DD-AE25-A0BCBAE40192}" Directory_="APPDIR" Attributes="0" KeyPath="System.Windows.Interactivity.dll"/>
     <ROW Component="YamlDotNet.dll" ComponentId="{ED37BACB-3DD9-4DF0-93D2-D081F348C864}" Directory_="APPDIR" Attributes="0" KeyPath="YamlDotNet.dll"/>
     <ROW Component="git2106a5f2.dll" ComponentId="{1FCB3649-517F-413C-83E4-84F0AB146480}" Directory_="APPDIR" Attributes="256" KeyPath="git2106a5f2.dll"/>
-    <ROW Component="git27ce88e6.dll" ComponentId="{EA6022D3-EE1F-46E0-B9DE-2BC66819FAEC}" Directory_="APPDIR" Attributes="256" KeyPath="git27ce88e6.dll"/>
     <ROW Component="pyRevitLabs.Common.dll" ComponentId="{379FC385-744C-4190-A95C-281E67B527AF}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.Common.dll"/>
     <ROW Component="pyRevitLabs.CommonCLI.dll" ComponentId="{A83F9E4E-2B1A-45A3-B465-B25A73D75272}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.CommonCLI.dll"/>
     <ROW Component="pyRevitLabs.CommonWPF.dll" ComponentId="{5363FD8C-C3D6-446B-8F9F-FD6AD171F2B0}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.CommonWPF.dll"/>
@@ -155,7 +154,6 @@
     <ROW File="System.Numerics.Vectors.dll" Component_="System.Numerics.Vectors.dll" FileName="SYSTEM~4.DLL|System.Numerics.Vectors.dll" Attributes="0" SourcePath="..\bin\System.Numerics.Vectors.dll" SelfReg="false"/>
     <ROW File="System.Collections.Immutable.dll" Component_="System.Collections.Immutable.dll" FileName="SYSTEM~5.DLL|System.Collections.Immutable.dll" Attributes="0" SourcePath="..\bin\System.Collections.Immutable.dll" SelfReg="false"/>
     <ROW File="System.Memory.dll" Component_="System.Memory.dll" FileName="SYSTEM~6.DLL|System.Memory.dll" Attributes="0" SourcePath="..\bin\System.Memory.dll" SelfReg="false"/>
-    <ROW File="git27ce88e6.dll" Component_="git27ce88e6.dll" FileName="GIT2-7~1.DLL|git2-7ce88e6.dll" Attributes="0" SourcePath="..\bin\git2-7ce88e6.dll" SelfReg="false"/>
     <ROW File="System.Text.Encoding.CodePages.dll" Component_="System.Text.Encoding.CodePages.dll" FileName="SYSTEM~7.DLL|System.Text.Encoding.CodePages.dll" Attributes="0" SourcePath="..\bin\System.Text.Encoding.CodePages.dll" SelfReg="false"/>
     <ROW File="System.Threading.Tasks.Extensions.dll" Component_="System.Threading.Tasks.Extensions.dll" FileName="SYSTEM~8.DLL|System.Threading.Tasks.Extensions.dll" Attributes="0" SourcePath="..\bin\System.Threading.Tasks.Extensions.dll" SelfReg="false"/>
     <ROW File="Microsoft.CodeAnalysis.VisualBasic.dll" Component_="Microsoft.CodeAnalysis.VisualBasic.dll" FileName="MICROS~5.DLL|Microsoft.CodeAnalysis.VisualBasic.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.VisualBasic.dll" SelfReg="false"/>
@@ -340,7 +338,6 @@
     <ROW Feature_="MainFeature" Component_="System.Numerics.Vectors.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Collections.Immutable.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Memory.dll"/>
-    <ROW Feature_="MainFeature" Component_="git27ce88e6.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Text.Encoding.CodePages.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Threading.Tasks.Extensions.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.VisualBasic.dll"/>
