@@ -118,7 +118,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                 string.Format(
                     JournalTemplate,                                    // template string
                     CommonUtils.GetISOTimeStampNow(),                   // timestamp with format: 27-Oct-2016 19:33:31.459
-                    AllowDialogs ? 1 : 0,                               // whether journal playback should allow dialogs
+                    AllowDialogs ? 0 : 1,                               // whether journal playback should allow dialogs
                     Script,                                             // script path
                     "",                                                 // sys paths
                     string.Join(";", ModelPaths),                       // model paths
