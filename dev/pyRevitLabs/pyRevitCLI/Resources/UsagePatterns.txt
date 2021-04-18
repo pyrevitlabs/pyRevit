@@ -66,9 +66,9 @@ Usage:
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
 	pyrevit run (-h | --help)
 	pyrevit run commands
-	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--import=<import_path>]
-	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--purge] [--import=<import_path>]
-	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--import=<import_path>]
+	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--allowdialogs] [--import=<import_path>]
 	pyrevit caches (-h | --help)
 	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit config (-h | --help)

@@ -548,10 +548,10 @@ namespace pyRevitCLI {
                             revitYear: TryGetValue("--revit"),
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
-                                ImportPath = TryGetValue("--import", null)
+                                ImportPath = TryGetValue("--import", null),
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue
                             },
-                            targetIsFileList: true,
-                            allowDialogs = arguments["--allowdialogs"].IsTrue
+                            targetIsFileList: true
                         );
                     }
                     else
@@ -561,9 +561,9 @@ namespace pyRevitCLI {
                             revitYear: TryGetValue("--revit"),
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
-                                ImportPath = TryGetValue("--import", null)
-                            },
-                            allowDialogs = arguments["--allowdialogs"].IsTrue
+                                ImportPath = TryGetValue("--import", null),
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue
+                            }
                         );
                 }
             }

@@ -154,7 +154,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false, bool allowDialogs = false) {
+        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false) {
             // verify command
             if (commandName is null || commandName == string.Empty)
                 throw new Exception("Command name must be provided.");
@@ -197,8 +197,23 @@ namespace pyRevitCLI {
                         throw new Exception($"Can not detect the Revit version of model at \"{modelFile}\". Model might be newer than specified version {revitYearNumber}.");
                 }
             }
-            else
-                revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
+            else {
+                // determine revit model version from given files
+                foreach (string modelFile in modelFiles) {
+                    var modelInfo = new RevitModelFile(modelFile);
+                    if (modelInfo.RevitProduct != null) {
+                        if (revitYearNumber == 0)
+                            revitYearNumber = modelInfo.RevitProduct.ProductYear;
+                        else if (modelInfo.RevitProduct.ProductYear > revitYearNumber)
+                            revitYearNumber = modelInfo.RevitProduct.ProductYear;
+                    }
+                }
+
+                // if could not determine revit version from given files,
+                // use latest version
+                if (revitYearNumber == 0)
+                    revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
+            }
 
             // now run
             if (revitYearNumber != 0) {
@@ -256,8 +271,7 @@ namespace pyRevitCLI {
                         attachment,
                         commandScriptPath,
                         modelFiles,
-                        runOptions,
-                        allowDialogs
+                        runOptions
                     );
 
                     // print results (exec env)

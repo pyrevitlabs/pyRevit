@@ -26,11 +26,8 @@ namespace pyRevitLabs.PyRevit {
     public class PyRevitRunnerExecEnv {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        public PyRevitRunnerExecEnv(PyRevitAttachment attachment, string script, IEnumerable<string> modelPaths, bool allowDialogs) {
+        public PyRevitRunnerExecEnv(PyRevitAttachment attachment) {
             Attachment = attachment;
-            Script = script;
-            ModelPaths = modelPaths;
-            AllowDialogs = allowDialogs;
 
             // check if clone is compatible
             if (!CommonUtils.VerifyFile(PyRevitCloneRunner))
@@ -41,10 +38,6 @@ namespace pyRevitLabs.PyRevit {
             // setup working dir
             WorkingDirectory = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), ExecutionId);
             CommonUtils.EnsurePath(WorkingDirectory);
-
-            // generate journal and manifest file
-            GenerateJournal();
-            GenerateManifest();
         }
 
         private const string JournalNameTemplate = "PyRevitRunner_{0}.txt";
@@ -69,10 +62,29 @@ Jrn.Command ""SystemMenu"" , ""Quit the application; prompts to save projects , 
 Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""No"", ""IDNO""
 ";
 
+        public void Begin(string script, IEnumerable<string> modelPaths, PyRevitRunnerOptions opts) {
+            Script = script;
+            ModelPaths = modelPaths;
+
+            // generate journal and manifest file
+            GenerateJournal();
+            GenerateManifest();
+
+            if (opts.ImportPath != null)
+                CopyExistingAddons(opts.ImportPath);
+        }
+
+        public void End(PyRevitRunnerOptions opts) {
+            // purge files if requested
+            if (opts.PurgeTempFiles)
+                Purge();
+        }
+
         public PyRevitAttachment Attachment { get; private set; }
         public string Script { get; private set; }
-        public bool AllowDialogs {get; private set;}
         public IEnumerable<string> ModelPaths { get; private set; }
+        public bool AllowDialogs { get; private set; }
+        public bool PurgeAfterExec { get; private set; }
 
         public RevitProduct Revit { get { return Attachment.Product; } }
         public PyRevitClone Clone { get { return Attachment.Clone; } }
@@ -97,21 +109,16 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
 
         public bool Purged { get; private set; } = false;
 
-        public void Purge() {
-            CommonUtils.DeleteDirectory(WorkingDirectory);
-            Purged = true;
-        }
+        // private
 
         // MDJ added code to copy all .addin files and subdirs into the batch running context.
         // This is to workaround built-in Revit addins like the NavisExporter not being available while using pyRevit batch.
         // Per MSDN, the below code is a relatively safe way to recurse through dirs and copy: http://msdn.microsoft.com/en-us/library/system.io.directoryinfo.aspx
-
-        public void CopyExistingAddons(string sourceDirectory) {
+        private void CopyExistingAddons(string sourceDirectory) {
             var targetDirectoryInfo = new DirectoryInfo(WorkingDirectory);
             CopyAll(new DirectoryInfo(sourceDirectory), targetDirectoryInfo);
         }
 
-        // private
         private void GenerateJournal() {
             File.WriteAllText(
                 JournalFile,
@@ -160,13 +167,17 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                 CopyAll(diSourceSubDir, nextTargetSubDir);
             }
         }
+
+        private void Purge() {
+            CommonUtils.DeleteDirectory(WorkingDirectory);
+            Purged = true;
+        }
     }
 
     public class PyRevitRunnerOptions {
-        public PyRevitRunnerOptions() { }
-
-        public bool PurgeTempFiles = false;
-        public string ImportPath;
+        public bool PurgeTempFiles { get; set; } = false;
+        public bool AllowDialogs { get; set; } = false;
+        public string ImportPath { get; set; }
     }
 
     public static class PyRevitRunner {
@@ -175,8 +186,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         public static PyRevitRunnerExecEnv Run(PyRevitAttachment attachment,
                                                string scriptPath,
                                                IEnumerable<string> modelPaths,
-                                               PyRevitRunnerOptions opts = null,
-                                               bool allowDialogs = false) {
+                                               PyRevitRunnerOptions opts = null) {
             var product = attachment.Product;
             var clone = attachment.Clone;
             var engineVer = attachment.Engine != null ? attachment.Engine.Version : 0;
@@ -189,27 +199,22 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             if (opts is null)
                 opts = new PyRevitRunnerOptions();
 
-            var execEnv = new PyRevitRunnerExecEnv(attachment, scriptPath, modelPaths, allowDialogs);
-
-            // purge files if requested
-            if (opts.ImportPath != null)
-                execEnv.CopyExistingAddons(opts.ImportPath);
-
-            // run the process
-            ProcessStartInfo revitProcessInfo = new ProcessStartInfo(product.ExecutiveLocation) {
-                Arguments = execEnv.JournalFile,
-                WorkingDirectory = execEnv.WorkingDirectory,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            logger.Debug("Running Revit in playback mode with journal: \"{0}\"", execEnv.JournalFile);
-            var revitProcess = Process.Start(revitProcessInfo);
-            revitProcess.WaitForExit();
-
-            // purge files if requested
-            if (opts.PurgeTempFiles)
-                execEnv.Purge();
-
+            var execEnv = new PyRevitRunnerExecEnv(attachment);
+            execEnv.Begin(scriptPath, modelPaths, opts);
+            {
+                // run the process
+                ProcessStartInfo revitProcessInfo = new ProcessStartInfo(product.ExecutiveLocation) {
+                    Arguments = execEnv.JournalFile,
+                    WorkingDirectory = execEnv.WorkingDirectory,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                logger.Debug("Running Revit in playback mode with journal: \"{0}\"", execEnv.JournalFile);
+                var revitProcess = Process.Start(revitProcessInfo);
+                revitProcess.WaitForExit();
+            }
+            execEnv.End(opts);
+            
             return execEnv;
         }
     }
