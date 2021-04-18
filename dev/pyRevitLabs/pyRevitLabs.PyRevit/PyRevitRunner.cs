@@ -14,11 +14,11 @@ using pyRevitLabs.TargetApps.Revit;
 namespace pyRevitLabs.PyRevit {
     public class PyRevitRunnerCommand {
         public PyRevitRunnerCommand(string commandPath) => Path = commandPath;
-        
+
         public override string ToString() {
             return $"{Name} | \"{Path}\"";
         }
-        
+
         public string Name => System.IO.Path.GetFileName(Path).Replace(PyRevitConsts.ExtensionUICommandPostfix, "");
         public string Path { get; }
     }
@@ -26,10 +26,11 @@ namespace pyRevitLabs.PyRevit {
     public class PyRevitRunnerExecEnv {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        public PyRevitRunnerExecEnv(PyRevitAttachment attachment, string script, IEnumerable<string> modelPaths) {
+        public PyRevitRunnerExecEnv(PyRevitAttachment attachment, string script, IEnumerable<string> modelPaths, bool allowDialogs) {
             Attachment = attachment;
             Script = script;
             ModelPaths = modelPaths;
+            AllowDialogs = allowDialogs;
 
             // check if clone is compatible
             if (!CommonUtils.VerifyFile(PyRevitCloneRunner))
@@ -54,22 +55,23 @@ namespace pyRevitLabs.PyRevit {
 ' 0:< 'C {0};
 Dim Jrn
 Set Jrn = CrsJournalScript
-Jrn.Directive ""DebugMode"", ""PerformAutomaticActionInErrorDialog"", 1
+Jrn.Directive ""DebugMode"", ""PerformAutomaticActionInErrorDialog"", {1}
 Jrn.Directive ""DebugMode"", ""PermissiveJournal"", 1
 Jrn.RibbonEvent ""TabActivated:Add-Ins""
 Jrn.RibbonEvent ""Execute external command:CustomCtrl_%CustomCtrl_%Add-Ins%pyRevitRunner%PyRevitRunnerCommand:PyRevitRunner.PyRevitRunnerCommand""
 Jrn.Data ""APIStringStringMapJournalData""  _
     , 4 _
-    , ""ScriptSource"" , ""{1}"" _
-    , ""SearchPaths"" , ""{2}"" _
-    , ""Models"" , ""{3}"" _
-    , ""LogFile"" , ""{4}""
+    , ""ScriptSource"" , ""{2}"" _
+    , ""SearchPaths"" , ""{3}"" _
+    , ""Models"" , ""{4}"" _
+    , ""LogFile"" , ""{5}""
 Jrn.Command ""SystemMenu"" , ""Quit the application; prompts to save projects , ID_APP_EXIT""
 Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""No"", ""IDNO""
 ";
 
         public PyRevitAttachment Attachment { get; private set; }
         public string Script { get; private set; }
+        public bool AllowDialogs {get; private set;}
         public IEnumerable<string> ModelPaths { get; private set; }
 
         public RevitProduct Revit { get { return Attachment.Product; } }
@@ -101,8 +103,8 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         }
 
         // MDJ added code to copy all .addin files and subdirs into the batch running context.
-        // This is to workaround built-in Revit addins like the NavisExporter not being available while using pyRevit batch. 
-        // Per MSDN, the below code is a relatively safe way to recurse through dirs and copy: http://msdn.microsoft.com/en-us/library/system.io.directoryinfo.aspx 
+        // This is to workaround built-in Revit addins like the NavisExporter not being available while using pyRevit batch.
+        // Per MSDN, the below code is a relatively safe way to recurse through dirs and copy: http://msdn.microsoft.com/en-us/library/system.io.directoryinfo.aspx
 
         public void CopyExistingAddons(string sourceDirectory) {
             var targetDirectoryInfo = new DirectoryInfo(WorkingDirectory);
@@ -116,6 +118,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                 string.Format(
                     JournalTemplate,                                    // template string
                     CommonUtils.GetISOTimeStampNow(),                   // timestamp with format: 27-Oct-2016 19:33:31.459
+                    AllowDialogs ? 0 : 1,                               // whether journal playback should allow dialogs
                     Script,                                             // script path
                     "",                                                 // sys paths
                     string.Join(";", ModelPaths),                       // model paths
@@ -172,7 +175,8 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         public static PyRevitRunnerExecEnv Run(PyRevitAttachment attachment,
                                                string scriptPath,
                                                IEnumerable<string> modelPaths,
-                                               PyRevitRunnerOptions opts = null) {
+                                               PyRevitRunnerOptions opts = null,
+                                               bool allowDialogs = false) {
             var product = attachment.Product;
             var clone = attachment.Clone;
             var engineVer = attachment.Engine != null ? attachment.Engine.Version : 0;
@@ -185,7 +189,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             if (opts is null)
                 opts = new PyRevitRunnerOptions();
 
-            var execEnv = new PyRevitRunnerExecEnv(attachment, scriptPath, modelPaths);
+            var execEnv = new PyRevitRunnerExecEnv(attachment, scriptPath, modelPaths, allowDialogs);
 
             // purge files if requested
             if (opts.ImportPath != null)

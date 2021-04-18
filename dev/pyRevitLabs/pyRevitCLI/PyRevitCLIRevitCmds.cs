@@ -154,7 +154,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false) {
+        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false, bool allowDialogs = false) {
             // verify command
             if (commandName is null || commandName == string.Empty)
                 throw new Exception("Command name must be provided.");
@@ -163,7 +163,7 @@ namespace pyRevitCLI {
             int revitYearNumber = 0;
             int.TryParse(revitYear, out revitYearNumber);
 
-            
+
             // setup a list of models
             var modelFiles = new List<string>();
             // if target file is a list of model paths
@@ -176,7 +176,7 @@ namespace pyRevitCLI {
             else
                 modelFiles.Add(targetFile);
 
-            
+
             // verify all models are accessible
             foreach (string modelFile in modelFiles)
                 if (!CommonUtils.VerifyFile(modelFile))
@@ -256,7 +256,8 @@ namespace pyRevitCLI {
                         attachment,
                         commandScriptPath,
                         modelFiles,
-                        runOptions
+                        runOptions,
+                        allowDialogs
                     );
 
                     // print results (exec env)
@@ -288,7 +289,7 @@ namespace pyRevitCLI {
                     }
                 }
             }
-            
+
         }
 
         // privates:
