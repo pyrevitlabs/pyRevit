@@ -310,7 +310,7 @@ namespace pyRevitCLI {
                     else {
                         // try parse the engine version as an integer e.g. 277 for 2.7.7
                         if (int.TryParse(engStrVer, out var engIntVer))
-                            engineVersion = (PyRevitEngineVersion)engIntVer;                        
+                            engineVersion = (PyRevitEngineVersion)engIntVer;
                     }
 
                     if (engineVersion is null) {
@@ -548,7 +548,8 @@ namespace pyRevitCLI {
                             revitYear: TryGetValue("--revit"),
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
-                                ImportPath = TryGetValue("--import", null)
+                                ImportPath = TryGetValue("--import", null),
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue
                             },
                             targetIsFileList: true
                         );
@@ -560,7 +561,8 @@ namespace pyRevitCLI {
                             revitYear: TryGetValue("--revit"),
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
-                                ImportPath = TryGetValue("--import", null)
+                                ImportPath = TryGetValue("--import", null),
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue
                             }
                         );
                 }
@@ -699,8 +701,8 @@ namespace pyRevitCLI {
                         Console.WriteLine(string.Format("User {0} config",
                                                         PyRevitConfigs.GetUserCanConfig() ? "CAN" : "CAN NOT"));
 
-                } 
-                
+                }
+
                 else if (all("colordocs")) {
                     if (any("enable", "disable"))
                         PyRevitConfigs.SetColorizeDocs(arguments["enable"].IsTrue);
@@ -889,7 +891,7 @@ namespace pyRevitCLI {
 
                 else if (TryGetValue("<doctor_command>") is var doctorCommand && doctorCommand != null)
                     PyRevitCLIAppCmds.RunDoctor(doctorCommand, dryRun: arguments["--dryrun"].IsTrue);
-                
+
                 else if (all("doctor", "--list"))
                     PyRevitCLIAppCmds.RunDoctor("--list");
 
