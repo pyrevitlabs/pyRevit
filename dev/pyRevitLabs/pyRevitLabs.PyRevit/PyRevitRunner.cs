@@ -65,6 +65,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         public void Begin(string script, IEnumerable<string> modelPaths, PyRevitRunnerOptions opts) {
             Script = script;
             ModelPaths = modelPaths;
+            AllowDialogs = opts.AllowDialogs;
 
             // generate journal and manifest file
             GenerateJournal();
