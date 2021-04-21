@@ -232,7 +232,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // host info
             if (sender != null) {
                 // set the host info based on the sender type
-                eventTelemetryRecord.host_user = string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
                 eventTelemetryRecord.username = Telemetry.GetRevitUser(sender);
                 eventTelemetryRecord.revit = Telemetry.GetRevitVersion(sender);
                 eventTelemetryRecord.revitbuild = Telemetry.GetRevitBuild(sender);

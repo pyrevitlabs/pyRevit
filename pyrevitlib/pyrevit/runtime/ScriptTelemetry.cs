@@ -56,7 +56,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static ScriptTelemetryRecord MakeTelemetryRecord(ref ScriptRuntime runtime) {
             // setup a new telemetry record
             return new ScriptTelemetryRecord {
-                host_user = UserEnv.GetLoggedInUserName(),
                 username = Telemetry.GetRevitUser(runtime.App),
                 revit = Telemetry.GetRevitVersion(runtime.App),
                 revitbuild = Telemetry.GetRevitBuild(runtime.App),
