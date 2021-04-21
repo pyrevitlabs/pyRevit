@@ -35,10 +35,14 @@ detail_line_types = [DB.DetailLine,
                      DB.DetailNurbSpline]
 
 
-metric_units = [DB.DisplayUnitType.DUT_METERS,
-                DB.DisplayUnitType.DUT_CENTIMETERS,
-                DB.DisplayUnitType.DUT_MILLIMETERS]
-
+if HOST_APP.is_newer_than(2021):
+    metric_units = [DB.UnitTypeId.Meters,
+                    DB.UnitTypeId.Centimeters,
+                    DB.UnitTypeId.Millimeters]
+else:
+    metric_units = [DB.DisplayUnitType.DUT_METERS,
+                    DB.DisplayUnitType.DUT_CENTIMETERS,
+                    DB.DisplayUnitType.DUT_MILLIMETERS]
 
 # type in lower case
 readonly_patterns = ['solid fill']
@@ -213,9 +217,16 @@ class MakePatternWindow(forms.WPFWindow):
 
     def setup_export_units(self):
         self.export_units_cb.ItemsSource = ['INCH', 'MM']
+        is_metric = False
         units = revit.doc.GetUnits()
-        length_fo = units.GetFormatOptions(DB.UnitType.UT_Length)
-        if length_fo.DisplayUnits in metric_units:
+        if HOST_APP.is_newer_than(2021):
+            length_fo = units.GetFormatOptions(DB.SpecTypeId.Length)
+            is_metric = length_fo.GetUnitTypeId() in metric_units
+        else:
+            length_fo = units.GetFormatOptions(DB.UnitType.UT_Length)
+            is_metric = length_fo.DisplayUnits in metric_units
+
+        if is_metric:
             self.export_units_cb.SelectedIndex = 1
         else:
             self.export_units_cb.SelectedIndex = 0
