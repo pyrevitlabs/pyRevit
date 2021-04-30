@@ -1,9 +1,11 @@
 tooltip: >-
   Get a total count and types of In Place Family in the current document.
+  And create a new 3Dview named InPlace Families isolate them
 
 
-  Copyright (c) 2019 Jean-Marc Couffin
+  Copyright (c) 2021 Jean-Marc Couffin
 
   https://github.com/jmcouffin
 author: 'Jean-Marc Couffin'
 contact: 'https://github.com/jmcouffin'
+highlight: updated

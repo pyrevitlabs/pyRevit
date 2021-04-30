@@ -6,3 +6,4 @@ title: >-
 authors:
   - '{{author}}'
 help_url: https://www.notion.so/pyrevitlabs/Extension-Checks-0cf10ac6717b41f2915fe3341f05a223
+min_revit_version: 2019

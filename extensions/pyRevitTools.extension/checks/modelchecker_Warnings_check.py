@@ -392,7 +392,8 @@ class ModelChecker(PreflightTestCase):
         - Description,
         - Ids,
         - Count
-
+        
+        !! Revit 2018 + only !!
         !!Load links before using!!
     """
 
