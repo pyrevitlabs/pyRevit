@@ -15,6 +15,9 @@ from pyrevit import script
 
 output = script.get_output()
 
+# Close other output when launched several times
+close_other_output = output.close_others(all_open_outputs=True)
+
 # Collect family instances
 familyinstance_collector = DB.FilteredElementCollector(revit.doc)\
                              .OfClass(DB.FamilyInstance)\
