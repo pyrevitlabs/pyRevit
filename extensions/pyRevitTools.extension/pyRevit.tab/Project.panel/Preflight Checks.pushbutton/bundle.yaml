@@ -1,4 +1,6 @@
-tooltip: Run builtin or custom preflight checks on your models
+tooltip: 
+  fr_fr: Lance des validations preflight inclus ou personnalisées sur vos fichiers
+  en_us: Run builtin or custom preflight checks on your models
 title: >-
   Preflight
 
