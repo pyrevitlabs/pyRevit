@@ -3,10 +3,9 @@ title:
   en_us: Remove Revision From Sheets
 tooltip:
   fr_fr: >-
-  Sélectionnez une révision de la liste des révisions
-
-  et ce script va retirer la révision de toutes les feuilles si aucun nuage de révision n'a été positionné sur la feuille
+    Sélectionnez une révision de la liste des révisions et ce script va retirer
+    la révision de toutes les feuilles si aucun nuage de révision n'a été
+    positionné sur la feuille
   en_us: >-
-  Select a revision from the list of revisions
-
-  and this script will remove that revision from all sheets if it has not been "clouded" on the sheet
+    Select a revision from the list of revisions and this script will remove
+    that revision from all sheets if it has not been "clouded" on the sheet
