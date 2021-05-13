@@ -1,5 +1,12 @@
-tooltip: "Print sheets in order from a sheet index.\n\nNote:\nWhen using the `Combine into one file` option,\nthe tool adds non-printable character u'\\u200e'\n(Left-To-Right Mark) at the start of the sheet names\nto push Revit's interenal printing engine to sort\nthe sheets correctly per the drawing index order. \n\nMake sure your drawings indices consider this\nwhen filtering for sheet numbers.\n\nShift-Click:\nShift-Clicking the tool will remove all\nnon-printable characters from the sheet numbers,\nin case an error in the tool causes these characters\nto remain."
-title: >-
+tooltip: 
+  fr_fr: "Imprimez les feuilles dans l'ordre à partir d'un index de feuille.\n\nNote:\nLorsque vous utilisez l'option `Combiner en un seul fichier`,\nl'outil ajoute un caractère non imprimable u'\\u200e'\n((Marque de gauche à droite) au début des noms de feuille)\npour pousser le moteur d'impression interne de Revit à trier\nles feuilles correctement selon l'ordre d'index du dessin.\n\nAssurez-vous que les index de vos dessins tiennent compte de ceci\nlors du filtrage des numéros de feuille.\n\nShift-Click:\nShift-Clicking sur l'outil pour supprimer tous les\ncaractères non-imprimables des numéros de feuilles,\nen cas d'erreur dans l'outil, cela entraînerait la conservation de ces caractères."
+  en_us: "Print sheets in order from a sheet index.\n\nNote:\nWhen using the `Combine into one file` option,\nthe tool adds non-printable character u'\\u200e'\n(Left-To-Right Mark) at the start of the sheet names\nto push Revit's interenal printing engine to sort\nthe sheets correctly per the drawing index order. \n\nMake sure your drawings indices consider this\nwhen filtering for sheet numbers.\n\nShift-Click:\nShift-Clicking the tool will remove all\nnon-printable characters from the sheet numbers,\nin case an error in the tool causes these characters\nto remain."
+title:
+  fr_fr: >-
+  Imprimer
+
+  Feuilles
+  en_us: >-
   Print
 
   Sheets

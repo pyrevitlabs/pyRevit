@@ -1,12 +1,25 @@
 help_url: https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da
-tooltip: >-
+tooltip:
+  fr_fr: >-
+  Gérer les notes d'identification du projet.
+
+
+  Shift+Click:
+
+  Remise à zéro des fenêtre de configurations et ouvrir.
+  en_us: >-
   Manage project keynotes.
 
 
   Shift+Click:
 
   Reset window configurations and open.
-title: >-
+title:
+  fr_fr: >-
+  Gérer
+
+  Notes d'identification
+  en_us: >-
   Manage
 
   Keynotes
