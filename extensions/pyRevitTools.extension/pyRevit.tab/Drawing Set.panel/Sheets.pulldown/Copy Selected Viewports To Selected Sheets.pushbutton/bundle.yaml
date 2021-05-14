@@ -1,2 +1,17 @@
-tooltip: Open the source sheet. Run this script and select destination sheets. Select Viewports and push Finish button on the properties bar. The selected views will be added to the destination sheets. If the view or schedule already exists on that sheet, the location and type will be updated
-title: Copy/Update Selected Viewports To Selected Sheets
+title:
+  fr_fr: >-
+    Copier / mettre à jour les vues sélectionnées dans les feuilles
+    sélectionnées
+  en_us: Copy/Update Selected Viewports To Selected Sheets
+tooltip:
+  fr_fr: >-
+    Ouvrez la feuille source. Exécutez ce script et sélectionnez les feuilles de
+    destination. Sélectionnez Vues et appuyez sur le bouton Terminer dans la
+    barre de propriétés. Les vues sélectionnées seront ajoutées aux feuilles de
+    destination. Si la vue ou la nomenclature existe déjà sur cette feuille,
+    l'emplacement et le type seront mis à jour
+  en_us: >-
+    Open the source sheet. Run this script and select destination sheets. Select
+    Viewports and push Finish button on the properties bar. The selected views
+    will be added to the destination sheets. If the view or schedule already
+    exists on that sheet, the location and type will be updated
