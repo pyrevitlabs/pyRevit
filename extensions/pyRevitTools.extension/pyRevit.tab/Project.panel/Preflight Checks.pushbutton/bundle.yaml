@@ -1,4 +1,6 @@
-tooltip: Run builtin or custom preflight checks on your models
+tooltip: 
+  fr_fr: Lance des validations preflight inclus ou personnalisées sur vos fichiers
+  en_us: Run builtin or custom preflight checks on your models
 title: >-
   Preflight
 
@@ -6,3 +8,4 @@ title: >-
 authors:
   - '{{author}}'
 help_url: https://www.notion.so/pyrevitlabs/Extension-Checks-0cf10ac6717b41f2915fe3341f05a223
+min_revit_version: 2019

@@ -1,1 +1,14 @@
-tooltip: Draw the desired crop boundary as a closed polygon on your sheet (using detail lines). Then select the bounday and the destination viewport and run the script. This script will apply the drafted boundary to the view of the selected viewport
+title:
+  fr_fr: Définir la zone cadrée sur la forme sélectionnée
+  en_us: Set Crop Region To Selected Shape
+tooltip:
+  fr_fr: >-
+    Dessinez la limite de cadrage souhaitée sous forme de polygone fermé sur
+    votre feuille (à l'aide de lignes de détail). Sélectionnez ensuite la limite
+    et la fenêtre de destination et exécutez le script. Ce script appliquera le
+    contour dessiné à la vue de la fenêtre sélectionnée
+  en_us: >-
+    Draw the desired crop boundary as a closed polygon on your sheet (using
+    detail lines). Then select the bounday and the destination viewport and run
+    the script. This script will apply the drafted boundary to the view of the
+    selected viewport

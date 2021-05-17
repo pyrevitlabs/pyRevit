@@ -1,1 +1,6 @@
-tooltip: Sets the revision visibility parameter to None for all revisions
+title:
+  fr_fr: Eteindre toutes les révisions
+  en_us: Turn Off all revisions
+tooltip:
+  fr_fr: Définit le paramètre de visibilité des révisions sur Aucun pour toutes les révisions
+  en_us: Sets the revision visibility parameter to None for all revisions
