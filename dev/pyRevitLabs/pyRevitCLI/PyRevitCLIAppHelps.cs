@@ -11,7 +11,7 @@ namespace pyRevitCLI {
         internal static void
         PrintHelp(PyRevitCLICommandType commandType) {
             switch (commandType) {
-                
+
                 case PyRevitCLICommandType.Main:
                     BuildHelp(
                         null,
@@ -57,7 +57,7 @@ namespace pyRevitCLI {
                         }
                     );
                     break;
-                
+
                 case PyRevitCLICommandType.Env:
                     BuildHelp(
                         new List<string>() { "env" },
@@ -297,6 +297,7 @@ namespace pyRevitCLI {
                             { "<model_file>",           "Target Revit model file path" },
                             { "--purge",                "Remove temporary run environment after completion" },
                             { "--import=<import_path>", "Copy content of this folder into the runtime temp path." },
+                            { "--allowdialogs",         "To allow dialogs during journal playback" }
                         });
                     break;
 
@@ -447,7 +448,7 @@ namespace pyRevitCLI {
             if (options != null) {
                 baseHelp += header + Environment.NewLine;
                 foreach (var optionPair in options) {
-                    baseHelp += 
+                    baseHelp +=
                         string.Format(outputFormat, optionPair.Key, optionPair.Value)
                         + Environment.NewLine;
                 }

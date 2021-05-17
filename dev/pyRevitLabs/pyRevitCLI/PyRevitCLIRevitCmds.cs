@@ -163,7 +163,7 @@ namespace pyRevitCLI {
             int revitYearNumber = 0;
             int.TryParse(revitYear, out revitYearNumber);
 
-            
+
             // setup a list of models
             var modelFiles = new List<string>();
             // if target file is a list of model paths
@@ -176,7 +176,7 @@ namespace pyRevitCLI {
             else
                 modelFiles.Add(targetFile);
 
-            
+
             // verify all models are accessible
             foreach (string modelFile in modelFiles)
                 if (!CommonUtils.VerifyFile(modelFile))
@@ -197,8 +197,23 @@ namespace pyRevitCLI {
                         throw new Exception($"Can not detect the Revit version of model at \"{modelFile}\". Model might be newer than specified version {revitYearNumber}.");
                 }
             }
-            else
-                revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
+            else {
+                // determine revit model version from given files
+                foreach (string modelFile in modelFiles) {
+                    var modelInfo = new RevitModelFile(modelFile);
+                    if (modelInfo.RevitProduct != null) {
+                        if (revitYearNumber == 0)
+                            revitYearNumber = modelInfo.RevitProduct.ProductYear;
+                        else if (modelInfo.RevitProduct.ProductYear > revitYearNumber)
+                            revitYearNumber = modelInfo.RevitProduct.ProductYear;
+                    }
+                }
+
+                // if could not determine revit version from given files,
+                // use latest version
+                if (revitYearNumber == 0)
+                    revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
+            }
 
             // now run
             if (revitYearNumber != 0) {
@@ -288,7 +303,7 @@ namespace pyRevitCLI {
                     }
                 }
             }
-            
+
         }
 
         // privates:

@@ -17,9 +17,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public Dictionary<string, string> meta { get; private set; }
 
         // when?
-        public string timestamp { get; set; }
+        public string timestamp { get; private set; }
         // by who?
-        public string host_user { get; set; }
+        public string host_user { get; private set; }
 
 
         public TelemetryRecord() {

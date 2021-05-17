@@ -1077,7 +1077,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
             my_togglebutton.IsChecked = state if state else False
-            if configs and 'option' in configs:
+            if configs and switch in configs:
                 self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
 

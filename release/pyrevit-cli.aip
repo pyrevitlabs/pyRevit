@@ -21,10 +21,10 @@
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyrevitbanner.bmp" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyrevitcli.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{E61BB97E-6FF1-4706-A92E-D9F38EB9C77B} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{8E0191BC-C5DB-4F0E-8F52-6DF04C2B8CE8} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="4.8.7" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.8.8" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
@@ -159,6 +159,8 @@
     <ROW File="Microsoft.CodeAnalysis.VisualBasic.dll" Component_="Microsoft.CodeAnalysis.VisualBasic.dll" FileName="MICROS~5.DLL|Microsoft.CodeAnalysis.VisualBasic.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.VisualBasic.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.Emojis.dll" Component_="pyRevitLabs.Emojis.dll" FileName="PYREV~13.DLL|pyRevitLabs.Emojis.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.Emojis.dll" SelfReg="false"/>
     <ROW File="pyrevitdoctor.exe" Component_="pyrevitdoctor.exe" FileName="PYREVI~5.EXE|pyrevit-doctor.exe" Attributes="0" SourcePath="..\bin\pyrevit-doctor.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="pyrevit.admin" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.ADM|pyrevit.admin" Attributes="0" SourcePath="..\bin\pyrevit.admin" SelfReg="false"/>
+    <ROW File="pyrevit.user" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.USE|pyrevit.user" Attributes="0" SourcePath="..\bin\pyrevit.user" SelfReg="false"/>
     <ATTRIBUTE name="DontAddFileAttributes" value="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">

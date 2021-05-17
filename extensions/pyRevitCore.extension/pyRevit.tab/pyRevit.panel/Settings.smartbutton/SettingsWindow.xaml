@@ -537,6 +537,9 @@
                             pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders. Note that attachment to any of Revit versions listed here will be read-only and can not be changed, if it is 
                             marked with &lt;current&gt; or &lt;all users&gt;
                         </TextBlock>
+                        <CheckBox x:Name="revit2022_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
+                            Autodesk Revit 2022
+                        </CheckBox>
                         <CheckBox x:Name="revit2021_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
                             Autodesk Revit 2021
                         </CheckBox>
