@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import datetime
 
 from pyrevit import coreutils
@@ -9,10 +9,11 @@ from pyrevit import revit, DB
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.compat import safe_strtype
 
-#to be removed after fixing RevitLinkInstance
+# to be removed after fixing RevitLinkInstance
 import clr
-clr.AddReference('RevitAPI')
-clr.AddReference('RevitServices')
+
+clr.AddReference("RevitAPI")
+clr.AddReference("RevitServices")
 
 from Autodesk.Revit.DB import *
 from RevitServices.Persistence import DocumentManager
@@ -181,6 +182,8 @@ CRITICAL_WARNINGS = [
     "f657364a-e0b7-46aa-8c17-edd8e59683b9",
     # 'Room separation line is slightly off axis and may cause inaccuracies.''
 ]
+
+
 def flatten(l):
     flat_list = []
     for sublist in l:
@@ -188,23 +191,28 @@ def flatten(l):
             flat_list.append(item)
     return flat_list
 
+
 def chunks(l, n):
     """Yield n number of striped chunks from l."""
     for i in range(0, n):
         yield l[i::n]
+
 
 def inner_lists(lst):
     if all(isinstance(x, list) for x in lst):
         return [x for inner in lst for x in inner_lists(inner)]
     else:
         return [lst]
+
+
 def unique(list1):
     # insert the list to the set
     list_set = set(list1)
     # convert the set to the list
-    unique_list = (list(list_set))
+    unique_list = list(list_set)
     for x in unique_list:
         print x,
+
 
 def dashboardRectMaker(value, description, treshold):
     """dashboard HTMl maker - rectangle with large number"""
@@ -258,13 +266,15 @@ def dashboardCenterMaker(value):
     """dashboard HTMl maker - div for center aligning"""
     content = str(value)
     html_code = "<div class='dashboardCenter'>" + content + "</div>"
-    print(coreutils.prepare_html_str(html_code))
+    print (coreutils.prepare_html_str(html_code))
+
 
 def dashboardLeftMaker(value):
     """dashboard HTMl maker - div for left aligning"""
     content = str(value)
     html_code = "<div class='dashboardLeft'>" + content + "</div>"
-    print(coreutils.prepare_html_str(html_code))
+    print (coreutils.prepare_html_str(html_code))
+
 
 def path2fileName(file_path, divider):
     """returns file name - everything in path from "\\" or "/" to the end"""
@@ -303,33 +313,36 @@ def checkModel(doc, output):
         .WhereElementIsElementType()
         .ToElements()
     )
-    if len(rvtlinks_id_collector)!=0:
+    if len(rvtlinks_id_collector) != 0:
         rvtlinkdocs, rvtlinkdocsName, rvtlink_status = [], [], []
-        #checking loaded models
+        # checking loaded models
         for i in rvtlinks_id_collector:
-            if str(i.GetLinkedFileStatus())=='Loaded': 
+            if str(i.GetLinkedFileStatus()) == "Loaded":
                 rvtlink_status.append(True)
             else:
                 rvtlink_status.append(False)
         if all(rvtlink_status):
-            revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
+            revitLinksdoc = DB.FilteredElementCollector(doc).OfClass(
+                DB.RevitLinkInstance
+            )
             revitLinksdoc_unique, revitLinksdoc_unique_name = [], []
-            #isolating unique names and instances/types for links placed multiple times
+            # isolating unique names and instances/types for links placed multiple times
             for i in revitLinksdoc:
                 if i.GetLinkDocument().Title not in revitLinksdoc_unique_name:
                     revitLinksdoc_unique_name.append(i.GetLinkDocument().Title)
                     revitLinksdoc_unique.append(i)
             rvtlinkdocsName = revitLinksdoc_unique_name
-            # RVTLinks 
+            # RVTLinks
             rvtlinks_collector = (
                 DB.FilteredElementCollector(doc)
                 .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
                 .WhereElementIsNotElementType()
-                #.ToElements()
-                )
+                # .ToElements()
+            )
+
             def GetWarns(docs):
                 all_warnings = []
-                links = [doc.GetLinkDocument() for doc in docs]   
+                links = [doc.GetLinkDocument() for doc in docs]
                 warnings_count = []
                 warnings_count_int = []
                 for link in links:
@@ -343,22 +356,24 @@ def checkModel(doc, output):
                         for i in warn.GetFailingElements():
                             elems.append(str(i))
                         warnings.append(str(elems))
-                    all_warnings.append(warnings)	
+                    all_warnings.append(warnings)
                 return all_warnings, warnings_count, warnings_count_int
-            
-            #to be simplified in the list treatment
-            links_warnings= GetWarns(revitLinksdoc_unique)
+
+            # to be simplified in the list treatment
+            links_warnings = GetWarns(revitLinksdoc_unique)
             warnings_count_num = links_warnings[2]
-            links_warnings_count = list(chunks(rvtlinkdocsName + links_warnings[1], len(rvtlinkdocsName)))
+            links_warnings_count = list(
+                chunks(rvtlinkdocsName + links_warnings[1], len(rvtlinkdocsName))
+            )
             links_warnings = links_warnings[0]
             intermezzo = flatten(links_warnings)
-            fileWarnings = list(chunks(intermezzo,3))
+            fileWarnings = list(chunks(intermezzo, 3))
 
             ## Warnings file dashboard section
-            #output.print_md(str(fileWarnings))
+            # output.print_md(str(fileWarnings))
             output.print_md("# Warnings count<br />")
 
-            #Doughnut pie
+            # Doughnut pie
             chartWarnings = output.make_doughnut_chart()
             chartWarnings.options.title = {
                 "display": True,
@@ -366,7 +381,7 @@ def checkModel(doc, output):
                 "fontSize": 25,
                 "fontColor": "#000",
                 "fontStyle": "bold",
-                "position": "left"
+                "position": "left",
             }
             chartWarnings.options.legend = {"position": "top", "fullWidth": False}
             chartWarnings.data.labels = rvtlinkdocsName
@@ -375,14 +390,30 @@ def checkModel(doc, output):
             set_w.backgroundColor = COLORS
             chartWarnings.draw()
 
-            #tables
-            output.print_table(links_warnings_count, columns=["File Name","Warnings count"], formats=None, title='', last_line_style='')
+            # tables
+            output.print_table(
+                links_warnings_count,
+                columns=["File Name", "Warnings count"],
+                formats=None,
+                title="",
+                last_line_style="",
+            )
             output.print_md("# Warnings details<br />")
-            output.print_table(zip(*fileWarnings), columns=["File Name","Warnings", "Ids"], formats=None, title='', last_line_style='')
+            output.print_table(
+                zip(*fileWarnings),
+                columns=["File Name", "Warnings", "Ids"],
+                formats=None,
+                title="",
+                last_line_style="",
+            )
         else:
-            output.print_md('<b>Load all the links, the tool is meant for models with <ins>loaded</ins> links</b>')
+            output.print_md(
+                "<b>Load all the links, the tool is meant for models with <ins>loaded</ins> links</b>"
+            )
     else:
-        output.print_md('<b>Load at least one link, the tool is meant for models with <ins>loaded</ins> links </b>')
+        output.print_md(
+            "<b>Load at least one link, the tool is meant for models with <ins>loaded</ins> links </b>"
+        )
 
 
 class ModelChecker(PreflightTestCase):
@@ -393,6 +424,7 @@ class ModelChecker(PreflightTestCase):
         - Ids,
         - Count
 
+        !! Revit 2018 + only !!
         !!Load links before using!!
     """
 
@@ -408,7 +440,7 @@ class ModelChecker(PreflightTestCase):
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
         endtime_hms_claim = "Transaction took " + endtime_hms
-        print(endtime_hms_claim)
+        print (endtime_hms_claim)
 
     def tearDown(self, doc, output):
         pass

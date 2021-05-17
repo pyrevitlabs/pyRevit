@@ -1,1 +1,11 @@
-tooltip: Decreases the sheet number of the selected sheets by one. The sheet name change will be printed if logging is set to Verbose in pyRevit settings
+title:
+  fr_fr: Décrémenter les Numéros des Feuilles Sélectionnées
+  en_us: Decrement Selected Sheet Numbers
+tooltip:
+  fr_fr: >-
+    Diminue de un le numéro de feuille des feuilles sélectionnées. Le changement
+    de nom de feuille sera imprimé si la journalisation est définie sur Verbose
+    dans les paramètres pyRevit
+  en_us: >-
+    Decreases the sheet number of the selected sheets by one. The sheet name
+    change will be printed if logging is set to Verbose in pyRevit settings
