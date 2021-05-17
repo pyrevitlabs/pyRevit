@@ -1,2 +1,8 @@
-tooltip: Lists title blocks on selected sheets for review or selection
-title: List/Select TitleBlocks on Sheets
+title:
+  fr_fr: Lister les Cartouches sur les Feuilles
+  en_us: List/Select TitleBlocks on Sheets
+tooltip:
+  fr_fr: >-
+    Répertorie les cartouches sur les feuilles sélectionnées pour examen ou
+    sélection
+  en_us: Lists title blocks on selected sheets for review or selection

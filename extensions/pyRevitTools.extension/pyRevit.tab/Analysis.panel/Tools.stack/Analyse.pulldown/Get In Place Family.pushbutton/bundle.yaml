@@ -1,0 +1,9 @@
+title:
+  fr_fr: Familles InSitu
+  en_us: Get in place families
+tooltip:
+  fr_fr: Obtenez un nombre total et des types de familles in situ dans le document actuel et créez une nouvelle vue 3D nommée Familles InPlace pour les isoler
+  en_us: Get a total count and types of In Place Family in the current document and create a new 3Dview named InPlace Families isolate them
+author: 'Jean-Marc Couffin'
+contact: 'https://github.com/jmcouffin'
+highlight: updated
