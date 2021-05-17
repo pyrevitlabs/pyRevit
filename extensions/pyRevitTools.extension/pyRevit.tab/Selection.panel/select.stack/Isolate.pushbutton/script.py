@@ -59,13 +59,13 @@ def get_isolation_elements(selected_switch):
         for elId in elements:
             el = revit.doc.GetElement(elId)
             if len(list(el.GetMaterialIds(True))) > 0:
-                element_to_isolate.Append(elId)
+                element_to_isolate.Add(elId)
             elif isinstance(el, DB.Wall) and el.IsStackedWall:
                 memberWalls = el.GetStackedWallMemberIds()
                 for mwid in memberWalls:
                     mw = revit.doc.GetElement(mwid)
                     if len(list(mw.GetMaterialIds(True))) > 0:
-                        element_to_isolate.Append(elId)
+                        element_to_isolate.Add(elId)
         return element_to_isolate
 
     elif selected_switch == "Model Elements":
