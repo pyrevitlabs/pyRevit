@@ -7,7 +7,7 @@ Example:
     >>> a.subtitle
     ... 'python RAD Environment for Autodesk Revit®'
     >>> a.copyright
-    ... '© 2014-2020 Ehsan Iran-Nejad'
+    ... '© 2014-2021 Ehsan Iran-Nejad'
 """
 from collections import namedtuple
 
@@ -31,4 +31,4 @@ def get_pyrevit_about():
     """
     return PyRevitAbout(subtitle='python RAD Environment for Autodesk Revit®',
                         madein="['pdx', 'hio', 'rno', 'sea']",
-                        copyright='© 2014-2020 Ehsan Iran-Nejad')
+                        copyright='© 2014-2021 Ehsan Iran-Nejad')

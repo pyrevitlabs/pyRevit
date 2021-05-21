@@ -112,7 +112,12 @@ def get_number(target_element):
     """Get target elemnet number (might be from Number or other fields)"""
     if hasattr(target_element, "Number"):
         return target_element.Number
+
+    # determine target parameter
     mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+    if isinstance(target_element, (DB.Level, DB.Grid)):
+        mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
+    # get now
     if mark_param:
         return mark_param.AsString()
 
@@ -121,8 +126,13 @@ def set_number(target_element, new_number):
     """Set target elemnet number (might be at Number or other fields)"""
     if hasattr(target_element, "Number"):
         target_element.Number = new_number
+        return
 
+    # determine target parameter
     mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+    if isinstance(target_element, (DB.Level, DB.Grid)):
+        mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
+    # set now 
     if mark_param:
         mark_param.Set(new_number)
 
@@ -318,6 +328,8 @@ if forms.check_modelview(revit.active_view):
         RNOpts(cat=BIC.OST_Walls),
         RNOpts(cat=BIC.OST_Windows),
         RNOpts(cat=BIC.OST_Parking),
+        RNOpts(cat=BIC.OST_Levels),
+        RNOpts(cat=BIC.OST_Grids),
         ]
     # add areas if active view is an Area Plan
     if revit.active_view.ViewType == DB.ViewType.AreaPlan:
@@ -329,7 +341,8 @@ if forms.check_modelview(revit.active_view):
     selected_option_name = \
         forms.CommandSwitchWindow.show(
             options_dict,
-            message='Pick element type to renumber:'
+            message='Pick element type to renumber:',
+            width=400
         )
 
     if selected_option_name:

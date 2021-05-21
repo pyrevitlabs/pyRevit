@@ -1,0 +1,82 @@
+# context:
+#   - a
+#   - all: all of [a,b] in XYZ # (&)
+#   - any: any of [a,b] in XYZ # (|)
+#   - not_any: not any of [a,b] in XYZ # !(&)
+#   - not_all: not all of [a,b] in XYZ # !(|)
+#   - exact: [a,b] == XYZ # (;)
+#   - not_exact: [a,b] != XYZ # (;)
+
+context_1:
+  - result: "(active-floor-plan)&(OST_Walls|OST_Floors)"
+  - active-floor-plan
+  - any:
+    - OST_Walls
+    - OST_Floors
+
+context_2:
+  result: "(active-floor-plan|active-rcp-plan)&(OST_Walls&OST_Floors)"
+  any:
+    - active-floor-plan
+    - active-rcp-plan
+  all:
+    - OST_Walls
+    - OST_Floors
+
+context_3:
+  - result: "(doc-project)&(OST_Walls;OST_Floors)"
+  - doc-project
+  - exact:
+    - OST_Walls
+    - OST_Floors
+
+context_4:
+  - result: "(doc-project)&!(OST_Walls|OST_Floors)"
+  - doc-project
+  - not_any:
+    - OST_Walls
+    - OST_Floors
+
+context_5:
+  result: "!(OST_Walls&OST_Floors)"
+  rule: "!(OST_Walls&OST_Floors)"
+
+context_6: zero-doc
+context_6_result: "(zero-doc)"
+
+context_7:
+  result: "(doc-family)"
+  any: doc-family
+
+context_8:
+  result: "!(doc-family)"
+  not_any: doc-family
+
+context_9:
+  result: "(doc-family)"
+  all:
+    - doc-family
+    - any:
+      - OST_Walls
+
+context_10:
+  result: "!(doc-family)"
+  not_all:
+    - doc-family
+    - all:
+      - OST_Walls
+
+context_11:
+  result: "!(active-detail-view|active-drafting-view)&!(OST_Walls)"
+  not_any:
+    - active-detail-view
+    - active-drafting-view
+  not_exact: OST_Walls
+
+
+context_12_regex_filter:
+  - result: "(doc-project[title:/([A-Z])\\w+/])&(OST_Walls|OST_Floors)"
+  - doc-project[title:/([A-Z])\w+/]
+  - any:
+    - OST_Walls
+    - OST_Floors

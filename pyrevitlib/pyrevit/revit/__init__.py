@@ -1,7 +1,7 @@
 import types
 import sys
 
-from pyrevit import EXEC_PARAMS, HOST_APP
+from pyrevit import EXEC_PARAMS, HOST_APP, DOCS
 from pyrevit import PyRevitException
 from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
@@ -21,6 +21,7 @@ from pyrevit.revit.db.pickling import *
 from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
 from pyrevit.revit import ui
+from pyrevit.revit import tabs
 from pyrevit.revit import events
 from pyrevit.revit import report
 from pyrevit.revit import files
@@ -28,6 +29,7 @@ from pyrevit.revit import serverutils
 from pyrevit.revit import geom
 from pyrevit.revit import units
 from pyrevit.revit import features
+from pyrevit.revit import bim360
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -59,23 +61,11 @@ class RevitWrapper(types.ModuleType):
 
     @property
     def doc(self):
-        return HOST_APP.doc
+        return DOCS.doc
 
     @property
     def docs(self):
-        return HOST_APP.docs
-
-    @property
-    def activeview(self):
-        mlogger.deprecate(
-            "revit.active_view is deprecated. use revit.active_view instead.")
-        return HOST_APP.active_view
-
-    @activeview.setter
-    def activeview(self, value):
-        mlogger.deprecate(
-            "revit.active_view is deprecated. use revit.active_view instead.")
-        HOST_APP.active_view = value
+        return DOCS.docs
 
     @property
     def active_view(self):
@@ -88,12 +78,6 @@ class RevitWrapper(types.ModuleType):
     @property
     def servers(self):
         return HOST_APP.available_servers
-
-    @staticmethod
-    def get_project_info():
-        mlogger.deprecate('Method revit.get_project_info() is deprecated. '
-                          'Use revit.query.get_project_info() instead.')
-        return query.get_project_info()
 
     @staticmethod
     def open_doc(doc_path):

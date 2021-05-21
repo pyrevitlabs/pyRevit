@@ -19,7 +19,7 @@ logger = script.get_logger()
 
 def verify_selection(selected_elems, doc):
     if doc.IsFamilyDocument:
-        if all([isinstance(x, DB.DirectShape) for x in selected_elems]):
+        if all([isinstance(x, (DB.DirectShape, DB.ImportInstance)) for x in selected_elems]):
             return True
         else:
             forms.alert("More than one element is selected or selected "
@@ -40,7 +40,7 @@ if verify_selection(selection, revit.doc):
         geom_opts.IncludeNonVisibleObjects = True
         logger.debug('Converting: %s', sat_import)
         solids = []
-        for geo in sat_import.Geometry[geom_opts]:
+        for geo in revit.query.get_geometry(sat_import):
             if isinstance(geo, DB.Solid):
                 if geo.Volume > 0.0:
                     solids.append(geo)

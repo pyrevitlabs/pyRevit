@@ -44,6 +44,7 @@ def _build(name: str, sln: str, config: str):
 
 def build_engines(_: Dict[str, str]):
     """Build pyRevit engines"""
+    _build("default ironpython engine", configs.LOADERS, "Release")
     _build("ironpython 2.7.* engines", configs.LOADERS, "Release")
     _build("cpython 3.7 engine", configs.CPYTHONRUNTIME, "ReleasePY37")
     _build("cpython 3.8 engine", configs.CPYTHONRUNTIME, "ReleasePY38")

@@ -1,3 +1,9 @@
 [submodule "dev/modules/pyRevitLabs.Python.Net"]
 	path = dev/modules/pyRevitLabs.Python.Net
 	url = https://github.com/pyrevitlabs/pythonnet.git
+[submodule "dev/modules/pyRevitLabs.dlr"]
+	path = dev/modules/pyRevitLabs.dlr
+	url = https://github.com/pyrevitlabs/dlr.git
+[submodule "dev/modules/pyRevitLabs.ironpython2"]
+	path = dev/modules/pyRevitLabs.ironpython2
+	url = https://github.com/pyrevitlabs/ironpython2.git

@@ -50,6 +50,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit", "pyRe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Emojis", "pyRevitLabs.Emojis\pyRevitLabs.Emojis.csproj", "{495994B5-044C-4B59-BD1D-D05683B443E5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitDoctor", "pyRevitDoctor\pyRevitDoctor.csproj", "{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,6 +106,10 @@ Global
 		{495994B5-044C-4B59-BD1D-D05683B443E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{495994B5-044C-4B59-BD1D-D05683B443E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{495994B5-044C-4B59-BD1D-D05683B443E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

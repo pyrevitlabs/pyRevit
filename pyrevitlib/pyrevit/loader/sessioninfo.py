@@ -55,7 +55,7 @@ def setup_runtime_vars():
     else:
         mlogger.debug('Can not determine attachment.')
         envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR, "Unknown")
-        envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR, "0.0.0")
+        envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR, "0")
 
     # set cpython engine version env var
     cpyengine = user_config.get_active_cpython_engine()
@@ -63,7 +63,7 @@ def setup_runtime_vars():
         envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR,
                                     str(cpyengine.Version))
     else:
-        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, "0.0.0")
+        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, "0")
 
     # set a list of important assemblies
     # this is required for dotnet script execution

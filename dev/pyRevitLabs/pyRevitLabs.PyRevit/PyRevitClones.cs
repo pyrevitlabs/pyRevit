@@ -187,8 +187,7 @@ namespace pyRevitLabs.PyRevit {
                                           string branchName = null,
                                           string repoUrl = null,
                                           string destPath = null,
-                                          string username = null,
-                                          string password = null) {
+                                          GitInstallerCredentials credentials = null) {
             string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoGitPath;
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TragetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
@@ -216,7 +215,7 @@ namespace pyRevitLabs.PyRevit {
                 throw new NotImplementedException("Deployment with git clones not implemented yet.");
             }
             else {
-                repo = GitInstaller.Clone(repoSourcePath, repoBranch, destPath, username, password);
+                repo = GitInstaller.Clone(repoSourcePath, repoBranch, destPath, credentials);
             }
 
             // Check installation
@@ -484,7 +483,7 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        private static void ReDeployClone(PyRevitClone clone, string username = null, string password = null) {
+        private static void ReDeployClone(PyRevitClone clone, GitInstallerCredentials credentials) {
             // grab clone arguments from inside of clone
             var cloneName = clone.Name;
             var clonePath = clone.ClonePath;
@@ -529,26 +528,26 @@ namespace pyRevitLabs.PyRevit {
 
         // force update given or all registered clones
         // @handled @logs
-        public static void Update(PyRevitClone clone, string username = null, string password = null) {
+        public static void Update(PyRevitClone clone, GitInstallerCredentials credentials) {
             // current user config
             logger.Debug("Updating pyRevit clone \"{0}\"", clone.Name);
             if (clone.IsRepoDeploy) {
-                var res = GitInstaller.ForcedUpdate(clone.ClonePath, username, password);
+                var res = GitInstaller.ForcedUpdate(clone.ClonePath, credentials);
                 if (res <= UpdateStatus.Conflicts)
                     throw new PyRevitException(string.Format("Error updating clone \"{0}\"", clone.Name));
             }
             else {
                 // re-deploying is how the no-git clones get updated
-                ReDeployClone(clone, username, password);
+                ReDeployClone(clone, credentials);
             }
         }
 
         // force update given or all registered clones
         // @handled @logs
-        public static void UpdateAllClones(string username = null, string password = null) {
+        public static void UpdateAllClones(GitInstallerCredentials credentials) {
             logger.Debug("Updating all pyRevit clones");
             foreach (var clone in GetRegisteredClones())
-                Update(clone, username, password);
+                Update(clone, credentials);
         }
 
         // updates the config value for registered clones

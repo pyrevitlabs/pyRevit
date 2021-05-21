@@ -184,3 +184,96 @@ tr:nth-child(odd) {
 .unittesterror {
 	border-bottom: 1px solid gray;
 }
+
+.dashboardRectNormal {
+	background-color: #9cbf72;
+	font-size: 3em;
+	font-variant: ;
+	margin: 2px;
+	padding: 10px 8px 8px 8px;
+	color: #324320;
+	height: 100px;
+	width: 130px;
+	text-align: left;
+	font-weight: bold;
+	display: inline-table;
+	box-shadow: 1px 1px 2px;
+	text-transform: uppercase;
+}
+
+.dashboardRectMediocre {
+	background-color: #ffb444;
+	font-size: 3em;
+	margin: 2px;
+	padding: 10px 8px 8px 8px;
+	color: #653f0c;
+	height: 100px;
+	width: 130px;
+	text-align: left;
+	font-weight: bold;
+	display: inline-table;
+	box-shadow: 1px 1px 2px;
+	text-transform: uppercase;
+}
+
+.dashboardRectMediocre:hover{
+	background-color: #bbb;
+}
+
+.dashboardRectCritical{
+	background-color: #e26d70;
+	font-size: 3em;
+	margin: 2px;
+	padding: 10px 8px 8px 8px;
+	color: #521114;
+	height: 100px;
+	width: 130px;
+	text-align: left;
+	font-weight: bold;
+	display: inline-table;
+	box-shadow: 1px 1px 2px;
+	text-transform: uppercase;
+}
+
+.dashboardRectCritical:hover{
+	background-color: #bbb;
+}
+
+.dashboardSmall {
+	font-size: 0.4em;
+	font-weight: bold;
+	}
+
+.dashboardCenter {
+	text-align: center; 
+}
+
+.dashboardLink {
+   color: white;
+   text-decoration: none;
+   font-weight: normal;
+   padding: 0px;
+}
+
+.dashboardLink:hover {
+   color: white;
+   text-decoration: none;
+   background-color: #bbb;
+   font-weight: normal;
+   padding: 0px;
+}
+
+.dashboardNoLink {
+   color: white;
+   text-decoration: none;
+   font-weight: normal;
+   padding: 0px;
+}
+
+.dashboardNoLink:hover {
+   color: white;
+   text-decoration: none;
+   background-color:#fff;
+   font-weight: normal;
+   padding: 0px;
+}

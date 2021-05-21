@@ -67,7 +67,7 @@ def _setup_output():
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = '{}:{}:{}'.format(
         runtime_info.pyrevit_version,
-        runtime_info.engine_version,
+        int(runtime_info.engine_version),
         runtime_info.host_version
         )
 
@@ -149,7 +149,7 @@ def _perform_onsessionloadcomplete_ops():
 
     # activate internal handlers
     # toggle doc colorizer
-    revit.ui.toggle_doc_colorizer(user_config.colorize_docs)
+    revit.tabs.init_doc_colorizer(user_config)
 
     # activate runtime routes server
     if user_config.routes_server:
@@ -178,7 +178,12 @@ def _new_session():
         ui_ext.configure()
 
         # collect all module references from extensions
-        ui_ext_modules = ui_ext.get_all_modules()
+        ui_ext_modules = []
+        # FIXME: currently dlls inside bin/ are not pre-loaded since
+        # this will lock them by Revit. Maybe all dlls should be loaded
+        # from memory (read binary and load assembly)?
+        # ui_ext_modules.extend(ui_ext.get_extension_modules())
+        ui_ext_modules.extend(ui_ext.get_command_modules())
         # make sure they are all loaded
         assmutils.load_asm_files(ui_ext_modules)
         # and update env information

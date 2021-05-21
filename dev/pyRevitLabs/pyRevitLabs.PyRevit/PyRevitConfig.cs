@@ -19,6 +19,7 @@ namespace pyRevitLabs.PyRevit {
         public PyRevitConfig(string cfgFilePath) {
             if (cfgFilePath != null) {
                 if (CommonUtils.VerifyFile(cfgFilePath)) {
+                    CommonUtils.VerifyFileAccessible(cfgFilePath);
                     ConfigFilePath = cfgFilePath;
 
                     // INI formatting

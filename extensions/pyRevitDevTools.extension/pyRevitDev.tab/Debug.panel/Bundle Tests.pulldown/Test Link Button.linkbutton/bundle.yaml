@@ -4,3 +4,4 @@ author: "{{author}}"
 highlight: new
 assembly: PyRevitTestLinkCommand.dll
 command_class: PyRevitTestLinkExternalCommand
+availability_class: PyRevitTestLinkExternalCommandAvail

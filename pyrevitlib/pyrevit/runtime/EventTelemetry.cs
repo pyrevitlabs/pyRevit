@@ -226,13 +226,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         // event management ------------------------------------------------------------------------------------------
         public void LogEventTelemetryRecord(EventTelemetryRecord eventTelemetryRecord, object sender, object args) {
-            var envDict = new EnvDictionary();
+            var env = new EnvDictionary();
 
             // update general properties on record
             // host info
             if (sender != null) {
                 // set the host info based on the sender type
-                eventTelemetryRecord.host_user = string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
                 eventTelemetryRecord.username = Telemetry.GetRevitUser(sender);
                 eventTelemetryRecord.revit = Telemetry.GetRevitVersion(sender);
                 eventTelemetryRecord.revitbuild = Telemetry.GetRevitBuild(sender);
@@ -254,12 +253,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             // now post the telemetry record
-            if (envDict.AppTelemetryState) {
-                if (envDict.AppTelemetryState
-                        && envDict.AppTelemetryServerUrl != null
-                        && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
+            if (env.AppTelemetryState) {
+                if (env.AppTelemetryServerUrl != null && !string.IsNullOrEmpty(env.AppTelemetryServerUrl))
                     new Task(() =>
-                        Telemetry.PostTelemetryRecord(envDict.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
+                        Telemetry.PostTelemetryRecord(env.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
             }
         }
 
@@ -1134,6 +1131,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         { "command_id",  args.CommandId },
                     }
             }, uiapp, args);
+        }
+
+        public void Application_IUpdater(object sender, UpdaterData d) {
+            throw new NotImplementedException();
         }
     }
 }

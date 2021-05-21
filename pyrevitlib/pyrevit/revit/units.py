@@ -1,6 +1,6 @@
 """Unit conversion utilities for Revit."""
 
-from pyrevit import HOST_APP
+from pyrevit import DOCS
 from pyrevit import DB
 
 
@@ -14,7 +14,7 @@ def format_area(area_value, doc=None):
     Returns:
         str: formatted value
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
                                      unitType=DB.UnitType.UT_Area,
                                      value=area_value,
@@ -32,7 +32,7 @@ def format_slope(slope_value, doc=None):
     Returns:
         str: formatted value
     """
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
                                      unitType=DB.UnitType.UT_Slope,
                                      value=slope_value,

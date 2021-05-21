@@ -10,7 +10,7 @@ from pyrevit import script
 
 
 logger = script.get_logger()
-my_config = script.get_config()
+my_config = script.get_config("favourite_categories")
 
 
 # somehow DB.BuiltInCategory.OST_Truss does not have a corresponding DB.Category

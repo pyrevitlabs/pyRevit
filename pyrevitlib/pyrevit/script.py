@@ -318,6 +318,11 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
     return appdata.get_data_file(script_file_id, file_ext)
 
 
+def remove_data_file(filepath):
+    """Remove given data file"""
+    appdata.garbage_data_file(filepath)
+
+
 def get_bundle_file(file_name):
     """Return full path to file under current script bundle.
 

@@ -3,6 +3,11 @@
 import os.path as op
 from pyrevit import PyRevitException
 from pyrevit.framework import clr, Process
+from pyrevit.coreutils import logger
+
+
+mlogger = logger.get_logger(__name__)
+
 
 ADC_NAME = "Autodesk Desktop Connector"
 ADC_SHORTNAME = "ADC"
@@ -74,6 +79,7 @@ def _ensure_local_path(adc, path):
         return _drive_path_to_local_path(drv_info, path)
     elif not _get_drive_from_local_path(adc, path):
         raise PyRevitException("Path is not inside any ADC drive")
+    return path
 
 
 def _get_item(adc, path):
@@ -103,6 +109,14 @@ def _get_item_lockstatus(adc, item):
 def _get_item_property_value(adc, drive, item, prop_name):
     for prop_def in _get_drive_properties(adc, drive):
         if prop_def.DisplayName == prop_name:
+            res = adc.GetProperties([item.Id], [prop_def.Id])
+            if res:
+                return res.Values[0]
+
+
+def _get_item_property_id_value(adc, drive, item, prop_id):
+    for prop_def in _get_drive_properties(adc, drive):
+        if prop_def.Id == prop_id:
             res = adc.GetProperties([item.Id], [prop_def.Id])
             if res:
                 return res.Values[0]
@@ -159,8 +173,12 @@ def is_synced(path):
     adc = _get_adc()
     item = _get_item(adc, path)
     drive = _get_item_drive(adc, item)
-    prop_val = _get_item_property_value(adc, drive, item, 'Status')
+    # ADC uses translated property names so
+    # check status property by its type "LocalState"
+    # see https://github.com/eirannejad/pyRevit/issues/1152
+    prop_val = _get_item_property_id_value(adc, drive, item, 'LocalState')
     # possible values, 'Cached', 'Stale', 'Modified'
+    # .Value is not translated
     return prop_val.Value == 'Cached'or prop_val.Value == 'Synced'
 
 

@@ -11,7 +11,7 @@ namespace pyRevitCLI {
         internal static void
         PrintHelp(PyRevitCLICommandType commandType) {
             switch (commandType) {
-                
+
                 case PyRevitCLICommandType.Main:
                     BuildHelp(
                         null,
@@ -37,6 +37,7 @@ namespace pyRevitCLI {
                             { "detach",                 "Detach pyRevit clone from installed Revit" },
                             { "config",                 "Configure pyRevit for current user" },
                             { "run",                    "Run python script in Revit" },
+                            { "doctor",                 "Fix potential or real problems" },
                         },
                         helpCommands: new Dictionary<string, string>() {
                             { "wiki",                   "Open pyRevit Wiki" },
@@ -56,7 +57,7 @@ namespace pyRevitCLI {
                         }
                     );
                     break;
-                
+
                 case PyRevitCLICommandType.Env:
                     BuildHelp(
                         new List<string>() { "env" },
@@ -96,6 +97,7 @@ namespace pyRevitCLI {
                             { "info",                   "Print info about clone" },
                             { "open",                   "Open clone directory in file browser" },
                             { "add",                    "Register an existing clone" },
+                            { "add this",               "Register clone that contains this utility" },
                             { "forget",                 "Forget a registered clone" },
                             { "rename",                 "Rename a clone" },
                             { "delete",                 "Delete a clone" },
@@ -115,6 +117,7 @@ namespace pyRevitCLI {
                             { "<tag_name>",             "Clone tag to rebase to" },
                             { "<commit_hash>",          "Clone commit rebase to" },
                             { "<origin_url>",           "New clone remote origin url" },
+                            { "--force",                "Just do it; I know what I am doing" },
                             { "--reset",                "Reset remote origin url to default" },
                             { "--clearconfigs",         "Clear pyRevit configurations." },
                             { "--all",                  "All clones" },
@@ -177,7 +180,7 @@ namespace pyRevitCLI {
                         options: new Dictionary<string, string>() {
                             { "<extension_name>",       "Extension name to install" },
                             { "<repo_url>",             "Extension source git repo url" },
-                            { "ui | lib | run",         "Type of custom extension to install" },
+                            { "ui | lib",               "Type of custom extension to install" },
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
@@ -294,6 +297,7 @@ namespace pyRevitCLI {
                             { "<model_file>",           "Target Revit model file path" },
                             { "--purge",                "Remove temporary run environment after completion" },
                             { "--import=<import_path>", "Copy content of this folder into the runtime temp path." },
+                            { "--allowdialogs",         "To allow dialogs during journal playback" }
                         });
                     break;
 
@@ -325,6 +329,9 @@ namespace pyRevitCLI {
                         header: "Manage pyRevit configurations",
                         mgmtCommands: new Dictionary<string, string>() {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
+                            { "routes",                 "Routes configurations" },
+                            { "telemetry",              "Script Telemetry configurations" },
+                            { "apptelemetry",           "Application Telemetry configurations" },
                         },
                         commands: new Dictionary<string, string>() {
                             { "bincache",               "Enable/Disable binary cache for caching extension info" },
@@ -342,16 +349,14 @@ namespace pyRevitCLI {
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
                             { "colordocs",              "Enable/Disable Document Colorizer" },
                             { "tooltipdebuginfo",       "Enable/Disable showing tool debug info in extended tooltips" },
-                            { "routes",                 "Routes" },
-                            { "telemetry",              "Telemetry" },
-                            { "apptelemetry",           "Application Telemetry" },
                             { "outputcss",              "Output window styling" },
                         },
                         options: new Dictionary<string, string>() {
                             { "none | verbose | debug", "Debug log levels" },
                             { "enable | disable",       "Enable/Disable config option" },
                             { "Yes | No",               "Activate/Deactivate config option" },
-                            { "file | server",          "Set path for file logging or url for server logging" },
+                            { "file | server",          "Set path for file logging, or url for server logging" },
+                            { "hooks",                  "Activate/Deactivate telemetry for hooks" },
                             { "<css_path>",             "Target css file path for output styling" },
                             { "--lock",                 "Lock seed file by admin user" },
                             { "<option_path>",          "Custom option path formatted as \"section:option\"" },
@@ -443,7 +448,7 @@ namespace pyRevitCLI {
             if (options != null) {
                 baseHelp += header + Environment.NewLine;
                 foreach (var optionPair in options) {
-                    baseHelp += 
+                    baseHelp +=
                         string.Format(outputFormat, optionPair.Key, optionPair.Value)
                         + Environment.NewLine;
                 }

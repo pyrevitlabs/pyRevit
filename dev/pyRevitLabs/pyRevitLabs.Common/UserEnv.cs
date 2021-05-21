@@ -74,6 +74,10 @@ namespace pyRevitLabs.Common {
             return targetPackPaths;
         }
 
+        public static string GetExecutingUserName() {
+            return string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
+        }
+
         public static string GetLoggedInUserName() {
             try {
                 ConnectionOptions oConn = new ConnectionOptions();
@@ -91,6 +95,11 @@ namespace pyRevitLabs.Common {
                 logger.Debug("Failed to get logged in username. | {0}", ex.Message);
             }
             return null;
+        }
+
+        public static bool IsRunAsElevated() {
+            WindowsIdentity id = WindowsIdentity.GetCurrent();
+            return id.Owner != id.User;
         }
 
         public static bool IsRunAsAdmin() {

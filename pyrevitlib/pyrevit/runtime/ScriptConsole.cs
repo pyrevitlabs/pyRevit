@@ -375,8 +375,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private string GetStyleSheetFile() {
-            var envDict = new EnvDictionary();
-            return envDict.ActiveStyleSheet;
+            var env = new EnvDictionary();
+            return env.ActiveStyleSheet;
         }
 
         public string GetFullHtml() {

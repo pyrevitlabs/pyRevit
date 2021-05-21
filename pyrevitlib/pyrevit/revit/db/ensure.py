@@ -1,6 +1,6 @@
 import os.path as op
 
-from pyrevit import HOST_APP, PyRevitException
+from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit import db
@@ -16,7 +16,7 @@ mlogger = get_logger(__name__)
 def ensure_sharedparam(sparam_name, sparam_categories, sparam_group,
                        load_param=True, allow_vary_betwen_groups=False,
                        doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     if query.model_has_parameter(sparam_name, doc=doc):
         if allow_vary_betwen_groups:
             param = query.get_project_parameter(sparam_name, doc=doc)
@@ -47,7 +47,7 @@ def ensure_sharedparam_file(spfilepath):
 
 
 def ensure_family(family_name, family_file, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     famsym = query.get_family(family_name, doc=doc)
     if not famsym:
         with transaction.Transaction('Load Family', doc=doc):
@@ -80,7 +80,7 @@ def ensure_element_ids(mixed_list):
 
 
 def ensure_workset(workset_name, partial=False, doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     workset = query.model_has_workset(workset_name, partial=partial, doc=doc)
     if workset:
         return workset
@@ -97,7 +97,7 @@ def ensure_text_type(name,
                      underline=False,
                      with_factor=1.0,
                      doc=None):
-    doc = doc or HOST_APP.doc
+    doc = doc or DOCS.doc
     # check if type exists
     for ttype in query.get_types_by_class(DB.TextNoteType, doc=doc):
         if query.get_name(ttype) == name:

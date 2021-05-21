@@ -15,9 +15,10 @@ BINPATH = op.join(ROOT, "bin")
 # root path for non-deployable source files
 DEVPATH = op.join(ROOT, "dev")
 LABS = op.join(DEVPATH, "pyRevitLabs/pyRevitLabs.sln")
+DEFAULT_IPY = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
 LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
 CPYTHONRUNTIME = op.join(
-    DEVPATH, "modules/pyRevitLabs.Python.Net/src/runtime/Python.Runtime.csproj"
+    DEVPATH, "modules/pyRevitLabs.Python.Net.sln"
 )
 
 # cli autocomplete files
@@ -58,6 +59,7 @@ COPYRIGHT_FILES = [
     op.join(DEVPATH, "pyRevit/AssemblyCopyright.cs"),
     op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
     op.join(DOCS_DIR, "conf.py"),
+    op.join(ROOT, "README.md"),
 ]
 
 # all source file locations that are part of pyRevit project

@@ -15,7 +15,6 @@ namespace pyRevitLabs.PyRevit {
         Unknown,
         UIExtension,
         LibraryExtension,
-        RunnerExtension
     }
 
     public struct PyRevitExtensionMetaData {
@@ -65,7 +64,6 @@ namespace pyRevitLabs.PyRevit {
                 switch ("." + _jsonObj.type) {
                     case PyRevitConsts.ExtensionUIPostfix: return PyRevitExtensionTypes.UIExtension;
                     case PyRevitConsts.ExtensionLibraryPostfix: return PyRevitExtensionTypes.LibraryExtension;
-                    case PyRevitConsts.ExtensionRunnerPostfix: return PyRevitExtensionTypes.RunnerExtension;
                     default: return PyRevitExtensionTypes.Unknown;
                 }
             }
@@ -152,7 +150,8 @@ namespace pyRevitLabs.PyRevit {
         public void SetOrigin(string originUrl) => SetOrigin(InstallPath, originUrl);
 
         // find a run command
-        public string GetRunCommand(string commandName) => GetRunCommand(InstallPath, commandName);
+        public List<PyRevitRunnerCommand> GetCommands() => GetCommands(InstallPath);
+        public PyRevitRunnerCommand GetCommand(string commandName) => GetCommand(InstallPath, commandName);
 
         // static methods ============================================================================================
         private static string GetExtensionNameFromInstall(string extPath) {
@@ -165,15 +164,24 @@ namespace pyRevitLabs.PyRevit {
         public static string GetExtensionDefFilePath(string extPath) =>
             Path.Combine(extPath, PyRevitConsts.ExtensionDefFileName);
 
-        public static string GetRunCommand(string extPath, string commandName) {
-            foreach (var filePath in Directory.GetFiles(extPath)) {
-                var fileName = Path.GetFileName(filePath);
-                if (CommonUtils.VerifyPythonScript(filePath)
-                        && fileName.ToLower().EndsWith(PyRevitConsts.ExtensionRunnerCommandPostfix)
-                        && fileName.ToLower().Replace(PyRevitConsts.ExtensionRunnerCommandPostfix, "") == commandName.ToLower())
-                    return filePath;
+        public static List<PyRevitRunnerCommand> GetCommands(string extPath) {
+            var commands = new List<PyRevitRunnerCommand>();
+            string commandsDir = Path.Combine(extPath, PyRevitConsts.ExtensionUICommandsDirName);
+            if (CommonUtils.VerifyPath(commandsDir)) {
+                foreach (var cmdPath in Directory.GetFiles(commandsDir)) {
+                    if (CommonUtils.VerifyPythonScript(cmdPath)
+                            && cmdPath.ToLower().EndsWith(PyRevitConsts.ExtensionUICommandPostfix))
+                        commands.Add(new PyRevitRunnerCommand(cmdPath));
+                }
             }
+            return commands;
+        }
 
+        public static PyRevitRunnerCommand GetCommand(string extPath, string commandName) {
+            foreach (var command in GetCommands(extPath)) {
+                if (command.Name.ToLower() == commandName.ToLower())
+                    return command;
+            }
             throw new PyRevitException(string.Format("Run command \"{0}\" does not exist.", commandName));
         }
 
@@ -213,7 +221,6 @@ namespace pyRevitLabs.PyRevit {
             switch (extType) {
                 case PyRevitExtensionTypes.UIExtension: return PyRevitConsts.ExtensionUIPostfix;
                 case PyRevitExtensionTypes.LibraryExtension: return PyRevitConsts.ExtensionLibraryPostfix;
-                case PyRevitExtensionTypes.RunnerExtension: return PyRevitConsts.ExtensionRunnerPostfix;
                 default: return null;
             }
         }

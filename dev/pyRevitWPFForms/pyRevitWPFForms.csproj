@@ -67,6 +67,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\extensions\pyRevitDevTools.extension\DockableExample.xaml">
+      <Link>Dev\DockableExample.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Engine Tests.pulldown\Test Persistent Engine.pushbutton\NonModalWindow.xaml">
       <Link>Dev\NonModalWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
@@ -164,6 +169,11 @@
     </Page>
     <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit3.stack\Edit.pulldown\Convert Line Styles.pushbutton\ConvertLineStyles.xaml">
       <Link>Tools\ConvertLineStyles.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\PreflightCheckTemplate.xaml">
+      <Link>Tools\PreflightCheckTemplate.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

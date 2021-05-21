@@ -1,12 +1,17 @@
 # pylint: skip-file
+from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit import revit, script
 import hooks_logger as hl
+
+args = EXEC_PARAMS.event_args
+
 hl.log_hook(__file__,
     {
-        "cancellable?": str(__eventargs__.Cancellable),
-        "doc": str(__eventargs__.Document),
-        "master_file": str(__eventargs__.IsSavingAsMasterFile),
-        "original_path": str(__eventargs__.OriginalPath),
-        "status": str(__eventargs__.Status),
+        "cancellable?": str(args.Cancellable),
+        "doc": str(revit.doc),
+        "master_file": str(args.IsSavingAsMasterFile),
+        "original_path": str(args.OriginalPath),
+        "status": str(args.Status),
     },
     log_doc_access=True
 )

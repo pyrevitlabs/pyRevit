@@ -65,6 +65,7 @@ namespace pyRevitLabs.PyRevit {
             try {
                 if (File.Exists(sourceFile)) {
                     CommonUtils.EnsureFile(targetFile);
+                    CommonUtils.VerifyFileAccessible(targetFile);
                     File.Copy(sourceFile, targetFile, true);
 
                     if (makeCurrentUserAsOwner) {
@@ -196,6 +197,17 @@ namespace pyRevitLabs.PyRevit {
 
             if (telemetryServerUrl != null)
                 cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryServerUrlKey, telemetryServerUrl);
+        }
+
+        public static bool GetTelemetryIncludeHooks() {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryIncludeHooksKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryIncludeHooksDefault;
+        }
+
+        public static void SetTelemetryIncludeHooks(bool state) {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryIncludeHooksKey, state);
         }
 
         public static void DisableTelemetry() {

@@ -73,15 +73,6 @@ def _update_product_data(ver, key, cli=False):
         json.dump([x._asdict() for x in pdata], dfile, indent=True)
 
 
-def _installer_build():
-    installer = "advancedinstaller.com"
-    for script in [configs.PYREVIT_AIPFILE, configs.PYREVIT_CLI_AIPFILE]:
-        print(f"Building installer {script}")
-        utils.system(
-            [installer, "/build", op.abspath(script),]
-        )
-
-
 def _get_binaries():
     for dirname, _, files in os.walk(configs.BINPATH):
         for fn in files:
@@ -113,6 +104,16 @@ def _ensure_clean_tree():
 def _commit_changes(msg):
     utils.system(['git', 'add', '--all'])
     utils.system(['git', 'commit', '-m', msg])
+
+
+def build_installers(args: Dict[str, str]):
+    """Build pyRevit and CLI installers"""
+    installer = "advancedinstaller.com"
+    for script in [configs.PYREVIT_AIPFILE, configs.PYREVIT_CLI_AIPFILE]:
+        print(f"Building installer {script}")
+        utils.system(
+            [installer, "/build", op.abspath(script),]
+        )
 
 
 def create_release(args: Dict[str, str]):
@@ -147,4 +148,4 @@ def create_release(args: Dict[str, str]):
 
     # now build the installers
     # installer are signed by the installer builder
-    _installer_build()
+    build_installers(args)

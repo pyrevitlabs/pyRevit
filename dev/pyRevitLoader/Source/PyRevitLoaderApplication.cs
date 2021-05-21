@@ -4,13 +4,26 @@ using System.Reflection;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 
+/* Note:
+ * It is necessary that this code object do not have any references to IronPython.
+ * To ensure the correct version of IronPython dlls are loaded, the OnStartup()
+ * methods manually loads the IronPython assemblies before calling into the 
+ * ScriptExecutor that has IronPython references
+ */
 namespace PyRevitLoader {
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
     class PyRevitLoaderApplication : IExternalApplication {
+        public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
+
         // Hook into Revit to allow starting a command.
         Result IExternalApplication.OnStartup(UIControlledApplication application) {
             try {
+                // load all engine assemblies
+                // this is to ensure pyRevit is loaded on its own assemblies
+                foreach (var engineDll in Directory.GetFiles(LoaderPath, "*.dll"))
+                    Assembly.LoadFrom(engineDll);
+                
                 return ExecuteStartupScript(application);
             }
             catch (Exception ex) {

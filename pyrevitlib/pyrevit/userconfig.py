@@ -295,7 +295,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def cpython_engine_version(self, version):
         self.core.set_option(
             CONSTS.ConfigsCPythonEngineKey,
-            value=version
+            value=int(version)
         )
 
     @property
@@ -321,10 +321,13 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @output_stylesheet.setter
     def output_stylesheet(self, stylesheet_filepath):
-        self.core.set_option(
-            CONSTS.ConfigsOutputStyleSheet,
-            value=stylesheet_filepath
-        )
+        if stylesheet_filepath:
+            self.core.set_option(
+                CONSTS.ConfigsOutputStyleSheet,
+                value=stylesheet_filepath
+            )
+        else:
+            self.core.remove_option(CONSTS.ConfigsOutputStyleSheet)
 
     @property
     def routes_host(self):
@@ -422,6 +425,20 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         self.telemetry.set_option(
             CONSTS.ConfigsTelemetryServerUrlKey,
             value=server_url
+        )
+
+    @property
+    def telemetry_include_hooks(self):
+        return self.telemetry.get_option(
+            CONSTS.ConfigsTelemetryIncludeHooksKey,
+            default_value=CONSTS.ConfigsTelemetryIncludeHooksDefault,
+        )
+
+    @telemetry_include_hooks.setter
+    def telemetry_include_hooks(self, state):
+        self.telemetry.set_option(
+            CONSTS.ConfigsTelemetryIncludeHooksKey,
+            value=state
         )
 
     @property

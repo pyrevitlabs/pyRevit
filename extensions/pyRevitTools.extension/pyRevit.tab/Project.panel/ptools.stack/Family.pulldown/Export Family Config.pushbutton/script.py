@@ -2,6 +2,9 @@
 
 Family configuration file is a yaml file,
 providing info about the parameters and types defined in the family.
+The shared parameters are exported to a txt file.
+In the yaml file, the shared parameters are distinguished
+by the presence of their GUID.
 
 The structure of this config file is as shown below:
 
@@ -25,27 +28,36 @@ Example:
 parameters:
 	Shelf Height (Upper):
 		type: Length
-		group: PG_GEOMETRY
+		category: PG_GEOMETRY
 		instance: false
 types:
 	24D"x36H":
 		Shelf Height (Upper): 3'-0"
+
+Note: If a parameter is in the revit file and the yaml file,
+but shared in one and family in the other, after import,
+the parameter won't change. So if it was shared in the revit file,
+but family in the yaml file, it will remain shared.
 """
 #pylint: disable=import-error,invalid-name,broad-except
 # TODO: export parameter ordering
-from collections import OrderedDict
+import codecs
 
+from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import forms
+from pyrevit import coreutils
 from pyrevit import script
-
 from pyrevit.coreutils import yaml
+
+from Autodesk.Revit import Exceptions
 
 
 logger = script.get_logger()
 output = script.get_output()
 
 
+# yaml sections and keys ------------------------------------------------------
 PARAM_SECTION_NAME = 'parameters'
 PARAM_SECTION_TYPE = 'type'
 PARAM_SECTION_CAT = 'category'
@@ -54,11 +66,15 @@ PARAM_SECTION_INST = 'instance'
 PARAM_SECTION_REPORT = 'reporting'
 PARAM_SECTION_FORMULA = 'formula'
 PARAM_SECTION_DEFAULT = 'default'
+PARAM_SECTION_GUID = 'GUID' # To store unique if of shared parameters
 
 TYPES_SECTION_NAME = 'types'
 
+SHAREDPARAM_DEF = 'xref_sharedparams'
+# -----------------------------------------------------------------------------
 
 FAMILY_SYMBOL_FORMAT = '{} : {}'
+ELECTRICAL_LOAD_CLASS_FORMAT = 'ELECTRICAL_LOAD_CLASS : {}'
 
 
 class SortableParam(object):
@@ -85,13 +101,27 @@ def get_symbol_name(symbol_id):
             )
 
 
+def get_load_class_name(load_class_id):
+    # load_class_id is an element id
+    load_class = revit.doc.GetElement(load_class_id)
+    return ELECTRICAL_LOAD_CLASS_FORMAT.format(load_class.Name)
+
+
 def get_param_typevalue(ftype, fparam):
     fparam_value = None
     # extract value by param type
-    if fparam.StorageType == DB.StorageType.ElementId \
-            and fparam.Definition.ParameterType == \
-                DB.ParameterType.FamilyType:
-        fparam_value = get_symbol_name(ftype.AsElementId(fparam))
+    if fparam.StorageType == DB.StorageType.ElementId:
+        # support various types of params that reference other elements
+        # these values can not be stored by their id since the same symbol
+        # will most probably have a different id in another document
+        if fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
+            # storing type references by their name
+            fparam_value = get_symbol_name(ftype.AsElementId(fparam))
+
+        elif fparam.Definition.ParameterType == \
+                DB.ParameterType.LoadClassification:
+            # storing load classifications by a unique id
+            fparam_value = get_load_class_name(ftype.AsElementId(fparam))
 
     elif fparam.StorageType == DB.StorageType.String:
         fparam_value = ftype.AsString(fparam)
@@ -154,7 +184,11 @@ def get_famtype_famcat(fparam):
 def read_configs(selected_fparam_names,
                  include_types=False, include_defaults=False):
     # read parameter and type configurations into a dictionary
-    cfgs_dict = OrderedDict({PARAM_SECTION_NAME: {}, TYPES_SECTION_NAME: {}})
+    cfgs_dict = dict({
+        PARAM_SECTION_NAME: {},
+        TYPES_SECTION_NAME: {},
+        SHAREDPARAM_DEF: '',
+        })
 
     fm = revit.doc.FamilyManager
 
@@ -166,6 +200,8 @@ def read_configs(selected_fparam_names,
     export_sparams = [SortableParam(x) for x in fm.GetParameters()
                       if x.Definition.Name in selected_fparam_names]
 
+    shared_params = []
+
     # grab all parameter defs
     for sparam in sorted(export_sparams, reverse=True):
         fparam_name = sparam.fparam.Definition.Name
@@ -174,19 +210,30 @@ def read_configs(selected_fparam_names,
         fparam_isinst = sparam.fparam.IsInstance
         fparam_isreport = sparam.fparam.IsReporting
         fparam_formula = sparam.fparam.Formula
+        fparam_shared = sparam.fparam.IsShared
 
         cfgs_dict[PARAM_SECTION_NAME][fparam_name] = {
             PARAM_SECTION_TYPE: str(fparam_type),
             PARAM_SECTION_GROUP: str(fparam_group),
             PARAM_SECTION_INST: fparam_isinst,
             PARAM_SECTION_REPORT: fparam_isreport,
-            PARAM_SECTION_FORMULA: fparam_formula
+            PARAM_SECTION_FORMULA: fparam_formula,
         }
+
+        # add extra data for shared params
+        if fparam_shared:
+            cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_GUID] = \
+                sparam.fparam.GUID
 
         # get the family category if param is FamilyType selector
         if fparam_type == DB.ParameterType.FamilyType:
             cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
                 get_famtype_famcat(sparam.fparam)
+
+        # Check if the current family parameter is a shared parameter
+        if sparam.fparam.IsShared:
+            # Add to an array of sorted shared parameters
+            shared_params.append(sparam.fparam)
 
     # include type configs?
     if include_types:
@@ -194,17 +241,12 @@ def read_configs(selected_fparam_names,
     elif include_defaults:
         add_default_values(cfgs_dict, export_sparams)
 
-    return cfgs_dict
+    return cfgs_dict, shared_params
 
 
 def get_config_file():
     # Get parameter definition yaml file from user
     return forms.save_file(file_ext='yaml')
-
-
-def save_configs(configs_dict, parma_file):
-    # Load contents of yaml file into an ordered dict
-    return yaml.dump_dict(configs_dict, parma_file)
 
 
 def get_parameters():
@@ -215,6 +257,55 @@ def get_parameters():
         title="Select Parameters",
         multiselect=True,
     ) or []
+
+
+def store_sharedparam_def(shared_params):
+    # Reads the shared parameters into a txt file
+    sparam_file = HOST_APP.app.OpenSharedParameterFile()
+    exported_sparams_grp = sparam_file.Groups.Create("Exported Parameters")
+    for sparam in shared_params:
+        sparamdef_create_options = \
+            DB.ExternalDefinitionCreationOptions(
+                sparam.Definition.Name,
+                sparam.Definition.ParameterType,
+                GUID=sparam.GUID
+            )
+
+        try:
+            exported_sparams_grp.Definitions.Create(sparamdef_create_options)
+        except Exceptions.ArgumentException:
+            forms.alert(
+                "A parameter with the same GUID already exists. "
+                "Parameter: %s will be ignored." % sparam.Definition.Name
+            )
+
+
+def get_shared_param_def_contents(shared_params):
+    global family_cfg_file
+
+    # get a temporary text file to store the generated shared param data
+    temp_defs_filepath = \
+        script.get_instance_data_file(
+            file_id=coreutils.get_file_name(family_cfg_file),
+            add_cmd_name=True
+        )
+    # make sure the file exists and it is empty
+    open(temp_defs_filepath, 'w').close()
+
+    # swap existing shared param with temp
+    existing_sharedparam_file = HOST_APP.app.SharedParametersFilename
+    HOST_APP.app.SharedParametersFilename = temp_defs_filepath
+    # write the shared param data
+    store_sharedparam_def(shared_params)
+    # restore the original shared param file
+    HOST_APP.app.SharedParametersFilename = existing_sharedparam_file
+
+    return revit.files.read_text(temp_defs_filepath)
+
+
+def save_configs(configs_dict, parma_file):
+    # Load contents of yaml file into an ordered dict
+    return yaml.dump_dict(configs_dict, parma_file)
 
 
 if __name__ == '__main__':
@@ -240,10 +331,17 @@ if __name__ == '__main__':
                     yes=True, no=True
                 )
 
-            family_configs = \
+            family_configs, shared_parameters = \
                 read_configs(family_params,
                              include_types=inctypes,
                              include_defaults=incdefault)
 
             logger.debug(family_configs)
+
+            # get revit to generate contents of a shared param file definition
+            # for the shared parameters and store that inside the yaml file
+            if shared_parameters:
+                family_configs[SHAREDPARAM_DEF] = \
+                    get_shared_param_def_contents(shared_parameters)
+
             save_configs(family_configs, family_cfg_file)

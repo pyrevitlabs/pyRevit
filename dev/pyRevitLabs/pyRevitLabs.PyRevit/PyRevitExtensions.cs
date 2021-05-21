@@ -159,7 +159,7 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static void InstallExtension(string extensionName, PyRevitExtensionTypes extensionType,
                                             string repoPath, string destPath = null, string branchName = null,
-                                            string username = null, string password = null) {
+                                            GitInstallerCredentials credentials = null) {
             // make sure extension is not installed already
             try {
                 var existExt = GetInstalledExtension(extensionName);
@@ -187,7 +187,7 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Installing extension into \"{0}\"", finalExtRepoPath);
 
             // start the clone process
-            var repo = GitInstaller.Clone(repoPath, branchName, finalExtRepoPath, username, password);
+            var repo = GitInstaller.Clone(repoPath, branchName, finalExtRepoPath, credentials);
 
             // Check installation
             if (repo != null) {
@@ -252,28 +252,28 @@ namespace pyRevitLabs.PyRevit {
 
         // force update extension
         // @handled @logs
-        public static void UpdateExtension(PyRevitExtension ext, string username = null, string password = null) {
+        public static void UpdateExtension(PyRevitExtension ext, GitInstallerCredentials credentials = null) {
             logger.Debug("Updating extension \"{0}\"", ext.Name);
             logger.Debug("Updating extension repo at \"{0}\"", ext.InstallPath);
-            var res = GitInstaller.ForcedUpdate(ext.InstallPath, username, password);
+            var res = GitInstaller.ForcedUpdate(ext.InstallPath, credentials);
             if (res <= UpdateStatus.Conflicts)
                 throw new PyRevitException(
                     string.Format("Error updating extension \"{0}\" installed at \"{1}\"", ext.Name, ext.InstallPath)
                     );
         }
 
-        public static void UpdateExtension(string extName, string username = null, string password = null) {
+        public static void UpdateExtension(string extName, GitInstallerCredentials credentials = null) {
             var ext = GetInstalledExtension(extName);
-            UpdateExtension(ext, username, password);
+            UpdateExtension(ext, credentials);
         }
 
         // force update all extensions
         // @handled @logs
-        public static void UpdateAllInstalledExtensions(string username = null, string password = null) {
+        public static void UpdateAllInstalledExtensions(GitInstallerCredentials credentials = null) {
             logger.Debug("Updating all installed extensions.");
             // update all installed extensions
             foreach (var ext in GetInstalledExtensions())
-                UpdateExtension(ext, username, password);
+                UpdateExtension(ext, credentials);
         }
 
         // enable extension in config

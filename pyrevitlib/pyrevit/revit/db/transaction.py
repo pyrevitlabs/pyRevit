@@ -1,4 +1,4 @@
-from pyrevit import HOST_APP, DB
+from pyrevit import HOST_APP, DOCS, DB
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.revit.db import failure
@@ -35,7 +35,7 @@ class Transaction():
                  swallow_errors=False,
                  log_errors=True,
                  nested=False):
-        doc = doc or HOST_APP.doc
+        doc = doc or DOCS.doc
         # create nested transaction if one is already open
         if doc.IsModifiable or nested:
             self._rvtxn = \
@@ -104,7 +104,7 @@ class DryTransaction(Transaction):
 class TransactionGroup():
     def __init__(self, name=None, doc=None, assimilate=True, log_errors=True):
         self._rvtxn_grp = \
-            DB.TransactionGroup(doc or HOST_APP.doc,
+            DB.TransactionGroup(doc or DOCS.doc,
                                 name if name else DEFAULT_TRANSACTION_NAME)
         self.assimilate = assimilate
         self._logerror = log_errors
