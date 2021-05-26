@@ -1,2 +1,15 @@
-tooltip: Changes element type of the selected elements to a the element type of a picked element, while maintaining the values of all instance parameters. First select all the elements that you want to change the type for and run this tool. Then select the element that has the source element type
+title:
+  fr_fr: Changer le type d'élément de façon sécuritaire
+  en_us: Change element type safely
+tooltip:
+  fr_fr: >-
+    Changer le type des éléments sélectionnés par le type de l'élément
+    sélectionné, tout en maintenant les valeurs des paramètres d'occurence.
+    Sélectionnez tous les éléments dont vous souhaitez changer le type et lancer
+    l'outil. Puis sélectionner le type d'élément source.
+  en_us: >-
+    Changes element type of the selected elements to a the element type of a
+    picked element, while maintaining the values of all instance parameters.
+    First select all the elements that you want to change the type for and run
+    this tool. Then select the element that has the source element type
 context: selection

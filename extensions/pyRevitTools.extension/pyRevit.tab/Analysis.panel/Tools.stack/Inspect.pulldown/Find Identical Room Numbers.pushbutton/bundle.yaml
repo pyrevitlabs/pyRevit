@@ -1,1 +1,6 @@
-tooltip: Finds and lists rooms with identical numbers
+title:
+  fr_fr: Trouver les numéros de pièces identiques
+  en_us: Find identical room numbers
+tooltip:
+  fr_fr: Trouver et lister les pièces avec un numéro identique
+  en_us: Finds and lists rooms with identical numbers

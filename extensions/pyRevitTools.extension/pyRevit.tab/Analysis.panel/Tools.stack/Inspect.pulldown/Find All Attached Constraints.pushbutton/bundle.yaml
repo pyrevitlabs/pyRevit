@@ -1,2 +1,7 @@
-tooltip: Find all constraints attached to the selected element
 context: selection
+title:
+  fr_fr: Trouver toutes les contraintes attachées
+  en_us: Find all attached constraints
+tooltip:
+  fr_fr: Trouver toutes les contraintes attachées à l'élément sélectionné
+  en_us: Find all constraints attached to the selected element

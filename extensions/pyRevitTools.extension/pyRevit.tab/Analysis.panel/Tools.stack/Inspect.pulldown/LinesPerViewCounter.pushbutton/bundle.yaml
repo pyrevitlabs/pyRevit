@@ -1,5 +1,8 @@
-title: 'Lines Per View Counter'
-tooltip: List sorted Detail Line Counts for all views with Detail Lines
+title:
+  fr_fr: Compteur de lignes par vue
+  en_us: Lines Per View Counter
+tooltip:
+  fr_fr: Lister classée du nombre de lignes de détail par vue contenant des lignes de détail
+  en_us: List sorted Detail Line Counts for all views with Detail Lines
 author: 'Frederic Beaupere'
 contact: 'https://github.com/frederic-beaupere'
-

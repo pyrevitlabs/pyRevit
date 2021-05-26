@@ -1,3 +1,8 @@
-tooltip: Merge selected parts into one element
+title:
+  fr_fr: Assembler les parts
+  en_us: Merge parts
+tooltip:
+  fr_fr: Assembler les parts sélectionnées dans un élément
+  en_us: Merge selected parts into one element
 author: '{{author}}'
 context: selection

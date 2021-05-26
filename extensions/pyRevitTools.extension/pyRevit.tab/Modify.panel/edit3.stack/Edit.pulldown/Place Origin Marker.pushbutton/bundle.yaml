@@ -1,1 +1,6 @@
-tooltip: Place a cross marker at the true 0,0,0 origin
+title:
+  fr_fr: Placer une borne sur l'origine
+  en_us: Place origin marker
+tooltip:
+  fr_fr: Place une borne en forme de croix sur l'origine de la terre 0,0,0
+  en_us: Place a cross marker at the Earth origin at 0,0,0

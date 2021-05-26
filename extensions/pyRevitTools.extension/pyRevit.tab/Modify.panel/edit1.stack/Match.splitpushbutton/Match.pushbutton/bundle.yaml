@@ -1,8 +1,19 @@
 help_url: '{{docpath}}SrjyyGvarhw'
-tooltip: >-
-  Pick the source object that has the element graphics override you like to match to, and then pick the destination objects one by one and this tool will match the graphics overrides
+title:
+  fr_fr: Correspondance
+  en_us: Match
+tooltip:
+  fr_fr: >-
+    Choisissez l'objet source qui a le remplacement graphique d'élément auquel vous souhaitez faire correspondre, puis choisissez les objets de destination un par un et cet outil fera correspondre les remplacements graphiques
 
 
-  Shift-Click:
+    Shift-Click:
 
-  Shows Match Config window
+     Affiche la fenêtre de configuration des correspondances
+  en_us: >-
+    Pick the source object that has the element graphics override you like to match to, and then pick the destination objects one by one and this tool will match the graphics overrides
+
+
+    Shift-Click:
+
+    Shows Match Config window
