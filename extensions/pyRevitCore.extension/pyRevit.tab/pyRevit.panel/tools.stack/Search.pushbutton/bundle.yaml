@@ -1,0 +1,9 @@
+tooltip: The best interface ever!
+title:
+  en_us: 'Search'
+  fa: 'جستجو'
+  bg: 'Търси'
+  nl_nl: 'Zoek'
+  fr_fr: 'Rechercher'
+  de_de: 'Suche'
+context: zero-doc

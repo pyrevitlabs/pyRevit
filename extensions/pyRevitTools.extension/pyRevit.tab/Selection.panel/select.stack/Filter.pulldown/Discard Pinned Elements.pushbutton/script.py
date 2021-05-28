@@ -3,8 +3,6 @@
 from pyrevit import revit, DB
 
 
-__context__ = 'Selection'
-
 selection = revit.get_selection()
 
 

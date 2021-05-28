@@ -1,5 +1,6 @@
 layout:
   - Debug
+  - Test Panel Background
+  - Test Panel Colors
   - Developer Tools
-  - Tests A
-  - Tests B
+  - Developer Examples

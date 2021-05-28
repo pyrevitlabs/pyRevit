@@ -9,6 +9,7 @@ help_url: "{{docpath}}"
 authors:
   - "{{author}}"
   - John Doe
+highlight: new
 context:
   - OST_Walls
   - OST_TextNotes

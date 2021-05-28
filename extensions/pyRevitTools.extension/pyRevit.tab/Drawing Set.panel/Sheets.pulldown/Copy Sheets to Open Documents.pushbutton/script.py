@@ -8,18 +8,13 @@ from pyrevit import script
 from Autodesk.Revit.DB import Element as DBElement
 
 
-__helpurl__ = '{{docpath}}9Q-J6mWBYJI&t=17s'
-__doc__ = 'Copies selected or current sheet(s) to other ' \
-          'projects currently open in Revit. Make sure the destination ' \
-          'documents have at least one Legend view (Revit API does not ' \
-          'provide a method to create Legend views so this script needs ' \
-          'to duplicate an existing one to create a new Legend).'
-
-
 logger = script.get_logger()
 output = script.get_output()
 
 selection = revit.get_selection()
+
+
+VIEW_TOS_PARAM = DB.BuiltInParameter.VIEW_DESCRIPTION
 
 
 class Option(forms.TemplateListItem):
@@ -70,7 +65,8 @@ def get_user_options():
 def get_dest_docs():
     # find open documents other than the active doc
     selected_dest_docs = \
-        forms.select_open_docs(title='Select Destination Documents')
+        forms.select_open_docs(title='Select Destination Documents',
+                               filterfunc=lambda d: not d.IsFamilyDocument)
     if not selected_dest_docs:
         sys.exit(0)
     else:
@@ -206,6 +202,13 @@ def copy_view_contents(activedoc, source_view, dest_doc, dest_view,
     return True
 
 
+def copy_view_props(source_view, dest_view):
+    dest_view.Scale = source_view.Scale
+    dest_view.Parameter[VIEW_TOS_PARAM].Set(
+        source_view.Parameter[VIEW_TOS_PARAM].AsString()
+    )
+
+
 def copy_view(activedoc, source_view, dest_doc):
     matching_view = find_matching_view(dest_doc, source_view)
     if matching_view:
@@ -259,7 +262,7 @@ def copy_view(activedoc, source_view, dest_doc):
                 )
                 revit.update.set_name(new_view,
                                       revit.query.get_name(source_view))
-                new_view.Scale = source_view.Scale
+                copy_view_props(source_view, new_view)
         except Exception as sheet_err:
             logger.error('Error creating drafting view. | {}'
                          .format(sheet_err))
@@ -279,7 +282,7 @@ def copy_view(activedoc, source_view, dest_doc):
                             )
                     revit.update.set_name(new_view,
                                         revit.query.get_name(source_view))
-                    new_view.Scale = source_view.Scale
+                    copy_view_props(source_view, new_view)
             else:
                 logger.error('Destination document must have at least one '
                              'Legend view. Skipping legend.')

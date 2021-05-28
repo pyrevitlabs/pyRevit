@@ -76,6 +76,16 @@ options = {
         tag_type=DB.BuiltInCategory.OST_StructuralColumnTags,
         element_type=DB.BuiltInCategory.OST_StructuralColumns
         ),
+
+    'Furniture': Taggable(
+        tag_type=DB.BuiltInCategory.OST_FurnitureTags,
+        element_type=DB.BuiltInCategory.OST_Furniture
+        ),
+
+    'Furniture Systems': Taggable(
+        tag_type=DB.BuiltInCategory.OST_FurnitureSystemTags,
+        element_type=DB.BuiltInCategory.OST_FurnitureSystems
+        ),
 }
 
 selected_switch = \

@@ -10,7 +10,7 @@ from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 #pylint: disable=W0703,C0302,C0103
 __all__ = ('BaseWrapper', 'ElementWrapper',
            'ExternalRef', 'ProjectParameter', 'ProjectInfo',
-           'XYZPoint', 'open_doc', 'close_doc')
+           'XYZPoint')
 
 
 class BaseWrapper(object):
@@ -312,24 +312,3 @@ class XYZPoint(BaseWrapper):
                     and self.y == other.y \
                     and self.z == other.z
         return False
-
-
-def open_doc(doc_path):
-    """Open document at given path.
-
-    Args:
-        doc_path (str): document file path
-
-    Returns:
-        DB.Document: opened document
-    """
-    return HOST_APP.app.OpenDocumentFile(doc_path)
-
-
-def close_doc(doc):
-    """Close given document.
-
-    Args:
-        doc (DB.Document): document
-    """
-    return doc.Close()

@@ -1,0 +1,12 @@
+tooltip: >-
+  Reduce the list of open Revit tabs
+
+
+  Shift+Click:
+
+  Customize which tabs should be hidden in minified mode
+title: >-
+  Minify
+
+  Revit UI
+context: zero-doc

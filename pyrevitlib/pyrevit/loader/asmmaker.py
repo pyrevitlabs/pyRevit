@@ -195,3 +195,6 @@ def cleanup_assembly_files():
         for asm_file_path in appdata.list_data_files(file_ext='dll'):
             if not assmutils.find_loaded_asm(asm_file_path, by_location=True):
                 appdata.garbage_data_file(asm_file_path)
+                asm_log_file = asm_file_path.replace('.dll', '.log')
+                if op.exists(asm_log_file):
+                    appdata.garbage_data_file(asm_log_file)

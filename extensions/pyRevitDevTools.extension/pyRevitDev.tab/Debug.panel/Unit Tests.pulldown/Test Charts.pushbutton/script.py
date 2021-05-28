@@ -34,19 +34,19 @@ def get_test_chart(chart_type):
                            'fontColor': '#000',
                            'fontStyle': 'bold'}
 
-    chart.options.scales = {
-        'xAxes': [{
-            'display': True,
-            'scaleLabel': {
-                'display': True,
-                'labelString': 'Month'
-                }}],
-        'yAxes': [{
-            'display': True,
-            'scaleLabel': {
-                'display': True,
-                'labelString': 'Value'
-                }}]}
+    # chart.options.scales = {
+    #     'xAxes': [{
+    #         'display': True,
+    #         'scaleLabel': {
+    #             'display': True,
+    #             'labelString': 'Month'
+    #             }}],
+    #     'yAxes': [{
+    #         'display': True,
+    #         'scaleLabel': {
+    #             'display': True,
+    #             'labelString': 'Value'
+    #             }}]}
 
     return chart
 

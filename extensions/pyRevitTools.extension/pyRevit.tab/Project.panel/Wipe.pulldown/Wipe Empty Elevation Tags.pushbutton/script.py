@@ -2,12 +2,6 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-__doc__ = 'Genrally if all elevations creates by an elevation tag are '\
-          'deleted from the model, the empty elevation tag still remains '\
-          'in its location. This script will delete all empty elevation ' \
-          'tags from the model.'
-
-
 logger = script.get_logger()
 
 

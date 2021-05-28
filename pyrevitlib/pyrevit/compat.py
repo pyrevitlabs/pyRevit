@@ -21,9 +21,11 @@ if PY3:
 if PY2:
     import _winreg as winreg
     import ConfigParser as configparser
+    from collections import Iterable
 elif PY3:
     import winreg as winreg
     import configparser as configparser
+    from collections.abc import Iterable
 
 
 #pylint: disable=C0103

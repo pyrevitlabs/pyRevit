@@ -6,12 +6,6 @@ from pyrevit import script
 output = script.get_output()
 
 
-__context__ = 'selection'
-__doc__ = 'Find all Rooms/Areas/Spaces with identical names to the select '\
-          'room, area or space and calculates the average area '\
-          'of that space type.'
-
-
 areas = DB.FilteredElementCollector(revit.doc)\
           .OfCategory(DB.BuiltInCategory.OST_Areas)\
           .WhereElementIsNotElementType().ToElements()

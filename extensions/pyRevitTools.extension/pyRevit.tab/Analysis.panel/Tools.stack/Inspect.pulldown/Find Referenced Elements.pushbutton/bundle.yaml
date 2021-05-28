@@ -1,0 +1,3 @@
+help_url: '{{docpath}}4IlvCkoOolw'
+tooltip: Lists all the elements that are tied to the selected element. For example elements tags or dimensions
+context: selection

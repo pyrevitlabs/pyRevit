@@ -13,7 +13,7 @@ Here is the source of :func:`pyrevit.script.get_output`. As you can see this
 functions calls the :func:`pyrevit.output.get_output` to receive the
 output wrapper.
 
-.. literalinclude:: ../../../pyrevitlib/pyrevit/script.py
+.. literalinclude:: ../../pyrevitlib/pyrevit/script.py
     :pyobject: get_output
 """
 
@@ -62,7 +62,9 @@ def set_stylesheet(stylesheet):
     if op.isfile(stylesheet):
         envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
                                     stylesheet)
-        user_config.output_stylesheet = stylesheet
+        # do not store this setting forcefully
+        # each repo should default to its own stylesheet
+        # user_config.output_stylesheet = stylesheet
 
 
 def get_stylesheet():
@@ -130,6 +132,14 @@ class PyRevitOutputWindow(object):
             return self.window.OutputUniqueId
 
     @property
+    def is_closed_by_user(self):
+        return self.window.ClosedByUser
+
+    @property
+    def last_line(self):
+        return self.window.GetLastLine()
+
+    @property
     def debug_mode(self):
         """Set debug mode on output window and stream.
 
@@ -182,6 +192,8 @@ class PyRevitOutputWindow(object):
         # inject the script into head
         head_el = self._get_head_element()
         head_el.AppendChild(html_element)
+        if self.window:
+            self.window.WaitReadyBrowser()
 
     def inject_to_body(self, element_tag, element_contents, attribs=None):
         """Inject html element to current html body of the output window.
@@ -208,6 +220,8 @@ class PyRevitOutputWindow(object):
         # inject the script into body
         body_el = self._get_body_element()
         body_el.AppendChild(html_element)
+        if self.window:
+            self.window.WaitReadyBrowser()
 
     def inject_script(self, script_code, attribs=None, body=False):
         """Inject script tag into current head (or body) of the output window.
@@ -276,6 +290,18 @@ class PyRevitOutputWindow(object):
         """Resize window to the new width and height."""
         self.set_width(width)
         self.set_height(height)
+
+    def center(self):
+        """Center the output window on the screen"""
+        screen_area = HOST_APP.proc_screen_workarea
+        left = \
+            (abs(screen_area.Right - screen_area.Left) / 2) \
+                - (self.get_width() / 2)
+        top = \
+            (abs(screen_area.Top - screen_area.Bottom) / 2) \
+                - (self.get_height() / 2)
+        self.window.Left = left
+        self.window.Top = top
 
     def get_title(self):
         """str: Return current window title."""
@@ -585,9 +611,9 @@ class PyRevitOutputWindow(object):
             )
         )
 
-    def insert_divider(self):
+    def insert_divider(self, level=''):
         """Add horizontal rule to the output window."""
-        self.print_md('-----')
+        self.print_md('%s\n-----' % level)
 
     def next_page(self):
         """Add hidden next page tag to the output window.

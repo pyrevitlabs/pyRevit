@@ -29,13 +29,16 @@ from System import AppDomain, Version
 from System import Type
 from System import Uri, Guid
 from System import EventHandler
-from System import Array, IntPtr, Enum
+from System import Array, IntPtr, Enum, Byte
 from System import Convert
 from System.Text import Encoding
+from System.Text.RegularExpressions import Regex
 from System.Collections import ObjectModel
+from System.Collections.ObjectModel import ObservableCollection
 from System.Collections import IEnumerator, IEnumerable
 from System.Collections.Generic import List, Dictionary
 from System.Collections.Generic import IList, IDictionary
+from System.Collections.Generic import KeyValuePair
 from System import DateTime, DateTimeOffset
 
 from System import Diagnostics
@@ -51,7 +54,7 @@ from System.Reflection.Emit import AssemblyBuilderAccess
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
 from System import IO
-from System.IO import IOException, DriveInfo, Path, StringReader
+from System.IO import IOException, DriveInfo, Path, StringReader, File
 
 from System import Net
 from System.Net import WebClient, WebRequest, WebProxy
@@ -67,23 +70,55 @@ from System.Windows import Media
 from System.Windows import Threading
 from System.Windows import Interop
 from System.Windows import Input
+from System.Windows import Data
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 from System import Math
-from System.CodeDom import Compiler
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
-
 from System.Linq import Enumerable
 
-from Microsoft.CSharp import CSharpCodeProvider
+import pyrevit.engine as eng
 
+
+ASSEMBLY_FILE_TYPE = 'dll'
+ASSEMBLY_FILE_EXT = '.dll'
+
+
+ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
+ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
+clr.AddReferenceToFileAndPath(ipy_dllpath)
+
+import IronPython
+
+# WPF
 wpf = None
-clr.AddReference('IronPython.Wpf')
-if compat.PY3:
-    import IronPython
-    wpf = IronPython.Modules.Wpf
-else:
+wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
+try:
+    clr.AddReference(wpf_assmname)
+    if compat.PY3:
+        wpf = IronPython.Modules.Wpf
+    else:
+        import wpf
+except Exception:
+    clr.AddReferenceToFileAndPath(wpf_dllpath)
     import wpf
+
+
+# SQLite
+sqlite3 = None
+sqlite3_assmname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
+sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_assmname + ASSEMBLY_FILE_EXT)
+try:
+    clr.AddReference(sqlite3_assmname)
+    if compat.PY3:
+        sqlite3 = IronPython.SQLite
+    else:
+        import sqlite3
+except Exception:
+    clr.AddReferenceToFileAndPath(sqlite3_dllpath)
+    import sqlite3
+
 
 CPDialogs = None
 try:
@@ -102,12 +137,12 @@ try:
 except Exception:
     pass
 
+clr.AddReference('pyRevitLabs.Emojis')
+import pyRevitLabs.Emojis as Emojis
+
 
 # do not import anything from pyrevit before this
 from pyrevit import BIN_DIR
-
-
-ASSEMBLY_FILE_TYPE = 'dll'
 
 
 def get_type(fw_object):

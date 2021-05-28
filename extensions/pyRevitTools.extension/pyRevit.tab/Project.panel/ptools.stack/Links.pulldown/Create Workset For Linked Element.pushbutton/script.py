@@ -3,11 +3,6 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__doc__ = 'This tool will create a workset for the selected linked '\
-          'element base on its name. If the model is not workshared, '\
-          'it will be converted to workshared model.'
-
-
 logger = script.get_logger()
 
 selection = revit.get_selection()

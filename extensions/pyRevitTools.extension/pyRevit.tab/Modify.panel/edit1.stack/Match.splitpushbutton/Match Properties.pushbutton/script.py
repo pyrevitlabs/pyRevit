@@ -11,7 +11,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
-__author__ = "{{author}}"
 
 logger = script.get_logger()
 output = script.get_output()
@@ -111,19 +110,6 @@ def get_source_properties(src_element):
     return props
 
 
-def pick_and_match_types(src_props):
-    """Match property values for selected types."""
-    with forms.WarningBar(title="Pick objects to match type properties:"):
-        while True:
-            dest_element = revit.pick_element()
-            if not dest_element:
-                break
-
-            dest_type = revit.query.get_type(dest_element)
-            with revit.Transaction("Match Type Properties"):
-                match_prop(dest_element, dest_type, src_props)
-
-
 def recall():
     """Load last matched properties from memory."""
     data = []
@@ -150,22 +136,30 @@ if __shiftclick__:    #pylint: disable=undefined-variable
     logger.debug("Recalled data: %s", source_props)
 
 if not source_props:
-    source_element = None
+    # try use selected elements
+    selected_elements = revit.get_selection().elements
+    if len(selected_elements) == 1 and forms.alert("Use selected %s?" % ("view"
+            if isinstance(selected_elements[0], DB.View) else "element"),
+                                                   yes=True, no=True):
+        source_element = selected_elements[0]
+        target_type = "Views" if isinstance(source_element, DB.View)\
+            else "Elements"
+    else:
+        source_element = None
+        # ask for type of elements to match
+        # some are not selectable in graphical views
+        target_type = \
+            forms.CommandSwitchWindow.show(
+                ["Elements", "Views"],
+                message="Pick type of targets:")
 
-    # ask for type of elements to match
-    # some are not selectable in graphical views
-    target_type = \
-        forms.CommandSwitchWindow.show(
-            ["Elements", "Views"],
-            message="Pick type of targets:")
-
-    # determine source element
-    if target_type == "Elements":
-        with forms.WarningBar(title="Pick source object:"):
-            source_element = revit.pick_element()
-    elif target_type == "Views":
-        source_element = \
-            forms.select_views(title="Select Source View", multiple=False)
+        # determine source element
+        if target_type == "Elements":
+            with forms.WarningBar(title="Pick source object:"):
+                source_element = revit.pick_element()
+        elif target_type == "Views":
+            source_element = \
+                forms.select_views(title="Select Source View", multiple=False)
 
     # grab properties from source element
     if source_element:
@@ -176,7 +170,23 @@ if not source_props:
 # apply values
 if source_props:
     if target_type == "Elements":
-        pick_and_match_types(source_props)
+        with forms.WarningBar(title="Pick objects to match type properties:"):
+            while True:
+                dest_element = revit.pick_element()
+                if not dest_element:
+                    break
+
+                dest_type = revit.query.get_type(dest_element)
+                with revit.Transaction("Match Type Properties"):
+                    # apply type params first
+                    match_prop(dest_element,
+                               dest_type,
+                               [x for x in source_props if x.istype])
+                    # then instance params
+                    match_prop(dest_element,
+                               dest_type,
+                               [x for x in source_props if not x.istype])
+
     elif target_type == "Views":
         target_views = \
             forms.select_views(title="Select Target Views", multiple=True)
@@ -184,4 +194,11 @@ if source_props:
             with revit.Transaction("Match Type Properties"):
                 for tview in target_views:
                     tview_type = revit.query.get_type(tview)
-                    match_prop(tview, tview_type, source_props)
+                    # apply type params first
+                    match_prop(tview,
+                               tview_type,
+                               [x for x in source_props if x.istype])
+                    # then instance params
+                    match_prop(tview,
+                               tview_type,
+                               [x for x in source_props if not x.istype])

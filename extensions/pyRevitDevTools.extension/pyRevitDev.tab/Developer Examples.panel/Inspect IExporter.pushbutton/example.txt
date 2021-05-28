@@ -1,0 +1,438 @@
+  + start
+    + view begin
+    | RNT_Viewport
+    | My Export View
+      + element begin
+      | id=1610 name=Level 1 type=Levels
+      - element end
+      + element begin
+      | id=2486 name={3D} type=Cameras
+      - element end
+      + element begin
+      | id=2506 name=Wall 1 type=Walls
+        + material
+        | RNT_Material
+        - material
+        + face begin
+        | RNT_FaceGroup
+          + polymesh
+          - polymesh
+        - face end
+        + material
+        | RNT_Material
+        - material
+        + face begin
+        | RNT_FaceGroup
+          + polymesh
+          - polymesh
+        - face end
+        + material
+        | RNT_Material
+        - material
+        + face begin
+        | RNT_FaceGroup
+          + polymesh
+          - polymesh
+        - face end
+        + material
+        | RNT_Material
+        - material
+        + face begin
+        | RNT_FaceGroup
+          + polymesh
+          - polymesh
+        - face end
+        + material
+        | RNT_Material
+        - material
+        + face begin
+        | RNT_FaceGroup
+          + polymesh
+          - polymesh
+        - face end
+        + material
+        | RNT_Material
+        - material
+        + face begin
+        | RNT_FaceGroup
+          + polymesh
+          - polymesh
+        - face end
+      - element end
+      + element begin
+      | id=2580 name=Custom 3d View type=Cameras
+      - element end
+      + element begin
+      | id=2633 name=Project1.rvt : 1 : location <Not Shared> type=RVT Links
+        + link begin
+        | RNT_RvtLink
+          + element begin
+          | id=1679 name=Rectangular Mullion type=?
+          - element end
+          + element begin
+          | id=2481 name=Analytical Surface - Sliding Doors type=?
+            + material
+            | RNT_Material
+            - material
+            + face begin
+            | RNT_FaceGroup
+              + polymesh
+              - polymesh
+            - face end
+            + material
+            | RNT_Material
+            - material
+            + face begin
+            | RNT_FaceGroup
+              + polymesh
+              - polymesh
+            - face end
+            + material
+            | RNT_Material
+            - material
+            + face begin
+            | RNT_FaceGroup
+              + polymesh
+              - polymesh
+            - face end
+            + material
+            | RNT_Material
+            - material
+            + face begin
+            | RNT_FaceGroup
+              + polymesh
+              - polymesh
+            - face end
+            + material
+            | RNT_Material
+            - material
+            + face begin
+            | RNT_FaceGroup
+              + polymesh
+              - polymesh
+            - face end
+            + material
+            | RNT_Material
+            - material
+            + face begin
+            | RNT_FaceGroup
+              + polymesh
+              - polymesh
+            - face end
+          - element end
+        - link end
+      - element end
+      + element begin
+      | id=3284 name=24" type=Casework
+        + instance begin
+        | RNT_Instance
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+          + material
+          | RNT_Material
+          - material
+          + face begin
+          | RNT_FaceGroup
+            + polymesh
+            - polymesh
+          - face end
+        - instance end
+      - element end
+      + element begin
+      | id=1610 name=Level 1 type=Levels
+      - element end
+      + element begin
+      | id=2486 name={3D} type=Cameras
+      - element end
+      + element begin
+      | id=2580 name=Custom 3d View type=Cameras
+      - element end
+      + element begin
+      | id=2633 name=Project1.rvt : 1 : location <Not Shared> type=RVT Links
+        + link begin
+        | RNT_RvtLink
+          + element begin
+          | id=1679 name=Rectangular Mullion type=?
+          - element end
+        - link end
+      - element end
+    - view end
+  - finish

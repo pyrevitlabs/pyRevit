@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 using pyRevitLabs.Common;
 
@@ -56,10 +56,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static ScriptTelemetryRecord MakeTelemetryRecord(ref ScriptRuntime runtime) {
             // setup a new telemetry record
             return new ScriptTelemetryRecord {
-                host_user = UserEnv.GetLoggedInUserName(),
-                username = runtime.App.Username,
-                revit = runtime.App.VersionNumber,
-                revitbuild = runtime.App.VersionBuild,
+                username = Telemetry.GetRevitUser(runtime.App),
+                revit = Telemetry.GetRevitVersion(runtime.App),
+                revitbuild = Telemetry.GetRevitBuild(runtime.App),
                 sessionid = runtime.SessionUUID,
                 pyrevit = runtime.PyRevitVersion,
                 clone = runtime.CloneName,
@@ -90,23 +89,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static void LogScriptTelemetryRecord(ref ScriptRuntime runtime) {
-            var envDict = new EnvDictionary();
+            var env = new EnvDictionary();
 
             var record = MakeTelemetryRecord(ref runtime);
 
-            if (envDict.TelemetryState) {
-                if (envDict.TelemetryState
-                        && envDict.TelemetryServerUrl != null
-                        && !string.IsNullOrEmpty(envDict.TelemetryServerUrl))
-                    new Task(() =>
-                        Telemetry.PostTelemetryRecord(envDict.TelemetryServerUrl, record)).Start();
+            if (env.TelemetryServerUrl != null && !string.IsNullOrEmpty(env.TelemetryServerUrl))
+                new Task(() =>
+                    Telemetry.PostTelemetryRecord(env.TelemetryServerUrl, record)).Start();
 
-                if (envDict.TelemetryState
-                        && envDict.TelemetryFilePath != null
-                        && !string.IsNullOrEmpty(envDict.TelemetryFilePath))
-                    new Task(() =>
-                        Telemetry.WriteTelemetryRecord(envDict.TelemetryFilePath, record)).Start();
-            }
+            if (env.TelemetryFilePath != null && !string.IsNullOrEmpty(env.TelemetryFilePath))
+                new Task(() =>
+                    Telemetry.WriteTelemetryRecord(env.TelemetryFilePath, record)).Start();
         }
     }
 }

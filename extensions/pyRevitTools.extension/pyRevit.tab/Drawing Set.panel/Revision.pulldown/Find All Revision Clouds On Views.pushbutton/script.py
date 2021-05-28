@@ -1,9 +1,6 @@
 from pyrevit import revit, DB
 
 
-__doc__ = 'Lists all revision clouds in this model that have been '\
-          'placed on a view and not on sheet.'
-
 revcs = DB.FilteredElementCollector(revit.doc)\
          .OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\
          .WhereElementIsNotElementType()

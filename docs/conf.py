@@ -26,7 +26,9 @@ else:
     import __builtin__ as builtins
 
 
-logger = logging.getLogger(name='pyRevitDocumenter')
+logging.basicConfig()
+logger = logging.getLogger(name='sphinx-config')
+# logger.setLevel(logging.DEBUG)
 
 doc_dir = os.path.dirname(__file__)
 root_dir = os.path.dirname(doc_dir)
@@ -72,7 +74,7 @@ class MockObject(object):
         self.fullname = kwargs.get('fullname', '<Unamed Import>')
 
     def __getattr__(self, attr):
-        logger.debug("Getting Atts:{} from {}')".format(attr, self.fullname))
+        logger.debug("getting attribute:{} from {}".format(attr, self.fullname))
         path_and_attr = '.'.join([self.fullname, attr])
         override_obj = MockObject.MOCK_OVERRIDE.get(path_and_attr, None)
         return override_obj or MockObject(fullname=attr)
@@ -81,7 +83,7 @@ class MockObject(object):
         yield iter(self)
 
     def AddReference(self, namespace):
-        logger.debug("Mock.clr.AddReference('{}')".format(namespace))
+        logger.debug("MockObject.clr.AddReference('{}')".format(namespace))
 
     def __call__(self, *args, **kwargs):
         return MockObject(*args, **kwargs)
@@ -92,6 +94,10 @@ class MockObject(object):
     def __str__(self):
         return self.fullname
 
+    # wrapping pyevent.make_event() method for correct return type
+    def make_event(self):
+        return None, None
+
 
 class MockImporter(object):
     # https://github.com/gtalarico/revitpythonwrapper/issues/3
@@ -101,6 +107,7 @@ class MockImporter(object):
     dotnet_modules = ['clr',
                       'Autodesk',
                       'UIFramework',
+                      'UIFrameworkServices',
                       'RevitServices',
                       'IronPython',
                       'System',
@@ -113,8 +120,11 @@ class MockImporter(object):
                       'MadMilkman',
                       'OpenMcdf',
                       'MahApps',
+                      'YamlDotNet',
+                      'PythonStubs',
                       'pyRevitLabs',
                       '_winreg',
+                      'pyevent'
                       ]
 
     def find_module(self, fullname, path=None):
@@ -174,7 +184,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRevit'
-copyright = u'2014-2019, eirannejad'
+copyright = u'2014-2020, eirannejad'
 author = u'eirannejad'
 
 # The version info for the project you're documenting, acts as replacement for

@@ -6,8 +6,6 @@ Select group members instead of parent group elements.
 #pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB
 
-__context__ = 'selection'
-
 
 # get view elements
 viewelements = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\

@@ -1,0 +1,5 @@
+tooltip: >-
+  Explodes all instances of the selected groups and removes
+
+  the group definition from project browser
+context: selection

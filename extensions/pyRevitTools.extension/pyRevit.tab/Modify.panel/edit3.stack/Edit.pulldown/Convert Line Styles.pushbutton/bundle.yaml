@@ -1,0 +1,12 @@
+tooltip: >-
+  This is a tool to convert line styles. Run the tool,
+
+  select a line with the style to be replaced, and then
+
+  select a line with the interfacetypes style
+
+  The script will correct the line styles in the model
+
+  HOWEVER the lines that are part of a group will not be affected
+
+  Also see the "Shake Filled Regions" tool

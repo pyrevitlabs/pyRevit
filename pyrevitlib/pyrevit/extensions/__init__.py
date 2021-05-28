@@ -17,15 +17,9 @@ class LIBExtensionType:
     POSTFIX = '.lib'
 
 
-class RUNExtensionType:
-    ID = 'run'
-    POSTFIX = '.run'
-
-
 class ExtensionTypes:
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
-    RUN_EXTENSION = RUNExtensionType
 
     @classmethod
     def get_ext_types(cls):
@@ -34,11 +28,6 @@ class ExtensionTypes:
             if attr.endswith('_EXTENSION'):
                 ext_types.add(getattr(cls, attr))
         return ext_types
-
-    @classmethod
-    def is_cli_ext(cls, ext_type):
-        """Check if this is a pyRevit CLI extension."""
-        return ext_type == cls.RUN_EXTENSION
 
 
 # -----------------------------------------------------------------------------
@@ -91,6 +80,18 @@ MDATA_AUTHORS = 'authors'
 MDATA_LAYOUT = 'layout'
 MDATA_COMMAND_HELP_URL = 'help_url'
 MDATA_COMMAND_CONTEXT = 'context'
+MDATA_COMMAND_CONTEXT_TYPE = "type"
+MDATA_COMMAND_CONTEXT_NOT = "not_"
+MDATA_COMMAND_CONTEXT_ANY = "any"
+MDATA_COMMAND_CONTEXT_ALL = "all"
+MDATA_COMMAND_CONTEXT_EXACT = "exact"
+MDATA_COMMAND_CONTEXT_NOTANY = MDATA_COMMAND_CONTEXT_NOT + MDATA_COMMAND_CONTEXT_ANY
+MDATA_COMMAND_CONTEXT_NOTALL = MDATA_COMMAND_CONTEXT_NOT + MDATA_COMMAND_CONTEXT_ALL
+MDATA_COMMAND_CONTEXT_NOTEXACT = MDATA_COMMAND_CONTEXT_NOT + MDATA_COMMAND_CONTEXT_EXACT
+MDATA_COMMAND_CONTEXT_ANY_SEP = "|"
+MDATA_COMMAND_CONTEXT_ALL_SEP = "&"
+MDATA_COMMAND_CONTEXT_EXACT_SEP = ";"
+MDATA_COMMAND_CONTEXT_RULE = "({rule})"
 MDATA_MIN_REVIT_VERSION = 'min_revit_version'
 MDATA_MAX_REVIT_VERSION = 'max_revit_version'
 MDATA_BETA_SCRIPT = 'is_beta'
@@ -98,9 +99,11 @@ MDATA_ENGINE = 'engine'
 MDATA_ENGINE_CLEAN = 'clean'
 MDATA_ENGINE_FULLFRAME = 'full_frame'
 MDATA_ENGINE_PERSISTENT = 'persistent'
+MDATA_ENGINE_MAINTHREAD = 'mainthread'
 MDATA_LINK_BUTTON_MODULES = 'modules'
 MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
 MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
+MDATA_LINK_BUTTON_AVAIL_COMMAND_CLASS = 'availability_class'
 MDATA_URL_BUTTON_HYPERLINK = 'hyperlink'
 MDATA_TEMPLATES_KEY = 'templates'
 MDATA_BACKGROUND_KEY = 'background'
@@ -111,6 +114,13 @@ MDATA_HIGHLIGHT_KEY = 'highlight'
 MDATA_HIGHLIGHT_TYPE_NEW = 'new'
 MDATA_HIGHLIGHT_TYPE_UPDATED = 'updated'
 MDATA_COLLAPSED_KEY = 'collapsed'
+# metadata schema: DynamoBIM bundles
+MDATA_ENGINE_DYNAMO_AUTOMATE = 'automate'
+MDATA_ENGINE_DYNAMO_PATH = 'dynamo_path'
+# MDATA_ENGINE_DYNAMO_PATH_EXEC = 'dynamo_path_exec'
+MDATA_ENGINE_DYNAMO_PATH_CHECK_EXIST = 'dynamo_path_check_existing'
+MDATA_ENGINE_DYNAMO_FORCE_MANUAL_RUN = 'dynamo_force_manual_run'
+MDATA_ENGINE_DYNAMO_MODEL_NODES_INFO = 'dynamo_model_nodes_info'
 
 # metadata schema: Bundles | legacy
 UI_TITLE_PARAM = '__title__'
@@ -127,8 +137,6 @@ HIGHLIGHT_SCRIPT_PARAM = '__highlight__'
 CLEAN_ENGINE_SCRIPT_PARAM = '__cleanengine__'
 FULLFRAME_ENGINE_PARAM = '__fullframeengine__'
 PERSISTENT_ENGINE_PARAM = '__persistentengine__'
-LINK_BUTTON_ASSEMBLY = '__assembly__'
-LINK_BUTTON_COMMAND_CLASS = '__commandclass__'
 
 # -----------------------------------------------------------------------------
 # supported bundles
@@ -139,8 +147,6 @@ INVOKE_BUTTON_POSTFIX = '.invokebutton'
 PUSH_BUTTON_POSTFIX = '.pushbutton'
 SMART_BUTTON_POSTFIX = '.smartbutton'
 PULLDOWN_BUTTON_POSTFIX = '.pulldown'
-STACK2_BUTTON_POSTFIX = '.stack2'
-STACK3_BUTTON_POSTFIX = '.stack3'
 STACK_BUTTON_POSTFIX = '.stack'
 SPLIT_BUTTON_POSTFIX = '.splitbutton'
 SPLITPUSH_BUTTON_POSTFIX = '.splitpushbutton'
@@ -153,12 +159,12 @@ URL_BUTTON_POSTFIX = '.urlbutton'
 COMP_LIBRARY_DIR_NAME = 'lib'
 COMP_BIN_DIR_NAME = 'bin'
 COMP_HOOKS_DIR_NAME = 'hooks'
+COMP_CHECKS_DIR_NAME = 'checks'
 
 # unique ids
 UNIQUE_ID_SEPARATOR = '-'
 
 # bundle layout elements
-DEFAULT_LAYOUT_FILE_NAME = '_layout'
 SEPARATOR_IDENTIFIER = '---'
 SLIDEOUT_IDENTIFIER = '>>>'
 
@@ -212,7 +218,11 @@ CONTENT_VERSION_POSTFIX = \
 ALT_CONTENT_POSTFIX = DEFAULT_ALT_CONTENT_NAME + CONTENT_FILE_FORMAT
 ALT_CONTENT_VERSION_POSTFIX = \
     DEFAULT_ALT_CONTENT_NAME + "_{version}" + CONTENT_FILE_FORMAT
+
+# bundle help
+HELP_FILE_PATTERN = r'.*help\..+'
+
 # -----------------------------------------------------------------------------
 # Command bundle defaults
 CTX_SELETION = 'selection'
-CTX_ZERODOC = ['zero-doc', 'zerodoc']
+CTX_ZERODOC = 'zero-doc'

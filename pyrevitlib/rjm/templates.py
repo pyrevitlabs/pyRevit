@@ -1,3 +1,5 @@
+"""Journal content templates"""
+#pylint: disable=line-too-long
 # initializtion templates ------------------------------------------------------
 # timestamp format: 27-Oct-2016 19:33:31.459
 INIT = """' revit_journal_maker generated journal
@@ -9,10 +11,10 @@ Set Jrn = CrsJournalScript
 
 # initializing the journal in debug permissive mode
 INIT_DEBUG = """' Adding debug options'
-Jrn.Directive "DebugMode", "PerformAutomaticActionInErrorDialog", 1
-Jrn.Directive "DebugMode", "PermissiveJournal", 1
-' Jrn.Directive "DebugMode", "PermissiveJournalAndReportAsError", 1
-' Jrn.Directive "DebugMode" , "GfxUseDx9AccelerationOnPlay" , 1
+Jrn.Directive "DebugMode", "PerformAutomaticActionInErrorDialog", {takedefaultaction}
+Jrn.Directive "DebugMode", "PermissiveJournal", {permissive}
+' Jrn.Directive "DebugMode", "PermissiveJournalAndReportAsError", {permissive_jrn}
+' Jrn.Directive "DebugMode" , "GfxUseDx9AccelerationOnPlay" , {usedx9accel}
 """
 
 

@@ -1,0 +1,8 @@
+tooltip: Sets the active workset from the selection
+title: >-
+  Set
+
+  Workset
+context: selection
+author: 'Jean-Marc Couffin'
+contact: 'https://github.com/jmcouffin'

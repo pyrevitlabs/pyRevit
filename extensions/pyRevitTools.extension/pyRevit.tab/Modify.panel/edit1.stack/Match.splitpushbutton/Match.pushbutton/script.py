@@ -5,14 +5,6 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__helpurl__ = "{{docpath}}SrjyyGvarhw"
-
-__doc__ = 'Pick the source object that has the element graphics override '\
-          'you like to match to, and then pick the destination objects '\
-          'one by one and this tool will match the graphics overrides.'\
-          '\n\nShift-Click:\nShows Match Config window.'
-
-
 my_config = script.get_config()
 
 

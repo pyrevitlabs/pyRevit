@@ -8,18 +8,6 @@ from pyrevit.loader import sessionmgr
 from pyrevit.loader import sessioninfo
 
 
-__cleanengine__ = True
-__context__ = 'zero-doc'
-__doc__ = 'Searches the script folders and create buttons ' \
-          'for the new script or newly installed extensions.'
-__title__ = {
-    'en_us': 'Reload',
-    'fa': 'بارگذاری مجدد',
-    'bg': 'Презареди',
-    'nl_nl': 'Herladen',
-}
-
-
 res = True
 if EXEC_PARAMS.executed_from_ui:
     res = forms.alert('Reloading increases the memory footprint and is '

@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PyRevitTestLinkCommand", "PyRevitTestLinkCommand.csproj", "{136BBAFF-A689-4E38-8B2B-01D5CD46C0B5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{136BBAFF-A689-4E38-8B2B-01D5CD46C0B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{136BBAFF-A689-4E38-8B2B-01D5CD46C0B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DC025DB6-A9DB-4179-9F02-8F48E6169A2F}
+	EndGlobalSection
+EndGlobal

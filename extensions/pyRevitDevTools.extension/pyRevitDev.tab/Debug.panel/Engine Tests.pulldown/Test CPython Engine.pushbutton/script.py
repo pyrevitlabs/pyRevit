@@ -14,7 +14,7 @@ print('\n'.join(sys.path))
 # now load the cpython assembly
 # clr.AddReference('pyRevitLabs.PythonNet')
 clr.AddReferenceToFile('pyRevitLabs.PythonNet.dll')
-import pyRevitLabs.PythonNet as py
+import Python.Runtime as py
 
 TEST_CODE = """import sys
 print('\\n'.join(sys.path))

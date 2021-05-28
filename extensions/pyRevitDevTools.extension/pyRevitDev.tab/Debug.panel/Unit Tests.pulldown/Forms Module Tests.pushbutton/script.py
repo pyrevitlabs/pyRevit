@@ -91,6 +91,17 @@ test_forms(forms.select_revisions,
            test_title='Testing Selecting Revisions',
            filterfuncstr='pyRevit')
 
+
+print(
+    forms.SelectFromList.show(
+        {'All': '1 2 3 4 5 6 7 8 9 0'.split(),
+         'Odd': '1 3 5 7 9'.split(),
+         'Even': '2 4 6 8 0'.split()},
+        title='MultiGroup List',
+        group_selector_title='Select Integer Range:'
+    ))
+
+
 print(
     forms.SelectFromList.show(
         {'All': '1 2 3 4 5 6 7 8 9 0'.split(),

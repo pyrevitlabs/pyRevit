@@ -128,7 +128,7 @@
                 </StackPanel>
             </DockPanel>
         </Grid>
-        <DockPanel DockPanel.Dock="Right" Margin="10,10,0,0">
+        <DockPanel DockPanel.Dock="Right" Margin="10,10,0,0" Width="200">
             <GroupBox Header="Legend" DockPanel.Dock="Bottom" >
                 <StackPanel Margin="5,10,5,5">
                     <WrapPanel Margin="0,0,0,5">
@@ -165,6 +165,19 @@
                     </WrapPanel>
                 </StackPanel>
             </GroupBox>
+            <StackPanel DockPanel.Dock="Bottom" Margin="0,0,0,10">
+                <TextBlock Text="Notes" FontWeight="Medium" />
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse Height="6" Width="6" Fill="Black"/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock TextWrapping="WrapWithOverflow" Margin="5,0,0,0">
+                        <TextBlock.Text>
+                            Revisions are sorted by Sequence Number since it is consistent across "By Project" or "By Sheet" configs
+                        </TextBlock.Text>
+                    </TextBlock>
+                </BulletDecorator>
+            </StackPanel>
             <StackPanel>
                 <Button x:Name="updatesheets_b"
                         Content="Update Sheets"
@@ -190,6 +203,12 @@
                   VerticalGridLinesBrush="{StaticResource GridColor}"
                   BeginningEdit="edit_commit">
             <DataGrid.Resources>
+                <DataTemplate x:Key="ColumnHeaderTemplate">
+                    <Grid MinWidth="25" ToolTip="{Binding desc}">
+                        <TextBlock Text="{Binding name}" HorizontalAlignment="Center"/>
+                    </Grid>
+                </DataTemplate>
+
                 <Style x:Key="SheetColumn" TargetType="{x:Type DataGridCell}">
                     <Setter Property="BorderThickness" Value="0,0,3,0"/>
                     <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>

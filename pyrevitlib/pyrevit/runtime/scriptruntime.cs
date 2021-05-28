@@ -371,8 +371,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ControlledApp = null;
             _uiApp = null;
             _app = null;
-            _scriptOutput = null;
-            _outputStream = null;
+            _scriptOutput = new WeakReference<ScriptConsole>(null);
+            _outputStream = new WeakReference<ScriptIO>(null);;
             _resultsDict = null;
         }
     }

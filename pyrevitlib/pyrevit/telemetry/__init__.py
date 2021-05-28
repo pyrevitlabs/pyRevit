@@ -69,6 +69,10 @@ def get_telemetry_server_url():
     return envvars.get_pyrevit_env_var(envvars.TELEMETRYSERVER_ENVVAR)
 
 
+def get_telemetry_include_hooks():
+    return envvars.get_pyrevit_env_var(envvars.TELEMETRYINCLUDEHOOKS_ENVVAR)
+
+
 def set_telemetry_state(state):
     envvars.set_pyrevit_env_var(envvars.TELEMETRYSTATE_ENVVAR, state)
     user_config.telemetry_status = state
@@ -93,6 +97,11 @@ def set_telemetry_file_path(file_path):
 def set_telemetry_server_url(server_url):
     envvars.set_pyrevit_env_var(envvars.TELEMETRYSERVER_ENVVAR, server_url)
     user_config.telemetry_server_url = server_url
+
+
+def set_telemetry_include_hooks(state):
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYINCLUDEHOOKS_ENVVAR, state)
+    user_config.telemetry_include_hooks = state
 
 
 def disable_telemetry():
@@ -260,6 +269,9 @@ def setup_telemetry(session_id=None):
         # if config exists, setup server logging
         set_telemetry_server_url(telemetry_server_url)
 
+    # set telemetry script types
+    set_telemetry_include_hooks(user_config.telemetry_include_hooks)
+
     # APP TELEMETRY ------------------------------------------------------------
     # setup default value for telemetry global switch
     apptelemetry_state = user_config.apptelemetry_status
@@ -285,9 +297,13 @@ def setup_telemetry(session_id=None):
         telemetry_events.unregister_all_event_telemetries(telemetry_handler)
 
     set_apptelemetry_handler(new_telemetry_handler)
-    apptelemetry_event_flags = get_apptelemetry_event_flags()
-    # re-register events with new telemetry_handler
-    telemetry_events.register_event_telemetry(new_telemetry_handler,
-                                              apptelemetry_event_flags)
+    # register handlers only if telemetry system is active
+    if apptelemetry_state:
+        apptelemetry_event_flags = get_apptelemetry_event_flags()
+        # re-register events with new telemetry_handler
+        telemetry_events.register_event_telemetry(
+            new_telemetry_handler,
+            apptelemetry_event_flags
+        )
 
     user_config.save_changes()

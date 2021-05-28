@@ -5,7 +5,8 @@ import os.path as op
 from pyrevit import HOST_APP
 
 
-__all__ = ('get_journals_folder', 'get_current_journal_file')
+__all__ = ('get_journals_folder', 'get_current_journal_file',
+           'get_current_session_id')
 
 
 def get_journals_folder():

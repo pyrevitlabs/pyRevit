@@ -1,0 +1,12 @@
+tooltip: 
+  en_us: Searches the script folders and create buttons for the new script or newly installed extensions
+  fr_fr: Recherche de nouveaux scripts dans le dossier de scripts et crée de nouveau bouton ou ajoute une nouvelle extension
+engine:
+  clean: true
+title:
+  en_us: 'Reload'
+  fa: 'بارگذاری مجدد'
+  bg: 'Презареди'
+  nl_nl: 'Herladen'
+  fr_fr: 'Recharger'
+context: zero-doc

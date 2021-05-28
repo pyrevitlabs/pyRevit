@@ -54,7 +54,7 @@ class DefaultOrderedDict(OrderedDict):
         if self.default_factory is None:
             args = tuple()
         else:
-            args = self.default_factory,
+            args = self.default_factory
         return type(self), args, None, None, self.items()
 
     def copy(self):
@@ -65,7 +65,6 @@ class DefaultOrderedDict(OrderedDict):
         return type(self)(self.default_factory, self)
 
     def __deepcopy__(self, memo):
-        import copy
         return type(self)(self.default_factory,
                           copy.deepcopy(self.items()))
 
@@ -211,3 +210,17 @@ def merge(d1, d2):
         else:
             d1[key] = new_value
     return d1
+
+
+def almost_equal(a, b, rnd=5):
+    """Check if two numerical values almost equal
+
+    Args:
+        a (float): value a
+        b (float): value b
+        rnd (int, optional): n digits after comma. Defaults to 5.
+
+    Returns:
+        bool: True if almost equal
+    """
+    return a == b or int(a*10**rnd) == int(b*10**rnd)

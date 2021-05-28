@@ -1,5 +1,6 @@
 title: Test Direct Class Invoke (Custom Title)
 tooltip: Test Direct Class Invoke Tooltip
 author: "{{author}}"
+highlight: new
 assembly: PyRevitTestLinkCommand
 command_class: PyRevitTestLinkExternalCommand

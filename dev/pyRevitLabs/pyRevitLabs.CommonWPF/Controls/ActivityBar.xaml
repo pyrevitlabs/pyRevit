@@ -6,6 +6,13 @@
              mc:Ignorable="d"
              d:DesignHeight="100" d:DesignWidth="900">
     <UserControl.Resources>
+        <Style x:Key="controlButton" TargetType="{x:Type Button}">
+            <Setter Property="Height" Value="25" />
+            <Setter Property="Padding" Value="6,0,6,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontFamily" Value="Consolas" />
+        </Style>
+        
         <Style x:Key="SmallCancel" TargetType="{x:Type Button}">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Padding" Value="0"/>
@@ -55,15 +62,19 @@
             </RichTextBox>
             <StackPanel Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal">
                 <Button x:Name="clearConsoleButton" Content="CLEAR" Margin="0,0,5,0"
+                        Style="{StaticResource controlButton}"
                         Click="clearConsoleButton_Click"
                         ToolTip="Clear all console content"/>
                 <Button x:Name="copyConsoleButton" Content="COPY ALL" Margin="0,0,5,0"
+                        Style="{StaticResource controlButton}"
                         Click="copyConsoleButton_Click"
                         ToolTip="Copy all console contents to clipboard"/>
                 <Button x:Name="clearErrorsConsoleButton" Content="CLEAR ERRORS"  Margin="0,0,5,0"
+                        Style="{StaticResource controlButton}"
                         Click="clearErrorsConsoleButton_Click"
                         ToolTip="Clear errors on console"/>
                 <Button x:Name="closeButton" Content="CLOSE" Margin="0,0,15,0"
+                        Style="{StaticResource controlButton}"
                         Click="closeButton_Click"
                         ToolTip="Collapse console"/>
             </StackPanel>

@@ -5,18 +5,14 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__doc__ = 'Decreases the sheet number of the selected sheets by one. '\
-          'The sheet name change will be printed if logging is set '\
-          'to Verbose in pyRevit settings.'
-
-
 selection = revit.get_selection()
 logger = script.get_logger()
 
 
 shift = -1
 
-selected_sheets = forms.select_sheets(title='Select Sheets', use_selection=True)
+selected_sheets = forms.select_sheets(title='Select Sheets',
+                                      use_selection=True)
 if not selected_sheets:
     script.exit()
 

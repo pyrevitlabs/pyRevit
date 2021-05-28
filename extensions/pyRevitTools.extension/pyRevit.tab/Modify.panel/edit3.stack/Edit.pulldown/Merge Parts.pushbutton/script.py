@@ -5,9 +5,6 @@ from pyrevit.framework import List
 from pyrevit import forms
 from pyrevit import script
 
-__author__ = "{{author}}"
-__context__ = "selection"
-
 
 logger = script.get_logger()
 output = script.get_output()

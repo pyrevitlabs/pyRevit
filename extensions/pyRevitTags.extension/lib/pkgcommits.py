@@ -152,11 +152,12 @@ class CommitPointTypes(object):
 
 
 class CommitPoint(object):
-    def __init__(self, cptype, target, idx, name):
+    def __init__(self, cptype, target, idx, name, desc):
         self.cptype = cptype
         self.target = target
         self.idx = idx
         self.name = name
+        self.desc = desc
 
     def __repr__(self):
         return '<{} cptype={} idx={} name={}>'.format(

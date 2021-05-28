@@ -18,7 +18,9 @@ mlogger = coreutils.logger.get_logger(__name__)
 
 
 EXT_DIR_KEY = 'directory'
-SUB_CMP_KEY = 'sub_components'
+SUB_CMP_KEY = 'components'
+LAYOUT_ITEM_KEY = 'layout_items'
+LAYOUT_DIR_KEY = 'directive'
 TYPE_ID_KEY = 'type_id'
 NAME_KEY = 'name'
 
@@ -30,8 +32,8 @@ class TypedComponent(object):
 class CachableComponent(TypedComponent):
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
-        if TYPE_ID_KEY in cache_dict:
-            cache_dict[TYPE_ID_KEY] = self.type_id
+        if hasattr(self, TYPE_ID_KEY):
+            cache_dict[TYPE_ID_KEY] = getattr(self, TYPE_ID_KEY)
         return cache_dict
 
     def load_cache_data(self, cache_dict):
@@ -40,13 +42,13 @@ class CachableComponent(TypedComponent):
 
 
 class LayoutDirective(CachableComponent):
-    def __init__(self, directive_type, target):
+    def __init__(self, directive_type=None, target=None):
         self.directive_type = directive_type
         self.target = target
 
 
 class LayoutItem(CachableComponent):
-    def __init__(self, name, directive):
+    def __init__(self, name=None, directive=None):
         self.name = name
         self.directive = directive
 
@@ -135,8 +137,11 @@ class GenericUIComponent(GenericComponent):
         mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
 
         self.media_file = \
-            self.find_bundle_file([exts.DEFAULT_MEDIA_FILENAME], as_name=True)
+            self.find_bundle_file([exts.DEFAULT_MEDIA_FILENAME], finder='name')
         mlogger.debug('Media file is: %s:%s', self.name, self.media_file)
+
+        self._help_url = \
+            self.find_bundle_file([exts.HELP_FILE_PATTERN], finder='regex')
 
         # each component can store custom libraries under
         # lib/ inside the component folder
@@ -269,25 +274,25 @@ class GenericUIComponent(GenericComponent):
             return self.module_paths.remove(path)
 
     def get_bundle_file(self, file_name):
-        if file_name:
+        if self.directory and file_name:
             file_addr = op.join(self.directory, file_name)
             return file_addr if op.exists(file_addr) else None
 
-    def find_bundle_file(self, patterns,
-                         as_name=False, as_postfix=True, as_regex=False):
-        for bundle_file in os.listdir(self.directory):
-            if as_name:
-                for file_name in patterns:
-                    if op.splitext(bundle_file)[0] == file_name:
-                        return op.join(self.directory, bundle_file)
-            elif as_postfix:
-                for file_postfix in patterns:
-                    if bundle_file.endswith(file_postfix):
-                        return op.join(self.directory, bundle_file)
-            elif as_regex:
-                for regex_pattern in patterns:
-                    if re.match(regex_pattern, bundle_file):
-                        return op.join(self.directory, bundle_file)
+    def find_bundle_file(self, patterns, finder='postfix'):
+        if self.directory:
+            for bundle_file in os.listdir(self.directory):
+                if 'name' == finder:
+                    for file_name in patterns:
+                        if op.splitext(bundle_file)[0] == file_name:
+                            return op.join(self.directory, bundle_file)
+                elif 'postfix' == finder:
+                    for file_postfix in patterns:
+                        if bundle_file.endswith(file_postfix):
+                            return op.join(self.directory, bundle_file)
+                elif 'regex' == finder:
+                    for regex_pattern in patterns:
+                        if re.match(regex_pattern, bundle_file):
+                            return op.join(self.directory, bundle_file)
         return None
 
     def find_bundle_module(self, module):
@@ -332,7 +337,9 @@ class GenericUIContainer(GenericUIComponent):
         # default is layout in metadata, the older layout file is deprecate
         # and is for fallback only
         if not self.parse_layout_metadata():
-            self.parse_layout_file()
+            mlogger.debug('Container does not have layout file defined: %s',
+                self)
+
 
     def _apply_layout_directive(self, directive, component):
         # if matching directive found, process the directive
@@ -411,19 +418,6 @@ class GenericUIContainer(GenericUIComponent):
         if layout:
             self.parse_layout_items(layout)
             return True
-
-    def parse_layout_file(self):
-        layout_filepath = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
-        if op.exists(layout_filepath):
-            mlogger.deprecate(
-                "\"_layout\" file is deprecated. "
-                "use bundle.yaml instead. | %s", self)
-            with codecs.open(layout_filepath, 'r', 'utf-8') as layout_file:
-                self.parse_layout_items(layout_file.read().splitlines())
-                return True
-        else:
-            mlogger.debug('Container does not have layout file defined: %s',
-                          self)
 
     def contains(self, item_name):
         return any([x.name == item_name for x in self.components])
@@ -507,6 +501,13 @@ class GenericUICommand(GenericUIComponent):
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
         self.requires_persistent_engine = False
+        self.requires_mainthread_engine = False
+        # engine options specific to dynamo
+        self.dynamo_path = None
+        # self.dynamo_path_exec = False
+        self.dynamo_path_check_existing = False
+        self.dynamo_force_manual_run = False
+        self.dynamo_model_nodes_info = None
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent.__init__(self, cmp_path=cmp_path)
 
@@ -568,6 +569,7 @@ class GenericUICommand(GenericUIComponent):
     def _read_bundle_metadata(self):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent._read_bundle_metadata(self)
+        # determine engine configs
         if exts.MDATA_ENGINE in self.meta:
             self.requires_clean_engine = \
                 self.meta[exts.MDATA_ENGINE].get(
@@ -579,19 +581,117 @@ class GenericUICommand(GenericUIComponent):
                 self.meta[exts.MDATA_ENGINE].get(
                     exts.MDATA_ENGINE_PERSISTENT, 'false').lower() == 'true'
 
+            # determine if engine is required to run on main thread
+            # MDATA_ENGINE_MAINTHREAD is the generic option
+            rme = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_MAINTHREAD, 'false') == 'true'
+            # MDATA_ENGINE_DYNAMO_AUTOMATE is specific naming for dynamo
+            automate = self.meta[exts.MDATA_ENGINE].get(
+                exts.MDATA_ENGINE_DYNAMO_AUTOMATE, 'false') == 'true'
+            self.requires_mainthread_engine = rme or automate
+
+            # process engine options specific to dynamo
+            self.dynamo_path = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH, None)
+            # self.dynamo_path_exec = \
+            #     self.meta[exts.MDATA_ENGINE].get(
+            #         exts.MDATA_ENGINE_DYNAMO_PATH_EXEC, 'true') == 'true'
+            self.dynamo_path_check_existing = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_PATH_CHECK_EXIST,
+                    'false') == 'true'
+            self.dynamo_force_manual_run = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_FORCE_MANUAL_RUN,
+                    'false') == 'true'
+            self.dynamo_model_nodes_info = \
+                self.meta[exts.MDATA_ENGINE].get(
+                    exts.MDATA_ENGINE_DYNAMO_MODEL_NODES_INFO, None)
+
         # panel buttons should be active always
         if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:
-            self.context = exts.CTX_ZERODOC[0]
+            self.context = self._parse_context_directives(exts.CTX_ZERODOC)
         else:
             self.context = \
                 self.meta.get(exts.MDATA_COMMAND_CONTEXT, None)
-            if isinstance(self.context, list):
-                self.context = coreutils.join_strings(self.context)
+            if self.context:
+                self.context = self._parse_context_directives(self.context)
 
-            if self.context and exts.CTX_ZERODOC[1] in self.context:
-                mlogger.deprecate(
-                    "\"zerodoc\" context is deprecated. "
-                    "use \"zero-doc\" instead. | %s", self)
+    def _parse_context_list(self, context):
+        context_rules = []
+
+        str_items = [x for x in context if isinstance(x, str)]
+        context_rules.append(
+            exts.MDATA_COMMAND_CONTEXT_RULE.format(
+                rule=exts.MDATA_COMMAND_CONTEXT_ALL_SEP.join(str_items)
+                )
+        )
+
+        dict_items = [x for x in context if isinstance(x, dict)]
+        for ditem in dict_items:
+            context_rules.extend(self._parse_context_dict(ditem))
+
+        return context_rules
+
+    def _parse_context_dict(self, context):
+        context_rules = []
+        for ctx_key, ctx_value in context.items():
+            if ctx_key == exts.MDATA_COMMAND_CONTEXT_TYPE:
+                context_type = (
+                    exts.MDATA_COMMAND_CONTEXT_ANY_SEP
+                    if ctx_value == exts.MDATA_COMMAND_CONTEXT_ANY
+                    else exts.MDATA_COMMAND_CONTEXT_ALL_SEP
+                )
+                continue
+
+            if isinstance(ctx_value, str):
+                ctx_value = [ctx_value]
+
+            key = ctx_key.lower()
+            condition = ""
+            # all
+            if key == exts.MDATA_COMMAND_CONTEXT_ALL \
+                    or key == exts.MDATA_COMMAND_CONTEXT_NOTALL:
+                condition = exts.MDATA_COMMAND_CONTEXT_ALL_SEP
+
+            # any
+            elif key == exts.MDATA_COMMAND_CONTEXT_ANY \
+                    or key == exts.MDATA_COMMAND_CONTEXT_NOTANY:
+                condition = exts.MDATA_COMMAND_CONTEXT_ANY_SEP
+
+            # except
+            elif key == exts.MDATA_COMMAND_CONTEXT_EXACT \
+                    or key == exts.MDATA_COMMAND_CONTEXT_NOTEXACT:
+                condition = exts.MDATA_COMMAND_CONTEXT_EXACT_SEP
+
+            context = condition.join(
+                [x for x in ctx_value if isinstance(x, str)]
+                )
+            formatted_rule = \
+                exts.MDATA_COMMAND_CONTEXT_RULE.format(rule=context)
+            if key.startswith(exts.MDATA_COMMAND_CONTEXT_NOT):
+                formatted_rule = "!" + formatted_rule
+            context_rules.append(formatted_rule)
+        return context_rules
+
+    def _parse_context_directives(self, context):
+        context_rules = []
+
+        if isinstance(context, str):
+            context_rules.append(
+                exts.MDATA_COMMAND_CONTEXT_RULE.format(rule=context)
+            )
+        elif isinstance(context, list):
+            context_rules.extend(self._parse_context_list(context))
+
+        elif isinstance(context, dict):
+            if "rule" in context:
+                return context["rule"]
+            context_rules.extend(self._parse_context_dict(context))
+
+        context_type = exts.MDATA_COMMAND_CONTEXT_ALL_SEP
+        return context_type.join(context_rules)
 
     def _read_bundle_metadata_from_python_script(self):
         try:
@@ -648,17 +748,12 @@ class GenericUICommand(GenericUIComponent):
 
             # panel buttons should be active always
             if self.type_id == exts.PANEL_PUSH_BUTTON_POSTFIX:
-                self.context = exts.CTX_ZERODOC[0]
+                self.context = self._parse_context_directives(exts.CTX_ZERODOC)
             else:
                 self.context = \
                     script_content.extract_param(exts.COMMAND_CONTEXT_PARAM)
-                if isinstance(self.context, list):
-                    self.context = coreutils.join_strings(self.context)
-
-                if self.context and exts.CTX_ZERODOC[1] in self.context:
-                    mlogger.deprecate(
-                        "\"zerodoc\" context is deprecated. "
-                        "use \"zero-doc\" instead. | %s", self)
+                if self.context:
+                    self.context = self._parse_context_directives(self.context)
 
         except Exception as parse_err:
             mlogger.log_parse_except(self.script_file, parse_err)

@@ -9,9 +9,6 @@ import tagscfg
 import tagsmgr
 
 
-__author__ = '{{author}}'
-
-
 logger = script.get_logger()
 
 

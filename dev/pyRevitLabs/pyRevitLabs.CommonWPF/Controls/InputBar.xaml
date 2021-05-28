@@ -1,0 +1,94 @@
+﻿<UserControl x:Class="pyRevitLabs.CommonWPF.Controls.InputBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:pyRevitLabs.CommonWPF.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="36" d:DesignWidth="600">
+    <UserControl.Resources>
+        <Brush x:Key="pyRevitDark">#ff2c3e50</Brush>
+        <Brush x:Key="pyRevitAccent">#FFf39c12</Brush>
+        
+        <Style x:Key="utilButton" TargetType="{x:Type Button}">
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Margin" Value="3,0,0,0" />
+            <Setter Property="Padding" Value="3" />
+            <Setter Property="Background" Value="{StaticResource pyRevitDark}" />
+            <Setter Property="BorderBrush" Value="{StaticResource pyRevitDark}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style x:Key="debugButton" TargetType="{x:Type Button}">
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="3,0,0,0" />
+            <Setter Property="Width" Value="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" />
+            <Setter Property="Background" Value="{StaticResource pyRevitAccent}" />
+            <Setter Property="BorderBrush" Value="{StaticResource pyRevitAccent}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Grid x:Key="dbgContinue" Height="12" Width="12">
+            <Path Stretch="Uniform" 
+                Data="M2.5 2L4 2L4 14L2.5 14L2.5 2ZM6 2.18L6 14L15 8.062L6 2.181L6 2.18ZM12.315 8.062L7.5 5L7.5 11.18L12.315 8.062Z"
+                Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}"/>
+        </Grid>
+
+        <Grid x:Key="dbgStepOver" Height="12" Width="12">
+            <Path Stretch="Uniform" 
+                Data="M10.289 13.716C10.289 14.969 9.259 16 8.006 16C6.753 16 5.722 14.969 5.722 13.716C5.722 12.464 6.753 11.433 8.006 11.433C9.259 11.433 10.289 12.464 10.289 13.716ZM15.995 6.029L15.995 0.914L14.077 0.914L14.077 4.164C12.612 2.426 10.354 1.339 7.887 1.339C3.824 1.339 0.316 4.29 0.01 8.242L-0.016 8.586L1.904 8.586L1.932 8.297C2.203 5.49 4.748 3.259 7.886 3.259C10.106 3.259 12.034 4.378 13.065 6.029L9.446 6.029L9.446 7.947L14.77 7.947L16 6.7L16 6.029L15.995 6.029Z"
+                Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}"/>
+        </Grid>
+
+        <Grid x:Key="dbgStepIn" Height="12" Width="12">
+            <Path Stretch="Uniform" 
+                Data="M10.289 13.716C10.289 14.969 9.259 16 8.006 16C6.753 16 5.722 14.969 5.722 13.716C5.722 12.464 6.753 11.433 8.006 11.433C9.259 11.433 10.289 12.464 10.289 13.716ZM7.314 9.986L8.697 9.986L13.68 5.003L12.326 3.651L8.962 6.981L8.962 0L7.05 0L7.05 6.981L3.685 3.651L2.332 5.003L7.314 9.986Z"
+                Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}" />
+        </Grid>
+
+        <Grid x:Key="dbgStepOut" Height="12" Width="12">
+            <Path Stretch="Uniform" 
+                Data="M10.289 13.716C10.289 14.969 9.259 16 8.006 16C6.753 16 5.722 14.969 5.722 13.716C5.722 12.464 6.753 11.433 8.006 11.433C9.259 11.433 10.289 12.464 10.289 13.716ZM8.697 0L7.314 0L2.332 4.983L3.685 6.335L7.05 3.005L7.05 9.986L8.962 9.986L8.962 3.005L12.326 6.335L13.68 4.983L8.697 0Z"
+                Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}" />
+        </Grid>
+
+        <Grid x:Key="dbgStop" Height="8" Width="8">
+            <Path Stretch="Uniform" 
+                Data="M3.905 3.905L3.905 12.095L12.095 12.095L12.095 3.905L3.905 3.905ZM10.202 10.202L5.798 10.202L5.798 5.798L10.202 5.798L10.202 10.202Z"
+                Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}" />
+        </Grid>
+    </UserControl.Resources>
+    <DockPanel Margin="6" >
+        <Label x:Name="promptLabel" Content=">>>" DockPanel.Dock="Left" Background="{StaticResource pyRevitDark}" Foreground="White" 
+               VerticalAlignment="Stretch" HorizontalAlignment="Left" VerticalContentAlignment="Center"
+               FontFamily="Consolas" Padding="6,0" Width="32"/>
+        <Grid x:Name="debugPanel" DockPanel.Dock="Right"  Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+                <ColumnDefinition />
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="dbgCont" ToolTip="Continue" Grid.Column="0" Style="{StaticResource debugButton}" Content="{StaticResource dbgContinue}" Click="dbgCont_Click"/>
+            <Button x:Name="dbStepOver" ToolTip="Step Over" Grid.Column="1" Style="{StaticResource debugButton}" Content="{StaticResource dbgStepOver}" Click="dbStepOver_Click"/>
+            <Button x:Name="dbgStepIn" ToolTip="Step In" Grid.Column="2" Style="{StaticResource debugButton}" Content="{StaticResource dbgStepIn}" Click="dbgStepIn_Click" />
+            <Button x:Name="dbgStepOut" ToolTip="Step Out" Grid.Column="3" Style="{StaticResource debugButton}" Content="{StaticResource dbgStepOut}" Click="dbgStepOut_Click" />
+            <Button x:Name="dbgStop" ToolTip="Stop" Grid.Column="4" Style="{StaticResource debugButton}" Content="{StaticResource dbgStop}" Click="dbgStop_Click"/>
+        </Grid>
+        <Grid x:Name="filePanel" DockPanel.Dock="Right"  Visibility="Collapsed">
+            <Button x:Name="pickFile" Grid.Column="4"
+                    Width="38" Content="&#x25CF;&#x25CF;&#x25CF;"
+                    Style="{StaticResource utilButton}" 
+                    VerticalContentAlignment="Center"
+                    Padding="0,0,0,2"
+                    Click="pickFile_Click" />
+        </Grid>
+        <TextBox x:Name="inputTb" BorderBrush="{StaticResource pyRevitDark}" BorderThickness="1" 
+                 AcceptsTab="False" AcceptsReturn="False" Text="" Padding="2,0,0,0"
+                 MaxLength="256" MaxLines="1"
+                 VerticalContentAlignment="Center" FontFamily="Consolas"
+                 KeyUp="inputTb_KeyUp" />
+    </DockPanel>
+</UserControl>

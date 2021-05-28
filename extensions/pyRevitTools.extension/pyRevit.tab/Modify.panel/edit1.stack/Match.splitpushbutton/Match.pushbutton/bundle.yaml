@@ -1,0 +1,8 @@
+help_url: '{{docpath}}SrjyyGvarhw'
+tooltip: >-
+  Pick the source object that has the element graphics override you like to match to, and then pick the destination objects one by one and this tool will match the graphics overrides
+
+
+  Shift-Click:
+
+  Shows Match Config window

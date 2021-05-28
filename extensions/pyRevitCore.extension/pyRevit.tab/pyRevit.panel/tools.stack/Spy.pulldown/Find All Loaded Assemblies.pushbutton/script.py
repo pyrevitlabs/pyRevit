@@ -4,8 +4,6 @@ from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import script
 
-__context__ = 'zero-doc'
-
 
 output = script.get_output()
 

@@ -2,11 +2,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__context__ = 'selection'
-__doc__ = 'Select a series of tags and this tool will add their associated '\
-          'elements to selection. This is especially useful for isolating '\
-          'elements and their tags.'
-
 selection = revit.get_selection()
 
 

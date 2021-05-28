@@ -14,9 +14,6 @@ from pyrevit.userconfig import user_config
 import pyrevitcore_globals
 
 
-__context__ = 'zero-doc'
-
-
 logger = script.get_logger()
 
 
@@ -52,9 +49,6 @@ class ExtensionPackageListItem:
         elif self.ext_pkg.type == \
                 exts.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
-        elif self.ext_pkg.type == \
-                exts.ExtensionTypes.RUN_EXTENSION:
-            self.Type = 'CLI Run Commands'
 
         # setting up other list data
         self.Builtin = self.ext_pkg.builtin
@@ -268,12 +262,9 @@ class ExtensionsWindow(forms.WPFWindow):
                     self.show_element(self.ext_remove_b)
 
                 # Action Button: Toggle (Enable / Disable)
-                if ext_pkg_item.ext_pkg.is_cli_ext:
-                    self.hide_element(self.ext_toggle_b)
-                else:
-                    self._update_toggle_button(
-                        enable=ext_pkg_item.ext_pkg.config.disabled
-                    )
+                self._update_toggle_button(
+                    enable=ext_pkg_item.ext_pkg.config.disabled
+                )
             else:
                 self.show_element(self.ext_install_b)
                 self.hide_element(self.ext_toggle_b, self.ext_remove_b)
@@ -282,10 +273,7 @@ class ExtensionsWindow(forms.WPFWindow):
             self.hide_element(self.ext_install_b)
             self.hide_element(self.ext_remove_b)
             # hide the button if includes any cli extensions
-            if any([x.ext_pkg.is_cli_ext for x in ext_pkg_items]):
-                self.hide_element(self.ext_toggle_b)
-            # hide the button if any ext is not installed
-            elif any([not x.ext_pkg.is_installed for x in ext_pkg_items]):
+            if any([not x.ext_pkg.is_installed for x in ext_pkg_items]):
                 self.hide_element(self.ext_toggle_b)
             else:
                 all_disabled = \
@@ -325,10 +313,10 @@ class ExtensionsWindow(forms.WPFWindow):
 
                 # Set current username and pass for the private repo
                 self.repousername_tb.Text = ext_pkg_item.ext_pkg.config.username
-                self.repopassword_tb.Text = ext_pkg_item.ext_pkg.config.password
+                self.repopassword_pb.Password = ext_pkg_item.ext_pkg.config.password
             except Exception:
                 self.privaterepo_cb.IsChecked = False
-                self.repopassword_tb.Text = self.repousername_tb.Text = ''
+                self.repopassword_pb.Password = self.repousername_tb.Text = ''
 
     def _list_options(self, option_filter=None):
         if option_filter:
@@ -398,7 +386,7 @@ class ExtensionsWindow(forms.WPFWindow):
             self.selected_pkg.ext_pkg.config.username = \
                 self.repousername_tb.Text
             self.selected_pkg.ext_pkg.config.password = \
-                self.repopassword_tb.Text
+                self.repopassword_pb.Password
             user_config.save_changes()
             self.Close()
         except Exception as pkg_sett_save_err:
@@ -437,8 +425,7 @@ class ExtensionsWindow(forms.WPFWindow):
         try:
             extpkgs.remove(self.selected_pkg.ext_pkg)
             self.Close()
-            if not self.selected_pkg.ext_pkg.is_cli_ext:
-                call_reload()
+            call_reload()
         except Exception as pkg_remove_err:
             logger.error('Error removing package. | {}'.format(pkg_remove_err))
 

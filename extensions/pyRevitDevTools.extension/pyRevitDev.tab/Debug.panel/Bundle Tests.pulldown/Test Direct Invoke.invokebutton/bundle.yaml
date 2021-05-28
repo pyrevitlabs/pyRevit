@@ -1,5 +1,7 @@
 title: Test Direct Invoke (Custom Title)
 tooltip: Test Direct Invoke Tooltip
+context: zero-doc
 author: "{{author}}"
+highlight: new
 assembly: AliTpyRevitConcepts.dll
 command_class:

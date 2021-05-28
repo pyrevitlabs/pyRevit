@@ -48,13 +48,9 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath) {
+        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, GitInstallerCredentials credentials) {
             // FIXME: implement image
             if (cloneName != null) {
-                // report progress
-                GlobalConfigs.ReportProgress = true;
-                Console.CursorVisible = false;
-
                 // if deployment requested or image path is provided
                 if (imagePath != null || deployName != null)
                     PyRevitClones.DeployFromImage(
@@ -71,11 +67,9 @@ namespace pyRevitCLI {
                         deploymentName: deployName,
                         branchName: branchName,
                         repoUrl: repoUrl,
-                        destPath: destPath
+                        destPath: destPath,
+                        credentials: credentials
                         );
-
-                GlobalConfigs.ReportProgress = false;
-                Console.CursorVisible = true;
             }
         }
 
@@ -117,9 +111,16 @@ namespace pyRevitCLI {
         DeleteClone(bool allClones, string cloneName, bool clearConfigs) {
             if (allClones)
                 PyRevitClones.DeleteAllClones(clearConfigs: clearConfigs);
-            else {
-                if (cloneName != null)
-                    PyRevitClones.Delete(PyRevitClones.GetRegisteredClone(cloneName), clearConfigs: clearConfigs);
+            else if (cloneName != null) {
+                // lets detach the clone if there is any attachments to it
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
+                foreach(var attachment in PyRevitAttachments.GetAttachments())
+                    if (attachment.Clone.Equals(clone)) {
+                        logger.Debug($"Detaching existing attachment: {attachment}");
+                        PyRevitAttachments.Detach(attachment.Product.ProductYear, attachment.AllUsers);
+                    }
+
+                PyRevitClones.Delete(clone, clearConfigs: clearConfigs);
             }
         }
 
@@ -234,7 +235,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        UpdateClone(bool allClones, string cloneName) {
+        UpdateClone(bool allClones, string cloneName, GitInstallerCredentials credentials) {
             // TODO: ask for closing running Revits
 
             // prepare a list of clones to be updated
@@ -265,7 +266,7 @@ namespace pyRevitCLI {
             // update clones that do not include this process
             foreach (var clone in targetClones) {
                 logger.Debug("Updating clone \"{0}\"", clone.Name);
-                PyRevitClones.Update(clone);
+                PyRevitClones.Update(clone, credentials);
             }
 
             // now update myClone if any, as last step
@@ -274,56 +275,42 @@ namespace pyRevitCLI {
                                            + "Use installer to update.");
 
         }
-
+        
         internal static void
-        AttachClone(string cloneName,
-                    bool latest, bool dynamoSafe, string engineVersion,
+        AttachClone(PyRevitClone clone, string engineId,
                     string revitYear, bool installed, bool attached,
                     bool allUsers) {
-            var clone = PyRevitClones.GetRegisteredClone(cloneName);
+            var engine = clone.GetConfiguredEngine(engineId);
+            AttachClone(clone, engine.Version, revitYear, installed, attached, allUsers);
+        }
 
-            // grab engine version
-            int engineVer = 0;
-            int.TryParse(engineVersion, out engineVer);
-
-            if (latest) {
-                logger.Debug("Attaching on latest engine...");
-                var latestCloneEngine = 
-                    clone.GetEngines().Where(x => x.Runtime).OrderByDescending(x => x.Version).First();
-                logger.Debug(string.Format("Latest engine: {0}", latestCloneEngine));
-                if (latestCloneEngine != null)
-                    engineVer = latestCloneEngine.Version;
-                else
-                    throw new PyRevitException("Can not determine latest runtime engine for this clone.");
-            }
-            else if (dynamoSafe) {
-                logger.Debug("Attaching on dynamo-safe engine");
-                engineVer = PyRevitConsts.ConfigsDynamoCompatibleEnginerVer;
-            }
-
+        internal static void
+        AttachClone(PyRevitClone clone, PyRevitEngineVersion engineVersion,
+                    string revitYear, bool installed, bool attached,
+                    bool allUsers) {
             // decide targets revits to attach to
             int revitYearNumber = 0;
             if (installed)
                 foreach (var revit in RevitProduct.ListInstalledProducts())
-                    PyRevitAttachments.Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+                    PyRevitAttachments.Attach(revit.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
             else if (attached)
                 foreach (var attachment in PyRevitAttachments.GetAttachments())
-                    PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+                    PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVersion, allUsers: allUsers);
             else if (int.TryParse(revitYear, out revitYearNumber))
-                PyRevitAttachments.Attach(revitYearNumber, clone, engineVer: engineVer, allUsers: allUsers);
+                PyRevitAttachments.Attach(revitYearNumber, clone, engineVer: engineVersion, allUsers: allUsers);
         }
 
         internal static void
-        DetachClone(string revitYear, bool all) {
+        DetachClone(string revitYear, bool all, bool currentAndAllUsers = false) {
             if (revitYear != null) {
                 int revitYearNumber = 0;
                 if (int.TryParse(revitYear, out revitYearNumber))
-                    PyRevitAttachments.Detach(revitYearNumber);
+                    PyRevitAttachments.Detach(revitYearNumber, currentAndAllUsers: true);
                 else
                     throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
             }
             else if (all)
-                PyRevitAttachments.DetachAll();
+                PyRevitAttachments.DetachAll(currentAndAllUsers);
         }
 
         internal static void

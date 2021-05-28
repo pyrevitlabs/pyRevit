@@ -4,21 +4,21 @@ using System.Collections.Generic;
 using IronPython.Runtime;
 
 using pyRevitLabs.Common;
-using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class DomainStorageKeys {
-        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpper();
+        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
         public static string EnginesDictKey = keyPrefix + "CachedEngines";
-        public static string IronPythonEngineDefaultStreamCfgKey = keyPrefix + "CachedEngineDefaultStreamCfg";
+        public static string IronPythonEngineDefaultOutputStreamCfgKey = keyPrefix + "CachedEngineDefaultOutputStreamCfg";
+        public static string IronPythonEngineDefaultInputStreamCfgKey = keyPrefix + "CachedEngineDefaultInputStreamCfg";
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
 
     public static class EnvDictionaryKeys
     {
-        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpper();
+        public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string SessionUUID = string.Format("{0}_UUID", keyPrefix);
         public static string RevitVersion = string.Format("{0}_APPVERSION", keyPrefix);
@@ -38,6 +38,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string TelemetryFileDir = string.Format("{0}_TELEMETRYDIR", keyPrefix);
         public static string TelemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
         public static string TelemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
+        public static string TelemetryIncludeHooks = string.Format("{0}_TELEMETRYINCLUDEHOOKS", keyPrefix);
+        
         public static string AppTelemetryState = string.Format("{0}_APPTELEMETRYSTATE", keyPrefix);
         public static string AppTelemetryHandler = string.Format("{0}_APPTELEMETRYHANDLER", keyPrefix);
         public static string AppTelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
@@ -72,6 +74,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool TelemetryState;
         public string TelemetryFilePath;
         public string TelemetryServerUrl;
+        public bool TelemetryIncludeHooks;
 
         public bool AppTelemetryState;
         public string AppTelemetryServerUrl;
@@ -134,6 +137,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (_envData.Contains(EnvDictionaryKeys.TelemetryServerUrl))
                 TelemetryServerUrl = (string)_envData[EnvDictionaryKeys.TelemetryServerUrl];
+
+            if (_envData.Contains(EnvDictionaryKeys.TelemetryIncludeHooks))
+                TelemetryIncludeHooks = (bool)_envData[EnvDictionaryKeys.TelemetryIncludeHooks];
 
             // app events telemetry
             if (_envData.Contains(EnvDictionaryKeys.AppTelemetryState))

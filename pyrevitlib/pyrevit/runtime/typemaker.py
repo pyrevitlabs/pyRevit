@@ -17,6 +17,12 @@ mlogger = logger.get_logger(__name__)
 
 
 def create_avail_type(extension, cmd_component, module_builder=None):
+    if cmd_component.type_id == exts.LINK_BUTTON_POSTFIX:
+        mlogger.debug(
+            'Skipped creating availability type for: %s', cmd_component
+            )
+        return
+
     # create command availability class for this command
     mlogger.debug('Creating availability type for: %s', cmd_component)
     # set the name of the created type
@@ -32,7 +38,7 @@ def create_avail_type(extension, cmd_component, module_builder=None):
                 cmd_component=cmd_component
                 )
 
-        elif context_str in exts.CTX_ZERODOC:
+        elif context_str == exts.CTX_ZERODOC:
             bundletypemaker.create_zerodoc_avail_type(
                 module_builder=module_builder,
                 cmd_component=cmd_component

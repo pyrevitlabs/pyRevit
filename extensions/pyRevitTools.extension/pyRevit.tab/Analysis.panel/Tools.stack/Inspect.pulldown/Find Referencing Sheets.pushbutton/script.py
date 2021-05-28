@@ -6,8 +6,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
-__author__ = "{{author}}"
-
 output = script.get_output()
 
 curview = revit.active_view

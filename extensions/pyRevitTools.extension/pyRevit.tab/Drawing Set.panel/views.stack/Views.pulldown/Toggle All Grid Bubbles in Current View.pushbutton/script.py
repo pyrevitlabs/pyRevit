@@ -4,9 +4,6 @@ from pyrevit import forms
 from pyrevit import revit, DB
 
 
-__min_revit_ver__ = 2016
-
-
 all_grids = DB.FilteredElementCollector(revit.doc)\
               .OfCategory(DB.BuiltInCategory.OST_Grids)\
               .WhereElementIsNotElementType().ToElements()

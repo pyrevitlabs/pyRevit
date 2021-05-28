@@ -10,15 +10,14 @@ using IronPython.Hosting;
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 
-using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class IronPythonEngineConfigs : ScriptEngineConfigs {
-        public bool clean;
-        public bool full_frame;
-        public bool persistent;
+        public bool clean = false;
+        public bool full_frame = false;
+        public bool persistent = false;
     }
 
     public class IronPythonEngine : ScriptEngine {
@@ -29,11 +28,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static Tuple<Stream, System.Text.Encoding> DefaultOutputStreamConfig {
             get {
-                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEngineDefaultStreamCfgKey);
+                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEngineDefaultOutputStreamCfgKey);
             }
 
             set {
-                AppDomain.CurrentDomain.SetData(DomainStorageKeys.IronPythonEngineDefaultStreamCfgKey, value);
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.IronPythonEngineDefaultOutputStreamCfgKey, value);
+            }
+        }
+
+        public static Tuple<Stream, System.Text.Encoding> DefaultInputStreamConfig {
+            get {
+                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEngineDefaultInputStreamCfgKey);
+            }
+
+            set {
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.IronPythonEngineDefaultInputStreamCfgKey, value);
             }
         }
 
@@ -43,13 +52,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // extract engine configuration from runtime data
             try {
                 ExecEngineConfigs = new JavaScriptSerializer().Deserialize<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
-            }
-            catch {
-                // if any errors switch to defaults
-                ExecEngineConfigs.clean = false;
-                ExecEngineConfigs.full_frame = false;
-                ExecEngineConfigs.persistent = false;
-            }
+            } catch {}
 
             // If the command required a fullframe engine
             // or if the command required a clean engine
@@ -67,6 +70,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (ExecEngineConfigs.full_frame) {
                     flags["Frames"] = true;
                     flags["FullFrames"] = true;
+                    flags["Tracing"] = true;
                 }
 
                 Engine = IronPython.Hosting.Python.CreateEngine(flags);
@@ -83,6 +87,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // save the default stream for later resetting the streams
                 DefaultOutputStreamConfig = new Tuple<Stream, System.Text.Encoding>(Engine.Runtime.IO.OutputStream, Engine.Runtime.IO.OutputEncoding);
+                DefaultInputStreamConfig = new Tuple<Stream, System.Text.Encoding>(Engine.Runtime.IO.InputStream, Engine.Runtime.IO.InputEncoding);
 
                 // setup stdlib
                 SetupStdlib(Engine);
@@ -182,6 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void SetupStreams(ref ScriptRuntime runtime) {
             Engine.Runtime.IO.SetOutput(runtime.OutputStream, System.Text.Encoding.UTF8);
+            Engine.Runtime.IO.SetInput(runtime.OutputStream, System.Text.Encoding.UTF8);
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime) {
@@ -289,6 +295,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (outStream != null) {
                 Engine.Runtime.IO.SetOutput(outStream.Item1, outStream.Item2);
                 outStream.Item1.Dispose();
+            }
+            Tuple<Stream, System.Text.Encoding> inStream = DefaultInputStreamConfig;
+            if (inStream != null) {
+                Engine.Runtime.IO.SetInput(inStream.Item1, inStream.Item2);
+                inStream.Item1.Dispose();
             }
         }
     }

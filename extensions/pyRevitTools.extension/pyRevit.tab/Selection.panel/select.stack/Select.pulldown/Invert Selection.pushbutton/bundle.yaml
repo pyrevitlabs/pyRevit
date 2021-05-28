@@ -1,0 +1,8 @@
+tooltip: >-
+  Inverts selection in active view
+
+
+  Shift-Click:
+
+  Select group members instead of parent group elements
+context: selection

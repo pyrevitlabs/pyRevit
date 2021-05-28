@@ -17,6 +17,10 @@ namespace pyRevitLabs.PyRevit {
         public string Url;
         public string BranchName;
         public string DeploymentName;
+
+        public override string ToString() {
+            return string.Format("Url: \"{0}\" | Branch: \"{1}\" | Deployment: \"{2}\"", Url, BranchName, DeploymentName);
+        }
     }
 
     public class PyRevitClone {
@@ -27,7 +31,7 @@ namespace pyRevitLabs.PyRevit {
             "git", "pyrevit",
             "blog", "docs", "source", "youtube", "support", "env", "clone", "clones",
             "add", "forget", "rename", "delete", "branch", "commit", "version",
-            "attach", "attatched", "latest", "dynamosafe", "detached",
+            "attach", "attatched", "detached",
             "extend", "extensions", "search", "install", "uninstall", "update", "paths", "revits",
             "config", "configs", "logs", "none", "verbose", "debug", "allowremotedll", "checkupdates",
             "autoupdate", "rocketmode", "filelogging", "loadbeta", "telemetry", "enable", "disable",
@@ -77,7 +81,7 @@ namespace pyRevitLabs.PyRevit {
             else {
                 return string.Format(
                     "{0} | Deploy: \"{1}\" | Branch: \"{2}\" | Version: \"{3}\" | Path: \"{4}\"",
-                    Name, Deployment.Name, Branch, ModuleVersion, ClonePath);
+                    Name, Deployment?.Name, Branch, ModuleVersion, ClonePath);
             }
         }
 
@@ -111,7 +115,7 @@ namespace pyRevitLabs.PyRevit {
 
         public string Commit => GetCommit(ClonePath);
 
-        public string ShortCommit => Commit.GetHashShort();
+        public string ShortCommit => Commit?.GetHashShort();
 
         public string Origin => GetOrigin(ClonePath);
 
@@ -150,8 +154,10 @@ namespace pyRevitLabs.PyRevit {
 
         public List<PyRevitEngine> GetEngines() => GetEngines(ClonePath);
 
-        public PyRevitEngine GetEngine(int engineVer) => GetEngine(ClonePath, engineVer: engineVer);
+        public PyRevitEngine GetEngine(PyRevitEngineVersion engineVer) => GetEngine(ClonePath, engineVer: engineVer);
 
+        public PyRevitEngine GetConfiguredEngine(string engineId) => GetConfiguredEngine(ClonePath, engineId);
+        
         public List<PyRevitEngine> GetConfiguredEngines() => GetConfiguredEngines(ClonePath);
 
         public List<PyRevitDeployment> GetConfiguredDeployments() => GetConfiguredDeployments(ClonePath);
@@ -167,6 +173,8 @@ namespace pyRevitLabs.PyRevit {
         public PyRevitCloneFromImageArgs DeploymentArgs => ReadDeploymentArgs(ClonePath);
 
         public List<PyRevitExtension> GetExtensions() => GetExtensions(ClonePath);
+
+        public PyRevitExtension GetExtension(string searchPattern) => GetExtension(ClonePath, searchPattern);
 
         // static methods ============================================================================================
         // determine if this is a git repo
@@ -206,21 +214,19 @@ namespace pyRevitLabs.PyRevit {
                 var normClonePath = clonePath.NormalizeAsPath();
                 logger.Debug("Checking pyRevit clone validity \"{0}\"", normClonePath);
                 if (CommonUtils.VerifyPath(normClonePath)) {
-                    // say yes if under test
-                    if (!GlobalConfigs.AllClonesAreValid) {
-                        // determine clone validity based on directory availability
-                        logger.Debug("Checking clone validity by directory structure...");
-                        var pyrevitDir = GetPyRevitPath(normClonePath);
-                        logger.Debug("Checking pyRevit path \"{0}\"", pyrevitDir);
-                        if (!CommonUtils.VerifyPath(pyrevitDir)) {
-                            throw new pyRevitInvalidPyRevitCloneException(normClonePath);
-                        }
-
-                        // if is a repo, and repo is NOT valid, throw an exception
-                        logger.Debug("Checking clone validity by git repo...");
-                        if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath))
-                            throw new pyRevitInvalidGitCloneException(normClonePath);
+                    // determine clone validity based on directory availability
+                    logger.Debug("Checking clone validity by directory structure...");
+                    var pyrevitDir = GetPyRevitPath(normClonePath);
+                    logger.Debug("Checking pyRevit path \"{0}\"", pyrevitDir);
+                    if (!CommonUtils.VerifyPath(pyrevitDir)) {
+                        throw new pyRevitInvalidPyRevitCloneException(normClonePath);
                     }
+
+                    // if is a repo, and repo is NOT valid, throw an exception
+                    logger.Debug("Checking clone validity by git repo...");
+                    if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath))
+                        throw new pyRevitInvalidGitCloneException(normClonePath);
+
                     logger.Debug("Valid pyRevit clone \"{0}\"", normClonePath);
                     return;
                 }
@@ -249,9 +255,31 @@ namespace pyRevitLabs.PyRevit {
         // get engine from clone path
         // returns latest with default engineVer value
         // @handled @logs
-        public static PyRevitEngine GetEngine(string clonePath, int engineVer) {
+        public static PyRevitEngine GetEngine(string clonePath, PyRevitEngineVersion engineVer) {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
-            return GetEngines(clonePath).Where(x => x.Version == engineVer).First();
+            if (engineVer == PyRevitEngineVersion.Default) {
+                var defaultEng = GetDefaultEngine(clonePath);
+                if (defaultEng is null)
+                    throw new PyRevitException("Can not find default engine");
+                return defaultEng;
+            }
+            else {
+                var engines = GetEngines(clonePath).Where(x => x.Version == engineVer);
+                var engineCount = engines.Count();
+                if (engineCount == 0)
+                    throw new PyRevitException($"Can not find engine with specified version \"{engineVer.Version}\" is found");
+                else if (engineCount > 1)
+                    throw new PyRevitException($"More than one engine with specified version \"{engineVer.Version}\" is found");
+
+                return engines.First();
+            }
+        }
+
+        public static PyRevitEngine GetDefaultEngine(string clonePath) {
+            foreach (var eng in GetEngines(clonePath))
+                if (eng.IsDefault)
+                    return eng;
+            throw new PyRevitException($"Can not find default engine");
         }
 
         // get all engines from clone path
@@ -266,6 +294,13 @@ namespace pyRevitLabs.PyRevit {
                 var enginesDir = FindEnginesDirectory(clonePath);
                 return FindEngines(enginesDir);
             }
+        }
+
+        public static PyRevitEngine GetConfiguredEngine(string clonePath, string engineId) {
+            foreach (var eng in GetEngines(clonePath))
+                if (eng.Id.ToLower() == engineId.ToLower())
+                    return eng;
+            throw new PyRevitException($"Can not find engine \"{engineId}\"");
         }
 
         // extract deployment config from pyRevitfile inside the clone
@@ -284,13 +319,14 @@ namespace pyRevitLabs.PyRevit {
 
                     engines.Add(
                         new PyRevitEngine(
-                            engineVer: infoTable["version"].Get<int>(),
+                            id: engineCfg.Key,
+                            engineVer: new PyRevitEngineVersion(infoTable["version"].Get<int>()),
                             runtime: infoTable.TryGetValue("runtime") != null ? infoTable["runtime"].Get<bool>() : true, // be flexible since its a new feature
                             enginePath: Path.Combine(clonePath, infoTable["path"].Get<string>()),
                             assemblyName: infoTable.TryGetValue("assembly") != null? infoTable["assembly"].Get<string>() : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
                             kernelName: infoTable["kernel"].Get<string>(),
                             engineDescription: infoTable["description"].Get<string>(),
-                            compatibleProducts: new List<string>(((TomlArray)infoTable["compatproducts"]).To<string>())
+                            isDefault: engineCfg.Key.Contains("DEFAULT")
                             )
                         );
                 }
@@ -422,7 +458,14 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static List<PyRevitExtension> GetExtensions(string clonePath) {
             VerifyCloneValidity(clonePath);
-            return PyRevitExtension.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
+            return PyRevitExtensions.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
+        }
+
+        // get a specific builtin extension
+        // @handled @logs
+        public static PyRevitExtension GetExtension(string clonePath, string searchPattern) {
+            VerifyCloneValidity(clonePath);
+            return PyRevitExtensions.FindExtension(PyRevitClone.GetExtensionsPath(clonePath), searchPattern);
         }
 
         // check if given assembly belongs to pyrevit
@@ -452,7 +495,8 @@ namespace pyRevitLabs.PyRevit {
                     BranchName = contents[1] == string.Empty ? PyRevitLabsConsts.TragetBranch : contents[1],
                     DeploymentName = contents[2] == string.Empty ? null : contents[2]
                 };
-
+                logger.Debug(args);
+                
                 return args;
             }
             catch (Exception ex) {
@@ -490,12 +534,6 @@ namespace pyRevitLabs.PyRevit {
 
             logger.Debug("Valid clone found at: {0}", testPath);
             return testPath;
-        }
-
-        // find latest engine path
-        // @handled @logs
-        private static PyRevitEngine FindLatestEngine(string enginesDir) {
-            return FindEngine(enginesDir, engineVer: 000);
         }
 
         // find engine path with given version
@@ -543,21 +581,27 @@ namespace pyRevitLabs.PyRevit {
             if (CommonUtils.VerifyPath(enginesDir)) {
                 foreach (string engineDir in Directory.GetDirectories(enginesDir)) {
                     var engineDirName = Path.GetFileName(engineDir);
-                    if (engineFinder.IsMatch(engineDirName)) {
-                        var engineVer = int.Parse(engineDirName);
+                    var m = engineFinder.Match(engineDirName);
+                    if (m.Success) {
                         logger.Debug("Engine found \"{0}\":\"{1}\"", engineDirName, engineDir);
 
                         // this method is for legacy repos. since engine configuration file is not available in
                         // legacy repos, it needs to decide whether an engine could be used for runtime or not
-                        // assumes anything Python 3 and above is not runtime
-                        bool runtime = true;
-                        if (engineVer >= 300)
-                            runtime = false;
+                        // assumes anything between python 2.7.* and 2.9.9 is IronPython
+                        bool runtime = false;
+                        if (int.TryParse(m.Value, out var engineVer))
+                            if (engineVer > 270 && engineVer < 300)
+                                runtime = true;
 
-                        engines.Add(new PyRevitEngine(engineVer, runtime, engineDir));
+                        engines.Add(
+                            new PyRevitEngine(
+                                id: engineDirName,
+                                engineVer: (PyRevitEngineVersion)engineVer,
+                                runtime: runtime,
+                                enginePath: engineDir)
+                        );
                     }
                 }
-
             }
             else
                 throw new pyRevitResourceMissingException(enginesDir);

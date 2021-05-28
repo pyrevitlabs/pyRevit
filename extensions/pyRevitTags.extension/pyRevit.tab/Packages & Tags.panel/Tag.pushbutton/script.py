@@ -10,11 +10,6 @@ import tagscfg
 import tagsmgr
 
 
-__title__ = 'Tag\nSelected'
-__author__ = '{{author}}'
-__helpurl__ = '{{docpath}}FYNDSAypWlg'
-
-
 logger = script.get_logger()
 output = script.get_output()
 

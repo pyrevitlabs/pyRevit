@@ -1,0 +1,15 @@
+tooltip: >-
+  Applies the copied state to the active view
+
+  This works in conjunction with the Copy State tool
+
+
+  Shift-Click:
+
+  Show additional options
+author: >-
+  Gui Talarico
+
+  {{author}}
+
+  Alex Melnikov

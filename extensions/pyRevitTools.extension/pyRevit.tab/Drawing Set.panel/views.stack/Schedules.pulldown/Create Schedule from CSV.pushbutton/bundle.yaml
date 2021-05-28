@@ -1,0 +1,18 @@
+tooltip: >-
+  Import existing CSV file as a key schedule
+
+
+  - First CSV row must be field names
+
+  - First CSV field must be "Key Name"
+
+
+  CSV Example:
+
+  Key Name,Parameter1 Name,Parameter2 Name
+
+  A,Value11,Value12
+
+  B,Value21,Value22
+
+  C,Value32,Value32

@@ -109,10 +109,22 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         return self._cfg_file_path
 
     @property
+    def environment(self):
+        if not self.has_section(CONSTS.EnvConfigsSectionName):
+            self.add_section(CONSTS.EnvConfigsSectionName)
+        return self.get_section(CONSTS.EnvConfigsSectionName)
+
+    @property
     def core(self):
         if not self.has_section(CONSTS.ConfigsCoreSection):
             self.add_section(CONSTS.ConfigsCoreSection)
         return self.get_section(CONSTS.ConfigsCoreSection)
+
+    @property
+    def routes(self):
+        if not self.has_section(CONSTS.ConfigsRoutesSection):
+            self.add_section(CONSTS.ConfigsRoutesSection)
+        return self.get_section(CONSTS.ConfigsRoutesSection)
 
     @property
     def telemetry(self):
@@ -283,7 +295,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def cpython_engine_version(self, version):
         self.core.set_option(
             CONSTS.ConfigsCPythonEngineKey,
-            value=version
+            value=int(version)
         )
 
     @property
@@ -309,9 +321,54 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @output_stylesheet.setter
     def output_stylesheet(self, stylesheet_filepath):
-        self.core.set_option(
-            CONSTS.ConfigsOutputStyleSheet,
-            value=stylesheet_filepath
+        if stylesheet_filepath:
+            self.core.set_option(
+                CONSTS.ConfigsOutputStyleSheet,
+                value=stylesheet_filepath
+            )
+        else:
+            self.core.remove_option(CONSTS.ConfigsOutputStyleSheet)
+
+    @property
+    def routes_host(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsRoutesHostKey,
+            default_value=CONSTS.ConfigsRoutesHostDefault,
+        )
+
+    @routes_host.setter
+    def routes_host(self, routes_host):
+        self.routes.set_option(
+            CONSTS.ConfigsRoutesHostKey,
+            value=routes_host
+        )
+
+    @property
+    def routes_port(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsRoutesPortKey,
+            default_value=CONSTS.ConfigsRoutesPortDefault,
+        )
+
+    @routes_port.setter
+    def routes_port(self, port):
+        self.routes.set_option(
+            CONSTS.ConfigsRoutesPortKey,
+            value=port
+        )
+
+    @property
+    def load_core_api(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsLoadCoreAPIKey,
+            default_value=CONSTS.ConfigsConfigsLoadCoreAPIDefault,
+        )
+
+    @load_core_api.setter
+    def load_core_api(self, state):
+        self.routes.set_option(
+            CONSTS.ConfigsLoadCoreAPIKey,
+            value=state
         )
 
     @property
@@ -368,6 +425,20 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         self.telemetry.set_option(
             CONSTS.ConfigsTelemetryServerUrlKey,
             value=server_url
+        )
+
+    @property
+    def telemetry_include_hooks(self):
+        return self.telemetry.get_option(
+            CONSTS.ConfigsTelemetryIncludeHooksKey,
+            default_value=CONSTS.ConfigsTelemetryIncludeHooksDefault,
+        )
+
+    @telemetry_include_hooks.setter
+    def telemetry_include_hooks(self, state):
+        self.telemetry.set_option(
+            CONSTS.ConfigsTelemetryIncludeHooksKey,
+            value=state
         )
 
     @property
@@ -469,6 +540,34 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
+    def tooltip_debug_info(self):
+        return self.core.get_option(
+            CONSTS.ConfigsAppendTooltipExKey,
+            default_value=CONSTS.ConfigsAppendTooltipExDefault,
+        )
+
+    @tooltip_debug_info.setter
+    def tooltip_debug_info(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsAppendTooltipExKey,
+            value=state
+        )
+
+    @property
+    def routes_server(self):
+        return self.routes.get_option(
+            CONSTS.ConfigsRoutesServerKey,
+            default_value=CONSTS.ConfigsRoutesServerDefault,
+        )
+
+    @routes_server.setter
+    def routes_server(self, state):
+        self.routes.set_option(
+            CONSTS.ConfigsRoutesServerKey,
+            value=state
+        )
+
+    @property
     def respect_language_direction(self):
         return False
 
@@ -486,12 +585,12 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         Returns:
             :obj:`list`: list of strings. External user extension directories.
         """
-        dir_list = []
+        dir_list = set()
         if include_default:
             # add default ext path
-            dir_list.append(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            dir_list.add(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
         try:
-            dir_list.extend([
+            dir_list.update([
                 op.expandvars(op.normpath(x))
                 for x in self.core.get_option(
                     CONSTS.ConfigsUserExtensionsKey,
@@ -510,11 +609,19 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             :obj:`list`: list of strings. user extension directories.
 
         """
-        dir_list = []
+        dir_list = set()
         if op.exists(EXTENSIONS_DEFAULT_DIR):
-            dir_list.append(EXTENSIONS_DEFAULT_DIR)
-        dir_list.extend(self.get_thirdparty_ext_root_dirs())
-        return list(set(dir_list))
+            dir_list.add(EXTENSIONS_DEFAULT_DIR)
+        dir_list.update(self.get_thirdparty_ext_root_dirs())
+        return list(dir_list)
+
+    def get_ext_sources(self):
+        """Return a list of extension definition source files"""
+        ext_sources = self.environment.get_option(
+            CONSTS.EnvConfigsExtensionLookupSourcesKey,
+            default_value=[],
+        )
+        return list(set(ext_sources))
 
     def set_thirdparty_ext_root_dirs(self, path_list):
         """Updates list of external extension directories in config file
@@ -542,7 +649,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         engines = []
         # try ot find attachment and get engines from the clone
         attachment = self.get_current_attachment()
-        if attachment:
+        if attachment and attachment.Clone:
             engines = attachment.Clone.GetEngines()
         # if can not find attachment, instantiate a temp clone
         else:
@@ -550,7 +657,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
                 clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
                 engines = clone.GetEngines()
             except Exception as cEx:
-                mlogger.debug('Can not create clone from path: %s', )
+                mlogger.debug('Can not create clone from path: %s', str(cEx))
 
         # find cpython engines
         cpy_engines_dict = {
@@ -581,6 +688,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     def set_active_cpython_engine(self, pyrevit_engine):
         self.cpython_engine_version = pyrevit_engine.Version
+
 
     def save_changes(self):
         """Save user config into associated config file."""
@@ -656,9 +764,13 @@ if not EXEC_PARAMS.doc_mode:
     # check to see if there is any config file provided by admin
     elif ADMIN_CONFIG_FILE:
         # if yes, copy that and use as default
+        # if admin config file is writable it means it is provided
+        # to bootstrap the first pyRevit run
         if os.access(ADMIN_CONFIG_FILE, os.W_OK):
             CONFIG_TYPE = 'Seed'
-            PyRevit.PyRevitConfigs.SeedConfig(False, ADMIN_CONFIG_FILE)
+            # make a local copy if one does not exist
+            if not USER_CONFIG_FILE:
+                PyRevit.PyRevitConfigs.SeedConfig(False, ADMIN_CONFIG_FILE)
             CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
         # unless it's locked. then read that config file and set admin-mode
         else:

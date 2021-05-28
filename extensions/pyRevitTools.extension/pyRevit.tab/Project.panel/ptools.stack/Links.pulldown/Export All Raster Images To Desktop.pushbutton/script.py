@@ -9,10 +9,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
-__doc__ = 'Exports all original imported images to '\
-          'chosen path and adds file size to image type name.'
-
-
 def convert_size(size_bytes):
     if size_bytes == 0:
         return "0B"

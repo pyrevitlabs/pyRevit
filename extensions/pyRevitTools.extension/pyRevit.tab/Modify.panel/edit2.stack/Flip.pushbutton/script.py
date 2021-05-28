@@ -4,9 +4,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__context__ = 'selection'
-
-
 def flip_facing():
     with revit.Transaction('Flip Facing Selected'):
         for el in revit.get_selection():

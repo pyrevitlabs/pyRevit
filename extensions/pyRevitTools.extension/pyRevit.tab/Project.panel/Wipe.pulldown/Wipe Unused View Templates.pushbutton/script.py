@@ -1,9 +1,6 @@
 from pyrevit import forms
 from pyrevit import revit, DB
 
-__doc__ = 'Deletes all unused view templates '\
-          '(Any view template that has not been assigned to a view).'
-
 
 class ViewTemplateToPurge(forms.TemplateListItem):
     @property

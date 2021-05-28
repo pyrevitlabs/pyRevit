@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Blend for Visual Studio 15
 VisualStudioVersion = 15.0.27703.2000
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitWPFForms", "pyRevitWPFForms\pyRevitWPFForms.csproj", "{34A98B57-8933-48CF-BC4E-50D700975128}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitWPFForms", "pyRevitWPFForms.csproj", "{34A98B57-8933-48CF-BC4E-50D700975128}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

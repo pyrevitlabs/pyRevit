@@ -3,9 +3,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
-__doc__ = 'Deletes all view parameter filters that has not been '\
-          'listed on any views. This includes sheets as well.'
-
 logger = script.get_logger()
 
 

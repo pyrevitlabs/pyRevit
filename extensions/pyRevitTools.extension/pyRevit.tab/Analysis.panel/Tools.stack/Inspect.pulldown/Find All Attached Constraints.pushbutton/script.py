@@ -3,9 +3,6 @@
 from pyrevit import revit, DB
 
 
-__context__ = 'selection'
-
-
 def listconstraints(selected_el):
     print('THIS OBJECT ID: {0}'.format(selected_el.Id))
     clconst = DB.FilteredElementCollector(revit.doc)\

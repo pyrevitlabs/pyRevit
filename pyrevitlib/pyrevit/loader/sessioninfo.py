@@ -55,7 +55,7 @@ def setup_runtime_vars():
     else:
         mlogger.debug('Can not determine attachment.')
         envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR, "Unknown")
-        envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR, "0.0.0")
+        envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR, "0")
 
     # set cpython engine version env var
     cpyengine = user_config.get_active_cpython_engine()
@@ -63,7 +63,7 @@ def setup_runtime_vars():
         envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR,
                                     str(cpyengine.Version))
     else:
-        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, "0.0.0")
+        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, "0")
 
     # set a list of important assemblies
     # this is required for dotnet script execution
@@ -179,15 +179,9 @@ def report_env():
     if user_config.rocket_mode:
         mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
 
-    if HOST_APP.is_newer_than(2017):
-        full_host_name = \
-            HOST_APP.version_name.replace(HOST_APP.version,
-                                          HOST_APP.subversion)
-    else:
-        full_host_name = HOST_APP.version_name
-    mlogger.info('Host is %s (build: %s id: %s)',
-                 full_host_name, HOST_APP.build, HOST_APP.proc_id)
-    mlogger.info('Running on: %s', sys.version)
+    mlogger.info('Host is %s pid: %s', HOST_APP.pretty_name, HOST_APP.proc_id)
+    # ipy 2.7.10 has a new line in its sys.version :rolling-eyes-emoji:
+    mlogger.info('Running on: %s', sys.version.replace('\n', ' '))
     mlogger.info('User is: %s', HOST_APP.username)
     mlogger.info('Home Directory is: %s', HOME_DIR)
     mlogger.info('Session uuid is: %s', get_session_uuid())

@@ -54,6 +54,9 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static string GetRevitAddonsFilePath(int revitYear, string addinFileName, bool allusers = false) {
+            if (UserEnv.IsRunAsElevated())
+                allusers = true;
+            
             var rootFolder =
                 allusers ? System.Environment.SpecialFolder.CommonApplicationData : System.Environment.SpecialFolder.ApplicationData;
             return Path.Combine(GetRevitAddonsFolder(revitYear, allUsers: allusers), addinFileName + ".addin");

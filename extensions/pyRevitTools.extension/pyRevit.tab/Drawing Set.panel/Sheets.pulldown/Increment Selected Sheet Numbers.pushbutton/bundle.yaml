@@ -1,0 +1,11 @@
+title:
+  fr_fr: Incrémenter les Numéros des Feuilles Sélectionnées
+  en_us: Increment Selected Sheet Numbers
+tooltip:
+  fr_fr: >-
+    Augmente de un le numéro de feuille des feuilles sélectionnées. Le
+    changement de nom de feuille sera imprimé si la journalisation est définie
+    sur Verbose dans les paramètres pyRevit
+  en_us: >-
+    Increases the sheet number of the selected sheets by one. The sheet name
+    change will be printed if logging is set to Verbose in pyRevit settings

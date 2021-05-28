@@ -10,7 +10,7 @@ Examples:
     >>> from pyrevit import HOST_APP
     >>> from pyrevit import EXEC_PARAMS
 """
-#pylint: disable=W0703,C0302,C0103,C0413
+#pylint: disable=W0703,C0302,C0103,C0413,raise-missing-from
 import sys
 import os
 import os.path as op
@@ -19,22 +19,6 @@ import traceback
 import re
 
 import clr  #pylint: disable=E0401
-
-
-try:
-    clr.AddReference('PyRevitLoader')
-except Exception:
-    # probably older IronPython engine not being able to
-    # resolve to an already loaded assembly.
-    # PyRevitLoader is executing this script so it should be referabe.
-    pass
-
-try:
-    import PyRevitLoader
-except ImportError:
-    # this means that pyRevit is _not_ being loaded from a pyRevit engine
-    # e.g. when importing from RevitPythonShell
-    PyRevitLoader = None
 
 
 PYREVIT_ADDON_NAME = 'pyRevit'
@@ -79,15 +63,13 @@ RUNTIME_DIR = op.join(MODULE_DIR, 'runtime')
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 
 # if loader module is available means pyRevit is being executed by Revit.
-if PyRevitLoader:
-    ENGINES_DIR = \
-        op.join(BIN_DIR, 'engines', PyRevitLoader.ScriptExecutor.EngineVersion)
-    ADDIN_RESOURCE_DIR = op.join(BIN_DIR, 'engines',
-                                 'Source', 'pyRevitLoader', 'Resources')
+import pyrevit.engine as eng
+if eng.EngineVersion != 000:
+    ENGINES_DIR = op.join(BIN_DIR, 'engines', eng.EngineVersion)
 # otherwise it might be under test, or documentation processing.
 # so let's keep the symbols but set to None (fake the symbols)
 else:
-    ENGINES_DIR = ADDIN_RESOURCE_DIR = None
+    ENGINES_DIR = None
 
 # add the framework dll path to the search paths
 sys.path.append(BIN_DIR)
@@ -147,8 +129,6 @@ class PyRevitException(Exception):
 
 class PyRevitIOError(PyRevitException):
     """Common base class for all pyRevit io-related exceptions."""
-
-    pass
 
 
 class PyRevitCPythonNotSupported(PyRevitException):
@@ -263,7 +243,10 @@ class _HostApplication(object):
     @property
     def subversion(self):
         """str: Return subversion number (e.g. '2018.3')."""
-        return self.app.SubVersionNumber
+        if hasattr(self.app, 'SubVersionNumber'):
+            return self.app.SubVersionNumber
+        else:
+            return '{}.0'.format(self.version)
 
     @property
     def version_name(self):
@@ -273,12 +256,26 @@ class _HostApplication(object):
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
-        return self.app.VersionBuild
+        if int(self.version) >= 2021:
+            # uses labs module that is imported later in this code
+            return labs.extract_build_from_exe(self.proc_path)
+        else:
+            return self.app.VersionBuild
 
     @property
     def serial_no(self):
         """str: Return serial number number (e.g. '569-09704828')."""
         return api.get_product_serial_number()
+
+    @property
+    def pretty_name(self):
+        """str: Pretty name of the host
+        (e.g. 'Autodesk Revit 2019.2 build: 20190808_0900(x64)')
+        """
+        host_name = self.version_name
+        if self.is_newer_than(2017):
+            host_name = host_name.replace(self.version, self.subversion)
+        return "%s build: %s" % (host_name, self.build)
 
     @property
     def is_demo(self):
@@ -401,6 +398,16 @@ class _HostApplication(object):
 
         return self._postable_cmds
 
+    def post_command(self, command_id):
+        """Request Revit to run a command
+
+        Args:
+            command_id (str): command identifier e.g. ID_REVIT_SAVE_AS_TEMPLATE
+        """
+        command_id = UI.RevitCommandId.LookupCommandId(command_id)
+        self.uiapp.PostCommand(command_id)
+
+
 
 try:
     # Create an intance of host application wrapper
@@ -423,7 +430,7 @@ class _ExecutorParams(object):
         try:
             return __execid__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def exec_timestamp(self):
@@ -431,7 +438,7 @@ class _ExecutorParams(object):
         try:
             return __timestamp__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def engine_id(self):
@@ -439,13 +446,13 @@ class _ExecutorParams(object):
         try:
             return __cachedengineid__
         except NameError:
-            raise AttributeError()
+            pass
 
     @property   # read-only
     def engine_ver(self):
         """str: Return PyRevitLoader.ScriptExecutor hardcoded version."""
-        if PyRevitLoader:
-            return PyRevitLoader.ScriptExecutor.EngineVersion
+        if eng.ScriptExecutor:
+            return eng.ScriptExecutor.EngineVersion
 
     @property  # read-only
     def cached_engine(self):
@@ -510,6 +517,19 @@ class _ExecutorParams(object):
         """``DB.RevitAPIEventArgs``: Return event arguments object."""
         if self.script_runtime_cfgs:
             return self.script_runtime_cfgs.EventArgs
+
+    @property
+    def event_doc(self):
+        """``DB.Document``: Return document set in event args if available."""
+        if self.event_args:
+            if hasattr(self.event_args, 'Document'):
+                return getattr(self.event_args, 'Document')
+            elif hasattr(self.event_args, 'ActiveDocument'):
+                return getattr(self.event_args, 'ActiveDocument')
+            elif hasattr(self.event_args, 'CurrentDocument'):
+                return getattr(self.event_args, 'CurrentDocument')
+            elif hasattr(self.event_args, 'GetDocument'):
+                return self.event_args.GetDocument()
 
     @property   # read-only
     def needs_refreshed_engine(self):
@@ -675,6 +695,26 @@ class _ExecutorParams(object):
 # create an instance of _ExecutorParams wrapping current runtime.
 EXEC_PARAMS = _ExecutorParams()
 
+
+# -----------------------------------------------------------------------------
+# type to safely get document instance from app or event args
+# -----------------------------------------------------------------------------
+
+class _DocsGetter(object):
+    """Instance to safely get document from HOST_APP instance or EXEC_PARAMS"""
+
+    @property
+    def doc(self):
+        """Active document"""
+        return HOST_APP.doc or EXEC_PARAMS.event_doc
+
+    @property
+    def docs(self):
+        """List of active documents"""
+        return HOST_APP.docs
+
+
+DOCS = _DocsGetter()
 
 # -----------------------------------------------------------------------------
 # config user environment paths

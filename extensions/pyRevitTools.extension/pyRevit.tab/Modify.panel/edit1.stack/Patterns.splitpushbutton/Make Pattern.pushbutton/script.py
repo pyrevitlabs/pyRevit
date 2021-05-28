@@ -11,29 +11,6 @@ from pyrevit import script
 import patmaker
 
 
-__title__ = 'Make\nPattern'
-
-__helpurl__ = \
-    '{{docpath}}H7b8hjHbauE&t=8s&list=PLc_1PNcpnV57FWI6G8Cd09umHpSOzvamf'
-
-__doc__ = 'Draw your pattern tile in a detail view using detail lines, '\
-          'curves, circles or ellipses, or even filled regions.\n'\
-          'Select the pattern lines and curves '\
-          'and run this tool. Give the pattern a name and '\
-          'hit "Create Pattern". The tool asks you to pick the boundary '\
-          'corners of the pattern. The tool will process the input lines, '\
-          'approximates the curves and splines with smaller lines and '\
-          'finds the best angles for these lines and will '\
-          'generate a pattern. It also reads the patterns from selected '\
-          'filled regions and will combine with selected detail lines.'\
-          '\n\n'\
-          'TIP: You can export existing patterns if no lines are selected.'\
-          '\n\n'\
-          'TRICK: You can convert existing pattern types by selecting a '\
-          'filled region only and create the opposite pattern type '\
-          '(selected drafting filled region and create model pattern).'\
-
-
 logger = script.get_logger()
 
 selection = revit.get_selection()
@@ -58,10 +35,14 @@ detail_line_types = [DB.DetailLine,
                      DB.DetailNurbSpline]
 
 
-metric_units = [DB.DisplayUnitType.DUT_METERS,
-                DB.DisplayUnitType.DUT_CENTIMETERS,
-                DB.DisplayUnitType.DUT_MILLIMETERS]
-
+if HOST_APP.is_newer_than(2021):
+    metric_units = [DB.UnitTypeId.Meters,
+                    DB.UnitTypeId.Centimeters,
+                    DB.UnitTypeId.Millimeters]
+else:
+    metric_units = [DB.DisplayUnitType.DUT_METERS,
+                    DB.DisplayUnitType.DUT_CENTIMETERS,
+                    DB.DisplayUnitType.DUT_MILLIMETERS]
 
 # type in lower case
 readonly_patterns = ['solid fill']
@@ -183,17 +164,30 @@ class MakePatternWindow(forms.WPFWindow):
             if isinstance(element, acceptable_lines):
                 geom_curves.append(self.grab_geom_curves(element))
             elif isinstance(element, DB.FilledRegion):
-                frtype = revit.doc.GetElement(element.GetTypeId())
-                fillpat_element = revit.doc.GetElement(frtype.FillPatternId)
-                fillpat = fillpat_element.GetFillPattern()
-                fillgrids = fillpat.GetFillGrids()
-                # adjust derafting patterns to current scale
-                if fillpat.Target == DB.FillPatternTarget.Drafting:
-                    adjusted_fillgrids = \
-                        [self.update_fillgrid(x, revit.active_view.Scale)
-                         for x in fillgrids]
-                else:
-                    adjusted_fillgrids.extend(fillgrids)
+                bg_fillpat = \
+                    revit.query.get_fillpattern_from_element(element)
+                fg_fillpat = None
+                # check for version otherwise fg_fillpat is same as bg_fillpat
+                if HOST_APP.is_newer_than(2018):
+                    fg_fillpat = \
+                        revit.query.get_fillpattern_from_element(
+                            element,
+                            background=False
+                            )
+                # process both forground and background patterns
+                for fillpat in [bg_fillpat, fg_fillpat]:
+                    # if available
+                    if fillpat:
+                        fillgrids = fillpat.GetFillGrids()
+                        # adjust derafting patterns to current scale
+                        if fillpat.Target == DB.FillPatternTarget.Drafting:
+                            adjusted_fillgrids.extend(
+                                [self.update_fillgrid(x,
+                                                      revit.active_view.Scale)
+                                 for x in fillgrids]
+                            )
+                        else:
+                            adjusted_fillgrids.extend(fillgrids)
 
         return geom_curves, adjusted_fillgrids
 
@@ -223,9 +217,16 @@ class MakePatternWindow(forms.WPFWindow):
 
     def setup_export_units(self):
         self.export_units_cb.ItemsSource = ['INCH', 'MM']
+        is_metric = False
         units = revit.doc.GetUnits()
-        length_fo = units.GetFormatOptions(DB.UnitType.UT_Length)
-        if length_fo.DisplayUnits in metric_units:
+        if HOST_APP.is_newer_than(2021):
+            length_fo = units.GetFormatOptions(DB.SpecTypeId.Length)
+            is_metric = length_fo.GetUnitTypeId() in metric_units
+        else:
+            length_fo = units.GetFormatOptions(DB.UnitType.UT_Length)
+            is_metric = length_fo.DisplayUnits in metric_units
+
+        if is_metric:
             self.export_units_cb.SelectedIndex = 1
         else:
             self.export_units_cb.SelectedIndex = 0

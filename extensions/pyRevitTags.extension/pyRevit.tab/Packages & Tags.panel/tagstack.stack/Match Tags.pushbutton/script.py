@@ -8,9 +8,6 @@ import tagscfg
 import tagsmgr
 
 
-__author__ = '{{author}}'
-
-
 def pick_and_match_styles(src_element):
     with forms.WarningBar(title='Pick target elements:'):
         while True:

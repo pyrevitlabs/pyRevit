@@ -3,10 +3,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__doc__ = 'Run this tool in a sheet view and click on sheet viewports one '\
-          'by one and this tool will change the detail number sequentially.'
-
-
 # verify active view is sheet
 curview = revit.active_view
 if not isinstance(curview, DB.ViewSheet):

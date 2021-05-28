@@ -1,14 +1,13 @@
 """Prints all available emojis with shorthand codes."""
-from pyrevit.runtime.types import ScriptConsoleEmojis
+#pylint: disable=import-error
+from pyrevit.framework import Emojis
 
 from pyrevit import script
 
 output = script.get_output()
 
 
-__context__ = 'zero-doc'
-
 output.freeze()
-for e in ScriptConsoleEmojis.emojiDict.Keys:
+for e in Emojis.Emojis.EmojiDict.Keys:
     print(':{0}: : {0}'.format(e))
 output.unfreeze()

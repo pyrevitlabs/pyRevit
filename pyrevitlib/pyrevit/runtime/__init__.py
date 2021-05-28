@@ -5,10 +5,13 @@ import sys
 import json
 
 from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
+import pyrevit.engine as eng
 from pyrevit import framework
+from pyrevit.framework import List, Array
 from pyrevit import api
+from pyrevit import labs
 from pyrevit.compat import safe_strtype
-from pyrevit import RUNTIME_DIR, ADDIN_RESOURCE_DIR
+from pyrevit import RUNTIME_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import logger
@@ -16,8 +19,6 @@ from pyrevit.coreutils import appdata
 from pyrevit.loader import HASH_CUTOFF_LENGTH
 from pyrevit.userconfig import user_config
 import pyrevit.extensions as exts
-
-from pyrevit.runtime import compiler
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -93,9 +94,12 @@ if not EXEC_PARAMS.doc_mode:
     # - runtime csharp files
     # - runtime engine version
     # - cpython engine version
+    mlogger.debug('Building on IronPython engine: %s', EXEC_PARAMS.engine_ver)
     BASE_TYPES_DIR_HASH = \
         coreutils.get_str_hash(
-            coreutils.calculate_dir_hash(INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER)
+            coreutils.calculate_dir_hash(
+                INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
+            )
             + EXEC_PARAMS.engine_ver
             + str(CPYTHON_ENGINE.Version)
             )[:HASH_CUTOFF_LENGTH]
@@ -138,10 +142,6 @@ def _get_source_files():
     source_files = all_sources.values()
     mlogger.debug('Source files to be compiled: %s', source_files)
     return source_files
-
-
-def _get_resource_file(resource_name):
-    return op.join(ADDIN_RESOURCE_DIR, resource_name)
 
 
 def _get_framework_module(fw_module):
@@ -220,21 +220,32 @@ def _get_reference_file(ref_name):
 
 def get_references():
     # 'IronRuby', 'IronRuby.Libraries',
-    ref_list = ['pyRevitLoader',
-                'RevitAPI', 'RevitAPIUI',
-                'IronPython', 'IronPython.Modules',
-                'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
-                'System', 'System.Core', 'System.IO',
-                'System.Numerics', 'System.Drawing',
-                'System.Xaml', 'System.Web', 'System.Xml',
-                'System.Windows.Forms', 'System.Web.Extensions',
-                'AdWindows', 'UIFramework',
-                'PresentationCore', 'PresentationFramework',
-                'WindowsBase', 'WindowsFormsIntegration',
-                'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
-                'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
-                'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit']
+    ref_list = [
+        # system stuff
+        'System', 'System.Core',
+        'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
+        'System.Drawing', 'System.Windows.Forms', 'System.Web.Extensions',
+        'PresentationCore', 'PresentationFramework',
+        'WindowsBase', 'WindowsFormsIntegration',
+        # legacy csharp/vb.net compiler
+        'Microsoft.CSharp',
+        # iron python engine
+        '{prefix}Microsoft.Dynamic'.format(prefix=eng.EnginePrefix),
+        '{prefix}Microsoft.Scripting'.format(prefix=eng.EnginePrefix),
+        '{prefix}IronPython'.format(prefix=eng.EnginePrefix),
+        '{prefix}IronPython.Modules'.format(prefix=eng.EnginePrefix),
+        # revit api
+        'RevitAPI', 'RevitAPIUI', 'AdWindows', 'UIFramework',
+        # pyrevit loader assembly
+        'pyRevitLoader',
+        # pyrevit labs
+        'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
+        'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
+        'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit',
+        'pyRevitLabs.Emojis',
+        ]
 
+    # another revit api
     if HOST_APP.is_newer_than(2018):
         ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
@@ -254,13 +265,28 @@ def _generate_runtime_asm():
     # now try to compile
     try:
         mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
-        compiler.compile_csharp(
-            source_list,
-            RUNTIME_ASSM_FILE,
-            reference_list=get_references(),
-            resource_list=[])
-        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
-
+        res, msgs = labs.Common.CodeCompiler.CompileCSharp(
+            sourceFiles=Array[str](source_list),
+            outputPath=RUNTIME_ASSM_FILE,
+            references=Array[str](
+                get_references()
+                ),
+            defines=Array[str]([
+                "REVIT{}".format(HOST_APP.version),
+                "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
+                ]),
+            debug=False
+            )
+        # log results
+        logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
+        with open(logfile, 'w') as lf:
+            lf.write('\n'.join(msgs))
+        # load compiled dll if successful
+        if res:
+            return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
+        # otherwise raise hell
+        else:
+            raise PyRevitException('\n'.join(msgs))
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',

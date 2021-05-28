@@ -1,0 +1,7 @@
+tooltip: >-
+  Print the full path to the central model (if model is workshared)
+
+
+  Shift+Click:
+
+  Open central model path in file browser

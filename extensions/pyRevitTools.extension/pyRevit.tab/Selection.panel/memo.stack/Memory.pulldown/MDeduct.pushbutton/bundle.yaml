@@ -1,0 +1,4 @@
+tooltip: >-
+  Deducts selection from memory keeping the rest
+
+  Works like the M- button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files

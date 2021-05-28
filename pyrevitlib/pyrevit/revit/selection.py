@@ -1,4 +1,4 @@
-from pyrevit import HOST_APP, PyRevitException
+from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger
 
@@ -37,7 +37,7 @@ class ElementSelection:
 
     def __iter__(self):
         for elref in self._refs:
-            yield HOST_APP.doc.GetElement(elref)
+            yield DOCS.doc.GetElement(elref)
 
     def __getitem__(self, index):
         return self.elements[index]
@@ -61,7 +61,7 @@ class ElementSelection:
 
     @property
     def elements(self):
-        return [HOST_APP.doc.GetElement(x) for x in self._refs]
+        return [DOCS.doc.GetElement(x) for x in self._refs]
 
     @property
     def element_ids(self):
@@ -70,12 +70,12 @@ class ElementSelection:
     @property
     def first(self):
         if self._refs:
-            return HOST_APP.doc.GetElement(self._refs[0])
+            return DOCS.doc.GetElement(self._refs[0])
 
     @property
     def last(self):
         if self._refs:
-            return HOST_APP.doc.GetElement(self._refs[-1])
+            return DOCS.doc.GetElement(self._refs[-1])
 
     def set_to(self, element_list):
         self._refs = ElementSelection.get_element_ids(element_list)
@@ -90,13 +90,13 @@ class ElementSelection:
 
     def include(self, element_type):
         refs = [x for x in self._refs
-                if isinstance(HOST_APP.doc.GetElement(x),
+                if isinstance(DOCS.doc.GetElement(x),
                               element_type)]
         return ElementSelection(refs)
 
     def exclude(self, element_type):
         refs = [x for x in self._refs
-                if not isinstance(HOST_APP.doc.GetElement(x),
+                if not isinstance(DOCS.doc.GetElement(x),
                                   element_type)]
         return ElementSelection(refs)
 
@@ -177,7 +177,7 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
 
         if obj_type == UI.Selection.ObjectType.Element:
             return_values = \
-                [HOST_APP.doc.GetElement(ref)
+                [DOCS.doc.GetElement(ref)
                  for ref in refs]
         elif obj_type == UI.Selection.ObjectType.PointOnElement:
             if world:
@@ -186,7 +186,7 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
                 return_values = [ref.UVPoint for ref in refs]
         else:
             return_values = \
-                [HOST_APP.doc.GetElement(ref)
+                [DOCS.doc.GetElement(ref)
                  .GetGeometryObjectFromReference(ref)
                  for ref in refs]
 

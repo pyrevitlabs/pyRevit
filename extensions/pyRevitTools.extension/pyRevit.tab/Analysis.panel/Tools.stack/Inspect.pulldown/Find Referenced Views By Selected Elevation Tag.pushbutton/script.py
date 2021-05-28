@@ -3,9 +3,6 @@
 from pyrevit import revit, DB
 
 
-__context__ = 'selection'
-
-
 el = revit.get_selection().first
 
 if isinstance(el, DB.ElevationMarker):

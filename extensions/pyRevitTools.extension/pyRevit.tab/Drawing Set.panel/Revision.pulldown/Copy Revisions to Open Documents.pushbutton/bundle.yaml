@@ -1,0 +1,6 @@
+title:
+  fr_fr: Copier les Révision vers les Documents Ouverts
+  en_us: Copy Revisions to Open Documents
+tooltip:
+  fr_fr: Copie les révisions sélectionnées du modèle actuel vers les modèles ouverts
+  en_us: Copy selected revisions from current model to selected open models

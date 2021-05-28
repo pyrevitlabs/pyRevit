@@ -10,12 +10,6 @@ from pyrevit import script
 logger = script.get_logger()
 
 
-__context__ = 'zero-doc'
-
-__doc__ = 'Downloads updates from the remote git repositories ' \
-          '(e.g github, bitbucket).'
-
-
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     # do not load the tool if user should not update
     if not user_config.user_can_update:

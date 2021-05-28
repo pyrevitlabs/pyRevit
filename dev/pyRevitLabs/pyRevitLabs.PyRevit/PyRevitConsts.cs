@@ -96,6 +96,18 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsUserCanConfigDefault = true;
         public const string ConfigsColorizeDocsKey = "colorize_docs";
         public const bool ConfigsColorizeDocsDefault = false;
+        public const string ConfigsAppendTooltipExKey = "tooltip_debug_info";
+        public const bool ConfigsAppendTooltipExDefault = false;
+
+        public const string ConfigsRoutesSection = "routes";
+        public const string ConfigsRoutesServerKey = "enabled";
+        public const bool ConfigsRoutesServerDefault = false;
+        public const string ConfigsRoutesHostKey = "host";
+        public const string ConfigsRoutesHostDefault = "";
+        public const string ConfigsRoutesPortKey = "port";
+        public const int ConfigsRoutesPortDefault = 48884;
+        public const string ConfigsLoadCoreAPIKey = "core_api";
+        public const bool ConfigsConfigsLoadCoreAPIDefault = false;
 
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
@@ -104,6 +116,8 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsTelemetryStatusDefault = false;
         public const string ConfigsTelemetryFileDirKey = "telemetry_file_dir";
         public const string ConfigsTelemetryServerUrlKey = "telemetry_server_url";
+        public const string ConfigsTelemetryIncludeHooksKey = "include_hooks";
+        public const bool ConfigsTelemetryIncludeHooksDefault = false;
         public const string ConfigsAppTelemetryStatusKey = "active_app";
         public const bool ConfigsAppTelemetryStatusDefault = false;
         public const string ConfigsAppTelemetryServerUrlKey = "apptelemetry_server_url";
@@ -122,8 +136,12 @@ namespace pyRevitLabs.PyRevit {
         public const string ExtensionDisabledKey = "disabled";
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
-        public const string ExtensionRunnerPostfix = ".run";
-        public const string ExtensionRunnerCommandPostfix = "_command.py";
+        public const string ExtensionUIBinDirName = "bin";
+        public const string ExtensionUILibDirName = "lib";
+        public const string ExtensionUIHooksDirName = "hooks";
+        public const string ExtensionUICommandsDirName = "commands";
+        public const string ExtensionUICommandPostfix = "_command.py";
+        public const string ExtensionUIChecksDirName = "checks";
         // bundles
         public const string BundleTabPostfix = ".tab";
         public const string BundlePanelPostfix = ".panel";
@@ -158,10 +176,15 @@ namespace pyRevitLabs.PyRevit {
         // methods
         public static string FindConfigFileInDirectory(string sourcePath) {
             var configMatcher = new Regex(ConfigsFileRegexPattern, RegexOptions.IgnoreCase);
-            if (CommonUtils.VerifyPath(sourcePath))
-                foreach (string subFile in Directory.GetFiles(sourcePath))
-                    if (configMatcher.IsMatch(Path.GetFileName(subFile)))
-                        return subFile;
+            // capture exceptions that might occur getting the files under sourcePath
+            // 
+            try {
+                if (CommonUtils.VerifyPath(sourcePath))
+                    foreach (string subFile in Directory.GetFiles(sourcePath))
+                        if (configMatcher.IsMatch(Path.GetFileName(subFile)))
+                            return subFile;
+            }
+            catch { }
             return null;
         }
 
@@ -175,8 +198,9 @@ namespace pyRevitLabs.PyRevit {
         // @reviewed
         public static string ConfigFilePath {
             get {
-                var cfgFile = FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath);
-                return cfgFile != null ? cfgFile : Path.Combine(PyRevitLabsConsts.PyRevitPath, DefaultConfigsFileName);
+                string configRoot = UserEnv.IsRunAsElevated() ? PyRevitLabsConsts.PyRevitProgramDataPath : PyRevitLabsConsts.PyRevitPath;
+                var cfgFile = FindConfigFileInDirectory(configRoot);
+                return cfgFile != null ? cfgFile : Path.Combine(configRoot, DefaultConfigsFileName);
             }
         }
 

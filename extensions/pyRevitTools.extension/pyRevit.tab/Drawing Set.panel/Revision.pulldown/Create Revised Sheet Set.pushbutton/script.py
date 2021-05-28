@@ -3,12 +3,6 @@ from pyrevit import revit
 from pyrevit import forms
 
 
-__doc__ = 'Select a revision from the list of revisions and this script '\
-          'will create a print sheet set for the revised sheets under the '\
-          'selected revision, and will assign the new sheet set as '\
-          'the default print set.'
-
-
 revisions = forms.select_revisions(button_name='Create Sheet Set',
                                    multiple=True)
 if revisions:

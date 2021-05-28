@@ -9,11 +9,6 @@ import tagscfg
 import tagsmgr
 
 
-__title__ = 'Manage\nTags'
-__author__ = '{{author}}'
-__helpurl__ = '{{docpath}}FYNDSAypWlg'
-
-
 logger = script.get_logger()
 
 

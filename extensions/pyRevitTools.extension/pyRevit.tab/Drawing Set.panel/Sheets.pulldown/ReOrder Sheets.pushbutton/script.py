@@ -3,7 +3,7 @@
 This tool looks for project parameters (on Sheets) that are
 Instance, of type Integer, and have "Order" in their names.
 """
-#pylint: disable=W0613,E0401,C0103
+# pylint: disable=W0613,E0401,C0103
 import re
 
 from pyrevit import forms
@@ -35,9 +35,9 @@ class ReOrderWindow(forms.WPFWindow):
 
         self._setup_item_params_combobox()
 
-        self.grouping_pattern = \
-            self._config.get_option('index_grouping_pattern',
-                                    r'([A-Z])\d')
+        self.grouping_pattern = self._config.get_option(
+            "index_grouping_pattern", r"([A-Z])\d"
+        )
 
     @property
     def items_list(self):
@@ -73,7 +73,7 @@ class ReOrderWindow(forms.WPFWindow):
 
     def _update_order_indices(self):
         if self.grouping_pattern:
-            last_groupid = ''
+            last_groupid = ""
             grouping_index = 0
             grouping_range = 1000
             for idx, item in enumerate(self.items_list):
@@ -95,10 +95,13 @@ class ReOrderWindow(forms.WPFWindow):
         items = revit.query.get_sheets()
         if items:
             item_sample = items[0]
-            item_params = [x.Definition.Name for x in item_sample.Parameters
-                           if x.StorageType == DB.StorageType.Integer]
+            item_params = [
+                x.Definition.Name
+                for x in item_sample.Parameters
+                if x.StorageType == DB.StorageType.Integer
+            ]
 
-            order_params = [x for x in item_params if 'order' in x.lower()]
+            order_params = [x for x in item_params if "order" in x.lower()]
             self.orderparams_cb.ItemsSource = sorted(order_params)
             self.orderparams_cb.SelectedIndex = 0
 
@@ -107,9 +110,10 @@ class ReOrderWindow(forms.WPFWindow):
         if self.selected_item_param:
             items = sorted(
                 items,
-                key=lambda x: x.LookupParameter(self.selected_item_param)
-                .AsInteger()
-                )
+                key=lambda x: x.LookupParameter(
+                    self.selected_item_param
+                ).AsInteger(),
+            )
         return items
 
     def _get_selected_nonselected(self):
@@ -139,11 +143,15 @@ class ReOrderWindow(forms.WPFWindow):
             # Show all items
             self.items_list = items_list
 
+    def sheet_selection_changed(self, sender, args):
+        selected, non_selected = self._get_selected_nonselected()
+        self.shift_buttons.IsEnabled = True if selected else False
+
     def sorting_changed(self, sender, args):
         order_param = args.Column.SortMemberPath
-        if order_param == 'number':
+        if order_param == "number":
             self.items_list = sorted(self.items_list, key=lambda x: x.number)
-        elif order_param == 'name':
+        elif order_param == "name":
             self.items_list = sorted(self.items_list, key=lambda x: x.name)
 
     def grouping_pattern_changed(self, sender, args):
@@ -151,50 +159,59 @@ class ReOrderWindow(forms.WPFWindow):
 
     def move_to_top(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
-        new_list = self._insert_list_in_list(selected, non_selected, 0)
-        self.items_list = new_list
+        if selected:
+            new_list = self._insert_list_in_list(selected, non_selected, 0)
+            self.items_list = new_list
 
     def move_10_to_top(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
-        index = self.items_dg.ItemsSource.index(selected[0])
-        new_list = self._insert_list_in_list(selected, non_selected, index - 10)
-        self.items_list = new_list
+        if selected:
+            index = self.items_dg.ItemsSource.index(selected[0])
+            new_list = self._insert_list_in_list(
+                selected, non_selected, index - 10
+            )
+            self.items_list = new_list
 
     def move_1_to_top(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
-        index = self.items_dg.ItemsSource.index(selected[0])
-        new_list = self._insert_list_in_list(selected, non_selected, index - 1)
-        self.items_list = new_list
+        if selected:
+            index = self.items_dg.ItemsSource.index(selected[0])
+            new_list = self._insert_list_in_list(selected, non_selected, index - 1)
+            self.items_list = new_list
 
     def move_1_to_bottom(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
-        index = self.items_dg.ItemsSource.index(selected[0])
-        new_list = self._insert_list_in_list(selected, non_selected, index + 1)
-        self.items_list = new_list
+        if selected:
+            index = self.items_dg.ItemsSource.index(selected[0])
+            new_list = self._insert_list_in_list(selected, non_selected, index + 1)
+            self.items_list = new_list
 
     def move_10_to_bottom(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
-        index = self.items_dg.ItemsSource.index(selected[0])
-        new_list = self._insert_list_in_list(selected, non_selected, index + 10)
-        self.items_list = new_list
+        if selected:
+            index = self.items_dg.ItemsSource.index(selected[0])
+            new_list = self._insert_list_in_list(selected, non_selected, index + 10)
+            self.items_list = new_list
 
     def move_to_bottom(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
-        new_list = self._insert_list_in_list(selected,
-                                             non_selected,
-                                             len(non_selected))
-        self.items_list = new_list
+        if selected:
+            new_list = self._insert_list_in_list(
+                selected, non_selected, len(non_selected)
+            )
+            self.items_list = new_list
 
     def reorder_items(self, sender, args):
         self.Close()
-        self._config.set_option('index_grouping_pattern',
-                                self.grouping_pattern)
-        with revit.Transaction('Reorder Sheets'):
+        self._config.set_option("index_grouping_pattern", self.grouping_pattern)
+        with revit.Transaction("Reorder Sheets"):
             for item in self.items_list:
-                idx_param = \
-                    item.revit_item.LookupParameter(self.selected_item_param)
+                idx_param = item.revit_item.LookupParameter(
+                    self.selected_item_param
+                )
                 if idx_param:
                     idx_param.Set(item.order_index)
 
 
-ReOrderWindow('ReOrderWindow.xaml').ShowDialog()
+ReOrderWindow("ReOrderWindow.xaml").ShowDialog()
+

@@ -3,12 +3,6 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__doc__ = 'Draw the desired crop boundary as a closed polygon on your sheet '\
-          '(using detail lines). Then select the bounday and the '\
-          'destination viewport and run the script. This script will '\
-          'apply the drafted boundary to the view of the selected viewport.'
-
-
 # note: no needs to check for curves in polygon.
 # currently it takes a straight line between the start and end point.
 # (no errors so far)
