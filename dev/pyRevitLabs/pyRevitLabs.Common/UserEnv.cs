@@ -75,7 +75,7 @@ namespace pyRevitLabs.Common {
         }
 
         public static string GetExecutingUserName() {
-            return string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName);
+            return string.Format($"{WindowsIdentity.GetCurrent().Name}");
         }
 
         public static string GetLoggedInUserName() {
