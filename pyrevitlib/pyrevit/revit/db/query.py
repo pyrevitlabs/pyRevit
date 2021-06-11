@@ -151,6 +151,14 @@ def get_mark(element):
 
 
 def get_location(element):
+    """Get element location point.
+
+    Args:
+        element (DB.Element): source element
+
+    Returns:
+        DB.XYZ: X, Y, Z of location point element
+    """
     locp = element.Location.Point
     return (locp.X, locp.Y, locp.Z)
 
