@@ -10,7 +10,6 @@ from pyrevit.preflight import PreflightTestCase
 from pyrevit.compat import safe_strtype
 
 def checkModel(doc, output):
-    """Check given model"""
 
     output.print_md("# Reference planes<br />")
     # reference plane without name
@@ -20,7 +19,7 @@ def checkModel(doc, output):
         .ToElements()
     )
     RefPCount = len(refPlaneCollector)
-    output.print_md("\nLines in view:{0} \n\n".format(RefPCount))
+    output.print_md("\n**Lines in view:**{0} \n\n".format(RefPCount))
     noNameRefPCount = 0
     
     refPlaneList, refPlanNames = [], []
@@ -28,13 +27,13 @@ def checkModel(doc, output):
     for refPlane in refPlaneCollector:
         refPlaneList.append(refPlane.Id)
         refPlanNames.append(refPlane.Name)
-        output.print_md("View id:{0} \n"
-                        "Reference Plane Name:{1} \n\n"
+        output.print_md("**View id:**{0} \n"
+                        "**Reference Plane Name:**{1} \n\n"
                         .format(output.linkify(refPlane.Id), refPlane.Name))
 
 class ModelChecker(PreflightTestCase):
     """
-    Revit model quality check
+    List all reference planes in the model
     This QC tools returns you with the following data:
         Reference planes count, link to, name
 
