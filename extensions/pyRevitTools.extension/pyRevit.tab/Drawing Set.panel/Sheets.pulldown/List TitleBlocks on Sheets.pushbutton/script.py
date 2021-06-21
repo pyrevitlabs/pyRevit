@@ -1,4 +1,10 @@
-"""Select title blocks on selected sheets for batch editing."""
+"""Select title blocks on selected sheets for batch editing.
+
+Shift+Click:
+Skip the sheet selector popup.
+Select titleblocks on currently selected sheets in project browser.
+
+"""
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import revit
 from pyrevit import forms
