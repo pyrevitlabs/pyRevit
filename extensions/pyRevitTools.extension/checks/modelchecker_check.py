@@ -438,7 +438,9 @@ def checkModel(doc, output):
     # it is something with schedules on more sheets maybe...
     for schedule in scheduleCollector:
         schedName = schedule.Name
-        if schedName[:19] != "<Revision Schedule>":
+        if (schedName[:19] != "<Revision Schedule>"            
+            # to support french files
+            or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
                 if schedule.OwnerViewId.IntegerValue != -1:
                     # print schedName
@@ -448,7 +450,9 @@ def checkModel(doc, output):
     # there is need to iterate class and category filter to get all schedule - UnionWith didn't work
     for schedule in ScheduleCollectorInstances:
         schedName = schedule.Name
-        if schedName[:19] != "<Revision Schedule>":
+        if (schedName[:19] != "<Revision Schedule>"            
+            # to support french files
+            or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
                 if schedule.OwnerViewId.IntegerValue != -1:
                     # print schedName
