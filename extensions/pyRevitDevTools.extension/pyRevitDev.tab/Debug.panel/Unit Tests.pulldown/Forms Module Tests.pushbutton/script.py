@@ -48,6 +48,16 @@ print(
 
 
 print(
+    forms.ask_for_number_slider(
+        default='test default',
+        prompt='test prompt',
+        title='test title',
+        min=12,
+        max=100
+    ))
+
+
+print(
     forms.ask_for_one_item(
         ['test item 1', 'test item 2', 'test item 3'],
         default='test item 2',

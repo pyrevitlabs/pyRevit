@@ -1191,8 +1191,6 @@ class GetValueWindow(TemplateUserInputWindow):
         value_prompt = kwargs.get('prompt', None)
         value_default = kwargs.get('default', None)
         self.reserved_values = kwargs.get('reserved_values', [])
-        value_max = kwargs.get('max', 100)
-        value_min = kwargs.get('min', 0)
 
         # customize window based on type
         if self.value_type == 'string':
@@ -1218,9 +1216,11 @@ class GetValueWindow(TemplateUserInputWindow):
         elif self.value_type == 'slider':
             self.show_element(self.sliderPanel_sp)
             self.sliderPrompt.Text = value_prompt
-            self.numberPicker.Minimum = value_min
-            self.numberPicker.Maximum = value_max
-            self.numberPicker.Value = value_default if value_default else self.numberPicker.Value.MaximizeValue
+            self.numberPicker.Minimum = kwargs.get('min', 0)
+            self.numberPicker.Maximum = kwargs.get('max', 100)
+            self.numberPicker.Value = \
+                value_default if isinstance(value_default, float) \
+                    else self.numberPicker.Minimum
 
     def string_value_changed(self, sender, args): #pylint: disable=unused-argument
         """Handle string vlaue update event."""
