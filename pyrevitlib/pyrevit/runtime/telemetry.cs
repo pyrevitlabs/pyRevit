@@ -28,7 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             };
 
             timestamp = Telemetry.GetTelemetryTimeStamp();
-            host_user = UserEnv.GetLoggedInUserName();
+            host_user = UserEnv.GetLoggedInUserName() ?? UserEnv.GetExecutingUserName();
         }
     }
 
