@@ -1191,6 +1191,8 @@ class GetValueWindow(TemplateUserInputWindow):
         value_prompt = kwargs.get('prompt', None)
         value_default = kwargs.get('default', None)
         self.reserved_values = kwargs.get('reserved_values', [])
+        value_max = kwargs.get('max', 100)
+        value_min = kwargs.get('min', 0)
 
         # customize window based on type
         if self.value_type == 'string':
@@ -1213,6 +1215,12 @@ class GetValueWindow(TemplateUserInputWindow):
             self.show_element(self.datePanel_dp)
             self.datePrompt.Text = \
                 value_prompt if value_prompt else 'Pick date:'
+        elif self.value_type == 'slider':
+            self.show_element(self.sliderPanel_sp)
+            self.sliderPrompt.Text = value_prompt
+            self.numberPicker.Minimum = value_min
+            self.numberPicker.Maximum = value_max
+            self.numberPicker.Value = value_default if value_default else self.numberPicker.Value.MaximizeValue
 
     def string_value_changed(self, sender, args): #pylint: disable=unused-argument
         """Handle string vlaue update event."""
@@ -1247,6 +1255,8 @@ class GetValueWindow(TemplateUserInputWindow):
                 self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
             else:
                 self.response = None
+        elif self.value_type == 'slider':
+            self.response = self.numberPicker.Value
 
 
 class TemplatePromptBar(WPFWindow):
@@ -3193,6 +3203,40 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
     return GetValueWindow.show(
         None,
         value_type='date',
+        default=default,
+        prompt=prompt,
+        title=title,
+        **kwargs
+        )
+
+
+def ask_for_number_slider(default=None, prompt=None, title=None, **kwargs):
+    """Ask user to select a number value.
+
+    This is a shortcut function that configures :obj:`GetValueWindow` for
+    numbers. kwargs can be used to pass on other arguments.
+
+    Args:
+        default (str): default unique string. must not be in reserved_values
+        prompt (str): prompt message
+        title (str): title message
+        kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
+
+    Returns:
+        str: selected string value
+
+    Example:
+        >>> forms.ask_for_string(
+        ...     default=50,
+        ...     min = 0
+        ...     max = 100
+        ...     prompt='Select a number:',
+        ...     title='test title')
+        ... '50'
+    """
+    return GetValueWindow.show(
+        None,
+        value_type='slider',
         default=default,
         prompt=prompt,
         title=title,
