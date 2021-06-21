@@ -1,10 +1,19 @@
-tooltip: >-
-  Selects group instances, which contain selected elements
+title:
+  fr_fr: Sélectionner les groupes supérieurs
+  en_us: Select topmost groups
+tooltip:
+  fr_fr: >-
+    Sélectionne les occurences du groupe qui contiennent les éléments sélectionnés
+    Par défaut, les éléments non groupés sont exclus de la sélection
+  
+    Shift+Click:
 
-  By default excludes not-grouped elements from selection
+    Inclure les éléments non-groupés
+  en_us: >-
+    Selects group instances, which contain selected elements
+    By default excludes not-grouped elements from selection
+  
+    Shift+Click:
 
-
-  Shift+Click:
-
-  Include not-grouped elements
+    Include not-grouped elements
 context: Selection

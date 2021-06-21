@@ -1,4 +1,9 @@
-tooltip: Provides options for overriding values on selected dimensions
+title:
+  fr_fr: Remplacement des valeurs des dimensions
+  en_us: Override dimensions
+tooltip:
+  fr_fr: Donne des options pour le remplacement des valeurs des dimensions sélectionnées
+  en_us: Provides options for overriding values on selected dimensions
 context: OST_Dimensions
 author: >-
   {{author}}

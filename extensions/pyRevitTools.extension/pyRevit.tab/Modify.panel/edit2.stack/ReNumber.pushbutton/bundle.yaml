@@ -1,3 +1,8 @@
-tooltip: ReNumber numbered elements in order of selection
+title:
+  fr_fr: Renuméroter
+  en_us: Renumber
+tooltip:
+  fr_fr: Renuméroter les éléments dans l'ordre de sélection
+  en_us: ReNumber numbered elements in order of selection
 author: '{{author}}'
 

@@ -1,1 +1,6 @@
-tooltip: Pickup painted surface material and apply to other surfaces
+title:
+  fr_fr: Correspondance de peinture
+  en_us: Match paint
+tooltip:
+  fr_fr: Permet d'appliquer le matériau paint d'une surface sur une autre surface
+  en_us: Pickup painted surface material and apply to other surfaces

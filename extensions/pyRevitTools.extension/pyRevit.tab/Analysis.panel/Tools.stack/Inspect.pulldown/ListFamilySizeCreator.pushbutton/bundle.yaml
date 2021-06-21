@@ -1,4 +1,8 @@
-tooltip: List all families and their sizes
-title: Lists Family Sizes
+title:
+  fr_fr: Lister la taille des familles
+  en_us: Lists Family Sizes
+tooltip:
+  fr_fr: Liste toutes les familles et leur taille
+  en_us: List all families and their sizes
 author: 'Frederic Beaupere'
 contact: 'https://github.com/frederic-beaupere'
