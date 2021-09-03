@@ -459,12 +459,13 @@ class _WPFPanelProvider(UI.IDockablePaneProvider):
     def __init__(self, panel_type, default_visible=True):
         self._panel_type = panel_type
         self._default_visible = default_visible
+        self.panel = self._panel_type()
 
     def SetupDockablePane(self, data):
         """Setup forms.WPFPanel set on this instance"""
         # TODO: need to implement panel data
         # https://apidocs.co/apps/revit/2021.1/98157ec2-ab26-6ab7-2933-d1b4160ba2b8.htm
-        data.FrameworkElement = self._panel_type()
+        data.FrameworkElement = self.panel
         data.VisibleByDefault = self._default_visible
 
 
@@ -483,11 +484,14 @@ def register_dockable_panel(panel_type, default_visible=True):
 
     panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
     dockable_panel_id = UI.DockablePaneId(panel_uuid)
+    panel_provider = _WPFPanelProvider(panel_type, default_visible)
     HOST_APP.uiapp.RegisterDockablePane(
         dockable_panel_id,
         panel_type.panel_title,
-        _WPFPanelProvider(panel_type, default_visible)
+        panel_provider
     )
+
+    return panel_provider.panel
 
 
 def open_dockable_panel(panel_type_or_id):
