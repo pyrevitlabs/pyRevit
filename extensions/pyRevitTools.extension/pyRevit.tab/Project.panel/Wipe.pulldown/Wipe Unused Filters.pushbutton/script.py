@@ -41,7 +41,7 @@ if not allFilters:
 unusedFilters = allFilters - usedFiltersSet
 
 if not unusedFilters:
-    forms.alert('All filters are in use. No purging in necessary.')
+    forms.alert('All filters are in use. No purging necessary.')
 else:
     # ask user for wipe actions
     return_options = \
