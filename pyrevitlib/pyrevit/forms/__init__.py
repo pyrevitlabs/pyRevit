@@ -2846,7 +2846,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
     if init_dir:
         sf_dlg.InitialDirectory = init_dir
     if title:
-        of_dlg.Title = title
+        sf_dlg.Title = title
 
     # setting default filename
     sf_dlg.FileName = default_name
