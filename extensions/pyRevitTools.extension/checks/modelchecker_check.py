@@ -413,11 +413,7 @@ def checkModel(doc, output):
     scheduleCount = 0
     ### scheduleNames = []
     for schedule in schedules_id_collector:
-        if (
-            schedule.Name[:19] != "<Revision Schedule>"
-            # to support french files
-            or schedule.Name[:28] != "<Nomenclature des révisions>"
-        ):
+        if not(schedule.IsTitleblockRevisionSchedule):
             scheduleCount += 1
     ###        scheduleNames.append((schedule.Name))
     ### output.print_md("<br />".join(scheduleNames))
