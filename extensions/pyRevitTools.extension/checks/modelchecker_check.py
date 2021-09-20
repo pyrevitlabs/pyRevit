@@ -587,17 +587,21 @@ def checkModel(doc, output):
     )
 
     # model groups
-    modelGroupCount = (
+    modelGroup = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
-        .WhereElementIsNotElementType()
-        .GetElementCount()
+        .WhereElementIsNotElementType()   
     )
+    modelGroupCount = 0
+    for element in modelGroup:
+        if element.GroupId and element.GroupId != DB.ElementId.InvalidElementId:
+            modelGroupCount += 1
+
     modelGroupTypeCount = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
+        .WhereElementIsElementType()
         .GetElementCount()
-        - modelGroupCount
     )
 
     # reference plane without name
