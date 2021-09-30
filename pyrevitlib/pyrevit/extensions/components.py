@@ -80,7 +80,8 @@ class NoScriptButton(GenericUICommand):
             target_asm = self.find_bundle_module(assm_file)
             if not target_asm and required:
                 mlogger.error("%s can not find target assembly.", self)
-            return target_asm or ''
+
+        return target_asm or ''
 
     def get_assm_file(self, assm_file):
         return os.path.splitext(assm_file)[0] + '_' + HOST_APP.version + \
