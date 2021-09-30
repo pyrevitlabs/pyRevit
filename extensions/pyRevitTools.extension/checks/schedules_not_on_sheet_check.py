@@ -60,7 +60,7 @@ class ModelChecker(PreflightTestCase):
     """
     List all schedules not placed on a sheet
     This QC tools returns you with the following data:
-        -----
+        Type, Id + link and Schedule name with the ability to click on the link to open the schedule
 
     """
 
