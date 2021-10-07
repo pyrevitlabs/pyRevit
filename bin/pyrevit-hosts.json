@@ -1450,5 +1450,17 @@
         "build": "20210804_1515",
         "target": "x64",
         "notes": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2022.1",
+        "version": "22.1.1.516",
+        "build": "20210921_1515",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_html"
     }
 ]
