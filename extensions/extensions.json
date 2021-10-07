@@ -96,6 +96,20 @@
             "website": "http://engenheirohidraulico.com.br/",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "enable": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pyTiBa",
+            "description": "pdf/dwg_export with user specified filename, Excel import",
+            "author": "Tillmann Baumeister",
+            "author-url": "https://github.com/tillbaum",
+            "url": "https://github.com/tillbaum/pytiba.git",
+            "website": "https://github.com/tillbaum",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
