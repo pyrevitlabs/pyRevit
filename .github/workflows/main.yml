@@ -1,0 +1,14 @@
+name: pyRevitCI
+on: [push]
+jobs:
+  build:
+    runs-on: windows-2019
+    steps:
+      # under $GITHUB_WORKSPACE
+      - uses: actions/checkout@v2
+
+      - name: Install pipenv
+        run: pip install pipenv
+      
+      - name: Check environment
+        run: pipenv run pyrevit check
