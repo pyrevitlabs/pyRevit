@@ -13,10 +13,12 @@ jobs:
           python-version: 3.9
 
       - name: Install pipenv
-        run: pip install pipenv
+        run: |
+          pip install pipenv
+          pipenv install
 
-      - name: Install pipenv virtual env
-        run: pipenv install
+      - name: Ensure msbuild is ready
+        uses: warrenbuckley/Setup-MSBuild@v1
 
-      - name: Check environment
+      - name: Check build environment
         run: pipenv run pyrevit check
