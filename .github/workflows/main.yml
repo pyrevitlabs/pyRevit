@@ -9,7 +9,13 @@ jobs:
 
       - name: Install pipenv
         run: pip install pipenv
-      
+
+      - name: Install pyenv
+        run: pip install pyenv-win --target $HOME\\.pyenv
+
+      - name: Install python 3.9
+        run: pyenv install 3.9
+
       - name: Install pipenv virtual env
         run: pipenv install
 
