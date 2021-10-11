@@ -17,8 +17,5 @@ jobs:
           pip install pipenv
           pipenv install
 
-      - name: Ensure msbuild is ready
-        uses: warrenbuckley/Setup-MSBuild@v1
-
       - name: Check build environment
         run: pipenv run pyrevit check

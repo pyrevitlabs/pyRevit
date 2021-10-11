@@ -9,6 +9,7 @@ RequiredTool = namedtuple("RequiredTool", ["name", "get", "step"])
 
 
 REQUIRED_TOOLS = [
+    RequiredTool(name="dotnet", get="", step="build"),
     RequiredTool(name="msbuild", get="", step="build"),
     RequiredTool(name="go", get="", step="build"),
     RequiredTool(name="gcc", get="", step="build"),
