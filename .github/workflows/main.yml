@@ -10,5 +10,8 @@ jobs:
       - name: Install pipenv
         run: pip install pipenv
       
+      - name: Install pipenv virtual env
+        run: pipenv install
+
       - name: Check environment
         run: pipenv run pyrevit check
