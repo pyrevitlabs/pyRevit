@@ -1,1 +1,10 @@
-tooltip: Lists views that have not been placed on any sheets
+title:
+  fr_fr: |-
+    Rechercher les vues non placées
+  en_us: |-
+    Query View Sheet Placement
+tooltip:
+  fr_fr: |-
+    Répertorie les vues qui n'ont été placées sur aucune feuille
+  en_us: |-
+    Lists views that have not been placed on any sheets

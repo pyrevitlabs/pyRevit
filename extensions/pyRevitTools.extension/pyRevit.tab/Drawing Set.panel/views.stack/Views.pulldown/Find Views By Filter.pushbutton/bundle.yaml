@@ -1,1 +1,10 @@
-tooltip: Lists views based on a search option
+title:
+  fr_fr: |-
+    Rechercher les vues par filtrage
+  en_us: |-
+   Search Views By Filter
+tooltip:
+  fr_fr: |-
+    Lister les vues à partir d'options de recherche
+  en_us: |-
+    Lists views based on a search option
