@@ -2,7 +2,7 @@ name: pyRevitCI
 on: [push]
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       # under $GITHUB_WORKSPACE
       - uses: actions/checkout@v2
