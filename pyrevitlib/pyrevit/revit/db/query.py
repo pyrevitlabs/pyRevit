@@ -592,7 +592,7 @@ def get_linked_model_doc(linked_model):
 def find_first_legend(doc=None):
     doc = doc or DOCS.doc
     for view in DB.FilteredElementCollector(doc).OfClass(DB.View):
-        if view.ViewType == DB.ViewType.Legend:
+        if view.ViewType == DB.ViewType.Legend and not view.IsTemplate:
             return view
     return None
 
