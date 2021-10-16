@@ -1,1 +1,11 @@
-tooltip: Batch duplicates the selected views with or without detailing
+title:
+  fr_fr: |-
+    Dupliquer les vues sélectionnées
+  en_us: |-
+    Duplicate Selected Views
+tooltip:
+  fr_fr: |-
+    Dupliquer les vues sélectionnées avec ou sans détails
+  en_us: |-
+    Batch duplicates the selected views with or without detailing
+

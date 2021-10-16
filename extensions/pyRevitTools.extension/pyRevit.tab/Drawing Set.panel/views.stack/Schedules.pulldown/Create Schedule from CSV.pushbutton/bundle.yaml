@@ -1,18 +1,45 @@
-tooltip: >-
-  Import existing CSV file as a key schedule
+title:
+  fr_fr: |-
+    Créer une nomenclature à partir d'un CSV
+  en_us: |-
+    Create schedule from CSV
+
+  
+tooltip: 
+  fr_fr: |-
+    Importer un fichier CSV existant en tant que programme clé
 
 
-  - First CSV row must be field names
+        - La première ligne CSV doit être le nom des champs
 
-  - First CSV field must be "Key Name"
+        - Le premier champ CSV doit être "Nom de clé"
 
 
-  CSV Example:
+        Exemple CSV :
 
-  Key Name,Parameter1 Name,Parameter2 Name
+        Nom de la clé, nom du paramètre 1, nom du paramètre 2
 
-  A,Value11,Value12
+        A,Valeur11,Valeur12
 
-  B,Value21,Value22
+        B,Valeur21,Valeur22
 
-  C,Value32,Value32
+        C,Valeur32,Valeur32
+  en_us: |-
+      Import existing CSV file as a key schedule
+
+
+        - First CSV row must be field names
+
+        - First CSV field must be "Key Name"
+
+
+        CSV Example:
+
+        Key Name,Parameter1 Name,Parameter2 Name
+
+        A,Value11,Value12
+
+        B,Value21,Value22
+
+        C,Value32,Value32
+

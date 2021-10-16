@@ -1,7 +1,25 @@
-tooltip: >-
-  Exports selected schedules to CSV files
+tooltip:
+  fr_fr: |-
+    Exporte les nomenclatures sélectionnées vers des fichiers CSV
 
 
-  Shift-Click:
+     Shift-Clic :
 
-  Pick from default output locations
+     Choisissez parmi les emplacements de sortie par défaut
+  en_us: |-
+    Exports selected schedules to CSV files
+
+
+    Shift-Click:
+
+    Pick from default output locations
+
+  
+title: 
+  fr_fr: |-
+    Exporter les nomenclatures en CSV 
+  en_us: |-
+    Export Schedules To CSV
+
+
+
