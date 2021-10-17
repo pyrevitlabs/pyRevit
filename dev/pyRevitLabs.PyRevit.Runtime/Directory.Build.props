@@ -2,10 +2,6 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="../Directory.Build.props" />
 
-    <PropertyGroup>
-        <PyRevitEnginesDir>$(PyRevitBinDir)engines\</PyRevitEnginesDir>
-    </PropertyGroup>
-
     <ItemGroup>
         <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" Private="false" />
         <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" Private="false" />

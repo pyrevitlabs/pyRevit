@@ -30,4 +30,6 @@
         <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EventTelemetry.cs" />
         <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptTelemetry.cs" />
     </ItemGroup>
+
+    <Import Project="../Directory.Build.targets" />
 </Project>

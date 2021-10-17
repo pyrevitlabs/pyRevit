@@ -3,4 +3,6 @@
     <Target Name="Deploy" AfterTargets="AfterBuild">
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitBinDir)" />
     </Target>
+
+    <Import Project="../Directory.Build.targets" />
 </Project>

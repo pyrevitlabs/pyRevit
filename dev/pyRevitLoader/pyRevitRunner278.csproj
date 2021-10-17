@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <UseRunner>true</UseRunner>
+    <IronPythonVersion>IPY278</IronPythonVersion>
+    <IronPythonStdLib>python_278_lib.zip</IronPythonStdLib>
+    <Version>$(RevitVersion).2.7.8</Version>
+  </PropertyGroup>
+
+  <Import Project="Loader.Common.Props" />
+</Project>

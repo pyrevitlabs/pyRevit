@@ -3,9 +3,13 @@
   <PropertyGroup>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <PyRevitRootDir>$(MSBuildThisFileDirectory)\..\</PyRevitRootDir>
+    
     <PyRevitBinDir>$(PyRevitRootDir)\bin\</PyRevitBinDir>
+    <PyRevitEnginesDir>$(PyRevitBinDir)engines\</PyRevitEnginesDir>
+    
     <PyRevitDevDir>$(PyRevitRootDir)\dev\</PyRevitDevDir>
     <PyRevitModulesDir>$(PyRevitDevDir)\modules\</PyRevitModulesDir>
+    
     <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib\</PyRevitLibDir>
   </PropertyGroup>
 
