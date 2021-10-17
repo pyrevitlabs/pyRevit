@@ -37,7 +37,7 @@ def _build(name: str, sln: str, config: str, print_output: Optional[bool] = Fals
         ],
         dump_stdout=print_output
     )
-    passed, report = utils.parse_msbuild_output(report)
+    passed, report = utils.parse_dotnet_build_output(report)
     if not passed:
         _abort(report)
     else:

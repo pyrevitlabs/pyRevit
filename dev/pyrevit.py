@@ -7,8 +7,8 @@
     Install these tools before starting the build process. Add the binary
     directory for these tools to your system PATH. Run `check` to test
 
+    dotnet SDK              for building labs (https://dotnet.microsoft.com/download/dotnet)
     Visual Studio:          for building labs (https://visualstudio.microsoft.com/downloads/)
-    ├── msbuild                 building C# projects
     └── signtool                digitally signing binaries
     gcc                     for building sqlite package in telemetry server (http://mingw.org)
     go                      for building telemetry server (https://golang.org)
