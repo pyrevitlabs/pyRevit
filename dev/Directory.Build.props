@@ -2,15 +2,17 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <OutputPath>bin\$(Configuration)\</OutputPath>
-    <PyRevitRootDir>$(MSBuildThisFileDirectory)..\</PyRevitRootDir>
-    <PyRevitBinDir>$(PyRevitRootDir)bin\</PyRevitBinDir>
-    <PyRevitDevDir>$(PyRevitRootDir)dev\</PyRevitDevDir>
-    <PyRevitModulesDir>$(PyRevitDevDir)modules\</PyRevitModulesDir>
+    <PyRevitRootDir>$(MSBuildThisFileDirectory)\..\</PyRevitRootDir>
+    <PyRevitBinDir>$(PyRevitRootDir)\bin\</PyRevitBinDir>
+    <PyRevitDevDir>$(PyRevitRootDir)\dev\</PyRevitDevDir>
+    <PyRevitModulesDir>$(PyRevitDevDir)\modules\</PyRevitModulesDir>
+    <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib\</PyRevitLibDir>
   </PropertyGroup>
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 

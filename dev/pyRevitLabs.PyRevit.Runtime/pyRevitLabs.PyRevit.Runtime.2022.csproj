@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RevitVersion>2022</RevitVersion>
+    </PropertyGroup>
+</Project>

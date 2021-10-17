@@ -3,11 +3,11 @@ using System.IO;
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Reflection;
-using System.Web.Script.Serialization;
 
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Json;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class DynamoBIMEngineConfigs : ScriptEngineConfigs {
@@ -30,7 +30,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // extract engine configuration from runtime data
             try {
-                ExecEngineConfigs = new JavaScriptSerializer().Deserialize<DynamoBIMEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
+                ExecEngineConfigs = JsonConvert.DeserializeObject<DynamoBIMEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
             } catch {}
         }
 

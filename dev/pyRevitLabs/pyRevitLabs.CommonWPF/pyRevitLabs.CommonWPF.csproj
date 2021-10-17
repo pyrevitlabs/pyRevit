@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <Target Name="DeployDependencies" AfterTargets="Deploy">
-    <Copy SourceFiles="$(PyRevitModulesDir)\pyRevitLabs.MahAppsMetro.dll" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="$(OutputPath)\System.Windows.Interactivity.dll" DestinationFolder="$(PyRevitBinDir)" />
   </Target>
 </Project>
