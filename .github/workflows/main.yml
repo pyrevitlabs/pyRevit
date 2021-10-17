@@ -19,3 +19,6 @@ jobs:
 
       - name: Check build environment
         run: pipenv run pyrevit check
+
+      - name: Build & Release
+        run: pipenv run pyrevit release 4.8.9
