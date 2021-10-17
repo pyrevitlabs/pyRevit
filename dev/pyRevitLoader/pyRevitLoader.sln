@@ -9,27 +9,27 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Runners", "Runners", "{74C5
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitDefaultLoader", "pyRevitDefaultLoader.csproj", "{B4999A6B-E890-4514-9FEF-4FC5C0332C89}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader273", "pyRevitLoader273.csproj", "{EE662C9C-EAF9-465C-B17A-F9F1F744F5F1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader.273", "pyRevitLoader.273.csproj", "{EE662C9C-EAF9-465C-B17A-F9F1F744F5F1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader277", "pyRevitLoader277.csproj", "{39C47292-FEE1-4D6D-96A7-B6066854C98B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader.277", "pyRevitLoader.277.csproj", "{39C47292-FEE1-4D6D-96A7-B6066854C98B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader278", "pyRevitLoader278.csproj", "{C4D5CD8F-4504-4C34-9870-CD06712EF888}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader.278", "pyRevitLoader.278.csproj", "{C4D5CD8F-4504-4C34-9870-CD06712EF888}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader279", "pyRevitLoader279.csproj", "{4FE03FBD-3EF1-4570-8E9D-8C3E508AACD5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader.279", "pyRevitLoader.279.csproj", "{4FE03FBD-3EF1-4570-8E9D-8C3E508AACD5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader2710", "pyRevitLoader2710.csproj", "{581ADF22-C823-4A43-99C1-23BB75C905A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLoader.2710", "pyRevitLoader.2710.csproj", "{581ADF22-C823-4A43-99C1-23BB75C905A5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitDefaultRunner", "pyRevitDefaultRunner.csproj", "{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner273", "pyRevitRunner273.csproj", "{1172860C-81A9-436E-9187-DE7E64529C23}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner.273", "pyRevitRunner.273.csproj", "{1172860C-81A9-436E-9187-DE7E64529C23}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner277", "pyRevitRunner277.csproj", "{D1EFC1A1-388E-4B95-8DF0-FF84A2598902}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner.277", "pyRevitRunner.277.csproj", "{D1EFC1A1-388E-4B95-8DF0-FF84A2598902}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner278", "pyRevitRunner278.csproj", "{EFEA8406-20F6-4AFC-9610-95F9A9EC564E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner.278", "pyRevitRunner.278.csproj", "{EFEA8406-20F6-4AFC-9610-95F9A9EC564E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner279", "pyRevitRunner279.csproj", "{14F32C47-EC16-4E35-95A7-2DDF2C8889D2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner.279", "pyRevitRunner.279.csproj", "{14F32C47-EC16-4E35-95A7-2DDF2C8889D2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner2710", "pyRevitRunner2710.csproj", "{DE55F0AB-BDEA-4E61-BC38-E8576912B8BD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitRunner.2710", "pyRevitRunner.2710.csproj", "{DE55F0AB-BDEA-4E61-BC38-E8576912B8BD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
