@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"../cli"
-	"../persistence"
+	"pyrevittelemetryserver/cli"
+	"pyrevittelemetryserver/persistence"
+
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 )

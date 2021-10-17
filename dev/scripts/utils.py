@@ -30,7 +30,7 @@ class Command:
 def system(
     args: List[str],
     cwd: Optional[str] = None,
-    dump_stdout: Optional[bool] = False,
+    dump_stdout: Optional[bool] = True,
 ):
     """Run a command and return the stdout"""
     if dump_stdout:

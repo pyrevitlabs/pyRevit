@@ -23,7 +23,8 @@ CPYTHONRUNTIME = op.join(
 
 # cli autocomplete files
 USAGEPATTERNS = op.join(DEVPATH, "pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt")
-AUTOCOMP = "pyrevit-autocomplete.go"
+AUTOCOMPPATH = "dev/pyRevitLabs/pyRevitCLIAutoComplete"
+AUTOCOMP = op.join(AUTOCOMPPATH, "pyrevit-autocomplete.go")
 AUTOCOMPBIN = op.join(BINPATH, "pyrevit-autocomplete.exe")
 
 # telemetry server files

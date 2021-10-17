@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"../cli"
+	"pyrevittelemetryserver/cli"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
@@ -28,22 +28,22 @@ func (w GenericSQLConnection) GetType() DBBackend {
 }
 
 func (w GenericSQLConnection) GetVersion(logger *cli.Logger) string {
-    db, err := openConnection(w.Config.Backend, w.Config.ConnString, logger)
-    if err != nil {
-        logger.Debug("error opening connection")
-        return ""
-    }
-    defer db.Close()
- 
-    var version string
-    err = db.QueryRow("select version()").Scan(&version)
-    if err != nil {
-        err = db.QueryRow("select @@version").Scan(&version)
-        if err != nil {
-            log.Fatal(err)
-        }
-    }
-    return version
+	db, err := openConnection(w.Config.Backend, w.Config.ConnString, logger)
+	if err != nil {
+		logger.Debug("error opening connection")
+		return ""
+	}
+	defer db.Close()
+
+	var version string
+	err = db.QueryRow("select version()").Scan(&version)
+	if err != nil {
+		err = db.QueryRow("select @@version").Scan(&version)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return version
 }
 
 func (w GenericSQLConnection) GetStatus(logger *cli.Logger) ConnectionStatus {
@@ -154,7 +154,7 @@ func generateScriptInsertQueryV1(table string, logrec *ScriptTelemetryRecordV1, 
 	var record []string
 
 	// generate record id, panic if error
-	recordId := uuid.Must(uuid.NewV4())
+	recordId := uuid.NewV4()
 
 	re := regexp.MustCompile(`(\d+:\d+:\d+)`)
 	record = []string{
@@ -222,7 +222,7 @@ func generateScriptInsertQueryV2(table string, logrec *ScriptTelemetryRecordV2, 
 	var record []string
 
 	// generate record id, panic if error
-	recordId := uuid.Must(uuid.NewV4())
+	recordId := uuid.NewV4()
 
 	record = []string{
 		recordId.String(),
@@ -290,7 +290,7 @@ func generateEventInsertQueryV2(table string, logrec *EventTelemetryRecordV2, lo
 	var record []string
 
 	// generate record id, panic if error
-	recordId := uuid.Must(uuid.NewV4())
+	recordId := uuid.NewV4()
 
 	record = []string{
 		recordId.String(),
