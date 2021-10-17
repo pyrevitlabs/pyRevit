@@ -8,9 +8,11 @@
     <PyRevitEnginesDir>$(PyRevitBinDir)engines\</PyRevitEnginesDir>
     
     <PyRevitDevDir>$(PyRevitRootDir)\dev\</PyRevitDevDir>
-    <PyRevitModulesDir>$(PyRevitDevDir)\modules\</PyRevitModulesDir>
+    <PyRevitDevLibsDir>$(PyRevitDevDir)\libs\</PyRevitDevLibsDir>
+    <PyRevitDevModulesDir>$(PyRevitDevDir)\modules\</PyRevitDevModulesDir>
     
     <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib\</PyRevitLibDir>
+    <PyRevitExtDir>$(PyRevitRootDir)\extensions\</PyRevitExtDir>
   </PropertyGroup>
 
   <PropertyGroup>

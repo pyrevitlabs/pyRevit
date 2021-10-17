@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" Private="false" />
-    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" Private="false" />
-    <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitModulesDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
+    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
+    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
+    <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>

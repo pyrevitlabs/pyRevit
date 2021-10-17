@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" Private="false" />
-    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" Private="false" />
+    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
+    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,8 +27,8 @@
 
   <Target Name="DeployDependencies" AfterTargets="Deploy">
     <ItemGroup>
-      <CustomDependencies Include="$(PyRevitModulesDir)\*.dll" />
-      <CustomBinaries Include="$(PyRevitModulesDir)\*.exe" />
+      <CustomDependencies Include="$(PyRevitDevLibsDir)\*.dll" />
+      <CustomBinaries Include="$(PyRevitDevLibsDir)\*.exe" />
     </ItemGroup>
     <Copy SourceFiles="pyrevit.ico" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="pyrevit_cli.ico" DestinationFolder="$(PyRevitBinDir)" />

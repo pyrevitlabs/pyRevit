@@ -3,9 +3,9 @@
     <Import Project="../Directory.Build.props" />
 
     <ItemGroup>
-        <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" Private="false" />
-        <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" Private="false" />
-        <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitModulesDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
+        <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
+        <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
+        <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -26,7 +26,7 @@
         <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll" />
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll" />
 
-        <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Python.Net\src\runtime\bin\pyRevitLabs.PythonNet.dll" />
+        <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitDevModulesDir)\pyRevitLabs.Python.Net\src\runtime\bin\pyRevitLabs.PythonNet.dll" />
         
         <Reference Include="pyRevitLabs.Common" HintPath="$(PyRevitBinDir)\pyRevitLabs.Common.dll" />
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
@@ -34,11 +34,11 @@
         <Reference Include="pyRevitLabs.PyRevit" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
         <Reference Include="pyRevitLabs.TargetApps.Revit" HintPath="$(PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
 
-        <Reference Include="AdWindows" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\AdWindows.dll" />
-        <Reference Include="UIFramework" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\UIFramework.dll" />
-        <Reference Include="RevitAPI" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\RevitAPI.dll" />
-        <Reference Include="RevitAPIUI" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\RevitAPIUI.dll" />
-        <Reference Include="Xceed.Wpf.AvalonDock" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\Xceed.Wpf.AvalonDock.dll" />
+        <Reference Include="AdWindows" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\AdWindows.dll" />
+        <Reference Include="UIFramework" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\UIFramework.dll" />
+        <Reference Include="RevitAPI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPI.dll" />
+        <Reference Include="RevitAPIUI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPIUI.dll" />
+        <Reference Include="Xceed.Wpf.AvalonDock" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\Xceed.Wpf.AvalonDock.dll" />
     </ItemGroup>
 
     <ItemGroup>

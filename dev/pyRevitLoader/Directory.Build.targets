@@ -30,11 +30,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="AdWindows" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\AdWindows.dll" />
-        <Reference Include="UIFramework" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\UIFramework.dll" />
-        <Reference Include="RevitAPI" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\RevitAPI.dll" />
-        <Reference Include="RevitAPIUI" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\RevitAPIUI.dll" />
-        <Reference Include="Xceed.Wpf.AvalonDock" HintPath="$(PyRevitModulesDir)\Revit\$(RevitVersion)\Xceed.Wpf.AvalonDock.dll" />
+        <Reference Include="AdWindows" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\AdWindows.dll" />
+        <Reference Include="UIFramework" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\UIFramework.dll" />
+        <Reference Include="RevitAPI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPI.dll" />
+        <Reference Include="RevitAPIUI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPIUI.dll" />
+        <Reference Include="Xceed.Wpf.AvalonDock" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\Xceed.Wpf.AvalonDock.dll" />
         <Reference  Include="Microsoft.CSharp" />
     </ItemGroup>
 

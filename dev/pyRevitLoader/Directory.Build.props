@@ -4,7 +4,7 @@
 
     <PropertyGroup>
         <RevitVersion>2022</RevitVersion>
-        <IronPythonStdLibDir>$(PyRevitModulesDir)\IronPython\</IronPythonStdLibDir>
+        <IronPythonStdLibDir>$(PyRevitDevLibsDir)\IronPython\</IronPythonStdLibDir>
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     </PropertyGroup>
 </Project>
