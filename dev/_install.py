@@ -13,7 +13,7 @@ REQUIRED_TOOLS = [
     RequiredTool(name="go", get="", step="build"),
     RequiredTool(name="gcc", get="", step="build"),
     RequiredTool(name="signtool", get="", step="release"),
-    RequiredTool(name="advancedinstaller.com", get="", step="release"),
+    RequiredTool(name="compil32.exe", get="", step="release"),
 ]
 
 

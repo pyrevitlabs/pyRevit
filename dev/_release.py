@@ -134,9 +134,9 @@ def create_release(args: Dict[str, str]):
     props.set_ver(args)
 
     # update installers and get new product versions
-    pyrevit_pc, pyrevitcli_pc = _installer_set_version(release_ver)
-    _update_product_data(release_ver, pyrevit_pc)
-    _update_product_data(release_ver, pyrevitcli_pc, cli=True)
+    # pyrevit_pc, pyrevitcli_pc = _installer_set_version(release_ver)
+    # _update_product_data(release_ver, pyrevit_pc)
+    # _update_product_data(release_ver, pyrevitcli_pc, cli=True)
 
     # _commit_changes(f"Updated version: {release_ver}")
 
@@ -144,8 +144,8 @@ def create_release(args: Dict[str, str]):
     buildall.build_all(args)
 
     # sign everything
-    _sign_binaries()
+    # _sign_binaries()
 
     # now build the installers
     # installer are signed by the installer builder
-    build_installers(args)
+    # build_installers(args)
