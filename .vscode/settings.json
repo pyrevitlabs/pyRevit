@@ -22,8 +22,10 @@
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
         "**/.vs": true,
+        "**/.sync": true,
         "**/bin": true,
-        "**/obj": true
+        "**/obj": true,
+        "**/__pycache__": true
     },
     "python.pythonPath": "C:\\Users\\ehsan\\.virtualenvs\\pyrevit-dev-2PO7Kqjk\\Scripts\\python.exe"
 }
