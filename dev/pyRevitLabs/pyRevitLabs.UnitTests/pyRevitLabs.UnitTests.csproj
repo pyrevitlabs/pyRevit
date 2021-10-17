@@ -4,8 +4,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" />
-    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" />
+    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" Private="false" />
+    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>

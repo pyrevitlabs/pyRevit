@@ -8,17 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" />
-    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" />
+    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" Private="false" />
+    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Colorful.Console" Version="1.2.10" />
     <PackageReference Include="docopt.net" Version="0.6.1.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-
   </ItemGroup>
 
   <ItemGroup>
@@ -28,4 +24,11 @@
     <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
+
+  <Target Name="DeployDependencies" AfterTargets="Deploy">
+    <Copy SourceFiles="$(OutputPath)\Colorful.Console.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\DocoptNet.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" DestinationFolder="$(PyRevitBinDir)" />
+  </Target>
 </Project>

@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitModulesDir)\pyRevitLabs.MahAppsMetro.dll" />
+    <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitModulesDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -14,4 +14,9 @@
     <Reference Include="WindowsBase" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
+
+  <Target Name="DeployDependencies" AfterTargets="Deploy">
+    <Copy SourceFiles="$(PyRevitModulesDir)\pyRevitLabs.MahAppsMetro.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Windows.Interactivity.dll" DestinationFolder="$(PyRevitBinDir)" />
+  </Target>
 </Project>

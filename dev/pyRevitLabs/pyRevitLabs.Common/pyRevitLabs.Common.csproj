@@ -1,17 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" />
-    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" />
+    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitModulesDir)\pyRevitLabs.Json.dll" Private="false" />
+    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitModulesDir)\pyRevitLabs.NLog.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DotNetVersionFinder" Version="1.1.3" />
     <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
     <PackageReference Include="MadMilkman.Ini" Version="1.0.6" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.4.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="3.4.0" />
     <PackageReference Include="OpenMcdf" Version="2.2.1.6" />
     <PackageReference Include="YamlDotNet" Version="8.1.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="3.4.0" />
     <Reference Include="System.Management" />
   </ItemGroup>
+
+  <Target Name="DeployDependencies" AfterTargets="Deploy">
+    <ItemGroup>
+      <LibGit2SharpNative Include="$(OutputPath)\lib\win32\x64\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="$(OutputPath)\DotNetVersionFinder.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\LibGit2Sharp.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="@(LibGit2SharpNative)" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\MadMilkman.Ini.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\OpenMcdf.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\YamlDotNet.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\Microsoft.CodeAnalysis.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\Microsoft.CodeAnalysis.VisualBasic.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Collections.Immutable.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Memory.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Numerics.Vectors.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Reflection.Metadata.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Runtime.CompilerServices.Unsafe.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Text.Encoding.CodePages.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\System.Threading.Tasks.Extensions.dll" DestinationFolder="$(PyRevitBinDir)" />
+  </Target>
 </Project>
