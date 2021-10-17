@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using pyRevitLabs.Common;
 
 // https://docs.microsoft.com/en-us/visualstudio/test/getting-started-with-unit-testing
-namespace pyRevitLabs.Tests {
+namespace pyRevitLabs.UnitTests {
     [TestClass]
     public class TemplateUnitTest {
         private TestContext _testContextInstance;

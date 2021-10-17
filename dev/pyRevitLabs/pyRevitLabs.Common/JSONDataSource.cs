@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Web.Script.Serialization;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -84,7 +83,7 @@ namespace pyRevitLabs.Common {
                         logger.Debug("Reloading data from \"{0}\"", dataSource);
                         var dataSet = File.ReadAllText(dataSource);
 
-                        _cache = new JavaScriptSerializer().Deserialize<List<T>>(dataSet);
+                        _cache = JsonConvert.DeserializeObject<List<T>>(dataSet);
                         if (_cache != null && _cache.Count > 0) {
                             _cacheVersion = cacheVersion;
                             return _cache;

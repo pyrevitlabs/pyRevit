@@ -1,10 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <AssemblyName>pyrevit</AssemblyName>
-    <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
-    <ApplicationManifest>pyrevit.manifest</ApplicationManifest>
-    <SignAssembly>true</SignAssembly>
+    <TestProjectType>UnitTest</TestProjectType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,18 +9,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Colorful.Console" Version="1.2.10" />
-    <PackageReference Include="docopt.net" Version="0.6.1.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-
+    <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
-    <ProjectReference Include="..\pyRevitLabs.CommonCLI\pyRevitLabs.CommonCLI.csproj" />
-    <ProjectReference Include="..\pyRevitLabs.Language\pyRevitLabs.Language.csproj" />
     <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>

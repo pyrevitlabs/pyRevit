@@ -50,13 +50,13 @@ PYREVIT_PRODUCTS_DATAFILE = op.join(BINPATH, "pyrevit-products.json")
 
 # files containing version definition
 VERSION_FILES = [
-    op.join(DEVPATH, "pyRevit/AssemblyVersion.cs"),
+    op.join(DEVPATH, "Directory.Build.props"),
     PYREVIT_VERSION_FILE,
 ]
 
 # files containing copyright notice
 COPYRIGHT_FILES = [
-    op.join(DEVPATH, "pyRevit/AssemblyCopyright.cs"),
+    op.join(DEVPATH, "Directory.Build.props"),
     op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
     op.join(DOCS_DIR, "conf.py"),
     op.join(ROOT, "README.md"),

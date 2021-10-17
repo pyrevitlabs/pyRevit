@@ -1,27 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>pyRevitDoctor</RootNamespace>
     <AssemblyName>pyrevit-doctor</AssemblyName>
-    <TargetFramework>net48</TargetFramework>
     <ApplicationIcon>pyrevit-doctor.ico</ApplicationIcon>
-    <OutputPath>bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <DefineConstants></DefineConstants>
-  </PropertyGroup>
-
-
-  <ItemGroup>
-    <Resource Include="pyrevit-doctor.ico" />
-  </ItemGroup>
-
-  <Target Name="Deploy" AfterTargets="AfterBuild">
-    <Copy SourceFiles="$(OutputPath)pyrevit-doctor.exe" DestinationFolder="$(PyRevitBinDir)" />
-  </Target>
 </Project>

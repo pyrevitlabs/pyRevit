@@ -6,12 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using pyRevitLabs.Tests;
 using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.UnitTests;
 
-namespace pyRevitLabs.PyRevit.Tests {
+namespace pyRevitLabs.UnitTests.pyRevit {
     [TestClass()]
     public class PyRevitTests: TemplateUnitTest {
         public override string TempPath =>
