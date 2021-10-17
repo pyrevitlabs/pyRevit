@@ -33,6 +33,7 @@
     <Copy SourceFiles="pyrevit.ico" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="pyrevit_cli.ico" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="pyrevit_pkg.ico" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutputPath)\Colorful.Console.dll" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="$(OutputPath)\DocoptNet.dll" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="@(CustomDependencies)" DestinationFolder="$(PyRevitBinDir)" />
     <Copy SourceFiles="@(CustomBinaries)" DestinationFolder="$(PyRevitBinDir)" />
