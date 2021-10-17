@@ -1,6 +1,8 @@
 """Dev scripts utilities"""
 # pylint: disable=bad-continuation
 import sys
+import os
+import os.path as op
 import logging
 import re
 from typing import List, Optional, Dict
@@ -45,6 +47,9 @@ def system(
 
 def where(program_name):
     """Test if a program is available on PATH"""
+    if op.exists(program_name):
+        return True
+
     finder = "where" if sys.platform == "win32" else "which"
     res = subprocess.run(
         [finder, program_name], check=False, capture_output=True
