@@ -63,7 +63,6 @@ __binname__ = op.splitext(op.basename(__file__))[0]
 
 logging.basicConfig()
 logger = logging.getLogger()
-# logger.setLevel(logging.DEBUG)
 
 
 def prepare_docopt_help(for_print=False):
@@ -124,6 +123,10 @@ COMMANDS = [
 
 
 if __name__ == "__main__":
+    if "--debug" in sys.argv:
+        logger.setLevel(logging.DEBUG)
+        sys.argv.remove("--debug")
+
     try:
         # process args
         args = docopt(
