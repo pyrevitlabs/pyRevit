@@ -5,6 +5,8 @@ import os.path as op
 from typing import Dict, List
 import re
 import datetime
+import logging
+
 import yaml
 
 from scripts import configs
@@ -13,11 +15,15 @@ from scripts import airtavolo
 from scripts.airtavolo import ToolLocales
 
 
+logger = logging.getLogger()
+
+
 def _modify_contents(files, finder, new_value):
     for text_file in files:
         contents = []
         file_changed = False
         with open(text_file, "r") as sfile:
+            logger.debug(f"Setting version in file {text_file} to {new_value}")
             for cline in sfile.readlines():
                 newcline = finder.sub(new_value, cline)
                 if cline != newcline:
@@ -63,6 +69,13 @@ def set_ver(args: Dict[str, str]):
     else:
         print(utils.colorize("<red>Invalid version format (e.g. 4.8.0)</red>"))
         sys.exit(1)
+
+
+def set_current_ver(args: Dict[str, str]):
+    with open(configs.PYREVIT_VERSION_FILE, "r") as vfile:
+        version = vfile.readline()
+    if version:
+        set_ver({ "<ver>": version.strip() })
 
 
 def _find_tbundles(root_path) -> List[str]:
