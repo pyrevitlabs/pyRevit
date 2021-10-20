@@ -30,7 +30,7 @@ def _abort(message):
     sys.exit(1)
 
 
-def installer_set_uuid(args: Dict[str, str]) -> List[str]:
+def _installer_set_uuid() -> List[str]:
     product_codes = []
     uuid_finder = re.compile(r"^#define MyAppUUID \"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\"")
     for installer_file in configs.INSTALLER_FILES:
@@ -55,7 +55,7 @@ def installer_set_uuid(args: Dict[str, str]) -> List[str]:
     return product_codes
 
 
-def _update_product_data(ver, key, cli=False):
+def _update_product_data_file(ver, key, cli=False):
     pdata = []
     with open(configs.PYREVIT_PRODUCTS_DATAFILE, "r") as dfile:
         pdata = json.load(dfile, object_hook=lambda d: PyRevitProduct(**d))
@@ -86,6 +86,13 @@ def _update_product_data(ver, key, cli=False):
 
     with open(configs.PYREVIT_PRODUCTS_DATAFILE, "w") as dfile:
         json.dump([x._asdict() for x in pdata], dfile, indent=True)
+
+
+def set_product_data(args: Dict[str, str]):
+    pyrevit_pc, pyrevitcli_pc = _installer_set_uuid()
+    release_ver = props.get_version()
+    _update_product_data_file(release_ver, pyrevit_pc)
+    _update_product_data_file(release_ver, pyrevitcli_pc, cli=True)
 
 
 def _get_binaries():
@@ -149,9 +156,7 @@ def create_release(args: Dict[str, str]):
     props.set_ver(args)
 
     # update installers and get new product versions
-    pyrevit_pc, pyrevitcli_pc = installer_set_uuid(args)
-    _update_product_data(release_ver, pyrevit_pc)
-    _update_product_data(release_ver, pyrevitcli_pc, cli=True)
+    update_product_data(args)
 
     # _commit_changes(f"Updated version: {release_ver}")
 

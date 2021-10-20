@@ -36,7 +36,7 @@ def _modify_contents(files, finder, new_value):
 
 def get_version():
     """Get current version"""
-    ver_finder = re.compile(r"4\.\d\.\d")
+    ver_finder = re.compile(r"\d\.\d+\.\d+(\.\d+)?")
     for verfile in configs.VERSION_FILES:
         with open(verfile, "r") as vfile:
             for cline in vfile.readlines():
@@ -83,7 +83,7 @@ def set_ver(args: Dict[str, str]):
         sys.exit(1)
 
 
-def set_current_ver(args: Dict[str, str]):
+def set_build_ver(args: Dict[str, str]):
     with open(configs.PYREVIT_VERSION_FILE, "r") as vfile:
         version = vfile.readline()
     if version:
