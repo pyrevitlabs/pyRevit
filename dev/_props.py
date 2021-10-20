@@ -18,6 +18,10 @@ from scripts.airtavolo import ToolLocales
 logger = logging.getLogger()
 
 
+VER_FINDER = re.compile(r"\d\.\d+\.\d+(\.[0-9+]+)?")
+VER_PART_FINDER = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.[0-9+]+)?")
+
+
 def _modify_contents(files, finder, new_value):
     for text_file in files:
         contents = []
@@ -36,11 +40,10 @@ def _modify_contents(files, finder, new_value):
 
 def get_version():
     """Get current version"""
-    ver_finder = re.compile(r"\d\.\d+\.\d+(\.\d+)?")
     for verfile in configs.VERSION_FILES:
         with open(verfile, "r") as vfile:
             for cline in vfile.readlines():
-                if match := ver_finder.search(cline):
+                if match := VER_FINDER.search(cline):
                     return match.group()
 
 
@@ -56,26 +59,25 @@ def set_year(_: Dict[str, str]):
 
 
 def _update_build_number(version: str):
-    parts = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.\d+)?").findall(version)
+    parts = VER_PART_FINDER.findall(version)
     if parts:
         v = parts[0]
         major = v[0]
         minor = v[1]
         patch = v[2]
-        build = datetime.datetime.now().strftime('%j%H%M')
+        build = datetime.datetime.now().strftime('%y%j+%H%M')
         return f"{major}.{minor}.{patch}.{build}"
     return version
 
 
 def set_ver(args: Dict[str, str]):
     """Update version number"""
-    ver_finder = re.compile(r"\d\.\d+\.\d+(\.\d+)?")
     new_version = _update_build_number(args["<ver>"])
-    if m := ver_finder.match(new_version):
+    if VER_FINDER.match(new_version):
         print(f"Updating version to v{new_version}...")
         _modify_contents(
             files=configs.VERSION_FILES,
-            finder=ver_finder,
+            finder=VER_FINDER,
             new_value=new_version,
         )
     else:
