@@ -21,7 +21,7 @@ DisableStartupPrompt=yes
 DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64
 ;     path
-DefaultDirName={userappdata}\{#MyAppName}
+DefaultDirName={userappdata}\{#MyAppName}-Master
 UsePreviousAppDir=yes
 ;     mode
 PrivilegesRequired=lowest
@@ -63,6 +63,7 @@ Source: "..\pyrevitlib\*"; DestDir: "{app}\pyrevitlib"; Flags: ignoreversion rec
 Source: "..\site-packages\*"; DestDir: "{app}\site-packages"; Flags: ignoreversion recursesubdirs; Components: core dev learn
 ; clone arguments
 Source: "..\release\.pyrevitargs"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
+Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 
 [Registry]
 ; Uninstaller does not undo this change
