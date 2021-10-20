@@ -167,7 +167,7 @@ def _update_locales(bundle_path: str, tool_locales: List[ToolLocales]):
                 yaml.dump(bundle_dict, bfile)
 
 
-def update_locales(_: Dict[str, str]):
+def set_locales(_: Dict[str, str]):
     """Update locale files across the extensions"""
     tool_locales = airtavolo.get_tool_locales()
     for tbundle in _find_tbundles(configs.EXTENSIONS_PATH):

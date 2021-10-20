@@ -88,7 +88,7 @@ def _update_product_data_file(ver, key, cli=False):
         json.dump([x._asdict() for x in pdata], dfile, indent=True)
 
 
-def set_product_data(args: Dict[str, str]):
+def set_product_data(_: Dict[str, str]):
     pyrevit_pc, pyrevitcli_pc = _installer_set_uuid()
     release_ver = props.get_version()
     _update_product_data_file(release_ver, pyrevit_pc)
@@ -104,7 +104,7 @@ def _get_binaries():
                 yield op.join(dirname, fn)
 
 
-def _sign_binaries():
+def sign_binaries(_: Dict[str, str]):
     print("digitally signing binaries...")
     for bin_file in _get_binaries():
         utils.system([
@@ -128,7 +128,7 @@ def _commit_changes(msg):
     utils.system(['git', 'commit', '-m', msg])
 
 
-def build_installers(args: Dict[str, str]):
+def build_installers(_: Dict[str, str]):
     """Build pyRevit and CLI installers"""
     installer = "advancedinstaller.com"
     for script in [configs.PYREVIT_INSTALLERFILE, configs.PYREVIT_CLI_INSTALLERFILE]:
@@ -141,8 +141,6 @@ def build_installers(args: Dict[str, str]):
 def create_release(args: Dict[str, str]):
     """Create pyRevit release (build all, create installers)"""
     # utils.ensure_windows()
-
-    # _ensure_clean_tree()
 
     # run a check on all tools
     if not install.check(args):
@@ -158,14 +156,12 @@ def create_release(args: Dict[str, str]):
     # update installers and get new product versions
     set_product_data(args)
 
-    # _commit_changes(f"Updated version: {release_ver}")
-
     # now build all projects
     buildall.build_all(args)
 
     # sign everything
-    # _sign_binaries()
+    sign_binaries(args)
 
     # now build the installers
     # installer are signed by the installer builder
-    # build_installers(args)
+    build_installers(args)

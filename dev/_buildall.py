@@ -15,7 +15,7 @@ import _telem as telem
 ARTIFACTS = ['bin', 'obj', '.vs', 'TestResults']
 
 
-def build_clean(_: Dict[str, str]):
+def clean_build(_: Dict[str, str]):
     """Clean bin and obj from projects"""
     for dirname, subdirs, _ in os.walk(configs.DEVPATH):
         for subdir in subdirs:

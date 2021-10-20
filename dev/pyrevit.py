@@ -96,7 +96,6 @@ COMMANDS = [
     # main release command
     Command(name="release", target="", args=["<tag>"], run=release.create_release),
     # individual release steps for testing
-    Command(name="changelog", target="", args=["<tag>"], run=clog.report_clog),
     Command(name="build", target="all", args=[], run=buildall.build_all),
     Command(name="build", target="labs", args=[], run=labs.build_labs),
     Command(name="build", target="engines", args=[], run=labs.build_engines),
@@ -104,22 +103,24 @@ COMMANDS = [
     Command(name="build", target="telem", args=[], run=telem.build_telem),
     Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
     Command(name="build", target="installers", args=[], run=release.build_installers),
-    Command(name="clean", target="labs", args=[], run=buildall.build_clean),
+    Command(name="sign",  target="all", args=[], run=release.sign_binaries),
+    Command(name="clean", target="labs", args=[], run=buildall.clean_build),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
-    Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
-    Command(name="test", target="telem", args=[], run=telem.start_telem),
     # unit testing
+    Command(name="test", target="telem", args=[], run=telem.start_telem),
     # manual data setters
-    Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
-    Command(name="update", target="year", args=[], run=props.set_year),
-    Command(name="update", target="locales", args=[], run=props.update_locales),
     Command(name="set", target="year", args=[], run=props.set_year),
     Command(name="set", target="version", args=["<ver>"], run=props.set_ver),
     Command(name="set", target="build", args=[], run=props.set_build_ver),
     Command(name="set", target="products", args=[], run=release.set_product_data),
+    Command(name="set", target="locales", args=[], run=props.set_locales),
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),
+    Command(name="report", target="changelog", args=["<tag>"], run=clog.report_clog),
+    # misc
+    Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
+    Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
     Command(name="help", target="", args=[], run=print_help),
 ]
 
