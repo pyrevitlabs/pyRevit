@@ -24,7 +24,7 @@
         "**/Thumbs.db": true,
         "**/.vs": true,
         "**/.sync": true,
-        "**/bin": true,
+        "*/**/bin": true,
         "**/obj": true,
         "**/__pycache__": true,
         "**/Prerequisites": true,
