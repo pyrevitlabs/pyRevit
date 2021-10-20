@@ -58,7 +58,6 @@ def set_year(_: Dict[str, str]):
 def _update_build_number(version: str):
     parts = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.\d+)?").findall(version)
     if parts:
-        print(parts)
         v = parts[0]
         major = v[0]
         minor = v[1]
@@ -73,7 +72,6 @@ def set_ver(args: Dict[str, str]):
     ver_finder = re.compile(r"\d\.\d+\.\d+(\.\d+)?")
     new_version = _update_build_number(args["<ver>"])
     if m := ver_finder.match(new_version):
-        print(m.group())
         print(f"Updating version to v{new_version}...")
         _modify_contents(
             files=configs.VERSION_FILES,

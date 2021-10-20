@@ -116,6 +116,7 @@ COMMANDS = [
     Command(name="set", target="version", args=["<ver>"], run=props.set_ver),
     Command(name="set", target="year", args=[], run=props.set_year),
     Command(name="reset", target="version", args=[], run=props.set_current_ver),
+    Command(name="set", target="products", args=[], run=release.installer_set_uuid),
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),

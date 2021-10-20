@@ -3,8 +3,11 @@
 import sys
 import os
 import os.path as op
-from typing import Dict, Tuple
+import uuid
 import json
+import re
+import logging
+from typing import Dict, List
 from collections import namedtuple
 
 from scripts import configs
@@ -13,6 +16,9 @@ from scripts import utils
 import _install as install
 import _buildall as buildall
 import _props as props
+
+
+logger = logging.getLogger()
 
 
 PyRevitProduct = namedtuple("PyRevitProduct", "product,release,version,key")
@@ -24,20 +30,29 @@ def _abort(message):
     sys.exit(1)
 
 
-def _installer_set_version(version) -> Tuple[str, str]:
-    installer = "advancedinstaller.com"
+def installer_set_uuid(args: Dict[str, str]) -> List[str]:
     product_codes = []
-    for script in [configs.PYREVIT_AIPFILE, configs.PYREVIT_CLI_AIPFILE]:
-        print(f"Updating installer script {script} to {version}")
-        utils.system(
-            [installer, "/edit", op.abspath(script), "/setversion", version]
-        )
-        product_code_report = utils.system(
-            [installer, "/edit", script, "/getproperty", "ProductCode",]
-        )
-        # e.g. 1033:{uuid}
-        product_codes.append(product_code_report.split(":")[1])
-    return (product_codes[0], product_codes[1])
+    uuid_finder = re.compile(r"^#define MyAppUUID \"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\"")
+    for installer_file in configs.INSTALLER_FILES:
+        contents = []
+        file_changed = False
+        product_code = str(uuid.uuid4())
+        with open(installer_file, "r") as instfile:
+            logger.debug(f"Setting uuid in file {installer_file} to {product_code}")
+            for cline in instfile.readlines():
+                if uuid_finder.match(cline):
+                    newcline = uuid_finder.sub(f"#define MyAppUUID \"{product_code}\"", cline)
+                    if cline != newcline:
+                        file_changed = True
+                    contents.append(newcline)
+                else:
+                    contents.append(cline)
+        if file_changed:
+            with open(installer_file, "w") as instfile:
+                instfile.writelines(contents)
+
+        product_codes.append(product_code)
+    return product_codes
 
 
 def _update_product_data(ver, key, cli=False):
@@ -109,7 +124,7 @@ def _commit_changes(msg):
 def build_installers(args: Dict[str, str]):
     """Build pyRevit and CLI installers"""
     installer = "advancedinstaller.com"
-    for script in [configs.PYREVIT_AIPFILE, configs.PYREVIT_CLI_AIPFILE]:
+    for script in [configs.PYREVIT_INSTALLERFILE, configs.PYREVIT_CLI_INSTALLERFILE]:
         print(f"Building installer {script}")
         utils.system(
             [installer, "/build", op.abspath(script),]
@@ -134,9 +149,9 @@ def create_release(args: Dict[str, str]):
     props.set_ver(args)
 
     # update installers and get new product versions
-    # pyrevit_pc, pyrevitcli_pc = _installer_set_version(release_ver)
-    # _update_product_data(release_ver, pyrevit_pc)
-    # _update_product_data(release_ver, pyrevitcli_pc, cli=True)
+    pyrevit_pc, pyrevitcli_pc = installer_set_uuid(args)
+    _update_product_data(release_ver, pyrevit_pc)
+    _update_product_data(release_ver, pyrevitcli_pc, cli=True)
 
     # _commit_changes(f"Updated version: {release_ver}")
 

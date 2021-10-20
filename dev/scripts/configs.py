@@ -41,8 +41,13 @@ DOCS_INDEX = op.join(DOCS_BUILD, "index.html")
 # API file paths must be absolute otherwise advancedinstaller will mess up
 # the relative source paths defined inside the api file and fails
 RELEASE_PATH = op.join(ROOT, "release")
-PYREVIT_AIPFILE = op.join(RELEASE_PATH, "pyrevit.aip")
-PYREVIT_CLI_AIPFILE = op.join(RELEASE_PATH, "pyrevit-cli.aip")
+PYREVIT_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit.iss")
+PYREVIT_CLI_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit-cli.iss")
+INSTALLER_FILES = [
+    PYREVIT_INSTALLERFILE,
+    PYREVIT_CLI_INSTALLERFILE,
+]
+
 PYREVIT_VERSION_FILE = op.join(ROOT, "pyrevitlib/pyrevit/version")
 
 # data files
@@ -53,6 +58,8 @@ PYREVIT_PRODUCTS_DATAFILE = op.join(BINPATH, "pyrevit-products.json")
 VERSION_FILES = [
     op.join(DEVPATH, "Directory.Build.props"),
     PYREVIT_VERSION_FILE,
+    PYREVIT_INSTALLERFILE,
+    PYREVIT_CLI_INSTALLERFILE,
 ]
 
 # files containing copyright notice
