@@ -4,6 +4,7 @@
         <AssemblyName>pyRevitLoader</AssemblyName>
         <RootNamespace>pyRevitLoader</RootNamespace>
         <OutputPath>bin\$(Configuration)\$(IronPythonVersion)\Loader</OutputPath>
+        <BaseIntermediateOutputPath>obj\$(Configuration)\$(IronPythonVersion)\Loader</BaseIntermediateOutputPath>
         <TargetDir>$(ProjectDir)$(OutputPath)</TargetDir>
     </PropertyGroup>
 
@@ -11,6 +12,7 @@
         <AssemblyName>pyRevitRunner</AssemblyName>
         <RootNamespace>pyRevitRunner</RootNamespace>
         <OutputPath>bin\$(Configuration)\$(IronPythonVersion)\Runner</OutputPath>
+        <BaseIntermediateOutputPath>obj\$(Configuration)\$(IronPythonVersion)\Runner</BaseIntermediateOutputPath>
         <TargetDir>$(ProjectDir)$(OutputPath)</TargetDir>
     </PropertyGroup>
 </Project>
