@@ -22,4 +22,8 @@ jobs:
         run: pipenv run pyrevit check
 
       - name: Build & Release
-        run: pipenv run pyrevit release 4.8.9
+        run: |
+          pipenv run pyrevit set year
+          pipenv run pyrevit set build
+          pipenv run pyrevit set products
+          pipenv run pyrevit build all
