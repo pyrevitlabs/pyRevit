@@ -68,6 +68,8 @@ COPYRIGHT_FILES = [
     op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
     op.join(DOCS_DIR, "conf.py"),
     op.join(ROOT, "README.md"),
+    PYREVIT_INSTALLERFILE,
+    PYREVIT_CLI_INSTALLERFILE,
 ]
 
 # all source file locations that are part of pyRevit project
