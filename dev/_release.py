@@ -118,7 +118,7 @@ def build_installers(args: Dict[str, str]):
 
 def create_release(args: Dict[str, str]):
     """Create pyRevit release (build all, create installers)"""
-    utils.ensure_windows()
+    # utils.ensure_windows()
 
     # _ensure_clean_tree()
 
