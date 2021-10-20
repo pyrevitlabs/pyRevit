@@ -47,7 +47,8 @@ def system(
 
 def where(program_name):
     """Test if a program is available on PATH"""
-    if op.exists(program_name):
+    if op.exists(program_name) \
+            or (sys.platform == "win32" and op.exists(program_name + ".exe")):
         return True
 
     finder = "where" if sys.platform == "win32" else "which"

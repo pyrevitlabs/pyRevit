@@ -13,6 +13,7 @@
     gcc                     for building sqlite package in telemetry server (http://mingw.org)
     go                      for building telemetry server (https://golang.org)
     Inno Setup Compiler     for buidling installers (https://jrsoftware.org/isinfo.php)
+    └── iscc                    buidling installers from scripts
     pipenv                  for managing python virtual envs (https://pipenv.readthedocs.io/)
     python 2                for building docs (https://www.python.org/downloads/)
     python 3                for the build tools (https://www.python.org/downloads/)
