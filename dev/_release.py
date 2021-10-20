@@ -156,7 +156,7 @@ def create_release(args: Dict[str, str]):
     props.set_ver(args)
 
     # update installers and get new product versions
-    update_product_data(args)
+    set_product_data(args)
 
     # _commit_changes(f"Updated version: {release_ver}")
 
