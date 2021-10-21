@@ -172,8 +172,15 @@ class ProjectParameter(BaseWrapper):
         self.name = self.param_def.Name
         # Revit <2017 does not have the Id parameter
         self.param_id = getattr(self.param_def, 'Id', None)
-        self.unit_type = self.param_def.UnitType
-        self.param_type = self.param_def.ParameterType
+
+        #Revit >2021 does not have the UnitType property
+        if HOST_APP.is_older_than(2022):
+            self.unit_type = self.param_def.UnitType
+
+        #Revit >2022 does not have the ParameterType property
+        if HOST_APP.is_older_than(2023):
+            self.param_type = self.param_def.ParameterType
+
         self.param_group = self.param_def.ParameterGroup
 
     def __eq__(self, other):
