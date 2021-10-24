@@ -27,3 +27,16 @@ jobs:
           pipenv run pyrevit set build
           pipenv run pyrevit set products
           pipenv run pyrevit build all
+          pipenv run pyrevit build installers
+
+      - name: Read Version
+        id: buildversion
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: pyrevitlib/pyrevit/version
+
+      - name: Upload Installers
+        uses: actions/upload-artifact@v2
+        with:
+          name: pyrevit-installers
+          path: dist/pyRevit_"${{ steps.buildversion.outputs.content }}".*
