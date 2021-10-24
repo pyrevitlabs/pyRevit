@@ -29,7 +29,7 @@ jobs:
           pipenv run pyrevit build all
           pipenv run pyrevit build installers
 
-      - name: Read Version
+      - name: Read Build Version
         id: buildversion
         uses: juliangruber/read-file-action@v1
         with:
@@ -39,4 +39,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: pyrevit-installers
-          path: dist/pyRevit_"${{ steps.buildversion.outputs.content }}".*
+          path: dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
