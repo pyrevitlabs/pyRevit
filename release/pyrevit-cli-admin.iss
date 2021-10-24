@@ -26,10 +26,10 @@ ChangesEnvironment=yes
 DefaultDirName={autopf}\{#MyAppName}
 UsePreviousAppDir=yes
 ;     mode
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
 ; Build info
 OutputDir=..\dist
-OutputBaseFilename=pyRevit CLI_{#MyAppVersion}_signed
+OutputBaseFilename=pyRevit CLI_{#MyAppVersion}_admin_signed
 SetupIconFile=..\bin\pyrevit_cli.ico
 Compression=lzma
 SolidCompression=yes
@@ -50,12 +50,12 @@ Source: "..\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion
 ; Multiple installs keep adding the path
 ; https://stackoverflow.com/a/3431379/2350244
 ; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 
 [UninstallRun]
-Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser

@@ -42,10 +42,14 @@ DOCS_INDEX = op.join(DOCS_BUILD, "index.html")
 # the relative source paths defined inside the api file and fails
 RELEASE_PATH = op.join(ROOT, "release")
 PYREVIT_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit.iss")
+PYREVIT_ADMIN_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit-admin.iss")
 PYREVIT_CLI_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit-cli.iss")
+PYREVIT_ADMIN_CLI_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit-cli-admin.iss")
 INSTALLER_FILES = [
     PYREVIT_INSTALLERFILE,
     PYREVIT_CLI_INSTALLERFILE,
+    PYREVIT_ADMIN_INSTALLERFILE,
+    PYREVIT_ADMIN_CLI_INSTALLERFILE
 ]
 
 PYREVIT_VERSION_FILE = op.join(ROOT, "pyrevitlib/pyrevit/version")

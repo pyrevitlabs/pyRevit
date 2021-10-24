@@ -35,8 +35,28 @@ jobs:
         with:
           path: pyrevitlib/pyrevit/version
 
-      - name: Upload Installers
+      # default retention period is 90 days
+      # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
+      - name: Upload pyRevit Installer
         uses: actions/upload-artifact@v2
         with:
-          name: pyrevit-installers
+          name: pyRevit Installer
           path: dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
+
+      - name: Upload pyRevit Installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: pyRevit Installer (Admin)
+          path: dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+
+      - name: Upload pyRevit CLI Installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: pyRevit CLI Installer
+          path: dist/pyRevit CLI_${{ steps.buildversion.outputs.content }}_signed.exe
+
+      - name: Upload pyRevit CLI Installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: pyRevit CLI Installer (Admin)
+          path: dist/pyRevit CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe

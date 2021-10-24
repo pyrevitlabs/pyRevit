@@ -22,13 +22,13 @@ DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64
 ChangesEnvironment=yes
 ;     path
-DefaultDirName={userappdata}\{#MyAppName}-Master
+DefaultDirName={autopf}\{#MyAppName}-Master
 UsePreviousAppDir=yes
 ;     mode
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
 ; Build info
 OutputDir=..\dist
-OutputBaseFilename=pyRevit_{#MyAppVersion}_signed
+OutputBaseFilename=pyRevit_{#MyAppVersion}_admin_signed
 SetupIconFile=..\bin\pyrevit.ico
 Compression=lzma
 SolidCompression=yes
@@ -71,14 +71,14 @@ Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: co
 ; Multiple installs keep adding the path
 ; https://stackoverflow.com/a/3431379/2350244
 ; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master 277 --installed"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master 277 --installed"; Flags: runhidden runascurrentuser
 
 [UninstallRun]
-Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
