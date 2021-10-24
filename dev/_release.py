@@ -30,13 +30,12 @@ def _abort(message):
     sys.exit(1)
 
 
-def _installer_set_uuid() -> List[str]:
-    product_codes = []
+def _installer_set_uuid(installer_files: List[str]) -> List[str]:
+    product_code = str(uuid.uuid4())
     uuid_finder = re.compile(r"^#define MyAppUUID \"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\"")
-    for installer_file in configs.INSTALLER_FILES:
+    for installer_file in installer_files:
         contents = []
         file_changed = False
-        product_code = str(uuid.uuid4())
         with open(installer_file, "r") as instfile:
             logger.debug(f"Setting uuid in file {installer_file} to {product_code}")
             for cline in instfile.readlines():
@@ -50,9 +49,7 @@ def _installer_set_uuid() -> List[str]:
         if file_changed:
             with open(installer_file, "w") as instfile:
                 instfile.writelines(contents)
-
-        product_codes.append(product_code)
-    return product_codes
+    return product_code
 
 
 def _update_product_data_file(ver, key, cli=False):
@@ -89,7 +86,8 @@ def _update_product_data_file(ver, key, cli=False):
 
 
 def set_product_data(_: Dict[str, str]):
-    pyrevit_pc, pyrevitcli_pc = _installer_set_uuid()
+    pyrevit_pc = _installer_set_uuid(configs.PYREVIT_INSTALLER_FILES)
+    pyrevitcli_pc = _installer_set_uuid(configs.PYREVIT_CLI_INSTALLER_FILES)
     release_ver = props.get_version()
     _update_product_data_file(release_ver, pyrevit_pc)
     _update_product_data_file(release_ver, pyrevitcli_pc, cli=True)
