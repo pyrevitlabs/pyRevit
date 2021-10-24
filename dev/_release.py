@@ -131,7 +131,7 @@ def _commit_changes(msg):
 def build_installers(_: Dict[str, str]):
     """Build pyRevit and CLI installers"""
     installer = "iscc.exe"
-    for script in [configs.PYREVIT_INSTALLERFILE, configs.PYREVIT_CLI_INSTALLERFILE]:
+    for script in [configs.INSTALLER_FILES]:
         print(f"Building installer {script}")
         utils.system(
             [installer, op.abspath(script),]
