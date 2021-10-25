@@ -112,8 +112,8 @@ elif selected_switch == 'Project Parameters':
             output.print_md('#### {}'.format(pp.name))
             print('\tUNIT: {}\n\tTYPE: {}\n\tGROUP: {}'
                   '\n\tBINDING: {}\n\tAPPLIED TO: {}\n'.format(
-                      pp.unit_type,
-                      pp.param_type,
+                      getattr(pp.unit_type, 'TypeId', pp.unit_type),
+                      getattr(pp.param_type, 'TypeId', pp.param_type),
                       pp.param_group,
                       pp.param_binding_type,
                       [x.Name for x in pp.param_binding.Categories]
@@ -125,8 +125,8 @@ elif selected_switch == 'Project Parameters':
             output.print_md('#### {} : {}'.format(pp.name, pp.param_guid))
             print('\tUNIT: {}\n\tTYPE: {}\n\tGROUP: {}'
                   '\n\tBINDING: {}\n\tAPPLIED TO: {}\n'.format(
-                      pp.unit_type,
-                      pp.param_type,
+                      getattr(pp.unit_type, 'TypeId', pp.unit_type),
+                      getattr(pp.param_type, 'TypeId', pp.param_type),
                       pp.param_group,
                       pp.param_binding_type,
                       [x.Name for x in pp.param_binding.Categories]
