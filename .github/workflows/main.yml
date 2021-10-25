@@ -64,7 +64,7 @@ jobs:
 
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
-      - name: Upload Artifacts
+      - name: Upload Installers
         uses: actions/upload-artifact@v2
         with:
           name: pyrevit-installers
