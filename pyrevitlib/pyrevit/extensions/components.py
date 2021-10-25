@@ -72,20 +72,20 @@ class NoScriptButton(GenericUICommand):
         if not assm_file.endswith(framework.ASSEMBLY_FILE_TYPE):
             assm_file += '.' + framework.ASSEMBLY_FILE_TYPE
 
-        # try get assembly with revit version (RevitPlugin_2020.dll)
-        new_assm_file = self.get_assm_file(assm_file)
-        target_asm = self.find_bundle_module(new_assm_file)
-        if not target_asm:
-            # get default assembly version (RevitPlugin.dll)
-            target_asm = self.find_bundle_module(assm_file)
-            if not target_asm and required:
-                mlogger.error("%s can not find target assembly.", self)
+        # try finding assembly for this specific host version
+        target_asm_by_host = self.find_bundle_module(assm_file, by_host=True)
+        if target_asm_by_host:
+            return target_asm_by_host
+        # try find assembly by its name
+        target_asm = self.find_bundle_module(assm_file)
+        if target_asm:
+            return target_asm
 
-        return target_asm or ''
+        if required:
+            mlogger.error("%s can not find target assembly.", self)
 
-    def get_assm_file(self, assm_file):
-        return os.path.splitext(assm_file)[0] + '_' + HOST_APP.version + \
-               '.' + framework.ASSEMBLY_FILE_TYPE
+        return ''
+
 
 class LinkButton(NoScriptButton):
     type_id = exts.LINK_BUTTON_POSTFIX
