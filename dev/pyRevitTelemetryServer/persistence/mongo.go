@@ -1,7 +1,8 @@
 package persistence
 
 import (
-	"../cli"
+	"pyrevittelemetryserver/cli"
+
 	_ "github.com/lib/pq"
 	"gopkg.in/mgo.v2"
 )

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="../Directory.Build.props" />
+
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
+        <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
+        <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="WindowsBase" />
+        <Reference Include="WindowsFormsIntegration" />
+        <Reference Include="PresentationCore" />
+        <Reference Include="PresentationFramework" />
+        <Reference Include="System.Windows.Forms" />
+        <Reference Include="System.Xaml" />
+        <Reference Include="System.Web" />
+
+        <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLoader.dll" />
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.dll" />
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Modules.dll" />
+        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.SQLite.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll" />
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll" />
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll" />
+
+        <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitDevModulesDir)\pyRevitLabs.Python.Net\src\runtime\bin\pyRevitLabs.PythonNet.dll" />
+        
+        <Reference Include="pyRevitLabs.Common" HintPath="$(PyRevitBinDir)\pyRevitLabs.Common.dll" />
+        <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
+        <Reference Include="pyRevitLabs.Emojis" HintPath="$(PyRevitBinDir)\pyRevitLabs.Emojis.dll" />
+        <Reference Include="pyRevitLabs.PyRevit" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
+        <Reference Include="pyRevitLabs.TargetApps.Revit" HintPath="$(PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
+
+        <Reference Include="AdWindows" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\AdWindows.dll" />
+        <Reference Include="UIFramework" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\UIFramework.dll" />
+        <Reference Include="RevitAPI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPI.dll" />
+        <Reference Include="RevitAPIUI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPIUI.dll" />
+        <Reference Include="Xceed.Wpf.AvalonDock" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\Xceed.Wpf.AvalonDock.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="docopt.net" Version="0.6.1.10" />
+        <PackageReference Include="AirspaceFixer" Version="1.0.5" />
+        <PackageReference Include="ControlzEx" Version="3.0.2.4" />
+    </ItemGroup>
+</Project>
