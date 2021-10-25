@@ -1,5 +1,8 @@
 name: pyRevitCI
-on: [push]
+on:
+  push:
+    branches:
+      - develop
 jobs:
   build:
     runs-on: windows-latest
