@@ -295,10 +295,18 @@ class GenericUIComponent(GenericComponent):
                             return op.join(self.directory, bundle_file)
         return None
 
-    def find_bundle_module(self, module):
+    def find_bundle_module(self, module, by_host=False):
         # test of file_name is an actually path to a file
         if op.isfile(module):
             return module
+
+        def build_assm_filename(module_filename):
+            # build assembly by host version (assm_file_2020.ext)
+            assm_name, assm_ext = op.splitext(module_filename)
+            return assm_name + '_' + HOST_APP.version + assm_ext
+
+        if by_host:
+            module = build_assm_filename(module)
 
         # test if module is inside search paths
         for module_path in self.module_paths:
