@@ -1,1 +1,6 @@
-tooltip: Opens the central log for the current workshared project
+title:
+  fr_fr: Ouvrir le log du projet central actuel
+  en_us: Open Current Project Central Log
+tooltip:
+  fr_fr: Ouvre le log central du projet partagé en cours
+  en_us: Opens the central log for the current workshared project

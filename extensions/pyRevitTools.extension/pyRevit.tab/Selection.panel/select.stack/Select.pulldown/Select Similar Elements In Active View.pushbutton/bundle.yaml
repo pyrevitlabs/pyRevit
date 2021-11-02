@@ -1,8 +1,21 @@
-tooltip: >-
-  Selects elements similar to the currently
-
-  selected elements in the active view
-
-
-  Shift-Click: select in whole project
+title:
+  fr_fr: Sélectionner les éléments similaires dans la vue active
+  en_us: Select Similar Elements In Active View
+tooltip:
+  fr_fr: >-
+     Sélectionne des éléments similaires aux éléments
+    
+     actuels sélectionnés dans la vue active
+    
+     Shift-Click :
+     
+     sélectionner dans l'ensemble du projet
+  en_us: >-
+    Selects elements similar to the currently
+    
+    selected elements in the active view
+    
+    Shift-Click :
+    
+    select in whole project
 context: selection

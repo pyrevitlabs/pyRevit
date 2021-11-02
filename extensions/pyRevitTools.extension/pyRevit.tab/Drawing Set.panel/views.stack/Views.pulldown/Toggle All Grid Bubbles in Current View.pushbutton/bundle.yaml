@@ -1,2 +1,7 @@
-tooltip: Toggle all/selected grid bubbles in the active view
+title:
+  fr_fr: Basculer toutes les bulles de quadrillage dans la vue
+  en_us: Toggle All Grid Bubbles in Current View
+tooltip:
+  fr_fr: Basculer toutes les bulles de quadrillage/sélectionnées dans la vue active
+  en_us: Toggle all/selected grid bubbles in the active view
 min_revit_version: 2016

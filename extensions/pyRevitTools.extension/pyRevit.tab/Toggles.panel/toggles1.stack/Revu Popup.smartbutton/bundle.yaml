@@ -1,6 +1,7 @@
-tooltip: Enables and disables the Revu PDF Printer prompt for filename option. The Icon shows the current state of this setting
-title: >-
-  Revu
-
-  Popup
+title:
+  fr_fr: Revu Popup
+  en_us: Revu Popup
+tooltip:
+  fr_fr: Active et désactive l'invite de l'imprimante PDF Revu pour l'option de nom de fichier. L'icône indique l'état actuel de ce paramètre.
+  en_us: Enables and disables the Revu PDF Printer prompt for filename option. The Icon shows the current state of this setting.
 context: zero-doc

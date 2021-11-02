@@ -1,1 +1,6 @@
-tooltip: Deletes all attached_constraints attached to the selected object
+title:
+  fr_fr: Supprimer les contraintes attachées
+  en_us: Wipe Attached Constraints
+tooltip:
+  fr_fr: Supprime toutes les contraintes attachées à l'objet sélectionné
+  en_us: Deletes all attached_constraints attached to the selected object

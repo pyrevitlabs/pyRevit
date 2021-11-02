@@ -1,1 +1,6 @@
-tooltip: Toggles visibility of imported categories on current view
+title:
+  fr_fr: Importés
+  en_us: Importer
+tooltip:
+  fr_fr: Bascule la visibilité des catégories importées sur la vue actuelle
+  en_us: Toggles visibility of imported categories on current view

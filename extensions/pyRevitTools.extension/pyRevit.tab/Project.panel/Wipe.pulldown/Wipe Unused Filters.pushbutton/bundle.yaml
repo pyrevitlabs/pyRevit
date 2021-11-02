@@ -1,1 +1,6 @@
-tooltip: Deletes all view parameter filters that has not been listed on any views. This includes sheets as well
+title:
+  fr_fr: Supprimer les filtres de vue inutilisés
+  en_us: Wipe Unused Filters
+tooltip:
+  fr_fr: Supprime tous les filtres de paramètres de vue qui n'ont été répertoriés dans aucune vue. Cela inclut aussi les feuilles
+  en_us: Deletes all view parameter filters that has not been listed on any views. This includes sheets as well

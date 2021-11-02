@@ -1,2 +1,7 @@
-tooltip: Convert Imported CAD Symbol to FreeForm or DirectShape Elements
+title:
+  fr_fr: Convertir un élément CAD 3D importé
+  en_us: Convert Imported 3D CAD
+tooltip:
+  fr_fr: Convertir un symbole CAD importé en éléments FreeForm ou DirectShape
+  en_us: Convert Imported CAD Symbol to FreeForm or DirectShape Elements
 is_beta: true

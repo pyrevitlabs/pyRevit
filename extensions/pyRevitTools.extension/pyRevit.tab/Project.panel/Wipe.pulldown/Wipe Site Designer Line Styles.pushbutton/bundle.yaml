@@ -1,1 +1,6 @@
-tooltip: Deletes all extra lines styles created by the faulty Site Designer addin
+title:
+  fr_fr: Supprimer les styles de lignes Site Designer
+  en_us: Wipe Site Designer Line Styles
+tooltip:
+  fr_fr: Supprime tous les styles de lignes créés par le addin défectueux Site Designer
+  en_us: Deletes all extra lines styles created by the faulty Site Designer addin

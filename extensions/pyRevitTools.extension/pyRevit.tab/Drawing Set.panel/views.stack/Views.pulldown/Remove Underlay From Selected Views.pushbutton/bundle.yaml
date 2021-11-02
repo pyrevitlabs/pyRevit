@@ -1,1 +1,6 @@
-tooltip: Removes Underlay From Selected Views
+title:
+  fr_fr: Enlève les fonds de plans des vues sélectionnées
+  en_us: Remove Underlay From Selected Views
+tooltip:
+  fr_fr: Enlève les fonds de plans des vues sélectionnées
+  en_us: Removes Underlay From Selected Views
