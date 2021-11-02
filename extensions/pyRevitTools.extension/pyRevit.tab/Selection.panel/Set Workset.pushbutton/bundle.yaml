@@ -1,8 +1,15 @@
-tooltip: Sets the active workset from the selection
-title: >-
-  Set
-
-  Workset
+title:
+  fr_fr: >-
+    Active
+    
+    Sous-Projet
+  en_us: >-
+    Set
+    
+    Workset
+tooltip:
+  fr_fr: Rend le sous-projet de la sélection actuel actif
+  en_us: Sets the active workset from the selection
 context: selection
 author: 'Jean-Marc Couffin'
 contact: 'https://github.com/jmcouffin'
