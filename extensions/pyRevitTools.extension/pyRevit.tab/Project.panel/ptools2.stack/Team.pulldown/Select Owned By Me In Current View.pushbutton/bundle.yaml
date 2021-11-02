@@ -1,1 +1,6 @@
-tooltip: Uses the Worksharing tooltip to find out the element "owned" by the user in the current view.If current view is a sheet, the tools searches all the views placed on this sheet as well."Owned" elements are the elements edited by the user since the last synchronize and release
+title:
+  fr_fr: Sélectionner les éléments en ma possession dans la vue actuelle
+  en_us: Select Owned By Me In Current View
+tooltip:
+  fr_fr: Utilise l'info-bulle de partage de projet pour trouver l'élément "possédé" par l'utilisateur dans la vue actuelle. Si la vue actuelle est une feuille, les outils recherchent également toutes les vues placées sur cette feuille. "Les éléments appartenant" sont les éléments édités par le utilisateur depuis la dernière synchronisation et la dernière version.
+  en_us: Uses the Worksharing tooltip to find out the element "owned" by the user in the current view.If current view is a sheet, the tools searches all the views placed on this sheet as well."Owned" elements are the elements edited by the user since the last synchronize and release.

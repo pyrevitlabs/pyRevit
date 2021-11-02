@@ -1,1 +1,6 @@
-tooltip: Lists all sheets containing elements currently "owned" by the user. "Owned" elements are the elementsby the user since the last synchronize and release
+title:
+  fr_fr: Trouver les feuilles avec des éléments en ma possession
+  en_us: Find Sheets With Elements Owned By Me
+tooltip:
+  fr_fr: Répertorie toutes les feuilles contenant des éléments actuellement « possédés » par l'utilisateur. Les éléments « possédés » sont les éléments de l'utilisateur depuis la dernière synchronisation et la dernière version.
+  en_us: Lists all sheets containing elements currently "owned" by the user. "Owned" elements are the elementsby the user since the last synchronize and release.

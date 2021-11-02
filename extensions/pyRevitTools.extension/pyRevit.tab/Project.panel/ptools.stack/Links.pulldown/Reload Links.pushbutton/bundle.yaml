@@ -1,4 +1,12 @@
-tooltip: >-
-  Reloads choosen Revit, CAD and DWG Links
-
-  Can reload links "locally" for workshared models
+title:
+  fr_fr: Recharger les liens
+  en_us: Reload Links
+tooltip:
+  fr_fr: >-
+     Recharge les liens Revit, CAD et DWG choisis
+    
+     Peut recharger les liens "localement" pour les modèles partagés
+  en_us: >-
+    Reloads choosen Revit, CAD and DWG Links
+    
+    Can reload links "locally" for workshared models

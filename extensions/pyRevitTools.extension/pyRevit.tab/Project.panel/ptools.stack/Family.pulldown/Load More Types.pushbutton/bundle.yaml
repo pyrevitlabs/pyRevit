@@ -1,1 +1,6 @@
-tooltip: Loads other types from selected family instance
+title:
+  fr_fr: Charger des types supplémentaires
+  en_us: Load More Types
+tooltip:
+  fr_fr: Charge d'autres types à partir de l'instance de famille sélectionnée
+  en_us: Loads other types from selected family instance

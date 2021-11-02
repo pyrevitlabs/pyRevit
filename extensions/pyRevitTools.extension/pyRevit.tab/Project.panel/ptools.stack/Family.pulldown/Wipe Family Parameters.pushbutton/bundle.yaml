@@ -1,7 +1,17 @@
+title:
+  fr_fr: Supprimer les paramètres des familles
+  en_us: Wipe Family Parameters
+tooltip:
+  fr_fr: >-
+     Ce script supprime tous les paramètres personnalisés qui n'ont pas été utilisés
+    
+     dans les dimensions sous forme d'étiquettes et réinitialise également la valeur 
+    
+     pour les autres paramètres à zéro ou null
+  en_us: >-
+    This script removes all custom parameters that has not been used
+    
+    in dimensions as labels and also resets the value for the other
+    
+    parameters to zero or null
 context: doc-family
-tooltip: >-
-  This script removes all custom parameters that has not been used
-
-  in dimensions as labels and also resets the value for the other
-
-  parameters to zero or null

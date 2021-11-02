@@ -1,1 +1,6 @@
-tooltip: Reset all model categories and subcategories back to default
+title:
+  fr_fr: Supprimer toutes les sous-catégories
+  en_us: Wipe SubCategories
+tooltip:
+  fr_fr: Réinitialise toutes les catégories et sous-catégories
+  en_us: Reset all model categories and subcategories back to default
