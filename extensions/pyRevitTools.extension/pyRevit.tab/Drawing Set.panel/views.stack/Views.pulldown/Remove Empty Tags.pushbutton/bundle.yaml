@@ -1,7 +1,16 @@
-tooltip: >-
-  Removes empty tags in current view
+title:
+  fr_fr: Enlever les étiquettes vides
+  en_us: Remove Empty Tags
+tooltip:
+  fr_fr: >-
+     Supprime les étiquettes vides dans la vue actuelle
 
+     Maj+Clic :
 
-  Shift+Click:
+     Supprimer les étiquettes dans les vues sélectionnées
+  en_us: >-
+    Removes empty tags in current view
 
-  Remove tags in selected views
+    Shift+Click:
+
+    Remove tags in selected views
