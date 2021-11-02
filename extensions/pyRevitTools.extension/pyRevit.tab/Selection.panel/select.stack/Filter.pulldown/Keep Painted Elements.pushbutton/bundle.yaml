@@ -1,2 +1,7 @@
-tooltip: keeps elements with painted faces in current selection and filters everything else out
+title:
+  fr_fr: Conserve les éléments peints
+  en_us: Keep Painted Elements
+tooltip:
+  fr_fr: Conserve les éléments avec des faces peintes dans la sélection actuelle et filtre tout le reste.
+  en_us: Keeps elements with painted faces in current selection and filters everything else out.
 context: Selection

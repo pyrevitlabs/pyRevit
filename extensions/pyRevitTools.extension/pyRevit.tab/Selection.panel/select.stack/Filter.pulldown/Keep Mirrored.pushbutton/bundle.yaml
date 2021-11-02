@@ -1,8 +1,17 @@
-tooltip: >-
-  Keep only mirrored elements in current selection
+title:
+  fr_fr: Conserve symétrisés
+  en_us: Keep Mirrored
+tooltip:
+  fr_fr: >-
+     Conserver uniquement les éléments symétrisés dans la sélection actuelle
 
+     Shift-Clic :
 
-  Shift-Click:
+     Conserver uniquement les non-symétrisés
+  en_us: >-
+    Keep only mirrored elements in current selection
 
-  Keep only not-Mirrored
+    Shift-Click:
+
+    Keep only not-Mirrored
 context: selection
