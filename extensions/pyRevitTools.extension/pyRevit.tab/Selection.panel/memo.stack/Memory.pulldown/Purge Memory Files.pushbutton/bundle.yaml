@@ -1,1 +1,6 @@
-tooltip: Deletes all the temporary selection data files folder. This will clear all selection memories
+title:
+  fr_fr: Purger les fichiers Mémoire
+  en_us: Purge Memory Files
+tooltip:
+  fr_fr: Supprime tout le dossier des fichiers de données de sélection temporaire. Cela effacera toutes les mémoires de sélection
+  en_us: Deletes all the temporary selection data files folder. This will clear all selection memories

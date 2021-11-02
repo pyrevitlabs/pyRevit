@@ -1,1 +1,6 @@
-tooltip: Selects all Text Note elements in the model. This is helpful for spell checking
+title:
+  fr_fr: Sélectionner toutes les notes textuelles
+  en_us: Select All Text Notes
+tooltip:
+  fr_fr: Sélectionne tous les éléments de catégorie note textuelle dans le modèle. Ceci est utile pour la vérification orthographique.
+  en_us: Selects all Text Note elements in the model. This is helpful for spell checking.

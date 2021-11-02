@@ -1,12 +1,25 @@
-tooltip: >-
-  Select all elements of the same type as selected element
-
-  and reports their IDs (sorted by the owner view if they
-
-  are View Specific objects)
-
-
-  Shift-Click:
-
-  Show Results
+title:
+  fr_fr: Sélectionner tous les objets du type sélectionné
+  en_us: Select All Objects Of Selected Type
+tooltip:
+  fr_fr: >-
+     Sélectionnez tous les éléments du même type que l'élément sélectionné
+    
+     et rapporte leurs identifiants (triés par la vue propriétaire s'ils
+    
+     sont des objets spécifiques à la vue)
+    
+     Shift-Clic :
+    
+     Montrer les résultats
+  en_us: >-
+    Select all elements of the same type as selected element
+    
+    and reports their IDs (sorted by the owner view if they
+    
+    are View Specific objects)
+    
+    Shift-Click:
+    
+    Show Results
 context: selection

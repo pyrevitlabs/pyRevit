@@ -1,4 +1,12 @@
-tooltip: >-
-  Deducts selection from memory keeping the rest
-
-  Works like the M- button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+title:
+  fr_fr: MDéduire
+  en_us: MDeduct
+tooltip:
+  fr_fr: >-
+     Déduit la sélection de la mémoire en gardant le reste
+    
+     Fonctionne comme le bouton M- d'une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym
+  en_us: >-
+    Deducts selection from memory keeping the rest
+    
+    Works like the M- button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files

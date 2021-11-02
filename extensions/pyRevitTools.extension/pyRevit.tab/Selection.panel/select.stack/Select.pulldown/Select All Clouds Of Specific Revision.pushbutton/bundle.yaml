@@ -1,1 +1,6 @@
-tooltip: Selects all revision clouds of a sepecific revision. This is helpful for setting a parameter or comment on all the revision clouds at once
+title:
+  fr_fr: Sélectionner tous les nuages d'une révision spécifique
+  en_us: Select All Clouds Of Specific Revision
+tooltip:
+  fr_fr: Sélectionne tous les nuages de révision d'une révision spécifique. Ceci est utile pour définir un paramètre ou un commentaire sur tous les nuages de révision à la fois
+  en_us: Selects all revision clouds of a sepecific revision. This is helpful for setting a parameter or comment on all the revision clouds at once
