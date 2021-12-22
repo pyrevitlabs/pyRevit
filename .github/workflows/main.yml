@@ -1,9 +1,9 @@
 name: pyRevitCI
 on:
+  workflow_dispatch:
   push:
     branches:
       - develop
-  workflow_dispatch:
 
 jobs:
   build:
@@ -42,13 +42,13 @@ jobs:
       - name: Sign Binaries
         uses: skymatic/code-sign-action@v1
         with:
-          certificate: '${{ secrets.CERTIFICATE }}'
-          password: '${{ secrets.PASSWORD }}'
-          certificatesha1: '${{ secrets.CERTIFICATESHA1 }}'
-          certificatename: '${{ secrets.CERTIFICATENAME }}'
-          description: 'pyRevit'
-          timestampUrl: 'http://timestamp.digicert.com'
-          folder: 'bin'
+          certificate: "${{ secrets.CERTIFICATE }}"
+          password: "${{ secrets.PASSWORD }}"
+          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
+          certificatename: "${{ secrets.CERTIFICATENAME }}"
+          description: "pyRevit"
+          timestampUrl: "http://timestamp.digicert.com"
+          folder: "bin"
           recursive: true
 
       - name: Build Installers
@@ -58,13 +58,13 @@ jobs:
       - name: Sign Installers
         uses: skymatic/code-sign-action@v1
         with:
-          certificate: '${{ secrets.CERTIFICATE }}'
-          password: '${{ secrets.PASSWORD }}'
-          certificatesha1: '${{ secrets.CERTIFICATESHA1 }}'
-          certificatename: '${{ secrets.CERTIFICATENAME }}'
-          description: 'pyRevit'
-          timestampUrl: 'http://timestamp.digicert.com'
-          folder: 'dist'
+          certificate: "${{ secrets.CERTIFICATE }}"
+          password: "${{ secrets.PASSWORD }}"
+          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
+          certificatename: "${{ secrets.CERTIFICATENAME }}"
+          description: "pyRevit"
+          timestampUrl: "http://timestamp.digicert.com"
+          folder: "dist"
           recursive: true
 
       # default retention period is 90 days
