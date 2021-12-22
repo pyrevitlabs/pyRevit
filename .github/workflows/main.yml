@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - develop
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: windows-latest
