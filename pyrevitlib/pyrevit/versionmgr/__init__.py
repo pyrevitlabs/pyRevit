@@ -9,7 +9,7 @@ Example:
 import os.path as op
 
 from pyrevit import HOME_DIR, BIN_DIR
-from pyrevit import VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA
+from pyrevit import VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, BUILD_METADATA
 from pyrevit import PYREVIT_CLI_PATH
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
@@ -26,40 +26,47 @@ class _PyRevitVersion(object):
     """pyRevit version wrapper.
 
     Args:
-        patch_number (str): patch value
-
+        commit_hash (str): signature
     """
     major = VERSION_MAJOR
     minor = VERSION_MINOR
+    patch = VERSION_PATCH
     metadata = BUILD_METADATA
-    patch = ''
+    signature = ''
 
-    def __init__(self, patch_number):
-        self.patch = safe_strtype(patch_number)[:7]
+    def __init__(self, signature):
+        self.signature = safe_strtype(signature)[:7]
 
     def as_int_tuple(self):
         """Returns version as an int tuple (major, minor, patch)"""
         try:
-            patch_number = int(self.patch, 16)
+            signature = int(self.patch, 16)
         except Exception:
-            patch_number = 0
-        ver_tuple = (_PyRevitVersion.major, _PyRevitVersion.minor, patch_number)
+            signature = 0
+
+        ver_tuple = (_PyRevitVersion.major, _PyRevitVersion.minor, signature)
         return ver_tuple
 
     def as_str_tuple(self):
         """Returns version as an string tuple ('major', 'minor', 'patch')"""
         ver_tuple = (safe_strtype(_PyRevitVersion.major),
-                     safe_strtype(_PyRevitVersion.minor), self.patch)
+                     safe_strtype(_PyRevitVersion.minor),
+                     safe_strtype(self.patch))
         return ver_tuple
 
-    def get_formatted(self, nopatch=False):
-        """Returns 'major.minor:patch' in string"""
-        formatted_ver = '{}.{}{}'.format(_PyRevitVersion.major,
-                                         _PyRevitVersion.minor,
-                                         _PyRevitVersion.metadata)
+    def get_formatted(self, strict=False, extended=False):
+        """Returns 'major.minor.patch' in string"""
+        formatted_ver = '{}.{}.{}'.format(_PyRevitVersion.major,
+                                          _PyRevitVersion.minor,
+                                          _PyRevitVersion.patch)
 
-        return formatted_ver if (nopatch or not self.patch) \
-                             else formatted_ver + ':' + self.patch
+        if not strict and self.metadata:
+            formatted_ver += ('.' + self.metadata)
+
+        if extended and not strict:
+            formatted_ver += (':' + self.signature)
+
+        return formatted_ver
 
 
 def get_pyrevit_repo():
