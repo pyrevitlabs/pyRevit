@@ -23,7 +23,7 @@ for el in selection.elements:
 if src_comment:
     clouds = []
     for revcloud in revclouds:
-        cparam = el.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+        cparam = revcloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
         dest_comment = cparam.AsString()
         if src_comment == dest_comment:
             clouds.append(revcloud.Id)
