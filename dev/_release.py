@@ -211,6 +211,7 @@ def _commit_changes(msg):
 def _tag_changes():
     build_version = props.get_version()
     utils.system(["git", "tag", f"v{build_version}"])
+    utils.system(["git", "tag", f"cli-v{build_version}"])
 
 
 def commit_and_tag_build(_: Dict[str, str]):
