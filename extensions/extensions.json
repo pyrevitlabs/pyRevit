@@ -1,7 +1,7 @@
 {
-    "extensions": [{
+    "extensions": [
+        {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "False",
             "name": "PyRevitPlus",
@@ -15,7 +15,6 @@
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "PyRevitMEP",
@@ -29,7 +28,6 @@
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "pyApex",
@@ -43,7 +41,6 @@
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "lib",
             "rocket_mode_compatible": "True",
             "name": "Revitron",
@@ -57,7 +54,6 @@
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "Revitron UI",
@@ -67,11 +63,12 @@
             "url": "https://github.com/revitron/revitron-ui.git",
             "website": "https://revitron-ui.readthedocs.io/en/latest/",
             "image": "",
-            "dependencies": ["Revitron"]
+            "dependencies": [
+                "Revitron"
+            ]
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "pyStructure",
@@ -85,7 +82,6 @@
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "MEPDesign",
@@ -99,7 +95,6 @@
         },
         {
             "builtin": "False",
-            "enable": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "pyTiBa",
@@ -109,6 +104,51 @@
             "url": "https://github.com/tillbaum/pytiba.git",
             "website": "https://github.com/tillbaum",
             "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "EF-Tools",
+            "description": "Set of custom tools.",
+            "author": "Erik Frits",
+            "author_profile": "https://www.linkedin.com/in/erik-frits/",
+            "url": "https://github.com/ErikFrits/EF-Tools.git",
+            "website": "https://www.erikfrits.com",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pyChilizer",
+            "description": "A collection of tools for Revit.",
+            "author": "Archilizer",
+            "author_profile": "https://archilizer.com",
+            "url": "https://github.com/dnenov/pyChilizer",
+            "website": "https://archilizer.com",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pySSG",
+            "description": "IronPython Scripts for Autodesk Revit.",
+            "author": "Kyle Bruxvoort",
+            "author_profile": "https://kbrux.com",
+            "url": "https://github.com/kbruxvoort/SSG.extension.git",
+            "website": "https://archilizer.com",
+            "image": "",
+            "templates": {
+                "youtube": "https://www.youtube.com/watch?v=",
+                "author": "Kyle Bruxvoort"
+            },
             "dependencies": []
         }
     ]
