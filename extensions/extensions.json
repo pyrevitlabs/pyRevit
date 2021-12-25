@@ -105,6 +105,19 @@
             "website": "https://github.com/tillbaum",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "EF-Tools",
+            "description": "Set of custom tools.",
+            "author": "Erik Frits",
+            "author_profile": "https://www.linkedin.com/in/erik-frits/",
+            "url": "https://github.com/ErikFrits/EF-Tools.git",
+            "website": "https://www.erikfrits.com",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
