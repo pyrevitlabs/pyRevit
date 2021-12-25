@@ -132,6 +132,24 @@
             "website": "https://archilizer.com",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pySSG",
+            "description": "IronPython Scripts for Autodesk Revit.",
+            "author": "Kyle Bruxvoort",
+            "author_profile": "https://kbrux.com",
+            "url": "https://github.com/kbruxvoort/SSG.extension.git",
+            "website": "https://archilizer.com",
+            "image": "",
+            "templates": {
+                "youtube": "https://www.youtube.com/watch?v=",
+                "author": "Kyle Bruxvoort"
+            },
+            "dependencies": []
         }
     ]
 }
