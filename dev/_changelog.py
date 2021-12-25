@@ -124,7 +124,10 @@ def find_changes(gitlog_report: str):
     while idx < report_length:
         # extract hash and message
         cline = changelines[idx]
-        chash, cmsg = cline.split(" ", 1)
+        parts = cline.split(" ", 1)
+        if len(parts) != 2:
+            continue
+        chash, cmsg = parts
         logger.debug("commit -> %s: %s", chash, cmsg)
         # grab all the comments lines
         idx += 1
@@ -195,4 +198,4 @@ def report_clog(args: Dict[str, str]):
                 for todo in change.todos:
                     print(f"    - [ ] {todo}")
     except Exception as ex:
-        print(ex, gitlog_report)
+        print(gitlog_report)
