@@ -174,36 +174,36 @@ def report_clog(args: Dict[str, str]):
     print(f"Target tag is: {target_tag}")
     print(f"Target tag hash is: {tag_hash}")
 
-    # gitlog_report = utils.system(
-    #     ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag_hash}..HEAD"]
-    # )
+    gitlog_report = utils.system(
+        ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag_hash}..HEAD"]
+    )
 
-    # print("Parsing git log for changes...")
-    # changes = find_changes(gitlog_report, fetch_info=True)
+    print("Parsing git log for changes...")
+    changes = find_changes(gitlog_report, fetch_info=True)
 
-    # # groups changes (and purge)
-    # grouped_changes = defaultdict(list)
-    # for change in changes:
-    #     # skip unintersting commits
-    #     if any(re.search(x, change.message) for x in SKIP_PATTERNS):
-    #         continue
+    # groups changes (and purge)
+    grouped_changes = defaultdict(list)
+    for change in changes:
+        # skip unintersting commits
+        if any(re.search(x, change.message) for x in SKIP_PATTERNS):
+            continue
 
-    #     if change.groups:
-    #         for group in change.groups:
-    #             grouped_changes[group].append(change)
-    #     else:
-    #         grouped_changes[""].append(change)
+        if change.groups:
+            for group in change.groups:
+                grouped_changes[group].append(change)
+        else:
+            grouped_changes[""].append(change)
 
-    # # report changes by groups in order
-    # for cgroup in CHANGE_GROUPS:
-    #     header(cgroup.header, level=1)
-    #     for change in grouped_changes[cgroup.tag]:
-    #         if change.issue_type == "issue":
-    #             print(f"- Resolved Issue ({change.ticket}: {change.title})")
-    #         elif change.issue_type == "pr":
-    #             print(f"- Merged PR ({change.ticket}: {change.title})")
-    #         else:
-    #             print(f"- {change.message}")
+    # report changes by groups in order
+    for cgroup in CHANGE_GROUPS:
+        header(cgroup.header, level=1)
+        for change in grouped_changes[cgroup.tag]:
+            if change.issue_type == "issue":
+                print(f"- Resolved Issue ({change.ticket}: {change.title})")
+            elif change.issue_type == "pr":
+                print(f"- Merged PR ({change.ticket}: {change.title})")
+            else:
+                print(f"- {change.message}")
 
-    #         for todo in change.todos:
-    #             print(f"    - [ ] {todo}")
+            for todo in change.todos:
+                print(f"    - [ ] {todo}")
