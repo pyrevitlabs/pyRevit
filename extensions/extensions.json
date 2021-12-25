@@ -118,6 +118,20 @@
             "website": "https://www.erikfrits.com",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pyChilizer",
+            "description": "A collection of tools for Revit.",
+            "author": "Archilizer",
+            "author_profile": "https://archilizer.com",
+            "url": "https://github.com/dnenov/pyChilizer",
+            "website": "https://archilizer.com",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
