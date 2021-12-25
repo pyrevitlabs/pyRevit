@@ -203,11 +203,8 @@ def create_release(args: Dict[str, str]):
 
 
 def _commit_changes(msg):
-    utils.system(["git", "add", configs.PYREVIT_VERSION_FILE])
-    utils.system(["git", "add", configs.AUTOCOMP])
-    utils.system(["git", "add", configs.DIRECTORY_BUILD_PROPS])
-    utils.system(["git", "add", r"release\*"])
-    utils.system(["git", "add", r"bin\*"])
+    for commit_file in configs.COMMIT_FILES:
+        utils.system(["git", "add", commit_file])
     utils.system(["git", "commit", "-m", msg])
 
 

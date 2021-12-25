@@ -98,6 +98,17 @@ COPYRIGHT_FILES = [
     PYREVIT_ADMIN_CLI_INSTALLERFILE,
 ]
 
+COMMIT_FILES = [
+    AUTOCOMP,
+    DIRECTORY_BUILD_PROPS,
+    PYREVIT_VERSION_FILE,
+    op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
+    op.join(DOCS_DIR, "conf.py"),
+    op.join(ROOT, "README.md"),
+    r"release\*",
+    r"bin\*",
+]
+
 # all source file locations that are part of pyRevit project
 SOURCE_DIRS = [
     op.join(ROOT, "pyrevitlib/pyrevit"),
