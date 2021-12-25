@@ -11,7 +11,11 @@ jobs:
     steps:
       # under $GITHUB_WORKSPACE
       - uses: actions/checkout@v2
-      - uses: snickerbockers/submodules-init@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      # - uses: snickerbockers/submodules-init@v4
 
       - name: Setup Python 3.9
         uses: actions/setup-python@v2.2.2
