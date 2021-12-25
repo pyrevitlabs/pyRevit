@@ -108,6 +108,7 @@ jobs:
           git config user.name 'Ehsan Iran-Nejad'
           git config user.email eirannejad@gmail.com
           pipenv run pyrevit build commit
+          git push
 
       - name: Publish Release
         if: (github.ref == 'refs/heads/master_test')
