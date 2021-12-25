@@ -2,11 +2,11 @@ name: pyRevitCI
 on:
   push:
     branches:
-      - master
+      - master_test
       - develop
   pull_request:
     branches:
-      - master
+      - master_test
       - develop
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
           pipenv run pyrevit set build
 
       - name: Publish Build Info
-        if: (github.ref == 'refs/heads/master')
+        if: (github.ref == 'refs/heads/master_test')
         run: |
           pipenv run pyrevit set products
 
@@ -95,19 +95,22 @@ jobs:
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
       - name: Generate Release Notes
-        # if: (github.ref == 'refs/heads/master')
+        if: (github.ref == 'refs/heads/master_test')
         env:
           GITHUBTOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit report changelog > release_notes.md
 
       - name: Commit & Tag Changes
-        if: (github.ref == 'refs/heads/master')
+        if: (github.ref == 'refs/heads/master_test')
+        # configure git and commit changes
         run: |
+          git config user.name 'Ehsan Iran-Nejad'
+          git config user.email eirannejad@gmail.com
           pipenv run pyrevit build commit
 
       - name: Publish Release
-        # if: (github.ref == 'refs/heads/master')
+        if: (github.ref == 'refs/heads/master_test')
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
