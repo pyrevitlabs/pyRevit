@@ -195,5 +195,4 @@ def report_clog(args: Dict[str, str]):
                 for todo in change.todos:
                     print(f"    - [ ] {todo}")
     except Exception as ex:
-        print(ex)
-        print(gitlog_report)
+        print(ex, gitlog_report)
