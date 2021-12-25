@@ -9,6 +9,8 @@ from collections import namedtuple, defaultdict
 from scripts import utils
 from scripts import github
 
+import _props as props
+
 
 logger = logging.getLogger()
 
@@ -207,3 +209,11 @@ def report_clog(args: Dict[str, str]):
 
             for todo in change.todos:
                 print(f"    - [ ] {todo}")
+
+    if not props.is_wip_build(args):
+        build_version = props.get_version()
+        print(
+            "\n"
+            f"**Full Changelog**: https://github.com/eirannejad/pyRevit/"
+            f"compare/{target_tag}...v{build_version}"
+        )

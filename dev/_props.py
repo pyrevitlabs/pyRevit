@@ -72,7 +72,7 @@ def _update_build_number(version: str):
     return version
 
 
-def _is_wip_build():
+def is_wip_build(_: Dict[str, str]):
     """Determine if this is a develop/wip build"""
     branch_name = utils.system(["git", "rev-parse", "--abbrev-ref", "HEAD"])
     return branch_name.strip().lower() == "develop"
@@ -83,7 +83,7 @@ def set_ver(args: Dict[str, str]):
     new_version = _update_build_number(args["<ver>"])
 
     # add wip to version if this is a wip build
-    if _is_wip_build():
+    if is_wip_build(args):
         new_version += configs.PYREVIT_WIP_VERSION_EXT
 
     if VER_FINDER.match(new_version):
