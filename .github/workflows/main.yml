@@ -10,10 +10,10 @@ jobs:
     runs-on: windows-latest
     steps:
       # under $GITHUB_WORKSPACE
-      # fetch enough history so release notes can be generated from
+      # fetch history so release notes can be generated from
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 500
+          fetch-depth: 0
       - uses: snickerbockers/submodules-init@v4
 
       - name: Setup Python 3.9
