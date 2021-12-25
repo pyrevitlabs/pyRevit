@@ -30,12 +30,6 @@ def _abort(message):
     sys.exit(1)
 
 
-def _get_build_version():
-    with open(configs.PYREVIT_VERSION_FILE, "r") as vf:
-        version = vf.readline()
-        return version.strip()
-
-
 def _installer_set_uuid(installer_files: List[str]) -> List[str]:
     product_code = str(uuid.uuid4())
     uuid_finder = re.compile(
@@ -46,7 +40,7 @@ def _installer_set_uuid(installer_files: List[str]) -> List[str]:
         file_changed = False
         with open(installer_file, "r") as instfile:
             logger.debug(
-                f"Setting uuid in file {installer_file} to {product_code}"
+                "Setting uuid in file %s to %s", installer_file, product_code
             )
             for cline in instfile.readlines():
                 if uuid_finder.match(cline):
@@ -158,7 +152,7 @@ def build_installers(_: Dict[str, str]):
 def sign_installers(_: Dict[str, str]):
     """Sign installers with certificate (must be installed on machine)"""
     print("digitally signing installers...")
-    build_version = _get_build_version()
+    build_version = props.get_version()
     for installer_exe_fmt in configs.INSTALLER_EXES:
         installer_exe = installer_exe_fmt.format(version=build_version)
         utils.system(
@@ -218,11 +212,11 @@ def _commit_changes(msg):
 
 
 def _tag_changes():
-    build_version = _get_build_version()
+    build_version = props.get_version()
     utils.system(["git", "tag", f"v{build_version}"])
 
 
-def commit_and_tag_build(args: Dict[str, str]):
+def commit_and_tag_build(_: Dict[str, str]):
     """Commit changes and tag repo"""
-    # _commit_changes("Publish!")
+    _commit_changes("Publish!")
     _tag_changes()

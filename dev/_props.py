@@ -18,8 +18,8 @@ from scripts.airtavolo import ToolLocales
 logger = logging.getLogger()
 
 
-VER_FINDER = re.compile(r"\d\.\d+\.\d+(\.[0-9+]+)?")
-VER_PART_FINDER = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.[0-9+]+)?")
+VER_FINDER = re.compile(r"\d\.\d+\.\d+(\.[a-z0-9+-]+)?")
+VER_PART_FINDER = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.[a-z0-9+-]+)?")
 
 
 def _modify_contents(files, finder, new_value):
@@ -27,7 +27,9 @@ def _modify_contents(files, finder, new_value):
         contents = []
         file_changed = False
         with open(text_file, "r") as sfile:
-            logger.debug(f"Setting version in file {text_file} to {new_value}")
+            logger.debug(
+                "Setting version in file %s to %s", text_file, new_value
+            )
             for cline in sfile.readlines():
                 newcline = finder.sub(new_value, cline)
                 if cline != newcline:
@@ -61,10 +63,10 @@ def set_year(_: Dict[str, str]):
 def _update_build_number(version: str):
     parts = VER_PART_FINDER.findall(version)
     if parts:
-        v = parts[0]
-        major = v[0]
-        minor = v[1]
-        patch = v[2]
+        version = parts[0]
+        major = version[0]
+        minor = version[1]
+        patch = version[2]
         build = datetime.datetime.now().strftime("%y%j+%H%M")
         return f"{major}.{minor}.{patch}.{build}"
     return version
@@ -98,7 +100,7 @@ def set_ver(args: Dict[str, str]):
         sys.exit(1)
 
 
-def set_build_ver(args: Dict[str, str]):
+def set_build_ver(_: Dict[str, str]):
     """Generate and set new build version"""
     with open(configs.PYREVIT_VERSION_FILE, "r") as vfile:
         version = vfile.readline()
