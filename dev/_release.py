@@ -142,11 +142,6 @@ def _ensure_clean_tree():
         sys.exit(1)
 
 
-def _commit_changes(msg):
-    utils.system(["git", "add", "--all"])
-    utils.system(["git", "commit", "-m", msg])
-
-
 def build_installers(_: Dict[str, str]):
     """Build pyRevit and CLI installers"""
     installer = "iscc.exe"
@@ -211,3 +206,23 @@ def create_release(args: Dict[str, str]):
 
     # now sign installers
     sign_installers(args)
+
+
+def _commit_changes(msg):
+    utils.system(["git", "add", configs.PYREVIT_VERSION_FILE])
+    utils.system(["git", "add", configs.AUTOCOMP])
+    utils.system(["git", "add", configs.DIRECTORY_BUILD_PROPS])
+    utils.system(["git", "add", r"release\*"])
+    utils.system(["git", "add", r"bin\*"])
+    utils.system(["git", "commit", "-m", msg])
+
+
+def _tag_changes():
+    build_version = _get_build_version()
+    utils.system(["git", "tag", f"v{build_version}"])
+
+
+def commit_and_tag_build(args: Dict[str, str]):
+    """Commit changes and tag repo"""
+    # _commit_changes("Publish!")
+    _tag_changes()

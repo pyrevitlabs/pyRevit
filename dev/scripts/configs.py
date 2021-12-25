@@ -20,6 +20,7 @@ LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
 CPYTHONRUNTIME = op.join(
     DEVPATH, "modules/pyRevitLabs.Python.Net.sln"
 )
+DIRECTORY_BUILD_PROPS = op.join(DEVPATH, "Directory.Build.props")
 
 # cli autocomplete files
 USAGEPATTERNS = op.join(DEVPATH, "pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt")
@@ -77,7 +78,7 @@ PYREVIT_PRODUCTS_DATAFILE = op.join(BINPATH, "pyrevit-products.json")
 
 # files containing version definition
 VERSION_FILES = [
-    op.join(DEVPATH, "Directory.Build.props"),
+    DIRECTORY_BUILD_PROPS,
     PYREVIT_VERSION_FILE,
     PYREVIT_INSTALLERFILE,
     PYREVIT_CLI_INSTALLERFILE,
@@ -87,7 +88,7 @@ VERSION_FILES = [
 
 # files containing copyright notice
 COPYRIGHT_FILES = [
-    op.join(DEVPATH, "Directory.Build.props"),
+    DIRECTORY_BUILD_PROPS,
     op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
     op.join(DOCS_DIR, "conf.py"),
     op.join(ROOT, "README.md"),

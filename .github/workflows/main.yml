@@ -26,11 +26,18 @@ jobs:
       - name: Check build environment
         run: pipenv run pyrevit check
 
-      - name: Build Binaries
+      - name: Update Build Info
         run: |
           pipenv run pyrevit set year
           pipenv run pyrevit set build
+
+      - name: Publish Build Info
+        if: (github.ref == 'refs/heads/master')
+        run: |
           pipenv run pyrevit set products
+
+      - name: Build Products
+        run: |
           pipenv run pyrevit build products
 
       - name: Get Build Version
@@ -70,6 +77,7 @@ jobs:
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
+        if: (github.ref == 'refs/heads/develop')
         uses: actions/upload-artifact@v2
         with:
           name: pyrevit-installers
@@ -78,3 +86,7 @@ jobs:
             dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+
+      - name: Commit & Tag Changes
+        run: |
+          pipenv run pyrevit build commit
