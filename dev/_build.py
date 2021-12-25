@@ -23,7 +23,7 @@ def clean_build(_: Dict[str, str]):
                 shutil.rmtree(op.join(dirname, subdir))
 
 
-def build_all(_: Dict[str, str]):
+def build_binaries(_: Dict[str, str]):
     """Build all projects under pyRevit dev"""
     apidocs.build_docs(_)
     labs.build_labs(_)

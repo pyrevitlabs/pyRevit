@@ -13,7 +13,9 @@ REQUIRED_TOOLS = [
     RequiredTool(name="dotnet", get="", step="build"),
     RequiredTool(name="go", get="", step="build"),
     RequiredTool(name="gcc", get="", step="build"),
-    RequiredTool(name="iscc", get=r"C:\Program Files (x86)\Inno Setup 6", step="release"),
+    RequiredTool(
+        name="iscc", get=r"C:\Program Files (x86)\Inno Setup 6", step="release"
+    ),
 ]
 
 

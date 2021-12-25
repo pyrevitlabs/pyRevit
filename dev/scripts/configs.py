@@ -40,6 +40,7 @@ DOCS_INDEX = op.join(DOCS_BUILD, "index.html")
 # release files
 # API file paths must be absolute otherwise advancedinstaller will mess up
 # the relative source paths defined inside the api file and fails
+DISTRIBUTE_PATH = op.join(ROOT, "dist")
 RELEASE_PATH = op.join(ROOT, "release")
 PYREVIT_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit.iss")
 PYREVIT_ADMIN_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit-admin.iss")
@@ -60,6 +61,14 @@ INSTALLER_FILES = [
     PYREVIT_ADMIN_CLI_INSTALLERFILE,
 ]
 
+INSTALLER_EXES = [
+    op.join(DISTRIBUTE_PATH, "pyRevit_{version}_signed"),
+    op.join(DISTRIBUTE_PATH, "pyRevit_{version}_admin_signed"),
+    op.join(DISTRIBUTE_PATH, "pyRevit_CLI_{version}_signed"),
+    op.join(DISTRIBUTE_PATH, "pyRevit_CLI_{version}_admin_signed"),
+]
+
+PYREVIT_WIP_VERSION_EXT = "-wip"
 PYREVIT_VERSION_FILE = op.join(ROOT, "pyrevitlib/pyrevit/version")
 
 # data files

@@ -14,7 +14,7 @@ from scripts import configs
 from scripts import utils
 
 import _install as install
-import _buildall as buildall
+import _build as build
 import _props as props
 
 
@@ -30,17 +30,29 @@ def _abort(message):
     sys.exit(1)
 
 
+def _get_build_version():
+    with open(configs.PYREVIT_VERSION_FILE, "r") as vf:
+        version = vf.readline()
+        return version.strip()
+
+
 def _installer_set_uuid(installer_files: List[str]) -> List[str]:
     product_code = str(uuid.uuid4())
-    uuid_finder = re.compile(r"^#define MyAppUUID \"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\"")
+    uuid_finder = re.compile(
+        r"^#define MyAppUUID \"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\""
+    )
     for installer_file in installer_files:
         contents = []
         file_changed = False
         with open(installer_file, "r") as instfile:
-            logger.debug(f"Setting uuid in file {installer_file} to {product_code}")
+            logger.debug(
+                f"Setting uuid in file {installer_file} to {product_code}"
+            )
             for cline in instfile.readlines():
                 if uuid_finder.match(cline):
-                    newcline = uuid_finder.sub(f"#define MyAppUUID \"{product_code}\"", cline)
+                    newcline = uuid_finder.sub(
+                        f'#define MyAppUUID "{product_code}"', cline
+                    )
                     if cline != newcline:
                         file_changed = True
                     contents.append(newcline)
@@ -86,6 +98,7 @@ def _update_product_data_file(ver, key, cli=False):
 
 
 def set_product_data(_: Dict[str, str]):
+    """Set new product uuid on installers and product uuid database """
     pyrevit_pc = _installer_set_uuid(configs.PYREVIT_INSTALLER_FILES)
     pyrevitcli_pc = _installer_set_uuid(configs.PYREVIT_CLI_INSTALLER_FILES)
     release_ver = props.get_version()
@@ -97,33 +110,41 @@ def _get_binaries():
     for dirname, _, files in os.walk(configs.BINPATH):
         for fn in files:
             bf = fn.lower()
-            if bf.startswith('pyrevit') \
-                    and any(bf.endswith(x) for x in ['.exe', '.dll']):
+            if bf.startswith("pyrevit") and any(
+                bf.endswith(x) for x in [".exe", ".dll"]
+            ):
                 yield op.join(dirname, fn)
 
 
 def sign_binaries(_: Dict[str, str]):
+    """Sign binaries with certificate (must be installed on machine)"""
     print("digitally signing binaries...")
     for bin_file in _get_binaries():
-        utils.system([
-            'signtool', 'sign',
-            '/n', 'Ehsan Iran Nejad',
-            '/t', 'http://timestamp.digicert.com',
-            '/fd', 'sha256',
-            f'{bin_file}'
-        ])
+        utils.system(
+            [
+                "signtool",
+                "sign",
+                "/n",
+                "Ehsan Iran Nejad",
+                "/t",
+                "http://timestamp.digicert.com",
+                "/fd",
+                "sha256",
+                f"{bin_file}",
+            ]
+        )
 
 
 def _ensure_clean_tree():
-    res = utils.system(['git', 'status'])
-    if 'nothing to commit' not in res:
-        print('You have uncommited changes in working tree. Commit those first')
+    res = utils.system(["git", "status"])
+    if "nothing to commit" not in res:
+        print("You have uncommited changes in working tree. Commit those first")
         sys.exit(1)
 
 
 def _commit_changes(msg):
-    utils.system(['git', 'add', '--all'])
-    utils.system(['git', 'commit', '-m', msg])
+    utils.system(["git", "add", "--all"])
+    utils.system(["git", "commit", "-m", msg])
 
 
 def build_installers(_: Dict[str, str]):
@@ -132,34 +153,61 @@ def build_installers(_: Dict[str, str]):
     for script in configs.INSTALLER_FILES:
         print(f"Building installer {script}")
         utils.system(
-            [installer, op.abspath(script),]
+            [
+                installer,
+                op.abspath(script),
+            ]
+        )
+
+
+def sign_installers(_: Dict[str, str]):
+    """Sign installers with certificate (must be installed on machine)"""
+    print("digitally signing installers...")
+    build_version = _get_build_version()
+    for installer_exe_fmt in configs.INSTALLER_EXES:
+        installer_exe = installer_exe_fmt.format(version=build_version)
+        utils.system(
+            [
+                "signtool",
+                "sign",
+                "/n",
+                "Ehsan Iran Nejad",
+                "/t",
+                "http://timestamp.digicert.com",
+                "/fd",
+                "sha256",
+                f"{installer_exe}",
+            ]
         )
 
 
 def create_release(args: Dict[str, str]):
-    """Create pyRevit release (build all, create installers)"""
+    """Create pyRevit release (build all projects, create installers)"""
     # utils.ensure_windows()
 
     # run a check on all tools
     if not install.check(args):
-        _abort('At least one necessary tool is missing for release process')
+        _abort("At least one necessary tool is missing for release process")
 
-    release_ver = args["<tag>"]
     # update copyright notice
     props.set_year(args)
-    # prepare required arg for setprop.set_ver
-    args["<ver>"] = release_ver
+
+    # update release version
+    # prepare required arg for props.set_ver
+    args["<ver>"] = args["<tag>"]
     props.set_ver(args)
 
-    # update installers and get new product versions
+    # update product data
     set_product_data(args)
 
     # now build all projects
-    buildall.build_all(args)
+    build.build_binaries(args)
 
     # sign everything
     sign_binaries(args)
 
     # now build the installers
-    # installer are signed by the installer builder
     build_installers(args)
+
+    # now sign installers
+    sign_installers(args)

@@ -49,7 +49,7 @@ import _install as install
 import _apidocspy as apidocspy
 import _autocomplete as autoc
 import _labs as labs
-import _buildall as buildall
+import _build as build
 import _changelog as clog
 import _hostdata as hostdata
 import _release as release
@@ -97,15 +97,16 @@ COMMANDS = [
     # main release command
     Command(name="release", target="", args=["<tag>"], run=release.create_release),
     # individual release steps for testing
-    Command(name="build", target="all", args=[], run=buildall.build_all),
+    Command(name="build", target="products", args=[], run=build.build_binaries),
     Command(name="build", target="labs", args=[], run=labs.build_labs),
     Command(name="build", target="engines", args=[], run=labs.build_engines),
     Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
     Command(name="build", target="telem", args=[], run=telem.build_telem),
     Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
     Command(name="build", target="installers", args=[], run=release.build_installers),
-    Command(name="sign",  target="all", args=[], run=release.sign_binaries),
-    Command(name="clean", target="labs", args=[], run=buildall.clean_build),
+    Command(name="sign",  target="products", args=[], run=release.sign_binaries),
+    Command(name="sign",  target="installers", args=[], run=release.sign_installers),
+    Command(name="clean", target="labs", args=[], run=build.clean_build),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
     # unit testing
     Command(name="test", target="telem", args=[], run=telem.start_telem),

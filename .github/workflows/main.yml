@@ -31,7 +31,7 @@ jobs:
           pipenv run pyrevit set year
           pipenv run pyrevit set build
           pipenv run pyrevit set products
-          pipenv run pyrevit build all
+          pipenv run pyrevit build products
 
       - name: Get Build Version
         id: buildversion

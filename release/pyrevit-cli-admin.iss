@@ -29,6 +29,7 @@ UsePreviousAppDir=yes
 PrivilegesRequired=admin
 ; Build info
 OutputDir=..\dist
+; See dev/scripts/config.py INSTALLER_EXES
 OutputBaseFilename=pyRevit_CLI_{#MyAppVersion}_admin_signed
 SetupIconFile=..\bin\pyrevit_cli.ico
 Compression=lzma

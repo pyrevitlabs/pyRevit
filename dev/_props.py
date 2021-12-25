@@ -65,14 +65,27 @@ def _update_build_number(version: str):
         major = v[0]
         minor = v[1]
         patch = v[2]
-        build = datetime.datetime.now().strftime('%y%j+%H%M')
+        build = datetime.datetime.now().strftime("%y%j+%H%M")
         return f"{major}.{minor}.{patch}.{build}"
     return version
+
+
+def _is_wip_build():
+    """Determine if this is a develop/wip build"""
+    branch_name = utils.system(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"], dump_stdout=False
+    )
+    return branch_name.strip().lower() == "develop"
 
 
 def set_ver(args: Dict[str, str]):
     """Update version number"""
     new_version = _update_build_number(args["<ver>"])
+
+    # add wip to version if this is a wip build
+    if _is_wip_build():
+        new_version += configs.PYREVIT_WIP_VERSION_EXT
+
     if VER_FINDER.match(new_version):
         print(f"Updating version to v{new_version}...")
         _modify_contents(
@@ -86,10 +99,11 @@ def set_ver(args: Dict[str, str]):
 
 
 def set_build_ver(args: Dict[str, str]):
+    """Generate and set new build version"""
     with open(configs.PYREVIT_VERSION_FILE, "r") as vfile:
         version = vfile.readline()
     if version:
-        set_ver({ "<ver>": version.strip() })
+        set_ver({"<ver>": version.strip()})
 
 
 def _find_tbundles(root_path) -> List[str]:
