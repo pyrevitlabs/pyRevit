@@ -87,21 +87,23 @@ jobs:
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
+      - name: Generate Release Notes
+        # if: (github.ref == 'refs/heads/master')
+        env:
+          GITHUBTOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
+        run: |
+          pipenv run pyrevit report changelog > release_notes.md
+
       - name: Commit & Tag Changes
         if: (github.ref == 'refs/heads/master')
         run: |
           pipenv run pyrevit build commit
 
-      - name: Generate Release Notes
-        # if: (github.ref == 'refs/heads/master')
-        run: |
-          pipenv run pyrevit report changelog > release_notes.md
-
       - name: Publish Release
         # if: (github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.buildversion.outputs.content }}
           name: pyRevit v${{ steps.buildversion.outputs.content }}
