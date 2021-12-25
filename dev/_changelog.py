@@ -62,14 +62,14 @@ class Change:
         if gtags := re.findall(r"\[(.+?)\]", self.message):
             # clean the tags from change message
             for gtag in gtags:
-                self.message = self.message.replace(f'[{gtag}]', '')
+                self.message = self.message.replace(f"[{gtag}]", "")
             self.message = self.message.strip()
-            self.message = re.sub(r'\s+', ' ', self.message)
+            self.message = re.sub(r"\s+", " ", self.message)
             self.groups = gtags
 
     def _find_todos(self):
-        for cline in self.comments.split('\n'):
-            if m := re.search(r'\-\s*\[\s*\]\s+(.+)', cline):
+        for cline in self.comments.split("\n"):
+            if m := re.search(r"\-\s*\[\s*\]\s+(.+)", cline):
                 self.todos.append(m.groups()[0])
 
     def _getinfo(self):
@@ -125,7 +125,7 @@ def find_changes(gitlog_report: str):
         # extract hash and message
         cline = changelines[idx]
         chash, cmsg = cline.split(" ", 1)
-        logger.debug('commit -> %s: %s', chash, cmsg)
+        logger.debug("commit -> %s: %s", chash, cmsg)
         # grab all the comments lines
         idx += 1
         ccmt = ""
@@ -137,9 +137,7 @@ def find_changes(gitlog_report: str):
                 break
             cline = changelines[idx]
         # add a new change
-        changes.append(
-            Change(commit_hash=chash, message=cmsg, comments=ccmt)
-            )
+        changes.append(Change(commit_hash=chash, message=cmsg, comments=ccmt))
         idx += 1
     return changes
 
@@ -153,7 +151,16 @@ def report_clog(args: Dict[str, str]):
     """Report changes from given <tag> to HEAD
     Queries github issue information for better reporting
     """
-    tag_hash = utils.system(["git", "rev-parse", f"{args['<tag>']}"])
+    target_tag = args["<tag>"]
+    if not target_tag:
+        # get the latest tag
+        latest_tag_hash = utils.system(
+            ["git", "rev-list", "--tags", "--max-count=1"]
+        )
+        latest_tag = utils.system(["git", "describe", latest_tag_hash])
+        target_tag = latest_tag
+
+    tag_hash = utils.system(["git", "rev-parse", f"{latest_tag}"])
     gitlog_report = utils.system(
         ["git", "log", "--pretty=format:%h %s%n%b/", f"{tag_hash}..HEAD"]
     )
@@ -176,12 +183,12 @@ def report_clog(args: Dict[str, str]):
     for cgroup in CHANGE_GROUPS:
         header(cgroup.header, level=1)
         for change in grouped_changes[cgroup.tag]:
-            if change.issue_type == 'issue':
+            if change.issue_type == "issue":
                 print(f"- Resolved Issue ({change.ticket}: {change.title})")
-            elif change.issue_type == 'pr':
+            elif change.issue_type == "pr":
                 print(f"- Merged PR ({change.ticket}: {change.title})")
             else:
                 print(f"- {change.message}")
 
             for todo in change.todos:
-                print(f'    - [ ] {todo}')
+                print(f"    - [ ] {todo}")

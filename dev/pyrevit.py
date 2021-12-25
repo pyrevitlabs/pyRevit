@@ -120,7 +120,8 @@ COMMANDS = [
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),
-    Command(name="report", target="changelog", args=["<tag>"], run=clog.report_clog),
+    Command(name="report", target="changelog", args=[], run=clog.report_clog),
+    # Command(name="report", target="changelog", args=["<tag>"], run=clog.report_clog),
     # misc
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),

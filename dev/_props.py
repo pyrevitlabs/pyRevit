@@ -74,9 +74,7 @@ def _update_build_number(version: str):
 
 def _is_wip_build():
     """Determine if this is a develop/wip build"""
-    branch_name = utils.system(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"], dump_stdout=False
-    )
+    branch_name = utils.system(["git", "rev-parse", "--abbrev-ref", "HEAD"])
     return branch_name.strip().lower() == "develop"
 
 
