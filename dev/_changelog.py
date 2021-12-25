@@ -41,8 +41,8 @@ class Change:
         # if ticket number found in message
         # get ticket info from cloud
         self._ticketdata = None
-        # if self._ticket:
-        #     self._getinfo()
+        if self._ticket:
+            self._getinfo()
 
     def _parse_message(self):
         # determine type from message
