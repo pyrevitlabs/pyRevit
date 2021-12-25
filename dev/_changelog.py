@@ -19,7 +19,7 @@ ChangeGroup = namedtuple("ChangeGroup", ["tag", "header"])
 class Change:
     """Type representing a commit point"""
 
-    def __init__(self, commit_hash, message, comments):
+    def __init__(self, commit_hash, message, comments, fetch_info=True):
         self.commit_hash = commit_hash
         self.message = message
         self.comments = comments
@@ -41,7 +41,7 @@ class Change:
         # if ticket number found in message
         # get ticket info from cloud
         self._ticketdata = None
-        if self._ticket:
+        if fetch_info and self._ticket:
             self._getinfo()
 
     def _parse_message(self):
@@ -114,7 +114,7 @@ CHANGE_GROUPS = [
 SKIP_PATTERNS = [r"cleanup", r"^Merge branch \'.+\' into .+$"]
 
 
-def find_changes(gitlog_report: str):
+def find_changes(gitlog_report: str, fetch_info: bool = True):
     """Create changes from git log report"""
     # designed to work with `git log --pretty='format:%h %s%n%b/'`
     changes = []
@@ -140,7 +140,14 @@ def find_changes(gitlog_report: str):
                 break
             cline = changelines[idx]
         # add a new change
-        changes.append(Change(commit_hash=chash, message=cmsg, comments=ccmt))
+        changes.append(
+            Change(
+                commit_hash=chash,
+                message=cmsg,
+                comments=ccmt,
+                fetch_info=fetch_info,
+            )
+        )
         idx += 1
     return changes
 
@@ -154,50 +161,50 @@ def report_clog(args: Dict[str, str]):
     """Report changes from given <tag> to HEAD
     Queries github issue information for better reporting
     """
-    target_tag = args["<tag>"]
-    if not target_tag:
-        # get the latest tag
-        latest_tag_hash = utils.system(
-            ["git", "rev-list", "--tags", "--max-count=1"]
-        )
-        latest_tag = utils.system(["git", "describe", latest_tag_hash])
-        target_tag = latest_tag
+    print(github.get_ticket("1405"))
+    # target_tag = args["<tag>"]
+    # if not target_tag:
+    #     # get the latest tag
+    #     latest_tag_hash = utils.system(
+    #         ["git", "rev-list", "--tags", "--max-count=1"]
+    #     )
+    #     latest_tag = utils.system(["git", "describe", latest_tag_hash])
+    #     target_tag = latest_tag
 
-    tag_hash = utils.system(["git", "rev-parse", f"{target_tag}"])
-    print(f"Target tag is: {target_tag}")
-    print(f"Target tag hash is: {tag_hash}")
+    # tag_hash = utils.system(["git", "rev-parse", f"{target_tag}"])
+    # print(f"Target tag is: {target_tag}")
+    # print(f"Target tag hash is: {tag_hash}")
 
-    gitlog_report = utils.system(
-        ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag_hash}..HEAD"]
-    )
+    # gitlog_report = utils.system(
+    #     ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag_hash}..HEAD"]
+    # )
 
+    # print("Parsing git log for changes...")
+    # changes = find_changes(gitlog_report, fetch_info=False)
 
-    print("Parsing git log for changes...")
-    changes = find_changes(gitlog_report)
+    # # groups changes (and purge)
+    # grouped_changes = defaultdict(list)
+    # for change in changes:
+    #     # skip unintersting commits
+    #     if any(re.search(x, change.message) for x in SKIP_PATTERNS):
+    #         continue
 
-    # groups changes (and purge)
-    grouped_changes = defaultdict(list)
-    for change in changes:
-        # skip unintersting commits
-        if any(re.search(x, change.message) for x in SKIP_PATTERNS):
-            continue
+    #     if change.groups:
+    #         for group in change.groups:
+    #             grouped_changes[group].append(change)
+    #     else:
+    #         grouped_changes[""].append(change)
 
-        if change.groups:
-            for group in change.groups:
-                grouped_changes[group].append(change)
-        else:
-            grouped_changes[""].append(change)
+    # # report changes by groups in order
+    # for cgroup in CHANGE_GROUPS:
+    #     header(cgroup.header, level=1)
+    #     for change in grouped_changes[cgroup.tag]:
+    #         if change.issue_type == "issue":
+    #             print(f"- Resolved Issue ({change.ticket}: {change.title})")
+    #         elif change.issue_type == "pr":
+    #             print(f"- Merged PR ({change.ticket}: {change.title})")
+    #         else:
+    #             print(f"- {change.message}")
 
-    # report changes by groups in order
-    for cgroup in CHANGE_GROUPS:
-        header(cgroup.header, level=1)
-        for change in grouped_changes[cgroup.tag]:
-            if change.issue_type == "issue":
-                print(f"- Resolved Issue ({change.ticket}: {change.title})")
-            elif change.issue_type == "pr":
-                print(f"- Merged PR ({change.ticket}: {change.title})")
-            else:
-                print(f"- {change.message}")
-
-            for todo in change.todos:
-                print(f"    - [ ] {todo}")
+    #         for todo in change.todos:
+    #             print(f"    - [ ] {todo}")
