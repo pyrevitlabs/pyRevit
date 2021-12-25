@@ -24,7 +24,7 @@ def _call_github(url):
     # if no api token is provided, calls will be rate limited
     if AUTH_TOKEN:
         headers = {"Authorization": "token " + AUTH_TOKEN}
-    return requests.get(url, headers=headers)
+    return requests.get(url, headers=headers, timeout=1)
 
 
 def get_ticket(ticket: str):

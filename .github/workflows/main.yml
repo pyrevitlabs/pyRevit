@@ -26,7 +26,7 @@ jobs:
           pip install pipenv
           pipenv install
 
-      - name: Check build environment
+      - name: Check Build Environment
         run: pipenv run pyrevit check
 
       # - name: Update Build Info
