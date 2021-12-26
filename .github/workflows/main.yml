@@ -129,7 +129,6 @@ jobs:
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
-
       - name: Commit & Tag Changes
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
