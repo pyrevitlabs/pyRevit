@@ -1,17 +1,11 @@
-name: pyRevitCI
+name: Release pyRevit
 on:
-  push:
-    branches:
-      - develop
-  pull_request_target:
-    types: ["closed"]
+  pull_request:
     branches:
       - master
-      - develop
 
 env:
   ReleaseBranch: "refs/heads/master"
-  WIPBranch: "refs/heads/develop"
 
 jobs:
   build:
@@ -44,7 +38,6 @@ jobs:
           pipenv run pyrevit set build
 
       - name: Publish Build Info
-        if: (github.ref == env.ReleaseBranch)
         run: |
           pipenv run pyrevit set products
 
@@ -89,7 +82,6 @@ jobs:
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
-        if: (github.ref == env.WIPBranch )
         uses: actions/upload-artifact@v2
         with:
           name: pyrevit-installers
@@ -100,14 +92,14 @@ jobs:
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
       - name: Generate Release Notes
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch)
         env:
           GITHUBTOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit report changelog > release_notes.md
 
       - name: Commit & Tag Changes
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
           git config user.name 'Ehsan Iran-Nejad'
@@ -117,7 +109,7 @@ jobs:
           git push --tags
 
       - name: Publish Release
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch)
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
