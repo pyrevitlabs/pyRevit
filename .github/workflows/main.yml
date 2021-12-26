@@ -2,12 +2,17 @@ name: Release pyRevit
 on: [pull_request]
 
 env:
-  ReleaseBranch: "refs/heads/master"
+  ReleaseBranch: "main"
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
+      - name: Context
+        run: |
+          echo REF=$${{ github.ref }}
+          echo BASE_REF=$${{ github.ref }}
+
       # under $GITHUB_WORKSPACE
       # fetch history so release notes can be generated from
       - uses: actions/checkout@v2
@@ -123,7 +128,7 @@ jobs:
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
       - name: Commit & Tag Changes
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
           git config user.name 'Ehsan Iran-Nejad'
@@ -132,7 +137,7 @@ jobs:
           git push
 
       - name: Merge Master
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch)
         uses: "pascalgn/automerge-action@v0.14.3"
         env:
           GITHUB_TOKEN: "${{ secrets.CI_GITHUB_TOKEN }}"
