@@ -1,8 +1,9 @@
-name: Publish pyRevit
+name: Build pyRevit
 on:
   pull_request:
+    types: ["closed"]
     branches:
-      - master
+      - develop
 
 jobs:
   build:
@@ -87,39 +88,3 @@ jobs:
             dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
-
-      - name: Generate Release Notes
-        env:
-          GITHUBTOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
-        run: |
-          pipenv run pyrevit report changelog > release_notes.md
-
-      - name: Commit & Tag Changes
-        # configure git and commit changes
-        run: |
-          git config user.name 'Ehsan Iran-Nejad'
-          git config user.email eirannejad@gmail.com
-          pipenv run pyrevit build commit
-          git push
-          git push --tags
-
-      - name: Publish Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.buildversion.outputs.content }}
-          name: pyRevit v${{ steps.buildversion.outputs.content }}
-          body_path: release_notes.md
-          draft: true
-          prerelease: false
-          files: |
-            dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
-            dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
-            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
-            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
-
-      - name: Merge Master
-        uses: "pascalgn/automerge-action@v0.14.3"
-        env:
-          GITHUB_TOKEN: "${{ secrets.CI_GITHUB_TOKEN }}"
