@@ -2,7 +2,7 @@ name: Release pyRevit
 on: [pull_request]
 
 env:
-  ReleaseBranch: "refs/heads/master"
+  ReleaseBranch: "refs/heads/main"
 
 jobs:
   build:
@@ -121,9 +121,13 @@ jobs:
       #       dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+      - name: Echo
+        run: |
+          echo REF=${{ github.ref }}
+          echo BASEREF=${{ github.base_ref }}
 
       - name: Commit & Tag Changes
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == 'refs/heads/main')
         # configure git and commit changes
         run: |
           git config user.name 'Ehsan Iran-Nejad'
