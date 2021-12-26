@@ -2,7 +2,7 @@ name: Release pyRevit
 on: [pull_request]
 
 env:
-  ReleaseBranch: "refs/heads/master"
+  ReleaseBranch: "refs/heads/main"
 
 jobs:
   build:
