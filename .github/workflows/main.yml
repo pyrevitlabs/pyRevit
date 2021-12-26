@@ -2,6 +2,10 @@ name: pyRevitCI
 on:
   push:
     branches:
+      - develop
+  pull_request_target:
+    types: ["closed"]
+    branches:
       - master
       - develop
 
