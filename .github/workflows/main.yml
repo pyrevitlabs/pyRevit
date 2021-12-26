@@ -1,15 +1,13 @@
 name: pyRevitCI
 on:
-  push:
-    branches:
-      - develop
+  # push:
+  #   branches:
+  #     - develop
   pull_request_target:
     types: ["closed"]
     branches:
       - master_test
       - develop
-
-
 
 env:
   ReleaseBranch: "refs/heads/master_test"
