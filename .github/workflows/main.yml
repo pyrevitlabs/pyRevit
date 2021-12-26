@@ -1,9 +1,9 @@
 name: Release pyRevit
-on: [pull_request]
+on:
+  pull_request:
 
 env:
   ReleaseBranch: "main"
-
 
 jobs:
   build:
@@ -11,12 +11,14 @@ jobs:
     steps:
       - name: Context
         run: |
-          echo REF=$${{ github.ref }}
-          echo BASE_REF=$${{ github.ref }}
+          echo REF=${{ github.ref }}
+          echo BASE_REF=${{ github.base_ref }}
+          echo ${{ github.event.pull_request.head.ref }}
+          echo ${{ github.event.pull_request.head.sha }}
 
       # under $GITHUB_WORKSPACE
       # fetch history so release notes can be generated from
-      - uses: actions/checkout@v2
+      # - uses: actions/checkout@v2
       #   with:
       #     fetch-depth: 0
       #     token: ${{ secrets.CI_GITHUB_TOKEN }}
