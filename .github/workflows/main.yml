@@ -129,6 +129,7 @@ jobs:
           echo HEAD_REF=${{ github.head_ref }}
           echo BASE_REF=${{ github.base_ref }}
           git branch --list
+          git remote -v
 
       - name: Configure Git
         if: (github.base_ref == env.ReleaseBranch)
