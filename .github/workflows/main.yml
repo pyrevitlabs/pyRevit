@@ -128,6 +128,7 @@ jobs:
           echo REF=${{ github.ref }}
           echo HEAD_REF=${{ github.head_ref }}
           echo BASE_REF=${{ github.base_ref }}
+          git remote update
           git branch --list
           git remote -v
 
