@@ -8,12 +8,6 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Context
-        run: |
-          echo REF=${{ github.ref }}
-          echo HEAD_REF=${{ github.head_ref }}
-          echo BASE_REF=${{ github.base_ref }}
-
       # under $GITHUB_WORKSPACE
       # fetch history so release notes can be generated from
       - uses: actions/checkout@v2
@@ -129,6 +123,13 @@ jobs:
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
+      - name: Context
+        run: |
+          echo REF=${{ github.ref }}
+          echo HEAD_REF=${{ github.head_ref }}
+          echo BASE_REF=${{ github.base_ref }}
+          git branch --list
+
       - name: Configure Git
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
@@ -146,6 +147,6 @@ jobs:
       - name: Merge Master
         if: (github.base_ref == env.ReleaseBranch)
         run: |
-          git checkout ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
           git merge ${{ github.head_ref }}
           git push
