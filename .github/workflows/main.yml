@@ -2,7 +2,7 @@ name: Release pyRevit
 on: [pull_request]
 
 env:
-  ReleaseBranch: "refs/heads/master"
+  ReleaseBranch: "refs/heads/main"
 
 jobs:
   build:
@@ -123,7 +123,7 @@ jobs:
       #       dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
       - name: Commit & Tag Changes
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
           git config user.name 'Ehsan Iran-Nejad'
@@ -132,7 +132,7 @@ jobs:
           git push
 
       - name: Merge Master
-        if: (github.ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch)
         uses: "pascalgn/automerge-action@v0.14.3"
         env:
           GITHUB_TOKEN: "${{ secrets.CI_GITHUB_TOKEN }}"
