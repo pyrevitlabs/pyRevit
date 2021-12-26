@@ -1,0 +1,134 @@
+name: pyRevitCI
+on:
+  push:
+    branches:
+      - develop
+  pull_request_target:
+    types: ["closed"]
+    branches:
+      - master
+      - develop
+
+env:
+  ReleaseBranch: "refs/heads/master"
+  WIPBranch: "refs/heads/develop"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      # under $GITHUB_WORKSPACE
+      # fetch history so release notes can be generated from
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.CI_GITHUB_TOKEN }}
+      - uses: snickerbockers/submodules-init@v4
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: 3.9
+
+      - name: Install pipenv
+        run: |
+          pip install pipenv
+          pipenv install
+
+      - name: Check Build Environment
+        run: pipenv run pyrevit check
+
+      - name: Update Build Info
+        run: |
+          pipenv run pyrevit set year
+          pipenv run pyrevit set build
+
+      - name: Publish Build Info
+        if: (github.ref == env.ReleaseBranch)
+        run: |
+          pipenv run pyrevit set products
+
+      - name: Build Products
+        run: |
+          pipenv run pyrevit build products
+
+      - name: Get Build Version
+        id: buildversion
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: pyrevitlib/pyrevit/version
+
+      - name: Sign Binaries
+        uses: skymatic/code-sign-action@v1
+        with:
+          certificate: "${{ secrets.CERTIFICATE }}"
+          password: "${{ secrets.PASSWORD }}"
+          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
+          certificatename: "${{ secrets.CERTIFICATENAME }}"
+          description: "pyRevit"
+          timestampUrl: "http://timestamp.digicert.com"
+          folder: "bin"
+          recursive: true
+
+      - name: Build Installers
+        run: |
+          pipenv run pyrevit build installers
+
+      - name: Sign Installers
+        uses: skymatic/code-sign-action@v1
+        with:
+          certificate: "${{ secrets.CERTIFICATE }}"
+          password: "${{ secrets.PASSWORD }}"
+          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
+          certificatename: "${{ secrets.CERTIFICATENAME }}"
+          description: "pyRevit"
+          timestampUrl: "http://timestamp.digicert.com"
+          folder: "dist"
+          recursive: true
+
+      # default retention period is 90 days
+      # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
+      - name: Upload Installers
+        if: (github.ref == env.WIPBranch )
+        uses: actions/upload-artifact@v2
+        with:
+          name: pyrevit-installers
+          path: |
+            dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
+            dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
+            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+
+      - name: Generate Release Notes
+        if: (github.ref == env.ReleaseBranch)
+        env:
+          GITHUBTOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
+        run: |
+          pipenv run pyrevit report changelog > release_notes.md
+
+      - name: Commit & Tag Changes
+        if: (github.ref == env.ReleaseBranch)
+        # configure git and commit changes
+        run: |
+          git config user.name 'Ehsan Iran-Nejad'
+          git config user.email eirannejad@gmail.com
+          pipenv run pyrevit build commit
+          git push
+          git push --tags
+
+      - name: Publish Release
+        if: (github.ref == env.ReleaseBranch)
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.buildversion.outputs.content }}
+          name: pyRevit v${{ steps.buildversion.outputs.content }}
+          body_path: release_notes.md
+          draft: true
+          prerelease: false
+          files: |
+            dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
+            dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
+            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe

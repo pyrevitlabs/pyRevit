@@ -1,1 +1,6 @@
-tooltip: This tool will create a workset for the selected linked element base on its name. If the model is not workshared, it will be converted to workshared model
+title:
+  fr_fr: Créer un sous-projet pour les fichiers liés
+  en_us: Create Workset For Linked Element
+tooltip:
+  fr_fr: Cet outil créera un sous-projet pour le fichier lié sélectionné en fonction de son nom. Si le modèle n'est pas partagé, il sera converti en modèle partagé
+  en_us: This tool will create a workset for the selected linked element base on its name. If the model is not workshared, it will be converted to workshared model

@@ -1,16 +1,52 @@
-tooltip: >-
-  Export family configurations to yaml file.
-
-
-  Family configuration file is a yaml file,
-
-  providing info about the parameters and types defined in the family.
-
-
-  The structure of this config file is as shown below:
-
-
-  parameters:
+title:
+  fr_fr: Exporter la configuration de la famille
+  en_us: Export Family Config
+tooltip:
+  fr_fr: >-
+     Exportez les configurations de famille vers le fichier yaml.
+    
+     Le fichier de configuration de la famille est un fichier yaml,
+    
+     fournissant des informations sur les paramètres et les types définis dans la famille.
+    
+     La structure de ce fichier de configuration est la suivante :
+    
+     paramètres:
+           <nom-paramètre> :
+                   type : <Autodesk.Revit.DB.ParameterType>
+                   catégorie : <Autodesk.Revit.DB.BuiltInParameterGroup>
+                   exemple : <vrai|faux>
+                   rapport : <true|false>
+                   formule : <chaîne>
+                   par défaut : <chaîne>
+    
+     les types:
+           <nom-type> :
+                   <nom-paramètre> : <valeur>
+                   <nom-paramètre> : <valeur>
+                   ...
+    
+     Exemple:
+    
+     paramètres:
+           Hauteur de l'étagère (supérieure) :
+                   type: Longueur
+                   groupe : PG_GEOMETRY
+                   exemple : faux
+                  
+     les types:
+           24D"x36H":
+                   Hauteur de l'étagère (supérieure) : 3'-0"
+  en_us: >-
+    Export family configurations to yaml file.
+    
+    Family configuration file is a yaml file,
+    
+    providing info about the parameters and types defined in the family.
+    
+    The structure of this config file is as shown below:
+    
+    parameters:
           <parameter-name>:
                   type: <Autodesk.Revit.DB.ParameterType>
                   category: <Autodesk.Revit.DB.BuiltInParameterGroup>
@@ -18,22 +54,22 @@ tooltip: >-
                   reporting: <true|false>
                   formula: <str>
                   default: <str>
-  types:
+    
+    types:
           <type-name>:
                   <parameter-name>: <value>
                   <parameter-name>: <value>
                   ...
-
-
-  Example:
-
-
-  parameters:
+    
+    Example:
+    
+    parameters:
           Shelf Height (Upper):
                   type: Length
                   group: PG_GEOMETRY
                   instance: false
-  types:
+                  
+    types:
           24D"x36H":
                   Shelf Height (Upper): 3'-0"
 author: '{{author}}'

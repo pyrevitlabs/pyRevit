@@ -28,11 +28,19 @@ PYREVIT_CLI_NAME = 'pyrevit.exe'
 VERSION_STRING = '0.0.'
 with open(op.join(op.dirname(__file__), 'version'), 'r') as version_file:
     VERSION_STRING = version_file.read()
-VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA = \
-    re.findall(r'(\d+).(\d+)(.+)', VERSION_STRING)[0]
-VERSION_MAJOR = int(VERSION_MAJOR)
-VERSION_MINOR = int(VERSION_MINOR)
+matches = re.findall(r'(\d+?)\.(\d+?)\.(\d+?)\.?(.+)?', VERSION_STRING)[0]
+if len(matches) == 4:
+    VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, BUILD_METADATA = matches
+else:
+    VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH = matches
+    BUILD_METADATA = ""
 
+try:
+    VERSION_MAJOR = int(VERSION_MAJOR)
+    VERSION_MINOR = int(VERSION_MINOR)
+    VERSION_PATCH = int(VERSION_PATCH)
+except:
+    raise Exception('Critical Error. Can not determine pyRevit version.')
 # -----------------------------------------------------------------------------
 # config environment paths
 # -----------------------------------------------------------------------------

@@ -1,7 +1,16 @@
-tooltip: >-
-  Select previous element in selection memory.
-
-
-  Click +1
-
-  Shift+Click +10
+title:
+  fr_fr: Précédent
+  en_us: Prev
+tooltip:
+  fr_fr: >-
+     Sélectionnez l'élément précédent dans la mémoire de sélection.
+    
+     Cliquez sur +1
+    
+     Shift+Clic +10
+  en_us: >-
+    Select previous element in selection memory.
+    
+    Click +1
+    
+    Shift+Click +10

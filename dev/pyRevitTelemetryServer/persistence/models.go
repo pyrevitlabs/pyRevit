@@ -3,7 +3,8 @@ package persistence
 import (
 	"fmt"
 
-	"../cli"
+	"pyrevittelemetryserver/cli"
+
 	"github.com/asaskevich/govalidator"
 )
 

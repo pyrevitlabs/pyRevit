@@ -1,9 +1,19 @@
-tooltip: >-
-  Copies the state of desired parameter of the active
-
-  view to memory. e.g. Visibility Graphics settings or
-
-  Zoom state. Run it and see how it works
+title:
+  fr_fr: Copier l'état
+  en_us: Copy State
+tooltip:
+  fr_fr: >-
+     Copie l'état du paramètre souhaité de la vue
+    
+     active en mémoire. Par exemple. Paramètres graphiques de visibilité ou
+    
+     État du zoom. Exécutez-le et voyez comment cela fonctionne
+  en_us: >-
+    Copies the state of desired parameter of the active
+    
+    view to memory. e.g. Visibility Graphics settings or
+    
+    Zoom state. Run it and see how it works
 author: >-
   Gui Talarico
 

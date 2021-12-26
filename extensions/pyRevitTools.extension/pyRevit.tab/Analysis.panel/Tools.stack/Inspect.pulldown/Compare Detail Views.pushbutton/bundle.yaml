@@ -1,7 +1,28 @@
-tooltip: >-
-  Compared two views by comparing the contents against each other. By default this tool does not pay attention to the element types. For example, two text elements having the same contents but with different styles are considered equal. This however can be overridden using the SHIFT-Click. If the views do not match, all the different elements will be selected. This tool is helpful when comparing duplicate detail views
+title:
+  fr_fr: Comparer les vues de détail
+  en_us: Compare Detail Views
+tooltip:
+  fr_fr: >-
+    Comparé deux vues en comparant les contenus les uns par rapport aux autres. Par défaut
+    cet outil ne fait pas attention aux types d'éléments. Par exemple, deux textes
+    ayant le même contenu mais avec des styles différents sont considérés
+    égal. Ceci peut cependant être remplacé en utilisant le SHIFT-Click. Si les vues 
+    ne correspondent pas, tous les différents éléments seront sélectionnés. Cet outil est utile
+    lors de la comparaison de vues de détail en double
 
 
-  SHIFT-Click:
+    SHIFT-Click:
 
-  Include Element Types in comparing views
+    Inclure les types d'élément dans la comparaison des vues
+  en_us: >-
+    Compared two views by comparing the contents against each other. By default
+    this tool does not pay attention to the element types. For example, two text
+    elements having the same contents but with different styles are considered
+    equal. This however can be overridden using the SHIFT-Click. If the views do
+    not match, all the different elements will be selected. This tool is helpful
+    when comparing duplicate detail views
+
+
+    SHIFT-Click:
+
+    Include Element Types in comparing views

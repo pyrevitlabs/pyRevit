@@ -1,2 +1,7 @@
-tooltip: Looks into the current selection elements and keeps the ones hosted on a linked model surface
+title:
+  fr_fr: Eléments hébergés sur un modèle lié
+  en_us: Elements Hosted On Linked Model
+tooltip:
+  fr_fr: Examine les éléments de la sélection actuelle et conserve ceux hébergés sur une surface de modèle liée
+  en_us: Looks into the current selection elements and keeps the ones hosted on a linked model surface
 context: Selection

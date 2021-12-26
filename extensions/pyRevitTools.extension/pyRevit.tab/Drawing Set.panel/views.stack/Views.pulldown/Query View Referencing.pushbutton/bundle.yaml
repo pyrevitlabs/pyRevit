@@ -1,1 +1,10 @@
-tooltip: Query all selected views and determine if referenced or not
+title:
+  fr_fr: |-
+    Rechercher référencement des vues
+  en_us: |-
+    Query View Referencing
+tooltip:
+  fr_fr: |-
+    Interroger toutes les vues sélectionnées et déterminer si elles sont référencées ou non
+  en_us: |-
+    Query all selected views and determine if referenced or not

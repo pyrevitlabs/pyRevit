@@ -1,1 +1,6 @@
-tooltip: Copy selected view templates to other open models
+title:
+  fr_fr: Copier les gabarits de vue sélectionnés vers des modèles ouverts
+  en_us: Copy selected view templates to other open models
+tooltip:
+  fr_fr: Copier les gabarits de vue sélectionnés vers d'autres modèles ouverts
+  en_us: Copy selected view templates to other open models

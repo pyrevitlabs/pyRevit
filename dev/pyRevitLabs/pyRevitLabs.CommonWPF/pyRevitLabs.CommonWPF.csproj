@@ -1,120 +1,21 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{15E9A99D-11E3-4D46-B333-79A10427F682}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>pyRevitLabs.CommonWPF</RootNamespace>
-    <AssemblyName>pyRevitLabs.CommonWPF</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
+
   <ItemGroup>
+    <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Expression.Blend.Sdk" Version="1.0.2" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="pyRevitLabs.MahAppsMetro">
-      <HintPath>..\..\..\bin\pyRevitLabs.MahAppsMetro.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Transactions" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
     <Reference Include="WindowsBase" />
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\pyRevit\AssemblyCopyright.cs">
-      <Link>Properties\AssemblyCopyright.cs</Link>
-    </Compile>
-    <Compile Include="..\..\pyRevit\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
-    <Compile Include="Controls\InputBar.xaml.cs">
-      <DependentUpon>InputBar.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Convertors\BitmapSourceConverter.cs" />
-    <Compile Include="Convertors\BitmapToImageSourceConverter.cs" />
-    <Compile Include="Windows\AppWindow.cs" />
-    <Compile Include="Controls\ActivityBar.xaml.cs">
-      <DependentUpon>ActivityBar.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Controls\LabelledTextBox.xaml.cs">
-      <DependentUpon>LabelledTextBox.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Controls\SpinnerDotCircle.xaml.cs">
-      <DependentUpon>SpinnerDotCircle.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="Controls\ActivityBar.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Controls\InputBar.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Controls\LabelledTextBox.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Controls\SpinnerDotCircle.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Resources\Icons.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Expression.Blend.Sdk">
-      <Version>1.0.2</Version>
-    </PackageReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "$(TargetDir)..\..\..\..\..\bin"
-</PostBuildEvent>
-  </PropertyGroup>
+
+  <Target Name="DeployDependencies" AfterTargets="Deploy">
+    <Copy SourceFiles="$(OutputPath)\System.Windows.Interactivity.dll" DestinationFolder="$(PyRevitBinDir)" />
+  </Target>
 </Project>

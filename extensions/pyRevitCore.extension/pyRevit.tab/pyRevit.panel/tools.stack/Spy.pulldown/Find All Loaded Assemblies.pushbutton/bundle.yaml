@@ -1,2 +1,7 @@
-tooltip: List all currently loaded assemblies
+title:
+  fr_fr: Rechercher tous les DLL chargés
+  en_us: Find All Loaded Assemblies
+tooltip:
+  fr_fr: Lister tous les DLL chargés
+  en_us: List all currently loaded assemblies
 context: zero-doc

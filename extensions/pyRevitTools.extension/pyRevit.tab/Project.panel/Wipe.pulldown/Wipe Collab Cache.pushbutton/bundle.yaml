@@ -1,2 +1,7 @@
-tooltip: Erase selected BIM360 collaboration cache
+title:
+  fr_fr: Supprimer le cache BIM360
+  en_us: Wipe BIM360 Collab Cache
+tooltip:
+  fr_fr: Efface le Collaboration Cache de BIM360
+  en_us: Erase selected BIM360 collaboration cache
 context: zero-doc

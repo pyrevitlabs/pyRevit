@@ -1,4 +1,9 @@
-tooltip: Deletes the lines overlapped by other lines (similar to AutoCAD Overkill)
+title:
+  fr_fr: Overkill
+  en_us: Overkill
+tooltip:
+  fr_fr: Efface les lignes qui se superposent avec d'autres lignes (Similaire à la fonction Overkill dans Autocad)
+  en_us: Deletes the lines overlapped by other lines (similar to AutoCAD Overkill)
 author: >-
   tylerk
 

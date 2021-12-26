@@ -1,1 +1,6 @@
-tooltip: Erase selected data schema and its entities
+title:
+  fr_fr: Efface les schémas de données
+  en_us: Wipe Data Schema
+tooltip:
+  fr_fr: Supprime les schémas de données sélectionnés et ses entités
+  en_us: Erase selected data schema and its entities

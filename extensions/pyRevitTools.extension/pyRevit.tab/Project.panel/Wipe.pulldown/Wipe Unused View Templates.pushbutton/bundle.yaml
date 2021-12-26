@@ -1,1 +1,6 @@
-tooltip: Deletes all unused view templates (Any view template that has not been assigned to a view)
+title:
+  fr_fr: Supprimer les gabarits de vue inutilisés
+  en_us: Wipe Unused View Templates
+tooltip:
+  fr_fr: Supprime tous les gabarits de vue inutilisés (Tout gabarit de vue qui n'a pas été affecté à une vue)
+  en_us: Deletes all unused view templates (Any view template that has not been assigned to a view)

@@ -1,1 +1,6 @@
-tooltip: Exports all original imported images to chosen path and adds file size to image type name
+title:
+  fr_fr: Exporter toutes les images
+  en_us: Export All Raster Images
+tooltip:
+  fr_fr: Exporte toutes les images importées d'origine vers le chemin choisi et ajoute la taille du fichier au nom du type d'image
+  en_us: Exports all original imported images to chosen path and adds file size to image type name

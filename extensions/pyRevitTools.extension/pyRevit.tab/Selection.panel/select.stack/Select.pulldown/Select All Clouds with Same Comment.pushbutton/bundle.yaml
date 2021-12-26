@@ -1,2 +1,7 @@
-tooltip: Selects all revision clouds in the model with comment matching selected revision cloud
+title:
+  fr_fr: Sélectionner tous les nuages de révision avec le même commentaire
+  en_us: Select All Clouds with Same Comment
+tooltip:
+  fr_fr: Sélectionne tous les nuages de révision dans le modèle avec le commentaire correspondant au nuage de révision sélectionné
+  en_us: Selects all revision clouds in the model with comment matching selected revision cloud
 context: selection

@@ -1,4 +1,12 @@
-tooltip: >-
-  Isolates specific elements in current view and
+title:
+  fr_fr: Isoler
+  en_us: Isolate
+tooltip:
+  fr_fr: >-
+    Isole des éléments spécifiques dans la vue actuelle et
 
-  put the view in isolate element mode
+    met la vue en mode 'élément isolé'
+  en_us: >-
+    Isolates specific elements in current view and
+
+    put the view in isolate element mode

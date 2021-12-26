@@ -1,1 +1,6 @@
-tooltip: Tag all chosen element types in all views
+title:
+  fr_fr: Etiqueter dans toutes les vues
+  en_us: Tag in all views
+tooltip:
+  fr_fr: Etiqueter les éléments d'un type sélectionné dans toutes les vues
+  en_us: Tag all chosen element types in all views

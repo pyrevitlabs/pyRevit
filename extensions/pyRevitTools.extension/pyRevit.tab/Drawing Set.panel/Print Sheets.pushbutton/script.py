@@ -897,6 +897,10 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.PrintToFile = True
             print_mgr.PrintToFileName = print_filepath
 
+            with revit.Transaction('Reload Keynote File',
+                                   doc=self.selected_doc):
+                DB.KeynoteTable.GetKeynoteTable(revit.doc).Reload(None)
+            
             print_mgr.Apply()
             print_mgr.SubmitPrint()
 
@@ -916,6 +920,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         print_mgr = self._get_printmanager()
         print_mgr.PrintToFile = True
         per_sheet_psettings = self.selected_print_setting.allows_variable_paper
+
+        with revit.Transaction('Reload Keynote File',
+                               doc=self.selected_doc):
+            DB.KeynoteTable.GetKeynoteTable(revit.doc).Reload(None)
+
         with revit.DryTransaction('Set Printer Settings',
                                   doc=self.selected_doc):
             try:

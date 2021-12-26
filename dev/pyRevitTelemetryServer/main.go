@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"./cli"
-	"./persistence"
-	"./server"
+	"pyrevittelemetryserver/cli"
+	"pyrevittelemetryserver/persistence"
+	"pyrevittelemetryserver/server"
 )
 
 func main() {

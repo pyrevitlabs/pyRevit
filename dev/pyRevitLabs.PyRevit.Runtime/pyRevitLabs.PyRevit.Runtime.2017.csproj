@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RevitVersion>2017</RevitVersion>
+  </PropertyGroup>
+</Project>

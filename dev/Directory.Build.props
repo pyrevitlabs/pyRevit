@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <PyRevitRootDir>$(MSBuildThisFileDirectory)\..\</PyRevitRootDir>
+    
+    <PyRevitBinDir>$(PyRevitRootDir)\bin\</PyRevitBinDir>
+    <PyRevitEnginesDir>$(PyRevitBinDir)engines\</PyRevitEnginesDir>
+    
+    <PyRevitDevDir>$(PyRevitRootDir)\dev\</PyRevitDevDir>
+    <PyRevitDevLibsDir>$(PyRevitDevDir)\libs\</PyRevitDevLibsDir>
+    <PyRevitDevModulesDir>$(PyRevitDevDir)\modules\</PyRevitDevModulesDir>
+    
+    <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib\</PyRevitLibDir>
+    <PyRevitExtDir>$(PyRevitRootDir)\extensions\</PyRevitExtDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>4.8.9.21359+1855</Version>
+    <Copyright>Copyright © 2014-2021</Copyright>
+    <Company>pyRevitLabs.io</Company>
+  </PropertyGroup>
+</Project>

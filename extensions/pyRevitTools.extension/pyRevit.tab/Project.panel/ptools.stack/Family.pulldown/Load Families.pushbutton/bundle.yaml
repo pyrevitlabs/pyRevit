@@ -1,3 +1,13 @@
-title: "Load\nFamilies"
-tooltip: "This tool gives you the option to load multiple Families from a folder and its subfolders.\nYou can choose to load the Family with all its Types, or select Types for each Family."
+title:
+  fr_fr: Charger les familles
+  en_us: Load Families
+tooltip:
+  fr_fr: >-
+    Cet outil vous donne la possibilité de charger plusieurs familles à partir d'un dossier et de ses sous-dossiers. 
+    
+    Vous pouvez choisir de charger la famille avec tous ses types, ou sélectionner des types pour chaque famille.
+  en_us: >-
+    This tool gives you the option to load multiple Families from a folder and its subfolders.
+    
+    You can choose to load the Family with all its Types, or select Types for each Family.
 author: Hikmet Deniz Kibar

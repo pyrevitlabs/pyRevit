@@ -1,5 +1,15 @@
-tooltip: Close everything but the selected views.
-title: Close Tabs
 authors:
   - thumDer
   - Johannes Domeier
+  
+title:
+  fr_fr: |-
+    Fermer les onglets
+  en_us: |-
+    Close Tabs
+tooltip:
+  fr_fr: |-
+    Fermez tout sauf les vues sélectionnées.
+  en_us: |-
+    Close everything but the selected views.
+

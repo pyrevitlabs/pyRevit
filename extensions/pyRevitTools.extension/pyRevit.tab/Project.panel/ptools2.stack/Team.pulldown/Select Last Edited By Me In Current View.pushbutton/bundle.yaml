@@ -1,1 +1,6 @@
-tooltip: Uses the Worksharing tooltip to find out the element "last edited" by the user in the current view. If current view is a sheet, the tools searches all the views placed on this sheet as well."Last Edited" elements are elements last edited by the user, and are different from borrowed elements
+title:
+  fr_fr: Sélectionner les éléments édités par moi-même dans la vue actuelle
+  en_us: Select Last Edited By Me In Current View
+tooltip:
+  fr_fr: Utilise l'info-bulle de partage de projet pour connaître l'élément « dernier modifié » par l'utilisateur dans la vue actuelle. Si la vue courante est une feuille, les outils recherchent également toutes les vues placées sur cette feuille. Les éléments "Edité en dernier" sont les derniers éléments édités par l'utilisateur et sont différents des éléments empruntés
+  en_us: Uses the Worksharing tooltip to find out the element "last edited" by the user in the current view. If current view is a sheet, the tools searches all the views placed on this sheet as well."Last Edited" elements are elements last edited by the user, and are different from borrowed elements

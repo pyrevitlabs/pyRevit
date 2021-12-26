@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RevitVersion>2020</RevitVersion>
+  </PropertyGroup>
+</Project>

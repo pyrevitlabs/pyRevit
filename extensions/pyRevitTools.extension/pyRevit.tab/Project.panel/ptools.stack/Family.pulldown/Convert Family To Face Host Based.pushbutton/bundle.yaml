@@ -1,1 +1,6 @@
-tooltip: This script removes all instances of the selected element Family and tries to convert the family into face host based. Only families of CommunicationDevices, DataDevices, DuctTerminal, ElectricalEquipment, ElectricalFixtures, FireAlarmDevices, LightingDevices, LightingFixtures, MechanicalEquipment, NurseCallDevices, PlumbingFixtures, SecurityDevices, Sprinklers, TelephoneDevices can be converted
+title:
+  fr_fr: Convertir la famille en famille par face
+  en_us: Convert Family To Face Host Based
+tooltip:
+  fr_fr: Ce script supprime toutes les instances de l'élément sélectionné Famille et essaie de convertir la famille en famille hébergée par face. Seules les familles de CommunicationDevices, DataDevices, DuctTerminal, ElectricalEquipments, ElectricalFixtures, FireAlarmDevices, LightingDevices, LightingFixtures, MechanicalEquipments, NurseCallDevices, PlumbingFixtures, SecurityDevices, Sprinklers, TelephoneDevices peuvent être converties
+  en_us: This script removes all instances of the selected element Family and tries to convert the family into face host based. Only families of CommunicationDevices, DataDevices, DuctTerminal, ElectricalEquipment, ElectricalFixtures, FireAlarmDevices, LightingDevices, LightingFixtures, MechanicalEquipment, NurseCallDevices, PlumbingFixtures, SecurityDevices, Sprinklers, TelephoneDevices can be converted

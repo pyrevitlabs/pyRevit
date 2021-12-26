@@ -7,7 +7,6 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Text.RegularExpressions;
-using IWshRuntimeLibrary;
 
 using LibGit2Sharp;
 using pyRevitLabs.Common.Extensions;
@@ -17,12 +16,13 @@ using System.Threading;
 
 namespace pyRevitLabs.Common {
     public static class CommonUtils {
-        private static object ProgressLock = new object();
-        private static int lastReport;
+        // private static object ProgressLock = new object();
+        // private static int lastReport;
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        [DllImport("ole32.dll")] private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
+        [DllImport("ole32.dll")]
+        private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
 
         public static bool VerifyFile(string filePath) {
             if (filePath != null && filePath != string.Empty)
@@ -338,34 +338,34 @@ namespace pyRevitLabs.Common {
             Process.Start("explorer.exe", resourcePath);
         }
 
-        public static void AddShortcut(string shortCutName,
-                                       string appName,
-                                       string pathToExe,
-                                       string args,
-                                       string workingDir,
-                                       string iconPath,
-                                       string description,
-                                       bool allUsers = false) {
-            string commonStartMenuPath = Environment.GetFolderPath(
-                allUsers ? Environment.SpecialFolder.CommonStartMenu : Environment.SpecialFolder.StartMenu
-                );
-            string appStartMenuPath = Path.Combine(commonStartMenuPath, "Programs", appName);
+        // public static void AddShortcut(string shortCutName,
+        //                                string appName,
+        //                                string pathToExe,
+        //                                string args,
+        //                                string workingDir,
+        //                                string iconPath,
+        //                                string description,
+        //                                bool allUsers = false) {
+        //     string commonStartMenuPath = Environment.GetFolderPath(
+        //         allUsers ? Environment.SpecialFolder.CommonStartMenu : Environment.SpecialFolder.StartMenu
+        //         );
+        //     string appStartMenuPath = Path.Combine(commonStartMenuPath, "Programs", appName);
 
-            EnsurePath(appStartMenuPath);
+        //     EnsurePath(appStartMenuPath);
 
-            string shortcutLocation = Path.Combine(appStartMenuPath, shortCutName + ".lnk");
-            WshShell shell = new WshShell();
-            IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutLocation);
+        //     string shortcutLocation = Path.Combine(appStartMenuPath, shortCutName + ".lnk");
+        //     WshShell shell = new WshShell();
+        //     IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutLocation);
 
-            shortcut.Description = "Test App Description";
-            //shortcut.IconLocation = @"C:\Program Files (x86)\TestApp\TestApp.ico"; //uncomment to set the icon of the shortcut
-            shortcut.TargetPath = pathToExe;
-            shortcut.Arguments = args;
-            shortcut.Description = description;
-            shortcut.IconLocation = iconPath;
-            shortcut.WorkingDirectory = workingDir;
-            shortcut.Save();
-        }
+        //     shortcut.Description = "Test App Description";
+        //     //shortcut.IconLocation = @"C:\Program Files (x86)\TestApp\TestApp.ico"; //uncomment to set the icon of the shortcut
+        //     shortcut.TargetPath = pathToExe;
+        //     shortcut.Arguments = args;
+        //     shortcut.Description = description;
+        //     shortcut.IconLocation = iconPath;
+        //     shortcut.WorkingDirectory = workingDir;
+        //     shortcut.Save();
+        // }
 
         public static string NewShortUUID() {
             return Convert.ToBase64String(Guid.NewGuid().ToByteArray());

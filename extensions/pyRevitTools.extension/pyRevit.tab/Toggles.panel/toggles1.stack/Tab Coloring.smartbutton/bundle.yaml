@@ -1,3 +1,8 @@
-tooltip: Does its best at visually separating open documents
+title:
+  fr_fr: Colorer les onglets
+  en_us: Tab Coloring
+tooltip:
+  fr_fr: Améliore la distinction entre les documents ouverts
+  en_us: Does its best at visually separating open documents
 min_revit_version: 2019
 context: zero-doc

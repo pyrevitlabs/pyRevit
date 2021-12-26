@@ -14,4 +14,20 @@
         "--line-length=80"
     ],
     "editor.formatOnSave": false,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Icon?": true,
+        "**/Thumbs.db": true,
+        "**/.vs": true,
+        "**/.sync": true,
+        "dev/**/bin": true,
+        "**/obj": true,
+        "**/__pycache__": true,
+        "**/Prerequisites": true,
+    },
+    "python.pythonPath": "C:\\Users\\ehsan\\.virtualenvs\\pyrevit-dev-2PO7Kqjk\\Scripts\\python.exe"
 }

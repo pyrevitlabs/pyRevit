@@ -5,6 +5,8 @@ import os.path as op
 from typing import Dict, List
 import re
 import datetime
+import logging
+
 import yaml
 
 from scripts import configs
@@ -13,11 +15,21 @@ from scripts import airtavolo
 from scripts.airtavolo import ToolLocales
 
 
+logger = logging.getLogger()
+
+
+VER_FINDER = re.compile(r"\d\.\d+\.\d+(\.[a-z0-9+-]+)?")
+VER_PART_FINDER = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.[a-z0-9+-]+)?")
+
+
 def _modify_contents(files, finder, new_value):
     for text_file in files:
         contents = []
         file_changed = False
         with open(text_file, "r") as sfile:
+            logger.debug(
+                "Setting version in file %s to %s", text_file, new_value
+            )
             for cline in sfile.readlines():
                 newcline = finder.sub(new_value, cline)
                 if cline != newcline:
@@ -30,11 +42,10 @@ def _modify_contents(files, finder, new_value):
 
 def get_version():
     """Get current version"""
-    ver_finder = re.compile(r"4\.\d\.\d")
     for verfile in configs.VERSION_FILES:
         with open(verfile, "r") as vfile:
             for cline in vfile.readlines():
-                if match := ver_finder.search(cline):
+                if match := VER_FINDER.search(cline):
                     return match.group()
 
 
@@ -49,20 +60,50 @@ def set_year(_: Dict[str, str]):
     )
 
 
+def _update_build_number(version: str):
+    parts = VER_PART_FINDER.findall(version)
+    if parts:
+        version = parts[0]
+        major = version[0]
+        minor = version[1]
+        patch = version[2]
+        build = datetime.datetime.now().strftime("%y%j+%H%M")
+        return f"{major}.{minor}.{patch}.{build}"
+    return version
+
+
+def is_wip_build(_: Dict[str, str]):
+    """Determine if this is a develop/wip build"""
+    branch_name = utils.system(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+    return branch_name.strip().lower() == "develop"
+
+
 def set_ver(args: Dict[str, str]):
     """Update version number"""
-    ver_finder = re.compile(r"4\.\d\.\d")
-    new_version = args["<ver>"]
-    if ver_finder.match(new_version):
+    new_version = _update_build_number(args["<ver>"])
+
+    # add wip to version if this is a wip build
+    if is_wip_build(args):
+        new_version += configs.PYREVIT_WIP_VERSION_EXT
+
+    if VER_FINDER.match(new_version):
         print(f"Updating version to v{new_version}...")
         _modify_contents(
             files=configs.VERSION_FILES,
-            finder=ver_finder,
+            finder=VER_FINDER,
             new_value=new_version,
         )
     else:
         print(utils.colorize("<red>Invalid version format (e.g. 4.8.0)</red>"))
         sys.exit(1)
+
+
+def set_build_ver(_: Dict[str, str]):
+    """Generate and set new build version"""
+    with open(configs.PYREVIT_VERSION_FILE, "r") as vfile:
+        version = vfile.readline()
+    if version:
+        set_ver({"<ver>": version.strip()})
 
 
 def _find_tbundles(root_path) -> List[str]:
@@ -142,7 +183,7 @@ def _update_locales(bundle_path: str, tool_locales: List[ToolLocales]):
                 yaml.dump(bundle_dict, bfile)
 
 
-def update_locales(_: Dict[str, str]):
+def set_locales(_: Dict[str, str]):
     """Update locale files across the extensions"""
     tool_locales = airtavolo.get_tool_locales()
     for tbundle in _find_tbundles(configs.EXTENSIONS_PATH):

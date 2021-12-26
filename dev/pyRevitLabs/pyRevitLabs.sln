@@ -3,54 +3,51 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30330.147
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Common", "pyRevitLabs.Common\pyRevitLabs.Common.csproj", "{C5A03112-6EE1-415F-B53D-5D732D9F47AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.Common", "pyRevitLabs.Common\pyRevitLabs.Common.csproj", "{C5A03112-6EE1-415F-B53D-5D732D9F47AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.CommonWPF", "pyRevitLabs.CommonWPF\pyRevitLabs.CommonWPF.csproj", "{15E9A99D-11E3-4D46-B333-79A10427F682}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.CommonWPF", "pyRevitLabs.CommonWPF\pyRevitLabs.CommonWPF.csproj", "{15E9A99D-11E3-4D46-B333-79A10427F682}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.CommonCLI", "pyRevitLabs.CommonCLI\pyRevitLabs.CommonCLI.csproj", "{614720BA-C0E3-4199-9A5E-D2468FFCBFE5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.CommonCLI", "pyRevitLabs.CommonCLI\pyRevitLabs.CommonCLI.csproj", "{614720BA-C0E3-4199-9A5E-D2468FFCBFE5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.TargetApps.Revit", "pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj", "{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.TargetApps.Revit", "pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj", "{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.TargetApps.Navisworks", "pyRevitLabs.TargetApps.Navisworks\pyRevitLabs.TargetApps.Navisworks.csproj", "{57323698-75AF-4345-827D-2E625A56CBF2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.TargetApps.Navisworks", "pyRevitLabs.TargetApps.Navisworks\pyRevitLabs.TargetApps.Navisworks.csproj", "{57323698-75AF-4345-827D-2E625A56CBF2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.TargetApps.AutoCAD", "pyRevitLabs.TargetApps.AutoCAD\pyRevitLabs.TargetApps.AutoCAD.csproj", "{0C382E44-C594-4F08-9469-20C0D25BA581}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.TargetApps.AutoCAD", "pyRevitLabs.TargetApps.AutoCAD\pyRevitLabs.TargetApps.AutoCAD.csproj", "{0C382E44-C594-4F08-9469-20C0D25BA581}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitCLI", "pyRevitCLI\pyRevitCLI.csproj", "{9561311E-A02A-4D5F-BD22-64258941BF2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitCLI", "pyRevitCLI\pyRevitCLI.csproj", "{9561311E-A02A-4D5F-BD22-64258941BF2E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
 		{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B} = {ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}
 		{614720BA-C0E3-4199-9A5E-D2468FFCBFE5} = {614720BA-C0E3-4199-9A5E-D2468FFCBFE5}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Language", "pyRevitLabs.Language\pyRevitLabs.Language.csproj", "{269FE01F-093A-4774-8017-FEFC2342ABF5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.Language", "pyRevitLabs.Language\pyRevitLabs.Language.csproj", "{269FE01F-093A-4774-8017-FEFC2342ABF5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.DeffrelDB", "pyRevitLabs.DeffrelDB\pyRevitLabs.DeffrelDB.csproj", "{4672A022-5855-4C70-B81E-9E1109BD7B6D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.DeffrelDB", "pyRevitLabs.DeffrelDB\pyRevitLabs.DeffrelDB.csproj", "{4672A022-5855-4C70-B81E-9E1109BD7B6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unit Tests", "Unit Tests\Unit Tests.csproj", "{17D33C7F-79A4-4403-96A2-13887ECAC775}"
-	ProjectSection(ProjectDependencies) = postProject
-		{595C5FC1-EA26-47A6-B78F-3A04D222963D} = {595C5FC1-EA26-47A6-B78F-3A04D222963D}
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit", "pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj", "{595C5FC1-EA26-47A6-B78F-3A04D222963D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit", "pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj", "{595C5FC1-EA26-47A6-B78F-3A04D222963D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.Emojis", "pyRevitLabs.Emojis\pyRevitLabs.Emojis.csproj", "{495994B5-044C-4B59-BD1D-D05683B443E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Emojis", "pyRevitLabs.Emojis\pyRevitLabs.Emojis.csproj", "{495994B5-044C-4B59-BD1D-D05683B443E5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitDoctor", "pyRevitDoctor\pyRevitDoctor.csproj", "{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitDoctor", "pyRevitDoctor\pyRevitDoctor.csproj", "{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.UnitTests", "pyRevitLabs.UnitTests\pyRevitLabs.UnitTests.csproj", "{E33FE30C-7DA3-4A8C-B7B9-C7B1A8F73E6A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -94,10 +91,6 @@ Global
 		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Release|Any CPU.Build.0 = Release|Any CPU
 		{595C5FC1-EA26-47A6-B78F-3A04D222963D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{595C5FC1-EA26-47A6-B78F-3A04D222963D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{595C5FC1-EA26-47A6-B78F-3A04D222963D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -110,6 +103,10 @@ Global
 		{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4BAD33B-FAEE-4D57-A3F6-E2BBDCDE8AE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E33FE30C-7DA3-4A8C-B7B9-C7B1A8F73E6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E33FE30C-7DA3-4A8C-B7B9-C7B1A8F73E6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E33FE30C-7DA3-4A8C-B7B9-C7B1A8F73E6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E33FE30C-7DA3-4A8C-B7B9-C7B1A8F73E6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

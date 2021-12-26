@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Web.Script.Serialization;
 
 // iron languages
 using Microsoft.Scripting;
@@ -11,6 +10,7 @@ using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
 
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.Json;
 using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
@@ -51,7 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // extract engine configuration from runtime data
             try {
-                ExecEngineConfigs = new JavaScriptSerializer().Deserialize<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
+                ExecEngineConfigs = JsonConvert.DeserializeObject<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
             } catch {}
 
             // If the command required a fullframe engine

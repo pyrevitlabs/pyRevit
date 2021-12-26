@@ -341,7 +341,10 @@ def create_filledregion(filledregion_name, fillpattern_element, doc=None):
                                    'exists.'.format(filledregion_name))
     source_filledregion = filledregion_types.FirstElement()
     new_filledregion = source_filledregion.Duplicate(filledregion_name)
-    new_filledregion.FillPatternId = fillpattern_element.Id
+    if HOST_APP.is_newer_than(2019, or_equal=True) : 
+        new_filledregion.ForegroundPatternId = fillpattern_element.Id
+    else: 
+        new_filledregion.FillPatternId = fillpattern_element.Id
     return new_filledregion
 
 

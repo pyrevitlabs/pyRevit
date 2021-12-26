@@ -1,2 +1,7 @@
-tooltip: Selects all elements (in model) of the same family as the currently selected object
+title:
+  fr_fr: Sélectionner tous les éléments de la même famille
+  en_us: Select All Elements Of Same Family
+tooltip:
+  fr_fr: Sélectionne tous les éléments (dans le modèle) de la même famille que l'objet actuellement sélectionné
+  en_us: Selects all elements (in model) of the same family as the currently selected object
 context: selection
