@@ -12,7 +12,7 @@ jobs:
       # fetch history so release notes can be generated from
       - uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: origin/${{ github.head_ref }}
       #     fetch-depth: 0
       #     token: ${{ secrets.CI_GITHUB_TOKEN }}
       # - uses: snickerbockers/submodules-init@v4
