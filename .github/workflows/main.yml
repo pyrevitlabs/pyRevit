@@ -149,6 +149,6 @@ jobs:
       - name: Merge Master
         if: (github.base_ref == env.ReleaseBranch)
         run: |
-          git checkout origin/${{ github.base_ref }}
+          git checkout ${{ github.base_ref }}
           git merge ${{ github.head_ref }}
           git push
