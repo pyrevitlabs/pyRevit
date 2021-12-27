@@ -18,8 +18,8 @@ jobs:
     steps:
       - name: Context
         run: |
-          ecgo event: ${{ github.event }}
-          ecgo repository: ${{ github.repository }}
+          echo event: ${{ github.event }}
+          echo repository: ${{ github.repository }}
           echo ref: ${{ github.ref }}
           echo head_ref: ${{ github.head_ref }}
           echo base_ref: ${{ github.base_ref }}
