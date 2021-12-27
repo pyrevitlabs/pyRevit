@@ -55,7 +55,6 @@ jobs:
           pipenv run pyrevit set build
 
       - name: Publish Build Info
-        if: (github.ref == 'refs/heads/master')
         run: |
           pipenv run pyrevit set products
 
