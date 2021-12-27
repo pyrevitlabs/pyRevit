@@ -1,2 +1,7 @@
-tooltip: Lists all sheets and views that the selected elements is visible in
 context: selection
+title:
+  fr_fr: Trouver les feuilles montrant l'élément sélectionné
+  en_us: Find sheets showing selected element
+tooltip:
+  fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
+  en_us: Lists all sheets and views that the selected elements is visible in

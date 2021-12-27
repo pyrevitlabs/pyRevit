@@ -1,6 +1,8 @@
 """Dev scripts utilities"""
 # pylint: disable=bad-continuation
 import sys
+import os
+import os.path as op
 import logging
 import re
 from typing import List, Optional, Dict
@@ -45,6 +47,10 @@ def system(
 
 def where(program_name):
     """Test if a program is available on PATH"""
+    if op.exists(program_name) \
+            or (sys.platform == "win32" and op.exists(program_name + ".exe")):
+        return True
+
     finder = "where" if sys.platform == "win32" else "which"
     res = subprocess.run(
         [finder, program_name], check=False, capture_output=True
@@ -75,8 +81,8 @@ def run_command(commands: List[Command], args: Dict[str, str]):
         cmd.run(args)
 
 
-def parse_msbuild_output(output):
-    """Parse msbuild output to find the result and error reports"""
+def parse_dotnet_build_output(output):
+    """Parse dotnet build output to find the result and error reports"""
     result = True
     build_finder = re.compile(r"^Build (success.*|FAIL.*)$")
     time_finder = re.compile(r"^Time Elapsed (.+)$")

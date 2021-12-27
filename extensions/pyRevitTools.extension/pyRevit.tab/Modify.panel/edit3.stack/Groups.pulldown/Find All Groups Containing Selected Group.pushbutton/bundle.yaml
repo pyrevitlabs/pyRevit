@@ -1,2 +1,7 @@
-tooltip: List all groups that includethe selected group element as a nested group
+title:
+  fr_fr: Trouver tous les groupes contenant le groupe sélectionné
+  en_us: Find all groups containing selected group
+tooltip:
+  fr_fr: Liste tous les groupes comprenant l'élément du groupe sélectionné comme un groupe imbriqué
+  en_us: List all groups that includethe selected group element as a nested group
 context: selection

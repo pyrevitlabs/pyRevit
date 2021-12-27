@@ -151,6 +151,14 @@ def get_mark(element):
 
 
 def get_location(element):
+    """Get element location point.
+
+    Args:
+        element (DB.Element): source element
+
+    Returns:
+        DB.XYZ: X, Y, Z of location point element
+    """
     locp = element.Location.Point
     return (locp.X, locp.Y, locp.Z)
 
@@ -584,7 +592,7 @@ def get_linked_model_doc(linked_model):
 def find_first_legend(doc=None):
     doc = doc or DOCS.doc
     for view in DB.FilteredElementCollector(doc).OfClass(DB.View):
-        if view.ViewType == DB.ViewType.Legend:
+        if view.ViewType == DB.ViewType.Legend and not view.IsTemplate:
             return view
     return None
 

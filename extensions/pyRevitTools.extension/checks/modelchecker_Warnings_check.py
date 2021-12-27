@@ -9,15 +9,6 @@ from pyrevit import revit, DB
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.compat import safe_strtype
 
-# to be removed after fixing RevitLinkInstance
-import clr
-
-clr.AddReference("RevitAPI")
-clr.AddReference("RevitServices")
-
-from Autodesk.Revit.DB import *
-from RevitServices.Persistence import DocumentManager
-
 COLORS = 10 * [
     "#ffc299",
     "#ff751a",
@@ -314,7 +305,7 @@ def checkModel(doc, output):
         .ToElements()
     )
     if len(rvtlinks_id_collector) != 0:
-        rvtlinkdocs, rvtlinkdocsName, rvtlink_status = [], [], []
+        rvtlinkdocsName, rvtlink_status = [], []
         # checking loaded models
         for i in rvtlinks_id_collector:
             if str(i.GetLinkedFileStatus()) == "Loaded":

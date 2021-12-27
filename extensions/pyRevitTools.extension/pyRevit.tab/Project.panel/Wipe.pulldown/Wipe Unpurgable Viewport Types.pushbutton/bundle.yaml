@@ -1,1 +1,6 @@
-tooltip: Asks user to select the viewport types to be converted and the viewport type to be replaced with. I made this tool to fix a problem with viewport types duplicating themselves during a project and would become unpurgable viewport types
+title:
+  fr_fr: Supprimer les types de fenêtres non-purgeables
+  en_us: Wipe Unpurgeable Viewport Types
+tooltip:
+  fr_fr: Demande à l'utilisateur de sélectionner les types de vues à convertir et le type de vues à remplacer. J'ai fait cet outil pour résoudre un problème avec les types de vues qui se dupliquent au cours d'un projet et deviendraient des types de fenêtres non purgeables
+  en_us: Asks user to select the viewport types to be converted and the viewport type to be replaced with. I made this tool to fix a problem with viewport types duplicating themselves during a project and would become unpurgable viewport types

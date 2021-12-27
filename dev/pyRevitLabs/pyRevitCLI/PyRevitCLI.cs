@@ -82,6 +82,14 @@ namespace pyRevitCLI {
         // cli version property
         public static string CLIPath => Assembly.GetExecutingAssembly().Location;
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
+        public static string CLIInfoVersion  {
+            get {
+                var infoVerAttr = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute)).FirstOrDefault();
+                if (infoVerAttr is AssemblyInformationalVersionAttribute infoVer)
+                    return infoVer.InformationalVersion;
+                return CLIVersion.ToString();
+            }
+        }
 
         // cli entry point:
         static void Main(string[] args) {

@@ -1,2 +1,7 @@
-tooltip: Lists all the views referenced by the selected elevation tag
 context: selection
+title:
+  fr_fr: Trouver les vues référencées par l'étiquette d'élévation sélectionnée
+  en_us: Find referenced views by selected elevation tag
+tooltip:
+  fr_fr: Lister toutes les vues référencées par l'étiquette d'élévation sélectionnée
+  en_us: Lists all the views referenced by the selected elevation tag

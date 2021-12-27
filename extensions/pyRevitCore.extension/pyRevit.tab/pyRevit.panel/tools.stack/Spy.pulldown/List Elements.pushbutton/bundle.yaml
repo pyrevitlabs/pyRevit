@@ -1,1 +1,6 @@
-tooltip: Lists specific elements from the model database
+title:
+  fr_fr: Répertorier les éléments
+  en_us: List Elements
+tooltip:
+  fr_fr: Répertorie les éléments spécifiques de la base de données du modèle
+  en_us: Lists specific elements from the model database

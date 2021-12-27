@@ -1,8 +1,17 @@
-tooltip: >-
-  Inverts selection in active view
-
-
-  Shift-Click:
-
-  Select group members instead of parent group elements
+title:
+  fr_fr: Inverser la sélection
+  en_us: Invert Selection
+tooltip:
+  fr_fr: >-
+     Inverse la sélection dans la vue active
+    
+     Shift-Clic :
+    
+     Sélectionnez les membres du groupe au lieu des éléments du groupe parent
+  en_us: >-
+    Inverts selection in active view
+    
+    Shift-Click:
+    
+    Select group members instead of parent group elements
 context: selection

@@ -1,7 +1,16 @@
-tooltip: >-
-  Select next element in selection memory.
-
-
-  Click +1
-
-  Shift+Click +10
+title:
+  fr_fr: Suivant
+  en_us: Next
+tooltip:
+  fr_fr: >-
+     Sélectionnez l'élément suivant dans la mémoire de sélection.
+    
+     Cliquez sur +1
+    
+     Shift+Clic +10
+  en_us: >-
+    Select next element in selection memory.
+    
+    Click +1
+    
+    Shift+Click +10

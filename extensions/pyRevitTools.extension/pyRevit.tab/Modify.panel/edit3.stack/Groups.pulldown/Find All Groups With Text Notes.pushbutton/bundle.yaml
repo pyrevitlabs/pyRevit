@@ -1,1 +1,6 @@
-tooltip: List all detail groups that include a text element inside them. This is helpful for spell checking
+title:
+  fr_fr: Trouver tous les groupes avec des notes textuelles
+  en_us: Find all groups with text notes
+tooltip:
+  fr_fr: Liste tous les groupes de détail qui incluent une note textuelle. Utile pour la correction orthographique.
+  en_us: List all detail groups that include a text element inside them. This is helpful for spell checking.

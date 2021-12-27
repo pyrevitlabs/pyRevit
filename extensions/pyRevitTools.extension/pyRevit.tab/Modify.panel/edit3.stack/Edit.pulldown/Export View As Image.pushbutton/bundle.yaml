@@ -1,1 +1,6 @@
-tooltip: Exports the current view to a 600DPI PNG image
+title:
+  fr_fr: Exporter une vue comme image
+  en_us: Export view as image
+tooltip:
+  fr_fr: Exporter la vue actuelle au format PNG avec une résolution de 600DPI
+  en_us: Exports the current view to a 600DPI PNG image

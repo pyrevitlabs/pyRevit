@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\CLREngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ContentEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\CPythonEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\DynamoBIMEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\Exceptions.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\GrasshopperEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\HyperlinkEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\InvokableDLLEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\IronPythonEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\IronRubyEngine.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\UpdaterListener.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\JournalListener.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptCommands.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptData.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptEngineManager.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptEngines.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EnvVariables.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\Telemetry.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EventHandling.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptExecutor.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EventHooks.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptConsole.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptConsoleUtils.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptConsoleManager.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptIO.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptRuntime.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EventTelemetry.cs" />
+        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptTelemetry.cs" />
+    </ItemGroup>
+
+    <Import Project="../Directory.Build.targets" />
+</Project>

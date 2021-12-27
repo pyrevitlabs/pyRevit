@@ -1,1 +1,10 @@
-tooltip: List all view that are referring the selected viewports or active view
+title:
+  fr_fr: |-
+    Ouvrir les vues en référence
+  en_us: |-
+    Open Refererring Views
+tooltip:
+  fr_fr: |-
+    Répertorier toutes les vues faisant référence aux fenêtres sélectionnées ou à la vue active
+  en_us: |-
+    List all view that are referring the selected viewports or active view

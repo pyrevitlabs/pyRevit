@@ -8,7 +8,7 @@ import requests
 logger = logging.getLogger()
 
 
-AUTH_TOKEN = os.environ.get("GITHUBAUTH", "")
+AUTH_TOKEN = os.environ.get("GITHUBTOKEN", "")
 API_ROOT = "https://api.github.com/repos/eirannejad/pyRevit/"
 
 API_ISSUES = API_ROOT + "issues/{ticket}"

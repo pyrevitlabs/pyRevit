@@ -9,6 +9,8 @@ from collections import namedtuple, defaultdict
 from scripts import utils
 from scripts import github
 
+import _props as props
+
 
 logger = logging.getLogger()
 
@@ -19,7 +21,7 @@ ChangeGroup = namedtuple("ChangeGroup", ["tag", "header"])
 class Change:
     """Type representing a commit point"""
 
-    def __init__(self, commit_hash, message, comments):
+    def __init__(self, commit_hash, message, comments, fetch_info=True):
         self.commit_hash = commit_hash
         self.message = message
         self.comments = comments
@@ -41,7 +43,7 @@ class Change:
         # if ticket number found in message
         # get ticket info from cloud
         self._ticketdata = None
-        if self._ticket:
+        if fetch_info and self._ticket:
             self._getinfo()
 
     def _parse_message(self):
@@ -62,14 +64,14 @@ class Change:
         if gtags := re.findall(r"\[(.+?)\]", self.message):
             # clean the tags from change message
             for gtag in gtags:
-                self.message = self.message.replace(f'[{gtag}]', '')
+                self.message = self.message.replace(f"[{gtag}]", "")
             self.message = self.message.strip()
-            self.message = re.sub(r'\s+', ' ', self.message)
+            self.message = re.sub(r"\s+", " ", self.message)
             self.groups = gtags
 
     def _find_todos(self):
-        for cline in self.comments.split('\n'):
-            if m := re.search(r'\-\s*\[\s*\]\s+(.+)', cline):
+        for cline in self.comments.split("\n"):
+            if m := re.search(r"\-\s*\[\s*\]\s+(.+)", cline):
                 self.todos.append(m.groups()[0])
 
     def _getinfo(self):
@@ -114,7 +116,7 @@ CHANGE_GROUPS = [
 SKIP_PATTERNS = [r"cleanup", r"^Merge branch \'.+\' into .+$"]
 
 
-def find_changes(gitlog_report: str):
+def find_changes(gitlog_report: str, fetch_info: bool = True):
     """Create changes from git log report"""
     # designed to work with `git log --pretty='format:%h %s%n%b/'`
     changes = []
@@ -124,8 +126,11 @@ def find_changes(gitlog_report: str):
     while idx < report_length:
         # extract hash and message
         cline = changelines[idx]
-        chash, cmsg = cline.split(" ", 1)
-        logger.debug('commit -> %s: %s', chash, cmsg)
+        parts = cline.split(" ", 1)
+        if len(parts) != 2:
+            continue
+        chash, cmsg = parts
+        print(f"commit -> {chash}: {cmsg}")
         # grab all the comments lines
         idx += 1
         ccmt = ""
@@ -138,8 +143,13 @@ def find_changes(gitlog_report: str):
             cline = changelines[idx]
         # add a new change
         changes.append(
-            Change(commit_hash=chash, message=cmsg, comments=ccmt)
+            Change(
+                commit_hash=chash,
+                message=cmsg,
+                comments=ccmt,
+                fetch_info=fetch_info,
             )
+        )
         idx += 1
     return changes
 
@@ -153,11 +163,25 @@ def report_clog(args: Dict[str, str]):
     """Report changes from given <tag> to HEAD
     Queries github issue information for better reporting
     """
-    tag_hash = utils.system(["git", "rev-parse", f"{args['<tag>']}"])
+    target_tag = args["<tag>"]
+    if not target_tag:
+        # get the latest tag
+        latest_tag_hash = utils.system(
+            ["git", "rev-list", "--tags", "--max-count=1"]
+        )
+        latest_tag = utils.system(["git", "describe", latest_tag_hash])
+        target_tag = latest_tag
+
+    tag_hash = utils.system(["git", "rev-parse", f"{target_tag}"])
+    print(f"Target tag is: {target_tag}")
+    print(f"Target tag hash is: {tag_hash}")
+
     gitlog_report = utils.system(
-        ["git", "log", "--pretty=format:%h %s%n%b/", f"{tag_hash}..HEAD"]
+        ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag_hash}..HEAD"]
     )
-    changes = find_changes(gitlog_report)
+
+    print("Parsing git log for changes...")
+    changes = find_changes(gitlog_report, fetch_info=True)
 
     # groups changes (and purge)
     grouped_changes = defaultdict(list)
@@ -176,12 +200,20 @@ def report_clog(args: Dict[str, str]):
     for cgroup in CHANGE_GROUPS:
         header(cgroup.header, level=1)
         for change in grouped_changes[cgroup.tag]:
-            if change.issue_type == 'issue':
+            if change.issue_type == "issue":
                 print(f"- Resolved Issue ({change.ticket}: {change.title})")
-            elif change.issue_type == 'pr':
+            elif change.issue_type == "pr":
                 print(f"- Merged PR ({change.ticket}: {change.title})")
             else:
                 print(f"- {change.message}")
 
             for todo in change.todos:
-                print(f'    - [ ] {todo}')
+                print(f"    - [ ] {todo}")
+
+    if not props.is_wip_build(args):
+        build_version = props.get_version()
+        print(
+            "\n"
+            f"**Full Changelog**: https://github.com/eirannejad/pyRevit/"
+            f"compare/{target_tag}...v{build_version}"
+        )

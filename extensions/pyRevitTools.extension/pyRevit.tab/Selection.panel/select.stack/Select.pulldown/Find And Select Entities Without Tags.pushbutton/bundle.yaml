@@ -1,1 +1,6 @@
-tooltip: Selects elements with no associated tags in current view
+title:
+  fr_fr: Rechercher et sélectionner des éléments sans étiquettes
+  en_us: Find And Select Entities Without Tags
+tooltip:
+  fr_fr: Sélectionne les éléments sans étiquettes associées dans la vue actuelle
+  en_us: Selects elements with no associated tags in current view

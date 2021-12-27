@@ -1,1 +1,6 @@
-tooltip: Toggles visibility of section box in current 3D view
+title:
+  fr_fr: Zone de coupe
+  en_us: Section Box
+tooltip:
+  fr_fr: Bascule la visibilité de la zone de coupe dans la vue 3D actuelle
+  en_us: Toggles visibility of section box in current 3D view

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestProjectType>UnitTest</TestProjectType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
+    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
+  </ItemGroup>
+</Project>

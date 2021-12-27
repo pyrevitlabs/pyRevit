@@ -1,2 +1,7 @@
-tooltip: Discards (not delete) grouped elements from the current selection
+title:
+  fr_fr: Enlève les éléments groupés
+  en_us: Discard Grouped Elements
+tooltip:
+  fr_fr: Supprime (ne supprime pas) les éléments groupés de la sélection actuelle
+  en_us: Discards (not delete) grouped elements from the current selection
 context: Selection

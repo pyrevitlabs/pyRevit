@@ -1,1 +1,6 @@
-tooltip: Activates selection tool that picks only Detail 2D elements
+title:
+  fr_fr: Sélectionner les éléments de détail
+  en_us: Pick Detail Elements
+tooltip:
+  fr_fr: Active l'outil de sélection qui sélectionne uniquement les éléments de détail 2D
+  en_us: Activates selection tool that picks only Detail 2D elements

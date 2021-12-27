@@ -1278,6 +1278,25 @@ def fuzzy_search_ratio(target_string, sfilter, regex=False):
 
     lower_tstring_parts = [x.lower() for x in tstring_parts]
     lower_sfilter_parts = [x.lower() for x in sfilter_parts]
+    # exclude override
+    if any(x[0] == '!' for x in sfilter_parts):
+        exclude_indices = [
+            lower_sfilter_parts.index(i) for i in lower_sfilter_parts
+            if i[0] == '!'
+        ]
+        exclude_indices.reverse()
+        exclude_list = [
+            lower_sfilter_parts.pop(i) for i in exclude_indices
+        ]
+        for e in exclude_list:
+            # doesn't contain
+            if len(e) > 1:
+                exclude_string = e[1:]
+                if any(
+                        [exclude_string in
+                        part for part in lower_tstring_parts]
+                ):
+                    return 0
     if all(x in lower_tstring_parts for x in lower_sfilter_parts):
         return 87
 

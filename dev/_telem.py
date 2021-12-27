@@ -45,9 +45,8 @@ def build_telem(args: Dict[str, str]):
     report = utils.system(
         ["go", "get", r"./..."],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
+        dump_stdout=True
     )
-    if report:
-        print(report)
     print("Telemetry server dependencies successfully updated")
 
     print("Building telemetry server...")

@@ -210,7 +210,10 @@ def parse_docopts(docopts_filepath):
 def build_autocmp(_: Dict[str, str]):
     """Build CLI shell autocomplete utility"""
     print("Updating autocomplete utility dependencies...")
-    utils.system(["go", "get", "github.com/posener/complete"])
+    utils.system(
+        ["go", "get", "-u", r"./..."],
+        cwd=op.abspath(configs.AUTOCOMPPATH)
+        )
     print("Autocomplete utility dependencies successfully updated")
 
     # generate go autocomplete source from usage patterns
@@ -223,6 +226,9 @@ def build_autocmp(_: Dict[str, str]):
     print("Building autocomplete utility...")
     target = op.abspath(configs.AUTOCOMPBIN)
     utils.system(["go", "fmt", configs.AUTOCOMP])
-    utils.system(["go", "build", "-o", target, configs.AUTOCOMP])
+    utils.system(
+        ["go", "build", "-o", target, op.abspath(configs.AUTOCOMP)],
+        cwd=op.abspath(configs.AUTOCOMPPATH)
+        )
     print("Building autocomplete utility completed successfully")
-    os.remove(configs.AUTOCOMP)
+    # os.remove(configs.AUTOCOMP)

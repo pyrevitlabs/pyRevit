@@ -114,7 +114,7 @@ namespace pyRevitCLI {
                                 { "latestFramework", UserEnv.GetInstalledDotNetVersion() },
                                 { "targetPacks", UserEnv.GetInstalledDotnetTargetPacks() },
                                 { "targetPacksCore", UserEnv.GetInstalledDotnetCoreTargetPacks() },
-                                { "cliVersion", PyRevitCLI.CLIVersion },
+                                { "cliVersion", PyRevitCLI.CLIInfoVersion },
                             }
                         },
                     };
@@ -178,13 +178,13 @@ namespace pyRevitCLI {
                 Console.WriteLine("No .Ne-Core Target Packs are installed.");
             }
 
-            Console.WriteLine(string.Format("pyRevit CLI {0}", PyRevitCLI.CLIVersion.ToString()));
+            Console.WriteLine(string.Format("pyRevit CLI v{0}", PyRevitCLI.CLIInfoVersion));
         }
 
         // cli specific commands
         internal static void
         PrintVersion(bool checkUpdates = false) {
-            Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, PyRevitCLI.CLIVersion.ToString()));
+            Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, PyRevitCLI.CLIInfoVersion));
             if (checkUpdates) {
                 if (CommonUtils.CheckInternetConnection()) {
                     try {

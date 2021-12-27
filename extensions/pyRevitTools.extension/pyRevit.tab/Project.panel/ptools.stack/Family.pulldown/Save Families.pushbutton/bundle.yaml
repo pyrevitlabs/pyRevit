@@ -1,1 +1,6 @@
-tooltip: Saves chosen families from the project
+title:
+  fr_fr: Sauvegarder les familles
+  en_us: Save Families
+tooltip:
+  fr_fr: Sauvegarder les familles sélectionnées dans le projet
+  en_us: Saves chosen families from the project

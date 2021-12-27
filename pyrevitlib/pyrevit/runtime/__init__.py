@@ -224,7 +224,7 @@ def get_references():
         # system stuff
         'System', 'System.Core',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
-        'System.Drawing', 'System.Windows.Forms', 'System.Web.Extensions',
+        'System.Drawing', 'System.Windows.Forms',
         'PresentationCore', 'PresentationFramework',
         'WindowsBase', 'WindowsFormsIntegration',
         # legacy csharp/vb.net compiler
@@ -240,9 +240,12 @@ def get_references():
         'pyRevitLoader',
         # pyrevit labs
         'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
-        'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
-        'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit',
+        'pyRevitLabs.MahAppsMetro',
+        'pyRevitLabs.NLog',
+        'pyRevitLabs.Json',
         'pyRevitLabs.Emojis',
+        'pyRevitLabs.TargetApps.Revit',
+        'pyRevitLabs.PyRevit',
         ]
 
     # another revit api

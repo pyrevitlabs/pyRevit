@@ -1,2 +1,7 @@
-tooltip: Select a series of stacked walls. Run this tool and it will replace the selection with sub-walls of the selected stacked walls
+title:
+  fr_fr: Sélectionner les murs empilés
+  en_us: Select SubWalls of Stacked Walls
+tooltip:
+  fr_fr: Sélectionnez une série de murs empilés. Exécutez cet outil et il remplacera la sélection par des sous-murs des murs empilés sélectionnés
+  en_us: Select a series of stacked walls. Run this tool and it will replace the selection with sub-walls of the selected stacked walls
 context: selection

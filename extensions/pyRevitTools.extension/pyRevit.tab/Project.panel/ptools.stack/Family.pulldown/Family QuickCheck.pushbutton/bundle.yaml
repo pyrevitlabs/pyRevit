@@ -1,14 +1,23 @@
-tooltip: >-
-  Non-exhaustive check to detect corrupt Revit families.
-
-
-  Copyright (c) 2017 Frederic Beaupere
-
-  github.com/frederic-beaupere
-
-
-  PR731 https://github.com/eirannejad/pyRevit/pull/731
-title: Family QuickCheck
+title:
+  fr_fr: Vérification rapide des familles
+  en_us: Family QuickCheck
+tooltip:
+  fr_fr: >-
+     Vérification non exhaustive pour détecter les familles Revit corrompues.
+    
+     Copyright (c) 2017 Frédéric Beaupere
+    
+     github.com/frederic-beaupere
+     
+         PR731 https://github.com/eirannejad/pyRevit/pull/731
+  en_us: >-
+    Non-exhaustive check to detect corrupt Revit families.
+    
+    Copyright (c) 2017 Frederic Beaupere
+    
+    github.com/frederic-beaupere
+    
+    PR731 https://github.com/eirannejad/pyRevit/pull/731
 author:
   - Frederic Beaupere
   - '{{author}}'

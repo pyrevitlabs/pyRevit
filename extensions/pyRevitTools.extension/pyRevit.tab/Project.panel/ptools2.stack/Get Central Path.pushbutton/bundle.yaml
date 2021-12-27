@@ -1,7 +1,16 @@
-tooltip: >-
-  Print the full path to the central model (if model is workshared)
-
-
-  Shift+Click:
-
-  Open central model path in file browser
+title:
+  fr_fr: Obtenir le chemin du Central
+  en_us: Get Central Path
+tooltip:
+  fr_fr: >-
+     Imprimer le chemin complet vers le modèle central (si le modèle est partagé)
+    
+     Shift+Clic :
+    
+     Ouvrir le chemin du modèle central dans le navigateur de fichiers
+  en_us: >-
+    Print the full path to the central model (if model is workshared)
+    
+    Shift+Click:
+    
+    Open central model path in file browser

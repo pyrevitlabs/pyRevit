@@ -1,5 +1,11 @@
-tooltip: >-
-  Explodes all instances of the selected groups and removes
-
-  the group definition from project browser
+title:
+  fr_fr: Explose et supprime les groupes sélectionnés
+  en_us: Explode and remove selected groups
+tooltip:
+  fr_fr: >-
+    Explose toutes les occurences des groupes sélectionnés et supprime
+    la définition de groupe depuis le navigateur de projet
+  en_us: >-
+    Explodes all instances of the selected groups and removes
+    the group definition from project browser
 context: selection

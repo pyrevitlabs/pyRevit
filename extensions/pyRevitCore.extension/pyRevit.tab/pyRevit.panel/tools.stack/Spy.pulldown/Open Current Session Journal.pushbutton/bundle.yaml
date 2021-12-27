@@ -1,1 +1,6 @@
-tooltip: Increases the sheet number of the selected sheets by one
+title:
+  fr_fr: Ouvre le journal de la session actuel
+  en_us: Open Current Session Journal
+tooltip:
+  fr_fr: Ouvre le journal de la session actuel
+  en_us: Open current session journal file

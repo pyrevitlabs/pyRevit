@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Web.Script.Serialization;
 using System.IO;
 using System.Diagnostics;
 
 using Autodesk.Revit.UI;
 using Autodesk.Revit.ApplicationServices;
 
+using pyRevitLabs.Json;
 using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 
@@ -28,7 +28,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             };
 
             timestamp = Telemetry.GetTelemetryTimeStamp();
-            host_user = UserEnv.GetLoggedInUserName();
+            host_user = UserEnv.GetLoggedInUserName() ?? UserEnv.GetExecutingUserName();
         }
     }
 
@@ -36,7 +36,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static string _exeBuild = null;
         
         public static string SerializeTelemetryRecord(object telemetryRecord) {
-            return new JavaScriptSerializer().Serialize(telemetryRecord);
+            return JsonConvert.SerializeObject(telemetryRecord);
         }
 
         public static string PostTelemetryRecord(string telemetryServerUrl, object telemetryRecord) {
@@ -68,11 +68,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 File.WriteAllText(telemetryFilePath, existingTelemetryData);
             }
 
-            var telemetryData = new JavaScriptSerializer().Deserialize<List<T>>(existingTelemetryData);
+            var telemetryData = JsonConvert.DeserializeObject<List<T>>(existingTelemetryData);
 
             telemetryData.Add(telemetryRecord);
 
-            existingTelemetryData = new JavaScriptSerializer().Serialize(telemetryData);
+            existingTelemetryData = JsonConvert.SerializeObject(telemetryData);
             File.WriteAllText(telemetryFilePath, existingTelemetryData);
         }
 

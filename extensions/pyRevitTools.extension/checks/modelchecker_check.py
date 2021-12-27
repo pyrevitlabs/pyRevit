@@ -413,11 +413,7 @@ def checkModel(doc, output):
     scheduleCount = 0
     ### scheduleNames = []
     for schedule in schedules_id_collector:
-        if (
-            schedule.Name[:19] != "<Revision Schedule>"
-            # to support french files
-            or schedule.Name[:28] != "<Nomenclature des révisions>"
-        ):
+        if not(schedule.IsTitleblockRevisionSchedule):
             scheduleCount += 1
     ###        scheduleNames.append((schedule.Name))
     ### output.print_md("<br />".join(scheduleNames))
@@ -438,7 +434,9 @@ def checkModel(doc, output):
     # it is something with schedules on more sheets maybe...
     for schedule in scheduleCollector:
         schedName = schedule.Name
-        if schedName[:19] != "<Revision Schedule>":
+        if (schedName[:19] != "<Revision Schedule>"            
+            # to support french files
+            or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
                 if schedule.OwnerViewId.IntegerValue != -1:
                     # print schedName
@@ -448,7 +446,9 @@ def checkModel(doc, output):
     # there is need to iterate class and category filter to get all schedule - UnionWith didn't work
     for schedule in ScheduleCollectorInstances:
         schedName = schedule.Name
-        if schedName[:19] != "<Revision Schedule>":
+        if (schedName[:19] != "<Revision Schedule>"            
+            # to support french files
+            or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
                 if schedule.OwnerViewId.IntegerValue != -1:
                     # print schedName
@@ -572,6 +572,19 @@ def checkModel(doc, output):
         .GetElementCount()
     )
 
+    # Analytical model activated elements
+    activated_analytical_model_elements_count = 0
+
+    param = DB.BuiltInParameter.STRUCTURAL_ANALYTICAL_MODEL
+    provider = DB.ParameterValueProvider( DB.ElementId( param ) )
+    evaluator = DB.FilterNumericEquals()
+    rule = DB.FilterIntegerRule( provider, evaluator, 1 )
+    filter = DB.ElementParameterFilter( rule )
+
+    analyticalCollector = DB.FilteredElementCollector( doc ).WherePasses( filter ).ToElements()
+
+    activated_analytical_model_elements_count = str(len(analyticalCollector))
+
     # detail groups
     detailGroupCount = (
         DB.FilteredElementCollector(doc)
@@ -587,17 +600,21 @@ def checkModel(doc, output):
     )
 
     # model groups
-    modelGroupCount = (
+    modelGroup = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
-        .WhereElementIsNotElementType()
-        .GetElementCount()
+        .WhereElementIsNotElementType()   
     )
+    modelGroupCount = 0
+    for element in modelGroup:
+        if element.GroupId and element.GroupId != DB.ElementId.InvalidElementId:
+            modelGroupCount += 1
+
     modelGroupTypeCount = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
+        .WhereElementIsElementType()
         .GetElementCount()
-        - modelGroupCount
     )
 
     # reference plane without name
@@ -700,6 +717,8 @@ def checkModel(doc, output):
     rampTres = 0
     # Architectural columns
     archTres = 0
+    # Analytical model activated elements
+    activated_analytical_model_elements_count_tres = 0
     # Groups
     detailGroupTypeTres = 30
     detailGroupTres = 500
@@ -1027,6 +1046,11 @@ def checkModel(doc, output):
             "Architecural <br>Columns",
             archTres
         )
+        + dashboardRectMaker(
+            activated_analytical_model_elements_count, 
+            "elements with analytical model activated", 
+            activated_analytical_model_elements_count_tres   
+        )
     )
     dashboardLeftMaker(htmlRowTextNotes)
 
@@ -1199,7 +1223,7 @@ class ModelChecker(PreflightTestCase):
         DWGs: Imported count, linked count, dwgs in 3D count
         Loadable families: count, in place family count, non parametric families count
         Text notes: with factor changed count, all caps text notes count
-        System families: ramps count, architectural columns count
+        System families: ramps count, architectural columns count, elements with analytical model option enabled
         Groups: detail group types count, detail group instances count, model group types count, model groups instances count
         Reference planes: not named count, ref planes count
         Elements count

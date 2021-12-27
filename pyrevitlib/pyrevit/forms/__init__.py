@@ -459,12 +459,13 @@ class _WPFPanelProvider(UI.IDockablePaneProvider):
     def __init__(self, panel_type, default_visible=True):
         self._panel_type = panel_type
         self._default_visible = default_visible
+        self.panel = self._panel_type()
 
     def SetupDockablePane(self, data):
         """Setup forms.WPFPanel set on this instance"""
         # TODO: need to implement panel data
         # https://apidocs.co/apps/revit/2021.1/98157ec2-ab26-6ab7-2933-d1b4160ba2b8.htm
-        data.FrameworkElement = self._panel_type()
+        data.FrameworkElement = self.panel
         data.VisibleByDefault = self._default_visible
 
 
@@ -483,11 +484,14 @@ def register_dockable_panel(panel_type, default_visible=True):
 
     panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
     dockable_panel_id = UI.DockablePaneId(panel_uuid)
+    panel_provider = _WPFPanelProvider(panel_type, default_visible)
     HOST_APP.uiapp.RegisterDockablePane(
         dockable_panel_id,
         panel_type.panel_title,
-        _WPFPanelProvider(panel_type, default_visible)
+        panel_provider
     )
+
+    return panel_provider.panel
 
 
 def open_dockable_panel(panel_type_or_id):
@@ -1213,6 +1217,14 @@ class GetValueWindow(TemplateUserInputWindow):
             self.show_element(self.datePanel_dp)
             self.datePrompt.Text = \
                 value_prompt if value_prompt else 'Pick date:'
+        elif self.value_type == 'slider':
+            self.show_element(self.sliderPanel_sp)
+            self.sliderPrompt.Text = value_prompt
+            self.numberPicker.Minimum = kwargs.get('min', 0)
+            self.numberPicker.Maximum = kwargs.get('max', 100)
+            self.numberPicker.Value = \
+                value_default if isinstance(value_default, float) \
+                    else self.numberPicker.Minimum
 
     def string_value_changed(self, sender, args): #pylint: disable=unused-argument
         """Handle string vlaue update event."""
@@ -1247,6 +1259,8 @@ class GetValueWindow(TemplateUserInputWindow):
                 self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
             else:
                 self.response = None
+        elif self.value_type == 'slider':
+            self.response = self.numberPicker.Value
 
 
 class TemplatePromptBar(WPFWindow):
@@ -2832,7 +2846,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
     if init_dir:
         sf_dlg.InitialDirectory = init_dir
     if title:
-        of_dlg.Title = title
+        sf_dlg.Title = title
 
     # setting default filename
     sf_dlg.FileName = default_name
@@ -3193,6 +3207,42 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
     return GetValueWindow.show(
         None,
         value_type='date',
+        default=default,
+        prompt=prompt,
+        title=title,
+        **kwargs
+        )
+
+
+def ask_for_number_slider(default=None, min=0, max=100, prompt=None, title=None, **kwargs):
+    """Ask user to select a number value.
+
+    This is a shortcut function that configures :obj:`GetValueWindow` for
+    numbers. kwargs can be used to pass on other arguments.
+
+    Args:
+        default (str): default unique string. must not be in reserved_values
+        min (int): minimum value on slider
+        max (int): maximum value on slider
+        prompt (str): prompt message
+        title (str): title message
+        kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
+
+    Returns:
+        str: selected string value
+
+    Example:
+        >>> forms.ask_for_string(
+        ...     default=50,
+        ...     min = 0
+        ...     max = 100
+        ...     prompt='Select a number:',
+        ...     title='test title')
+        ... '50'
+    """
+    return GetValueWindow.show(
+        None,
+        value_type='slider',
         default=default,
         prompt=prompt,
         title=title,

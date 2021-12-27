@@ -3,7 +3,7 @@
 import sys
 import os.path as op
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 # dev scripts
 from scripts import utils
@@ -19,7 +19,7 @@ def _abort(message):
     sys.exit(1)
 
 
-def _build(name: str, sln: str, config: str):
+def _build(name: str, sln: str, config: str, print_output: Optional[bool] = False):
     utils.ensure_windows()
 
     # clean
@@ -29,13 +29,15 @@ def _build(name: str, sln: str, config: str):
     print(f"Building {name}...")
     report = utils.system(
         [
-            "msbuild",
+            "dotnet",
+            "build",
             slnpath,
-            "-t:Clean;Restore;Build",
-            f"-p:Configuration={config}",
-        ]
+            "-c",
+            f"{config}",
+        ],
+        dump_stdout=print_output
     )
-    passed, report = utils.parse_msbuild_output(report)
+    passed, report = utils.parse_dotnet_build_output(report)
     if not passed:
         _abort(report)
     else:
@@ -44,8 +46,7 @@ def _build(name: str, sln: str, config: str):
 
 def build_engines(_: Dict[str, str]):
     """Build pyRevit engines"""
-    _build("default ironpython engine", configs.LOADERS, "Release")
-    _build("ironpython 2.7.* engines", configs.LOADERS, "Release")
+    _build("ironpython engines", configs.LOADERS, "Release")
     _build("cpython 3.7 engine", configs.CPYTHONRUNTIME, "ReleasePY37")
     _build("cpython 3.8 engine", configs.CPYTHONRUNTIME, "ReleasePY38")
 

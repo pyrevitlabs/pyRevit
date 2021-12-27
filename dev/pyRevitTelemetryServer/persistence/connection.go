@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"../cli"
+	"pyrevittelemetryserver/cli"
 )
 
 type ConnectionStatus struct {
