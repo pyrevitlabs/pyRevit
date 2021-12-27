@@ -110,7 +110,7 @@ jobs:
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
       - name: Generate Release Notes
-        if: (github.ref == 'refs/heads/master')
+        if: (github.base_ref == env.ReleaseBranch)
         env:
           GITHUBTOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
