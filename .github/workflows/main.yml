@@ -127,7 +127,7 @@ jobs:
         env:
           GITHUBTOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pipenv run pyrevit report changelog > release_notes.md
+          pipenv run pyrevit report releasenotes > release_notes.md
 
       # RELEASE only
       - name: Configure Push Credentials

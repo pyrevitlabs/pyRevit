@@ -6,10 +6,12 @@ from typing import Dict
 from collections import namedtuple, defaultdict
 
 # dev scripts
+from scripts import configs
 from scripts import utils
 from scripts import github
 
 import _props as props
+import _changelog as changelog
 
 
 logger = logging.getLogger()
@@ -128,9 +130,10 @@ def find_changes(gitlog_report: str, fetch_info: bool = True):
         cline = changelines[idx]
         parts = cline.split(" ", 1)
         if len(parts) != 2:
+            idx += 1
             continue
         chash, cmsg = parts
-        print(f"commit -> {chash}: {cmsg}")
+        # print(f"commit -> {chash}: {cmsg}")
         # grab all the comments lines
         idx += 1
         ccmt = ""
@@ -166,21 +169,26 @@ def report_changelog(args: Dict[str, str]):
     target_tag = args["<tag>"]
     if not target_tag:
         # get the latest tag
-        latest_tag_hash = utils.system(
-            ["git", "rev-list", "--tags", "--max-count=1"]
+        latest_tag = utils.system(
+            [
+                "git",
+                "for-each-ref",
+                "refs/tags/v*",
+                "--sort=-creatordate",
+                "--format=%(refname)",
+                "--count=1",
+            ]
         )
-        latest_tag = utils.system(["git", "describe", latest_tag_hash])
-        target_tag = latest_tag
+        target_tag = latest_tag.replace("refs/tags/", "")
+        args["<tag>"] = target_tag
 
-    tag_hash = utils.system(["git", "rev-parse", f"{target_tag}"])
-    print(f"Target tag is: {target_tag}")
-    print(f"Target tag hash is: {tag_hash}")
+    # print(f"Target tag is: {target_tag}")
 
     gitlog_report = utils.system(
-        ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag_hash}..HEAD"]
+        ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{target_tag}..HEAD"]
     )
 
-    print("Parsing git log for changes...")
+    # print("Parsing git log for changes...")
     changes = find_changes(gitlog_report, fetch_info=True)
 
     # groups changes (and purge)
@@ -210,9 +218,62 @@ def report_changelog(args: Dict[str, str]):
             for todo in change.todos:
                 print(f"    - [ ] {todo}")
 
+
+def generate_release_notes(args: Dict[str, str]):
+    """Generate release notes from given <tag> to HEAD
+    Queries github issue information for better reporting
+    """
+    # print downloads section
     build_version = props.get_version()
-    print(
-        "\n"
-        f"**Full Changelog**: https://github.com/eirannejad/pyRevit/"
-        f"compare/{target_tag}...v{build_version}"
+
+    build_version_urlsafe = build_version.replace("+", "%2B")
+    base_url = (
+        "https://github.com/eirannejad/pyRevit/"
+        f"releases/download/v{build_version_urlsafe}/"
     )
+
+    # add easy download links
+    print("# Downloads")
+    pyrevit_installer = (
+        configs.PYREVIT_INSTALLER_NAME.format(version=build_version) + ".exe"
+    )
+    print(
+        "- [pyRevit {version} Installer]({url})".format(
+            version=build_version, url=base_url + pyrevit_installer
+        )
+    )
+
+    pyrevit_admin_installer = (
+        configs.PYREVIT_ADMIN_INSTALLER_NAME.format(version=build_version)
+        + ".exe"
+    )
+    print(
+        "- [pyRevit {version} Installer - "
+        "Admin / All Users / %PROGRAMDATA%]({url})".format(
+            version=build_version, url=base_url + pyrevit_admin_installer
+        )
+    )
+
+    pyrevit_cli_installer = (
+        configs.PYREVIT_CLI_INSTALLER_NAME.format(version=build_version)
+        + ".exe"
+    )
+    print(
+        "- [pyRevit CLI {version} Installer]({url})".format(
+            version=build_version, url=base_url + pyrevit_cli_installer
+        )
+    )
+
+    pyrevit_cli_admin_installer = (
+        configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=build_version)
+        + ".exe"
+    )
+    print(
+        "- [pyRevit CLI {version} Installer - "
+        "Admin / All Users / %PROGRAMDATA%]({url})".format(
+            version=build_version, url=base_url + pyrevit_cli_admin_installer
+        )
+    )
+
+    # output change log
+    changelog.report_changelog(args)
