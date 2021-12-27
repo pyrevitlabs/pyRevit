@@ -49,10 +49,21 @@ jobs:
       - name: Check Build Environment
         run: pipenv run pyrevit check
 
-      - name: Update Build Info
+      - name: Update Copyright Info
         run: |
           pipenv run pyrevit set year
-          pipenv run pyrevit set build
+
+      # WIP only
+      - name: Update Build Info (WIP)
+        if: (github.base_ref != env.ReleaseBranch)
+        run: |
+          pipenv run pyrevit set build wip
+
+      # RELEASE only
+      - name: Update Build Info (Release)
+        if: (github.base_ref == env.ReleaseBranch)
+        run: |
+          pipenv run pyrevit set build release
 
       - name: Publish Build Info
         run: |
@@ -96,6 +107,7 @@ jobs:
           folder: "dist"
           recursive: true
 
+      # WIP only
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
@@ -109,7 +121,7 @@ jobs:
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
-      # steps from here on only run when merging to master
+      # RELEASE only
       - name: Generate Release Notes
         if: (github.base_ref == env.ReleaseBranch)
         env:
@@ -117,13 +129,15 @@ jobs:
         run: |
           pipenv run pyrevit report changelog > release_notes.md
 
-      - name: Configure GIT
+      # RELEASE only
+      - name: Configure Push Credentials
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
           git config user.name 'Ehsan Iran-Nejad'
           git config user.email eirannejad@gmail.com
 
+      # RELEASE only
       - name: Commit & Tag Changes
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
@@ -132,6 +146,7 @@ jobs:
           git push
           git push --tags
 
+      # RELEASE only
       - name: Publish Release
         if: (github.base_ref == env.ReleaseBranch)
         uses: softprops/action-gh-release@v1
@@ -149,7 +164,8 @@ jobs:
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
-      - name: Merge Master
+      # RELEASE only
+      - name: Merge To Master
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |

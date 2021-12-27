@@ -159,7 +159,7 @@ def header(text: str, level: int = 2):
     print("#" * level + f" {text}")
 
 
-def report_clog(args: Dict[str, str]):
+def report_changelog(args: Dict[str, str]):
     """Report changes from given <tag> to HEAD
     Queries github issue information for better reporting
     """
@@ -210,10 +210,9 @@ def report_clog(args: Dict[str, str]):
             for todo in change.todos:
                 print(f"    - [ ] {todo}")
 
-    if not props.is_wip_build(args):
-        build_version = props.get_version()
-        print(
-            "\n"
-            f"**Full Changelog**: https://github.com/eirannejad/pyRevit/"
-            f"compare/{target_tag}...v{build_version}"
-        )
+    build_version = props.get_version()
+    print(
+        "\n"
+        f"**Full Changelog**: https://github.com/eirannejad/pyRevit/"
+        f"compare/{target_tag}...v{build_version}"
+    )

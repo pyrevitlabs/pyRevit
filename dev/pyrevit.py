@@ -115,13 +115,13 @@ COMMANDS = [
     # manual data setters
     Command(name="set", target="year", args=[], run=props.set_year),
     Command(name="set", target="version", args=["<ver>"], run=props.set_ver),
-    Command(name="set", target="build", args=[], run=props.set_build_ver),
+    Command(name="set", target="build", args=["<build>"], run=props.set_build_ver),
     Command(name="set", target="products", args=[], run=release.set_product_data),
     Command(name="set", target="locales", args=[], run=props.set_locales),
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),
-    Command(name="report", target="changelog", args=[], run=clog.report_clog),
+    Command(name="report", target="changelog", args=[], run=clog.report_changelog),
     # misc
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
