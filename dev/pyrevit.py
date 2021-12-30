@@ -121,7 +121,7 @@ COMMANDS = [
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),
-    Command(name="report", target="changelog", args=[], run=clog.report_changelog),
+    Command(name="report", target="changelog", args=["[<tag>]"], run=clog.report_changelog),
     Command(name="report", target="releasenotes", args=[], run=clog.generate_release_notes),
     # misc
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),

@@ -127,7 +127,7 @@ jobs:
       - name: Generate Release Notes
         if: (github.base_ref == env.ReleaseBranch)
         env:
-          GITHUBTOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit report releasenotes > release_notes.md
 
