@@ -51,7 +51,11 @@ def get_version():
 
 def set_year(_: Dict[str, str]):
     """Update copyright notice"""
-    this_year = datetime.datetime.today().year
+    today = datetime.datetime.today()
+    this_year = today.year
+    # this is more flexible than: if today.month == 12:
+    if (datetime.datetime(this_year + 1, 1, 1) - today).days < 30:
+        this_year += 1
     cp_finder = re.compile(r"© 2014-\d{4}")
     new_copyright = f"© 2014-{this_year}"
     print(f'Updating copyright notice to "{new_copyright}"...')
