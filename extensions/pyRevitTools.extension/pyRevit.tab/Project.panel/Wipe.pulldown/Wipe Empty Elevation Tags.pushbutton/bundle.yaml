@@ -1,1 +1,6 @@
-tooltip: Genrally if all elevations creates by an elevation tag are deleted from the model, the empty elevation tag still remains in its location. This script will delete all empty elevation tags from the model
+title:
+  fr_fr: Supprimer les étiquettes d'élévation vides
+  en_us: Wipe Empty Elevation Tags
+tooltip:
+  fr_fr: En général, si toutes les élévations créées par une étiquette d'élévation sont supprimées du modèle, l'étiquette d'élévation vide reste toujours à son emplacement. Ce script supprimera toutes les étiquettes d'élévation vides du modèle
+  en_us: Generally if all elevations creates by an elevation tag are deleted from the model, the empty elevation tag still remains in its location. This script will delete all empty elevation tags from the model

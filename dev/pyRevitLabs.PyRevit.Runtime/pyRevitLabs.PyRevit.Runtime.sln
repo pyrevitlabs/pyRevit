@@ -3,28 +3,38 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime", "pyRevitLabs.PyRevit.Runtime.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2021", "pyRevitLabs.PyRevit.Runtime.2021.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2017", "pyRevitLabs.PyRevit.Runtime2017.csproj", "{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2017", "pyRevitLabs.PyRevit.Runtime.2017.csproj", "{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2018", "pyRevitLabs.PyRevit.Runtime2018.csproj", "{8CEA0B80-D74F-411F-A607-DC1599AA934E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2018", "pyRevitLabs.PyRevit.Runtime.2018.csproj", "{8CEA0B80-D74F-411F-A607-DC1599AA934E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2019", "pyRevitLabs.PyRevit.Runtime2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2019", "pyRevitLabs.PyRevit.Runtime.2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime2020", "pyRevitLabs.PyRevit.Runtime2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2020", "pyRevitLabs.PyRevit.Runtime.2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "modules", "modules", "{79D470EE-3B43-4186-8E04-FA7742AB6B55}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Python.Runtime", "..\modules\pyRevitLabs.Python.Net\src\runtime\Python.Runtime.csproj", "{097B4AC0-74E9-4C58-BCF8-C69746EC8271}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2022", "pyRevitLabs.PyRevit.Runtime.2022.csproj", "{DB535262-30DA-404D-A32E-F024FF37935C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 		ReleasePY37|Any CPU = ReleasePY37|Any CPU
 		ReleasePY37|x64 = ReleasePY37|x64
 		ReleasePY38|Any CPU = ReleasePY38|Any CPU
 		ReleasePY38|x64 = ReleasePY38|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{479435EA-C820-49E4-942F-1274C151EE71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{479435EA-C820-49E4-942F-1274C151EE71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{479435EA-C820-49E4-942F-1274C151EE71}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{479435EA-C820-49E4-942F-1274C151EE71}.Debug|x64.Build.0 = Debug|Any CPU
+		{479435EA-C820-49E4-942F-1274C151EE71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{479435EA-C820-49E4-942F-1274C151EE71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{479435EA-C820-49E4-942F-1274C151EE71}.Release|x64.ActiveCfg = Release|x64
+		{479435EA-C820-49E4-942F-1274C151EE71}.Release|x64.Build.0 = Release|x64
 		{479435EA-C820-49E4-942F-1274C151EE71}.ReleasePY37|Any CPU.ActiveCfg = Release|x64
 		{479435EA-C820-49E4-942F-1274C151EE71}.ReleasePY37|Any CPU.Build.0 = Release|x64
 		{479435EA-C820-49E4-942F-1274C151EE71}.ReleasePY37|x64.ActiveCfg = Release|x64
@@ -33,6 +43,14 @@ Global
 		{479435EA-C820-49E4-942F-1274C151EE71}.ReleasePY38|Any CPU.Build.0 = Release|x64
 		{479435EA-C820-49E4-942F-1274C151EE71}.ReleasePY38|x64.ActiveCfg = Release|x64
 		{479435EA-C820-49E4-942F-1274C151EE71}.ReleasePY38|x64.Build.0 = Release|x64
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Debug|x64.Build.0 = Debug|Any CPU
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Release|x64.ActiveCfg = Release|x64
+		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.Release|x64.Build.0 = Release|x64
 		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.ReleasePY37|Any CPU.ActiveCfg = Release|x64
 		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.ReleasePY37|Any CPU.Build.0 = Release|x64
 		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.ReleasePY37|x64.ActiveCfg = Release|x64
@@ -41,6 +59,14 @@ Global
 		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.ReleasePY38|Any CPU.Build.0 = Release|x64
 		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.ReleasePY38|x64.ActiveCfg = Release|x64
 		{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}.ReleasePY38|x64.Build.0 = Release|x64
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Debug|x64.Build.0 = Debug|Any CPU
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Release|x64.ActiveCfg = Release|x64
+		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.Release|x64.Build.0 = Release|x64
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.ReleasePY37|Any CPU.ActiveCfg = Release|x64
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.ReleasePY37|Any CPU.Build.0 = Release|x64
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.ReleasePY37|x64.ActiveCfg = Release|x64
@@ -49,6 +75,14 @@ Global
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.ReleasePY38|Any CPU.Build.0 = Release|x64
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.ReleasePY38|x64.ActiveCfg = Release|x64
 		{8CEA0B80-D74F-411F-A607-DC1599AA934E}.ReleasePY38|x64.Build.0 = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Debug|x64.Build.0 = Debug|Any CPU
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|x64.ActiveCfg = Release|x64
+		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.Release|x64.Build.0 = Release|x64
 		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.ReleasePY37|Any CPU.ActiveCfg = Release|x64
 		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.ReleasePY37|Any CPU.Build.0 = Release|x64
 		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.ReleasePY37|x64.ActiveCfg = Release|x64
@@ -57,6 +91,14 @@ Global
 		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.ReleasePY38|Any CPU.Build.0 = Release|x64
 		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.ReleasePY38|x64.ActiveCfg = Release|x64
 		{EFBE5B7E-227A-4122-98D7-D1F353AAF157}.ReleasePY38|x64.Build.0 = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Debug|x64.Build.0 = Debug|Any CPU
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Release|x64.ActiveCfg = Release|x64
+		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.Release|x64.Build.0 = Release|x64
 		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.ReleasePY37|Any CPU.ActiveCfg = Release|x64
 		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.ReleasePY37|Any CPU.Build.0 = Release|x64
 		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.ReleasePY37|x64.ActiveCfg = Release|x64
@@ -65,20 +107,25 @@ Global
 		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.ReleasePY38|Any CPU.Build.0 = Release|x64
 		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.ReleasePY38|x64.ActiveCfg = Release|x64
 		{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}.ReleasePY38|x64.Build.0 = Release|x64
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY37|Any CPU.ActiveCfg = ReleasePY37|Any CPU
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY37|Any CPU.Build.0 = ReleasePY37|Any CPU
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY37|x64.ActiveCfg = ReleasePY37|Any CPU
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY37|x64.Build.0 = ReleasePY37|Any CPU
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY38|Any CPU.ActiveCfg = ReleasePY38|Any CPU
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY38|Any CPU.Build.0 = ReleasePY38|Any CPU
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY38|x64.ActiveCfg = ReleasePY38|Any CPU
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271}.ReleasePY38|x64.Build.0 = ReleasePY38|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Debug|x64.Build.0 = Debug|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Release|x64.ActiveCfg = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.Release|x64.Build.0 = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY37|Any CPU.ActiveCfg = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY37|Any CPU.Build.0 = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY37|x64.ActiveCfg = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY37|x64.Build.0 = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY38|Any CPU.ActiveCfg = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY38|Any CPU.Build.0 = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY38|x64.ActiveCfg = Release|Any CPU
+		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY38|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{097B4AC0-74E9-4C58-BCF8-C69746EC8271} = {79D470EE-3B43-4186-8E04-FA7742AB6B55}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B7C859D3-5930-40E5-A8DA-A9A71915EC30}

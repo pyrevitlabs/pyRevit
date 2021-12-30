@@ -1,10 +1,16 @@
-tooltip: >-
-  Keep views synchronized. This means that as you pan and zoom and
-
-  switch between Plan and RCP views, this tool will keep the views
-
-  in the same zoomed area so you can keep working in the same
-
-  area without the need to zoom and pan again.
-
-  This tool works best when the views are maximized
+title:
+  fr_fr: Synchro Vues
+  en_us: Sync Views
+tooltip:
+  fr_fr: >-
+     Gardez les vues synchronisées. Cela signifie que lorsque vous effectuez un panoramique, un zoom et
+     basculez entre les vues Plan et Plans de plafond, cet outil conservera les vues
+     dans la même zone zoomée afin que vous puissiez continuer à travailler dans le même
+     zone sans avoir besoin de zoomer et de faire un panoramique à nouveau.
+     Cet outil fonctionne mieux lorsque les vues sont maximisées
+  en_us: >-
+    Keep views synchronized. This means that as you pan and zoom and
+    switch between Plan and RCP views, this tool will keep the views
+    in the same zoomed area so you can keep working in the same
+    area without the need to zoom and pan again.
+    This tool works best when the views are maximized

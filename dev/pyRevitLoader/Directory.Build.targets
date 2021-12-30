@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup Condition="$(UseRunner)=='' OR $(UseRunner)==False">
+        <Compile Include="Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs" />
+        <Compile Include="Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(UseRunner)==True">
+        <Compile Include="Source\PyRevitRunnerApplication.cs" Link="Source\PyRevitRunnerApplication.cs" />
+        <Compile Include="Source\PyRevitRunnerCommand.cs" Link="Source\PyRevitRunnerCommand.cs" />
+        <Compile Include="Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(UsePyRevitIronPython)=='' OR $(UsePyRevitIronPython)==False">
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\IronPython.dll" />
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\IronPython.Modules.dll" />
+        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\IronPython.SQLite.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\IronPython.Wpf.dll" />
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\Microsoft.Dynamic.dll" />
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\Microsoft.Scripting.dll" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(UsePyRevitIronPython)==True">
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.dll" />
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.Modules.dll" />
+        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.SQLite.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.Wpf.dll" />
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Dynamic.dll" />
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Scripting.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="AdWindows" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\AdWindows.dll" />
+        <Reference Include="UIFramework" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\UIFramework.dll" />
+        <Reference Include="RevitAPI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPI.dll" />
+        <Reference Include="RevitAPIUI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPIUI.dll" />
+        <Reference Include="Xceed.Wpf.AvalonDock" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\Xceed.Wpf.AvalonDock.dll" />
+        <Reference  Include="Microsoft.CSharp" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)" />
+    </ItemGroup>
+
+    <Target Name="Deploy" AfterTargets="AfterBuild">
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
+    </Target>
+
+    <Import Project="../Directory.Build.targets" />
+</Project>

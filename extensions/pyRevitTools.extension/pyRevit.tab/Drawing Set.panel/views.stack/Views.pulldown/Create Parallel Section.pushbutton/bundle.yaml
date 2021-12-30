@@ -1,1 +1,6 @@
-tooltip: Create section parallel to the plane of selected walls or planar element
+title:
+  fr_fr: Créer une coupe parallèle
+  en_us: Create Parallel Section
+tooltip:
+  fr_fr: Créer une coupe parallèle au plan des murs ou de l'élément planaire sélectionné
+  en_us: Create section parallel to the plane of selected walls or planar element

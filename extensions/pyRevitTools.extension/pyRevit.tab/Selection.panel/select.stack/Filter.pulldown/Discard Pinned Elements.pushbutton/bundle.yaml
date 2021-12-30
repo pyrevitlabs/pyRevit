@@ -1,2 +1,7 @@
-tooltip: Discards (not delete) pinned elements from current selection
+title:
+  fr_fr: Enlève les éléments épinglés
+  en_us: Discard Pinned Elements
+tooltip:
+  fr_fr: Enlève (ne supprime pas) les éléments épinglés de la sélection courante
+  en_us: Discards (not delete) pinned elements from current selection
 context: Selection

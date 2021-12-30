@@ -1,1 +1,6 @@
-tooltip: Moves all Filled Regions on the seleced views back-and-forth by a tiny amount to push Revit to regenerate the filled region and update the display. This tool is meant to be used in conjunction with the "Convert Line Styles" tool. The convert tool updates the line styles inside Filled region but does not currently shake the filled regions (Revit crashes on large models.)
+title:
+  fr_fr: Agiter les zones remplies
+  en_us: Shake filled regions
+tooltip:
+  fr_fr: Déplace puis replace toutes les zones remplies dans les vues sélectionnées afin de forcer Revit à régénérer les vues. Cet outil est conçu pour être utilisé avec l'outil "Convertir les styles de lignes". L'outil de conversion met à jour les styles de lignes dans les zones remplies mais n'agite pas les zones remplies (Revit tend à crasher sur les grands modèles)
+  en_us: Moves all Filled Regions on the seleced views back-and-forth by a tiny amount to push Revit to regenerate the filled region and update the display. This tool is meant to be used in conjunction with the "Convert Line Styles" tool. The convert tool updates the line styles inside Filled region but does not currently shake the filled regions (Revit crashes on large models.)

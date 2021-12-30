@@ -1,1 +1,6 @@
-tooltip: Lists all view templates and the filters that has been assigned to each
+title:
+  fr_fr: Trouver les filtres de gabarits de vue utilisés
+  en_us: Find Used View Templates Filters
+tooltip:
+  fr_fr: Répertorie tous les gabartis de vue et les filtres qui ont été attribués à chacun
+  en_us: Lists all view templates and the filters that has been assigned to each

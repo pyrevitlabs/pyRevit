@@ -1,2 +1,7 @@
-tooltip: Get information from a RVT file
+title:
+  fr_fr: Obtenir les infos d'un RVT
+  en_us: Get RVT Info
+tooltip:
+  fr_fr: Obtenir les informations d'un fichier RVT
+  en_us: Get information from a RVT file
 context: zero-doc

@@ -3,7 +3,8 @@ package persistence
 import (
 	"strings"
 
-	"../cli"
+	"pyrevittelemetryserver/cli"
+
 	"github.com/pkg/errors"
 )
 

@@ -1,1 +1,11 @@
-tooltip: Changes the selected view names
+title:
+  fr_fr: |-
+    Renommer les vues sélectionnées
+  en_us: |-
+    Rename Selected Views
+tooltip:
+  fr_fr: |-
+    Changer le nom des vues sélectionnées
+  en_us: |-
+    Changes the selected view names
+

@@ -26,5 +26,10 @@ with revit.Transaction("Rhino.Inside Sample7"):
     category = DB.ElementId(DB.BuiltInCategory.OST_GenericModel)
     ds = DB.DirectShape.CreateElement(revit.doc, category)
 
-    for geometry in Enumerable.ToList(Convert.ToHost(meshes)):
-        ds.AppendShape(geometry)
+    solids = []
+    for mesh in meshes:
+        solid = Convert.Geometry.GeometryEncoder.ToSolid(mesh)
+        solids.append(solid)
+    
+    for geometry in solids:
+        ds.AppendShape([geometry])

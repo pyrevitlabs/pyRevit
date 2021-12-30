@@ -71,10 +71,20 @@ class NoScriptButton(GenericUICommand):
         assm_file = self.assembly.lower()
         if not assm_file.endswith(framework.ASSEMBLY_FILE_TYPE):
             assm_file += '.' + framework.ASSEMBLY_FILE_TYPE
+
+        # try finding assembly for this specific host version
+        target_asm_by_host = self.find_bundle_module(assm_file, by_host=True)
+        if target_asm_by_host:
+            return target_asm_by_host
+        # try find assembly by its name
         target_asm = self.find_bundle_module(assm_file)
-        if not target_asm and required:
+        if target_asm:
+            return target_asm
+
+        if required:
             mlogger.error("%s can not find target assembly.", self)
-        return target_asm or ''
+
+        return ''
 
 
 class LinkButton(NoScriptButton):

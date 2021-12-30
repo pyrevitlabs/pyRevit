@@ -1,12 +1,17 @@
-tooltip: >-
-  Reduce the list of open Revit tabs
-
-
-  Shift+Click:
-
-  Customize which tabs should be hidden in minified mode
-title: >-
-  Minify
-
-  Revit UI
+title:
+  fr_fr: Minimiser UI Revit
+  en_us: Minify Revit UI
+tooltip:
+  fr_fr: >-
+     Réduire la liste des onglets Revit ouverts
+    
+     Shift+Clic :
+    
+     Personnalisez les onglets à masquer en mode minimisé
+  en_us: >-
+    Reduce the list of open Revit tabs
+    
+    Shift+Click:
+    
+    Customize which tabs should be hidden in minified mode
 context: zero-doc

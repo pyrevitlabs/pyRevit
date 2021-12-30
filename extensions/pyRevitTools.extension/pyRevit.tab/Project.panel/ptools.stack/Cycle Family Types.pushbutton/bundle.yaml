@@ -1,5 +1,9 @@
-tooltip: Cycle family types
-title: Cycle Types
+title:
+  fr_fr: Parcourir les types
+  en_us: Cycle Types
+tooltip:
+  fr_fr: Parcourir les types de familles
+  en_us: Cycle family types
 context: doc-family
 authors:
   - '{{author}}'

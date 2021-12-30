@@ -1,250 +1,47 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{34A98B57-8933-48CF-BC4E-50D700975128}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <RootNamespace>pyRevitWPFForms</RootNamespace>
-    <AssemblyName>pyRevitWPFForms</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <WarningLevel>4</WarningLevel>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+  
   <ItemGroup>
-    <Reference Include="PresentationFramework.Aero2" />
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xaml">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="WindowsBase" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\BaseWindow.xaml" Link="Forms\BaseWindow.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\CommandSwitchWindow.xaml" Link="Forms\CommandSwitchWindow.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\FamilyParameterItemStyle.xaml" Link="Forms\FamilyParameterItemStyle.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\GetValueWindow.xaml" Link="Forms\GetValueWindow.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\ImageListContainerStyle.xaml" Link="Forms\ImageListContainerStyle.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\ImageListPanelStyle.xaml" Link="Forms\ImageListPanelStyle.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\ParameterItemStyle.xaml" Link="Forms\ParameterItemStyle.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\ProgressBar.xaml" Link="Forms\ProgressBar.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\SearchPrompt.xaml" Link="Forms\SearchPrompt.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\SelectFromList.xaml" Link="Forms\SelectFromList.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\SwatchContainerStyle.xaml" Link="Forms\SwatchContainerStyle.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\TemplatePromptBar.xaml" Link="Forms\TemplatePromptBar.xaml" />
+    <Page Include="$(PyRevitLibDir)\pyrevit\forms\WarningBar.xaml" Link="Forms\WarningBar.xaml" />
+
+    <Page Include="$(PyRevitExtDir)\pyRevitCore.extension\pyRevit.tab\pyRevit.panel\About.pushbutton\AboutWindow.xaml" Link="Core\AboutWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitCore.extension\pyRevit.tab\pyRevit.panel\Extensions.smartbutton\ExtensionsWindow.xaml" Link="Core\ExtensionsWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitCore.extension\pyRevit.tab\pyRevit.panel\Settings.smartbutton\SettingsWindow.xaml" Link="Core\SettingsWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\DockableExample.xaml" Link="Dev\DockableExample.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Engine Tests.pulldown\Test Persistent Engine.pushbutton\NonModalWindow.xaml" Link="Dev\NonModalWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Logs.pushbutton\LogViewerWindow.xaml" Link="Debug\LogViewerWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test Sensors.pushbutton\sensors.xaml" Link="Dev\sensors.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML.pushbutton\ui.xaml" Link="Dev\ui.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\ManagePackagesWindow.xaml" Link="Tags\ManagePackagesWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\PackagesDataTemplate.xaml" Link="Tags\PackagesDataTemplate.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Tags.pushbutton\ManageTagsWindow.xaml" Link="Tags\ManageTagsWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Tag.pushbutton\ApplyTagWindow.xaml" Link="Tags\ApplyTagWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\TagsConfig.panelbutton\TagsConfigsWindow.xaml" Link="Tags\TagsConfigsWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\EditRecord.xaml" Link="Tools\KeynoteManager\EditRecord.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\KeynoteManagerWindow.xaml" Link="Tools\KeynoteManager\KeynoteManagerWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print Sheets.pushbutton\EditNamingFormats.xaml" Link="Tools\Print Sheets\EditNamingFormats.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print Sheets.pushbutton\PrintSheets.xaml" Link="Tools\Print Sheets\PrintSheets.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Batch Sheet Maker.pushbutton\BatchSheetMakerWindow.xaml" Link="Tools\BatchSheetMakerWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\ReOrder Sheets.pushbutton\ReOrderWindow.xaml" Link="Tools\ReOrderWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindow.xaml" Link="Tools\MatchConfigWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindowLegacy.xaml" Link="Tools\MatchConfigWindowLegacy.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Patterns.splitpushbutton\Make Pattern.pushbutton\MakePatternWindow.xaml" Link="Tools\MakePatternWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit2.stack\ReValue.pushbutton\ReValueWindow.xaml" Link="Tools\ReValueWindow.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit3.stack\Edit.pulldown\Convert Line Styles.pushbutton\ConvertLineStyles.xaml" Link="Tools\ConvertLineStyles.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\PreflightCheckTemplate.xaml" Link="Tools\PreflightCheckTemplate.xaml" />
   </ItemGroup>
-  <ItemGroup>
-    <Page Include="..\..\extensions\pyRevitCore.extension\pyRevit.tab\pyRevit.panel\About.pushbutton\AboutWindow.xaml">
-      <Link>Core\AboutWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitCore.extension\pyRevit.tab\pyRevit.panel\Extensions.smartbutton\ExtensionsWindow.xaml">
-      <Link>Core\ExtensionsWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitCore.extension\pyRevit.tab\pyRevit.panel\Settings.smartbutton\SettingsWindow.xaml">
-      <Link>Core\SettingsWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitDevTools.extension\DockableExample.xaml">
-      <Link>Dev\DockableExample.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Engine Tests.pulldown\Test Persistent Engine.pushbutton\NonModalWindow.xaml">
-      <Link>Dev\NonModalWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Logs.pushbutton\LogViewerWindow.xaml">
-      <Link>Debug\LogViewerWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test Sensors.pushbutton\sensors.xaml">
-      <Link>Dev\sensors.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML.pushbutton\ui.xaml">
-      <Link>Dev\ui.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\ManagePackagesWindow.xaml">
-      <Link>Tags\ManagePackagesWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\PackagesDataTemplate.xaml">
-      <Link>Tags\PackagesDataTemplate.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Tags.pushbutton\ManageTagsWindow.xaml">
-      <Link>Tags\ManageTagsWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Tag.pushbutton\ApplyTagWindow.xaml">
-      <Link>Tags\ApplyTagWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\TagsConfig.panelbutton\TagsConfigsWindow.xaml">
-      <Link>Tags\TagsConfigsWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\EditRecord.xaml">
-      <Link>Tools\KeynoteManager\EditRecord.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\KeynoteManagerWindow.xaml">
-      <Link>Tools\KeynoteManager\KeynoteManagerWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print Sheets.pushbutton\EditNamingFormats.xaml">
-      <Link>Tools\Print Sheets\EditNamingFormats.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print Sheets.pushbutton\PrintSheets.xaml">
-      <Link>Tools\Print Sheets\PrintSheets.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Batch Sheet Maker.pushbutton\BatchSheetMakerWindow.xaml">
-      <Link>Tools\BatchSheetMakerWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\ReOrder Sheets.pushbutton\ReOrderWindow.xaml">
-      <Link>Tools\ReOrderWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindow.xaml">
-      <Link>Tools\MatchConfigWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindowLegacy.xaml">
-      <Link>Tools\MatchConfigWindowLegacy.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Patterns.splitpushbutton\Make Pattern.pushbutton\MakePatternWindow.xaml">
-      <Link>Tools\MakePatternWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit2.stack\ReValue.pushbutton\ReValueWindow.xaml">
-      <Link>Tools\ReValueWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit3.stack\Edit.pulldown\Convert Line Styles.pushbutton\ConvertLineStyles.xaml">
-      <Link>Tools\ConvertLineStyles.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\PreflightCheckTemplate.xaml">
-      <Link>Tools\PreflightCheckTemplate.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\BaseWindow.xaml">
-      <Link>Forms\BaseWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\CommandSwitchWindow.xaml">
-      <Link>Forms\CommandSwitchWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\FamilyParameterItemStyle.xaml">
-      <Link>Forms\FamilyParameterItemStyle.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\GetValueWindow.xaml">
-      <Link>Forms\GetValueWindow.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\ImageListContainerStyle.xaml">
-      <Link>Forms\ImageListContainerStyle.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\ImageListPanelStyle.xaml">
-      <Link>Forms\ImageListPanelStyle.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\ParameterItemStyle.xaml">
-      <Link>Forms\ParameterItemStyle.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\ProgressBar.xaml">
-      <Link>Forms\ProgressBar.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\SearchPrompt.xaml">
-      <Link>Forms\SearchPrompt.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\SelectFromList.xaml">
-      <Link>Forms\SelectFromList.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\SwatchContainerStyle.xaml">
-      <Link>Forms\SwatchContainerStyle.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\TemplatePromptBar.xaml">
-      <Link>Forms\TemplatePromptBar.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="..\..\pyrevitlib\pyrevit\forms\WarningBar.xaml">
-      <Link>Forms\WarningBar.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

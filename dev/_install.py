@@ -1,5 +1,6 @@
 """Manage tasks related to the build environment"""
 # pylint: disable=invalid-name,broad-except
+import os.path as op
 from collections import namedtuple
 from typing import Dict
 
@@ -9,11 +10,12 @@ RequiredTool = namedtuple("RequiredTool", ["name", "get", "step"])
 
 
 REQUIRED_TOOLS = [
-    RequiredTool(name="msbuild", get="", step="build"),
+    RequiredTool(name="dotnet", get="", step="build"),
     RequiredTool(name="go", get="", step="build"),
     RequiredTool(name="gcc", get="", step="build"),
-    RequiredTool(name="signtool", get="", step="release"),
-    RequiredTool(name="advancedinstaller.com", get="", step="release"),
+    RequiredTool(
+        name="iscc", get=r"C:\Program Files (x86)\Inno Setup 6", step="release"
+    ),
 ]
 
 
@@ -27,7 +29,7 @@ def check(_: Dict[str, str]):
     all_pass = True
     # check required tools
     for rtool in REQUIRED_TOOLS:
-        has_tool = utils.where(rtool.name)
+        has_tool = utils.where(op.join(rtool.get, rtool.name))
         if has_tool:
             print(utils.colorize(f"[ <grn>PASS</grn> ]\t{rtool.name} is ready"))
         else:

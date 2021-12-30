@@ -1,3 +1,6 @@
+title:
+  fr_fr: Nettoyage
+  en_us: Wipe
 layout:
   - Wipe Model Components
   - Wipe Attached Constraints

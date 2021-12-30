@@ -22,7 +22,7 @@ class AboutWindow(forms.WPFWindow):
         pyrvt_ver = versionmgr.get_pyrevit_version()
         nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
         short_version = \
-            ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
+            ' v{}'.format(pyrvt_ver.get_formatted(strict=True))
 
         self.branch_name = self.deployname = None
         # check to see if git repo is valid

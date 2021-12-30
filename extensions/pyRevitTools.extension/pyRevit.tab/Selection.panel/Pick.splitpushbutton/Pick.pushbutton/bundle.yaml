@@ -1,7 +1,16 @@
-tooltip: >-
-  Activates selection tool that picks a specific type of element
+title:
+  fr_fr: Sélectionner
+  en_us: Pick
+tooltip:
+  fr_fr: >-
+    Active l'outil de sélection qui sélectionne un type d'élément spécifique
 
+     Shift-Clic :
 
-  Shift-Click:
+     Choisissez vos favoris dans toutes les catégories disponibles
+  en_us: >-
+    Activates selection tool that picks a specific type of element
 
-  Pick favorites from all available categories
+    Shift-Click:
+
+    Pick favorites from all available categories

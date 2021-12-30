@@ -1,1 +1,10 @@
-tooltip: Opens the sheet containing this view and zooms to the viewport
+title:
+  fr_fr: |-
+    Ouvrir la feuille en référence
+  en_us: |-
+    Open Referecing Sheet
+tooltip:
+  fr_fr: |-
+    Ouvre la feuille contenant cette vue et effectue un zoom sur la fenêtre
+  en_us: |-
+    Opens the sheet containing this view and zooms to the viewport

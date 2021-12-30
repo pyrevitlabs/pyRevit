@@ -8,13 +8,14 @@ import requests
 logger = logging.getLogger()
 
 
-AUTH_TOKEN = os.environ.get("GITHUBAUTH", "")
+AUTH_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 API_ROOT = "https://api.github.com/repos/eirannejad/pyRevit/"
 
 API_ISSUES = API_ROOT + "issues/{ticket}"
 API_RELEASES = API_ROOT + "releases"
 
-TicketInfo = namedtuple("TicketInfo", ["url", "title", "data"])
+LabelInfo = namedtuple("LabelInfo", ["name", "description"])
+TicketInfo = namedtuple("TicketInfo", ["url", "title", "data", "labels"])
 ReleaseInfo = namedtuple("ReleaseInfo", ["name", "tag", "assets", "data"])
 AssetInfo = namedtuple("AssetInfo", ["name", "downloads", "data"])
 
@@ -35,7 +36,21 @@ def get_ticket(ticket: str):
     if res.ok:
         issue = res.json()
         logger.debug("found ticket %s", issue)
-        return TicketInfo(url=issue["url"], title=issue["title"], data=issue)
+        ticket_labels = []
+        if labels := issue.get("labels", []):
+            ticket_labels = [
+                LabelInfo(name=x["name"], description=x["description"])
+                for x in labels
+            ]
+        else:
+            ticket_labels = []
+
+        return TicketInfo(
+            url=issue["url"],
+            title=issue["title"],
+            data=issue,
+            labels=ticket_labels,
+        )
     return None
 
 

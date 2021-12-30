@@ -1,3 +1,8 @@
 help_url: '{{docpath}}-JDgiP3gK9Y'
-tooltip: Reformat parameter string values (Super handy for renaming elements)
+title:
+  fr_fr: ReValoriser
+  en_us: ReValue
+tooltip:
+  fr_fr: Reformater les valeurs textuelles des paramètres (Super pratique pour renommer des éléments)
+  en_us: Reformat parameter string values (Super handy for renaming elements)
 context: selection

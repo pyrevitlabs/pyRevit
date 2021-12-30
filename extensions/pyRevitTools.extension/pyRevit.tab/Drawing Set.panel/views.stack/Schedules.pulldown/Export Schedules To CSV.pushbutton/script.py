@@ -20,17 +20,18 @@ output = script.get_output()
 
 
 open_exported = False
+incl_headers = False
 basefolder = ''
 # if user shift-clicks, default to user desktop,
 # otherwise ask for a folder containing the PDF files
 if __shiftclick__:  #pylint: disable=E0602
     destopt, switches = forms.CommandSwitchWindow.show(
-        ["My Desktop", "Where Revit Model Is", "My Downloads"],
-        switches=["Open CSV File"],
+        ["My Desktop", "Where Revit Model Is", "My Downloads", "User Select"],
+        switches=["Open CSV File","Include Headers"],
         message="Select destination:")
     if destopt == "My Desktop":
         basefolder = op.expandvars('%userprofile%\\desktop')
-    if destopt == "My Downloads":
+    elif destopt == "My Downloads":
         basefolder = op.expandvars('%userprofile%\\downloads')
     elif destopt == "Where Revit Model Is":
         central_path = revit.query.get_central_path()
@@ -40,8 +41,10 @@ if __shiftclick__:  #pylint: disable=E0602
             basefolder = revit.query.get_project_info().location
             if not basefolder:
                 forms.alert("Project has not been saved yet.", exitscript=True)
-
+    elif destopt == "User Select":
+        basefolder = forms.pick_folder()
     open_exported = switches["Open CSV File"]
+    incl_headers = switches["Include Headers"]
 else:
     basefolder = forms.pick_folder()
 
@@ -52,7 +55,10 @@ if basefolder:
 
     if schedules_to_export:
         vseop = DB.ViewScheduleExportOptions()
-        vseop.ColumnHeaders = coreutils.get_enum_none(DB.ExportColumnHeaders)
+        if incl_headers:
+            vseop.ColumnHeaders = coreutils.get_enum_value(DB.ExportColumnHeaders,"OneRow")
+        else:
+            vseop.ColumnHeaders = coreutils.get_enum_none(DB.ExportColumnHeaders)
         vseop.TextQualifier = DB.ExportTextQualifier.DoubleQuote
 
         # determine which separator to use

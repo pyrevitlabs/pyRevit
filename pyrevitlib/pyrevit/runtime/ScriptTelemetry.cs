@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using System.Web.Script.Serialization;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Json;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class ScriptTelemetryRecordEngineInfo {
@@ -81,7 +81,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         type = runtime.EngineType.ToString().ToLower(),
                         version = runtime.EngineVersion,
                         syspath = runtime.ScriptRuntimeConfigs.SearchPaths,
-                        configs = new JavaScriptSerializer().Deserialize<Dictionary<string, string>>(runtime.ScriptRuntimeConfigs.EngineConfigs),
+                        configs = JsonConvert.DeserializeObject<Dictionary<string, string>>(runtime.ScriptRuntimeConfigs.EngineConfigs),
                     },
                     message = runtime.TraceMessage
                 }

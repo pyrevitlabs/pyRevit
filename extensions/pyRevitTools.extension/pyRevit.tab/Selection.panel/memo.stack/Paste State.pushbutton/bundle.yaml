@@ -1,12 +1,23 @@
-tooltip: >-
-  Applies the copied state to the active view
-
-  This works in conjunction with the Copy State tool
-
-
-  Shift-Click:
-
-  Show additional options
+title:
+  fr_fr: Coller l'état
+  en_us: Paste State
+tooltip:
+  fr_fr: >-
+   Applique l'état copié à la vue active
+   
+   Cela fonctionne en conjonction avec l'outil Copier l'état
+   
+   Shift-Clic :
+   
+   Afficher les options supplémentaires
+  en_us: >-
+    Applies the copied state to the active view
+    
+    This works in conjunction with the Copy State tool
+    
+    Shift-Click:
+    
+    Show additional options
 author: >-
   Gui Talarico
 

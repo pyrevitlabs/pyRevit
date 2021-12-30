@@ -1,8 +1,16 @@
-tooltip: >-
-  Selects all vertical(default) or horizontal reveals in the project
-
-
-  Shift-Click:
-
-  Select horizontal reveals
-title: Select Vertical/Horizontal Reveals
+title:
+  fr_fr: Sélectionner les profils verticaux/horizontaux
+  en_us: Select Vertical/Horizontal Reveals
+tooltip:
+  fr_fr: >-
+     Sélectionne tous les profils verticaux (par défaut) ou horizontaux dans le projet
+    
+     Shift-Clic :
+    
+     Sélectionnez les profils horizontaux
+  en_us: >-
+    Selects all vertical(default) or horizontal reveals in the project
+    
+    Shift-Click:
+    
+    Select horizontal reveals

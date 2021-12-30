@@ -1,8 +1,17 @@
-tooltip: >-
-  Adds the selected views (callouts, sections, elevations) to the selected sheets. Model views will only be added to the first selected sheet since they can not exist on multiple sheets. The command defaults to active view if no views are selected
-
-
-  Shift+Click:
-
-  Pick source views from list instead of selection or active view
+title:
+  fr_fr: Ajouter des vues aux feuilles
+  en_us: Add Views to Sheets
+tooltip:
+  fr_fr: >-
+     Ajoute les vues sélectionnées (légendes, coupes, élévations) aux feuilles sélectionnées. Les vues de modèle ne seront ajoutées qu'à la première feuille sélectionnée car elles ne peuvent pas exister sur plusieurs feuilles. La commande passe par défaut à la vue active si aucune vue n'est sélectionnée
+    
+     Shift+Clic :
+    
+     Choisissez les vues source dans la liste au lieu de la sélection ou de la vue active
+  en_us: >-
+    Adds the selected views (callouts, sections, elevations) to the selected sheets. Model views will only be added to the first selected sheet since they can not exist on multiple sheets. The command defaults to active view if no views are selected
+    
+    Shift+Click:
+    
+    Pick source views from list instead of selection or active view
 author: 'Dan Mapes'

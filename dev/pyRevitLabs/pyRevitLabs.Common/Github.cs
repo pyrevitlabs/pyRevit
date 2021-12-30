@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Web.Script.Serialization;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
