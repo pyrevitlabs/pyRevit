@@ -62,11 +62,16 @@ INSTALLER_FILES = [
     PYREVIT_ADMIN_CLI_INSTALLERFILE,
 ]
 
+PYREVIT_INSTALLER_NAME = "pyRevit_{version}_signed"
+PYREVIT_ADMIN_INSTALLER_NAME = "pyRevit_{version}_admin_signed"
+PYREVIT_CLI_INSTALLER_NAME = "pyRevit_CLI_{version}_signed"
+PYREVIT_CLI_ADMIN_INSTALLER_NAME = "pyRevit_CLI_{version}_admin_signed"
+
 INSTALLER_EXES = [
-    op.join(DISTRIBUTE_PATH, "pyRevit_{version}_signed"),
-    op.join(DISTRIBUTE_PATH, "pyRevit_{version}_admin_signed"),
-    op.join(DISTRIBUTE_PATH, "pyRevit_CLI_{version}_signed"),
-    op.join(DISTRIBUTE_PATH, "pyRevit_CLI_{version}_admin_signed"),
+    op.join(DISTRIBUTE_PATH, PYREVIT_INSTALLER_NAME),
+    op.join(DISTRIBUTE_PATH, PYREVIT_ADMIN_INSTALLER_NAME),
+    op.join(DISTRIBUTE_PATH, PYREVIT_CLI_INSTALLER_NAME),
+    op.join(DISTRIBUTE_PATH, PYREVIT_CLI_ADMIN_INSTALLER_NAME),
 ]
 
 PYREVIT_WIP_VERSION_EXT = "-wip"

@@ -30,8 +30,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.head_ref }}
+
+      - name: Configure Git Credentials
+        uses: fregante/setup-git-user@v1
 
       - name: Update Submodules
         uses: snickerbockers/submodules-init@v4
@@ -125,17 +127,9 @@ jobs:
       - name: Generate Release Notes
         if: (github.base_ref == env.ReleaseBranch)
         env:
-          GITHUBTOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pipenv run pyrevit report changelog > release_notes.md
-
-      # RELEASE only
-      - name: Configure Push Credentials
-        if: (github.base_ref == env.ReleaseBranch)
-        # configure git and commit changes
-        run: |
-          git config user.name 'Ehsan Iran-Nejad'
-          git config user.email eirannejad@gmail.com
+          pipenv run pyrevit report releasenotes > release_notes.md
 
       # RELEASE only
       - name: Commit & Tag Changes

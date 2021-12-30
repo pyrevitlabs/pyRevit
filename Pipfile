@@ -13,6 +13,7 @@ docopt = "*"
 requests = "*"
 pygount = "*"
 pyyaml = ">=5.4"
+black = "*"
 
 [requires]
 python_version = "3.9"
