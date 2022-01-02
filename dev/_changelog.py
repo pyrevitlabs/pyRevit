@@ -268,11 +268,13 @@ def generate_release_notes(args: Dict[str, str]):
 
     # add easy download links
     print("# Downloads")
+    print(":small_blue_diamond: See **Assets** section below for all download options")
+    print("### pyRevit")
     pyrevit_installer = (
         configs.PYREVIT_INSTALLER_NAME.format(version=build_version) + ".exe"
     )
     print(
-        "- [pyRevit {version} Installer]({url})".format(
+        "- :package: [pyRevit {version} Installer]({url})".format(
             version=build_version, url=base_url + pyrevit_installer
         )
     )
@@ -282,29 +284,30 @@ def generate_release_notes(args: Dict[str, str]):
         + ".exe"
     )
     print(
-        "- [pyRevit {version} Installer - "
-        "Admin / All Users / %PROGRAMDATA%]({url})".format(
+        "- :package: [pyRevit {version} Installer]({url}) "
+        "- Admin / All Users / %PROGRAMDATA%".format(
             version=build_version, url=base_url + pyrevit_admin_installer
         )
     )
 
-    pyrevit_cli_installer = (
-        configs.PYREVIT_CLI_INSTALLER_NAME.format(version=build_version)
-        + ".exe"
-    )
-    print(
-        "- [pyRevit CLI {version} Installer]({url})".format(
-            version=build_version, url=base_url + pyrevit_cli_installer
-        )
-    )
+    print("### pyRevit CLI (Command line utility)")
+    # pyrevit_cli_installer = (
+    #     configs.PYREVIT_CLI_INSTALLER_NAME.format(version=build_version)
+    #     + ".exe"
+    # )
+    # print(
+    #     "- [pyRevit CLI {version} Installer - User %PATH%]({url})".format(
+    #         version=build_version, url=base_url + pyrevit_cli_installer
+    #     )
+    # )
 
     pyrevit_cli_admin_installer = (
         configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=build_version)
         + ".exe"
     )
     print(
-        "- [pyRevit CLI {version} Installer - "
-        "Admin / All Users / %PROGRAMDATA%]({url})".format(
+        "- :package: [pyRevit CLI {version} Installer]({url}) "
+        "- Admin / System %PATH%".format(
             version=build_version, url=base_url + pyrevit_cli_admin_installer
         )
     )
