@@ -17,13 +17,13 @@ DEVPATH = op.join(ROOT, "dev")
 LABS = op.join(DEVPATH, "pyRevitLabs/pyRevitLabs.sln")
 DEFAULT_IPY = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
 LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
-CPYTHONRUNTIME = op.join(
-    DEVPATH, "modules/pyRevitLabs.Python.Net.sln"
-)
+CPYTHONRUNTIME = op.join(DEVPATH, "modules/pyRevitLabs.Python.Net.sln")
 DIRECTORY_BUILD_PROPS = op.join(DEVPATH, "Directory.Build.props")
 
 # cli autocomplete files
-USAGEPATTERNS = op.join(DEVPATH, "pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt")
+USAGEPATTERNS = op.join(
+    DEVPATH, "pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt"
+)
 AUTOCOMPPATH = "dev/pyRevitLabs/pyRevitCLIAutoComplete"
 AUTOCOMP = op.join(AUTOCOMPPATH, "pyrevit-autocomplete.go")
 AUTOCOMPBIN = op.join(BINPATH, "pyrevit-autocomplete.exe")
@@ -37,6 +37,10 @@ TELEMETRYSERVERBIN = op.join(BINPATH, "pyrevit-telemetryserver.exe")
 DOCS_DIR = op.join(ROOT, "docs")
 DOCS_BUILD = op.join(DOCS_DIR, "_build")
 DOCS_INDEX = op.join(DOCS_BUILD, "index.html")
+
+# python module
+PYREVIT_LIBS_PATH = op.join(ROOT, "pyrevitlib")
+PYREVIT_MODULE_PATH = op.join(PYREVIT_LIBS_PATH, "pyrevit")
 
 # release files
 # API file paths must be absolute otherwise advancedinstaller will mess up
@@ -74,8 +78,15 @@ INSTALLER_EXES = [
     op.join(DISTRIBUTE_PATH, PYREVIT_CLI_ADMIN_INSTALLER_NAME),
 ]
 
+# choco files
+PYREVIT_CHOCO_NUSPEC_FILE = op.join(RELEASE_PATH, "choco", "pyrevit-cli.nuspec")
+PYREVIT_CHOCO_INSTALL_FILE = op.join(
+    RELEASE_PATH, "choco/tools", "chocolateyinstall.ps1"
+)
+
 PYREVIT_WIP_VERSION_EXT = "-wip"
-PYREVIT_VERSION_FILE = op.join(ROOT, "pyrevitlib/pyrevit/version")
+PYREVIT_VERSION_FILE = op.join(PYREVIT_MODULE_PATH, "version")
+PYREVIT_INSTALL_VERSION_FILE = op.join(RELEASE_PATH, "version")
 
 # data files
 PYREVIT_HOSTS_DATAFILE = op.join(BINPATH, "pyrevit-hosts.json")
@@ -94,7 +105,7 @@ VERSION_FILES = [
 # files containing copyright notice
 COPYRIGHT_FILES = [
     DIRECTORY_BUILD_PROPS,
-    op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
+    op.join(PYREVIT_MODULE_PATH, "versionmgr/about.py"),
     op.join(DOCS_DIR, "conf.py"),
     op.join(ROOT, "README.md"),
     PYREVIT_INSTALLERFILE,
@@ -107,7 +118,7 @@ COMMIT_FILES = [
     AUTOCOMP,
     DIRECTORY_BUILD_PROPS,
     PYREVIT_VERSION_FILE,
-    op.join(ROOT, "pyrevitlib/pyrevit/versionmgr/about.py"),
+    op.join(PYREVIT_MODULE_PATH, "versionmgr/about.py"),
     op.join(DOCS_DIR, "conf.py"),
     op.join(ROOT, "README.md"),
     r"release\*",
@@ -116,7 +127,7 @@ COMMIT_FILES = [
 
 # all source file locations that are part of pyRevit project
 SOURCE_DIRS = [
-    op.join(ROOT, "pyrevitlib/pyrevit"),
+    PYREVIT_MODULE_PATH,
     DEVPATH,
 ]
 

@@ -6,6 +6,7 @@ from typing import Dict, List
 import re
 import datetime
 import logging
+import xml.etree.ElementTree as ET
 
 import yaml
 
@@ -40,13 +41,38 @@ def _modify_contents(files, finder, new_value):
                 sfile.writelines(contents)
 
 
-def get_version():
+def _modify_choco_nuspec(build_version: str, install_version: str):
+    build_version_urlsafe = build_version.replace("+", "%2B")
+    releasenotes_url = (
+        "https://github.com/eirannejad/pyRevit/"
+        f"releases/tag/v{build_version_urlsafe}/"
+    )
+    ns = "http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd"
+    dom = ET.parse(configs.PYREVIT_CHOCO_NUSPEC_FILE)
+    ET.register_namespace("", ns)
+    nuget = dom.getroot()
+    version = nuget.findall(rf".//{{{ns}}}version")[0]
+    release_notes = nuget.findall(rf".//{{{ns}}}releaseNotes")[0]
+    version.text = build_version
+    release_notes.text = releasenotes_url
+    dom.write(
+        configs.PYREVIT_CHOCO_NUSPEC_FILE,
+        encoding="utf-8",
+        xml_declaration=True,
+    )
+
+
+def get_version(install=False):
     """Get current version"""
-    for verfile in configs.VERSION_FILES:
-        with open(verfile, "r") as vfile:
-            for cline in vfile.readlines():
-                if match := VER_FINDER.search(cline):
-                    return match.group()
+    verfile = (
+        configs.PYREVIT_INSTALL_VERSION_FILE
+        if install
+        else configs.PYREVIT_VERSION_FILE
+    )
+    with open(verfile, "r") as vfile:
+        for cline in vfile.readlines():
+            if match := VER_FINDER.search(cline):
+                return match.group()
 
 
 def set_year(_: Dict[str, str]):
@@ -78,20 +104,26 @@ def _update_build_number(version: str):
 
 def set_ver(args: Dict[str, str]):
     """Update version number"""
-    new_version = _update_build_number(args["<ver>"])
+    build_version = _update_build_number(args["<ver>"])
 
     # add wip to version if this is a wip build
     is_wip = args.get("<build>", "release") == "wip"
     if is_wip:
-        new_version += configs.PYREVIT_WIP_VERSION_EXT
+        build_version += configs.PYREVIT_WIP_VERSION_EXT
 
-    if VER_FINDER.match(new_version):
-        print(f"Updating version to v{new_version}...")
+    if VER_FINDER.match(build_version):
+        print(f"Updating version to v{build_version}...")
         _modify_contents(
             files=configs.VERSION_FILES,
             finder=VER_FINDER,
-            new_value=new_version,
+            new_value=build_version,
         )
+        install_version, _ = build_version.split("+")
+        print(f"Updating installers to v{install_version}...")
+        with open(configs.PYREVIT_INSTALL_VERSION_FILE, "w") as ivfile:
+            ivfile.writelines(install_version)
+
+        _modify_choco_nuspec(build_version, install_version)
     else:
         print(utils.colorize("<red>Invalid version format (e.g. 4.8.0)</red>"))
         sys.exit(1)
