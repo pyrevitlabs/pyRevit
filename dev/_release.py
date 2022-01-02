@@ -192,6 +192,18 @@ def _build_choco_packages():
     with open(configs.PYREVIT_CHOCO_INSTALL_FILE, "w") as cifile:
         cifile.writelines(contents)
 
+    print("Building choco package...")
+    utils.system(
+        [
+            "choco",
+            "pack",
+            configs.PYREVIT_CHOCO_NUSPEC_FILE,
+            "--outdir",
+            "dist",
+        ]
+        ,dump_stdout=True
+    )
+
 
 def build_installers(_: Dict[str, str]):
     """Build pyRevit and CLI installers"""

@@ -182,7 +182,6 @@ jobs:
       - name: Publish Choco Packages
         if: (github.base_ref == env.ReleaseBranch)
         run: |
-          choco pack release/choco/pyrevit-cli.nuspec --outdir dist
           choco apikey -k ${{ secrets.CHOCO_TOKEN}} -source https://push.chocolatey.org/
           choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
 
