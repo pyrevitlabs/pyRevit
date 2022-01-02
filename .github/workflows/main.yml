@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - master
+  # manual run
   workflow_dispatch:
 
 env:
@@ -29,8 +30,6 @@ jobs:
           echo "base_ref: ${{ github.base_ref }}"
           echo "commit: ${{ github.sha }}"
 
-      # under $GITHUB_WORKSPACE
-      # fetch history so release notes can be generated from
       - name: Checkout Repository
         uses: actions/checkout@v2
         with:
@@ -120,7 +119,7 @@ jobs:
           folder: "dist"
           recursive: true
 
-      # WIP only
+      # WIP (develop) only
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
