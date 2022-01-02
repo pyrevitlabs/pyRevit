@@ -13,9 +13,9 @@ $packageArgs = @{
 
   softwareName  = 'pyrevit-cli*'
 
-  checksum      = '7ae3487a95f0859db33cceae395b0c51afe644cf88dc8d1366db1f608cbf558f'
+  checksum      = '2558700AC3AAC08EFE930ABADF764A9B544E0BF981CD9245E4A4CF4E26F3A80A'
   checksumType  = 'sha256'
-  checksum64    = '7ae3487a95f0859db33cceae395b0c51afe644cf88dc8d1366db1f608cbf558f'
+  checksum64    = '2558700AC3AAC08EFE930ABADF764A9B544E0BF981CD9245E4A4CF4E26F3A80A'
   checksumType64= 'sha256'
 
   silentArgs    = "/VERYSILENT"

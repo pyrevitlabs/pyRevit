@@ -40,6 +40,15 @@ def _modify_contents(files, finder, new_value):
                 sfile.writelines(contents)
 
 
+def _modify_choco_nuspec(build_version: str, install_version: str):
+    build_version_urlsafe = build_version.replace("+", "%2B")
+    releasenotes_url = (
+        "https://github.com/eirannejad/pyRevit/"
+        f"releases/tag/v{build_version_urlsafe}/"
+    )
+    nuspec_files = [configs.PYREVIT_CHOCO_NUSPEC_FILE]
+
+
 def get_version():
     """Get current version"""
     for verfile in configs.VERSION_FILES:
@@ -78,20 +87,26 @@ def _update_build_number(version: str):
 
 def set_ver(args: Dict[str, str]):
     """Update version number"""
-    new_version = _update_build_number(args["<ver>"])
+    build_version = _update_build_number(args["<ver>"])
 
     # add wip to version if this is a wip build
     is_wip = args.get("<build>", "release") == "wip"
     if is_wip:
-        new_version += configs.PYREVIT_WIP_VERSION_EXT
+        build_version += configs.PYREVIT_WIP_VERSION_EXT
 
-    if VER_FINDER.match(new_version):
-        print(f"Updating version to v{new_version}...")
+    if VER_FINDER.match(build_version):
+        print(f"Updating version to v{build_version}...")
         _modify_contents(
             files=configs.VERSION_FILES,
             finder=VER_FINDER,
-            new_value=new_version,
+            new_value=build_version,
         )
+        install_version, _ = build_version.split("+")
+        print(f"Updating installers to v{install_version}...")
+        with open(configs.PYREVIT_INSTALL_VERSION_FILE, "w") as ivfile:
+            ivfile.writelines(install_version)
+
+        _modify_choco_nuspec(build_version, install_version)
     else:
         print(utils.colorize("<red>Invalid version format (e.g. 4.8.0)</red>"))
         sys.exit(1)
