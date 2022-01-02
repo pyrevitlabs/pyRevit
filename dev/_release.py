@@ -7,6 +7,7 @@ import uuid
 import json
 import re
 import logging
+import hashlib
 from typing import Dict, List
 from collections import namedtuple
 
@@ -136,8 +137,7 @@ def _ensure_clean_tree():
         sys.exit(1)
 
 
-def build_installers(_: Dict[str, str]):
-    """Build pyRevit and CLI installers"""
+def _build_installers():
     installer = "iscc.exe"
     for script in configs.INSTALLER_FILES:
         print(f"Building installer {script}")
@@ -147,6 +147,56 @@ def build_installers(_: Dict[str, str]):
                 op.abspath(script),
             ]
         )
+
+
+def _build_choco_packages():
+    build_version = props.get_version()
+    build_version_urlsafe = build_version.replace("+", "%2B")
+    base_url = (
+        "https://github.com/eirannejad/pyRevit/"
+        f"releases/download/v{build_version_urlsafe}/"
+    )
+    pyrevit_cli_admin_installer = (
+        configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=build_version)
+        + ".exe"
+    )
+
+    download_url = base_url + pyrevit_cli_admin_installer
+    sha25_hash = ""
+
+    sha256_hash = hashlib.sha256()
+    installer_file = op.join(
+        configs.DISTRIBUTE_PATH, pyrevit_cli_admin_installer
+    )
+    with open(installer_file, "rb") as f:
+        # read and update hash string value in blocks of 4K
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+        sha256_hash = str(sha256_hash.hexdigest()).upper()
+
+    contents = []
+    url_finder = re.compile(r"\$url64\s+=")
+    checksum_finder = re.compile(r"  checksum\s+=")
+    checksum64_finder = re.compile(r"  checksum64\s+=")
+    with open(configs.PYREVIT_CHOCO_INSTALL_FILE, "r") as cifile:
+        for cline in cifile.readlines():
+            if url_finder.match(cline):
+                contents.append(f"$url64      = '{download_url}'\n")
+            elif checksum_finder.match(cline):
+                contents.append(f"  checksum      = '{sha256_hash}'\n")
+            elif checksum64_finder.match(cline):
+                contents.append(f"  checksum64    = '{sha256_hash}'\n")
+            else:
+                contents.append(cline)
+
+    with open(configs.PYREVIT_CHOCO_INSTALL_FILE, "w") as cifile:
+        cifile.writelines(contents)
+
+
+def build_installers(_: Dict[str, str]):
+    """Build pyRevit and CLI installers"""
+    _build_installers()
+    _build_choco_packages()
 
 
 def sign_installers(_: Dict[str, str]):

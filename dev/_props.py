@@ -58,17 +58,21 @@ def _modify_choco_nuspec(build_version: str, install_version: str):
     dom.write(
         configs.PYREVIT_CHOCO_NUSPEC_FILE,
         encoding="utf-8",
-        xml_declaration=True
-        )
+        xml_declaration=True,
+    )
 
 
-def get_version():
+def get_version(install=False):
     """Get current version"""
-    for verfile in configs.VERSION_FILES:
-        with open(verfile, "r") as vfile:
-            for cline in vfile.readlines():
-                if match := VER_FINDER.search(cline):
-                    return match.group()
+    verfile = (
+        configs.PYREVIT_INSTALL_VERSION_FILE
+        if install
+        else configs.PYREVIT_VERSION_FILE
+    )
+    with open(verfile, "r") as vfile:
+        for cline in vfile.readlines():
+            if match := VER_FINDER.search(cline):
+                return match.group()
 
 
 def set_year(_: Dict[str, str]):
