@@ -6,6 +6,7 @@ from typing import Dict, List
 import re
 import datetime
 import logging
+import xml.etree.ElementTree as ET
 
 import yaml
 
@@ -46,7 +47,19 @@ def _modify_choco_nuspec(build_version: str, install_version: str):
         "https://github.com/eirannejad/pyRevit/"
         f"releases/tag/v{build_version_urlsafe}/"
     )
-    nuspec_files = [configs.PYREVIT_CHOCO_NUSPEC_FILE]
+    ns = "http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd"
+    dom = ET.parse(configs.PYREVIT_CHOCO_NUSPEC_FILE)
+    ET.register_namespace("", ns)
+    nuget = dom.getroot()
+    version = nuget.findall(rf".//{{{ns}}}version")[0]
+    release_notes = nuget.findall(rf".//{{{ns}}}releaseNotes")[0]
+    version.text = build_version
+    release_notes.text = releasenotes_url
+    dom.write(
+        configs.PYREVIT_CHOCO_NUSPEC_FILE,
+        encoding="utf-8",
+        xml_declaration=True
+        )
 
 
 def get_version():
