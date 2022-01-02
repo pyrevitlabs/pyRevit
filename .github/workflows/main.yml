@@ -18,11 +18,15 @@ jobs:
     steps:
       - name: Report Context
         run: |
-          echo "event: ${{ github.event }}"
+          echo "run: ${{ github.run_number }}"
+          echo "job: ${{ github.job }}"
+          echo "event_name: ${{ github.event_name }}"
+          echo "event_path: ${{ github.event_path }}"
           echo "repository: ${{ github.repository }}"
           echo "ref: ${{ github.ref }}"
           echo "head_ref: ${{ github.head_ref }}"
           echo "base_ref: ${{ github.base_ref }}"
+          echo "commit: ${{ github.sha }}"
 
       # under $GITHUB_WORKSPACE
       # fetch history so release notes can be generated from
@@ -86,11 +90,6 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: release/version
-
-      - name: Report Build and Install Versions
-        run: |
-          echo "build: v${{ steps.buildversion.outputs.content }}"
-          echo "install: v${{ steps.installversion.outputs.content }}"
 
       - name: Sign Binaries
         uses: skymatic/code-sign-action@v1
@@ -170,6 +169,13 @@ jobs:
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
       # RELEASE only
+      - name: Publish Choco Packages
+        if: (github.base_ref == env.ReleaseBranch)
+        run: |
+          choco apikey -k ${{ secrets.CHOCO_TOKEN}} -source https://push.chocolatey.org/
+          choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
+
+      # RELEASE only
       - name: Merge To Master
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
@@ -177,11 +183,4 @@ jobs:
           git checkout ${{ github.base_ref }}
           git merge ${{ github.head_ref }}
           git push
-
-      # RELEASE only
-      - name: Publish Choco Packages
-        if: (github.base_ref == env.ReleaseBranch)
-        run: |
-          choco apikey -k ${{ secrets.CHOCO_TOKEN}} -source https://push.chocolatey.org/
-          choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
 
