@@ -31,6 +31,7 @@ if not EXEC_PARAMS.doc_mode:
     INTERFACE_TYPES_DIR = RUNTIME_DIR
 
     DOTNET_DIR = op.join(os.getenv('windir'), 'Microsoft.NET', 'Framework')
+    DOTNET64_DIR = op.join(os.getenv('windir'), 'Microsoft.NET', 'Framework64')
 
     DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
                              'Reference Assemblies',
@@ -42,9 +43,18 @@ if not EXEC_PARAMS.doc_mode:
         DOTNET_FRAMEWORK_DIRS = sorted(
             [x for x in os.listdir(DOTNET_DIR)
              if x.startswith('v4.') and 'X' not in x], reverse=True)
-    except Exception as dotnet_fw_err:
+    except Exception as fw_err:
         DOTNET_FRAMEWORK_DIRS = []
-        mlogger.debug('Dotnet Frawework is not installed. | %s', dotnet_fw_err)
+        mlogger.debug('Dotnet Frawework is not installed. | %s', fw_err)
+
+    try:
+        # get sorted list of installed frawework paths
+        DOTNET64_FRAMEWORK_DIRS = sorted(
+            [x for x in os.listdir(DOTNET64_DIR)
+             if x.startswith('v4.') and 'X' not in x], reverse=True)
+    except Exception as fw_err:
+        DOTNET64_FRAMEWORK_DIRS = []
+        mlogger.debug('Dotnet64 Frawework is not installed. | %s', fw_err)
 
     try:
         # get sorted list of installed frawework sdk paths
@@ -55,7 +65,7 @@ if not EXEC_PARAMS.doc_mode:
         DOTNET_TARGETPACK_DIRS = []
         mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 else:
-    DOTNET_DIR = INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = \
+    DOTNET_DIR = DOTNET64_DIR = INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = \
         DOTNET_FRAMEWORK_DIRS = DOTNET_TARGETPACK_DIRS = None
 
 
@@ -144,19 +154,21 @@ def _get_source_files():
     return source_files
 
 
-def _get_framework_module(fw_module):
+def _get_framework_module(fw_module, fw64=False):
     # start with the newest sdk folder and
     # work backwards trying to find the dll
-    for fw_folder in DOTNET_FRAMEWORK_DIRS:
+    fw_dir = DOTNET64_DIR if fw64 else DOTNET_DIR
+    fw_folders = DOTNET64_FRAMEWORK_DIRS if fw64 else DOTNET_FRAMEWORK_DIRS
+    for fw_folder in fw_folders:
         fw_module_file = op.join(
-            DOTNET_DIR,
+            fw_dir,
             fw_folder,
             coreutils.make_canonical_name(fw_module,
                                           framework.ASSEMBLY_FILE_TYPE))
         mlogger.debug('Searching for installed: %s', fw_module_file)
         if op.exists(fw_module_file):
             mlogger.debug('Found installed: %s', fw_module_file)
-            sys.path.append(op.join(DOTNET_DIR, fw_folder))
+            sys.path.append(op.join(fw_dir, fw_folder))
             return fw_module_file
 
     return None
@@ -190,6 +202,7 @@ def _get_reference_file(ref_name):
 
     mlogger.debug('Dependency is not shipped: %s', ref_name)
     mlogger.debug('Searching for dependency in loaded assemblies: %s', ref_name)
+
     # Lastly try to find location of assembly if already loaded
     loaded_asm = assmutils.find_loaded_asm(ref_name)
     if loaded_asm:
@@ -198,16 +211,23 @@ def _get_reference_file(ref_name):
     mlogger.debug('Dependency is not loaded: %s', ref_name)
     mlogger.debug('Searching for dependency in installed frameworks: %s',
                   ref_name)
+
+    # Then try to find the dll in windows installed framework64 files
+    if DOTNET64_DIR:
+        fw_module_file = _get_framework_module(ref_name, fw64=True)
+        if fw_module_file:
+            return fw_module_file
+
     # Then try to find the dll in windows installed framework files
     if DOTNET_DIR:
         fw_module_file = _get_framework_module(ref_name)
         if fw_module_file:
             return fw_module_file
 
-
     mlogger.debug('Dependency is not installed: %s', ref_name)
     mlogger.debug('Searching for dependency in installed frameworks sdks: %s',
                   ref_name)
+
     # Then try to find the dll in windows SDK
     if DOTNET_TARGETPACK_DIRS:
         fw_sdk_module_file = _get_framework_sdk_module(ref_name)
