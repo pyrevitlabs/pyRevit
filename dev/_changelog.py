@@ -330,13 +330,18 @@ def generate_release_notes(args: Dict[str, str]):
 def notify_issues(args: Dict[str, str]):
     """Notifies issue threads from <tag> to HEAD
     """
+    build_version = props.get_version()
+    target_build = args["<build>"]
     target_url = args["<url>"]
     target_tag = args["<tag>"] or _find_latest_tag()
 
-    print(f"Target url: {target_url}")
-    github.post_comment("1", "test")
-    # all_changes = _collect_changes(target_tag, fetch_info=False)
+    if target_build == "release":
+        comment = f":package: New public release are available for [{build_version}]({target_url})"
+    elif target_build == "wip":
+        comment = f":package: New builds are available for [{build_version}]({target_url})"
+    
+    all_changes = _collect_changes(target_tag, fetch_info=False)
 
-    # for change in all_changes:
-    #     if change.ticket:
-    #         pass
+    for change in all_changes:
+        if change.ticket:
+            github.post_comment(change.ticket, comment)

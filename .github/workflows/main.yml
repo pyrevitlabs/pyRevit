@@ -191,11 +191,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pipenv run pyrevit notify https://github.com/eirannejad/pyRevit/actions/runs/${{ github.run_id }}
+          pipenv run pyrevit notify wip https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Notify Issue Threads
         if: (github.base_ref == env.ReleaseBranch)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pipenv run pyrevit notify ${{ steps.publish_release.outputs.url }}
+          pipenv run pyrevit notify release ${{ steps.publish_release.outputs.url }}

@@ -96,7 +96,7 @@ COMMANDS = [
     # release
     Command(name="release", target="", args=["<tag>"], run=release.create_release),
     # notify issue threads
-    Command(name="notify", target="", args=["[<tag>]", "<url>"], run=clog.notify_issues),
+    Command(name="notify", target="", args=["<build>", "<url>", "[<tag>]"], run=clog.notify_issues),
     # signning builds
     Command(name="sign", target="products", args=[], run=release.sign_binaries),
     Command(name="sign", target="installers", args=[], run=release.sign_installers),
@@ -122,7 +122,7 @@ COMMANDS = [
     # reports
     Command(name="report", target="sloc", args=[], run=misc.count_sloc),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),
-    Command(name="report", target="changelog", args=["[<tag>]", "[--json]"], run=clog.report_changelog),
+    Command(name="report", target="changelog", args=["[<tag>]"], run=clog.report_changelog),
     Command(name="report", target="releasenotes", args=[], run=clog.generate_release_notes),
     # misc
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
