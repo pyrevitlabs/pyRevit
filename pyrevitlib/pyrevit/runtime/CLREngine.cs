@@ -6,17 +6,12 @@ using System.Collections.Generic;
 using System.Reflection;
 using Autodesk.Revit.UI;
 
-//vb
-using System.CodeDom.Compiler;
-using Microsoft.VisualBasic;
-
 // csharp uses roslyn compiler in
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
-using Microsoft.Scripting;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class ExecParams {

@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -8,7 +7,6 @@ using System.Windows.Interop;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Reflection;
-using MEDIA = System.Windows.Media;
 
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
