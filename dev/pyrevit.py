@@ -93,12 +93,14 @@ def print_help(_: Dict[str, str]):
 
 
 COMMANDS = [
-    # prepare and verify build env
-    # Command(name="install", target="", args=[], run=install.install),
-    Command(name="check", target="", args=[], run=install.check),
-    # main release command
+    # release
     Command(name="release", target="", args=["<tag>"], run=release.create_release),
-    # individual release steps for testing
+    # notify issue threads
+    Command(name="notify", target="", args=["[<tag>]", "<url>"], run=clog.notify_issues),
+    # signning builds
+    Command(name="sign", target="products", args=[], run=release.sign_binaries),
+    Command(name="sign", target="installers", args=[], run=release.sign_installers),
+    # build
     Command(name="build", target="products", args=[], run=build.build_binaries),
     Command(name="build", target="labs", args=[], run=labs.build_labs),
     Command(name="build", target="engines", args=[], run=labs.build_engines),
@@ -107,8 +109,6 @@ COMMANDS = [
     Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
     Command(name="build", target="installers", args=[], run=release.build_installers),
     Command(name="build", target="commit", args=[], run=release.commit_and_tag_build),
-    Command(name="sign",  target="products", args=[], run=release.sign_binaries),
-    Command(name="sign",  target="installers", args=[], run=release.sign_installers),
     Command(name="clean", target="labs", args=[], run=build.clean_build),
     Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
     # unit testing
@@ -120,14 +120,17 @@ COMMANDS = [
     Command(name="set", target="products", args=[], run=release.set_product_data),
     Command(name="set", target="locales", args=[], run=props.set_locales),
     # reports
-    Command(name="report", target="sloc", args=[], run=misc.count_sloc,),
+    Command(name="report", target="sloc", args=[], run=misc.count_sloc),
     Command(name="report", target="downloads", args=[], run=misc.report_dls),
-    Command(name="report", target="changelog", args=["[<tag>]"], run=clog.report_changelog),
+    Command(name="report", target="changelog", args=["[<tag>]", "[--json]"], run=clog.report_changelog),
     Command(name="report", target="releasenotes", args=[], run=clog.generate_release_notes),
     # misc
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
     Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
     Command(name="help", target="", args=[], run=print_help),
+    # prepare and verify build env
+    Command(name="install", target="", args=[], run=install.install),
+    Command(name="check", target="", args=[], run=install.check),
 ]
 
 

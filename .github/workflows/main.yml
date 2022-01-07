@@ -152,6 +152,7 @@ jobs:
 
       # RELEASE only
       - name: Publish Release
+        id: publish_release
         if: (github.base_ref == env.ReleaseBranch)
         uses: softprops/action-gh-release@v1
         env:
@@ -184,3 +185,17 @@ jobs:
           git merge ${{ github.head_ref }}
           git push
 
+      # WIP (develop) only
+      - name: Notify Issue Threads (WIP)
+        if: (github.ref == 'refs/heads/develop')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pipenv run pyrevit notify https://github.com/eirannejad/pyRevit/actions/runs/${{ github.run_id }}
+
+      - name: Notify Issue Threads
+        if: (github.base_ref == env.ReleaseBranch)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pipenv run pyrevit notify ${{ steps.publish_release.outputs.url }}
