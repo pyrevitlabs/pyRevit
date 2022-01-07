@@ -267,18 +267,18 @@ namespace pyRevitLabs.DeffrelDB {
         private void Merge(List<DataLine> dataLines) {
             logger.Debug("    AUTO RESOLVE MERGE");
 
-#if TRACE
+#if DEBUG
             TraceDump(dataLines);
-# endif
+#endif
 
             AcquireLock();
 
             var mergedDataLines = RunAutoMergeConflict(Read(), dataLines);
             string contents = string.Join(Environment.NewLine, mergedDataLines.Select(d => d.Contents));
 
-#if TRACE
+#if DEBUG
             TraceDump(mergedDataLines, marker: "merged");
-# endif
+#endif
 
             logger.Debug("    MERGE");
 
