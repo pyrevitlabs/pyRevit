@@ -23,6 +23,7 @@ REQUIRED_TOOLS = [
 def install(_: Dict[str, str]):
     """Prepare build environment"""
     print("Preparing build environment")
+    raise NotImplementedError()
 
 
 def check(_: Dict[str, str]):

@@ -1,6 +1,7 @@
 """Wrapping needed github api v3 functions"""
 import os
 import logging
+import json
 from collections import namedtuple
 import requests
 
@@ -12,6 +13,7 @@ AUTH_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 API_ROOT = "https://api.github.com/repos/eirannejad/pyRevit/"
 
 API_ISSUES = API_ROOT + "issues/{ticket}"
+API_ISSUE_COMMENTS = API_ROOT + "issues/{ticket}/comments"
 API_RELEASES = API_ROOT + "releases"
 
 LabelInfo = namedtuple("LabelInfo", ["name", "description"])
@@ -20,19 +22,27 @@ ReleaseInfo = namedtuple("ReleaseInfo", ["name", "tag", "assets", "data"])
 AssetInfo = namedtuple("AssetInfo", ["name", "downloads", "data"])
 
 
-def _call_github(url):
-    headers = {}
+def _make_headers():
+    headers = {"Accept": "application/vnd.github.v3+json"}
     # if no api token is provided, calls will be rate limited
     if AUTH_TOKEN:
-        headers = {"Authorization": "token " + AUTH_TOKEN}
-    return requests.get(url, headers=headers)
+        headers["Authorization"] = "token " + AUTH_TOKEN
+    return headers
+
+
+def _get_github(url: str):
+    return requests.get(url, headers=_make_headers())
+
+
+def _post_github(url: str, data: str):
+    return requests.post(url, data=data, headers=_make_headers())
 
 
 def get_ticket(ticket: str):
     """Get issue info"""
     logger.debug("getting ticket info for #%s", ticket)
     ticket_url = API_ISSUES.format(ticket=ticket)
-    res = _call_github(ticket_url)
+    res = _get_github(ticket_url)
     if res.ok:
         issue = res.json()
         logger.debug("found ticket %s", issue)
@@ -57,7 +67,7 @@ def get_ticket(ticket: str):
 def get_releases():
     """Get all release infos"""
     releases = []
-    res = _call_github(API_RELEASES)
+    res = _get_github(API_RELEASES)
     if res.ok:
         for release in res.json():
             logger.debug("found release %s", release["name"])
@@ -75,3 +85,10 @@ def get_releases():
                 )
             )
     return releases
+
+
+def post_comment(ticket: str, comment: str):
+    """Post a comment on an issue thead"""
+    logger.debug("posting comment on ticket #%s", ticket)
+    ticket_url = API_ISSUE_COMMENTS.format(ticket=ticket)
+    _post_github(ticket_url, json.dumps({"body": comment}))
