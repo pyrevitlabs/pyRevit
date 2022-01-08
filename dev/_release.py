@@ -149,6 +149,18 @@ def _build_installers():
         )
 
 
+def _build_msi_installers():
+    installer = "msbuild"
+    for script in configs.MSI_INSTALLER_FILES:
+        print(f"Building installer {script}")
+        utils.system(
+            [
+                installer,
+                op.abspath(script),
+            ]
+        )
+
+
 def _build_choco_packages():
     build_version = props.get_version()
     build_version_urlsafe = build_version.replace("+", "%2B")
@@ -208,6 +220,7 @@ def _build_choco_packages():
 def build_installers(_: Dict[str, str]):
     """Build pyRevit and CLI installers"""
     _build_installers()
+    _build_msi_installers()
     _build_choco_packages()
 
 

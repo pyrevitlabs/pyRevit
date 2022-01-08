@@ -66,6 +66,12 @@ INSTALLER_FILES = [
     PYREVIT_ADMIN_CLI_INSTALLERFILE,
 ]
 
+# msi installers
+PYREVIT_CLI_MSI_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit-cli.wixproj")
+MSI_INSTALLER_FILES = [
+    PYREVIT_CLI_MSI_INSTALLERFILE,
+]
+
 PYREVIT_INSTALLER_NAME = "pyRevit_{version}_signed"
 PYREVIT_ADMIN_INSTALLER_NAME = "pyRevit_{version}_admin_signed"
 PYREVIT_CLI_INSTALLER_NAME = "pyRevit_CLI_{version}_signed"

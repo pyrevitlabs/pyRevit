@@ -15,6 +15,7 @@
     Inno Setup Compiler     for buidling installers (https://jrsoftware.org/isinfo.php)
     └── iscc                    buidling installers from scripts
     choco                   for building and publishing choco packages (https://chocolatey.org)
+    Wix Tools               for building MSI installers (https://wixtoolset.org/releases/)
     pipenv                  for managing python virtual envs (https://pipenv.readthedocs.io/)
     python 2                for building docs (https://www.python.org/downloads/)
     python 3                for the build tools (https://www.python.org/downloads/)
