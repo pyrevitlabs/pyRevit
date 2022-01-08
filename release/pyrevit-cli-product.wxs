@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?include pyrevit-common-vars.wxi?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<!-- Product definition -->
+	<Product Id="ca15188d-1c01-4d7d-9b5a-477b676cb83e"
+		UpgradeCode="f63ca076-83cc-420d-87a8-a99df3704b40"
+		Name="$(var.ProductName)"
+		Manufacturer="$(var.Company)"
+		Language="1033"
+		Version="$(var.Version)">
+
+		<!-- Packaging -->
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate EmbedCab="yes" />
+
+		<!-- Features -->
+		<Feature Id="ProductFeature" Title="$(var.ProductName)" Level="1">
+			<ComponentGroupRef Id="ProductComponents" />
+		</Feature>
+
+		<!-- UI -->
+		<UIRef Id="WixUI_Minimal" />
+		<WixVariable Id="WixUILicenseRtf" Value ="../LICENSE.rtf" />
+		<WixVariable Id="WixUIDialogBmp" Value ="pyrevit-cli-wix.bmp" />
+		<WixVariable Id="WixUIBannerBmp" Value ="pyrevit-banner-wix.bmp" />
+	</Product>
+
+	<!-- Install directory structure -->
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFiles64Folder">
+				<!-- pyrevit-bin.wxs lists all components in this directory -->
+				<Directory Id="PYREVIT_INSTALLFOLDER" Name="$(var.ProductName)" />
+			</Directory>
+		</Directory>
+	</Fragment>
+
+	<Fragment>
+		<ComponentGroup Id="ProductComponents" Directory="PYREVIT_INSTALLFOLDER">
+			<!-- pyrevit-bin.wxs lists all components in this group -->
+			<ComponentGroupRef Id="PYREVIT_BIN"></ComponentGroupRef>
+		</ComponentGroup>
+	</Fragment>
+</Wix>
