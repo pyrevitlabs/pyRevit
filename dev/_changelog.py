@@ -338,7 +338,7 @@ def notify_issues(args: Dict[str, str]):
     if target_build == "release":
         comment = f":package: New public release are available for [{build_version}]({target_url})"
     elif target_build == "wip":
-        comment = f":package: New builds are available for [{build_version}]({target_url})"
+        comment = f":package: New work-in-progress (wip) builds are available for [{build_version}]({target_url})"
     
     all_changes = _collect_changes(target_tag, fetch_info=False)
 
