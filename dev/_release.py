@@ -157,7 +157,8 @@ def _build_msi_installers():
             [
                 installer,
                 op.abspath(script),
-            ]
+            ],
+            dump_stdout=True
         )
 
 
