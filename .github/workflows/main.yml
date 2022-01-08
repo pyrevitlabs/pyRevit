@@ -131,6 +131,7 @@ jobs:
             dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
             dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
+            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.msi
             dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
 
       # RELEASE only
