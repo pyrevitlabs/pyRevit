@@ -10,6 +10,7 @@ import logging
 import hashlib
 from typing import Dict, List
 from collections import namedtuple
+import xml.etree.ElementTree as ET
 
 from scripts import configs
 from scripts import utils
@@ -31,8 +32,11 @@ def _abort(message):
     sys.exit(1)
 
 
-def _installer_set_uuid(installer_files: List[str]) -> List[str]:
-    product_code = str(uuid.uuid4())
+def _get_new_product_code():
+    return str(uuid.uuid4())
+
+
+def _installer_set_uuid(product_code: str, installer_files: List[str]):
     uuid_finder = re.compile(
         r"^#define MyAppUUID \"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})\""
     )
@@ -56,7 +60,19 @@ def _installer_set_uuid(installer_files: List[str]) -> List[str]:
         if file_changed:
             with open(installer_file, "w") as instfile:
                 instfile.writelines(contents)
-    return product_code
+
+
+def _msi_set_uuid(product_code: str, installer_files: List[str]):
+    for installer_file in installer_files:
+        namespace = "http://schemas.microsoft.com/developer/msbuild/2003"
+        dom = ET.parse(installer_file)
+        ET.register_namespace("", namespace)
+        nuget = dom.getroot()
+        id_tag = nuget.findall(rf".//{{{namespace}}}ProductIdCode")[0]
+        upgrade_tag = nuget.findall(rf".//{{{namespace}}}ProductUpgradeCode")[0]
+        id_tag.text = product_code
+        upgrade_tag.text = product_code
+        dom.write(installer_file, encoding="utf-8", xml_declaration=True)
 
 
 def _update_product_data_file(ver, key, cli=False):
@@ -93,12 +109,18 @@ def _update_product_data_file(ver, key, cli=False):
 
 
 def set_product_data(_: Dict[str, str]):
-    """Set new product uuid on installers and product uuid database """
-    pyrevit_pc = _installer_set_uuid(configs.PYREVIT_INSTALLER_FILES)
-    pyrevitcli_pc = _installer_set_uuid(configs.PYREVIT_CLI_INSTALLER_FILES)
-    release_ver = props.get_version()
-    _update_product_data_file(release_ver, pyrevit_pc)
-    _update_product_data_file(release_ver, pyrevitcli_pc, cli=True)
+    """Set new product uuid on installers and product uuid database"""
+    pyrevit_pc = _get_new_product_code()
+    pyrevitcli_pc = _get_new_product_code()
+
+    _installer_set_uuid(pyrevit_pc, configs.PYREVIT_INSTALLER_FILES)
+
+    _installer_set_uuid(pyrevitcli_pc, configs.PYREVIT_CLI_INSTALLER_FILES)
+    _msi_set_uuid(pyrevitcli_pc, configs.PYREVIT_CLI_MSI_PROPS_FILES)
+
+    build_version = props.get_version()
+    _update_product_data_file(build_version, pyrevit_pc)
+    _update_product_data_file(build_version, pyrevitcli_pc, cli=True)
 
 
 def _get_binaries():
@@ -155,7 +177,7 @@ def _build_msi_installers():
 
 def _build_choco_packages():
     build_version = props.get_version()
-    build_version_urlsafe = build_version.replace("+", "%2B")
+    build_version_urlsafe = props.get_version(url_safe=True)
     base_url = (
         "https://github.com/eirannejad/pyRevit/"
         f"releases/download/v{build_version_urlsafe}/"
@@ -166,8 +188,6 @@ def _build_choco_packages():
     )
 
     download_url = base_url + pyrevit_cli_admin_installer
-    sha25_hash = ""
-
     sha256_hash = hashlib.sha256()
     installer_file = op.join(
         configs.DISTRIBUTE_PATH, pyrevit_cli_admin_installer
@@ -204,8 +224,8 @@ def _build_choco_packages():
             configs.PYREVIT_CHOCO_NUSPEC_FILE,
             "--outdir",
             "dist",
-        ]
-        ,dump_stdout=True
+        ],
+        dump_stdout=True,
     )
 
 

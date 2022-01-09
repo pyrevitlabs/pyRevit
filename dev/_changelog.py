@@ -267,8 +267,8 @@ def generate_release_notes(args: Dict[str, str]):
     """
     # print downloads section
     build_version = props.get_version()
+    build_version_urlsafe = props.get_version(url_safe=True)
 
-    build_version_urlsafe = build_version.replace("+", "%2B")
     base_url = (
         "https://github.com/eirannejad/pyRevit/"
         f"releases/download/v{build_version_urlsafe}/"
