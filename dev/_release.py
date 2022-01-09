@@ -301,15 +301,15 @@ def sign_installers(_: Dict[str, str]):
         installer_exe = installer_exe_fmt.format(version=install_version)
         _sign_binary(f"{installer_exe}.exe", cert_name, cert_fingerprint)
 
-    # installer_nupkg = configs.PYREVIT_CHOCO_NUPKG_FILE.format(
-    #     version=install_version
-    # )
-    # _sign_binary(installer_nupkg, cert_name, cert_fingerprint)
+    installer_nupkg = configs.PYREVIT_CHOCO_NUPKG_FILE.format(
+        version=install_version
+    )
+    _sign_binary(installer_nupkg, cert_name, cert_fingerprint)
 
 
 def create_release(args: Dict[str, str]):
     """Create pyRevit release (build all projects, create installers)"""
-    # utils.ensure_windows()
+    utils.ensure_windows()
 
     # run a check on all tools
     if not install.check(args):
