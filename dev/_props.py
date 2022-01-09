@@ -60,7 +60,7 @@ def _modify_msi_year(copyright_message: str):
     ET.register_namespace("", namespace)
     nuget = dom.getroot()
     copyright_tag = nuget.findall(rf".//{{{namespace}}}Copyright")[0]
-    copyright_tag.text = copyright_message
+    copyright_tag.text = f"Copyright © {copyright_message}"
     dom.write(msi_file, encoding="utf-8", xml_declaration=True)
 
 
@@ -82,7 +82,7 @@ def _modify_choco_nuspec_year(copyright_message: str):
     ET.register_namespace("", namespace)
     nuget = dom.getroot()
     copyright_tag = nuget.findall(rf".//{{{namespace}}}copyright")[0]
-    copyright_tag.text = copyright_message
+    copyright_tag.text = f"Copyright © {copyright_message}"
     dom.write(nuspec_file, encoding="utf-8", xml_declaration=True)
 
 
@@ -122,15 +122,14 @@ def set_year(_: Dict[str, str]):
     # this is more flexible than: if today.month == 12:
     if (datetime.datetime(this_year + 1, 1, 1) - today).days < 30:
         this_year += 1
-    cp_finder = re.compile(r"© 2014-\d{4}")
-    new_copyright = f"© 2014-{this_year}"
+    cp_finder = re.compile(r"2014-\d{4}")
+    new_copyright = f"2014-{this_year}"
     print(f'Updating copyright notice to "{new_copyright}"...')
     _modify_contents(
         files=configs.COPYRIGHT_FILES, finder=cp_finder, new_value=new_copyright
     )
-    new_copyright_message = f"Copyright {new_copyright}"
-    _modify_msi_year(new_copyright_message)
-    _modify_choco_nuspec_year(new_copyright_message)
+    _modify_msi_year(new_copyright)
+    _modify_choco_nuspec_year(new_copyright)
 
 
 def set_ver(args: Dict[str, str]):
