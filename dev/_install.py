@@ -11,13 +11,13 @@ RequiredTool = namedtuple("RequiredTool", ["name", "get", "step"])
 
 REQUIRED_TOOLS = [
     RequiredTool(name="dotnet", get="", step="build"),
+    RequiredTool(name="msbuild", get="", step="build"),
     RequiredTool(name="go", get="", step="build"),
     RequiredTool(name="gcc", get="", step="build"),
     RequiredTool(
         name="iscc", get=r"C:\Program Files (x86)\Inno Setup 6", step="release"
     ),
     RequiredTool(name="choco", get="", step="release"),
-    RequiredTool(name="candle", get="", step="release"),
 ]
 
 

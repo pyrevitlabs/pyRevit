@@ -52,6 +52,9 @@ jobs:
           pip install pipenv
           pipenv install
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
       - name: Check Build Environment
         run: pipenv run pyrevit check
 
