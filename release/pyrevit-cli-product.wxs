@@ -2,11 +2,11 @@
 <?include pyrevit-common-vars.wxi?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 	<!-- Product definition -->
-	<Product Id="ca15188d-1c01-4d7d-9b5a-477b676cb83e"
-		UpgradeCode="f63ca076-83cc-420d-87a8-a99df3704b40"
+	<Product Id="$(var.ProductIdCode)"
+		UpgradeCode="$(var.ProductUpgradeCode)"
 		Name="$(var.ProductName)"
 		Manufacturer="$(var.Company)"
-		Language="1033"
+		Language="$(var.Language)"
 		Version="$(var.Version)">
 
 		<!-- Packaging -->

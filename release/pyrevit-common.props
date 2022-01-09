@@ -25,6 +25,7 @@
         <DefineConstants>$(DefineConstants);PyRevitBinDir=$(PyRevitBinDir)</DefineConstants>
         <DefineConstants>$(DefineConstants);Version=$(Version)</DefineConstants>
         <DefineConstants>$(DefineConstants);Company=$(Company)</DefineConstants>
+        <DefineConstants>$(DefineConstants);Language=1033</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup>
