@@ -36,24 +36,24 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
-      - name: Configure Git Credentials
-        uses: fregante/setup-git-user@v1
-
-      - name: Update Submodules
+      - name: Checkout Submodules
         uses: snickerbockers/submodules-init@v4
 
-      - name: Setup Python 3.9
+      - name: Prepare Python 3.9
         uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.9
 
-      - name: Install pipenv
+      - name: Prepare pipenv
         run: |
           pip install pipenv
           pipenv install
 
-      - name: Add msbuild to PATH
+      - name: Prepare msbuild
         uses: microsoft/setup-msbuild@v1.1
+
+      - name: Prepare git
+        uses: fregante/setup-git-user@v1
 
       - name: Check Build Environment
         run: pipenv run pyrevit check
@@ -61,6 +61,13 @@ jobs:
       - name: Update Copyright Info
         run: |
           pipenv run pyrevit set year
+
+      - name: Update Certificate
+        env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          pipenv run pyrevit sign add-cert
 
       # WIP only
       - name: Update Build Info (WIP)
@@ -94,13 +101,6 @@ jobs:
         with:
           path: release/version
 
-      - name: Add Certificate
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-        run: |
-          pipenv run pyrevit sign add-cert
-
       - name: Sign Products
         env:
           CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
@@ -119,7 +119,6 @@ jobs:
         run: |
           pipenv run pyrevit sign installers
 
-      # WIP only
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
@@ -134,16 +133,14 @@ jobs:
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_signed.msi
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
 
-      # RELEASE only
-      - name: Generate Release Notes
+      - name: Generate Release Notes (Release)
         if: (github.base_ref == env.ReleaseBranch)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit report releasenotes > release_notes.md
 
-      # RELEASE only
-      - name: Commit & Tag Changes
+      - name: Commit & Tag Changes (Release)
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
@@ -151,8 +148,7 @@ jobs:
           git push
           git push --tags
 
-      # RELEASE only
-      - name: Publish Release
+      - name: Publish Release (Release)
         id: publish_release
         if: (github.base_ref == env.ReleaseBranch)
         uses: softprops/action-gh-release@v1
@@ -172,15 +168,13 @@ jobs:
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_signed.msi
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
 
-      # RELEASE only
-      - name: Publish Choco Packages
+      - name: Publish Choco Packages (Release)
         if: (github.base_ref == env.ReleaseBranch)
         run: |
           choco apikey -k ${{ secrets.CHOCO_TOKEN}} -source https://push.chocolatey.org/
           choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
 
-      # RELEASE only
-      - name: Merge To Master
+      - name: Merge To Master (Release)
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
@@ -188,7 +182,6 @@ jobs:
           git merge ${{ github.head_ref }}
           git push
 
-      # WIP (develop) only
       - name: Notify Issue Threads (WIP)
         if: (github.ref == 'refs/heads/develop')
         env:
@@ -196,7 +189,7 @@ jobs:
         run: |
           pipenv run pyrevit notify wip https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-      - name: Notify Issue Threads
+      - name: Notify Issue Threads (Release)
         if: (github.base_ref == env.ReleaseBranch)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
