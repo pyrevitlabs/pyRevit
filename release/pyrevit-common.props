@@ -1,4 +1,3 @@
-    <!-- pyrevit properties -->
 <?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
     <PropertyGroup>
@@ -7,7 +6,6 @@
         <Company>pyRevitLabs.io</Company>
     </PropertyGroup>
 
-    <!-- common paths -->
     <PropertyGroup>
         <PyRevitRootDir>$(MSBuildThisFileDirectory)\..\</PyRevitRootDir>
         <PyRevitBinDir>$(PyRevitRootDir)\bin\</PyRevitBinDir>
@@ -15,13 +13,11 @@
         <OutputPath>$(PyRevitDistDir)</OutputPath>
     </PropertyGroup>
 
-    <!-- common wix poject properties -->
     <PropertyGroup>
         <ProductVersion>3.10</ProductVersion>
         <SchemaVersion>2.0</SchemaVersion>
         <OutputType>Package</OutputType>
         <DefineSolutionProperties>false</DefineSolutionProperties>
-        <!-- wix variables (var.*) -->
         <DefineConstants>$(DefineConstants);PyRevitBinDir=$(PyRevitBinDir)</DefineConstants>
         <DefineConstants>$(DefineConstants);Version=$(Version)</DefineConstants>
         <DefineConstants>$(DefineConstants);Company=$(Company)</DefineConstants>
