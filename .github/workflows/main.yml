@@ -55,6 +55,13 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Add Certificate
+        env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          pipenv run pyrevit sign add-cert
+
       - name: Check Build Environment
         run: pipenv run pyrevit check
 
@@ -94,33 +101,23 @@ jobs:
         with:
           path: release/version
 
-      - name: Sign Binaries
-        uses: skymatic/code-sign-action@v1
-        with:
-          certificate: "${{ secrets.CERTIFICATE }}"
-          password: "${{ secrets.PASSWORD }}"
-          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
-          certificatename: "${{ secrets.CERTIFICATENAME }}"
-          description: "pyRevit"
-          timestampUrl: "http://timestamp.digicert.com"
-          folder: "bin"
-          recursive: true
+      - name: Sign Products
+        env:
+          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+        run: |
+          pipenv run pyrevit sign products
 
       - name: Build Installers
         run: |
           pipenv run pyrevit build installers
 
       - name: Sign Installers
-        uses: skymatic/code-sign-action@v1
-        with:
-          certificate: "${{ secrets.CERTIFICATE }}"
-          password: "${{ secrets.PASSWORD }}"
-          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
-          certificatename: "${{ secrets.CERTIFICATENAME }}"
-          description: "pyRevit"
-          timestampUrl: "http://timestamp.digicert.com"
-          folder: "dist"
-          recursive: true
+        env:
+          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+        run: |
+          pipenv run pyrevit sign installers
 
       # WIP only
       # default retention period is 90 days

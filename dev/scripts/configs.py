@@ -100,6 +100,8 @@ PYREVIT_CHOCO_NUSPEC_FILE = op.join(RELEASE_PATH, "choco", "pyrevit-cli.nuspec")
 PYREVIT_CHOCO_INSTALL_FILE = op.join(
     RELEASE_PATH, "choco/tools", "chocolateyinstall.ps1"
 )
+PYREVIT_CHOCO_NUPKG_NAME = "pyrevit-cli.{version}.nupkg"
+PYREVIT_CHOCO_NUPKG_FILE = op.join(DISTRIBUTE_PATH, PYREVIT_CHOCO_NUPKG_NAME)
 
 PYREVIT_WIP_VERSION_EXT = "-wip"
 PYREVIT_VERSION_FILE = op.join(PYREVIT_MODULE_PATH, "version")

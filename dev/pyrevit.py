@@ -9,6 +9,8 @@
 
     dotnet SDK              for building labs (https://dotnet.microsoft.com/download/dotnet)
     Visual Studio:          for building labs (https://visualstudio.microsoft.com/downloads/)
+    └── msbuild                 building msi installers using Wix Tools
+    └── certutil                managing signing certificate
     └── signtool                digitally signing binaries
     gcc                     for building sqlite package in telemetry server (http://mingw.org)
     go                      for building telemetry server (https://golang.org)
@@ -99,6 +101,7 @@ COMMANDS = [
     # notify issue threads
     Command(name="notify", target="", args=["<build>", "<url>", "[<tag>]"], run=clog.notify_issues),
     # signning builds
+    Command(name="sign", target="addcert", args=[], run=release.setup_certificate),
     Command(name="sign", target="products", args=[], run=release.sign_binaries),
     Command(name="sign", target="installers", args=[], run=release.sign_installers),
     # build

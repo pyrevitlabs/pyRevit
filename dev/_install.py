@@ -17,6 +17,8 @@ REQUIRED_TOOLS = [
     RequiredTool(
         name="iscc", get=r"C:\Program Files (x86)\Inno Setup 6", step="release"
     ),
+    RequiredTool(name="certutil", get="", step="release"),
+    RequiredTool(name="signtool", get="", step="release"),
     RequiredTool(name="choco", get="", step="release"),
 ]
 

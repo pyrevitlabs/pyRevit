@@ -8,6 +8,8 @@ import json
 import re
 import logging
 import hashlib
+import base64
+import tempfile
 from typing import Dict, List
 from collections import namedtuple
 import xml.etree.ElementTree as ET
@@ -133,23 +135,77 @@ def _get_binaries():
                 yield op.join(dirname, fn)
 
 
+def _get_cert_info():
+    cert_name = os.environ.get("CERTIFICATENAME", "")
+    if not cert_name:
+        print("CERTIFICATENAME is required")
+        sys.exit(1)
+
+    cert_fingerprint = os.environ.get("CERTIFICATESHA1", "")
+    if not cert_fingerprint:
+        print("CERTIFICATESHA1 is required")
+        sys.exit(1)
+
+    return cert_name, cert_fingerprint
+
+
+def setup_certificate(_: Dict[str, str]):
+    """Add certificate to store
+    needs CERTIFICATE and CERTIFICATEPASSWORD env vars
+    """
+    cert_password = os.environ.get("CERTIFICATEPASSWORD", "")
+    if not cert_password:
+        print("CERTIFICATEPASSWORD is required")
+        sys.exit(1)
+
+    cert_contents = os.environ.get("CERTIFICATE", "")
+    cert_binary = base64.decodestring(cert_contents)
+    if not cert_binary:
+        print("CERTIFICATE is required")
+        sys.exit(1)
+
+    cert_filename = op.join(tempfile.gettempdir(), "certificate.pfx")
+    with open(cert_filename, "wb") as certfile:
+        certfile.write(cert_binary)
+
+    utils.system(
+        [
+            "certutil",
+            "-f",
+            "-p",
+            "${cert_password}",
+            "-importpfx",
+            "${cert_filename}",
+        ]
+    )
+
+
+def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
+    utils.system(
+        [
+            "signtool",
+            "sign",
+            "/sm",
+            "/tr",
+            "http://timestamp.digicert.com",
+            "/td",
+            "SHA256",
+            "/sha1",
+            cert_fingerprint,
+            "/n",
+            cert_name,
+            f"{filepath}",
+        ],
+        dump_stdout=True,
+    )
+
+
 def sign_binaries(_: Dict[str, str]):
     """Sign binaries with certificate (must be installed on machine)"""
     print("digitally signing binaries...")
+    cert_name, cert_fingerprint = _get_cert_info()()
     for bin_file in _get_binaries():
-        utils.system(
-            [
-                "signtool",
-                "sign",
-                "/n",
-                "Ehsan Iran Nejad",
-                "/t",
-                "http://timestamp.digicert.com",
-                "/fd",
-                "sha256",
-                f"{bin_file}",
-            ]
-        )
+        _sign_binary(bin_file, cert_name, cert_fingerprint)
 
 
 def _ensure_clean_tree():
@@ -239,22 +295,16 @@ def build_installers(_: Dict[str, str]):
 def sign_installers(_: Dict[str, str]):
     """Sign installers with certificate (must be installed on machine)"""
     print("digitally signing installers...")
+    cert_name, cert_fingerprint = _get_cert_info()()
     install_version = props.get_version(install=True)
     for installer_exe_fmt in configs.INSTALLER_EXES:
         installer_exe = installer_exe_fmt.format(version=install_version)
-        utils.system(
-            [
-                "signtool",
-                "sign",
-                "/n",
-                "Ehsan Iran Nejad",
-                "/t",
-                "http://timestamp.digicert.com",
-                "/fd",
-                "sha256",
-                f"{installer_exe}",
-            ]
-        )
+        _sign_binary(f"{installer_exe}.exe", cert_name, cert_fingerprint)
+
+    # installer_nupkg = configs.PYREVIT_CHOCO_NUPKG_FILE.format(
+    #     version=install_version
+    # )
+    # _sign_binary(installer_nupkg, cert_name, cert_fingerprint)
 
 
 def create_release(args: Dict[str, str]):
