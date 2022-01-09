@@ -140,26 +140,17 @@ def _ensure_clean_tree():
 def _build_installers():
     installer = "iscc.exe"
     for script in configs.INSTALLER_FILES:
-        print(f"Building installer {script}")
-        utils.system(
-            [
-                installer,
-                op.abspath(script),
-            ]
-        )
+        installer_script = op.abspath(script)
+        print(f"Building installer {installer_script}")
+        utils.system([installer, installer_script], dump_stdout=True)
 
 
 def _build_msi_installers():
     installer = "msbuild"
     for script in configs.MSI_INSTALLER_FILES:
-        print(f"Building installer {script}")
-        utils.system(
-            [
-                installer,
-                op.abspath(script),
-            ],
-            dump_stdout=True
-        )
+        installer_script = op.abspath(script)
+        print(f"Building installer {installer_script}")
+        utils.system([installer, installer_script], dump_stdout=True)
 
 
 def _build_choco_packages():
