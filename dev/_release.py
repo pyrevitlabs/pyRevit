@@ -239,9 +239,9 @@ def build_installers(_: Dict[str, str]):
 def sign_installers(_: Dict[str, str]):
     """Sign installers with certificate (must be installed on machine)"""
     print("digitally signing installers...")
-    build_version = props.get_version()
+    install_version = props.get_version(install=True)
     for installer_exe_fmt in configs.INSTALLER_EXES:
-        installer_exe = installer_exe_fmt.format(version=build_version)
+        installer_exe = installer_exe_fmt.format(version=install_version)
         utils.system(
             [
                 "signtool",

@@ -266,12 +266,12 @@ def generate_release_notes(args: Dict[str, str]):
     Queries github issue information for better reporting
     """
     # print downloads section
-    build_version = props.get_version()
-    build_version_urlsafe = props.get_version(url_safe=True)
+    install_version = props.get_version(install=True)
+    install_version_urlsafe = props.get_version(install=True, url_safe=True)
 
     base_url = (
         "https://github.com/eirannejad/pyRevit/"
-        f"releases/download/v{build_version_urlsafe}/"
+        f"releases/download/v{install_version_urlsafe}/"
     )
 
     # add easy download links
@@ -282,22 +282,22 @@ def generate_release_notes(args: Dict[str, str]):
     )
     print("### pyRevit")
     pyrevit_installer = (
-        configs.PYREVIT_INSTALLER_NAME.format(version=build_version) + ".exe"
+        configs.PYREVIT_INSTALLER_NAME.format(version=install_version) + ".exe"
     )
     print(
         "- :package: [pyRevit {version} Installer]({url})".format(
-            version=build_version, url=base_url + pyrevit_installer
+            version=install_version, url=base_url + pyrevit_installer
         )
     )
 
     pyrevit_admin_installer = (
-        configs.PYREVIT_ADMIN_INSTALLER_NAME.format(version=build_version)
+        configs.PYREVIT_ADMIN_INSTALLER_NAME.format(version=install_version)
         + ".exe"
     )
     print(
         "- :package: [pyRevit {version} Installer]({url}) "
         "- Admin / All Users / %PROGRAMDATA%".format(
-            version=build_version, url=base_url + pyrevit_admin_installer
+            version=install_version, url=base_url + pyrevit_admin_installer
         )
     )
 
@@ -313,13 +313,13 @@ def generate_release_notes(args: Dict[str, str]):
     # )
 
     pyrevit_cli_admin_installer = (
-        configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=build_version)
+        configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=install_version)
         + ".exe"
     )
     print(
         "- :package: [pyRevit CLI {version} Installer]({url}) "
         "- Admin / System %PATH%".format(
-            version=build_version, url=base_url + pyrevit_cli_admin_installer
+            version=install_version, url=base_url + pyrevit_cli_admin_installer
         )
     )
 
@@ -328,8 +328,7 @@ def generate_release_notes(args: Dict[str, str]):
 
 
 def notify_issues(args: Dict[str, str]):
-    """Notifies issue threads from <tag> to HEAD
-    """
+    """Notifies issue threads from <tag> to HEAD"""
     build_version = props.get_version()
     target_build = args["<build>"]
     target_url = args["<url>"]
@@ -339,7 +338,7 @@ def notify_issues(args: Dict[str, str]):
         comment = f":package: New public release are available for [{build_version}]({target_url})"
     elif target_build == "wip":
         comment = f":package: New builds are available for [{build_version}]({target_url})"
-    
+
     all_changes = _collect_changes(target_tag, fetch_info=False)
 
     for change in all_changes:
