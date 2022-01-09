@@ -190,6 +190,33 @@ def set_build_ver(args: Dict[str, str]):
         set_ver(args)
 
 
+def set_next_ver(args: Dict[str, str]):
+    """Increment version patch number and commit"""
+
+    def _increment_build_number(version: str):
+        parts = VER_PART_FINDER.findall(version)
+        if parts:
+            version = parts[0]
+            major = version[0]
+            minor = version[1]
+            patch = version[2]
+            return f"{major}.{minor}.{int(patch) + 1}"
+        return version
+
+    build_version = get_version()
+    next_build_version = _increment_build_number(build_version)
+    print(f"Updating version to v{next_build_version}...")
+    with open(configs.PYREVIT_VERSION_FILE, "w") as ivfile:
+        ivfile.writelines(next_build_version)
+    print(f"Updating installers to v{next_build_version}...")
+    with open(configs.PYREVIT_INSTALL_VERSION_FILE, "w") as ivfile:
+        ivfile.writelines(next_build_version)
+
+    utils.system(["git", "add", configs.PYREVIT_VERSION_FILE])
+    utils.system(["git", "add", configs.PYREVIT_INSTALL_VERSION_FILE])
+    utils.system(["git", "commit", "-m", "Next Version"])
+
+
 def _find_tbundles(root_path) -> List[str]:
     tbfinder = re.compile(r".+\..+")
     scfinder = re.compile(r".*script\.py")

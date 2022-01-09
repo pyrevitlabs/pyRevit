@@ -120,6 +120,7 @@ COMMANDS = [
     # manual data setters
     Command(name="set", target="year", args=[], run=props.set_year),
     Command(name="set", target="version", args=["<ver>"], run=props.set_ver),
+    Command(name="set", target="next-version", args=[], run=props.set_next_ver),
     Command(name="set", target="build", args=["<build>"], run=props.set_build_ver),
     Command(name="set", target="products", args=[], run=release.set_product_data),
     Command(name="set", target="locales", args=[], run=props.set_locales),

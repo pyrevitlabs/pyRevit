@@ -195,3 +195,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit notify release ${{ steps.publish_release.outputs.url }}
+
+      - name: Increment Version & Commit (Release)
+        if: (github.base_ref == env.ReleaseBranch)
+        run: |
+          git checkout ${{ github.head_ref }}
+          pipenv run pyrevit set next-version
+          git push
