@@ -122,11 +122,10 @@ jobs:
           folder: "dist"
           recursive: true
 
-      # WIP (develop) only
+      # WIP only
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
-        if: (github.ref == 'refs/heads/develop')
         uses: actions/upload-artifact@v2
         with:
           name: pyrevit-installers
