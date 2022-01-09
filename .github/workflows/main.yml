@@ -55,13 +55,6 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
-      - name: Add Certificate
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-        run: |
-          pipenv run pyrevit sign add-cert
-
       - name: Check Build Environment
         run: pipenv run pyrevit check
 
@@ -100,6 +93,13 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: release/version
+
+      - name: Add Certificate
+        env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          pipenv run pyrevit sign add-cert
 
       - name: Sign Products
         env:
