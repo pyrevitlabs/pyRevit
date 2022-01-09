@@ -1,5 +1,6 @@
 """Manage tasks related to the build environment"""
 # pylint: disable=invalid-name,broad-except
+import sys
 import os.path as op
 from collections import namedtuple
 from typing import Dict
@@ -46,4 +47,5 @@ def check(_: Dict[str, str]):
                     f"see --help"
                 )
             )
-    return all_pass
+    if not all_pass:
+        sys.exit(1)
