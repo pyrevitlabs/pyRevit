@@ -20,6 +20,7 @@ REQUIRED_TOOLS = [
     ),
     RequiredTool(name="certutil", get="", step="release"),
     RequiredTool(name="signtool", get="", step="release"),
+    RequiredTool(name="nuget", get="", step="release"),
     RequiredTool(name="choco", get="", step="release"),
 ]
 
