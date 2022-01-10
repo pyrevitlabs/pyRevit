@@ -1,7 +1,13 @@
 title:
+  ru: Установить регион обрезки на выделенной Форме
   fr_fr: Définir la zone cadrée sur la forme sélectionnée
   en_us: Set Crop Region To Selected Shape
 tooltip:
+  ru: >-
+    Начертите желаемую границу обрезки в виде замкнутого многоугольника
+    на листе (используя линию детализации). Затем выберите границу и видовой экран
+    и запустите скрипт. Данный скрипт применит начерченную границу к виду 
+    на выделенном видовом экране
   fr_fr: >-
     Dessinez la limite de cadrage souhaitée sous forme de polygone fermé sur
     votre feuille (à l'aide de lignes de détail). Sélectionnez ensuite la limite

@@ -1,8 +1,12 @@
 help_url: '{{docpath}}SJzs9ZxqRYc'
 title:
+  ru: Пакетное создание листов
   fr_fr: Création de Feuilles en Groupe
   en_us: Batch Sheet Maker
 tooltip:
+  ru: >-
+    Введите наименование и номера листов в поле для ввода 
+    и данный скрипт создаст их все сразу
   fr_fr: >-
     Entrez les noms et les numéros de feuilles dans la zone de texte et cet
     outil les créera toutes

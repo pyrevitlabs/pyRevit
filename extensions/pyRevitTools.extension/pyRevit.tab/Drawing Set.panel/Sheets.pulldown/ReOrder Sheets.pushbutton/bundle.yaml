@@ -1,7 +1,13 @@
 title:
+  ru: Переупорядочить листы
   fr_fr: Réorganiser les Feuilles
   en_us: ReOrder Sheets
 tooltip:
+  ru: >-
+    Показывает элементы в порядке по индексу листа
+    
+    Данный инструмент ищет параметры проекта (на Листах), 
+    которые являются экземплярами, типа Целое и содержит 'Order' в своем имени
   fr_fr: >-
     Imprimer les éléments dans l'ordre à partir d'un index de feuilles
 
