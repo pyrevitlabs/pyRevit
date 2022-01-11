@@ -1,7 +1,14 @@
 title:
+  ru: Стереть параметры семейства
   fr_fr: Supprimer les paramètres des familles
   en_us: Wipe Family Parameters
 tooltip:
+  ru: >-
+    Данный скрипт удаляет все пользовательские параметры, которые не были использованы
+    
+    в размерах как метки и так же сбрасывает значение для других
+    
+    параметров в ноль или null (none)
   fr_fr: >-
      Ce script supprime tous les paramètres personnalisés qui n'ont pas été utilisés
     
