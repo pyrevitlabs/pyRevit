@@ -1,7 +1,16 @@
 title:
+  ru: Вставить состояние
   fr_fr: Coller l'état
   en_us: Paste State
 tooltip:
+  ru: >-
+    Применяет скопированное состояние к активному виду.
+    
+    Это работает в сочетании с инструментом "Копировать состояние"
+    
+    Shift-Click:
+    
+    Показать дополнительные настройки
   fr_fr: >-
    Applique l'état copié à la vue active
    

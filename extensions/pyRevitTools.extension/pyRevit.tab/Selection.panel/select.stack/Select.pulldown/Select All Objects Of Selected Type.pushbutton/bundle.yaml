@@ -1,7 +1,18 @@
 title:
+  ru: Выделить все объекты выделенного типа
   fr_fr: Sélectionner tous les objets du type sélectionné
   en_us: Select All Objects Of Selected Type
 tooltip:
+  ru: >-
+    Выделяет все элементы с одинаковым типом, что и текущий выделенный элемент
+    
+    и печатает их идентификаторы (отсортированные по владельцу вида
+    
+    если они могут отображаться на видах)
+    
+    Shift-Click:
+    
+    Показать результаты
   fr_fr: >-
      Sélectionnez tous les éléments du même type que l'élément sélectionné
     

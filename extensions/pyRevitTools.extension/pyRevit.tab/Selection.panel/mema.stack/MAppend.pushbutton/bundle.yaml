@@ -1,8 +1,13 @@
 help_url: '{{docpath}}pAM-ARIXXLw'
 title:
+  ru: ПДобавить
   fr_fr: MAjouter
   en_us: MAppend
 tooltip:
+  ru: >-
+    Добавляет выбранные элементы в память проекта.
+    
+    Работает как кнопка M+ в калькуляторе. Память зависит для каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
   fr_fr: >-
      Ajouter la sélection actuelle à la mémoire
      Fonctionne comme le bouton M+ d'une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym

@@ -1,7 +1,14 @@
 title:
+  ru: Удержать отзеркаленные
   fr_fr: Conserve symétrisés
   en_us: Keep Mirrored
 tooltip:
+  ru: >-
+    Удерживает только отзеркаленные элементы в текущем выделении
+    
+    Shift-Click:
+    
+    Удержать только не отзеркаленные
   fr_fr: >-
      Conserver uniquement les éléments symétrisés dans la sélection actuelle
 

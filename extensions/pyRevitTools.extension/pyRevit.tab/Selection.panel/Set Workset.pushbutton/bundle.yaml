@@ -1,4 +1,8 @@
 title:
+  ru: >-
+    Установить
+    
+    рабочий набор
   fr_fr: >-
     Active
     
@@ -8,6 +12,7 @@ title:
     
     Workset
 tooltip:
+  ru: Устанавливает текущий рабочий набор из выделения
   fr_fr: Rend le sous-projet de la sélection actuel actif
   en_us: Sets the active workset from the selection
 context: selection

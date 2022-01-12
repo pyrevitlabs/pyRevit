@@ -1,7 +1,14 @@
 title:
+  ru: Предыдущий
   fr_fr: Précédent
   en_us: Prev
 tooltip:
+  ru: >-
+    Выбрать предыдущий элемент в памяти выбора.
+    
+    Click +1
+
+    Shift+Click +10
   fr_fr: >-
      Sélectionnez l'élément précédent dans la mémoire de sélection.
     
