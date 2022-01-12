@@ -1,6 +1,9 @@
-tooltip: Opens the pyRevit blog.
 title:
+  ru: Блог
   en_us: "Blog"
   fa: "وبلاگ"
   ar: "بلاگ"
+tooltip:
+  ru: Открывает блог pyRevit
+  en_us: Opens the pyRevit blog.
 context: zero-doc

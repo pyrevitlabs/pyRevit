@@ -1,2 +1,7 @@
-tooltip: Prints all available emojis with shorthand codes
+title:
+  ru: эмоджи
+  en_us: emojis
+tooltip:
+  ru: Печатает все доступные эмоджи с сокращенными кодами
+  en_us: Prints all available emojis with shorthand codes
 context: zero-doc

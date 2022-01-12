@@ -1,7 +1,9 @@
 title:
+  ru: Найти все загруженные сборки
   fr_fr: Rechercher tous les DLL chargés
   en_us: Find All Loaded Assemblies
 tooltip:
+  ru: Показывает всех загруженных в данный момент сборок
   fr_fr: Lister tous les DLL chargés
   en_us: List all currently loaded assemblies
 context: zero-doc
