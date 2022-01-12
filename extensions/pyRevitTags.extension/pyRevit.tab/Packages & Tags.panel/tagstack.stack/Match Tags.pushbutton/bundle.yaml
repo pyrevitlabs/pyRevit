@@ -1,2 +1,7 @@
-tooltip: Match Tags between selected elements
+title:
+  ru: Сопоставить марки
+  en_us: Match Tags
+tooltip:
+  ru: Сопоставляет марки между выделенными элементами
+  en_us: Match Tags between selected elements
 author: '{{author}}'

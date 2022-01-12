@@ -1,2 +1,7 @@
-tooltip: Manage sheet packages
+title:
+  ru: Экспортировать промаркированные
+  en_us: Export Tagged
+tooltip:
+  ru: Управляет пакетами листов
+  en_us: Manage sheet packages
 author: '{{author}}'
