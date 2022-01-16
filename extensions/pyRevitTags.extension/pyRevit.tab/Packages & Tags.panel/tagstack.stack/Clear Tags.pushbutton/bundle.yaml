@@ -2,6 +2,6 @@ title:
   ru: Очистить марки
   en_us: Clear Tags
 tooltip:
-  ru: Очищает информацию о марках выделенных элементов
+  ru: Очищает информацию о марках выделенных элементов.
   en_us: Clear tag information from selected elements
 author: '{{author}}'

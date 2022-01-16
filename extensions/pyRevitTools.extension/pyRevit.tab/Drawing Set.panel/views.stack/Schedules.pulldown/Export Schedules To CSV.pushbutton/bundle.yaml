@@ -1,10 +1,10 @@
 tooltip:
   ru: |-
-    Экспортирует выделенные спецификации в CSV файлы
+    Экспортирует выделенные спецификации в CSV файлы.
     
     
     Shift-Click:
-    Выберите путь экспорта по умолчанию
+    Выберите путь экспорта по умолчанию.
   fr_fr: |-
     Exporte les nomenclatures sélectionnées vers des fichiers CSV
 

@@ -13,7 +13,7 @@ tooltip:
     
     SHIFT-Click:
     
-    Включить типы элементов при сравнении видов
+    Включить типы элементов при сравнении видов.
   fr_fr: >-
     Comparé deux vues en comparant les contenus les uns par rapport aux autres. Par défaut
     cet outil ne fait pas attention aux types d'éléments. Par exemple, deux textes

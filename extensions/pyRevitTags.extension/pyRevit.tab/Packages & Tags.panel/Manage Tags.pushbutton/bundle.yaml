@@ -8,7 +8,7 @@ title:
 
     Tags
 tooltip:
-  ru: Управляет марками в проекте или выделенными элементами
+  ru: Управляет марками в проекте или выделенными элементами.
   en_us: Manage tags in project or selected elements
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'

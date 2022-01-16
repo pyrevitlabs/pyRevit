@@ -5,10 +5,10 @@ title:
   en_us: Count lines of selected style
 tooltip:
   ru: >-
-    Считает все линии в модели с таким же стилем выделенной линии
+    Считает все линии в модели с таким же стилем выделенной линии.
 
 
-    CTRL-Click: Выводит найденные линии
+    CTRL-Click: Выводит найденные линии.
   fr_fr: >-
     Compte toutes les lignes du modèle avec un style correspondant à la ligne sélectionnée
 

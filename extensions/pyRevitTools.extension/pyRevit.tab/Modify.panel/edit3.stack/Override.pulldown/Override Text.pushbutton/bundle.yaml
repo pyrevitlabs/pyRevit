@@ -3,7 +3,7 @@ title:
   fr_fr: Remplacement texte
   en_us: Override text
 tooltip:
-  ru: Предоставляет возможности для переопределения видимости/графики на выделенных текстовых примечаниях
+  ru: Предоставляет возможности для переопределения видимости/графики на выделенных текстовых примечаниях.
   fr_fr: Donne des options pour le remplacement graphiques des notes textuelles sélectionnés
   en_us: Provides options for overriding Visibility/Graphics on selected text notes
 context: OST_TextNotes

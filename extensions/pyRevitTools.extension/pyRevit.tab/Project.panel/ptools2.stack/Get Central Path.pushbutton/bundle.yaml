@@ -4,11 +4,11 @@ title:
   en_us: Get Central Path
 tooltip:
   ru: >-
-    Печатает полный путь до модели хранилища (если модель с совместным доступом)
+    Печатает полный путь до модели хранилища (если модель с совместным доступом).
     
     Shift+Click:
     
-    Открывает модель хранилища в проводнике
+    Открывает модель хранилища в проводнике.
   fr_fr: >-
      Imprimer le chemin complet vers le modèle central (si le modèle est partagé)
     

@@ -9,7 +9,7 @@ tooltip:
     Откройте исходный лист. Запустите данный скрипт и выделите листы назначения.
     Выделите видовые экраны и нажмите кнопку Finish на панели свойств. Выделенные виды
     будут добавлены в листы назначения. Если вид или спецификация уже существует 
-    на этом листе, расположение и тип будут обновлены
+    на этом листе, расположение и тип будут обновлены.
   fr_fr: >-
     Ouvrez la feuille source. Exécutez ce script et sélectionnez les feuilles de
     destination. Sélectionnez Vues et appuyez sur le bouton Terminer dans la

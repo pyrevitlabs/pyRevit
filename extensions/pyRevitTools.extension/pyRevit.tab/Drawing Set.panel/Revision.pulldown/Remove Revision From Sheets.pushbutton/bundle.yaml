@@ -5,7 +5,7 @@ title:
 tooltip:
   ru: >-
     Выделите изменение и данный скрипт удалит
-    данное изменение со всех листов если оно не было сделано инструментом пометочное облако
+    данное изменение со всех листов если оно не было сделано инструментом пометочное облако.
   fr_fr: >-
     Sélectionnez une révision de la liste des révisions et ce script va retirer
     la révision de toutes les feuilles si aucun nuage de révision n'a été

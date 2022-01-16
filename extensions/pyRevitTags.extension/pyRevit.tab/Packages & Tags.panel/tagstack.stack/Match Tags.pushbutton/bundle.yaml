@@ -2,6 +2,6 @@ title:
   ru: Сверить марки
   en_us: Match Tags
 tooltip:
-  ru: Сравнивает марки между выделенными элементами
+  ru: Сравнивает марки между выделенными элементами.
   en_us: Match Tags between selected elements
 author: '{{author}}'

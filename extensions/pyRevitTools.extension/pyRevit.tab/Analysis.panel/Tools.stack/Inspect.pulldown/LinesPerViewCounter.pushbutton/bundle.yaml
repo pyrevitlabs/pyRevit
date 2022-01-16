@@ -3,7 +3,7 @@ title:
   fr_fr: Compteur de lignes par vue
   en_us: Lines Per View Counter
 tooltip:
-  ru: Отображает отсортированный список количетсва линий детализации для всех линий детализации
+  ru: Отображает отсортированный список количетсва линий детализации для всех линий детализации.
   fr_fr: Lister classée du nombre de lignes de détail par vue contenant des lignes de détail
   en_us: List sorted Detail Line Counts for all views with Detail Lines
 author: 'Frederic Beaupere'

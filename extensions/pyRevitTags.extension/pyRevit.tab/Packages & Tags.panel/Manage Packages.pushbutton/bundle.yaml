@@ -8,7 +8,7 @@ title:
   
     Packages
 tooltip:
-  ru: Управляет пакетами листов
+  ru: Управляет пакетами листов.
   en_us: Manage sheet packages
 help_url: '{{docpath}}po0lCldSGmk'
 author: '{{author}}'

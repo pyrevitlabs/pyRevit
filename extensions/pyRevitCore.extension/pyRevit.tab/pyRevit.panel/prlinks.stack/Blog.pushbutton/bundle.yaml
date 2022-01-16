@@ -4,6 +4,6 @@ title:
   fa: "وبلاگ"
   ar: "بلاگ"
 tooltip:
-  ru: Открывает блог pyRevit
+  ru: Открывает блог pyRevit.
   en_us: Opens the pyRevit blog.
 context: zero-doc

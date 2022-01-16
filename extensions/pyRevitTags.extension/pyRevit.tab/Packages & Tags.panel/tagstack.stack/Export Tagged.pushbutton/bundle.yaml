@@ -2,6 +2,6 @@ title:
   ru: Экспорт марок
   en_us: Export Tagged
 tooltip:
-  ru: Управляет пакетами листов
+  ru: Управляет пакетами листов.
   en_us: Manage sheet packages
 author: '{{author}}'

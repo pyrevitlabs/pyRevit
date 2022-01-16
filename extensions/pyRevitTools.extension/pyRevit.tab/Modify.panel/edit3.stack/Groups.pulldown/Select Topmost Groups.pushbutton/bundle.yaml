@@ -5,10 +5,10 @@ title:
 tooltip:
   ru: >-
     Выделяет экземпляры групп, которые содержат выделенные элементы.
-    По умолчанию исключает несгруппированные элементы из выделения
+    По умолчанию исключает несгруппированные элементы из выделения.
     
     Shift+Click:
-    Включить несгруппированные элементы
+    Включить несгруппированные элементы.
   fr_fr: >-
     Sélectionne les occurences du groupe qui contiennent les éléments sélectionnés
     Par défaut, les éléments non groupés sont exclus de la sélection

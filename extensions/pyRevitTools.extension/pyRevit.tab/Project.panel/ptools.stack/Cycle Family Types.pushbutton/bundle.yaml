@@ -3,7 +3,7 @@ title:
   fr_fr: Parcourir les types
   en_us: Cycle Types
 tooltip:
-  ru: Последовательно переключает типы семейств
+  ru: Последовательно переключает типы семейств.
   fr_fr: Parcourir les types de familles
   en_us: Cycle family types
 context: doc-family

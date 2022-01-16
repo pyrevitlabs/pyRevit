@@ -5,7 +5,7 @@ title:
 tooltip:
   ru: >-
     Разрушает все экземпляры выделенных групп 
-    и удаляет определения групп из диспетчера проекта
+    и удаляет определения групп из диспетчера проекта.
   fr_fr: >-
     Explose toutes les occurences des groupes sélectionnés et supprime
     la définition de groupe depuis le navigateur de projet

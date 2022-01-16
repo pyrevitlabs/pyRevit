@@ -8,7 +8,7 @@ title:
   
     Selected
 tooltip:
-  ru: Применяет марку к выделенным элементам
+  ru: Применяет марку к выделенным элементам.
   en_us: Apply tag to selected elements
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'

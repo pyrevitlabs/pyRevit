@@ -3,7 +3,7 @@ title:
   fr_fr: Sélectionner les éléments d'un groupe
   en_us: Select Group Elements
 tooltip:
-  ru: Заменяет теущее выделение элементами внутри групп
+  ru: Заменяет теущее выделение элементами внутри групп.
   fr_fr: Remplace la sélection actuelle par des éléments à l'intérieur des groupes
   en_us: Replaces current selection with elements inside the groups
 context: selection

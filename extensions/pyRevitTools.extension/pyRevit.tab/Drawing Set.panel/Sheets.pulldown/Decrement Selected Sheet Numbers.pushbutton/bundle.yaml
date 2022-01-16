@@ -5,7 +5,7 @@ title:
 tooltip:
   ru: >-
     Уменьшает номер листа на один. Изменение листа будет выведено, 
-    если в настройках pyRevit ведение журнала установлено значение Verbose
+    если в настройках pyRevit ведение журнала установлено значение Verbose.
   fr_fr: >-
     Diminue de un le numéro de feuille des feuilles sélectionnées. Le changement
     de nom de feuille sera imprimé si la journalisation est définie sur Verbose
