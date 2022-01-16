@@ -1,7 +1,7 @@
 title:
-  ru: Сопоставить марки
+  ru: Сверить марки
   en_us: Match Tags
 tooltip:
-  ru: Сопоставляет марки между выделенными элементами
+  ru: Сравнивает марки между выделенными элементами
   en_us: Match Tags between selected elements
 author: '{{author}}'

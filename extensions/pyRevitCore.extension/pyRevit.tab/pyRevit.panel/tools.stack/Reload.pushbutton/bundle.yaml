@@ -5,7 +5,7 @@ tooltip:
 engine:
   clean: true
 title:
-  ru: Перезагрузить
+  ru: Обновить
   en_us: 'Reload'
   fa: 'بارگذاری مجدد'
   bg: 'Презареди'

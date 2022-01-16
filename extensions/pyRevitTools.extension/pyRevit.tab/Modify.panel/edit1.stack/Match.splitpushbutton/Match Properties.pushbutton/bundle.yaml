@@ -1,15 +1,15 @@
 title:
-  ru: Сопоставить параметры
+  ru: Сверить параметры
   fr_fr: Correspondance des propriétés
   en_us: Match properties
 tooltip:
   ru: >-
-    Сопоставляет параметры экземпляра или типа между элементами и их типами
+    Сверяет параметры экземпляра или типа между элементами и их типами
     
     
     Shift+Click:
     
-    Повторно применить предыдущее сопоставление параметров
+    Повторно применить предыдущую сверку параметров
   fr_fr: >-
     Fait correspondre les paramètres d'instance et de type entre les éléments et leurs types
 
