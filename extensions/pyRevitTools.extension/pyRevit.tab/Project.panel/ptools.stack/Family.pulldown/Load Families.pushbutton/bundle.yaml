@@ -1,7 +1,12 @@
 title:
+  ru: Загрузить семейства
   fr_fr: Charger les familles
   en_us: Load Families
 tooltip:
+  ru: >-
+    Данный инструмент дает Вам возможность загружать несколько семейств из папки и ее подпапок.
+    
+    Вы можете загрузить семейство со всеми его типами или выбрать типы для каждого семейства.
   fr_fr: >-
     Cet outil vous donne la possibilité de charger plusieurs familles à partir d'un dossier et de ses sous-dossiers. 
     

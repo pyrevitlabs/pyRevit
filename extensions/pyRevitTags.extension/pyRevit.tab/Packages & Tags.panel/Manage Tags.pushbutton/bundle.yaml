@@ -1,7 +1,14 @@
-help_url: '{{docpath}}FYNDSAypWlg'
-tooltip: Manage tags in project or selected elements
-author: '{{author}}'
-title: >-
-  Manage
+title:
+  ru: >-
+    Править
+  
+    марки
+  en_us: >-
+    Manage
 
-  Tags
+    Tags
+tooltip:
+  ru: Управляет марками в проекте или выделенными элементами.
+  en_us: Manage tags in project or selected elements
+help_url: '{{docpath}}FYNDSAypWlg'
+author: '{{author}}'

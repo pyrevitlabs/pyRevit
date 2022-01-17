@@ -1,7 +1,14 @@
 title:
+  ru: Выбрать
   fr_fr: Sélectionner
   en_us: Pick
 tooltip:
+  ru: >-
+    Активирует инструмент выделения, который выбирает определенный тип элемента.
+    
+    Shift-Click:
+    
+    Выбрать избранное из всех доступных категорий.
   fr_fr: >-
     Active l'outil de sélection qui sélectionne un type d'élément spécifique
 

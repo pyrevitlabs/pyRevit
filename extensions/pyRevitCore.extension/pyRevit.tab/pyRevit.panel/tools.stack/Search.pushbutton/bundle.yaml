@@ -1,5 +1,8 @@
-tooltip: The best interface ever!
+tooltip:
+  ru: Самый лучший интерфейс!
+  en_us: The best interface ever!
 title:
+  ru: Поиск
   en_us: 'Search'
   fa: 'جستجو'
   bg: 'Търси'

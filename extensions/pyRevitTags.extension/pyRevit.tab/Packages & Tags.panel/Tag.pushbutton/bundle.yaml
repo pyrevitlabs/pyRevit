@@ -1,7 +1,14 @@
+title:
+  ru: >-
+    Пометить
+  
+    выделенное
+  en_us: >-
+    Tag
+  
+    Selected
+tooltip:
+  ru: Применяет марку к выделенным элементам.
+  en_us: Apply tag to selected elements
 help_url: '{{docpath}}FYNDSAypWlg'
-tooltip: Apply tag to selected elements
 author: '{{author}}'
-title: >-
-  Tag
-
-  Selected

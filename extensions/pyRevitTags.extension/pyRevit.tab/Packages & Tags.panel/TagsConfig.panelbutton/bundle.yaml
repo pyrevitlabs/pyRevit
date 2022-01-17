@@ -1,2 +1,7 @@
-tooltip: Tags configuration options
+title:
+  ru: Конфигурация марок
+  en_us: Tags Config
+tooltip:
+  ru: Открывает настройки маркирования.
+  en_us: Tags configuration options
 context: zero-doc

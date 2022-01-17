@@ -1,9 +1,11 @@
-tooltip: 
+tooltip:
+  ru: Находит папки со скриптами и создает кнопки новых криптов или новых устанновленных расширений.
   en_us: Searches the script folders and create buttons for the new script or newly installed extensions
   fr_fr: Recherche de nouveaux scripts dans le dossier de scripts et crée de nouveau bouton ou ajoute une nouvelle extension
 engine:
   clean: true
 title:
+  ru: Обновить
   en_us: 'Reload'
   fa: 'بارگذاری مجدد'
   bg: 'Презареди'

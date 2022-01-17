@@ -1,7 +1,14 @@
+title:
+  ru: >-
+    Править
+    
+    листы
+  en_us: >-
+    Manage
+  
+    Packages
+tooltip:
+  ru: Управляет пакетами листов.
+  en_us: Manage sheet packages
 help_url: '{{docpath}}po0lCldSGmk'
-tooltip: Manage sheet packages
 author: '{{author}}'
-title: >-
-  Manage
-
-  Packages

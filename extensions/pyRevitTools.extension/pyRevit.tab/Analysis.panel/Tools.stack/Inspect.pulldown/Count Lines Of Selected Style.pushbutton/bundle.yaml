@@ -1,8 +1,14 @@
 context: selection
 title:
+  ru: Посчитать линии выделенного стиля
   fr_fr: Compter les lignes d'un style choisi
   en_us: Count lines of selected style
 tooltip:
+  ru: >-
+    Считает все линии в модели с таким же стилем выделенной линии.
+
+
+    CTRL-Click: Выводит найденные линии.
   fr_fr: >-
     Compte toutes les lignes du modèle avec un style correspondant à la ligne sélectionnée
 

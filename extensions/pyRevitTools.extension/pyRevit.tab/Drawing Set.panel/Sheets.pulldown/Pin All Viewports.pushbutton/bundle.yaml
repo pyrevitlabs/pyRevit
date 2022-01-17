@@ -1,7 +1,13 @@
 title:
+  ru: Прикрепить все видовые экраны
   fr_fr: Epingler toutes les Vues
   en_us: Pin All Viewports
 tooltip:
+  ru: |-
+    Прикрепляет все видовые экраны на выделенных листах.
+    
+    Shift-Click:
+    Прикрепляет все видовые экраны на активном листе.
   fr_fr: |-
     Épingler toutes les vues sur les feuilles sélectionnées.
 

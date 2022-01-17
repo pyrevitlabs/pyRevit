@@ -1,7 +1,12 @@
 title:
+  ru: ПОчистить
   fr_fr: MEffacer
   en_us: MClear
 tooltip:
+  ru: >-
+    Очищает память проекта.
+    
+    Работает как кнопка MC в калькуляторе. Память зависит от каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
   fr_fr: >-
      Efface la sélection de la mémoire
     

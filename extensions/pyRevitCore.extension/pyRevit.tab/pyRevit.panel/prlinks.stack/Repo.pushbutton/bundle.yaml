@@ -1,2 +1,7 @@
-tooltip: Opens the git repository page
+title:
+  ru: Репо
+  en_us: Repo
+tooltip:
+  ru: Открывает страницу git репозитория.
+  en_us: Opens the git repository page
 context: zero-doc

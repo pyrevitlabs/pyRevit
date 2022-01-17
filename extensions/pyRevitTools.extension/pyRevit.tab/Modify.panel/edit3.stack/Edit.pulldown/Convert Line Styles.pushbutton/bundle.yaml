@@ -1,7 +1,14 @@
 title:
+  ru: Конвертировать стили линий
   fr_fr: Changer les styles de lignes
   en_us: Convert line styles
 tooltip:
+  ru: >-
+    Данный инструмент конвертирует стили линий. Запустите инструмент,
+    выберите линию со стилем, который нужно заменить, а затем выберите 
+    строку со стилем типа интерфейса. Скрипт исправит стили линий в модели.
+    ОДНАКО, линии, которые являются частью группы, не будут затронуты. См. также 
+    инструмент "Встряхнуть заполненные области".
   fr_fr: >-
     Il s'agit d'un outil pour convertir les styles de ligne. Exécutez l'outil,
     sélectionnez une ligne avec le style à remplacer, puis

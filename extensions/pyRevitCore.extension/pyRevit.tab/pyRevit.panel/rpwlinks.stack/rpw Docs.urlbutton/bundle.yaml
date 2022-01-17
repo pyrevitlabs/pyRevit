@@ -1,3 +1,8 @@
-tooltip: Opens the documentation page for RevitPythonWrapper
+title:
+  ru: rpw
+  en_us: rpw
+tooltip:
+  ru: Открывает страницу документации для RevitPythonWrapper.
+  en_us: Opens the documentation page for RevitPythonWrapper
 hyperlink: "http://revitpythonwrapper.readthedocs.io/en/latest/"
 context: zero-doc

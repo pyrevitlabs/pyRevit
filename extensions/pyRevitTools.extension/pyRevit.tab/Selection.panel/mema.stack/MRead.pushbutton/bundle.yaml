@@ -1,8 +1,13 @@
 help_url: '{{docpath}}pAM-ARIXXLw'
 title:
+  ru: ПВыделить
   fr_fr: MLire
   en_us: MRead
 tooltip:
+  ru: >-
+    Читает выбранные элементы в память проекта.
+
+    Работает как кнопка MR в калькуляторе. Память зависит от каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
   fr_fr: >-
      Lire la sélection de la mémoire
     

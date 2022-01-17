@@ -1,9 +1,13 @@
 title:
+  ru: |-
+    Открыть связанные листы
   fr_fr: |-
     Ouvrir la feuille en référence
   en_us: |-
     Open Referecing Sheet
 tooltip:
+  ru:
+    Открывает лист содержащий данный вид и приближает к видовому экрану.
   fr_fr: |-
     Ouvre la feuille contenant cette vue et effectue un zoom sur la fenêtre
   en_us: |-

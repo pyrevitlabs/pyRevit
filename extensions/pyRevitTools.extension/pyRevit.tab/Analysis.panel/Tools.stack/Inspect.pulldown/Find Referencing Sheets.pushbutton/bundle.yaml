@@ -1,7 +1,12 @@
 title:
+  ru: Найти связанные листы
   fr_fr: Trouver les feuilles qui référencent la vue
   en_us: Find Referencing Sheets
 tooltip:
+  ru: >-
+    Находит все связанные листы с текущим видом.
+    
+    Особенно полезно для поиска легенд.
   fr_fr: >-
     Trouver toutes les vues qui référencent la vue active
 
