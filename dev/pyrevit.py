@@ -17,6 +17,7 @@
     Inno Setup Compiler     for buidling installers (https://jrsoftware.org/isinfo.php)
     └── iscc                    buidling installers from scripts
     choco                   for building and publishing choco packages (https://chocolatey.org)
+    nuget                   for signing choco nuget package (https://www.nuget.org/downloads)
     Wix Tools               for building MSI installers (https://wixtoolset.org/releases/)
     pipenv                  for managing python virtual envs (https://pipenv.readthedocs.io/)
     python 2                for building docs (https://www.python.org/downloads/)
@@ -29,8 +30,16 @@
     Access tokens must be set in env vars otherwise access will be
     limited to API rate limits:
 
-    GITHUBAUTH              for accessing repo info on github
-    AIRTABLEAUTH            for accessing shared tables on airtable
+    GITHUB_TOKEN            for accessing repo info on github
+    AIRTABLE_TOKEN          for accessing shared tables on airtable
+
+    Sign commands require certificate information on a series of
+    env vars otherwise signing process will fail:
+
+    CERTIFICATENAME         certificate name
+    CERTIFICATESHA1         certificate fingerprint
+    CERTIFICATE             certificate *.pfx contents in base64
+    CERTIFICATEPASSWORD     certificate password
 
 """  # pylint: disable=line-too-long
 # - [ ] run tests?
