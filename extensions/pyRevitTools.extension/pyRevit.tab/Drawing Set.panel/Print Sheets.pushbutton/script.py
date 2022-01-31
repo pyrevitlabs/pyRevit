@@ -1397,6 +1397,7 @@ def cleanup_sheetnumbers(doc):
 
 # verify model is printable
 forms.check_modeldoc(exitscript=True)
+selection = revit.uidoc.Selection.SetElementIds(List[DB.ElementId]([revit.DB.ElementId(2147483647)]))
 
 # TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602
