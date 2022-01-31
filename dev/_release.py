@@ -334,6 +334,10 @@ def sign_installers(_: Dict[str, str]):
         installer_exe = installer_exe_fmt.format(version=install_version)
         _sign_binary(f"{installer_exe}.exe", cert.name, cert.fingerprint)
 
+    for installer_msi_fmt in configs.INSTALLER_MSIS:
+        installer_msi = installer_msi_fmt.format(version=install_version)
+        _sign_binary(f"{installer_msi}.msi", cert.name, cert.fingerprint)
+
     installer_nupkg = configs.PYREVIT_CHOCO_NUPKG_FILE.format(
         version=install_version
     )
