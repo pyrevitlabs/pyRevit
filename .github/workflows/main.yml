@@ -67,7 +67,7 @@ jobs:
           CERTIFICATE: ${{ secrets.CERTIFICATE }}
           CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
         run: |
-          pipenv run pyrevit sign add-cert
+          pipenv run pyrevit sign addcert
 
       # WIP only
       - name: Update Build Info (WIP)
