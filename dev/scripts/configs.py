@@ -45,6 +45,9 @@ PYREVIT_MODULE_PATH = op.join(PYREVIT_LIBS_PATH, "pyrevit")
 # release files
 # API file paths must be absolute otherwise advancedinstaller will mess up
 # the relative source paths defined inside the api file and fails
+PYREVIT_UPGRADE_CODE = "92cd1cdd-85c6-438f-ad0a-67b08d59cc41"
+PYREVIT_CLI_UPGRADE_CODE = "618520c4-0c3a-4e8d-8e8a-b74db3f3592b"
+
 DISTRIBUTE_PATH = op.join(ROOT, "dist")
 RELEASE_PATH = op.join(ROOT, "release")
 PYREVIT_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit.iss")
@@ -70,6 +73,11 @@ INSTALLER_FILES = [
 PYREVIT_COMMON_MSI_PROPSFILE = op.join(RELEASE_PATH, "pyrevit-common.props")
 PYREVIT_CLI_MSI_PROPSFILE = op.join(RELEASE_PATH, "pyrevit-cli.props")
 PYREVIT_CLI_MSI_INSTALLERFILE = op.join(RELEASE_PATH, "pyrevit-cli.wixproj")
+PYREVIT_MSI_PROPS_FILES = [
+]
+PYREVIT_MSI_INSTALLER_FILES = [
+]
+
 PYREVIT_CLI_MSI_PROPS_FILES = [
     PYREVIT_CLI_MSI_PROPSFILE,
 ]

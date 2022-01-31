@@ -67,7 +67,9 @@ def _installer_set_uuid(product_code: str, installer_files: List[str]):
                 instfile.writelines(contents)
 
 
-def _msi_set_uuid(product_code: str, installer_files: List[str]):
+def _msi_set_uuid(
+    product_code: str, upgrade_code: str, installer_files: List[str]
+):
     for installer_file in installer_files:
         namespace = "http://schemas.microsoft.com/developer/msbuild/2003"
         dom = ET.parse(installer_file)
@@ -76,7 +78,7 @@ def _msi_set_uuid(product_code: str, installer_files: List[str]):
         id_tag = nuget.findall(rf".//{{{namespace}}}ProductIdCode")[0]
         upgrade_tag = nuget.findall(rf".//{{{namespace}}}ProductUpgradeCode")[0]
         id_tag.text = product_code
-        upgrade_tag.text = product_code
+        upgrade_tag.text = upgrade_code
         dom.write(installer_file, encoding="utf-8", xml_declaration=True)
 
 
@@ -118,12 +120,24 @@ def set_product_data(_: Dict[str, str]):
     pyrevit_pc = _get_new_product_code()
     pyrevitcli_pc = _get_new_product_code()
 
+    # update product info on installer files
     _installer_set_uuid(pyrevit_pc, configs.PYREVIT_INSTALLER_FILES)
-
     _installer_set_uuid(pyrevitcli_pc, configs.PYREVIT_CLI_INSTALLER_FILES)
-    _msi_set_uuid(pyrevitcli_pc, configs.PYREVIT_CLI_MSI_PROPS_FILES)
+
+    # update product info on MSI installer files
+    _msi_set_uuid(
+        pyrevit_pc,
+        configs.PYREVIT_UPGRADE_CODE,
+        configs.PYREVIT_MSI_PROPS_FILES,
+    )
+    _msi_set_uuid(
+        pyrevitcli_pc,
+        configs.PYREVIT_CLI_UPGRADE_CODE,
+        configs.PYREVIT_CLI_MSI_PROPS_FILES,
+    )
 
     build_version = props.get_version()
+
     _update_product_data_file(build_version, pyrevit_pc)
     _update_product_data_file(build_version, pyrevitcli_pc, cli=True)
 
@@ -186,7 +200,7 @@ def setup_certificate(_: Dict[str, str]):
             "-importpfx",
             f"{cert.filename}",
         ],
-        dump_stdout=True
+        dump_stdout=True,
     )
 
 
