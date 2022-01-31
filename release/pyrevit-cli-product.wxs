@@ -75,7 +75,7 @@
 			<ComponentGroupRef Id="PYREVIT_BIN"></ComponentGroupRef>
 
 			<Component Id="addPyRevitToPath" Guid="{763ee014-3d28-4612-babe-df8c5bef347e}" KeyPath="yes">
-				<Environment Id="PATH" Name="PATH" Value="[PYREVIT_INSTALLFOLDER]" Permanent="no" Part="first" Action="set" System="no" />
+				<Environment Id="PATH" Name="PATH" Value="[PYREVIT_INSTALLFOLDER]" Permanent="no" Part="first" Action="set" System="yes" />
 			</Component>
 		</ComponentGroup>
 	</Fragment>
