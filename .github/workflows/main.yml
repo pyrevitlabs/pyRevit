@@ -66,6 +66,8 @@ jobs:
         env:
           CERTIFICATE: ${{ secrets.CERTIFICATE }}
           CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
         run: |
           pipenv run pyrevit sign addcert
 
@@ -103,6 +105,8 @@ jobs:
 
       - name: Sign Products
         env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
           CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
           CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
         run: |
@@ -114,6 +118,8 @@ jobs:
 
       - name: Sign Installers
         env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
           CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
           CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
         run: |
