@@ -25,6 +25,9 @@ import _props as props
 logger = logging.getLogger()
 
 
+PyRevitCertificate = namedtuple(
+    "PyRevitCertificate", "name,filename,password,contents,fingerprint"
+)
 PyRevitProduct = namedtuple("PyRevitProduct", "product,release,version,key")
 
 
@@ -141,47 +144,53 @@ def _get_cert_info():
         print("CERTIFICATENAME is required")
         sys.exit(1)
 
-    cert_fingerprint = os.environ.get("CERTIFICATESHA1", "")
-    if not cert_fingerprint:
-        print("CERTIFICATESHA1 is required")
-        sys.exit(1)
+    cert_filename = op.join(tempfile.gettempdir(), "certificate.pfx")
 
-    return cert_name, cert_fingerprint
-
-
-def setup_certificate(_: Dict[str, str]):
-    """Add certificate to store
-    needs CERTIFICATE and CERTIFICATEPASSWORD env vars
-    """
     cert_password = os.environ.get("CERTIFICATEPASSWORD", "")
     if not cert_password:
         print("CERTIFICATEPASSWORD is required")
         sys.exit(1)
 
     cert_contents = os.environ.get("CERTIFICATE", "")
-    cert_binary = base64.decodebytes(bytes(cert_contents, "utf-8"))
-    if not cert_binary:
+    if not cert_contents:
         print("CERTIFICATE is required")
         sys.exit(1)
 
-    cert_filename = op.join(tempfile.gettempdir(), "certificate.pfx")
-    with open(cert_filename, "wb") as certfile:
-        certfile.write(cert_binary)
+    cert_fingerprint = os.environ.get("CERTIFICATESHA1", "")
+    if not cert_fingerprint:
+        print("CERTIFICATESHA1 is required")
+        sys.exit(1)
 
+    return PyRevitCertificate(
+        name=cert_name,
+        filename=cert_filename,
+        password=cert_password,
+        contents=cert_contents,
+        fingerprint=cert_fingerprint,
+    )
+
+
+def setup_certificate(_: Dict[str, str]):
+    """Add certificate to store
+    needs CERTIFICATE and CERTIFICATEPASSWORD env vars
+    """
+    cert = _get_cert_info()
+    with open(cert.filename, "wb") as certfile:
+        certfile.write(base64.decodebytes(bytes(cert.contents, "utf-8")))
     utils.system(
         [
             install.get_tool("certutil"),
             "-f",
             "-p",
-            "${cert_password}",
+            "${cert.password}",
             "-importpfx",
-            "${cert_filename}",
+            "${cert.filename}",
         ]
     )
 
 
 def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
-    utils.system(
+    res = utils.system(
         [
             install.get_tool("signtool"),
             "sign",
@@ -196,6 +205,29 @@ def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
             cert_name,
             f"{filepath}",
         ],
+        dump_stdout=False,
+    )
+    if "SignTool Error:" in res:
+        print(f"Error signing {filepath}")
+        print(f"{cert_name=}")
+        print(f"{cert_fingerprint=}")
+        print(f"signtool results:\n{res}")
+        sys.exit(1)
+
+
+def _sign_nupkg(filepath: str, cert_path: str, cert_password: str):
+    utils.system(
+        [
+            install.get_tool("nuget"),
+            "sign",
+            filepath,
+            "-CertificatePath",
+            cert_path,
+            "-CertificatePassword",
+            cert_password,
+            "-Timestamper",
+            "http://timestamp.digicert.com",
+        ],
         dump_stdout=True,
     )
 
@@ -203,9 +235,9 @@ def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
 def sign_binaries(_: Dict[str, str]):
     """Sign binaries with certificate (must be installed on machine)"""
     print("digitally signing binaries...")
-    cert_name, cert_fingerprint = _get_cert_info()
+    cert = _get_cert_info()
     for bin_file in _get_binaries():
-        _sign_binary(bin_file, cert_name, cert_fingerprint)
+        _sign_binary(bin_file, cert.name, cert.fingerprint)
 
 
 def _ensure_clean_tree():
@@ -295,16 +327,16 @@ def build_installers(_: Dict[str, str]):
 def sign_installers(_: Dict[str, str]):
     """Sign installers with certificate (must be installed on machine)"""
     print("digitally signing installers...")
-    cert_name, cert_fingerprint = _get_cert_info()
+    cert = _get_cert_info()
     install_version = props.get_version(install=True)
     for installer_exe_fmt in configs.INSTALLER_EXES:
         installer_exe = installer_exe_fmt.format(version=install_version)
-        _sign_binary(f"{installer_exe}.exe", cert_name, cert_fingerprint)
+        _sign_binary(f"{installer_exe}.exe", cert.name, cert.fingerprint)
 
     installer_nupkg = configs.PYREVIT_CHOCO_NUPKG_FILE.format(
         version=install_version
     )
-    _sign_binary(installer_nupkg, cert_name, cert_fingerprint)
+    _sign_nupkg(installer_nupkg, cert.filename, cert.password)
 
 
 def create_release(args: Dict[str, str]):
