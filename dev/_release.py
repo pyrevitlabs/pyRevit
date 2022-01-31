@@ -159,7 +159,7 @@ def setup_certificate(_: Dict[str, str]):
         sys.exit(1)
 
     cert_contents = os.environ.get("CERTIFICATE", "")
-    cert_binary = base64.decodestring(cert_contents)
+    cert_binary = base64.decodebytes(bytes(cert_contents, "utf-8"))
     if not cert_binary:
         print("CERTIFICATE is required")
         sys.exit(1)
