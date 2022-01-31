@@ -84,6 +84,12 @@ class ElementSelection:
             )
         HOST_APP.uidoc.RefreshActiveView()
 
+    def clear(self):
+        HOST_APP.uidoc.Selection.SetElementIds(
+            framework.List[DB.ElementId]([DB.ElementId.InvalidElementId])
+        )
+        HOST_APP.uidoc.RefreshActiveView()
+
     def append(self, element_list):
         self._refs.extend(ElementSelection.get_element_ids(element_list))
         self.set_to(self._refs)
