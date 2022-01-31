@@ -182,10 +182,11 @@ def setup_certificate(_: Dict[str, str]):
             install.get_tool("certutil"),
             "-f",
             "-p",
-            "${cert.password}",
+            f"{cert.password}",
             "-importpfx",
-            "${cert.filename}",
-        ]
+            f"{cert.filename}",
+        ],
+        dump_stdout=True
     )
 
 
