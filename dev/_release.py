@@ -203,7 +203,7 @@ def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
 def sign_binaries(_: Dict[str, str]):
     """Sign binaries with certificate (must be installed on machine)"""
     print("digitally signing binaries...")
-    cert_name, cert_fingerprint = _get_cert_info()()
+    cert_name, cert_fingerprint = _get_cert_info()
     for bin_file in _get_binaries():
         _sign_binary(bin_file, cert_name, cert_fingerprint)
 
