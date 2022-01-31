@@ -20,7 +20,7 @@ logger = logging.getLogger()
 
 
 VER_FINDER = re.compile(r"\d\.\d+\.\d+(\.[a-z0-9+-]+)?")
-VER_PART_FINDER = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.[a-z0-9+-]+)?")
+VER_PART_FINDER = re.compile(r"^(\d)\.(\d+)\.(\d+)(\.[a-z0-9+-]+)?")
 
 
 def _get_urlsafe_version(version: str):

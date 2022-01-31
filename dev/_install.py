@@ -52,8 +52,11 @@ def check(_: Dict[str, str]):
                     f"see --help"
                 )
             )
+
     if not all_pass:
         sys.exit(1)
+
+    return all_pass
 
 
 def get_tool(tool_name: str):

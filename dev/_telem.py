@@ -8,6 +8,8 @@ from typing import Dict
 from scripts import configs
 from scripts import utils
 
+import _install as install
+
 
 # TODO: ask docker to setup supported servers
 def _ensure_db(_: Dict[str, str]):
