@@ -9,6 +9,8 @@ from typing import Dict, Optional
 from scripts import utils
 from scripts import configs
 
+import _install as install
+
 
 logger = logging.getLogger()
 
@@ -29,7 +31,7 @@ def _build(name: str, sln: str, config: str, print_output: Optional[bool] = Fals
     print(f"Building {name}...")
     report = utils.system(
         [
-            "dotnet",
+            install.get_tool("dotnet"),
             "build",
             slnpath,
             "-c",

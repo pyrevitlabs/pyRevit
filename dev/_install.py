@@ -19,7 +19,11 @@ REQUIRED_TOOLS = [
         name="iscc", get=r"C:\Program Files (x86)\Inno Setup 6", step="release"
     ),
     RequiredTool(name="certutil", get="", step="release"),
-    RequiredTool(name="signtool", get="", step="release"),
+    RequiredTool(
+        name="signtool",
+        get=r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x86",
+        step="release",
+    ),
     RequiredTool(name="nuget", get="", step="release"),
     RequiredTool(name="choco", get="", step="release"),
 ]
@@ -50,3 +54,10 @@ def check(_: Dict[str, str]):
             )
     if not all_pass:
         sys.exit(1)
+
+
+def get_tool(tool_name: str):
+    """Get full path of a required build tool"""
+    for rtool in REQUIRED_TOOLS:
+        if rtool.name == tool_name:
+            return op.join(rtool.get, rtool.name)

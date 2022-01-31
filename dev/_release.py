@@ -170,7 +170,7 @@ def setup_certificate(_: Dict[str, str]):
 
     utils.system(
         [
-            "certutil",
+            install.get_tool("certutil"),
             "-f",
             "-p",
             "${cert_password}",
@@ -183,7 +183,7 @@ def setup_certificate(_: Dict[str, str]):
 def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
     utils.system(
         [
-            "signtool",
+            install.get_tool("signtool"),
             "sign",
             "/sm",
             "/tr",
@@ -216,7 +216,7 @@ def _ensure_clean_tree():
 
 
 def _build_installers():
-    installer = "iscc.exe"
+    installer = install.get_tool("iscc")
     for script in configs.INSTALLER_FILES:
         installer_script = op.abspath(script)
         print(f"Building installer {installer_script}")
@@ -224,7 +224,7 @@ def _build_installers():
 
 
 def _build_msi_installers():
-    installer = "msbuild"
+    installer = install.get_tool("msbuild")
     for script in configs.MSI_INSTALLER_FILES:
         installer_script = op.abspath(script)
         print(f"Building installer {installer_script}")
@@ -275,7 +275,7 @@ def _build_choco_packages():
     print("Building choco package...")
     utils.system(
         [
-            "choco",
+            install.get_tool("choco"),
             "pack",
             configs.PYREVIT_CHOCO_NUSPEC_FILE,
             "--outdir",
