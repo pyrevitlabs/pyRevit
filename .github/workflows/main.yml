@@ -56,7 +56,7 @@ jobs:
         uses: fregante/setup-git-user@v1
 
       - name: Prepare signtool
-      - run: echo "C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x86" >> $GITHUB_PATH
+        run: echo "C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x86" >> $GITHUB_PATH
 
       - name: Check Build Environment
         run: pipenv run pyrevit check
