@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?include pyrevit-common-vars.wxi?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<!-- Product definition -->
+	<Product Id="$(var.ProductIdCode)"
+		UpgradeCode="$(var.ProductUpgradeCode)"
+		Name="$(var.ProductName)"
+		Manufacturer="$(var.Company)"
+		Language="$(var.Language)"
+		Version="$(var.Version)">
+
+		<!-- Packaging -->
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate EmbedCab="yes" />
+
+		<!-- Features -->
+		<Feature Id="ProductFeature" Title="$(var.ProductName)" Level="1">
+			<ComponentGroupRef Id="ProductComponents" />
+		</Feature>
+
+		<!-- UI -->
+		<UIRef Id="WixUI_Minimal" />
+		<WixVariable Id="WixUILicenseRtf" Value="../LICENSE.rtf" />
+		<WixVariable Id="WixUIDialogBmp" Value="pyrevit-cli-wix.bmp" />
+		<WixVariable Id="WixUIBannerBmp" Value="pyrevit-banner-wix.bmp" />
+
+		<!-- Install actions -->
+		<CustomAction Id="clearExistingCachesCommandI" Property="clearExistingCachesI" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; caches clear --all" />
+		<CustomAction Id="clearExistingCachesI" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
+		<CustomAction Id="detachExistingClonesCommandI" Property="detachExistingClonesI" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; detach --all" />
+		<CustomAction Id="detachExistingClonesI" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
+
+		<!-- Uninstall actions -->
+		<CustomAction Id="clearExistingCachesCommandU" Property="clearExistingCachesU" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; caches clear --all" />
+		<CustomAction Id="clearExistingCachesU" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
+		<CustomAction Id="detachExistingClonesCommandU" Property="detachExistingClonesU" Value="&quot;[INSTALLDIR]pyrevit.exe&quot; detach --all" />
+		<CustomAction Id="detachExistingClonesU" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" />
+
+		<!-- Install sequence -->
+		<InstallExecuteSequence>
+			<Custom Action="clearExistingCachesCommandU" Before="clearExistingCachesU"/>
+			<Custom Action="clearExistingCachesU" Before="RemoveFiles">
+				REMOVE="ALL"
+			</Custom>
+			<Custom Action="detachExistingClonesCommandU" Before="detachExistingClonesU"/>
+			<Custom Action="detachExistingClonesU" After="clearExistingCachesU">
+				REMOVE="ALL"
+			</Custom>
+			
+			<Custom Action="clearExistingCachesCommandI" Before="clearExistingCachesI"/>
+			<Custom Action="clearExistingCachesI" After="InstallFiles">
+				NOT (REMOVE="ALL" OR RESUME OR PATCH)
+			</Custom>
+			<Custom Action="detachExistingClonesCommandI" Before="detachExistingClonesI"/>
+			<Custom Action="detachExistingClonesI" After="clearExistingCachesI">
+				NOT (REMOVE="ALL" OR RESUME OR PATCH)
+			</Custom>
+		</InstallExecuteSequence>
+	</Product>
+
+	<!-- Install directory structure -->
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFiles64Folder">
+				<!-- pyrevit-bin.wxs lists all components in this directory -->
+				<Directory Id="INSTALLDIR" Name="$(var.ProductName)" />
+			</Directory>
+		</Directory>
+	</Fragment>
+
+	<Fragment>
+		<ComponentGroup Id="ProductComponents" Directory="INSTALLDIR">
+			<!-- pyrevit-bin.wxs lists all components in this group -->
+			<ComponentGroupRef Id="PYREVIT_BIN"></ComponentGroupRef>
+
+			<Component Id="addPyRevitToPath" Guid="{763ee014-3d28-4612-babe-df8c5bef347e}" KeyPath="yes">
+				<Environment Id="PATH" Name="PATH" Value="[INSTALLDIR]" Permanent="no" Part="first" Action="set" System="yes" />
+			</Component>
+		</ComponentGroup>
+	</Fragment>
+</Wix>

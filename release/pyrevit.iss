@@ -17,6 +17,7 @@ AppCopyright=Copyright © 2014-2021 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
+DisableDirPage=auto
 DisableStartupPrompt=yes
 DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64

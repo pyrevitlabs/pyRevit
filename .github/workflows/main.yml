@@ -36,21 +36,24 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
-      - name: Configure Git Credentials
-        uses: fregante/setup-git-user@v1
-
-      - name: Update Submodules
+      - name: Checkout Submodules
         uses: snickerbockers/submodules-init@v4
 
-      - name: Setup Python 3.9
+      - name: Prepare Python 3.9
         uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.9
 
-      - name: Install pipenv
+      - name: Prepare pipenv
         run: |
           pip install pipenv
           pipenv install
+
+      - name: Prepare msbuild
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Prepare git
+        uses: fregante/setup-git-user@v1
 
       - name: Check Build Environment
         run: pipenv run pyrevit check
@@ -58,6 +61,15 @@ jobs:
       - name: Update Copyright Info
         run: |
           pipenv run pyrevit set year
+
+      - name: Update Certificate
+        env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+        run: |
+          pipenv run pyrevit sign addcert
 
       # WIP only
       - name: Update Build Info (WIP)
@@ -91,58 +103,50 @@ jobs:
         with:
           path: release/version
 
-      - name: Sign Binaries
-        uses: skymatic/code-sign-action@v1
-        with:
-          certificate: "${{ secrets.CERTIFICATE }}"
-          password: "${{ secrets.PASSWORD }}"
-          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
-          certificatename: "${{ secrets.CERTIFICATENAME }}"
-          description: "pyRevit"
-          timestampUrl: "http://timestamp.digicert.com"
-          folder: "bin"
-          recursive: true
+      - name: Sign Products
+        env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+        run: |
+          pipenv run pyrevit sign products
 
       - name: Build Installers
         run: |
           pipenv run pyrevit build installers
 
       - name: Sign Installers
-        uses: skymatic/code-sign-action@v1
-        with:
-          certificate: "${{ secrets.CERTIFICATE }}"
-          password: "${{ secrets.PASSWORD }}"
-          certificatesha1: "${{ secrets.CERTIFICATESHA1 }}"
-          certificatename: "${{ secrets.CERTIFICATENAME }}"
-          description: "pyRevit"
-          timestampUrl: "http://timestamp.digicert.com"
-          folder: "dist"
-          recursive: true
+        env:
+          CERTIFICATE: ${{ secrets.CERTIFICATE }}
+          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+        run: |
+          pipenv run pyrevit sign installers
 
-      # WIP (develop) only
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
-        if: (github.ref == 'refs/heads/develop')
         uses: actions/upload-artifact@v2
         with:
           name: pyrevit-installers
           path: |
-            dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
-            dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
-            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
-            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_${{ steps.installversion.outputs.content }}_signed.exe
+            dist/pyRevit_${{ steps.installversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
+            dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
 
-      # RELEASE only
-      - name: Generate Release Notes
+      - name: Generate Release Notes (Release)
         if: (github.base_ref == env.ReleaseBranch)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit report releasenotes > release_notes.md
 
-      # RELEASE only
-      - name: Commit & Tag Changes
+      - name: Commit & Tag Changes (Release)
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
@@ -150,34 +154,33 @@ jobs:
           git push
           git push --tags
 
-      # RELEASE only
-      - name: Publish Release
+      - name: Publish Release (Release)
         id: publish_release
         if: (github.base_ref == env.ReleaseBranch)
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.buildversion.outputs.content }}
-          name: pyRevit v${{ steps.buildversion.outputs.content }}
+          tag_name: v${{ steps.installversion.outputs.content }}
+          name: pyRevit v${{ steps.installversion.outputs.content }}
           body_path: release_notes.md
           draft: true
           prerelease: false
           files: |
-            dist/pyRevit_${{ steps.buildversion.outputs.content }}_signed.exe
-            dist/pyRevit_${{ steps.buildversion.outputs.content }}_admin_signed.exe
-            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_signed.exe
-            dist/pyRevit_CLI_${{ steps.buildversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_${{ steps.installversion.outputs.content }}_signed.exe
+            dist/pyRevit_${{ steps.installversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
+            dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
 
-      # RELEASE only
-      - name: Publish Choco Packages
+      - name: Publish Choco Packages (Release)
         if: (github.base_ref == env.ReleaseBranch)
         run: |
           choco apikey -k ${{ secrets.CHOCO_TOKEN}} -source https://push.chocolatey.org/
           choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
 
-      # RELEASE only
-      - name: Merge To Master
+      - name: Merge To Master (Release)
         if: (github.base_ref == env.ReleaseBranch)
         # configure git and commit changes
         run: |
@@ -185,7 +188,6 @@ jobs:
           git merge ${{ github.head_ref }}
           git push
 
-      # WIP (develop) only
       - name: Notify Issue Threads (WIP)
         if: (github.ref == 'refs/heads/develop')
         env:
@@ -193,9 +195,16 @@ jobs:
         run: |
           pipenv run pyrevit notify wip https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-      - name: Notify Issue Threads
+      - name: Notify Issue Threads (Release)
         if: (github.base_ref == env.ReleaseBranch)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit notify release ${{ steps.publish_release.outputs.url }}
+
+      - name: Increment Version & Commit (Release)
+        if: (github.base_ref == env.ReleaseBranch)
+        run: |
+          git checkout ${{ github.head_ref }}
+          pipenv run pyrevit set next-version
+          git push

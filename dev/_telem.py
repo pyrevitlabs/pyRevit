@@ -8,6 +8,8 @@ from typing import Dict
 from scripts import configs
 from scripts import utils
 
+import _install as install
+
 
 # TODO: ask docker to setup supported servers
 def _ensure_db(_: Dict[str, str]):
@@ -42,8 +44,9 @@ def build_telem(args: Dict[str, str]):
     )
 
     print("Updating telemetry server dependencies...")
+    go_tool = install.get_tool("go")
     report = utils.system(
-        ["go", "get", r"./..."],
+        [go_tool, "get", r"./..."],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
         dump_stdout=True
     )
@@ -56,7 +59,7 @@ def build_telem(args: Dict[str, str]):
         else op.abspath(configs.TELEMETRYSERVERBIN)
     )
     report = utils.system(
-        ["go", "build", "-o", output_bin, op.abspath(configs.TELEMETRYSERVER)],
+        [go_tool, "build", "-o", output_bin, op.abspath(configs.TELEMETRYSERVER)],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
     )
     print("Building telemetry server completed successfully")

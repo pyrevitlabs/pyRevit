@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="pyrevit-common.props" />
+  <Import Project="pyrevit-cli.props" />
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);ProductName=pyRevit CLI</DefineConstants>
+    <ProjectGuid>c8a9d032-3492-4781-b571-f01cfd407450</ProjectGuid>
+    <OutputName>pyRevit_CLI_$(Version)_admin_signed</OutputName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="pyrevit-bin.wxs" />
+    <Compile Include="pyrevit-cli-product.wxs" />
+  </ItemGroup>
+
+  <Import Project="pyrevit-common.targets" />
+</Project>

@@ -20,7 +20,19 @@ logger = logging.getLogger()
 
 
 VER_FINDER = re.compile(r"\d\.\d+\.\d+(\.[a-z0-9+-]+)?")
-VER_PART_FINDER = re.compile(r"^(\d)\.(\d+?)\.(\d+?)(\.[a-z0-9+-]+)?")
+VER_PART_FINDER = re.compile(r"^(\d)\.(\d+)\.(\d+)(\.[a-z0-9+-]+)?")
+
+
+def _get_urlsafe_version(version: str):
+    return version.replace("+", "%2B")
+
+
+def _get_release_url(version: str):
+    build_version_urlsafe = _get_urlsafe_version(version)
+    return (
+        "https://github.com/eirannejad/pyRevit/"
+        f"releases/tag/v{build_version_urlsafe}/"
+    )
 
 
 def _modify_contents(files, finder, new_value):
@@ -41,28 +53,54 @@ def _modify_contents(files, finder, new_value):
                 sfile.writelines(contents)
 
 
-def _modify_choco_nuspec(build_version: str, install_version: str):
-    build_version_urlsafe = build_version.replace("+", "%2B")
-    releasenotes_url = (
-        "https://github.com/eirannejad/pyRevit/"
-        f"releases/tag/v{build_version_urlsafe}/"
-    )
-    ns = "http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd"
-    dom = ET.parse(configs.PYREVIT_CHOCO_NUSPEC_FILE)
-    ET.register_namespace("", ns)
+def _modify_msi_year(copyright_message: str):
+    msi_file = configs.PYREVIT_COMMON_MSI_PROPSFILE
+    namespace = "http://schemas.microsoft.com/developer/msbuild/2003"
+    dom = ET.parse(msi_file)
+    ET.register_namespace("", namespace)
     nuget = dom.getroot()
-    version = nuget.findall(rf".//{{{ns}}}version")[0]
-    release_notes = nuget.findall(rf".//{{{ns}}}releaseNotes")[0]
-    version.text = build_version
-    release_notes.text = releasenotes_url
-    dom.write(
-        configs.PYREVIT_CHOCO_NUSPEC_FILE,
-        encoding="utf-8",
-        xml_declaration=True,
-    )
+    copyright_tag = nuget.findall(rf".//{{{namespace}}}Copyright")[0]
+    copyright_tag.text = f"Copyright © {copyright_message}"
+    dom.write(msi_file, encoding="utf-8", xml_declaration=True)
 
 
-def get_version(install=False):
+def _modify_msi_version(_: str, install_version: str):
+    msi_file = configs.PYREVIT_COMMON_MSI_PROPSFILE
+    namespace = "http://schemas.microsoft.com/developer/msbuild/2003"
+    dom = ET.parse(msi_file)
+    ET.register_namespace("", namespace)
+    nuget = dom.getroot()
+    version_tag = nuget.findall(rf".//{{{namespace}}}Version")[0]
+    version_tag.text = install_version
+    dom.write(msi_file, encoding="utf-8", xml_declaration=True)
+
+
+def _modify_choco_nuspec_year(copyright_message: str):
+    nuspec_file = configs.PYREVIT_CHOCO_NUSPEC_FILE
+    namespace = "http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd"
+    dom = ET.parse(nuspec_file)
+    ET.register_namespace("", namespace)
+    nuget = dom.getroot()
+    copyright_tag = nuget.findall(rf".//{{{namespace}}}copyright")[0]
+    copyright_tag.text = f"Copyright © {copyright_message}"
+    dom.write(nuspec_file, encoding="utf-8", xml_declaration=True)
+
+
+def _modify_choco_nuspec_version(build_version: str, install_version: str):
+    nuspec_file = configs.PYREVIT_CHOCO_NUSPEC_FILE
+    releasenotes_url = _get_release_url(build_version)
+    namespace = "http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd"
+    dom = ET.parse(nuspec_file)
+    ET.register_namespace("", namespace)
+    nuget = dom.getroot()
+    version_tag = nuget.findall(rf".//{{{namespace}}}version")[0]
+    release_notes_tag = nuget.findall(rf".//{{{namespace}}}releaseNotes")[0]
+    version_tag.text = install_version
+    release_notes_tag.text = releasenotes_url
+    dom.write(nuspec_file, encoding="utf-8", xml_declaration=True)
+
+
+def get_version(install=False, url_safe=False):
     """Get current version"""
     verfile = (
         configs.PYREVIT_INSTALL_VERSION_FILE
@@ -72,6 +110,8 @@ def get_version(install=False):
     with open(verfile, "r") as vfile:
         for cline in vfile.readlines():
             if match := VER_FINDER.search(cline):
+                if url_safe:
+                    return _get_urlsafe_version(match.group())
                 return match.group()
 
 
@@ -82,28 +122,30 @@ def set_year(_: Dict[str, str]):
     # this is more flexible than: if today.month == 12:
     if (datetime.datetime(this_year + 1, 1, 1) - today).days < 30:
         this_year += 1
-    cp_finder = re.compile(r"© 2014-\d{4}")
-    new_copyright = f"© 2014-{this_year}"
+    cp_finder = re.compile(r"2014-\d{4}")
+    new_copyright = f"2014-{this_year}"
     print(f'Updating copyright notice to "{new_copyright}"...')
     _modify_contents(
         files=configs.COPYRIGHT_FILES, finder=cp_finder, new_value=new_copyright
     )
-
-
-def _update_build_number(version: str):
-    parts = VER_PART_FINDER.findall(version)
-    if parts:
-        version = parts[0]
-        major = version[0]
-        minor = version[1]
-        patch = version[2]
-        build = datetime.datetime.now().strftime("%y%j+%H%M")
-        return f"{major}.{minor}.{patch}.{build}"
-    return version
+    _modify_msi_year(new_copyright)
+    _modify_choco_nuspec_year(new_copyright)
 
 
 def set_ver(args: Dict[str, str]):
     """Update version number"""
+
+    def _update_build_number(version: str):
+        parts = VER_PART_FINDER.findall(version)
+        if parts:
+            version = parts[0]
+            major = version[0]
+            minor = version[1]
+            patch = version[2]
+            build = datetime.datetime.now().strftime("%y%j+%H%M")
+            return f"{major}.{minor}.{patch}.{build}"
+        return version
+
     build_version = _update_build_number(args["<ver>"])
 
     # add wip to version if this is a wip build
@@ -112,18 +154,28 @@ def set_ver(args: Dict[str, str]):
         build_version += configs.PYREVIT_WIP_VERSION_EXT
 
     if VER_FINDER.match(build_version):
+        # update necessary files with "build version"
         print(f"Updating version to v{build_version}...")
         _modify_contents(
             files=configs.VERSION_FILES,
             finder=VER_FINDER,
             new_value=build_version,
         )
+
+        # update installer scripts with "install version"
         install_version, _ = build_version.split("+")
         print(f"Updating installers to v{install_version}...")
         with open(configs.PYREVIT_INSTALL_VERSION_FILE, "w") as ivfile:
             ivfile.writelines(install_version)
 
-        _modify_choco_nuspec(build_version, install_version)
+        _modify_contents(
+            files=configs.INSTALLER_FILES,
+            finder=VER_FINDER,
+            new_value=install_version,
+        )
+
+        _modify_choco_nuspec_version(build_version, install_version)
+        _modify_msi_version(build_version, install_version)
     else:
         print(utils.colorize("<red>Invalid version format (e.g. 4.8.0)</red>"))
         sys.exit(1)
@@ -136,6 +188,33 @@ def set_build_ver(args: Dict[str, str]):
     if version:
         args["<ver>"] = version.strip()
         set_ver(args)
+
+
+def set_next_ver(args: Dict[str, str]):
+    """Increment version patch number and commit"""
+
+    def _increment_build_number(version: str):
+        parts = VER_PART_FINDER.findall(version)
+        if parts:
+            version = parts[0]
+            major = version[0]
+            minor = version[1]
+            patch = version[2]
+            return f"{major}.{minor}.{int(patch) + 1}"
+        return version
+
+    build_version = get_version()
+    next_build_version = _increment_build_number(build_version)
+    print(f"Updating version to v{next_build_version}...")
+    with open(configs.PYREVIT_VERSION_FILE, "w") as ivfile:
+        ivfile.writelines(next_build_version)
+    print(f"Updating installers to v{next_build_version}...")
+    with open(configs.PYREVIT_INSTALL_VERSION_FILE, "w") as ivfile:
+        ivfile.writelines(next_build_version)
+
+    utils.system(["git", "add", configs.PYREVIT_VERSION_FILE])
+    utils.system(["git", "add", configs.PYREVIT_INSTALL_VERSION_FILE])
+    utils.system(["git", "commit", "-m", "Next Version"])
 
 
 def _find_tbundles(root_path) -> List[str]:

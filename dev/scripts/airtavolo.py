@@ -9,7 +9,7 @@ import requests
 logger = logging.getLogger()
 
 
-AUTH_TOKEN = os.environ.get("AIRTABLEAUTH", None)
+AUTH_TOKEN = os.environ.get("AIRTABLE_TOKEN", None)
 API_ROOT = "https://api.airtable.com/v0/appovr6nWz1C6nz4Z/"
 TOOL_TABLE_ROOT = API_ROOT + "pyRevit%20Tools%20Names"
 
