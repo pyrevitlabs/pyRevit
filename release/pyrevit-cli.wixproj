@@ -6,7 +6,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ProductName=pyRevit CLI</DefineConstants>
     <ProjectGuid>c8a9d032-3492-4781-b571-f01cfd407450</ProjectGuid>
-    <OutputName>pyRevit_CLI_$(Version)_signed</OutputName>
+    <OutputName>pyRevit_CLI_$(Version)_admin_signed</OutputName>
   </PropertyGroup>
 
   <ItemGroup>
