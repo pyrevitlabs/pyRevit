@@ -12,14 +12,14 @@
     </Target>
 
     <!-- Command line test -->
-    <!--  heat dir bin -cg PYREVIT_BIN -dr PYREVIT_INSTALLFOLDER -scom -sreg -srd -var var.PyRevitBinDir -gg -sfrag -out release/pyrevit-bin.wxs -t release/pyrevit-bin.xslt -->
+    <!--  heat dir bin -cg PYREVIT_BIN -dr INSTALLDIR -scom -sreg -srd -var var.PyRevitBinDir -gg -sfrag -out release/pyrevit-bin.wxs -t release/pyrevit-bin.xslt -->
     <Target Name="BeforeBuild">
         <HeatDirectory
             Directory="$(PyRevitBinDir)"
             OutputFile="pyrevit-bin.wxs"
             Transforms="pyrevit-bin.xslt"
             KeepEmptyDirectories="false"
-            DirectoryRefId="PYREVIT_INSTALLFOLDER"
+            DirectoryRefId="INSTALLDIR"
             ComponentGroupName="PYREVIT_BIN"
             ToolPath="$(WixToolPath)"
             AutogenerateGuids="true"
