@@ -21,7 +21,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             try {
                 // find RhinoInside.Revit.dll
                 ObjectHandle ghObjHandle =
-                    Activator.CreateInstance("RhinoInside.Revit", "RhinoInside.Revit.UI.CommandGrasshopperPlayer");
+                    Activator.CreateInstance("RhinoInside.Revit.AddIn", "RhinoInside.Revit.AddIn.Commands.CommandGrasshopperPlayer");
                 object ghPlayer = ghObjHandle.Unwrap();
                 foreach (MethodInfo methodInfo in ghPlayer.GetType().GetMethods()) {
                     var methodParams = methodInfo.GetParameters();
