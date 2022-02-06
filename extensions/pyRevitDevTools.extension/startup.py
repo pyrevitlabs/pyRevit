@@ -151,4 +151,7 @@ class DockableExample(forms.WPFPanel):
         forms.alert("Voila!!!")
 
 
-forms.register_dockable_panel(DockableExample)
+if not forms.is_registered_dockable_panel(DockableExample):
+    forms.register_dockable_panel(DockableExample)
+else:
+    print("Skipped registering dockable pane. Already exists.")

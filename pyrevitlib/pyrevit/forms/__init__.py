@@ -469,6 +469,17 @@ class _WPFPanelProvider(UI.IDockablePaneProvider):
         data.VisibleByDefault = self._default_visible
 
 
+def is_registered_dockable_panel(panel_type):
+    """Check if dockable panel is already registered
+
+    Args:
+        panel_type (forms.WPFPanel): dockable panel type
+    """
+    panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    dockable_panel_id = UI.DockablePaneId(panel_uuid)
+    return UI.DockablePane.PaneExists(dockable_panel_id)
+
+
 def register_dockable_panel(panel_type, default_visible=True):
     """Register dockable panel
 
