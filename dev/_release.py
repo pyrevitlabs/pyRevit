@@ -303,14 +303,11 @@ def _build_choco_packages():
 
     contents = []
     url_finder = re.compile(r"\$url64\s+=")
-    checksum_finder = re.compile(r"  checksum\s+=")
     checksum64_finder = re.compile(r"  checksum64\s+=")
     with open(configs.PYREVIT_CHOCO_INSTALL_FILE, "r") as cifile:
         for cline in cifile.readlines():
             if url_finder.match(cline):
                 contents.append(f"$url64      = '{download_url}'\n")
-            elif checksum_finder.match(cline):
-                contents.append(f"  checksum      = '{sha256_hash}'\n")
             elif checksum64_finder.match(cline):
                 contents.append(f"  checksum64    = '{sha256_hash}'\n")
             else:
