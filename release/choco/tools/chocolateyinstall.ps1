@@ -8,13 +8,10 @@ $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
   unzipLocation = $toolsDir
   fileType      = 'exe'
-  url           = $url
   url64bit      = $url64
 
   softwareName  = 'pyrevit-cli*'
 
-  checksum      = '2558700AC3AAC08EFE930ABADF764A9B544E0BF981CD9245E4A4CF4E26F3A80A'
-  checksumType  = 'sha256'
   checksum64    = '2558700AC3AAC08EFE930ABADF764A9B544E0BF981CD9245E4A4CF4E26F3A80A'
   checksumType64= 'sha256'
 

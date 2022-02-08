@@ -8,7 +8,7 @@
     <title>pyRevit CLI</title>
     <authors>Ehsan Iran-Nejad</authors>
     <projectUrl>https://github.com/eirannejad/pyRevit</projectUrl>
-    <iconUrl>https://github.com/eirannejad/pyRevit/tree/master/release/choco/chocoicon.png</iconUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/eirannejad/pyRevit@master/release/choco/chocoicon.png</iconUrl>
     <copyright>Copyright © 2014-2022</copyright>
     <licenseUrl>https://github.com/eirannejad/pyRevit/blob/master/LICENSE.txt</licenseUrl>
     <projectSourceUrl>https://github.com/eirannejad/pyRevit/tree/master/dev/pyRevitLabs</projectSourceUrl>
