@@ -46,16 +46,20 @@ namespace pyRevitLabs.PyRevit
             string userConfig = PyRevitConsts.ConfigFilePath;
             string adminConfig = PyRevitConsts.AdminConfigFilePath;
 
-            if (!CommonUtils.VerifyFile(userConfig)
-                    && CommonUtils.VerifyFile(adminConfig)) {
-                FileInfo fi = new FileInfo(adminConfig);
-                if (fi.IsReadOnly)
-                    return new PyRevitConfig(PyRevitConsts.AdminConfigFilePath, adminMode: true);
+            if (!CommonUtils.VerifyFile(userConfig))
+            {
+                if (CommonUtils.VerifyFile(adminConfig))
+                {
+                    if (new FileInfo(adminConfig).IsReadOnly)
+                        return new PyRevitConfig(adminConfig, adminMode: true);
+                    else
+                        SetupConfig(adminConfig);
+                }
                 else
-                    SetupConfig(adminConfig);
+                    SetupConfig();
             }
 
-            return new PyRevitConfig(PyRevitConsts.ConfigFilePath);
+            return new PyRevitConfig(userConfig);
         }
 
         // deletes config file
@@ -116,24 +120,26 @@ namespace pyRevitLabs.PyRevit
         // if admin config file exists, create initial config file from seed config
         public static void SetupConfig(string templateConfigFilePath = null)
         {
-            string sourceFile = templateConfigFilePath ?? PyRevitConsts.AdminConfigFilePath;
+            string sourceFile = templateConfigFilePath;
             string targetFile = PyRevitConsts.ConfigFilePath;
 
-            logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
+            if (sourceFile is string)
+            {
+                logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
 
-            try
-            {
-                if (File.Exists(sourceFile))
+                try
+                {
                     File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
-                else
-                    CommonUtils.EnsureFile(PyRevitConsts.ConfigFilePath);
+                }
+                catch (Exception ex)
+                {
+                    throw new PyRevitException(
+                        $"Failed configuring config file from template at {sourceFile} | {ex.Message}"
+                    );
+                }
             }
-            catch (Exception ex)
-            {
-                throw new PyRevitException(
-                    $"Failed configuring config file from template at {sourceFile} | {ex.Message}"
-                );
-            }
+            else
+                CommonUtils.EnsureFile(targetFile);
         }
 
         // specific configuration public access  ======================================================================

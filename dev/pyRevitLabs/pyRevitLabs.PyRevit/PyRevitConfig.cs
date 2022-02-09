@@ -23,7 +23,6 @@ namespace pyRevitLabs.PyRevit {
 
             if (CommonUtils.VerifyFile(cfgFilePath))
             {
-                CommonUtils.VerifyFileAccessible(cfgFilePath);
                 ConfigFilePath = cfgFilePath;
 
                 // INI formatting
@@ -36,7 +35,7 @@ namespace pyRevitLabs.PyRevit {
                 _adminMode = adminMode;
             }
             else
-                throw new PyRevitException("Can not access config file path.");
+                throw new PyRevitException($"Can not access config file at {cfgFilePath}");
         }
 
         // save config file to standard location
