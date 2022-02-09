@@ -1,247 +1,247 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <Fragment>
-        <DirectoryRef Id="PYREVIT_INSTALLFOLDER">
-            <Component Id="cmpEB228A8DF563E2B64EAC29B42D2308A9" Guid="*">
-                <File Id="filEE9B1C260649F004CEB4EEB0480616CE" KeyPath="yes" Source="$(var.PyRevitBinDir)\Colorful.Console.dll" />
+        <DirectoryRef Id="INSTALLDIR">
+            <Component Id="cmpF5A64A5E94238D00729D91F25AB3E7B7" Guid="*">
+                <File Id="fil1BE5C63FBE3623304208AAA9EE77DF91" KeyPath="yes" Source="$(var.PyRevitBinDir)\Colorful.Console.dll" />
             </Component>
-            <Component Id="cmpB5448268F5FB88381B7267D3E057837F" Guid="*">
-                <File Id="filAFF6DCB4DD7210B6371045D7C40D9F86" KeyPath="yes" Source="$(var.PyRevitBinDir)\ControlzEx.dll" />
+            <Component Id="cmp669D7BFE3F77F8D3E757F78FE36D1217" Guid="*">
+                <File Id="fil01FD9A438453A336BFC7E1C098C52A86" KeyPath="yes" Source="$(var.PyRevitBinDir)\ControlzEx.dll" />
             </Component>
-            <Component Id="cmp01ACC8FAB2EF2B37D7EAB91429CA5E54" Guid="*">
-                <File Id="fil9BF94AC3E3ECF53EF0CC0EE4C53E509F" KeyPath="yes" Source="$(var.PyRevitBinDir)\DocoptNet.dll" />
+            <Component Id="cmpEA71EDE9872C6F37B28033D11E773B6C" Guid="*">
+                <File Id="filD978F578FE4675FC6AA7278BFD158C7C" KeyPath="yes" Source="$(var.PyRevitBinDir)\DocoptNet.dll" />
             </Component>
-            <Component Id="cmp7DB98E36840F5A838A75C43C9D2FC88E" Guid="*">
-                <File Id="fil322A513034A1F54B6CB563E22CD90862" KeyPath="yes" Source="$(var.PyRevitBinDir)\DotNetVersionFinder.dll" />
+            <Component Id="cmpC04C8A63CC0FB022B72030B6D8CB65B9" Guid="*">
+                <File Id="filBE163D63A27D0A52D3F10027A86186F7" KeyPath="yes" Source="$(var.PyRevitBinDir)\DotNetVersionFinder.dll" />
             </Component>
-            <Component Id="cmp7399025B695DA97A914580430FA55EBC" Guid="*">
-                <File Id="filE2FDF4BECA15EE449548957502E09076" KeyPath="yes" Source="$(var.PyRevitBinDir)\FileFormatWavefront.dll" />
+            <Component Id="cmp68BD6B5E2505CB046A20D5FA0099C539" Guid="*">
+                <File Id="fil3406CC0FC6C6A6084331ABAA94AA1E0F" KeyPath="yes" Source="$(var.PyRevitBinDir)\FileFormatWavefront.dll" />
             </Component>
-            <Component Id="cmpB94310F2C88767C4A8D5989570FE7C18" Guid="*">
-                <File Id="fil98AB830A9967A6375990AF1C1F35EA42" KeyPath="yes" Source="$(var.PyRevitBinDir)\git2-106a5f2.dll" />
+            <Component Id="cmp163A5E7391728A257DD8E26E15D144C4" Guid="*">
+                <File Id="filCD68B9CBFC8F8CDE284298E677A30ADE" KeyPath="yes" Source="$(var.PyRevitBinDir)\git2-106a5f2.dll" />
             </Component>
-            <Component Id="cmp7A4178A060EA379A285232F8DE87BF37" Guid="*">
-                <File Id="fil73163C15941BAB99B4390AD27182FA84" KeyPath="yes" Source="$(var.PyRevitBinDir)\Ifc.NET.dll" />
+            <Component Id="cmpCCF4F9994FBB083C9B630368252E6983" Guid="*">
+                <File Id="filC47D4D8F87E530AF27947AAF789A3C7B" KeyPath="yes" Source="$(var.PyRevitBinDir)\Ifc.NET.dll" />
             </Component>
-            <Component Id="cmpED4E68E6DBD7783808A88B4BB8B58421" Guid="*">
-                <File Id="filC7CDB9D910A6D9B6A0FDDF8A07602AED" KeyPath="yes" Source="$(var.PyRevitBinDir)\Ifc.NET.resources.dll" />
+            <Component Id="cmp0533095C8FB7893D4BDCFA600B662FFD" Guid="*">
+                <File Id="fil61C61B42494BF471D393DBCD684FD90C" KeyPath="yes" Source="$(var.PyRevitBinDir)\Ifc.NET.resources.dll" />
             </Component>
-            <Component Id="cmp718CC1F1AA5BF6FE77D754C69D8A91D9" Guid="*">
-                <File Id="fil44D04549335992AC133CC9F0CD79D266" KeyPath="yes" Source="$(var.PyRevitBinDir)\Ifc.NET.XmlSerializers.dll" />
+            <Component Id="cmp833FC12B9B88235E6F05D89B0945B921" Guid="*">
+                <File Id="fil4EB6389A9932521A2E64F242B5B24412" KeyPath="yes" Source="$(var.PyRevitBinDir)\Ifc.NET.XmlSerializers.dll" />
             </Component>
-            <Component Id="cmp4D95B38B0646AA28D380C2FB2E914970" Guid="*">
-                <File Id="filE9EB1732473422713BE429B8C7C65F63" KeyPath="yes" Source="$(var.PyRevitBinDir)\IxMilia.Dxf.dll" />
+            <Component Id="cmpCB210A932DD45068E6C39EAA6B05E859" Guid="*">
+                <File Id="fil47EEB050A405A59D7D98CA3DC68E9214" KeyPath="yes" Source="$(var.PyRevitBinDir)\IxMilia.Dxf.dll" />
             </Component>
-            <Component Id="cmpC17F8D07BCD689D261700874184B69B5" Guid="*">
-                <File Id="filCE6791399B6EF3E3612A831E9069B51F" KeyPath="yes" Source="$(var.PyRevitBinDir)\LibGit2Sharp.dll" />
+            <Component Id="cmpA8122CE42B17A92BD3D1706DD1D71B1F" Guid="*">
+                <File Id="fil5D08212D3130F807DF4C675572D5BBD7" KeyPath="yes" Source="$(var.PyRevitBinDir)\LibGit2Sharp.dll" />
             </Component>
-            <Component Id="cmp00F911E8045D2BC7B43E98EF706788A6" Guid="*">
-                <File Id="filE732E1ACDAEC66E5584BDEA4EF1263FF" KeyPath="yes" Source="$(var.PyRevitBinDir)\MadMilkman.Ini.dll" />
+            <Component Id="cmp9FEC9886CE7C17E36E7FAA8292B4B9D2" Guid="*">
+                <File Id="fil8F4390649D4B44CC61F0E9B97CB72361" KeyPath="yes" Source="$(var.PyRevitBinDir)\MadMilkman.Ini.dll" />
             </Component>
-            <Component Id="cmp32FFC1FAC8C7924E967B2415F005CAB5" Guid="*">
-                <File Id="fil0550A55B80EBCBF21FC09F915D28171F" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.CodeAnalysis.CSharp.dll" />
+            <Component Id="cmp4F07074C4BF7BF4016DD5A470E2B9637" Guid="*">
+                <File Id="fil48A502818AF34CF3F90310C0DDE65DF8" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.CodeAnalysis.CSharp.dll" />
             </Component>
-            <Component Id="cmp06F52197B0F895C1BA5840C6C235BD09" Guid="*">
-                <File Id="fil57D489FE1434B951DEE123F6D211EDE3" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.CodeAnalysis.dll" />
+            <Component Id="cmpDA296E172B5770F0FA3EEE7889D77464" Guid="*">
+                <File Id="filA694FFFBA0D6ABE28FDF8C85A0AEA552" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.CodeAnalysis.dll" />
             </Component>
-            <Component Id="cmp4291197FE20D1F2DF15F6683AF95216E" Guid="*">
-                <File Id="fil0694E7323839F2B20677E34ADEA15AE4" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.CodeAnalysis.VisualBasic.dll" />
+            <Component Id="cmp32F256F0739B5E664E97843D18BECABB" Guid="*">
+                <File Id="filBB99E52B21192E7D2453BCF3706FA61E" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.CodeAnalysis.VisualBasic.dll" />
             </Component>
-            <Component Id="cmpF357F31F0339A49EDD2CA6F3E1DF2C94" Guid="*">
-                <File Id="filC1AA5C602D4D2CD58BAA55301F0693BF" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.WindowsAPICodePack.dll" />
+            <Component Id="cmpD50AAEBA16B0EDC9604A98ACE658A845" Guid="*">
+                <File Id="filCEEBBF9C2BEC45096E1C078FBEA81F7D" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.WindowsAPICodePack.dll" />
             </Component>
-            <Component Id="cmp04D813291CA0BAA125EB614AABE9E281" Guid="*">
-                <File Id="filE95ADBB509F0B7747C9EBF6C9DD530D6" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.WindowsAPICodePack.Shell.dll" />
+            <Component Id="cmp22F8D282DB59EF9E4E43C92C5C180A12" Guid="*">
+                <File Id="fil5512F1826793049537DA79C9E3A80EEF" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.WindowsAPICodePack.Shell.dll" />
             </Component>
-            <Component Id="cmp6C8D1A3772E988B348C866D14B26004A" Guid="*">
-                <File Id="filDBEC7A65CBC7F22CEFC8019BC98C5D76" KeyPath="yes" Source="$(var.PyRevitBinDir)\Nett.dll" />
+            <Component Id="cmp550D607B33F84FC216C0115A1C1E23CB" Guid="*">
+                <File Id="filE2BC268E62F7A7982601ED07B26DEF13" KeyPath="yes" Source="$(var.PyRevitBinDir)\Nett.dll" />
             </Component>
-            <Component Id="cmp45DD7BDE095BDAF14054017CD7C7B5DE" Guid="*">
-                <File Id="fil9CBC1A0030DBF8CE2A8D0D34D8FB0B39" KeyPath="yes" Source="$(var.PyRevitBinDir)\OpenMcdf.dll" />
+            <Component Id="cmp2C13014804B31A86960CDE6C4362FF03" Guid="*">
+                <File Id="filF19DC965E3FA43684E7940E1FB862E5D" KeyPath="yes" Source="$(var.PyRevitBinDir)\OpenMcdf.dll" />
             </Component>
-            <Component Id="cmpACA407D7A20303CFC7FBA5DE15F4C5F4" Guid="*">
-                <File Id="fil254C1482A2198C123CCB01DC1DE519C5" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-autocomplete.exe" />
+            <Component Id="cmpED2BCA0ECDAF005115E320BA8CE268FB" Guid="*">
+                <File Id="filC53F4A14DAB83036A99C850BA7C621D4" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-autocomplete.exe" />
             </Component>
-            <Component Id="cmpE29672F6A24D6852F93E90FC8251B58A" Guid="*">
-                <File Id="fil9DD386C6F11A9882F0EB29A9B46782E0" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-doctor.exe" />
+            <Component Id="cmpE2A976C14C0038C1A46E8D85F885BDE6" Guid="*">
+                <File Id="fil2A671FD4212DB5416B2C0EBD39A649FC" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-doctor.exe" />
             </Component>
-            <Component Id="cmpAA003B9B2D6623D062ACFCECA46DC70F" Guid="*">
-                <File Id="fil023E21C3714176E46D1DE4E916B95F81" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-hosts.json" />
+            <Component Id="cmpF68543970F0D2A2C93C1A9B577AECD80" Guid="*">
+                <File Id="fil4B0871812EFBD7CC22BBAF6728FA486E" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-hosts.json" />
             </Component>
-            <Component Id="cmp64C61682741A8C522CA6BB0FCE9B7398" Guid="*">
-                <File Id="filF9251873B6A592943819F6EEA8EC6AC3" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-products.json" />
+            <Component Id="cmp3BF19003A1E045D0971150BF5DBFF670" Guid="*">
+                <File Id="filD0636E2F3CD12184AF290D58A0369E3A" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-products.json" />
             </Component>
-            <Component Id="cmpE26B67B0326EDB65C6EFE2ED84696F4D" Guid="*">
-                <File Id="fil4857D99AB5119E232CBE8831CE79F470" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-stubsbuilder.exe" />
+            <Component Id="cmpFC2E350C95E73B51AAF91A7051B3317D" Guid="*">
+                <File Id="fil9D9CA28FA73B41A9BA127C9970E070F8" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-stubsbuilder.exe" />
             </Component>
-            <Component Id="cmp3B8F8058881C4895B24A1C2EDE3A5034" Guid="*">
-                <File Id="filD5F52035F3F0491EBF8746A3C5CB5008" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-telemetryserver.exe" />
+            <Component Id="cmpABFD324B27973D0D293493CB552AA06E" Guid="*">
+                <File Id="filCD962B3D0A8AA347B24C56BF834211EC" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-telemetryserver.exe" />
             </Component>
-            <Component Id="cmpA0C933FE79CBB13E1BEFA0C4102D7DE1" Guid="*">
-                <File Id="fil9251AED585589654464742227A61CAAE" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-toast.exe" />
+            <Component Id="cmp7FCE70C746C5770A34DFCEFA376C5385" Guid="*">
+                <File Id="fil9D6A84DFB6EC26EEF357C73C17B3B46F" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-toast.exe" />
             </Component>
-            <Component Id="cmp5B737AA533860D3EF9591F4D2CDF6713" Guid="*">
-                <File Id="filD49CE97656F4F9BF257CF371AB91CD7D" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit.exe" />
+            <Component Id="cmp44262A3F05199E34BE178696B174841B" Guid="*">
+                <File Id="filD78B1123BC32B4A724AD9BA93BD81C33" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit.exe" />
             </Component>
-            <Component Id="cmpEDC8816806E257D720DCBCAB4C2FFDB1" Guid="*">
-                <File Id="fil4F6B578718E444F67A99586D1C320D53" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevit.ico" />
+            <Component Id="cmp9FE2ADAEDA49D31438376E35EEC4C648" Guid="*">
+                <File Id="fil6B0F17330CC0235EF560397295BB4DA8" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevit.ico" />
             </Component>
-            <Component Id="cmp2FFB4DD0A0CC28D447CF9CB107CBAC26" Guid="*">
-                <File Id="fil9466A7DABB1F71A923D7D2114B1C6E1F" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit.svg" />
+            <Component Id="cmp07A828E8285DD2E10CAF0641C7D791C8" Guid="*">
+                <File Id="fil54099BC32B04324CFD77CF4B0DD9498D" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit.svg" />
             </Component>
-            <Component Id="cmpD05C51BDE4A1791F0B68F972738058DB" Guid="*">
-                <File Id="filFE6A70FBA2AF7AE56A8FB5C8FEFC44B4" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Common.dll" />
+            <Component Id="cmp7870E964FC396780D995F70F6F572A78" Guid="*">
+                <File Id="fil2FC7A674DE90098A47F9A60298CCFFCD" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Common.dll" />
             </Component>
-            <Component Id="cmp6BF4612600BF574D907E0E1F063C6C72" Guid="*">
-                <File Id="filE1160FFD264E88A3E9600304889BE634" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.CommonCLI.dll" />
+            <Component Id="cmpC155C95B634240EBE33C1A445573458C" Guid="*">
+                <File Id="fil3FF385255C93BFEF5FC9C40F354F169D" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.CommonCLI.dll" />
             </Component>
-            <Component Id="cmpF904443DB0D28EAC0BF64E36B734180B" Guid="*">
-                <File Id="filCFF95303F4F93EF5AF6AD1D851ED733A" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
+            <Component Id="cmp36807B390692FE64E5393037982C3A89" Guid="*">
+                <File Id="filF081FB324BFD7FB34B3B9B55AC2E9586" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
             </Component>
-            <Component Id="cmpF7D24C29A2CBD0EABE253815ECBDF01C" Guid="*">
-                <File Id="fil8F9119EC50200333331CAEA2A2B43379" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.DeffrelDB.dll" />
+            <Component Id="cmpE5B4D89E4EB4D4E16D2A25F0C0292CC4" Guid="*">
+                <File Id="filED99C6B524B80A9082A707294BEBD2EC" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.DeffrelDB.dll" />
             </Component>
-            <Component Id="cmp74E449502A81FB9AA6792E6EA501029D" Guid="*">
-                <File Id="fil53E8F85F662FCAD215B53F2F57401E61" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Emojis.dll" />
+            <Component Id="cmpBDF7F0A6A3A3CFF2C5F3E268F3AD7472" Guid="*">
+                <File Id="fil3028076BC7A85FD44FFE812996CAA966" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Emojis.dll" />
             </Component>
-            <Component Id="cmpBE992654795DB95FB2671A9BD9364A9C" Guid="*">
-                <File Id="fil0A287D46C729A08589B8A33C60CDF45F" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Json.dll" />
+            <Component Id="cmp679699B5CE353642B2FD78E5C4D3A2EB" Guid="*">
+                <File Id="fil2F598AF726567E1B827B6CC969C889AC" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Json.dll" />
             </Component>
-            <Component Id="cmp3883CAFE7629BF53CDE32855ACED8F3D" Guid="*">
-                <File Id="fil327BFCA381B305CDC0FF09A0B54CFF65" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Language.dll" />
+            <Component Id="cmp3A0C081CC084A3647A6CA469DAF8FEF5" Guid="*">
+                <File Id="fil07EC195E40B81D55A192E641E650873E" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.Language.dll" />
             </Component>
-            <Component Id="cmp7160CAC78D020E05D741A797E502BC41" Guid="*">
-                <File Id="filE3BBE9CEEC49A1ED7D93A82C7534A317" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.MahAppsMetro.dll" />
+            <Component Id="cmp82DE5CE1ADBDD7B8D28AB20732744155" Guid="*">
+                <File Id="filAABA0210CFCB6CFAF9F6D88D59C9BB6B" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.MahAppsMetro.dll" />
             </Component>
-            <Component Id="cmpAF59BCD13DD6CFAF7BF15C39C5A361E9" Guid="*">
-                <File Id="fil62C052ADCA4A9B018B6B45B27E527AE4" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.NLog.dll" />
+            <Component Id="cmpA818E740456105F619245D5C56202514" Guid="*">
+                <File Id="fil85A5A6FCB134475FD04EF9F26B095957" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.NLog.dll" />
             </Component>
-            <Component Id="cmpB818066A7A68720A08B1C51006B92180" Guid="*">
-                <File Id="fil2CE50CC20C55F787B14957178AEF4DF9" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
+            <Component Id="cmpC506B6E44AD9EE35B59D49FDCC4CDD5B" Guid="*">
+                <File Id="fil0BE76B90A7E4B5B16FBC995A8F3A1DA9" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
             </Component>
-            <Component Id="cmp7E06FBBDC75D6F49504078B9C32039BB" Guid="*">
-                <File Id="fil9FDE44FFBF153780B0D68AD0CA3D72BE" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.AutoCAD.dll" />
+            <Component Id="cmp587C2B24D8D4F42368199917A09070B4" Guid="*">
+                <File Id="fil94ACE2E9826BB9E51CD933F3789B1410" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.AutoCAD.dll" />
             </Component>
-            <Component Id="cmp3D1ECE967F1ADF696B53535E601C100D" Guid="*">
-                <File Id="fil0ADCF75E1E4365B5570E2F6268C4E18A" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.Navisworks.dll" />
+            <Component Id="cmp772EB0C2F1F614E11229A2802087CC0D" Guid="*">
+                <File Id="fil84E795E97B1E8F49BA7E0EF586A1B4F4" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.Navisworks.dll" />
             </Component>
-            <Component Id="cmp6B3B66759C0A8D73AD81E4783E490858" Guid="*">
-                <File Id="fil3AFA01E6C043FD1F9124D15E0FDA1C26" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
+            <Component Id="cmp165A1505F0A7BFAB25C9BF9A177E494A" Guid="*">
+                <File Id="fil15E26CAC11FE3F4922E225728E50CE05" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
             </Component>
-            <Component Id="cmp567D2F80CEB61B75FE8677CDAC61773D" Guid="*">
-                <File Id="filE5C7E6BE752B22A0D84B62796649DD00" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.UnitTests.dll" />
+            <Component Id="cmpE1E1CC18AB3F8B1EFF24F57F6B4A1D9C" Guid="*">
+                <File Id="fil7377897D8A2A79474AB1FB7A2CF86350" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.UnitTests.dll" />
             </Component>
-            <Component Id="cmp7055F4C18A7FE703C93CE4094E27F3D1" Guid="*">
-                <File Id="fil36BFF0798C72CB998031B6C1B78BBCF3" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_cli.ico" />
+            <Component Id="cmp8E4578AA65849C7E2B6B277F2CB3DA8B" Guid="*">
+                <File Id="fil806812B24D7899376C818ABC1521677E" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_cli.ico" />
             </Component>
-            <Component Id="cmp29910EF81E4D021141B700FBAA63FEC9" Guid="*">
-                <File Id="fil56FA13190B489695A07C39EF467662D5" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_outputwindow.png" />
+            <Component Id="cmp19265DA44B7D1772F8AD3E69BDF88DAD" Guid="*">
+                <File Id="fil5C3AE5910423DED9B4818559E2BEC253" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_outputwindow.png" />
             </Component>
-            <Component Id="cmp548CE79ACB2FFF6865396C87B1D0E788" Guid="*">
-                <File Id="fil92902671DD821D5EAA9AFFABEC5635CA" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_pkg.ico" />
+            <Component Id="cmp432308C32657D6C1FDB7A83BAE3096AF" Guid="*">
+                <File Id="fil3082019C934EE42F2CDFDE781A93B48A" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_pkg.ico" />
             </Component>
-            <Component Id="cmp18AEF3D0E769CAF4E3B6F6AAB9FF6844" Guid="*">
-                <File Id="filFC8839B43E714B292F47BAF5086B2A0E" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_settings.png" />
+            <Component Id="cmpE080F84AE061A54E1912EF098BE168CE" Guid="*">
+                <File Id="filCC08450191ACBFD9E5A29221EB4D6167" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_settings.png" />
             </Component>
-            <Component Id="cmp9D0E3777739A1C68663F21282B361FCF" Guid="*">
-                <File Id="fil743738FAF5704960A495640F5BA3300D" KeyPath="yes" Source="$(var.PyRevitBinDir)\PythonStubsBuilder.dll" />
+            <Component Id="cmp17024913AA93E8E641365EC02260BFE3" Guid="*">
+                <File Id="fil4C92993A75DFB38BBCA3D6B87D39E2C4" KeyPath="yes" Source="$(var.PyRevitBinDir)\PythonStubsBuilder.dll" />
             </Component>
-            <Component Id="cmp3A0DC78B37C1E0B5549B8F6C7D421FEF" Guid="*">
-                <File Id="fil227C75EB8E84DD689169428276C31300" KeyPath="yes" Source="$(var.PyRevitBinDir)\Rhino3dmIO.dll" />
+            <Component Id="cmpE04D14A7F24BBF58DC163D2FDD8965DD" Guid="*">
+                <File Id="filCD1D020CA2F7A6EB25642113CE8803B6" KeyPath="yes" Source="$(var.PyRevitBinDir)\Rhino3dmIO.dll" />
             </Component>
-            <Component Id="cmp46B41FC29CEB83D5C71C73050D3B2814" Guid="*">
-                <File Id="filF275F53C3ED20AE89EA2A4C1055351C7" KeyPath="yes" Source="$(var.PyRevitBinDir)\rhino3dmio_native.dll" />
+            <Component Id="cmp81265DD9F1F6CB7312262FB34D76F641" Guid="*">
+                <File Id="fil75F48501A29C139F5DD0899646A35205" KeyPath="yes" Source="$(var.PyRevitBinDir)\rhino3dmio_native.dll" />
             </Component>
-            <Component Id="cmpE672CEAC0E1D3CC8593EEF74A0CAAA0C" Guid="*">
-                <File Id="fil903A97AC993469675B1ACDCF75F5BD18" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Collections.Immutable.dll" />
+            <Component Id="cmp33FDA478CB86F083519801379B2D2D8B" Guid="*">
+                <File Id="fil5D4575804C3CE3ACC76FF53290806177" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Collections.Immutable.dll" />
             </Component>
-            <Component Id="cmpCCCD84229B8DFAB695D6FB3F84B4E1F1" Guid="*">
-                <File Id="fil43443C4D4AA82C3CF9D092DCECCADB88" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Memory.dll" />
+            <Component Id="cmp4CFC7C3721FFD91FA4E9798A516D5E97" Guid="*">
+                <File Id="fil1E24D2F3B531B1D76E1631314436BD58" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Memory.dll" />
             </Component>
-            <Component Id="cmp706336175520E47069D1AB7F8072BD11" Guid="*">
-                <File Id="fil5D1F98BF33BF6AE48EA1981B1ABD06DC" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Numerics.Vectors.dll" />
+            <Component Id="cmpA780BD9CC7EF10DE58A9E17B691B0205" Guid="*">
+                <File Id="fil41D7AC86F0924A477EE48B3AF9E39249" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Numerics.Vectors.dll" />
             </Component>
-            <Component Id="cmp30271C758AC1A8D2E6FA1EF13F65A7BD" Guid="*">
-                <File Id="fil08C458C196686A98B40880A641B44AC2" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Reflection.Metadata.dll" />
+            <Component Id="cmpC4D6E68A472E9CC1FAF71994B5B4DE32" Guid="*">
+                <File Id="fil741DE04C3124C1446D2FFF811D83E100" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Reflection.Metadata.dll" />
             </Component>
-            <Component Id="cmp117E575FE516EEC4C3C85233B7F5F043" Guid="*">
-                <File Id="fil226C59B5AC6023E5A950CD4101F8D29E" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Runtime.CompilerServices.Unsafe.dll" />
+            <Component Id="cmp04E7760BC247B05C847A4A6D5D8C7091" Guid="*">
+                <File Id="fil8974B12282083EB6B4CB7BAC26546374" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Runtime.CompilerServices.Unsafe.dll" />
             </Component>
-            <Component Id="cmp9D30196A8533B60581C713125A47CDDC" Guid="*">
-                <File Id="filE6D6EAA876F5EFD66C23616CD00BF6EF" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Text.Encoding.CodePages.dll" />
+            <Component Id="cmpD5EF7B2A59F953E92E81EF7D6E6DBA82" Guid="*">
+                <File Id="filC1BF4E80AF32E75E9827A0C9117D6A6B" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Text.Encoding.CodePages.dll" />
             </Component>
-            <Component Id="cmpCC4C8803DEAF011A4AE8D0C4925CDA31" Guid="*">
-                <File Id="filB729AC0174EFDF4D74ABDB524B5D18EA" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Threading.Tasks.Extensions.dll" />
+            <Component Id="cmp9DA87BA429922A2AB9A872E6B393B838" Guid="*">
+                <File Id="fil6A8BC02D0E287837DC8027D6A31B1B88" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Threading.Tasks.Extensions.dll" />
             </Component>
-            <Component Id="cmpCB5447921A8DDC3E19AC0F283BAB4858" Guid="*">
-                <File Id="fil5903A1F845715A6439AC2CE0724BD081" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Windows.Interactivity.dll" />
+            <Component Id="cmp4FE4E61EC9791201921745B40643CBB8" Guid="*">
+                <File Id="fil6F11DE09547B0AE8405683CDB88F7FC4" KeyPath="yes" Source="$(var.PyRevitBinDir)\System.Windows.Interactivity.dll" />
             </Component>
-            <Component Id="cmp2263EA6707DE35D3A6C240606062809F" Guid="*">
-                <File Id="filDC2F35215C0F2AAC991C12C08A720A0D" KeyPath="yes" Source="$(var.PyRevitBinDir)\YamlDotNet.dll" />
+            <Component Id="cmpC7E082D97E79582FFC212A16FAFA75E9" Guid="*">
+                <File Id="filD28724C398512BC5F16CD5A978E967FB" KeyPath="yes" Source="$(var.PyRevitBinDir)\YamlDotNet.dll" />
             </Component>
         </DirectoryRef>
     </Fragment>
     <Fragment>
         <ComponentGroup Id="PYREVIT_BIN">
-            <ComponentRef Id="cmpEB228A8DF563E2B64EAC29B42D2308A9" />
-            <ComponentRef Id="cmpB5448268F5FB88381B7267D3E057837F" />
-            <ComponentRef Id="cmp01ACC8FAB2EF2B37D7EAB91429CA5E54" />
-            <ComponentRef Id="cmp7DB98E36840F5A838A75C43C9D2FC88E" />
-            <ComponentRef Id="cmp7399025B695DA97A914580430FA55EBC" />
-            <ComponentRef Id="cmpB94310F2C88767C4A8D5989570FE7C18" />
-            <ComponentRef Id="cmp7A4178A060EA379A285232F8DE87BF37" />
-            <ComponentRef Id="cmpED4E68E6DBD7783808A88B4BB8B58421" />
-            <ComponentRef Id="cmp718CC1F1AA5BF6FE77D754C69D8A91D9" />
-            <ComponentRef Id="cmp4D95B38B0646AA28D380C2FB2E914970" />
-            <ComponentRef Id="cmpC17F8D07BCD689D261700874184B69B5" />
-            <ComponentRef Id="cmp00F911E8045D2BC7B43E98EF706788A6" />
-            <ComponentRef Id="cmp32FFC1FAC8C7924E967B2415F005CAB5" />
-            <ComponentRef Id="cmp06F52197B0F895C1BA5840C6C235BD09" />
-            <ComponentRef Id="cmp4291197FE20D1F2DF15F6683AF95216E" />
-            <ComponentRef Id="cmpF357F31F0339A49EDD2CA6F3E1DF2C94" />
-            <ComponentRef Id="cmp04D813291CA0BAA125EB614AABE9E281" />
-            <ComponentRef Id="cmp6C8D1A3772E988B348C866D14B26004A" />
-            <ComponentRef Id="cmp45DD7BDE095BDAF14054017CD7C7B5DE" />
-            <ComponentRef Id="cmpACA407D7A20303CFC7FBA5DE15F4C5F4" />
-            <ComponentRef Id="cmpE29672F6A24D6852F93E90FC8251B58A" />
-            <ComponentRef Id="cmpAA003B9B2D6623D062ACFCECA46DC70F" />
-            <ComponentRef Id="cmp64C61682741A8C522CA6BB0FCE9B7398" />
-            <ComponentRef Id="cmpE26B67B0326EDB65C6EFE2ED84696F4D" />
-            <ComponentRef Id="cmp3B8F8058881C4895B24A1C2EDE3A5034" />
-            <ComponentRef Id="cmpA0C933FE79CBB13E1BEFA0C4102D7DE1" />
-            <ComponentRef Id="cmp5B737AA533860D3EF9591F4D2CDF6713" />
-            <ComponentRef Id="cmpEDC8816806E257D720DCBCAB4C2FFDB1" />
-            <ComponentRef Id="cmp2FFB4DD0A0CC28D447CF9CB107CBAC26" />
-            <ComponentRef Id="cmpD05C51BDE4A1791F0B68F972738058DB" />
-            <ComponentRef Id="cmp6BF4612600BF574D907E0E1F063C6C72" />
-            <ComponentRef Id="cmpF904443DB0D28EAC0BF64E36B734180B" />
-            <ComponentRef Id="cmpF7D24C29A2CBD0EABE253815ECBDF01C" />
-            <ComponentRef Id="cmp74E449502A81FB9AA6792E6EA501029D" />
-            <ComponentRef Id="cmpBE992654795DB95FB2671A9BD9364A9C" />
-            <ComponentRef Id="cmp3883CAFE7629BF53CDE32855ACED8F3D" />
-            <ComponentRef Id="cmp7160CAC78D020E05D741A797E502BC41" />
-            <ComponentRef Id="cmpAF59BCD13DD6CFAF7BF15C39C5A361E9" />
-            <ComponentRef Id="cmpB818066A7A68720A08B1C51006B92180" />
-            <ComponentRef Id="cmp7E06FBBDC75D6F49504078B9C32039BB" />
-            <ComponentRef Id="cmp3D1ECE967F1ADF696B53535E601C100D" />
-            <ComponentRef Id="cmp6B3B66759C0A8D73AD81E4783E490858" />
-            <ComponentRef Id="cmp567D2F80CEB61B75FE8677CDAC61773D" />
-            <ComponentRef Id="cmp7055F4C18A7FE703C93CE4094E27F3D1" />
-            <ComponentRef Id="cmp29910EF81E4D021141B700FBAA63FEC9" />
-            <ComponentRef Id="cmp548CE79ACB2FFF6865396C87B1D0E788" />
-            <ComponentRef Id="cmp18AEF3D0E769CAF4E3B6F6AAB9FF6844" />
-            <ComponentRef Id="cmp9D0E3777739A1C68663F21282B361FCF" />
-            <ComponentRef Id="cmp3A0DC78B37C1E0B5549B8F6C7D421FEF" />
-            <ComponentRef Id="cmp46B41FC29CEB83D5C71C73050D3B2814" />
-            <ComponentRef Id="cmpE672CEAC0E1D3CC8593EEF74A0CAAA0C" />
-            <ComponentRef Id="cmpCCCD84229B8DFAB695D6FB3F84B4E1F1" />
-            <ComponentRef Id="cmp706336175520E47069D1AB7F8072BD11" />
-            <ComponentRef Id="cmp30271C758AC1A8D2E6FA1EF13F65A7BD" />
-            <ComponentRef Id="cmp117E575FE516EEC4C3C85233B7F5F043" />
-            <ComponentRef Id="cmp9D30196A8533B60581C713125A47CDDC" />
-            <ComponentRef Id="cmpCC4C8803DEAF011A4AE8D0C4925CDA31" />
-            <ComponentRef Id="cmpCB5447921A8DDC3E19AC0F283BAB4858" />
-            <ComponentRef Id="cmp2263EA6707DE35D3A6C240606062809F" />
+            <ComponentRef Id="cmpF5A64A5E94238D00729D91F25AB3E7B7" />
+            <ComponentRef Id="cmp669D7BFE3F77F8D3E757F78FE36D1217" />
+            <ComponentRef Id="cmpEA71EDE9872C6F37B28033D11E773B6C" />
+            <ComponentRef Id="cmpC04C8A63CC0FB022B72030B6D8CB65B9" />
+            <ComponentRef Id="cmp68BD6B5E2505CB046A20D5FA0099C539" />
+            <ComponentRef Id="cmp163A5E7391728A257DD8E26E15D144C4" />
+            <ComponentRef Id="cmpCCF4F9994FBB083C9B630368252E6983" />
+            <ComponentRef Id="cmp0533095C8FB7893D4BDCFA600B662FFD" />
+            <ComponentRef Id="cmp833FC12B9B88235E6F05D89B0945B921" />
+            <ComponentRef Id="cmpCB210A932DD45068E6C39EAA6B05E859" />
+            <ComponentRef Id="cmpA8122CE42B17A92BD3D1706DD1D71B1F" />
+            <ComponentRef Id="cmp9FEC9886CE7C17E36E7FAA8292B4B9D2" />
+            <ComponentRef Id="cmp4F07074C4BF7BF4016DD5A470E2B9637" />
+            <ComponentRef Id="cmpDA296E172B5770F0FA3EEE7889D77464" />
+            <ComponentRef Id="cmp32F256F0739B5E664E97843D18BECABB" />
+            <ComponentRef Id="cmpD50AAEBA16B0EDC9604A98ACE658A845" />
+            <ComponentRef Id="cmp22F8D282DB59EF9E4E43C92C5C180A12" />
+            <ComponentRef Id="cmp550D607B33F84FC216C0115A1C1E23CB" />
+            <ComponentRef Id="cmp2C13014804B31A86960CDE6C4362FF03" />
+            <ComponentRef Id="cmpED2BCA0ECDAF005115E320BA8CE268FB" />
+            <ComponentRef Id="cmpE2A976C14C0038C1A46E8D85F885BDE6" />
+            <ComponentRef Id="cmpF68543970F0D2A2C93C1A9B577AECD80" />
+            <ComponentRef Id="cmp3BF19003A1E045D0971150BF5DBFF670" />
+            <ComponentRef Id="cmpFC2E350C95E73B51AAF91A7051B3317D" />
+            <ComponentRef Id="cmpABFD324B27973D0D293493CB552AA06E" />
+            <ComponentRef Id="cmp7FCE70C746C5770A34DFCEFA376C5385" />
+            <ComponentRef Id="cmp44262A3F05199E34BE178696B174841B" />
+            <ComponentRef Id="cmp9FE2ADAEDA49D31438376E35EEC4C648" />
+            <ComponentRef Id="cmp07A828E8285DD2E10CAF0641C7D791C8" />
+            <ComponentRef Id="cmp7870E964FC396780D995F70F6F572A78" />
+            <ComponentRef Id="cmpC155C95B634240EBE33C1A445573458C" />
+            <ComponentRef Id="cmp36807B390692FE64E5393037982C3A89" />
+            <ComponentRef Id="cmpE5B4D89E4EB4D4E16D2A25F0C0292CC4" />
+            <ComponentRef Id="cmpBDF7F0A6A3A3CFF2C5F3E268F3AD7472" />
+            <ComponentRef Id="cmp679699B5CE353642B2FD78E5C4D3A2EB" />
+            <ComponentRef Id="cmp3A0C081CC084A3647A6CA469DAF8FEF5" />
+            <ComponentRef Id="cmp82DE5CE1ADBDD7B8D28AB20732744155" />
+            <ComponentRef Id="cmpA818E740456105F619245D5C56202514" />
+            <ComponentRef Id="cmpC506B6E44AD9EE35B59D49FDCC4CDD5B" />
+            <ComponentRef Id="cmp587C2B24D8D4F42368199917A09070B4" />
+            <ComponentRef Id="cmp772EB0C2F1F614E11229A2802087CC0D" />
+            <ComponentRef Id="cmp165A1505F0A7BFAB25C9BF9A177E494A" />
+            <ComponentRef Id="cmpE1E1CC18AB3F8B1EFF24F57F6B4A1D9C" />
+            <ComponentRef Id="cmp8E4578AA65849C7E2B6B277F2CB3DA8B" />
+            <ComponentRef Id="cmp19265DA44B7D1772F8AD3E69BDF88DAD" />
+            <ComponentRef Id="cmp432308C32657D6C1FDB7A83BAE3096AF" />
+            <ComponentRef Id="cmpE080F84AE061A54E1912EF098BE168CE" />
+            <ComponentRef Id="cmp17024913AA93E8E641365EC02260BFE3" />
+            <ComponentRef Id="cmpE04D14A7F24BBF58DC163D2FDD8965DD" />
+            <ComponentRef Id="cmp81265DD9F1F6CB7312262FB34D76F641" />
+            <ComponentRef Id="cmp33FDA478CB86F083519801379B2D2D8B" />
+            <ComponentRef Id="cmp4CFC7C3721FFD91FA4E9798A516D5E97" />
+            <ComponentRef Id="cmpA780BD9CC7EF10DE58A9E17B691B0205" />
+            <ComponentRef Id="cmpC4D6E68A472E9CC1FAF71994B5B4DE32" />
+            <ComponentRef Id="cmp04E7760BC247B05C847A4A6D5D8C7091" />
+            <ComponentRef Id="cmpD5EF7B2A59F953E92E81EF7D6E6DBA82" />
+            <ComponentRef Id="cmp9DA87BA429922A2AB9A872E6B393B838" />
+            <ComponentRef Id="cmp4FE4E61EC9791201921745B40643CBB8" />
+            <ComponentRef Id="cmpC7E082D97E79582FFC212A16FAFA75E9" />
         </ComponentGroup>
     </Fragment>
 </Wix>
