@@ -206,7 +206,7 @@ namespace pyRevitLabs.PyRevit {
 
         // pyRevit config file path
         // @reviewed
-        public static string SeedConfigFilePath {
+        public static string AdminConfigFilePath {
             get {
                 var cfgFile = FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
                 return cfgFile != null ? cfgFile : Path.Combine(PyRevitLabsConsts.PyRevitProgramDataPath, DefaultConfigsFileName);

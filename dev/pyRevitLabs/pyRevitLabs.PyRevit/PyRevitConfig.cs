@@ -13,32 +13,39 @@ namespace pyRevitLabs.PyRevit {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private IniFile _config;
+        private bool _adminMode;
 
         public string ConfigFilePath { get; private set; }
 
-        public PyRevitConfig(string cfgFilePath) {
-            if (cfgFilePath != null) {
-                if (CommonUtils.VerifyFile(cfgFilePath)) {
-                    CommonUtils.VerifyFileAccessible(cfgFilePath);
-                    ConfigFilePath = cfgFilePath;
+        public PyRevitConfig(string cfgFilePath, bool adminMode = false) {
+            if (cfgFilePath is null)
+                throw new PyRevitException("Config file path can not be null.");
 
-                    // INI formatting
-                    var cfgOps = new IniOptions();
-                    cfgOps.KeySpaceAroundDelimiter = true;
-                    cfgOps.Encoding = CommonUtils.GetUTF8NoBOMEncoding();
-                    _config = new IniFile(cfgOps);
+            if (CommonUtils.VerifyFile(cfgFilePath))
+            {
+                CommonUtils.VerifyFileAccessible(cfgFilePath);
+                ConfigFilePath = cfgFilePath;
 
-                    _config.Load(cfgFilePath);
-                }
-                else
-                    throw new PyRevitException("Can not access config file path.");
+                // INI formatting
+                var cfgOps = new IniOptions();
+                cfgOps.KeySpaceAroundDelimiter = true;
+                cfgOps.Encoding = CommonUtils.GetUTF8NoBOMEncoding();
+                _config = new IniFile(cfgOps);
+
+                _config.Load(cfgFilePath);
+                _adminMode = adminMode;
             }
             else
-                throw new PyRevitException("Config file path can not be null.");
+                throw new PyRevitException("Can not access config file path.");
         }
 
         // save config file to standard location
         public void SaveConfigFile() {
+            if (_adminMode) {
+                logger.Debug("Config is in admin mode. Skipping save");
+                return;
+            }
+
             logger.Debug("Saving config file \"{0}\"", PyRevitConsts.ConfigFilePath);
             try {
                 _config.Save(PyRevitConsts.ConfigFilePath);

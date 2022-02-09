@@ -599,7 +599,7 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Config);
                 else
-                    PyRevitCLIConfigCmds.SeedConfigs(
+                    PyRevitConfigs.SetupConfig(
                         templateConfigFilePath: TryGetValue("--from")
                     );
             }
@@ -847,7 +847,7 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("seed"))
-                    PyRevitConfigs.SeedConfig(makeCurrentUserAsOwner: arguments["--lock"].IsTrue);
+                    PyRevitConfigs.SeedConfig(lockSeedConfig: arguments["--lock"].IsTrue);
 
                 else if (any("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {

@@ -5,13 +5,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 
-using LibGit2Sharp;
-using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
-using System.Linq;
 using System.Threading;
 
 namespace pyRevitLabs.Common {
@@ -300,38 +296,6 @@ namespace pyRevitLabs.Common {
             }
 
             return true;
-        }
-
-        public static void SetFileSecurity(string filePath, string userNameWithDoman) {
-            //get file info
-            FileInfo fi = new FileInfo(filePath);
-
-            //get security access
-            FileSecurity fs = fi.GetAccessControl();
-
-            //remove any inherited access
-            fs.SetAccessRuleProtection(true, false);
-
-            //get any special user access
-            AuthorizationRuleCollection rules =
-                fs.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
-
-            //remove any special access
-            foreach (FileSystemAccessRule rule in rules)
-                fs.RemoveAccessRule(rule);
-
-            //add current user with full control.
-            fs.AddAccessRule(
-                new FileSystemAccessRule(userNameWithDoman, FileSystemRights.FullControl, AccessControlType.Allow)
-                );
-
-            //add all other users delete only permissions.
-            //fs.AddAccessRule(
-            //    new FileSystemAccessRule("Authenticated Users", FileSystemRights.Delete, AccessControlType.Allow)
-            //    );
-
-            //flush security access.
-            System.IO.File.SetAccessControl(filePath, fs);
         }
 
         public static void OpenInExplorer(string resourcePath) {

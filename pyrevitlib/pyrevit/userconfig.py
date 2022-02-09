@@ -689,10 +689,13 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def set_active_cpython_engine(self, pyrevit_engine):
         self.cpython_engine_version = pyrevit_engine.Version
 
+    @property
+    def is_readonly(self):
+        return self._admin
 
     def save_changes(self):
         """Save user config into associated config file."""
-        if not self._admin:
+        if not self._admin and self.config_file:
             try:
                 super(PyRevitConfig, self).save()
             except Exception as save_err:
@@ -761,26 +764,43 @@ if not EXEC_PARAMS.doc_mode:
     if LOCAL_CONFIG_FILE:
         CONFIG_TYPE = 'Local'
         CONFIG_FILE = LOCAL_CONFIG_FILE
+
     # check to see if there is any config file provided by admin
-    elif ADMIN_CONFIG_FILE:
+    elif ADMIN_CONFIG_FILE \
+            and os.access(ADMIN_CONFIG_FILE, os.W_OK) \
+            and not USER_CONFIG_FILE:
         # if yes, copy that and use as default
         # if admin config file is writable it means it is provided
         # to bootstrap the first pyRevit run
-        if os.access(ADMIN_CONFIG_FILE, os.W_OK):
+        try:
             CONFIG_TYPE = 'Seed'
             # make a local copy if one does not exist
-            if not USER_CONFIG_FILE:
-                PyRevit.PyRevitConfigs.SeedConfig(False, ADMIN_CONFIG_FILE)
+            PyRevit.PyRevitConfigs.SetupConfig(ADMIN_CONFIG_FILE)
             CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
-        # unless it's locked. then read that config file and set admin-mode
-        else:
-            CONFIG_TYPE = 'Admin'
-            CONFIG_FILE = ADMIN_CONFIG_FILE
+        except Exception as adminEx:
+            # if init operation failed, make a new config file
+            CONFIG_TYPE = 'New'
+            # setup config file name and path
+            CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
+                                                          file_ext='ini')
+            mlogger.warning(
+                'Failed to initialize config from seed file at %s\n'
+                'Using default config file',
+                ADMIN_CONFIG_FILE
+            )
+
+    # unless it's locked. then read that config file and set admin-mode
+    elif ADMIN_CONFIG_FILE \
+            and not os.access(ADMIN_CONFIG_FILE, os.W_OK):
+        CONFIG_TYPE = 'Admin'
+        CONFIG_FILE = ADMIN_CONFIG_FILE
+
     # if a config file is available for user use that
     elif USER_CONFIG_FILE:
         CONFIG_TYPE = 'User'
         CONFIG_FILE = USER_CONFIG_FILE
-    # if nothing can be found, make one
+
+    # if nothing can be found, make a new one
     else:
         CONFIG_TYPE = 'New'
         # setup config file name and path
