@@ -221,6 +221,27 @@ def _find_latest_tag():
     return latest_tag.replace("refs/tags/", "")
 
 
+def _find_previous_tag():
+    # get the latest tag
+    last_three_tags = utils.system(
+        [
+            "git",
+            "for-each-ref",
+            "refs/tags/v*",
+            "--sort=-creatordate",
+            "--format=%(refname)",
+            "--count=2",
+        ]
+    )
+    tags = last_three_tags.splitlines()
+    # Example
+    # refs/tags/v4.8.10.22040+1743
+    # refs/tags/v4.8.9.21361+0320
+    if len(tags) == 2:
+        return tags[1].replace("refs/tags/", "")
+    return _find_latest_tag()
+
+
 def _collect_changes(tag: str, fetch_info: bool = True):
     gitlog_report = utils.system(
         ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag}..HEAD"]
@@ -332,15 +353,19 @@ def notify_issues(args: Dict[str, str]):
     build_version = props.get_version()
     target_build = args["<build>"]
     target_url = args["<url>"]
-    target_tag = args["<tag>"] or _find_latest_tag()
+    target_tag = args["<tag>"] or _find_previous_tag()
 
+    link = f"[{build_version}]({target_url})"
     if target_build == "release":
-        comment = f":package: New public release are available for [{build_version}]({target_url})"
+        comment = f":package: New public release are available for {link}"
     elif target_build == "wip":
-        comment = f":package: New work-in-progress (wip) builds are available for [{build_version}]({target_url})"
+        comment = f":package: New work-in-progress (wip) builds are available for {link}"
 
+    print(f"Fetching changes up to {target_tag}")
     all_changes = _collect_changes(target_tag, fetch_info=False)
 
+    print(f'Notify comment "{comment}"')
     for change in all_changes:
         if change.ticket:
+            print(f"Notifying {change.ticket}")
             github.post_comment(change.ticket, comment)
