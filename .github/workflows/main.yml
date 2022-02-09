@@ -187,6 +187,7 @@ jobs:
           git checkout ${{ github.base_ref }}
           git merge ${{ github.head_ref }}
           git push
+          git checkout ${{ github.head_ref }}
 
       - name: Notify Issue Threads (WIP)
         if: (github.ref == 'refs/heads/develop')
@@ -205,6 +206,5 @@ jobs:
       - name: Increment Version & Commit (Release)
         if: (github.base_ref == env.ReleaseBranch)
         run: |
-          git checkout ${{ github.head_ref }}
           pipenv run pyrevit set next-version
           git push
