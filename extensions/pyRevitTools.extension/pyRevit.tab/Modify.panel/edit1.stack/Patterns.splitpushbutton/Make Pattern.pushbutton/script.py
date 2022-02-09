@@ -44,6 +44,15 @@ else:
                     DB.DisplayUnitType.DUT_CENTIMETERS,
                     DB.DisplayUnitType.DUT_MILLIMETERS]
 
+acceptable_viewtypes = ['FloorPlan',
+                        'CeilingPlan',
+                        'Elevation',
+                        'DraftingView',
+                        'EngineeringPlan',
+                        'AreaPlan',
+                        'Section',
+                        'Detail']
+
 # type in lower case
 readonly_patterns = ['solid fill']
 
@@ -61,6 +70,14 @@ class MakePatternWindow(forms.WPFWindow):
 
         if not self._selection:
             self.resolver_ops.IsEnabled = False
+            self.create_b.Content = "No Linework Selected"
+            self.create_b.IsEnabled = False
+            self._export_only = True
+            self.prompt_lb.Content = "Select Pattern to Export"
+
+        if revit.active_view.ViewType.ToString() not in acceptable_viewtypes:
+            self.resolver_ops.IsEnabled = False
+            self.create_b.Content = "Incompatible View Type"
             self.create_b.IsEnabled = False
             self._export_only = True
             self.prompt_lb.Content = "Select Pattern to Export"
