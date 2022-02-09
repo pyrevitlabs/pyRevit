@@ -28,7 +28,7 @@ PYREVIT_CLI_NAME = 'pyrevit.exe'
 VERSION_STRING = '0.0.'
 with open(op.join(op.dirname(__file__), 'version'), 'r') as version_file:
     VERSION_STRING = version_file.read()
-matches = re.findall(r'(\d+?)\.(\d+?)\.(\d+?)\.?(.+)?', VERSION_STRING)[0]
+matches = re.findall(r'(\d+)\.(\d+)\.(\d+)\.?(.+)?', VERSION_STRING)[0]
 if len(matches) == 4:
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, BUILD_METADATA = matches
 else:
