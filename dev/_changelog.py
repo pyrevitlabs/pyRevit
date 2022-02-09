@@ -353,13 +353,15 @@ def notify_issues(args: Dict[str, str]):
     build_version = props.get_version()
     target_build = args["<build>"]
     target_url = args["<url>"]
-    target_tag = args["<tag>"] or _find_previous_tag()
+    target_tag = args["<tag>"]
 
     link = f"[{build_version}]({target_url})"
     if target_build == "release":
         comment = f":package: New public release are available for {link}"
+        target_tag = target_tag or _find_previous_tag()
     elif target_build == "wip":
         comment = f":package: New work-in-progress (wip) builds are available for {link}"
+        target_tag = target_tag or _find_latest_tag()
 
     print(f"Fetching changes up to {target_tag}")
     all_changes = _collect_changes(target_tag, fetch_info=False)
