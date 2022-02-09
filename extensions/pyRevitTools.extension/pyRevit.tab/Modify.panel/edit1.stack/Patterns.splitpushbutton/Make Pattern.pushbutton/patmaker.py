@@ -684,7 +684,7 @@ class _RevitPattern:
                     flatten_zeros(pat_grid.origin.v * self._scale),
                     flatten_zeros(pat_grid.shift * self._scale),
                     flatten_zeros(pat_grid.offset * self._scale)])
-            grid_desc += PAT_SEPARATOR
+
             if pat_grid.segments:
                 scaled_segments = []
                 for idx, seg in enumerate(pat_grid.segments):
