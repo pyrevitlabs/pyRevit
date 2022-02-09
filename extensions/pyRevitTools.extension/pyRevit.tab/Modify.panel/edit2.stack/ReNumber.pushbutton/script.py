@@ -117,6 +117,8 @@ def get_number(target_element):
     mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
     if isinstance(target_element, (DB.Level, DB.Grid)):
         mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
+    if isinstance(target_element, DB.Viewport):
+        mark_param = target_element.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
     # get now
     if mark_param:
         return mark_param.AsString()
@@ -132,6 +134,8 @@ def set_number(target_element, new_number):
     mark_param = target_element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
     if isinstance(target_element, (DB.Level, DB.Grid)):
         mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
+    if isinstance(target_element, DB.Viewport):
+        mark_param = target_element.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
     # set now 
     if mark_param:
         mark_param.Set(new_number)
@@ -316,24 +320,27 @@ def door_by_room_renumber(rnopts):
 # [X] renumber room
 # [X] renumber doors by room
 
-# ensure active view is a model view
-if forms.check_modelview(revit.active_view):
+if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.ViewSheet)):
     # prepare options
-    renumber_options = [
-        RNOpts(cat=BIC.OST_Rooms),
-        RNOpts(cat=BIC.OST_MEPSpaces),
-        RNOpts(cat=BIC.OST_Doors),
-        RNOpts(cat=BIC.OST_Doors,
-               by_bicat=BIC.OST_Rooms),
-        RNOpts(cat=BIC.OST_Walls),
-        RNOpts(cat=BIC.OST_Windows),
-        RNOpts(cat=BIC.OST_Parking),
-        RNOpts(cat=BIC.OST_Levels),
-        RNOpts(cat=BIC.OST_Grids),
+    if not isinstance(revit.active_view, DB.ViewSheet):
+        renumber_options = [
+            RNOpts(cat=BIC.OST_Rooms),
+            RNOpts(cat=BIC.OST_MEPSpaces),
+            RNOpts(cat=BIC.OST_Doors),
+            RNOpts(cat=BIC.OST_Doors,
+                   by_bicat=BIC.OST_Rooms),
+            RNOpts(cat=BIC.OST_Walls),
+            RNOpts(cat=BIC.OST_Windows),
+            RNOpts(cat=BIC.OST_Parking),
+            RNOpts(cat=BIC.OST_Levels),
+            RNOpts(cat=BIC.OST_Grids),
         ]
-    # add areas if active view is an Area Plan
-    if revit.active_view.ViewType == DB.ViewType.AreaPlan:
-        renumber_options.insert(1, RNOpts(cat=BIC.OST_Areas))
+        # add areas if active view is an Area Plan
+        if revit.active_view.ViewType == DB.ViewType.AreaPlan:
+            renumber_options.insert(1, RNOpts(cat=BIC.OST_Areas))
+    else:
+        renumber_options = [RNOpts(cat=BIC.OST_Viewports)]
+
 
     options_dict = OrderedDict()
     for renumber_option in renumber_options:
