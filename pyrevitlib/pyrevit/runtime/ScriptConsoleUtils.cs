@@ -64,11 +64,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             var elementIdsToIsolate = new List<ElementId>();
                             foreach (var elid in elementIds) {
                                 var element = doc.GetElement(elid);
+                                #if (REVIT2023)
                                 if (element.GetType() == typeof(IndependentTag)) {
+                                    var hostId = ((IndependentTag)element).GetTaggedLocalElementIds().FirstOrDefault();
+                                    if (hostId != ElementId.InvalidElementId)
+                                        elementIdsToIsolate.Add(hostId);
+                                }
+                                #else
+                                    if (element.GetType() == typeof(IndependentTag)) {
                                     var hostId = ((IndependentTag)element).TaggedLocalElementId;
                                     if (hostId != ElementId.InvalidElementId)
                                         elementIdsToIsolate.Add(hostId);
                                 }
+                                #endif
                             }
 
                             elementIdsToIsolate.AddRange(elementIds);
