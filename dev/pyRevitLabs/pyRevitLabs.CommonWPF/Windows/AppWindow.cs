@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.ComponentModel;
 using System.Windows.Data;
+using System.Xaml;
 
 // packages
 using pyRevitLabs.MahAppsMetro;
@@ -25,12 +26,18 @@ namespace pyRevitLabs.CommonWPF.Windows {
         private void InitializeComponent() {
             // setting up user name and app version buttons
             var windowButtons = new WindowCommands();
-
+            
             var userButton = new Button() {
-                Content = CurrentUser,
                 ToolTip = "Active User. Click to copy to clipboard.",
                 Focusable = false
             };
+            
+            FrameworkElementFactory textBlockFactory 
+                = new FrameworkElementFactory(typeof(TextBlock));
+            textBlockFactory.SetValue(TextBlock.TextProperty, CurrentUser);
+
+            userButton.ContentTemplate = new DataTemplate(typeof(string));
+            userButton.ContentTemplate.VisualTree = textBlockFactory;
 
             userButton.Click += Copy_Button_Title;
             windowButtons.Items.Add(userButton);
