@@ -94,6 +94,7 @@ class SettingsWindow(forms.WPFWindow):
             '2020': self.revit2020_cb,
             '2021': self.revit2021_cb,
             '2022': self.revit2022_cb,
+            '2023': self.revit2023_cb,
             }
 
         self.set_image_source(self.lognone, 'lognone.png')
