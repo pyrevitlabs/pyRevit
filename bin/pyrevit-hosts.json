@@ -1558,5 +1558,53 @@
         "build": "20220111_1110",
         "target": "x64",
         "notes": "https://up.autodesk.com/2019/RVT/Revit-2019.2.5-Hotfix-Readme.html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023release_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2023 First Customer Ship",
+        "version": "23.0.1.318",
+        "build": "20220304_1515",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023release_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://knowledge.autodesk.com/support/revit/learn-explore/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2023.0.1",
+        "version": "23.0.10.18",
+        "build": "20220429_1500",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023updates_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_2020_2_8_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2020.2.8",
+        "version": "20.2.80.2",
+        "build": "20220225_1515",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2020/ENU/?guid=RevitReleaseNotes_2020updates_2020_2_8_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://up.autodesk.com/2019/RVT/Revit-2019.2.6-Hotfix-Readme.html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2019.2.6",
+        "version": "19.2.60.3",
+        "build": "20220224_1700",
+        "target": "x64",
+        "notes": "https://up.autodesk.com/2019/RVT/Revit-2019.2.6-Hotfix-Readme.html"
     }
 ]
