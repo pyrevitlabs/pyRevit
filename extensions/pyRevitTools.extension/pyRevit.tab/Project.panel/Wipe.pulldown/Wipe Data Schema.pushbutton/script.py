@@ -13,16 +13,19 @@ class DataSchemaItem(forms.TemplateListItem):
 
 schemas = DB.ExtensibleStorage.Schema.ListSchemas()
 
-sschema = \
+sschemas = \
     forms.SelectFromList.show([DataSchemaItem(x) for x in schemas],
-                              multiselect=False)
+                              multiselect=True) or []
 
-if sschema:
+for sschema in sschemas:
     with revit.Transaction("Remove Schema"):
-        if HOST_APP.version > 2020:
-            DB.ExtensibleStorage.Schema.EraseSchemaAndAllEntities(
-            schema=sschema,
-            overrideWriteAccessWithUserPermission=True
-            )
-        else:
-            doc.EraseSchemaAndAllEntities(sschema)
+        try:
+            if HOST_APP.version > 2020:
+                DB.ExtensibleStorage.Schema.EraseSchemaAndAllEntities(
+                    schema=sschema,
+                    overrideWriteAccessWithUserPermission=True
+                )
+            else:
+                doc.EraseSchemaAndAllEntities(sschema)
+        except Exception as e:
+            print(e)
