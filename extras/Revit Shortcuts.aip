@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="15.6" version="17.8" Modules="simple" RootPath="." Language="en" Id="{6DD96A19-87C4-4D41-A773-41F7BD68B759}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="15.6" version="19.4" Modules="simple" RootPath="." Language="en" Id="{6DD96A19-87C4-4D41-A773-41F7BD68B759}">
+  <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
+    <ROW Name="HiddenItems" Value="ActSyncAppComponent;AutorunComponent;CPLAppletComponent;GameUxComponent;SilverlightSlnComponent;AppXAppDetailsComponent;FixupComponent;AppXCapabilitiesComponent;AppXDependenciesComponent;AppXProductDetailsComponent;AppXVisualAssetsComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent;MsiXDiffComponent;MsixManifestEditorComponent"/>
+  </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
+    <ROW Property="AI_CURRENT_YEAR" Value="2022" ValueLocId="-"/>
+    <ROW Property="AI_PACKAGING_TOOL" Value="Advanced Installer 19.4 build 4648ec91" ValueLocId="-"/>
     <ROW Property="ALLUSERS" Value="1"/>
     <ROW Property="ARPNOMODIFY" MultiBuildValue="DefaultBuild:1"/>
     <ROW Property="ARPNOREPAIR" Value="1"/>
     <ROW Property="ARPPRODUCTICON" Value="WorksharingMonitorforRevit2020_DirWorksharingMonitor.exe" Type="8"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{EDC25C86-5507-4746-A258-1C03996B764B} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{D458FF1F-157E-4340-9FD2-0C981924FFED} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Revit Shortcuts"/>
-    <ROW Property="ProductVersion" Value="7.0.0" Type="32"/>
+    <ROW Property="ProductVersion" Value="23.0.0"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{22025095-7879-4C76-8536-85AACA9D99D0}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -56,6 +61,7 @@
     <ROW Fragment="SequenceDialogs.aip" Path="&lt;AI_THEMES&gt;classic\fragments\SequenceDialogs.aip"/>
     <ROW Fragment="Sequences.aip" Path="&lt;AI_FRAGS&gt;Sequences.aip"/>
     <ROW Fragment="StaticUIStrings.aip" Path="&lt;AI_FRAGS&gt;StaticUIStrings.aip"/>
+    <ROW Fragment="Themes.aip" Path="&lt;AI_FRAGS&gt;Themes.aip"/>
     <ROW Fragment="UI.aip" Path="&lt;AI_THEMES&gt;classic\fragments\UI.aip"/>
     <ROW Fragment="Validation.aip" Path="&lt;AI_FRAGS&gt;Validation.aip"/>
     <ROW Fragment="VerifyRemoveDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\VerifyRemoveDlg.aip"/>
@@ -118,6 +124,7 @@
     <ROW Name="Revit_2.exe" SourcePath="adskicons\15.ico" Index="0"/>
     <ROW Name="Revit_3.exe" SourcePath="adskicons\14.ico" Index="0"/>
     <ROW Name="Revit_4.exe" SourcePath="adskicons\22.ico" Index="0"/>
+    <ROW Name="Revit_5.exe" SourcePath="adskicons\23.ico" Index="0"/>
     <ROW Name="Revit_6.exe" SourcePath="adskicons\19.ico" Index="0"/>
     <ROW Name="Revit_7.exe" SourcePath="adskicons\20.ico" Index="0"/>
     <ROW Name="Revit_8.exe" SourcePath="adskicons\21.ico" Index="0"/>
@@ -145,7 +152,10 @@
     <ROW Condition="VersionNT" Description="[ProductName] cannot be installed on [WindowsType9XDisplay]." DescriptionLocId="AI.LaunchCondition.No9X" IsPredefined="true" Builds="DefaultBuild"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiRegsComponent">
+    <ROW Registry="Manufacturer" Root="-1" Key="Software\[Manufacturer]" Name="\"/>
     <ROW Registry="Path" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Path" Value="[APPDIR]" Component_="ProductInformation"/>
+    <ROW Registry="ProductName" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="\"/>
+    <ROW Registry="Software" Root="-1" Key="Software" Name="\"/>
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
@@ -157,6 +167,7 @@
     <ROW Shortcut="Revit20191_1" Directory_="NewFolder_Dir" Name="REVIT2~3|Revit 2020" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2020\Revit.exe" Hotkey="0" Icon_="Revit_7.exe" IconIndex="0" ShowCmd="1"/>
     <ROW Shortcut="Revit20201" Directory_="NewFolder_Dir" Name="REVIT2~1|Revit 2021" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2021\Revit.exe" Hotkey="0" Icon_="Revit_8.exe" IconIndex="0" ShowCmd="1"/>
     <ROW Shortcut="Revit20211" Directory_="NewFolder_Dir" Name="REVIT~13|Revit 2022" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2022\Revit.exe" Hotkey="0" Icon_="Revit_4.exe" IconIndex="0" ShowCmd="1"/>
+    <ROW Shortcut="Revit20221" Directory_="NewFolder_Dir" Name="REVIT2~4|Revit 2023" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2023\Revit.exe" Hotkey="0" Icon_="Revit_5.exe" IconIndex="0" ShowCmd="1"/>
     <ROW Shortcut="SHORTCUTDIR" Directory_="NewFolder_Dir" Name="REVIT2~5|Revit 2019" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2019\Revit.exe" Hotkey="0" Icon_="Revit_6.exe" IconIndex="0" ShowCmd="1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
