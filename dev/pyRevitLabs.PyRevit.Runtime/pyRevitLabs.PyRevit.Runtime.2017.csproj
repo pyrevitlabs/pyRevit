@@ -2,4 +2,8 @@
   <PropertyGroup>
     <RevitVersion>2017</RevitVersion>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 </Project>

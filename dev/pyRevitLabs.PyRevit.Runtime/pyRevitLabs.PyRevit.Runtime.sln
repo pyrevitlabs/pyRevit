@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30320.27
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2021", "pyRevitLabs.PyRevit.Runtime.2021.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2020", "pyRevitLabs.PyRevit.Runtime.2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2022", "pyRevitLabs.PyRevit.Runtime.2022.csproj", "{DB535262-30DA-404D-A32E-F024FF37935C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2023", "pyRevitLabs.PyRevit.Runtime.2023.csproj", "{E05891D9-4833-45B5-84B4-8237D9AF6A4C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -123,6 +125,22 @@ Global
 		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY38|Any CPU.Build.0 = Release|Any CPU
 		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY38|x64.ActiveCfg = Release|Any CPU
 		{DB535262-30DA-404D-A32E-F024FF37935C}.ReleasePY38|x64.Build.0 = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Debug|x64.Build.0 = Debug|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Release|x64.ActiveCfg = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.Release|x64.Build.0 = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY37|Any CPU.ActiveCfg = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY37|Any CPU.Build.0 = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY37|x64.ActiveCfg = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY37|x64.Build.0 = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY38|Any CPU.ActiveCfg = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY38|Any CPU.Build.0 = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY38|x64.ActiveCfg = Release|Any CPU
+		{E05891D9-4833-45B5-84B4-8237D9AF6A4C}.ReleasePY38|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
