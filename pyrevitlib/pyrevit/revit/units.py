@@ -1,6 +1,6 @@
 """Unit conversion utilities for Revit."""
 
-from pyrevit import DOCS
+from pyrevit import DOCS, HOST_APP
 from pyrevit import DB
 
 
@@ -33,7 +33,14 @@ def format_slope(slope_value, doc=None):
         str: formatted value
     """
     doc = doc or DOCS.doc
-    return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                     unitType=DB.SpecTypeId.Slope,
+                                     value=slope_value,
+                                     maxAccuracy=False,
+                                     forEditing=False)
+    else:
+        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
                                      unitType=DB.UnitType.UT_Slope,
                                      value=slope_value,
                                      maxAccuracy=False,
