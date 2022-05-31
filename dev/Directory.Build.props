@@ -33,7 +33,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>4.8.10.22040+1743</Version>
+    <Version>4.8.11.22151+0454</Version>
     <Copyright>Copyright © 2014-2022</Copyright>
     <Company>pyRevitLabs.io</Company>
   </PropertyGroup>
