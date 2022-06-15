@@ -9,6 +9,8 @@ mlogger = get_logger(__name__)
 
 
 class FuncAsEventHandler(UI.IExternalEventHandler):
+    __namespace__ = EXEC_PARAMS.exec_id
+
     def __init__(self, handler_func, purge=True):
         self.name = 'FuncAsEventHandler'
         self.handler_group_id = None
