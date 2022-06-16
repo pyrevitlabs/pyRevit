@@ -677,8 +677,9 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
                 return cpy_engines_dict[cpyengine_ver]
             except KeyError:
                 # return the latest cpython engine
-                # HACK for CPython compatibility
-                return max(cpy_engines_dict.values(), key=lambda x: str(x.Version))
+                return max(
+                    cpy_engines_dict.values(), key=lambda x: x.Version.Version
+                )
         else:
             mlogger.error('Can not determine cpython engines for '
                           'current attachment: %s', attachment)
