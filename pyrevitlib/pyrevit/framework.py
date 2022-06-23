@@ -86,7 +86,10 @@ ASSEMBLY_FILE_EXT = '.dll'
 
 ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
 ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
-clr.AddReferenceToFileAndPath(ipy_dllpath)
+if compat.PY3:
+    clr.AddReference(ipy_dllpath)
+else:
+    clr.AddReferenceToFileAndPath(ipy_dllpath)
 
 import IronPython
 

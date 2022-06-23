@@ -281,10 +281,7 @@ def get_references():
 
 
 def _generate_runtime_asm():
-    source_list = []
-    for source_file in _get_source_files():
-        source_list.append(source_file)
-
+    source_list = list(_get_source_files())
     # now try to compile
     try:
         mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
@@ -293,13 +290,14 @@ def _generate_runtime_asm():
             outputPath=RUNTIME_ASSM_FILE,
             references=Array[str](
                 get_references()
-                ),
+            ),
             defines=Array[str]([
                 "REVIT{}".format(HOST_APP.version),
                 "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
-                ]),
-            debug=False
-            )
+            ]),
+            debug=False,
+            messages=List[str]()
+        )
         # log results
         logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
         with open(logfile, 'w') as lf:
