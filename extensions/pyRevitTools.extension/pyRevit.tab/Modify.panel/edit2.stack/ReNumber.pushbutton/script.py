@@ -163,7 +163,10 @@ def get_elements_dict(builtin_cat):
     """Collect number:id information about target elements."""
     all_elements = \
         revit.query.get_elements_by_categories([builtin_cat])
-    return {get_number(x):x.Id for x in all_elements}
+    if builtin_cat == BIC.OST_Viewports:
+        return {get_number(x):x.Id for x in all_elements if x.SheetId == revit.active_view.Id}
+    else:
+        return {get_number(x):x.Id for x in all_elements}
 
 
 def find_replacement_number(existing_number, elements_dict):
