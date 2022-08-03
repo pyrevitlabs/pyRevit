@@ -58,11 +58,20 @@ rev_table_header = "| Number        | Date           | Description  |\n" \
                    "|:-------------:|:--------------:|:-------------|\n"
 rev_table_template = "|{number}|{date}|{desc}|\n"
 rev_table = rev_table_header
-for rev in all_revisions:
-    revnum = revit.query.get_rev_number(rev)
-    rev_table += rev_table_template.format(number=revnum,
-                                           date=rev.RevisionDate,
-                                           desc=rev.Description)
+
+# gather revision number, date, and description in tuple list
+rev_data = [(revit.query.get_rev_number(rev),
+             rev.RevisionDate,
+             rev.Description) for rev in all_revisions]
+
+# sort tuple list by revision number
+rev_data.sort(key=lambda rev:rev[0])
+
+# add revision data to the revision table string
+for rev in rev_data:
+    rev_table += rev_table_template.format(number=rev[0],
+                                           date=rev[1],
+                                           desc=rev[2])
 
 # print revision table
 console.print_md(rev_table)
