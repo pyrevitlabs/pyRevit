@@ -150,6 +150,54 @@ class ViewType(EnumSerializable):
     api_types = DB.ViewType
 
 
+class Grid(Serializable):
+    api_types = DB.Grid
+
+    def __init__(self, gridline):
+        from rpw import doc
+
+        cView = doc.ActiveView
+        curves=gridline.GetCurvesInView(DB.DatumExtentType.ViewSpecific, cView)
+        cCurve = curves[0]
+        start_curve = gridline.GetLeader(DB.DatumEnds.End0, cView)
+        end_curve = gridline.GetLeader(DB.DatumEnds.End1, cView)
+
+        if start_curve:
+          self.start_elbow = XYZ(start_curve.Elbow.X, start_curve.Elbow.Y, start_curve.Elbow.Z)
+          self.start_leader = XYZ(start_curve.End.X, start_curve.End.Y, start_curve.End.Z)
+          self.start_anchor = XYZ(start_curve.Anchor.X, start_curve.Anchor.Y, start_curve.Anchor.Z)
+
+        if end_curve:
+          self.end_elbow = XYZ(end_curve.Elbow.X, end_curve.Elbow.Y, end_curve.Elbow.Z)
+          self.end_leader = XYZ(end_curve.End.X, end_curve.End.Y, end_curve.End.Z)
+          self.end_anchor = XYZ(end_curve.Anchor.X, end_curve.Anchor.Y, end_curve.Anchor.Z)
+
+        self.grid_name = gridline.Name
+        self.start = XYZ(cCurve.GetEndPoint(0))
+        self.end = XYZ(cCurve.GetEndPoint(1))
+
+        if isinstance(cCurve, DB.Arc):
+          self.center = XYZ(cCurve.Center.X, cCurve.Center.Y, cCurve.Center.Z)
+
+        self.starts_with_bubble = gridline.HasBubbleInView(DB.DatumEnds.End0, cView)
+        self.start_bubble_visible = gridline.IsBubbleVisibleInView(DB.DatumEnds.End0, cView)
+
+        self.ends_with_bubble = gridline.HasBubbleInView(DB.DatumEnds.End1, cView)
+        self.end_bubble_visible = gridline.IsBubbleVisibleInView(DB.DatumEnds.End1, cView)
+
+    def deserialize(self):
+        name = self.grid_name
+        start = DB.XYZ(self.start.deserialize())
+        end = DB.XYZ(self.end.deserialize())
+        center = DB.XYZ(self.center.deserialize())
+        bubble_start = {self.starts_with_bubble, self.start_bubble_visible}
+        bubble_end = {self.ends_with_bubble, self.end_bubble_visible}
+        start_curve = {self.start_leader, self.start_elbow, self.start_anchor}
+        end_curve = {self.end_leader, self.end_elbow, self.end_anchor}
+
+        return name, start, end, center, bubble_start, bubble_end, start_curve, end_curve
+
+
 def _serialize_items(iterable_obj):
     result_list = []
     for api_item in iterable_obj:
