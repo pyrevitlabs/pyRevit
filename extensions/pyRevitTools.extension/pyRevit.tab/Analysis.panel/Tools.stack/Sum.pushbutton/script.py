@@ -13,7 +13,7 @@ selection = revit.get_selection()
 logger = script.get_logger()
 output = script.get_output()
 
-ParamDef = namedtuple('ParamDef', ['name', 'type', 'readableTypeName'])
+ParamDef = namedtuple('ParamDef', ['name', 'type', 'spec'])
 
 
 def is_calculable_param(param):
@@ -33,7 +33,7 @@ def get_definition_type(definition):
     else:
         return definition.ParameterType
 
-def get_definition_readableTypeName(definition):
+def get_definition_spec(definition):
     if HOST_APP.is_newer_than(2022):
         return DB.LabelUtils.GetLabelForSpec(definition.GetDataType())
     else:
@@ -134,7 +134,7 @@ def process_options(element_list):
                 pdef = param.Definition
                 shared_params.add(ParamDef(pdef.Name,
                                            get_definition_type(pdef),
-                                           get_definition_readableTypeName(pdef)))
+                                           get_definition_spec(pdef)))
 
         # find element type parameters
         el_type = revit.doc.GetElement(el.GetTypeId())
@@ -144,7 +144,7 @@ def process_options(element_list):
                     pdef = type_param.Definition
                     shared_params.add(ParamDef(pdef.Name,
                                                get_definition_type(pdef),
-                                               get_definition_readableTypeName(pdef)))
+                                               get_definition_spec(pdef)))
 
         param_sets.append(shared_params)
 
@@ -154,8 +154,7 @@ def process_options(element_list):
         for param_set in param_sets[1:]:
             all_shared_params = all_shared_params.intersection(param_set)
 
-        return {'{} <{}>'.format(x.name, x.readableTypeName): x
-                for x in all_shared_params}
+        return {'{} <{}>'.format(x.name, x.spec): x for x in all_shared_params}
 
 
 def process_sets(element_list):
