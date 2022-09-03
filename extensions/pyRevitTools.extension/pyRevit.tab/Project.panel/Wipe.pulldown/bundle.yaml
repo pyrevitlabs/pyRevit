@@ -5,6 +5,7 @@ title:
 layout:
   - Wipe Model Components
   - Wipe Attached Constraints
+  - Wipe Selected Families
   - Wipe Site Designer Line Styles
   - Wipe Unpurgable Viewport Types
   - Wipe Data Schema
