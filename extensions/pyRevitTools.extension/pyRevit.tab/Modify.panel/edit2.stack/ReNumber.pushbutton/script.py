@@ -159,10 +159,20 @@ def unmark_renamed_elements(target_view, marked_element_ids):
         target_view.SetElementOverrides(marked_element_id, ogs)
 
 
-def get_elements_dict(builtin_cat):
+def get_elements_dict(view, builtin_cat):
     """Collect number:id information about target elements."""
+    # Note: on treating viewports differently
+    # tool would fail to assign a new number to viewport
+    # on current sheet, if a viewport with the same
+    # number exists on any other sheet
+    if BIC.OST_Viewports == builtin_cat \
+            and isinstance(view, DB.ViewSheet):
+        return {get_number(revit.doc.GetElement(vpid)):vpid
+            for vpid in view.GetAllViewports()}
+
     all_elements = \
         revit.query.get_elements_by_categories([builtin_cat])
+
     return {get_number(x):x.Id for x in all_elements}
 
 
@@ -222,12 +232,13 @@ def _unmark_collected(category_name, renumbered_element_ids):
 def pick_and_renumber(rnopts, starting_index):
     """Main renumbering routine for elements of given category."""
     # all actions under one transaction
+    active_view = revit.active_view
     with revit.TransactionGroup("Renumber {}".format(rnopts.name)):
         # make sure target elements are easily selectable
-        with EasilySelectableElements(revit.active_view, rnopts.bicat):
+        with EasilySelectableElements(active_view, rnopts.bicat):
             index = starting_index
             # collect existing elements number:id data
-            existing_elements_data = get_elements_dict(rnopts.bicat)
+            existing_elements_data = get_elements_dict(active_view, rnopts.bicat)
             # list to collect renumbered elements
             renumbered_element_ids = []
             # ask user to pick elements and renumber them
@@ -253,7 +264,7 @@ def door_by_room_renumber(rnopts):
     active_view = revit.active_view
     with revit.TransactionGroup("Renumber Doors by Room"):
         # collect existing elements number:id data
-        existing_doors_data = get_elements_dict(rnopts.bicat)
+        existing_doors_data = get_elements_dict(active_view, rnopts.bicat)
         renumbered_door_ids = []
         # make sure target elements are easily selectable
         with EasilySelectableElements(active_view, rnopts.bicat) \

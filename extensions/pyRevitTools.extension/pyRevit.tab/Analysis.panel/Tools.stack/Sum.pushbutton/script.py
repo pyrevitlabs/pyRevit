@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, HOST_APP
 from pyrevit.compat import safe_strtype
 from pyrevit import forms
 from pyrevit import script
@@ -13,10 +13,14 @@ selection = revit.get_selection()
 logger = script.get_logger()
 output = script.get_output()
 
-ParamDef = namedtuple('ParamDef', ['name', 'type'])
+ParamDef = namedtuple('ParamDef', ['name', 'type', 'spec'])
 
 
 def is_calculable_param(param):
+    if HOST_APP.is_newer_than(2022) \
+        and not param.Definition.GetDataType().TypeId:
+        return False
+
     if param.StorageType == DB.StorageType.Double:
         return True
 
@@ -27,6 +31,17 @@ def is_calculable_param(param):
 
     return False
 
+def get_definition_type(definition):
+    if HOST_APP.is_newer_than(2022):
+        return definition.GetDataType()
+    else:
+        return definition.ParameterType
+
+def get_definition_spec(definition):
+    if HOST_APP.is_newer_than(2022):
+        return DB.LabelUtils.GetLabelForSpec(definition.GetDataType())
+    else:
+        return definition.ParameterType
 
 def calc_param_total(element_list, param_name):
     sum_total = 0.0
@@ -79,8 +94,12 @@ def format_volume(total):
                                          total/35.3147,
                                          (total/35.3147)*1000000)
 
-
-formatter_funcs = {DB.ParameterType.Length: format_length,
+if HOST_APP.is_newer_than(2022):
+    formatter_funcs = {DB.SpecTypeId.Length: format_length,
+                   DB.SpecTypeId.Area: format_area,
+                   DB.SpecTypeId.Volume: format_volume}
+else:
+    formatter_funcs = {DB.ParameterType.Length: format_length,
                    DB.ParameterType.Area: format_area,
                    DB.ParameterType.Volume: format_volume}
 
@@ -118,7 +137,8 @@ def process_options(element_list):
             if is_calculable_param(param):
                 pdef = param.Definition
                 shared_params.add(ParamDef(pdef.Name,
-                                           pdef.ParameterType))
+                                           get_definition_type(pdef),
+                                           get_definition_spec(pdef)))
 
         # find element type parameters
         el_type = revit.doc.GetElement(el.GetTypeId())
@@ -127,7 +147,8 @@ def process_options(element_list):
                 if is_calculable_param(type_param):
                     pdef = type_param.Definition
                     shared_params.add(ParamDef(pdef.Name,
-                                               pdef.ParameterType))
+                                               get_definition_type(pdef),
+                                               get_definition_spec(pdef)))
 
         param_sets.append(shared_params)
 
@@ -137,8 +158,7 @@ def process_options(element_list):
         for param_set in param_sets[1:]:
             all_shared_params = all_shared_params.intersection(param_set)
 
-        return {'{} <{}>'.format(x.name, x.type): x
-                for x in all_shared_params}
+        return {'{} <{}>'.format(x.name, x.spec): x for x in all_shared_params}
 
 
 def process_sets(element_list):
