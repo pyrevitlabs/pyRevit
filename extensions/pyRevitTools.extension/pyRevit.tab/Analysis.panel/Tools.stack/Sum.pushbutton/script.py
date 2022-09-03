@@ -17,6 +17,10 @@ ParamDef = namedtuple('ParamDef', ['name', 'type', 'spec'])
 
 
 def is_calculable_param(param):
+    if HOST_APP.is_newer_than(2022) \
+        and not param.Definition.GetDataType().TypeId:
+        return False
+
     if param.StorageType == DB.StorageType.Double:
         return True
 
