@@ -177,7 +177,7 @@ jobs:
       - name: Publish Choco Packages (Release)
         if: (github.base_ref == env.ReleaseBranch)
         run: |
-          choco apikey -k ${{ secrets.CHOCO_TOKEN}} -source https://push.chocolatey.org/
+          choco apikey --key ${{ secrets.CHOCO_TOKEN}} --source https://push.chocolatey.org/
           choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
 
       - name: Merge To Master (Release)
