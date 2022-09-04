@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop';
 
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$url64      = 'https://github.com/eirannejad/pyRevit/releases/download/v4.8.11.22151/pyRevit_CLI_4.8.11.22151_admin_signed.exe'
+$url64      = 'https://github.com/eirannejad/pyRevit/releases/download/v4.8.12.22247/pyRevit_CLI_4.8.12.22247_admin_signed.exe'
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
@@ -12,7 +12,7 @@ $packageArgs = @{
 
   softwareName  = 'pyrevit-cli*'
 
-  checksum64    = '2DD15C2FF80E3B0CB11B7B04AFD71F1FD0434FF443021EB39151CF8CA79A01D5'
+  checksum64    = 'A43C6CBA331EB91489721DDB7A2FF6B3F202C4E8138902F05306604BF92B743A'
   checksumType64= 'sha256'
 
   silentArgs    = "/VERYSILENT"
