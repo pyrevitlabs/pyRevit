@@ -280,6 +280,44 @@ def update_key_schedule(keyschedule, category, fields, records, doc=None):
                             param.Set(sched_items[param_value])
 
 
+def ensure_schedulable_parameters(category, parameter_defs, doc=None):
+    """Create a temporary key schedule and check of all
+    parameter definitions are schedulable using ScheduleDefinition api
+
+    Args:
+        parameter_defs (list[tuple]): list of (name, type) tuples
+    """
+    doc = doc or revit.doc
+    params_ensured = True
+    with revit.DryTransaction(doc):
+        temp_key_sched = DB.ViewSchedule.CreateKeySchedule(doc, category.Id)
+        fsched_field_names = [
+            x.GetName(doc)
+            for x in temp_key_sched.Definition.GetSchedulableFields()
+        ]
+
+        for param_def in parameter_defs:
+            if param_def[0] not in fsched_field_names:
+                logger.critical(
+                    "Missing schedulable parameter.\n"
+                    'Name: "%s"\n'
+                    "Type: %s\n"
+                    "Category %s",
+                    param_def[0],
+                    param_def[1],
+                    category.Name,
+                )
+                params_ensured = False
+
+    if not params_ensured:
+        logger.critical(
+            "Revit API does not allow creation of "
+            "Project Parameters. Please create the missing parameters "
+            "manually before importing the data from CSV file."
+        )
+    return params_ensured
+
+
 def ensure_parameters(category, parameter_defs, doc=None):
     """Ensure parameters exist for given categoryself.
 
@@ -406,7 +444,7 @@ if __name__ == "__main__":
                     # creates project params if not
                     # skip the first on since it is "Key Name" and only applies
                     # to elements inside a key schedule
-                    if ensure_parameters(key_sched_cat, param_defs[1:]):
+                    if ensure_schedulable_parameters(key_sched_cat, param_defs[1:]):
                         # create the schedule and fill with data now
                         create_key_schedule(
                             category=key_sched_cat,
