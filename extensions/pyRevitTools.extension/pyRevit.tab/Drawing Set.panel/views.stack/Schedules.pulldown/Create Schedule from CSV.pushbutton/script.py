@@ -336,17 +336,18 @@ def read_csv_typed_data(csv_file):
             parts = field_def.split("|")
             parts_count = len(parts)
             # added support for Revit 2022+ parameter types
-            if HOST_APP.is_newer_than(2021):
+            if HOST_APP.is_newer_than(2022, or_equal=True):
                 if parts_count == 1:
                     if parts[0]:
                         field_defs.append((parts[0], DB.SpecTypeId.String))
                 elif parts_count == 2:
-                    field_defs.append(
-                        (
-                            parts[0],
-                            coreutils.get_enum_value(DB.SpecTypeId, parts[1]),
+                    if hasattr(DB.SpecTypeId, parts[1]):
+                        field_defs.append(
+                            (
+                                parts[0],
+                                getattr(DB.SpecTypeId, parts[1]),
+                            )
                         )
-                    )
             else:
                 if parts_count == 1:
                     if parts[0]:
