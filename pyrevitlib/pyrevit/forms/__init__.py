@@ -39,8 +39,12 @@ from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
 from pyrevit import versionmgr
+from pyrevit.userconfig import user_config
 
 import pyevent #pylint: disable=import-error
+
+from System import Uri, UriKind
+from System.Windows import ResourceDictionary
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -148,6 +152,10 @@ class WPFWindow(framework.Windows.Window):
 
     def __init__(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         """Initialize WPF window and resources."""
+
+        # load localization
+        self.load_localization()
+
         # load xaml
         self.load_xaml(
             xaml_source,
@@ -155,6 +163,20 @@ class WPFWindow(framework.Windows.Window):
             handle_esc=handle_esc,
             set_owner=set_owner
             )
+
+    def load_localization(self):
+        lang_file = os.path.join(EXEC_PARAMS.command_path, "localizations",
+                                 "lang." + user_config.user_locale + ".xaml")
+
+        if not os.path.isfile(lang_file):
+            lang_file = os.path.join(EXEC_PARAMS.command_path, "localizations",
+                                     "lang.en_us.xaml")
+
+        if os.path.isfile(lang_file):
+            lang_dictionary = ResourceDictionary()
+            lang_dictionary.Source = Uri(lang_file, UriKind.Absolute)
+
+            self.Resources.MergedDictionaries.Add(lang_dictionary)
 
     def load_xaml(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         # create new id for this window
