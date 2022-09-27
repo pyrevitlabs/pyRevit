@@ -168,10 +168,15 @@ def get_biparam_stringequals_filter(bip_paramvalue_dict):
     for bip, fvalue in bip_paramvalue_dict.items():
         bip_id = DB.ElementId(bip)
         bip_valueprovider = DB.ParameterValueProvider(bip_id)
-        bip_valuerule = DB.FilterStringRule(bip_valueprovider,
-                                            DB.FilterStringEquals(),
-                                            fvalue,
-                                            True)
+        if HOST_APP.is_newer_than(2022):
+            bip_valuerule = DB.FilterStringRule(bip_valueprovider,
+                                                DB.FilterStringEquals(),
+                                                fvalue)
+        else:
+            bip_valuerule = DB.FilterStringRule(bip_valueprovider,
+                                                DB.FilterStringEquals(),
+                                                fvalue,
+                                                True)
         filters.append(bip_valuerule)
 
     if filters:
@@ -265,7 +270,10 @@ def get_elements_by_param_value(param_name, param_value,
     if param_id:
         pvprov = DB.ParameterValueProvider(param_id)
         pfilter = DB.FilterStringEquals()
-        vrule = DB.FilterStringRule(pvprov, pfilter, param_value, True)
+        if HOST_APP.is_newer_than(2022):
+            vrule = DB.FilterStringRule(pvprov, pfilter, param_value)
+        else:
+            vrule = DB.FilterStringRule(pvprov, pfilter, param_value, True)
         if inverse:
             vrule = DB.FilterInverseRule(vrule)
         param_filter = DB.ElementParameterFilter(vrule)
