@@ -87,6 +87,14 @@ options = {
         tag_type=DB.BuiltInCategory.OST_FurnitureSystemTags,
         element_type=DB.BuiltInCategory.OST_FurnitureSystems
         ),
+    'Structural framing': Taggable(
+        tag_type=DB.BuiltInCategory.OST_StructuralFramingTags,
+        element_type=DB.BuiltInCategory.OST_StructuralFraming
+        ),
+    'Structural foundations': Taggable(
+        tag_type=DB.BuiltInCategory.OST_StructuralFoundationTags,
+        element_type=DB.BuiltInCategory.OST_StructuralFoundation
+        ),
 }
 
 selected_switch = \
