@@ -970,15 +970,17 @@ def get_connected_circuits(element, spare=False, space=False):
         circuit_types.append(DB.Electrical.CircuitType.Spare)
     if space:
         circuit_types.append(DB.Electrical.CircuitType.Space)
-
-    if HOST_APP.is_newer_than(2021, or_equal=True): # deprecation of ElectricalSystems in 2021
-        if element.MEPModel and element.MEPModel.GetElectricalSystems:
-            return [x for x in element.MEPModel.GetElectricalSystems
-                    if x.CircuitType in circuit_types]
+    if circuit_types !=[DB.Electrical.CircuitType.Circuit]:
+        if HOST_APP.is_newer_than(2021, or_equal=True): # deprecation of ElectricalSystems in 2021
+            if element.MEPModel and element.MEPModel.GetElectricalSystems:
+                return [x for x in element.MEPModel.GetElectricalSystems
+                        if x.CircuitType in circuit_types]
+        else:
+            if element.MEPModel and element.MEPModel.ElectricalSystems:
+                return [x for x in element.MEPModel.ElectricalSystems
+                        if x.CircuitType in circuit_types]
     else:
-        if element.MEPModel and element.MEPModel.ElectricalSystems:
-            return [x for x in element.MEPModel.ElectricalSystems
-                    if x.CircuitType in circuit_types]
+        return element
 
 
 def get_element_categories(elements):
