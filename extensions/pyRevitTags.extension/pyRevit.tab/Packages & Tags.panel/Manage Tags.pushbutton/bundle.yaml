@@ -9,6 +9,6 @@ title:
     Tags
 tooltip:
   ru: Управляет марками в проекте или выделенными элементами.
-  en_us: Manage tags in project or selected elements
+  en_us: Manage tags in project or selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'
