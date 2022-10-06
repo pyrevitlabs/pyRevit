@@ -237,10 +237,29 @@ class ManageTagsWindow(forms.WPFWindow):
                                 'selected tag.'
                                 .format(catname=tag_cat.Name))
                     return
+                    if HOST_APP.is_newer_than(2020, or_equal=True):
+                        sch = \
+                            forms.SelectFromList.show(
+                                cat_schedules,
+                                name_attr='Name',
+                                title='Select Schedule',
+                                button_name='Select Schedule',
+                                width=400, height=300
+                                )
+                    else:
+                        sch = \
+                            forms.SelectFromList.show(
+                                cat_schedules,
+                                name_attr='ViewName',
+                                title='Select Schedule',
+                                button_name='Select Schedule',
+                                width=400, height=300
+                                )
+
                 tag_sched = \
                     forms.SelectFromList.show(
                         query.get_category_schedules(tag_cat),
-                        name_attr='ViewName',
+                        name_attr='Name',
                         title='Select Template Schedule',
                         button_name='Select Schedule',
                         width=400, height=300
