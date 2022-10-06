@@ -3,5 +3,5 @@ title:
   en_us: Clear Tags
 tooltip:
   ru: Очищает информацию о марках выделенных элементов.
-  en_us: Clear tag information from selected elements
+  en_us: Clear tag information from selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
 author: '{{author}}'
