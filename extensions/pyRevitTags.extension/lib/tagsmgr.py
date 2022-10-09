@@ -556,7 +556,7 @@ def apply_tags(element, tags, config=None):
                                                 spare=False)
         if esystems:
             for esys in esystems:
-                    apply_tags(esys, tags, config=config)
+                apply_tags(esys, tags, config=config)
 
     if config.append:
         el_tags = extract_tags(element)
