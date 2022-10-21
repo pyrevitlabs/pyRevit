@@ -201,6 +201,9 @@ class WPFWindow(framework.Windows.Window):
         if handle_esc:
             self.setup_default_handlers()
 
+    def get_locale_string(self, string_name):
+        return self.FindResource(string_name)
+
     def setup_owner(self):
         wih = Interop.WindowInteropHelper(self)
         wih.Owner = AdWindows.ComponentManager.ApplicationWindow
