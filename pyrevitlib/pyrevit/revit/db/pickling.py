@@ -150,6 +150,28 @@ class ViewType(EnumSerializable):
     api_types = DB.ViewType
 
 
+class ScheduleField(Serializable):
+    api_types = DB.ScheduleField
+    
+    def __init__(self, field):
+      self.name = field.GetName()
+      self.heading = field.ColumnHeading
+      self.align = field.HorizontalAlignment.ToString()
+      self.width = field.SheetColumnWidth
+      self.hidden = field.IsHidden
+      if not(field.GetFormatOptions().UseDefault):
+        self.FO_Accuracy = field.GetFormatOptions().Accuracy
+        self.FO_sym = field.GetFormatOptions().GetSymbolTypeId().TypeId
+        self.FO_usePlus = field.GetFormatOptions().UsePlusPrefix
+        self.FO = 'custom'
+      
+    def deserialize(self):
+      if ('custom' == self.FO):
+        return self.name, self.heading, self.hidden, self.width.deserialize(), self.FO, self.FO_Accuracy.deserialize(), self.FO_sym, self.FO_usePlus
+      else:
+        return self.name, self.heading, self.hidden, self.width.deserialize()
+
+
 class Grid(Serializable):
     api_types = DB.Grid
 
