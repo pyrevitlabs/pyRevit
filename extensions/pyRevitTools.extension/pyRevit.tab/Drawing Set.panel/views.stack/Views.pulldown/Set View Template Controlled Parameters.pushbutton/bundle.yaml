@@ -1,0 +1,7 @@
+title:
+  fr_fr: Inclure ou exclure les paramètres du gabarit de vue
+  en_us: Include or exclude template parameters
+tooltip: 
+  fr_fr: Inclure ou exclure les paramètres du gabarit de vue - non fonctionnel pour les gabarits de vue 3D
+  en_us: Include or exclude template parameters, not functional for 3D view templates
+author: Jean-Marc Couffin
