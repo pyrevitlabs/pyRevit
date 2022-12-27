@@ -9,6 +9,6 @@ title:
     Selected
 tooltip:
   ru: Применяет марку к выделенным элементам.
-  en_us: Apply tag to selected elements
+  en_us: Apply tag to selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'
