@@ -174,8 +174,12 @@ class ProjectParameter(BaseWrapper):
         # Revit <2017 does not have the Id parameter
         self.param_id = getattr(self.param_def, 'Id', None)
 
-        # Revit >2021 does not have the UnitType property
-        if HOST_APP.is_newer_than(2021, or_equal=True):
+
+        if HOST_APP.is_newer_than(2022, or_equal=True):
+            # GetSpecTypeId() Removed in Revit 2022
+            self.unit_type = self.param_def.GetDataType()
+        elif HOST_APP.is_exactly(2021):
+            # Revit >2021 does not have the UnitType property
             self.unit_type = self.param_def.GetSpecTypeId()
         else:
             self.unit_type = self.param_def.UnitType

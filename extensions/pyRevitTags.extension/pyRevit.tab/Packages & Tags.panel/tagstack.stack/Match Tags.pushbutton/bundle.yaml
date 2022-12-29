@@ -3,5 +3,5 @@ title:
   en_us: Match Tags
 tooltip:
   ru: Сравнивает марки между выделенными элементами.
-  en_us: Match Tags between selected elements
+  en_us: Match Tags between selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
 author: '{{author}}'

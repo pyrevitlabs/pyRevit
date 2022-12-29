@@ -407,23 +407,38 @@ def create_param_value_filter(filter_name,
         # if value is str, eval is expected to be str
         str_eval, num_eval = param_eval
         if isinstance(pvalue, str):
-            rule = DB.FilterStringRule(param_prov,
-                                       str_eval(),
-                                       pvalue,
-                                       case_sensitive)
+            if HOST_APP.is_newer_than(2022):
+                rule = DB.FilterStringRule(param_prov,
+                                        str_eval(),
+                                        pvalue)
+            else:
+                rule = DB.FilterStringRule(param_prov,
+                                        str_eval(),
+                                        pvalue,
+                                        case_sensitive)
         # if num_eval is for str, e.g. "contains", or "startswith"
         # convert numeric values to str
         elif isinstance(num_eval, DB.FilterStringRuleEvaluator):
             if isinstance(pvalue, (int, float)):
-                rule = DB.FilterStringRule(param_prov,
-                                           num_eval(),
-                                           str(pvalue),
-                                           False)
+                if HOST_APP.is_newer_than(2022):
+                    rule = DB.FilterStringRule(param_prov,
+                                            num_eval(),
+                                            str(pvalue))
+                else:
+                    rule = DB.FilterStringRule(param_prov,
+                                            num_eval(),
+                                            str(pvalue),
+                                            False)
             elif isinstance(pvalue, DB.ElementId):
-                rule = DB.FilterStringRule(param_prov,
-                                           num_eval(),
-                                           str(pvalue.IntegerValue),
-                                           False)
+                if HOST_APP.is_newer_than(2022):
+                    rule = DB.FilterStringRule(param_prov,
+                                            num_eval(),
+                                            str(pvalue.IntegerValue))
+                else:
+                    rule = DB.FilterStringRule(param_prov,
+                                            num_eval(),
+                                            str(pvalue.IntegerValue),
+                                            False)
         # if value is int, eval is expected to be numeric
         elif isinstance(pvalue, int):
             rule = DB.FilterIntegerRule(param_prov,
