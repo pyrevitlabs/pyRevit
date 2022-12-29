@@ -646,13 +646,13 @@ def checkModel(doc, output):
     linkdocPhasesName = []
 
     def DocPhases(doc, links = []):
-    	#Get document phases
-    	docPhases = doc.Phases
-    	#Get document phases names
-    	docPhasesName = []
-    	for i in docPhases:
-    		docPhasesName.append(i.Name)
-    	#Get links phases
+        #Get document phases
+        docPhases = doc.Phases
+        #Get document phases names
+        docPhasesName = []
+        for i in docPhases:
+            docPhasesName.append(i.Name)
+        #Get links phases
         for x in links:
             linkdocPhases = []
             try:
@@ -661,7 +661,7 @@ def checkModel(doc, output):
                 linkdocPhasesName.append(linkdocPhases)
             except:
                 linkdocPhasesName.append(['Link Unloaded'])
-    	return docPhasesName, linkdocPhasesName
+        return docPhasesName, linkdocPhasesName
 
     #Call for phases definition
     phase = inner_lists(DocPhases(doc,rvtlinkdocs))
