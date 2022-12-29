@@ -1,7 +1,17 @@
 """Utility functions and types"""
 #pylint: disable=import-error,invalid-name,broad-except
 #pylint: disable=unused-import,useless-object-inheritance
-from httplib import OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
+from pyrevit.compat import IRONPY340, PY3
+if IRONPY340:
+    from http.client import OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
+elif PY3:
+    from http import HTTPStatus as _s
+    OK = _s.OK
+    ACCEPTED = _s.ACCEPTED
+    INTERNAL_SERVER_ERROR = _s.INTERNAL_SERVER_ERROR
+    NO_CONTENT = _s.NO_CONTENT
+else:
+    from httplib import OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
 
 
 DEFAULT_SOURCE = "pyrevit.routes"

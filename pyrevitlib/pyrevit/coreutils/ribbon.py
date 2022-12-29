@@ -147,25 +147,25 @@ class ButtonIcons(object):
         base_image = Imaging.BitmapImage()
         base_image.BeginInit()
         base_image.StreamSource = self.filestream
-        base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
+        base_image.DecodePixelHeight = int(adjusted_icon_size * screen_scaling)
         base_image.EndInit()
         self.filestream.Seek(0, IO.SeekOrigin.Begin)
 
         image_size = base_image.PixelWidth
         image_format = base_image.Format
-        image_byte_per_pixel = base_image.Format.BitsPerPixel / 8
+        image_byte_per_pixel = int(base_image.Format.BitsPerPixel / 8)
         palette = base_image.Palette
 
-        stride = image_size * image_byte_per_pixel
+        stride = int(image_size * image_byte_per_pixel)
         array_size = stride * image_size
         image_data = System.Array.CreateInstance(System.Byte, array_size)
         base_image.CopyPixels(image_data, stride, 0)
 
+        scaled_size = int(adjusted_icon_size * screen_scaling)
+        scaled_dpi = int(adjusted_dpi * screen_scaling)
         bitmap_source = \
-            Imaging.BitmapSource.Create(adjusted_icon_size * screen_scaling,
-                                        adjusted_icon_size * screen_scaling,
-                                        adjusted_dpi * screen_scaling,
-                                        adjusted_dpi * screen_scaling,
+            Imaging.BitmapSource.Create(scaled_size, scaled_size,
+                                        scaled_dpi, scaled_dpi,
                                         image_format,
                                         palette,
                                         image_data,

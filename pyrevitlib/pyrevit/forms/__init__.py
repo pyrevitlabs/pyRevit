@@ -19,7 +19,7 @@ from pyrevit import PyRevitCPythonNotSupported, PyRevitException, PyRevitCPython
 import pyrevit.compat as compat
 from pyrevit.compat import safe_strtype
 
-if compat.PY3:
+if compat.PY3 and not compat.IRONPY340:
     raise PyRevitCPythonNotSupported('pyrevit.forms')
 
 from pyrevit import coreutils

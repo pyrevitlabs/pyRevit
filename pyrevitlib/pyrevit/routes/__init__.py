@@ -39,4 +39,4 @@ class API(object):
 
 def active_routes_api():
     """Activates routes API"""
-    from pyrevit.routes.api import *
+    from pyrevit.routes import api
