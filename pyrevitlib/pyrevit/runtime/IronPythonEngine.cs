@@ -8,6 +8,7 @@ using Microsoft.Scripting.Hosting;
 using IronPython.Hosting;
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
 
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.Json;
@@ -257,7 +258,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // engine.Setup.Options["Arguments"] = arguments;
             // engine.Runtime.Setup.HostArguments = new List<object>(arguments);
             var sysmodule = Engine.GetSysModule();
-            var pythonArgv = new IronPython.Runtime.List();
+            var pythonArgv = PythonOps.MakeEmptyList(2);
             // for python make sure the first argument is the script
             pythonArgv.append(runtime.ScriptSourceFile);
             pythonArgv.extend(runtime.ScriptRuntimeConfigs.Arguments);
