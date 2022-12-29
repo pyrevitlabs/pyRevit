@@ -5,7 +5,7 @@ import os.path as op
 #pylint: disable=superfluous-parens,useless-import-alias
 from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR, BIN_DIR
 from pyrevit.framework import clr
-import pyrevit.compat as compat
+from pyrevit.compat import PY2
 
 # try loading pyrevitlabs
 clr.AddReference('Nett')
@@ -22,7 +22,7 @@ clr.AddReference('System.Numerics.Vectors')
 clr.AddReference('System.Text.Encoding.CodePages')
 # Revit, and its builtin addons, ship multiple versions of this assembly
 # let's make sure our specific version is loaded
-if compat.PY2:
+if PY2:
     clr.AddReferenceToFileAndPath(
         op.join(BIN_DIR, 'System.Runtime.CompilerServices.Unsafe.dll')
         )
@@ -123,7 +123,7 @@ if not EXEC_PARAMS.doc_mode:
 
     # configure NLog
     #pylint: disable=W0201
-    if compat.PY2:
+    if PY2:
         config = NLog.Config.LoggingConfiguration()
         target = PyRevitOutputTarget()
         target.Name = __name__

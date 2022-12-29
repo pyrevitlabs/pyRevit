@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
 import pyrevit.compat as compat
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import PY3, safe_strtype
 from pyrevit import framework
 from pyrevit.framework import clr
 from pyrevit.framework import DateTime, DateTimeOffset
@@ -29,7 +29,7 @@ if not EXEC_PARAMS.doc_mode:
     mlogger.debug('Loading dll: %s', LIBGIT_DLL)
 
     try:
-        if compat.PY3:
+        if PY3:
             clr.AddReference(LIBGIT_DLL)
         else:
             clr.AddReferenceToFileAndPath(LIBGIT_DLL)

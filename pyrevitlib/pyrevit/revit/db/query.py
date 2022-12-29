@@ -9,7 +9,7 @@ from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import api
 from pyrevit import framework
 from pyrevit import compat
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import PY3, safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
@@ -94,7 +94,7 @@ def get_name(element, title_on_sheet=False):
 
     # have to use the imported Element otherwise
     # AttributeError occurs
-    if compat.PY3:
+    if PY3:
         return element.Name
     else:
         return Element.Name.__get__(element)
