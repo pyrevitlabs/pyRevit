@@ -41,6 +41,15 @@ assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'IronPython Engine'
 
+[engines.IPY340PR]
+kernel = 'IronPython 3'
+version = 340
+runtime = true
+path = 'bin\engines\IPY340PR'
+assembly = 'pyRevitLoader.dll'
+compatproducts = []
+description = 'IronPython 3 Engine'
+
 [engines.DEFAULT]
 kernel = 'IronPython'
 version = 2711
