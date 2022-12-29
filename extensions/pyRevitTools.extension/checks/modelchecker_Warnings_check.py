@@ -9,6 +9,8 @@ from pyrevit import revit, DB
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.compat import safe_strtype
 
+WIKI_ARTICLE = ""
+
 COLORS = 10 * [
     "#ffc299",
     "#ff751a",
@@ -202,7 +204,7 @@ def unique(list1):
     # convert the set to the list
     unique_list = list(list_set)
     for x in unique_list:
-        print x,
+        print(x)
 
 
 def dashboardRectMaker(value, description, treshold):
