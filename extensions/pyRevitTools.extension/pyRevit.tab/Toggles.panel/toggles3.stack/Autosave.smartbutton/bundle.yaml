@@ -1,0 +1,11 @@
+title:
+  en_us: Autosave
+tooltip:
+  en_us: >-
+    Automatically saves the current document upon changing views if the document has not been saved sinced the configured interval.
+    
+    Shift+Click:
+    
+    Customize interval between autosaves.
+min_revit_version: 2017
+context: zero-doc
