@@ -15,6 +15,7 @@ def create_button(button_type="pushbutton"):
         title="New Folder", instructions="Specify name for new button")
 
     if not newname:
+        alert("No name specified, will exit")
         script.exit()
 
     newfolder = os.path.join(up_folder, newname + "." + button_type)
@@ -40,12 +41,16 @@ def create_button(button_type="pushbutton"):
 
 # get the button count from user
 button_count = ask_for_string(
-    prompt='How many buttons do you want to create?', title='Number of buttons')
-
-for i in range(int(button_count)):
-    # select the type of button you want to create:
-    button_type_selected = CommandSwitchWindow.show(["pushbutton", "urlbutton"],
-                                                    message="Select button type")
-    if button_type_selected:
-        create_button(button_type_selected)
-sessionmgr.reload_pyrevit()
+    instructions='How many buttons do you want to create?', title='Number of buttons')
+if int(button_count) >= 8:
+    alert("You might want to enter a number of button less than 8, as the script will prompt you for each button type and name")
+    script.exit()
+else:
+    if int(button_count):
+        for i in range(int(button_count)):
+            # select the type of button you want to create:
+            button_type_selected = CommandSwitchWindow.show(["pushbutton", "urlbutton"],
+                                                            message="Select button type")
+            if button_type_selected:
+                create_button(button_type_selected)
+        sessionmgr.reload_pyrevit()
