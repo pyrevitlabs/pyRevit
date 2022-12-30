@@ -16,6 +16,8 @@ layout:
   - Test Independent Logging
   - -----
   - Test XAML
+  - Test XAML (Localized)
+  - Test XAML (Localized Resource)
   - Test Modeless (Sensors)
   - Test Progressbar
   - Test Charts
