@@ -27,7 +27,7 @@ if PY2:
 
 from System import AppDomain, Version
 from System import Type
-from System import Uri, Guid
+from System import Uri, UriKind, Guid
 from System import EventHandler
 from System import Array, IntPtr, Enum, Byte
 from System import Convert
@@ -71,6 +71,7 @@ from System.Windows import Threading
 from System.Windows import Interop
 from System.Windows import Input
 from System.Windows import Data
+from System.Windows import ResourceDictionary
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 from System import Math
 from System.Management import ManagementObjectSearcher

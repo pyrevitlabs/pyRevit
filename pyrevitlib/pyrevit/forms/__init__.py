@@ -3,6 +3,7 @@
 Example:
     >>> from pyrevit.forms import WPFWindow
 """
+#pylint: disable=consider-using-f-string,wrong-import-position
 
 import sys
 import os
@@ -15,7 +16,7 @@ import datetime
 import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DOCS, BIN_DIR
-from pyrevit import PyRevitCPythonNotSupported, PyRevitException, PyRevitCPythonNotSupported
+from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit.compat import PY3, IRONPY340
 from pyrevit.compat import safe_strtype
 
@@ -34,6 +35,7 @@ from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
+from pyrevit.framework import Uri, UriKind, ResourceDictionary
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
@@ -42,9 +44,6 @@ from pyrevit import versionmgr
 from pyrevit.userconfig import user_config
 
 import pyevent #pylint: disable=import-error
-
-from System import Uri, UriKind
-from System.Windows import ResourceDictionary
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -153,9 +152,6 @@ class WPFWindow(framework.Windows.Window):
     def __init__(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         """Initialize WPF window and resources."""
 
-        # load localization
-        self.load_localization()
-
         # load xaml
         self.load_xaml(
             xaml_source,
@@ -164,31 +160,12 @@ class WPFWindow(framework.Windows.Window):
             set_owner=set_owner
             )
 
-    def load_localization(self):
-        lang_file = os.path.join(EXEC_PARAMS.command_path, "localizations",
-                                 "lang." + user_config.user_locale + ".xaml")
-
-        if not os.path.isfile(lang_file):
-            lang_file = os.path.join(EXEC_PARAMS.command_path, "localizations",
-                                     "lang.en_us.xaml")
-
-        if os.path.isfile(lang_file):
-            lang_dictionary = ResourceDictionary()
-            lang_dictionary.Source = Uri(lang_file, UriKind.Absolute)
-
-            self.Resources.MergedDictionaries.Add(lang_dictionary)
-
     def load_xaml(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 
         if not literal_string:
-            if not op.exists(xaml_source):
-                wpf.LoadComponent(self,
-                                  os.path.join(EXEC_PARAMS.command_path,
-                                               xaml_source))
-            else:
-                wpf.LoadComponent(self, xaml_source)
+            wpf.LoadComponent(self, self._determine_xaml(xaml_source))
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
@@ -200,6 +177,50 @@ class WPFWindow(framework.Windows.Window):
         WPFWindow.setup_resources(self)
         if handle_esc:
             self.setup_default_handlers()
+
+    def _determine_xaml(self, xaml_source):
+        xaml_file = xaml_source
+        if not op.exists(xaml_file):
+            xaml_file = os.path.join(EXEC_PARAMS.command_path, xaml_source)
+
+        english_xaml_file = xaml_file.replace('.xaml', '.en_us.xaml')
+        localized_xaml_file = xaml_file.replace(
+            '.xaml',
+            '.{}.xaml'.format(user_config.user_locale)
+        )
+
+        english_xaml_resfile = \
+            xaml_file.replace('.xaml', '.ResourceDictionary.en_us.xaml')
+        localized_xaml_resfile = xaml_file.replace(
+            '.xaml',
+            '.ResourceDictionary.{}.xaml'.format(user_config.user_locale)
+        )
+
+        # if localized version of xaml file is provided, use that
+        if os.path.isfile(localized_xaml_file):
+            return localized_xaml_file
+
+        if os.path.isfile(english_xaml_file):
+            return english_xaml_file
+
+        # otherwise look for .ResourceDictionary files and load those,
+        # returning the original xaml_file
+        if os.path.isfile(localized_xaml_resfile):
+            self.merge_resource_dict(localized_xaml_resfile)
+        
+        if os.path.isfile(english_xaml_resfile):
+            self.merge_resource_dict(english_xaml_resfile)
+
+        return xaml_file
+
+
+    def merge_resource_dict(self, xaml_source):
+        """Reads ResourceDictionary from given xaml file and merged into
+        resource dictionary of this window
+        """
+        lang_dictionary = ResourceDictionary()
+        lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
+        self.Resources.MergedDictionaries.Add(lang_dictionary)
 
     def get_locale_string(self, string_name):
         return self.FindResource(string_name)
