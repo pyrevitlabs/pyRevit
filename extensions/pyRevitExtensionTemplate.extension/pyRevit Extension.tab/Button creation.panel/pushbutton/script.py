@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from pyrevit import revit, DB, forms, script
+from pyrevit import revit, forms, script
+from pyrevit import DB as DB
 
 output = script.get_output()
 output.close_others()
@@ -8,14 +9,12 @@ output.close_others()
 doc = revit.doc
 uidoc = revit.uidoc
 
-collector_name = (
+wall_instances = (
     DB.FilteredElementCollector(doc)
     .OfCategory(DB.BuiltInCategory.OST_Walls)
     .WhereElementIsNotElementType()
     .ToElements()
 )
 
-print('Hello World')
-
-for element in collector_name:
-    print(element.Id)
+output.print_md('# Hello World')
+output.print_md('{0} walls found in the model.'.format(len(wall_instances)))
