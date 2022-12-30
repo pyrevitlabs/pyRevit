@@ -6,6 +6,7 @@ Example:
     >>> data = script.journal_read('data-key')
     >>> script.exit()
 """
+#pylint: disable=consider-using-f-string
 
 import sys
 import os
@@ -500,19 +501,31 @@ def load_index(index_file='index.html'):
     outputwindow.open_page(index_file)
 
 
-def load_ui(ui_instance, ui_file='ui.xaml', set_owner=True):
+def load_ui(ui_instance, ui_file='ui.xaml', handle_esc=True, set_owner=True):
+    """Load xaml file into given window instance.
+
+    If window instance defines a method named `setup` it
+    will be called after loading 
+
+    Args:
+        ui_instance (forms.WPFWindow): ui form instance
+        ui_file (str, optional): name of ui xaml file. defaults to: 'ui.xaml'
+        handle_esc (bool, optional): handle escape and close window
+        set_owner (bool, optional): set window owner to Revit window
+    """
     ui_file = get_bundle_file(ui_file)
     if ui_file:
         ui_instance.load_xaml(
             ui_file,
             literal_string=False,
-            handle_esc=True,
+            handle_esc=handle_esc,
             set_owner=set_owner
             )
-        ui_instance.setup()
+        if hasattr(ui_instance, 'setup'):
+            ui_instance.setup()
         return ui_instance
-    else:
-        raise PyRevitException("Missing bundle ui file: {}".format(ui_file))
+
+    raise PyRevitException("Missing bundle ui file: {}".format(ui_file))
 
 
 def get_envvar(envvar):

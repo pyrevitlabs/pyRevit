@@ -207,12 +207,11 @@ class WPFWindow(framework.Windows.Window):
         # returning the original xaml_file
         if os.path.isfile(localized_xaml_resfile):
             self.merge_resource_dict(localized_xaml_resfile)
-        
-        if os.path.isfile(english_xaml_resfile):
+
+        elif os.path.isfile(english_xaml_resfile):
             self.merge_resource_dict(english_xaml_resfile)
 
         return xaml_file
-
 
     def merge_resource_dict(self, xaml_source):
         """Reads ResourceDictionary from given xaml file and merged into
