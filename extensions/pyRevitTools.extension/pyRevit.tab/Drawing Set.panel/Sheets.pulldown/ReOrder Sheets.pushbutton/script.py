@@ -4,6 +4,7 @@ This tool looks for project parameters (on Sheets) that are
 Instance, of type Integer, and have "Order" in their names.
 """
 # pylint: disable=W0613,E0401,C0103
+# pylint: disable=missing-class-docstring,missing-function-docstring,broad-except
 import re
 
 from pyrevit import forms
@@ -28,6 +29,30 @@ class ListItem(object):
 
 
 class ReOrderWindow(forms.WPFWindow):
+    @staticmethod
+    def ensure_orderable():
+        sheets = revit.query.get_sheets()
+        if not sheets:
+            forms.alert("There are no sheets in this model", exitscript=True)
+
+        sheet = sheets[0]
+        int_params = [
+            x
+            for x in sheet.Parameters
+            if "order" in x.Definition.Name.lower()
+            and x.StorageType == DB.StorageType.Integer
+        ]
+        if not int_params:
+            forms.alert(
+                "No 'Order' parameters were found. "
+                "Define a project parameter with type 'Integer' and "
+                "assign to Sheets category. This tool can set sheets order "
+                "indices on that parameter.",
+                exitscript=True,
+            )
+
+        return len(int_params)
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
@@ -144,7 +169,7 @@ class ReOrderWindow(forms.WPFWindow):
             self.items_list = items_list
 
     def sheet_selection_changed(self, sender, args):
-        selected, non_selected = self._get_selected_nonselected()
+        selected, _ = self._get_selected_nonselected()
         self.shift_buttons.IsEnabled = True if selected else False
 
     def sorting_changed(self, sender, args):
@@ -158,48 +183,46 @@ class ReOrderWindow(forms.WPFWindow):
         self._refresh()
 
     def move_to_top(self, sender, args):
-        selected, non_selected = self._get_selected_nonselected()
+        selected, unselected = self._get_selected_nonselected()
         if selected:
-            new_list = self._insert_list_in_list(selected, non_selected, 0)
-            self.items_list = new_list
+            items = self._insert_list_in_list(selected, unselected, 0)
+            self.items_list = items
 
     def move_10_to_top(self, sender, args):
-        selected, non_selected = self._get_selected_nonselected()
+        selected, unselected = self._get_selected_nonselected()
         if selected:
             index = self.items_dg.ItemsSource.index(selected[0])
-            new_list = self._insert_list_in_list(
-                selected, non_selected, index - 10
-            )
-            self.items_list = new_list
+            items = self._insert_list_in_list(selected, unselected, index - 10)
+            self.items_list = items
 
     def move_1_to_top(self, sender, args):
-        selected, non_selected = self._get_selected_nonselected()
+        selected, unselected = self._get_selected_nonselected()
         if selected:
             index = self.items_dg.ItemsSource.index(selected[0])
-            new_list = self._insert_list_in_list(selected, non_selected, index - 1)
-            self.items_list = new_list
+            items = self._insert_list_in_list(selected, unselected, index - 1)
+            self.items_list = items
 
     def move_1_to_bottom(self, sender, args):
-        selected, non_selected = self._get_selected_nonselected()
+        selected, unselected = self._get_selected_nonselected()
         if selected:
             index = self.items_dg.ItemsSource.index(selected[0])
-            new_list = self._insert_list_in_list(selected, non_selected, index + 1)
-            self.items_list = new_list
+            items = self._insert_list_in_list(selected, unselected, index + 1)
+            self.items_list = items
 
     def move_10_to_bottom(self, sender, args):
-        selected, non_selected = self._get_selected_nonselected()
+        selected, unselected = self._get_selected_nonselected()
         if selected:
             index = self.items_dg.ItemsSource.index(selected[0])
-            new_list = self._insert_list_in_list(selected, non_selected, index + 10)
-            self.items_list = new_list
+            items = self._insert_list_in_list(selected, unselected, index + 10)
+            self.items_list = items
 
     def move_to_bottom(self, sender, args):
-        selected, non_selected = self._get_selected_nonselected()
+        selected, unselected = self._get_selected_nonselected()
         if selected:
-            new_list = self._insert_list_in_list(
-                selected, non_selected, len(non_selected)
+            items = self._insert_list_in_list(
+                selected, unselected, len(unselected)
             )
-            self.items_list = new_list
+            self.items_list = items
 
     def reorder_items(self, sender, args):
         self.Close()
@@ -213,5 +236,5 @@ class ReOrderWindow(forms.WPFWindow):
                     idx_param.Set(item.order_index)
 
 
-ReOrderWindow("ReOrderWindow.xaml").ShowDialog()
-
+if ReOrderWindow.ensure_orderable():
+    ReOrderWindow("ReOrderWindow.xaml").ShowDialog()
