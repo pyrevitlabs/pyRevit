@@ -103,6 +103,17 @@ def solid_line():
                 revit.doc.ActiveView.SetElementOverrides(el.Id, ogs)
 
 
+def dashed_line():
+    with revit.Transaction("Set Element to Dashed Projection Line Pattern"):
+        for el in selection:
+            if el.ViewSpecific:
+                ogs = DB.OverrideGraphicSettings()
+                ogs.SetProjectionLinePatternId(
+                    DB.LinePatternElement.GetLinePatternElementByName(revit.doc, 'Dash').Id
+                    )
+                revit.doc.ActiveView.SetElementOverrides(el.Id, ogs)
+
+                
 def whiteout():
     # 0xffffff
     colorvg(0xff, 0xff, 0xff,
@@ -141,7 +152,8 @@ options = OrderedDict([('Reset VG Overrides', reset_vg),
                        ('Solid-Red Selected', mark_red),
                        ('Solid-Green Selected', mark_green),
                        ('Solid-Orange Selected', mark_orange),
-                       ('Solid-Blue Selected', mark_blue)])
+                       ('Solid-Blue Selected', mark_blue), 
+                       ('Dashed-Line Selected', dashed_line)])
 
 
 selected_switch = \
@@ -151,7 +163,8 @@ selected_switch = \
                 'Solid-Red Selected': {'background': '0xff5714'},
                 'Solid-Green Selected': {'background': '0x6eeb83'},
                 'Solid-Orange Selected': {'background': '0xffb800'},
-                'Solid-Blue Selected': {'background': '0x1be7ff'}},
+                'Solid-Blue Selected': {'background': '0x1be7ff'},
+                'Dashed-Line Selected': {'background': '0xaaaaaa'}},
         message='Pick Visibility/Graphics override option:'
         )
 
