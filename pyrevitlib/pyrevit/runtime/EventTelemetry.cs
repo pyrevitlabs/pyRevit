@@ -133,7 +133,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // some print parameters throw exceptions
             try {
-#if REVIT2023
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022)
                 marginx = printParams.OriginOffsetX;
                 marginy = printParams.OriginOffsetY;
 
@@ -208,7 +208,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 var docProjProps = new Dictionary<string, object>();
                 foreach (Parameter param in pinfo.Parameters)
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                    if (param.Id.Value > 0)
+#else
                     if (param.Id.IntegerValue > 0)
+#endif
                         docProjProps.Add(param.Definition.Name, GetParameterValue(param));
 
                 docProps = new Dictionary<string, object> {
@@ -392,12 +396,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public void UIApplication_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
             var paramId = e.ParameterId;
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+            long paramIdInt = 0;
+#else
             int paramIdInt = 0;
+#endif
             string paramName = string.Empty;
             Element param = null;
             if (paramId != null && paramId != ElementId.InvalidElementId) {
                 param = e.CurrentDocument != null ? e.CurrentDocument.GetElement(paramId) : param;
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                paramIdInt = paramId.Value;
+#else
                 paramIdInt = paramId.IntegerValue;
+#endif
                 paramName = ((ParameterElement)param).Name;
             }
             LogEventTelemetryRecord(new EventTelemetryRecord {
@@ -416,7 +428,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
-        public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
+            public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
             // TODO: implement
             //e.GetAllSolutionsPartsTypeCounts
             //e.GetCurrentSolutionPartTypeIds
@@ -828,7 +840,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     { "category", typeCategory },
                     { "from_typename", origTypeName },
                     { "to_typename", e.NewName },
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                    { "to_typeid", e.NewElementTypeId.Value },
+#else
                     { "to_typeid", e.NewElementTypeId.IntegerValue },
+#endif
                 }
             }, sender, e);
         }
