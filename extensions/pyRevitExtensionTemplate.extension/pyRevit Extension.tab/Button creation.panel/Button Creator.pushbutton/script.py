@@ -6,25 +6,43 @@ from pyrevit.forms import ask_for_string, alert, CommandSwitchWindow
 from pyrevit import script
 from pyrevit.loader import sessionmgr
 
+current_folder = os.path.dirname(__file__)
+up_folder = os.path.dirname(current_folder)
+button_types_folder = "button_types"
+button_types_folder = os.path.join(up_folder, button_types_folder)
+buttton_type_dict = {   "pushbutton": ["pushbutton", "pushbutton"],
+                        "pushbutton with config": ["pushbutton", "pushbutton_with_config"],
+                        "pushbutton for Dynamo script": ["pushbutton","pushbutton_for_dynamo_script"],
+                        "content button": ["content", "content_button"],
+                        "url button": ["urlbutton", "url_button"],
+                        }
 
-def create_button(button_type="pushbutton"):
-    current_folder = os.path.dirname(__file__)
-    up_folder = os.path.dirname(current_folder)
-    template_folder = os.path.join(up_folder, button_type)
+
+def button_template(button_type):
+    button_folder = "pushbutton"
+    button_template_folder_str = "pushbutton"
+    if button_type in buttton_type_dict:
+        button_folder = buttton_type_dict[button_type][0]
+        button_template_folder_str = buttton_type_dict[button_type][1]
+    button_template_folder = os.path.join(button_types_folder, button_template_folder_str)
+    return button_folder, button_template_folder
+
+
+def create_button(button_type):
+    button_folder, button_template_folder = button_template(button_type)
     newname = ask_for_string(
         title="New Folder", instructions="Specify name for new button")
-
     if not newname:
         alert("No name specified, will exit")
         script.exit()
+    newfolder = os.path.join(up_folder, newname + "." + button_folder)
 
-    newfolder = os.path.join(up_folder, newname + "." + button_type)
     if os.path.exists(newfolder):
         alert("Folder already exists")
     else:
         os.mkdir(newfolder)
-        for f in os.listdir(template_folder):
-            file = os.path.join(template_folder, f)
+        for f in os.listdir(button_template_folder):
+            file = os.path.join(button_template_folder, f)
             shutil.copy(file, newfolder)
         for copied_file in os.listdir(newfolder):
             if copied_file.endswith(".yaml"):
@@ -39,18 +57,11 @@ def create_button(button_type="pushbutton"):
                         f.write(line)
 
 
-# get the button count from user
-button_count = ask_for_string(
-    instructions='How many buttons do you want to create?', title='Number of buttons')
-if int(button_count) >= 8:
-    alert("You might want to enter a number of button less than 8, as the script will prompt you for each button type and name")
-    script.exit()
-else:
-    if int(button_count):
-        for i in range(int(button_count)):
-            # select the type of button you want to create:
-            button_type_selected = CommandSwitchWindow.show(["pushbutton", "urlbutton"],
-                                                            message="Select button type")
-            if button_type_selected:
-                create_button(button_type_selected)
+while True:
+    button_type_selected = CommandSwitchWindow.show(buttton_type_dict.keys(), message="Select button type")
+    if button_type_selected:
+        create_button(button_type_selected)
+    res = CommandSwitchWindow.show(["Yes", "No"], message="Create another one?")
+    if res == "No":
         sessionmgr.reload_pyrevit()
+        break
