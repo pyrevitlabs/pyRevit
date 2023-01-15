@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-import datetime
 from pyrevit import script
 from pyrevit import revit, DB
 
@@ -14,7 +13,11 @@ doc = revit.doc
 
 # Grab data from config
 my_config = script.get_config()
-tests = getattr(my_config, "BILT_tests")
+try:
+    tests = getattr(my_config, "qc")
+except:
+    tests = ["Project Name", "Project Number", "Warnings"]
+
 
 # Series of queries
 
@@ -22,9 +25,11 @@ def project_number(doc):
     project_number = doc.ProjectInformation.Number
     return project_number
 
+
 def project_name(doc):
     project_name = doc.ProjectInformation.Name
     return project_name
+
 
 def doc_warnings(doc):
     warnings = doc.GetWarnings()
@@ -33,6 +38,7 @@ def doc_warnings(doc):
         descriptions.append(DB.FailureMessage.GetDescriptionText(warning))
     if len(descriptions):
         return str(len(descriptions)) + ' Warnings in the project'
+
 
 # set minimal value to empty string
 pname, pnumber, warnings = "", "", ""
