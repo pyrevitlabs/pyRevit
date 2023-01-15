@@ -9,10 +9,10 @@ def get_control_points():
     form = forms.SelectFromList.show(
         list_checks, "Checks", 300, 500, multiselect=True, infopanel=True)
     if form:
-        setattr(my_config, "QC", form)
+        setattr(my_config, "qc", form)
         script.save_config()
     else:
-        setattr(my_config, "QC", list_checks)
+        setattr(my_config, "qc", list_checks)
         script.save_config()
 
 
