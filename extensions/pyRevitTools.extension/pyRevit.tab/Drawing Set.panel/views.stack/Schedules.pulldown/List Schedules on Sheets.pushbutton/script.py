@@ -5,30 +5,20 @@ output.close_others()
 
 doc = revit.doc
 
-schedules = [x for x in DB.FilteredElementCollector(doc)
-    .OfCategory(DB.BuiltInCategory.OST_Views)
-    .WhereElementIsNotElementType()
-    .ToElements()
-    if x.ViewType == DB.ViewType.Schedule
-]
+schedules = DB.FilteredElementCollector(doc).OfClass(
+    DB.ScheduleSheetInstance).ToElements()
 
-schedules_ids = [x.Id.IntegerValue for x in schedules]
+sheets = DB.FilteredElementCollector(doc).OfCategory(
+    DB.BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
 
-sheets = (
-    DB.FilteredElementCollector(doc)
-    .OfCategory(DB.BuiltInCategory.OST_Sheets)
-    .WhereElementIsNotElementType()
-    .ToElements()
-)
 
 result = []
-for sheet in sheets:
-    vps = sheet.GetAllPlacedViews()
-    for vp in vps:
-        if vp.IntegerValue in schedules_ids:
-            result.append(
-                (doc.GetElement(vp).Name, sheet.SheetNumber, sheet.Name)
-            )
+for schedule in schedules:
+    if not schedule.IsTitleblockRevisionSchedule:
+        sheet = doc.GetElement(schedule.OwnerViewId)
+        result.append(
+            (doc.GetElement(schedule.ScheduleId).Name, sheet.SheetNumber, sheet.Name)
+        )
 
 result = sorted(result, key=lambda x: x[0])
 
