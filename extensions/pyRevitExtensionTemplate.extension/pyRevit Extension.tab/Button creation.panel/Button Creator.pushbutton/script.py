@@ -19,7 +19,7 @@ buttton_type_dict = {"pushbutton": ["pushbutton", "pushbutton"],
                      "pushbutton for Dynamo script": ["pushbutton", "pushbutton_for_dynamo_script"],
                      "content button": ["content", "content_button"],
                      "url button": ["urlbutton", "url_button"],
-                     "invoke C# dll button": ["invoke", "invoke_dll_button"],
+                     "invoke C# dll button": ["invokebutton", "invoke_dll_button"],
                      }
 
 
@@ -52,7 +52,7 @@ def create_button(button_type):
             shutil.copy(file, newfolder)
             if button_type == "invoke C# dll button":
                 # copy bin folder to root of newfolder
-                bin_template_folder = os.path.join(up_folder, "bin")
+                bin_template_folder = os.path.join(button_types_folder, "bin")
                 bin_folder = os.path.join(up_folder, "bin")
                 os.mkdir(bin_folder)
                 for f in os.listdir(bin_template_folder):
