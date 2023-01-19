@@ -1,4 +1,7 @@
 # -*- coding=utf-8 -*-
+"""
+Create a new button from a template of button bundles.
+"""
 
 import os
 import shutil
@@ -10,12 +13,14 @@ current_folder = os.path.dirname(__file__)
 up_folder = os.path.dirname(current_folder)
 button_types_folder = "button_types"
 button_types_folder = os.path.join(up_folder, button_types_folder)
-buttton_type_dict = {   "pushbutton": ["pushbutton", "pushbutton"],
-                        "pushbutton with config": ["pushbutton", "pushbutton_with_config"],
-                        "pushbutton for Dynamo script": ["pushbutton","pushbutton_for_dynamo_script"],
-                        "content button": ["content", "content_button"],
-                        "url button": ["urlbutton", "url_button"],
-                        }
+# to extend add entry to dict: {"button type": ["button folder", "button template folder"]}
+buttton_type_dict = {"pushbutton": ["pushbutton", "pushbutton"],
+                     "pushbutton with config": ["pushbutton", "pushbutton_with_config"],
+                     "pushbutton for Dynamo script": ["pushbutton", "pushbutton_for_dynamo_script"],
+                     "content button": ["content", "content_button"],
+                     "url button": ["urlbutton", "url_button"],
+                     "invoke C# dll button": ["invokecsdll", "invoke_dll_button"],
+                     }
 
 
 def button_template(button_type):
@@ -24,7 +29,8 @@ def button_template(button_type):
     if button_type in buttton_type_dict:
         button_folder = buttton_type_dict[button_type][0]
         button_template_folder_str = buttton_type_dict[button_type][1]
-    button_template_folder = os.path.join(button_types_folder, button_template_folder_str)
+    button_template_folder = os.path.join(
+        button_types_folder, button_template_folder_str)
     return button_folder, button_template_folder
 
 
@@ -44,6 +50,10 @@ def create_button(button_type):
         for f in os.listdir(button_template_folder):
             file = os.path.join(button_template_folder, f)
             shutil.copy(file, newfolder)
+            if button_type == "invoke C# dll button":
+                # copy bin folder to root of newfolder
+                bin_folder = os.path.join(button_template_folder, "bin")
+                shutil.copytree(bin_folder, os.path.join(newfolder, "bin"))
         for copied_file in os.listdir(newfolder):
             if copied_file.endswith(".yaml"):
                 # get english title string and replace with newname
@@ -58,10 +68,12 @@ def create_button(button_type):
 
 
 while True:
-    button_type_selected = CommandSwitchWindow.show(buttton_type_dict.keys(), message="Select button type")
+    button_type_selected = CommandSwitchWindow.show(
+        buttton_type_dict.keys(), message="Select button type")
     if button_type_selected:
         create_button(button_type_selected)
-    res = CommandSwitchWindow.show(["Yes", "No"], message="Create another one?")
+    res = CommandSwitchWindow.show(
+        ["Yes", "No"], message="Create another one?")
     if res == "No":
         sessionmgr.reload_pyrevit()
         break
