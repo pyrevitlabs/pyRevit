@@ -6,13 +6,19 @@ Create a new button from a template of button bundles.
 import os
 import shutil
 from pyrevit.forms import ask_for_string, alert, CommandSwitchWindow
-from pyrevit import script
+from pyrevit import script, forms
 from pyrevit.loader import sessionmgr
 
+
 current_folder = os.path.dirname(__file__)
-up_folder = os.path.dirname(current_folder)
+up_1_folder = os.path.dirname(current_folder)
 button_types_folder = "button_types"
-button_types_folder = os.path.join(up_folder, button_types_folder)
+button_types_folder = os.path.join(up_1_folder, button_types_folder)
+up_2_folder = os.path.dirname(up_1_folder)
+panel_name = forms.ask_for_string(default="My New Panel Name", title="New panel", prompt="Get your new panel a name")
+panel_folder = os.path.join(up_2_folder, panel_name + ".panel")
+if not os.path.exists(panel_folder):
+    os.mkdir(panel_folder)
 # to extend add entry to dict: {"button type": ["bundle extension", "button template folder"]}
 buttton_type_dict = {"pushbutton": ["pushbutton", "pushbutton"],
                      "pushbutton with config": ["pushbutton", "pushbutton_with_config"],
@@ -41,27 +47,27 @@ def create_button(button_type):
     if not newname:
         alert("No name specified, will exit")
         script.exit()
-    newfolder = os.path.join(up_folder, newname + "." + button_folder)
+    new_button_folder = os.path.join(panel_folder, newname + "." + button_folder)
 
-    if os.path.exists(newfolder):
+    if os.path.exists(new_button_folder):
         alert("Folder already exists")
     else:
-        os.mkdir(newfolder)
+        os.mkdir(new_button_folder)
         for f in os.listdir(button_template_folder):
             file = os.path.join(button_template_folder, f)
-            shutil.copy(file, newfolder)
+            shutil.copy(file, new_button_folder)
             if button_type == "invoke C# dll button":
                 # copy bin folder to root of newfolder
                 bin_template_folder = os.path.join(button_types_folder, "bin")
-                bin_folder = os.path.join(up_folder, "bin")
+                bin_folder = os.path.join(panel_folder, "bin")
                 os.mkdir(bin_folder)
                 for f in os.listdir(bin_template_folder):
                     file = os.path.join(bin_template_folder, f)
                     shutil.copy(file, bin_folder)
-        for copied_file in os.listdir(newfolder):
+        for copied_file in os.listdir(new_button_folder):
             if copied_file.endswith(".yaml"):
                 # get english title string and replace with newname
-                path = os.path.join(newfolder, copied_file)
+                path = os.path.join(new_button_folder, copied_file)
                 with open(path, "r") as f:
                     lines = f.readlines()
                 with open(path, "w") as f:
