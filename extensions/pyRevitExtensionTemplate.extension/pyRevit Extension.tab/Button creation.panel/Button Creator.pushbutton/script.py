@@ -13,13 +13,13 @@ current_folder = os.path.dirname(__file__)
 up_folder = os.path.dirname(current_folder)
 button_types_folder = "button_types"
 button_types_folder = os.path.join(up_folder, button_types_folder)
-# to extend add entry to dict: {"button type": ["button folder", "button template folder"]}
+# to extend add entry to dict: {"button type": ["bundle extension", "button template folder"]}
 buttton_type_dict = {"pushbutton": ["pushbutton", "pushbutton"],
                      "pushbutton with config": ["pushbutton", "pushbutton_with_config"],
                      "pushbutton for Dynamo script": ["pushbutton", "pushbutton_for_dynamo_script"],
                      "content button": ["content", "content_button"],
                      "url button": ["urlbutton", "url_button"],
-                     "invoke C# dll button": ["invokecsdll", "invoke_dll_button"],
+                     "invoke C# dll button": ["invoke", "invoke_dll_button"],
                      }
 
 
@@ -52,8 +52,12 @@ def create_button(button_type):
             shutil.copy(file, newfolder)
             if button_type == "invoke C# dll button":
                 # copy bin folder to root of newfolder
-                bin_folder = os.path.join(button_template_folder, "bin")
-                shutil.copytree(bin_folder, os.path.join(newfolder, "bin"))
+                bin_template_folder = os.path.join(up_folder, "bin")
+                bin_folder = os.path.join(up_folder, "bin")
+                os.mkdir(bin_folder)
+                for f in os.listdir(bin_template_folder):
+                    file = os.path.join(bin_template_folder, f)
+                    shutil.copy(file, bin_folder)
         for copied_file in os.listdir(newfolder):
             if copied_file.endswith(".yaml"):
                 # get english title string and replace with newname
