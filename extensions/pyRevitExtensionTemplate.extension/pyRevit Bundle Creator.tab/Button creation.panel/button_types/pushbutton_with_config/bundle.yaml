@@ -1,0 +1,6 @@
+title:
+  en_us: english title
+  fr_fr: french title
+tooltip:
+  fr_fr: "Contrôle qualité, utilisez shift click pour configurer les tests"
+  en_us: Quality control use shift+click to configure the tests
