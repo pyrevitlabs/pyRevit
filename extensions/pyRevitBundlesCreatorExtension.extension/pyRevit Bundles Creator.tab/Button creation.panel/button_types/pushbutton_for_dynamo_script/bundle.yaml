@@ -1,0 +1,8 @@
+engine: 
+  clean: true
+title:
+  en_us: english title
+  fr_fr: french title
+tooltip: 
+  en_us: english tooltip
+  fr_fr: french tooltip

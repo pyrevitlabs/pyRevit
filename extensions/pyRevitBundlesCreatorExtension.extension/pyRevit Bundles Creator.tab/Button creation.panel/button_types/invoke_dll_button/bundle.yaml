@@ -1,0 +1,10 @@
+title:
+  en_us: english title
+  fr_fr: french title
+tooltip: 
+  en_us: english tooltip
+  fr_fr: french tooltip
+# highlight: new
+context: zero-doc
+assembly: AliTpyRevitConcepts.dll
+command_class:
