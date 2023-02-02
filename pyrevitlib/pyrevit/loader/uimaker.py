@@ -552,7 +552,10 @@ def _produce_ui_panels(ui_maker_params):
     """
     parent_ui_tab = ui_maker_params.parent_ui
     panel = ui_maker_params.component
-
+    
+    if panel.is_beta and not ui_maker_params.create_beta_cmds:
+        return None
+    
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
@@ -672,7 +675,7 @@ if not EXEC_PARAMS.doc_mode:
     current_ui = ribbon.get_current_ui()
 
 
-def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
+def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=True):
     """
     Updates/Creates pyRevit ui for the given extension and
     provided assembly dll address.
