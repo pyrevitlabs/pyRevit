@@ -1278,8 +1278,9 @@ class GetValueWindow(TemplateUserInputWindow):
             self.sliderPrompt.Text = value_prompt
             self.numberPicker.Minimum = kwargs.get('min', 0)
             self.numberPicker.Maximum = kwargs.get('max', 100)
+            self.numberPicker.TickFrequency = kwargs.get('interval', 1)
             self.numberPicker.Value = \
-                value_default if isinstance(value_default, float) \
+                value_default if isinstance(value_default, (float, int)) \
                     else self.numberPicker.Minimum
 
     def string_value_changed(self, sender, args): #pylint: disable=unused-argument
@@ -3270,7 +3271,7 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         )
 
 
-def ask_for_number_slider(default=None, min=0, max=100, prompt=None, title=None, **kwargs):
+def ask_for_number_slider(default=None, min=0, max=100, interval=1 prompt=None, title=None, **kwargs):
     """Ask user to select a number value.
 
     This is a shortcut function that configures :obj:`GetValueWindow` for
@@ -3302,6 +3303,9 @@ def ask_for_number_slider(default=None, min=0, max=100, prompt=None, title=None,
         default=default,
         prompt=prompt,
         title=title,
+        max=max,
+        min=min,
+        interval=interval,
         **kwargs
         )
 
