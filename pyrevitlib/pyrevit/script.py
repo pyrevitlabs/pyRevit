@@ -431,9 +431,6 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None, icon_size=ICON
         off_icon_path (str, optional): full path of icon for off state.
                                        default='off.png'
     """
-    #ICON_SMALL = 16
-    #ICON_MEDIUM = 24
-    #ICON_LARGE = 32
     # find the ui button
     uibuttons = get_all_buttons()
     if not uibuttons:
