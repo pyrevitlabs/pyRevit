@@ -675,7 +675,7 @@ if not EXEC_PARAMS.doc_mode:
     current_ui = ribbon.get_current_ui()
 
 
-def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=True):
+def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
     """
     Updates/Creates pyRevit ui for the given extension and
     provided assembly dll address.
