@@ -114,22 +114,34 @@ def get_param_typevalue(ftype, fparam):
         # support various types of params that reference other elements
         # these values can not be stored by their id since the same symbol
         # will most probably have a different id in another document
-        if fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
-            # storing type references by their name
-            fparam_value = get_symbol_name(ftype.AsElementId(fparam))
+        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+            if 'autodesk.revit.category.family' in fparam.Definition.GetDataType().TypeId:
+                # storing type references by their name
+                fparam_value = get_symbol_name(ftype.AsElementId(fparam))
+            elif fparam.Definition.GetDataType() == \
+                    DB.SpecTypeId.Reference.LoadClassification:
+                # storing load classifications by a unique id
+                fparam_value = get_load_class_name(ftype.AsElementId(fparam))
+        else:
+            if fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
+                # storing type references by their name
+                fparam_value = get_symbol_name(ftype.AsElementId(fparam))
 
-        elif fparam.Definition.ParameterType == \
-                DB.ParameterType.LoadClassification:
-            # storing load classifications by a unique id
-            fparam_value = get_load_class_name(ftype.AsElementId(fparam))
+            elif fparam.Definition.ParameterType == \
+                    DB.ParameterType.LoadClassification:
+                # storing load classifications by a unique id
+                fparam_value = get_load_class_name(ftype.AsElementId(fparam))
 
     elif fparam.StorageType == DB.StorageType.String:
         fparam_value = ftype.AsString(fparam)
 
     elif fparam.StorageType == DB.StorageType.Integer:
-        if DB.ParameterType.YesNo == fparam.Definition.ParameterType:
-            fparam_value = \
-                'true' if ftype.AsInteger(fparam) == 1 else 'false'
+        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+            if DB.SpecTypeId.Boolean.YesNo == fparam.Definition.GetDataType():
+                fparam_value = \
+                    'true' if ftype.AsInteger(fparam) == 1 else 'false'
+            else:
+                DB.ParameterType.YesNo == fparam.Definition.ParameterType:
         else:
             fparam_value = ftype.AsInteger(fparam)
 
@@ -205,15 +217,20 @@ def read_configs(selected_fparam_names,
     # grab all parameter defs
     for sparam in sorted(export_sparams, reverse=True):
         fparam_name = sparam.fparam.Definition.Name
-        fparam_type = sparam.fparam.Definition.ParameterType
         fparam_group = sparam.fparam.Definition.ParameterGroup
         fparam_isinst = sparam.fparam.IsInstance
         fparam_isreport = sparam.fparam.IsReporting
         fparam_formula = sparam.fparam.Formula
         fparam_shared = sparam.fparam.IsShared
+        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+            fparam_type = sparam.fparam.Definition.GetDataType()
+            fparam_type_str = str(fparam_type.TypeId)
+        else:
+            fparam_type = sparam.fparam.Definition.ParameterType
+            fparam_type_str = str(fparam_type)
 
         cfgs_dict[PARAM_SECTION_NAME][fparam_name] = {
-            PARAM_SECTION_TYPE: str(fparam_type),
+            PARAM_SECTION_TYPE: fparam_type_str,
             PARAM_SECTION_GROUP: str(fparam_group),
             PARAM_SECTION_INST: fparam_isinst,
             PARAM_SECTION_REPORT: fparam_isreport,
@@ -226,9 +243,14 @@ def read_configs(selected_fparam_names,
                 sparam.fparam.GUID
 
         # get the family category if param is FamilyType selector
-        if fparam_type == DB.ParameterType.FamilyType:
-            cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
-                get_famtype_famcat(sparam.fparam)
+        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+            if 'autodesk.revit.category.family' in fparam_type.TypeId:
+                cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
+                    get_famtype_famcat(sparam.fparam)
+        else:
+            if fparam_type == DB.ParameterType.FamilyType:
+                cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
+                    get_famtype_famcat(sparam.fparam)
 
         # Check if the current family parameter is a shared parameter
         if sparam.fparam.IsShared:
@@ -264,10 +286,14 @@ def store_sharedparam_def(shared_params):
     sparam_file = HOST_APP.app.OpenSharedParameterFile()
     exported_sparams_grp = sparam_file.Groups.Create("Exported Parameters")
     for sparam in shared_params:
+        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+            param_type = sparam.Definition.GetDataType()
+        else:
+            param_type = sparam.Definition.ParameterType
         sparamdef_create_options = \
             DB.ExternalDefinitionCreationOptions(
                 sparam.Definition.Name,
-                sparam.Definition.ParameterType,
+                param_type,
                 GUID=sparam.GUID
             )
 
