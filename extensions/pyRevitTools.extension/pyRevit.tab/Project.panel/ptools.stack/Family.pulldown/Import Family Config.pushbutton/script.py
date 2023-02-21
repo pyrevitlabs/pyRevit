@@ -146,20 +146,34 @@ def get_load_class_id(param_value):
 
 
 def get_param_config(param_name, param_opts):
-    # Extract parameter configurations from given dict
-    param_bip_cat = coreutils.get_enum_value(
-        DB.BuiltInParameterGroup,
-        param_opts.get(PARAM_SECTION_GROUP, DEFAULT_BIP_CATEGORY)
-        )
-    param_type = coreutils.get_enum_value(
-        DB.ParameterType,
-        param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE)
-        )
-    param_famtype = None
-    if param_type == DB.ParameterType.FamilyType:
-        param_famtype = param_opts.get(PARAM_SECTION_CAT, None)
-        if param_famtype:
-            param_famtype = revit.query.get_category(param_famtype)
+    if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+        # Extract parameter configurations from given dict
+        param_bip_cat = DB.ForgeTypeId(str(coreutils.get_enum_value(
+            DB.BuiltInParameterGroup,
+            param_opts.get(PARAM_SECTION_GROUP, DEFAULT_BIP_CATEGORY))
+            ))
+        print(param_bip_cat)
+        param_famtype = None
+        param_type = DB.ForgeTypeId(param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE))
+        if DB.Category.IsBuiltInCategory(DB.ForgeTypeId(param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE))):
+            param_famtype = param_opts.get(PARAM_SECTION_CAT, None)
+            if param_famtype:
+                param_famtype = revit.query.get_category(param_famtype)   
+    else:
+        # Extract parameter configurations from given dict
+        param_bip_cat = coreutils.get_enum_value(
+            DB.BuiltInParameterGroup,
+            param_opts.get(PARAM_SECTION_GROUP, DEFAULT_BIP_CATEGORY)
+            )      
+        param_type = coreutils.get_enum_value(
+            DB.ParameterType,
+            param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE)
+            )
+        param_famtype = None
+        if param_type == DB.ParameterType.FamilyType:
+            param_famtype = param_opts.get(PARAM_SECTION_CAT, None)
+            if param_famtype:
+                param_famtype = revit.query.get_category(param_famtype)
     param_isinst = \
         param_opts.get(PARAM_SECTION_INST, 'false').lower() == 'true'
     param_isreport = \
@@ -209,26 +223,40 @@ def set_fparam_value(pvcfg, fparam):
         return
 
     if fparam.StorageType == DB.StorageType.ElementId:
-        if fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
-            # resolve FamilyType value and get the symbol id
-            fsym_id = get_symbol_id(pvcfg.value)
-            fm.Set(fparam, fsym_id)
-
-            # can not use the types to find the value because yaml turns it
-            # into a string so need some sort of notifier
-        elif fparam.Definition.ParameterType == \
-                DB.ParameterType.LoadClassification:
-            load_class_id = get_load_class_id(pvcfg.value)
-            fm.Set(fparam, load_class_id)
+        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+            if DB.Category.IsBuiltInCategory(fparam.Definition.GetDataType()):
+                fsym_id = get_symbol_id(pvcfg.value)
+                fm.Set(fparam, fsym_id)
+            elif fparam.Definition.GetDataType() == \
+                    DB.SpecTypeId.Reference.LoadClassification:
+                load_class_id = get_load_class_id(pvcfg.value)
+                fm.Set(fparam, load_class_id) 
+        else:
+            if fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
+                # resolve FamilyType value and get the symbol id
+                fsym_id = get_symbol_id(pvcfg.value)
+                fm.Set(fparam, fsym_id)
+                # can not use the types to find the value because   yaml turns it
+                # into a string so need some sort of notifier
+            elif fparam.Definition.ParameterType == \
+                    DB.ParameterType.LoadClassification:
+                load_class_id = get_load_class_id(pvcfg.value)
+                fm.Set(fparam, load_class_id)
 
     elif fparam.StorageType == DB.StorageType.String:
         fm.Set(fparam, pvcfg.value)
 
     elif fparam.StorageType == DB.StorageType.Integer:
-        if fparam.Definition.ParameterType == DB.ParameterType.YesNo:
-            fm.Set(fparam, 1 if pvcfg.value.lower() == 'true' else 0)
+        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+            if DB.SpecTypeId.Boolean.YesNo == fparam.Definition.GetDataType():
+                fm.Set(fparam, 1 if pvcfg.value.lower() == 'true' else 0)
+            else:
+                fm.Set(fparam, int(pvcfg.value))
         else:
-            fm.Set(fparam, int(pvcfg.value))
+            if fparam.Definition.ParameterType == DB.ParameterType.YesNo:
+                fm.Set(fparam, 1 if pvcfg.value.lower() == 'true' else 0)
+            else:
+                fm.Set(fparam, int(pvcfg.value))
 
     else:
         fm.SetValueString(fparam, pvcfg.value)

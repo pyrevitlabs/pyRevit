@@ -39,7 +39,7 @@ but shared in one and family in the other, after import,
 the parameter won't change. So if it was shared in the revit file,
 but family in the yaml file, it will remain shared.
 """
-#pylint: disable=import-error,invalid-name,broad-except
+# pylint: disable=import-error,invalid-name,broad-except
 # TODO: export parameter ordering
 import codecs
 
@@ -66,7 +66,7 @@ PARAM_SECTION_INST = 'instance'
 PARAM_SECTION_REPORT = 'reporting'
 PARAM_SECTION_FORMULA = 'formula'
 PARAM_SECTION_DEFAULT = 'default'
-PARAM_SECTION_GUID = 'GUID' # To store unique if of shared parameters
+PARAM_SECTION_GUID = 'GUID'  # To store unique if of shared parameters
 
 TYPES_SECTION_NAME = 'types'
 
@@ -115,7 +115,7 @@ def get_param_typevalue(ftype, fparam):
         # these values can not be stored by their id since the same symbol
         # will most probably have a different id in another document
         if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
-            if 'autodesk.revit.category.family' in fparam.Definition.GetDataType().TypeId:
+            if DB.Category.IsBuiltInCategory(fparam.Definition.GetDataType()):
                 # storing type references by their name
                 fparam_value = get_symbol_name(ftype.AsElementId(fparam))
             elif fparam.Definition.GetDataType() == \
@@ -126,7 +126,6 @@ def get_param_typevalue(ftype, fparam):
             if fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
                 # storing type references by their name
                 fparam_value = get_symbol_name(ftype.AsElementId(fparam))
-
             elif fparam.Definition.ParameterType == \
                     DB.ParameterType.LoadClassification:
                 # storing load classifications by a unique id
@@ -140,8 +139,9 @@ def get_param_typevalue(ftype, fparam):
             if DB.SpecTypeId.Boolean.YesNo == fparam.Definition.GetDataType():
                 fparam_value = \
                     'true' if ftype.AsInteger(fparam) == 1 else 'false'
-            else:
-                DB.ParameterType.YesNo == fparam.Definition.ParameterType:
+        elif DB.ParameterType.YesNo == fparam.Definition.ParameterType:
+            fparam_value = \
+                'true' if ftype.AsInteger(fparam) == 1 else 'false'
         else:
             fparam_value = ftype.AsInteger(fparam)
 
