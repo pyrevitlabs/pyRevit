@@ -762,8 +762,20 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def set_tooltip_video(self, tooltip_video):
         try:
             adwindows_obj = self.get_adwindows_object()
-            if adwindows_obj and adwindows_obj.ToolTip:
-                adwindows_obj.ToolTip.ExpandedVideo = Uri(tooltip_video)
+            if isinstance(self.get_rvtapi_object().ToolTip, str):
+                exToolTip = self.get_rvtapi_object().ToolTip
+            else:
+                exToolTip = None
+            if adwindows_obj:
+                adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
+                adwindows_obj.ToolTip.Title = self.ui_title
+                adwindows_obj.ToolTip.Content = exToolTip
+                _StackPanel = System.Windows.Controls.StackPanel()
+                _video = System.Windows.Controls.MediaElement()
+                _video.Source = Uri(tooltip_video)
+                _StackPanel.Children.Add(_video)
+                adwindows_obj.ToolTip.ExpandedContent = _StackPanel
+                adwindows_obj.ResolveToolTip()
             else:
                 self.tooltip_video = tooltip_video
         except Exception as ttvideo_err:
