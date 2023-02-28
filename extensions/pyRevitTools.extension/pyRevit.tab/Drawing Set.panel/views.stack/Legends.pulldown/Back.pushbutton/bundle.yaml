@@ -1,0 +1,8 @@
+title:
+  fr_fr: Orienter le composant de légende sur la vue Arrière
+  en_us: Set Legend Component to Back orientation
+tooltip: 
+  fr_fr: Vue Arrière du composant de légende !!! Tous les composants de la légende ne supportent pas n'importe quel type d'orientation de vue !!!
+  en_us: Legend Component Back view !!! Not all legend components support any type of view orientation !!!
+author: Jean-Marc Couffin
+context: selection

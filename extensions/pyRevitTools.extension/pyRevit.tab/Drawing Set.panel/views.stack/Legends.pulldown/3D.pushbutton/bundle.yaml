@@ -1,0 +1,8 @@
+title:
+  fr_fr: Orienter le composant de légende sur la vue 3D
+  en_us: Set Legend Component to 3D orientation
+tooltip: 
+  fr_fr: Vue 3D du composant de légende !!! Tous les composants de la légende ne supportent pas n'importe quel type d'orientation de vue !!!
+  en_us: Legend Component 3D view !!! Not all legend components support any type of view orientation !!!
+author: Jean-Marc Couffin
+context: selection

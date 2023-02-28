@@ -1,0 +1,8 @@
+title:
+  fr_fr: Orienter le composant de légende sur la vue de Dessous
+  en_us: Set Legend Component to Down orientation
+tooltip: 
+  fr_fr: Vue de Dessous du composant de légende !!! Tous les composants de la légende ne supportent pas n'importe quel type d'orientation de vue !!!
+  en_us: Legend Component Down view !!! Not all legend components support any type of view orientation !!!
+author: Jean-Marc Couffin
+context: selection
