@@ -15,8 +15,8 @@ The structure of this config file is as shown below:
 
 parameters:
 	<parameter-name>:
-		type: <Autodesk.Revit.DB.ParameterType>
-		category: <Autodesk.Revit.DB.BuiltInParameterGroup>
+		type: <Autodesk.Revit.DB.ParameterType> or <Autodesk.Revit.DB.ForgeTypeId>
+		group: <Autodesk.Revit.DB.BuiltInParameterGroup> or <Autodesk.Revit.DB.ForgeTypeId>
 		instance: <true|false>
 		reporting: <true|false>
 		formula: <str>
@@ -33,7 +33,7 @@ Example:
 parameters:
 	Shelf Height (Upper):
 		type: Length
-		category: PG_GEOMETRY
+		group: PG_GEOMETRY or autodesk.revit.parametergroup:geometry-1.0.0
 		instance: false
 types:
 	24D"x36H":
@@ -71,7 +71,7 @@ SHAREDPARAM_DEF = 'xref_sharedparams'
 # -----------------------------------------------------------------------------
 
 DEFAULT_TYPE = 'Text'
-DEFAULT_BIP_CATEGORY = 'PG_CONSTRUCTION'
+DEFAULT_PARAM_GROUP = 'PG_CONSTRUCTION'
 
 FAMILY_SYMBOL_SEPARATOR = ' : '
 TEMP_TYPENAME = "Default"
@@ -147,12 +147,9 @@ def get_load_class_id(param_value):
 
 def get_param_config(param_name, param_opts):
     if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+        DEFAULT_PARAM_GROUP = 'autodesk.parameter.group:construction-1.0.0'
         # Extract parameter configurations from given dict
-        param_bip_cat = DB.ForgeTypeId(str(coreutils.get_enum_value(
-            DB.BuiltInParameterGroup,
-            param_opts.get(PARAM_SECTION_GROUP, DEFAULT_BIP_CATEGORY))
-            ))
-        print(param_bip_cat)
+        param_group = DB.ForgeTypeId(param_opts.get(PARAM_SECTION_GROUP, DEFAULT_PARAM_GROUP))    
         param_famtype = None
         param_type = DB.ForgeTypeId(param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE))
         if DB.Category.IsBuiltInCategory(DB.ForgeTypeId(param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE))):
@@ -161,9 +158,9 @@ def get_param_config(param_name, param_opts):
                 param_famtype = revit.query.get_category(param_famtype)   
     else:
         # Extract parameter configurations from given dict
-        param_bip_cat = coreutils.get_enum_value(
+        param_group = coreutils.get_enum_value(
             DB.BuiltInParameterGroup,
-            param_opts.get(PARAM_SECTION_GROUP, DEFAULT_BIP_CATEGORY)
+            param_opts.get(PARAM_SECTION_GROUP, DEFAULT_PARAM_GROUP)
             )      
         param_type = coreutils.get_enum_value(
             DB.ParameterType,
@@ -182,7 +179,7 @@ def get_param_config(param_name, param_opts):
     param_default = param_opts.get(PARAM_SECTION_DEFAULT, None)
     param_GUID = param_opts.get(PARAM_SECTION_GUID, None)
 
-    if not param_bip_cat:
+    if not param_group:
         logger.critical(
             'can not determine parameter category for %s', param_name
             )
@@ -196,7 +193,7 @@ def get_param_config(param_name, param_opts):
     # return a bundle with extracted values
     return ParamConfig(
         name=param_name,
-        bigroup=param_bip_cat,
+        bigroup=param_group,
         bitype=param_type,
         famcat=param_famtype,
         isinst=param_isinst,
@@ -225,6 +222,7 @@ def set_fparam_value(pvcfg, fparam):
     if fparam.StorageType == DB.StorageType.ElementId:
         if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
             if DB.Category.IsBuiltInCategory(fparam.Definition.GetDataType()):
+                print('TRUE')
                 fsym_id = get_symbol_id(pvcfg.value)
                 fm.Set(fparam, fsym_id)
             elif fparam.Definition.GetDataType() == \
@@ -468,7 +466,6 @@ def recover_sharedparam_defs(sharedparam_def_contents):
         )
 
     revit.files.write_text(temp_defs_filepath, sharedparam_def_contents)
-
     return temp_defs_filepath
 
 

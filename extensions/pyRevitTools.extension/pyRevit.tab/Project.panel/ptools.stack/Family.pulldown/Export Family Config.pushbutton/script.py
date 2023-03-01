@@ -217,21 +217,22 @@ def read_configs(selected_fparam_names,
     # grab all parameter defs
     for sparam in sorted(export_sparams, reverse=True):
         fparam_name = sparam.fparam.Definition.Name
-        fparam_group = sparam.fparam.Definition.ParameterGroup
         fparam_isinst = sparam.fparam.IsInstance
         fparam_isreport = sparam.fparam.IsReporting
         fparam_formula = sparam.fparam.Formula
         fparam_shared = sparam.fparam.IsShared
         if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
             fparam_type = sparam.fparam.Definition.GetDataType()
-            fparam_type_str = str(fparam_type.TypeId)
+            fparam_type_str = fparam_type.TypeId
+            fparam_group = sparam.fparam.Definition.GetGroupTypeId().TypeId
         else:
             fparam_type = sparam.fparam.Definition.ParameterType
             fparam_type_str = str(fparam_type)
+            fparam_group = sparam.fparam.Definition.ParameterGroup
 
         cfgs_dict[PARAM_SECTION_NAME][fparam_name] = {
             PARAM_SECTION_TYPE: fparam_type_str,
-            PARAM_SECTION_GROUP: str(fparam_group),
+            PARAM_SECTION_GROUP: fparam_group,
             PARAM_SECTION_INST: fparam_isinst,
             PARAM_SECTION_REPORT: fparam_isreport,
             PARAM_SECTION_FORMULA: fparam_formula,
@@ -329,9 +330,9 @@ def get_shared_param_def_contents(shared_params):
     return revit.files.read_text(temp_defs_filepath)
 
 
-def save_configs(configs_dict, parma_file):
+def save_configs(configs_dict, param_file):
     # Load contents of yaml file into an ordered dict
-    return yaml.dump_dict(configs_dict, parma_file)
+    return yaml.dump_dict(configs_dict, param_file)
 
 
 if __name__ == '__main__':
