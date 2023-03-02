@@ -331,7 +331,7 @@ def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
 
 
 def create_ext_command_attrs():
-    """Create dotnet attributes for Revit extenrnal commads.
+    """Create dotnet attributes for Revit external commands.
 
     This method is used in creating custom dotnet types for pyRevit commands
     and compiling them into a DLL assembly. Current implementation sets
