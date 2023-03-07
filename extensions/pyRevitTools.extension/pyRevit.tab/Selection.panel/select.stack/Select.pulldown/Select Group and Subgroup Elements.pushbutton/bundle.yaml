@@ -1,0 +1,7 @@
+title:
+  ru: Выделить элементы групп и подгрупп
+  en_us: Select Group and Subgroup Elements
+tooltip:
+  ru: Заменяет текущее выделение элементами внутри групп и их подгрупп.
+  en_us: Replaces current selection with elements inside the groups and their subgroups.
+context: selection
