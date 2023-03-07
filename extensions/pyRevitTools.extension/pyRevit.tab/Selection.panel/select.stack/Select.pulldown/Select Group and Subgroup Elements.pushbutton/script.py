@@ -9,7 +9,7 @@ selection = revit.get_selection()
 
 
 def deepest_element_ids_extractor(group):
-    """Extracts element ids from the group and its subgroups."""
+    """Recursively extracts element ids from the group and its subgroups."""
     for member_id in group.GetMemberIds():
         member = doc.GetElement(member_id)
         if isinstance(member, DB.Group):
