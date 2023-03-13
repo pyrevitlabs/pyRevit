@@ -25,6 +25,8 @@ import os.path as op
 import codecs
 from collections import namedtuple
 
+from System.Collections.Generic import List
+
 from pyrevit import HOST_APP
 from pyrevit import USER_DESKTOP
 from pyrevit import framework
@@ -825,25 +827,35 @@ class PrintSheetsWindow(forms.WPFWindow):
                         expanded=str(cpSetEx)
                         )
                     return
-            # add non-printable char in front of sheet Numbers
-            # to push revit to sort them per user
-            sheet_set = DB.ViewSet()
-            original_sheetnums = []
-            with revit.Transaction('Fix Sheet Numbers',
-                                   doc=self.selected_doc):
-                for idx, sheet in enumerate(target_sheets):
-                    rvtsheet = sheet.revit_sheet
-                    # removing any NPC from previous failed prints
-                    if NPC in rvtsheet.SheetNumber:
-                        rvtsheet.SheetNumber = \
-                            rvtsheet.SheetNumber.replace(NPC, '')
-                    # create a list of the existing sheet numbers
-                    original_sheetnums.append(rvtsheet.SheetNumber)
-                    # add a prefix (NPC) for sorting purposes
-                    rvtsheet.SheetNumber = \
-                        NPC * (idx + 1) + rvtsheet.SheetNumber
+            # The OrderedViewList property was added to the IViewSheetSet
+            # interface in Revit 2023 and makes the non-printable char
+            # technique unnecessary.
+            supports_OrderedViewList = HOST_APP.is_newer_than(2022)
+            if supports_OrderedViewList:
+                sheet_list = List[DB.View]()
+                for sheet in target_sheets:
                     if sheet.printable:
-                        sheet_set.Insert(rvtsheet)
+                        sheet_list.Add(sheet.revit_sheet)
+            else:
+                # add non-printable char in front of sheet Numbers
+                # to push revit to sort them per user
+                sheet_set = DB.ViewSet()
+                original_sheetnums = []
+                with revit.Transaction('Fix Sheet Numbers',
+                                    doc=self.selected_doc):
+                    for idx, sheet in enumerate(target_sheets):
+                        rvtsheet = sheet.revit_sheet
+                        # removing any NPC from previous failed prints
+                        if NPC in rvtsheet.SheetNumber:
+                            rvtsheet.SheetNumber = \
+                                rvtsheet.SheetNumber.replace(NPC, '')
+                        # create a list of the existing sheet numbers
+                        original_sheetnums.append(rvtsheet.SheetNumber)
+                        # add a prefix (NPC) for sorting purposes
+                        rvtsheet.SheetNumber = \
+                            NPC * (idx + 1) + rvtsheet.SheetNumber
+                        if sheet.printable:
+                            sheet_set.Insert(rvtsheet)
 
             # Collect existing sheet sets
             cl = DB.FilteredElementCollector(self.selected_doc)
@@ -866,8 +878,13 @@ class PrintSheetsWindow(forms.WPFWindow):
                                    doc=self.selected_doc):
                 try:
                     viewsheet_settings = print_mgr.ViewSheetSetting
-                    viewsheet_settings.CurrentViewSheetSet.Views = \
-                        sheet_set
+                    if supports_OrderedViewList:
+                        viewsheet_settings.CurrentViewSheetSet.IsAutomatic = False
+                        viewsheet_settings.CurrentViewSheetSet.OrderedViewList = \
+                            sheet_list
+                    else:
+                        viewsheet_settings.CurrentViewSheetSet.Views = \
+                            sheet_set
                     viewsheet_settings.SaveAs(sheetsetname)
                 except Exception as viewset_err:
                     sheet_report = ''
@@ -905,13 +922,14 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.SubmitPrint()
 
 
-            # now fix the sheet names
-            with revit.Transaction('Restore Sheet Numbers',
-                                   doc=self.selected_doc):
-                for sheet, sheetnum in zip(target_sheets,
-                                           original_sheetnums):
-                    rvtsheet = sheet.revit_sheet
-                    rvtsheet.SheetNumber = sheetnum
+            if not supports_OrderedViewList:
+                # now fix the sheet names
+                with revit.Transaction('Restore Sheet Numbers',
+                                    doc=self.selected_doc):
+                    for sheet, sheetnum in zip(target_sheets,
+                                            original_sheetnums):
+                        rvtsheet = sheet.revit_sheet
+                        rvtsheet.SheetNumber = sheetnum
 
             self._reset_psettings()
 
