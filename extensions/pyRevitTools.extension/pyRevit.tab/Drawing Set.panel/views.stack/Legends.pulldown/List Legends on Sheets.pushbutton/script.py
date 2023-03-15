@@ -1,4 +1,4 @@
-from pyrevit import revit, DB, script
+from pyrevit import revit, DB, script, forms
 
 output = script.get_output()
 output.close_others()
@@ -29,9 +29,10 @@ for sheet in sheets:
             result.append(
                 (doc.GetElement(vp).Name, sheet.SheetNumber, sheet.Name)
             )
-
-result = sorted(result, key=lambda x: x[0])
-
-output.print_md("## Legends on Sheets")
-headers = ["Legend Name", "Sheet Number", "Sheet Name"]
-output.print_table(result, headers)
+if len(result)!=0:
+    result = sorted(result, key=lambda x: x[0])
+    output.print_md("## Legends on Sheets")
+    headers = ["Legend Name", "Sheet Number", "Sheet Name"]
+    output.print_table(result, headers)
+else:
+    forms.alert("No legends found on sheets.")
