@@ -39,7 +39,7 @@ for sheet in sheets:
             )
 
 if len(result) != 0:
-    if sort_by == 'Sheets':
+    if sort_by == 'Legends':
         results = sorted(result, key=lambda x: x[1])
         output.print_md("## Legends on Sheets")
         headers = ["Legend selector", "Legend Name",
