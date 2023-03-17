@@ -3271,7 +3271,7 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         )
 
 
-def ask_for_number_slider(default=None, min=0, max=100, interval=1 prompt=None, title=None, **kwargs):
+def ask_for_number_slider(default=None, min=0, max=100, interval=1, prompt=None, title=None, **kwargs):
     """Ask user to select a number value.
 
     This is a shortcut function that configures :obj:`GetValueWindow` for
@@ -3281,6 +3281,7 @@ def ask_for_number_slider(default=None, min=0, max=100, interval=1 prompt=None, 
         default (str): default unique string. must not be in reserved_values
         min (int): minimum value on slider
         max (int): maximum value on slider
+        interval (int): number interval between values
         prompt (str): prompt message
         title (str): title message
         kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
@@ -3291,12 +3292,16 @@ def ask_for_number_slider(default=None, min=0, max=100, interval=1 prompt=None, 
     Example:
         >>> forms.ask_for_string(
         ...     default=50,
-        ...     min = 0
-        ...     max = 100
+        ...     min = 0,
+        ...     max = 100,
+        ...     interval = 5,
         ...     prompt='Select a number:',
         ...     title='test title')
         ... '50'
+    
+    In this example, the slider will allow values such as '40, 45, 50, 55, 60' etc
     """
+
     return GetValueWindow.show(
         None,
         value_type='slider',
