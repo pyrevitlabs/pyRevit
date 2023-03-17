@@ -449,7 +449,11 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
             return True
 
     def is_sheeted(view_id):
-        return view_id in sheeted_view_ids
+        view = revit.doc.GetElement(view_id)
+        related_ids = [view_id] + list(view.GetDependentViewIds())
+        return any(
+            v_id in sheeted_view_ids for v_id in related_ids
+        )
 
     def confirm_removal(view):
         if isinstance(view, viewclass_to_purge):
