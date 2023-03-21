@@ -25,12 +25,10 @@ import os.path as op
 import codecs
 from collections import namedtuple
 
-from System.Collections.Generic import List
-
 from pyrevit import HOST_APP
 from pyrevit import USER_DESKTOP
 from pyrevit import framework
-from pyrevit.framework import Windows, Drawing, ObjectModel, Forms
+from pyrevit.framework import Windows, Drawing, ObjectModel, Forms, List
 from pyrevit import coreutils
 from pyrevit import forms
 from pyrevit import revit, DB
