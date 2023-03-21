@@ -12,16 +12,18 @@ sheets = DB.FilteredElementCollector(doc).OfCategory(
     DB.BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
 
 
-result = []
+results = []
 for schedule in schedules:
     if not schedule.IsTitleblockRevisionSchedule:
         sheet = doc.GetElement(schedule.OwnerViewId)
-        result.append(
+        results.append(
             (doc.GetElement(schedule.ScheduleId).Name, sheet.SheetNumber, sheet.Name)
         )
 
-result = sorted(result, key=lambda x: x[0])
-
-output.print_md("## Schedules on Sheets")
-headers = ["Schedule Name", "Sheet Number", "Sheet Name"]
-output.print_table(result, headers)
+if len(results) != 0:
+    results = sorted(results, key=lambda x: x[0])
+    output.print_md("## Schedules on Sheets")
+    headers = ["Schedule Name", "Sheet Number", "Sheet Name"]
+    output.print_table(results, headers)
+else:
+    forms.alert("No legends found on sheets.")
