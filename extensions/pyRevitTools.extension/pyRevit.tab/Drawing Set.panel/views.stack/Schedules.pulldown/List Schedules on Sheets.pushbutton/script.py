@@ -1,4 +1,4 @@
-from pyrevit import revit, DB, script
+from pyrevit import revit, DB, script, forms
 
 output = script.get_output()
 output.close_others()
@@ -26,4 +26,4 @@ if len(results) != 0:
     headers = ["Schedule Name", "Sheet Number", "Sheet Name"]
     output.print_table(results, headers)
 else:
-    forms.alert("No legends found on sheets.")
+    forms.alert("No schedules found on sheets.")
