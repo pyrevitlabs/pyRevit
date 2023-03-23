@@ -1857,7 +1857,10 @@ class RevisionOption(TemplateListItem):
     def name(self):
         """Revision name (description)."""
         revnum = self.item.SequenceNumber
-        if hasattr(self.item, 'RevisionNumber'):
+        rev_settings = \
+            DB.RevisionSettings.GetRevisionSettings(self.item.Document)
+
+        if rev_settings.RevisionNumbering == DB.RevisionNumbering.PerProject:
             revnum = self.item.RevisionNumber
         return '{}-{}-{}'.format(revnum,
                                  self.item.Description,
