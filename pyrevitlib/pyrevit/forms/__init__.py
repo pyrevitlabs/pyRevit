@@ -3290,7 +3290,7 @@ def ask_for_number_slider(default=None, min=0, max=100, interval=1, prompt=None,
         str: selected string value
 
     Example:
-        >>> forms.ask_for_string(
+        >>> forms.ask_for_number_slider(
         ...     default=50,
         ...     min = 0,
         ...     max = 100,
