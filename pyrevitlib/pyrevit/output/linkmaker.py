@@ -46,14 +46,15 @@ def make_link(element_ids, contents=None):
         >>> for idx, elid in enumerate(element_ids):
         >>>     print('{}: {}'.format(idx+1, output.linkify(elid)))
     """
-    elementquery = []
-    if isinstance(element_ids, list):
-        strids = [safe_strtype(x.IntegerValue) for x in element_ids]
-    elif isinstance(element_ids, DB.ElementId):
-        strids = [safe_strtype(element_ids.IntegerValue)]
+    try:
+        try:
+            strids = [safe_strtype(x.IntegerValue) for x in element_ids]
+        except TypeError:
+            strids = [safe_strtype(element_ids.IntegerValue)]
+    except AttributeError:
+        raise ValueError("One or more items are not ElementIds")
 
-    for strid in strids:
-        elementquery.append('element[]={}'.format(strid))
+    elementquery = ('element[]={}'.format(strid) for strid in strids)
 
     reviturl = '&'.join(elementquery)
     link_title = ', '.join(strids)
@@ -63,15 +64,15 @@ def make_link(element_ids, contents=None):
         linkattrs_select = 'href="#" onClick="{}"'.format(alertjs)
         linkattrs_show = linkattrs_select
     else:
-        linkattrs_select = \
-            'href="{}{}{}&show=false"'.format(PROTOCOL_NAME,
-                                              '&command=select&',
-                                              reviturl)
-        linkattrs_show = linkattrs_select.replace('&show=false', '&show=true')
+        base_link = 'href="{}{}{}&show={{}}"'.format(
+            PROTOCOL_NAME, '&command=select&', reviturl
+        )
+        linkattrs_select = base_link.format("false")
+        linkattrs_show = base_link.format("true")
 
     return DEFAULT_LINK.format(
         attrs_select=linkattrs_select,
         attrs_show=linkattrs_show,
         ids=contents or link_title,
         show_icon=LINK_SHOW_ICON
-        )
+    )
