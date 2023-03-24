@@ -1,8 +1,9 @@
 from pyrevit import DB, script, revit
-from pyrevit import forms
+from pyrevit import forms, HOST_APP
 from time import sleep
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 from pyrevit.userconfig import user_config
+from pyrevit.framework import List
 
 op = script.get_output()
 op.close_others()
@@ -26,7 +27,6 @@ def set_override(r=255, g=0, b=0):
     color = DB.Color(r, g, b)
     src_style.SetProjectionLineColor(color)
     return src_style
-
 
 @revit.carryout('Override 2D elements')
 def override_projection_lines(elements_set):
@@ -53,7 +53,7 @@ def clear_overrides(elements_set):
         # get clear graphics without overrides
         src_style = DB.OverrideGraphicSettings()
         for element in elements_set:
-            revit.active_view.SetElementOverrides(element.Id, src_style)
+            active_view.SetElementOverrides(element.Id, src_style)
 
 
 def collect_view_specific_elements():
@@ -62,20 +62,40 @@ def collect_view_specific_elements():
     for x in elements_in_view:
         if x.ViewSpecific:
             viewspecific_elements.append(x)
-    return viewspecific_elements
+    elements_id_set = List[DB.ElementId](i.Id for i in viewspecific_elements)
+    return viewspecific_elements, elements_id_set
+
+
+@revit.carryout('Disable temporary isolation')
+def disable_temp_isolation(view=active_view):
+    if active_view.ViewType == DB.ViewType.DrawingSheet and view.IsTemporaryHideIsolateActive == True:
+        view.DisableTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate)
+    else:
+        view.DisableTemporaryViewMode(DB.TemporaryViewMode.TemporaryViewProperties)
+
+
+@revit.carryout('Enable temporary isolation')
+def enable_temp_isolation(view=active_view):
+    if view.ViewType == DB.ViewType.DrawingSheet and view.IsTemporaryHideIsolateActive() == False:
+        view.DisableTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate)
+    else:
+        view.EnableTemporaryViewPropertiesMode(view.Id)
 
 
 if __name__ == '__main__':
-    elements_set = collect_view_specific_elements()
-    overrides = revit.active_view.GetElementOverrides(elements_set[0].Id).ProjectionLineColor
-    try:
-        if overrides.Red == 255:
-            with forms.WarningBar(title="Clearing 2D elements overrides"):
-                clear_overrides(collect_view_specific_elements())
-                script.toggle_icon(False)
+    elements_set, elements_id_set = collect_view_specific_elements()
+    overrides = active_view.GetElementOverrides(elements_set[0].Id).ProjectionLineColor
+    with revit.TransactionGroup('Override 2D elements'):
+        if overrides.IsValid:
+            if overrides.Red == 255 and overrides.Green == 0 and overrides.Blue == 0:
+                with forms.WarningBar(title="Clearing 2D elements overrides"):
+                    disable_temp_isolation()
+                    clear_overrides(elements_set)
+                    script.toggle_icon(False)
+                    sleep(SLEEP_TIME)
+        else:
+            with forms.WarningBar(title="Highlight 2D elements in {}".format(active_view.Name)):
+                enable_temp_isolation()
+                element_count = override_projection_lines(elements_set)
+                script.toggle_icon(True)
                 sleep(SLEEP_TIME)
-    except:
-        with forms.WarningBar(title="Highlight 2D elements in {}".format(active_view.Name)):
-            element_count = override_projection_lines(elements_set)
-            script.toggle_icon(True)
-            sleep(SLEEP_TIME)
