@@ -696,7 +696,7 @@ def load_data(slot_name, this_project=True):
         ...         return [x.deserialize() for x in self._elmnt_ids]
         ...
         ...
-        ... mydata = script.load_data("Selected Elements", element_ids)
+        ... mydata = script.load_data("Selected Elements")
         ... mydata.element_ids
         [<DB.ElementId>, <DB.ElementId>, <DB.ElementId>]
     """
