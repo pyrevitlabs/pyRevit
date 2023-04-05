@@ -168,7 +168,8 @@
     <ROW Shortcut="Revit20201" Directory_="NewFolder_Dir" Name="REVIT2~1|Revit 2021" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2021\Revit.exe" Hotkey="0" Icon_="Revit_8.exe" IconIndex="0" ShowCmd="1"/>
     <ROW Shortcut="Revit20211" Directory_="NewFolder_Dir" Name="REVIT~13|Revit 2022" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2022\Revit.exe" Hotkey="0" Icon_="Revit_4.exe" IconIndex="0" ShowCmd="1"/>
     <ROW Shortcut="Revit20221" Directory_="NewFolder_Dir" Name="REVIT2~4|Revit 2023" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2023\Revit.exe" Hotkey="0" Icon_="Revit_5.exe" IconIndex="0" ShowCmd="1"/>
-    <ROW Shortcut="SHORTCUTDIR" Directory_="NewFolder_Dir" Name="REVIT2~5|Revit 2019" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2019\Revit.exe" Hotkey="0" Icon_="Revit_6.exe" IconIndex="0" ShowCmd="1"/>
+	<ROW Shortcut="Revit2024" Directory_="NewFolder_Dir" Name="REVIT2~4|Revit 2024" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2024\Revit.exe" Hotkey="0" Icon_="Revit_5.exe" IconIndex="0" ShowCmd="1"/>
+	<ROW Shortcut="SHORTCUTDIR" Directory_="NewFolder_Dir" Name="REVIT2~5|Revit 2019" Component_="ProductInformation" Target="[ProgramFiles64Folder]Autodesk\Revit 2019\Revit.exe" Hotkey="0" Icon_="Revit_6.exe" IconIndex="0" ShowCmd="1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="classic"/>

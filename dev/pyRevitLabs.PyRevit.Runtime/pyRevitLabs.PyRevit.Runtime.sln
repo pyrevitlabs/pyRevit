@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2023", "pyRevitLabs.PyRevit.Runtime.2023.csproj", "{E05891D9-4833-45B5-84B4-8237D9AF6A4C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2024", "pyRevitLabs.PyRevit.Runtime.2024.csproj", "{23c3f18a-d62c-411f-91bc-c13986f20f62}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

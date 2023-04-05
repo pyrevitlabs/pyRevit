@@ -133,7 +133,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // some print parameters throw exceptions
             try {
-#if REVIT2023
+#if REVIT2023 || REVIT2024
                 marginx = printParams.OriginOffsetX;
                 marginy = printParams.OriginOffsetY;
 

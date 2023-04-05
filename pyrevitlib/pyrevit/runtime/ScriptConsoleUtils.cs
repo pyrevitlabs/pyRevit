@@ -64,7 +64,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             var elementIdsToIsolate = new List<ElementId>();
                             foreach (var elid in elementIds) {
                                 var element = doc.GetElement(elid);
-                                #if (REVIT2023)
+                                #if (REVIT2023 || REVIT2024)
                                 if (element.GetType() == typeof(IndependentTag)) {
                                     var hostId = ((IndependentTag)element).GetTaggedLocalElementIds().FirstOrDefault();
                                     if (hostId != ElementId.InvalidElementId)
