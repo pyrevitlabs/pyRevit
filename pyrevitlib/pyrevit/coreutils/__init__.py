@@ -966,30 +966,24 @@ def reformat_string(orig_str, orig_format, new_format):
 
     Example:
         >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
-                            '{section} - {loc} - {mat} - {rating} - {name}',
-                            '{section}:{mat}:{rating} - {name} ({loc})'))
+                            '{{section}} - {{loc}} - {{mat}} - {{rating}} - {{name}}',
+                            '{{section}}:{{mat}}:{{rating}} - {{name}} ({{loc}})'))
         '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
     """
-    # find the tags
-    tag_extractor = re.compile('{(.+?)}')
-    tags = tag_extractor.findall(orig_format)
+    # Find tags -> ['{{a}}', '{{b}}', '{{c}}']
+    tags = re.findall('({{.+?}})', orig_format)
 
-    # replace the tags with regex patterns
-    # to create a regex pattern that finds values
-    tag_replacer = re.compile('{.+?}')
-    value_extractor_pattern = tag_replacer.sub('(.+)', orig_format)
-    # find all values
-    value_extractor = re.compile(value_extractor_pattern)
-    match = value_extractor.match(orig_str)
+    # Find values -> ['value1', 'value2']
+    value_extractor_pattern = re.sub('{{.+?}}', '(.+)', orig_format)
+    match = re.match(value_extractor_pattern, orig_str)
     values = match.groups()
 
-    # create a dictionary of tags and values
-    reformat_dict = {}
-    for key, value in zip(tags, values):
-        reformat_dict[key] = value
-
-    # use dictionary to reformat the string into new
-    return new_format.format(**reformat_dict)
+    # Replace values
+    formated_text = new_format
+    for tag, value in zip(tags, values):
+        formated_text = re.sub(tag, value, formated_text)
+    
+    return formated_text
 
 
 def get_mapped_drives_dict():

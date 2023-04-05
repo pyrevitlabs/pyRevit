@@ -22,7 +22,7 @@ class ReValueItem(object):
 
             if from_pattern:
                 # if format contains pattern finders use reformatter
-                if any(x in from_pattern for x in ['{', '}']):
+                if any(x in from_pattern for x in ['{{', '}}']):
                     self.newvalue = \
                         coreutils.reformat_string(self.oldvalue,
                                                   from_pattern,

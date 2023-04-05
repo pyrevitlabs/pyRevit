@@ -21,15 +21,15 @@
                     <Bold>By Format</Bold>
                     <LineBreak />
                     Specify the existing pattern of the values in the first box and a new format in the second box. For example,
-                        if value is "OVERALL 1ST FLOOR", the first box can contain <Run FontFamily="Consolas">"{type} {lvl}ST {name}"</Run>.
+                        if value is "OVERALL 1ST FLOOR", the first box can contain <Run FontFamily="Consolas">"{{type}} {{lvl}}ST {{name}}"</Run>.
                         The tool will match the specified format to the value and will extract the parts accordingly. Using the second box,
-                        you can rearrange these extracted parts. In this example, specifying <Run FontFamily="Consolas">"LEVEL {lvl} - {type} {name} PLAN"</Run>
+                        you can rearrange these extracted parts. In this example, specifying <Run FontFamily="Consolas">"LEVEL {{lvl}} - {{type}} {{name}} PLAN"</Run>
                         inside the second box will revalue to <Run FontFamily="Consolas">"LEVEL 1 - OVERALL FLOOR PLAN"</Run>
                     <LineBreak />
                     <LineBreak />
                     <Bold>By Regular Expression</Bold>
                     <LineBreak />
-                    If the first box does not contain a format finder "{}", then the tool works in Find/Replace mode with Regular Expression support.
+                    If the first box does not contain a format finder "{{}}", then the tool works in Find/Replace mode with Regular Expression support.
                     </TextBlock>
                 </Expander>
             </Border>
