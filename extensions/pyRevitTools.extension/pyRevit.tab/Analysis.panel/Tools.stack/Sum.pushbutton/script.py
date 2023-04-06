@@ -71,28 +71,41 @@ def calc_param_total(element_list, param_name):
     return sum_total
 
 
+def format_value(total, unit_type):
+    format_options = revit.doc.GetUnits().GetFormatOptions(unit_type)
+    try:
+        units = format_options.DisplayUnits
+        label =  DB.LabelUtils.GetLabelFor(units)
+    except AttributeError:
+        units =  format_options.GetUnitTypeId()
+        label =  DB.LabelUtils.GetLabelForUnit(units)
+    return '{} {}'.format(
+        DB.UnitUtils.ConvertFromInternalUnits(total, units),
+        label)
+
+
 def format_length(total):
-    return '{} feet\n' \
-           '{} meters\n' \
-           '{} centimeters'.format(total,
-                                   total/3.28084,
-                                   (total/3.28084)*100)
+    if HOST_APP.is_newer_than(2021):
+        unit_type = DB.SpecTypeId.Length
+    else:
+        unit_type = DB.UnitType.UT_Length
+    return format_value(total, unit_type)
 
 
 def format_area(total):
-    return '{} square feet\n' \
-           '{} square meters\n' \
-           '{} square centimeters'.format(total,
-                                          total/10.7639,
-                                          (total/10.7639)*10000)
+    if HOST_APP.is_newer_than(2021):
+        unit_type = DB.SpecTypeId.Area
+    else:
+        unit_type = DB.UnitType.UT_Area
+    return format_value(total, unit_type)
 
 
 def format_volume(total):
-    return '{} cubic feet\n' \
-           '{} cubic meters\n' \
-           '{} cubic centimeters'.format(total,
-                                         total/35.3147,
-                                         (total/35.3147)*1000000)
+    if HOST_APP.is_newer_than(2021):
+        unit_type = DB.SpecTypeId.Volume
+    else:
+        unit_type = DB.UnitType.UT_Volume
+    return format_value(total, unit_type)
 
 if HOST_APP.is_newer_than(2022):
     formatter_funcs = {DB.SpecTypeId.Length: format_length,
