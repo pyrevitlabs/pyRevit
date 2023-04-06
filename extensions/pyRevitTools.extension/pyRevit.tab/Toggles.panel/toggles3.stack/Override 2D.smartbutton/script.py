@@ -1,8 +1,6 @@
 from pyrevit import DB, script, revit
-from pyrevit import forms, HOST_APP
+from pyrevit import forms
 from time import sleep
-from pyrevit.coreutils.ribbon import ICON_MEDIUM
-from pyrevit.userconfig import user_config
 from pyrevit.framework import List
 
 op = script.get_output()
@@ -15,10 +13,7 @@ SLEEP_TIME = 0.8
 
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    button_icon = script_cmp.get_bundle_file(
-        'on.png' if user_config.colorize_docs else 'off.png'
-    )
-    ui_button_cmp.set_icon(button_icon, icon_size=ICON_MEDIUM)
+    script.toggle_icon(False)
 
 
 def set_override(r=255, g=0, b=0):
