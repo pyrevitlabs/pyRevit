@@ -1,0 +1,8 @@
+title: Test Dynamic ExecParams
+
+assembly: DynamicExecParams.dll
+command_class: DynamicExecParamsCommand
+
+highlight: new
+author: dosymep
+context: zero-doc
