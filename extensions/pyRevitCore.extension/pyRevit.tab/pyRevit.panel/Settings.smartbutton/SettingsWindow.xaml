@@ -2,7 +2,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
-        Title="pyRevit Settings"
+        Title="{DynamicResource Title}"
         Height="800" Width="700" MinWidth="600" MinHeight="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
@@ -90,7 +90,7 @@
                 <TextBlock Text="{TemplateBinding Header}" Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
         </ControlTemplate>
-        
+
         <ItemsPanelTemplate x:Key="swatchPanel">
             <WrapPanel />
         </ItemsPanelTemplate>
@@ -144,36 +144,29 @@
     <DockPanel>
         <Grid Background="{DynamicResource pyRevitDarkBrush}" DockPanel.Dock="Bottom">
             <WrapPanel HorizontalAlignment="Right">
-                <Button x:Name="save_b" Background="White" Content="Just Save Settings" Click="save_settings" Width="150" Margin="10,10,10,10" Height="24"/>
-                <Button x:Name="savereload_b" Background="White" Content="Save Settings and Reload" Click="save_settings_and_reload" Width="200" Margin="10,10,10,10" Height="24"/>
+                <Button x:Name="save_b" Background="White" Content="{DynamicResource JustSave}" Click="save_settings" Width="150" Margin="10,10,10,10" Height="24"/>
+                <Button x:Name="savereload_b" Background="White" Content="{DynamicResource SaveAndReload}" Click="save_settings_and_reload" Width="200" Margin="10,10,10,10" Height="24"/>
             </WrapPanel>
         </Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <Expander Header="Core Settings" IsExpanded="False" Margin="10px">
+                <Expander Header="{DynamicResource CoreSettings.Title}" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
-                        <GroupBox Header="General">
+                        <GroupBox Header="{DynamicResource CoreSettings.General}">
                             <StackPanel>
                                 <WrapPanel Margin="10,15,0,5">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Rocket Mode &#x1F680; (Reload Required)</TextBlock>
+                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.RocketMode}"/>
                                 </WrapPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">This is the switch for pyRevit Rocket Mode.
-                                                                                               If enabled, pyRevit will use a shared engine per each extension
-                                                                                               that supports the Rocket mode. For pyRevit developers,
-                                                                                               this means that your custom python modules should not use any
-                                                                                               module level variables that retain information from Revit like
-                                                                                               the active document, element information, etc.
-                                                                                               Why Rocket Mode? Yuuuuuge speed boost!!</TextBlock>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10" Text="{DynamicResource CoreSettings.RocketMode.Description}"/>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="checkupdates_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Check updates at startup</TextBlock>
+                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.CheckUpdates}"/>
                                 </WrapPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">If activated, pyRevit will check updates for all installed extensions
-                                                                                               at Revit startup. If no internet connection is detected, update check will be skipped.</TextBlock>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10" Text="{DynamicResource CoreSettings.CheckUpdates.Description}"/>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Engines" Margin="0,10,0,0">
+                        <GroupBox Header="{DynamicResource CoreSettings.Engines}" Margin="0,10,0,0">
                             <StackPanel>
                                 <DockPanel Margin="10,10,0,0" >
                                     <ContentControl Content="{StaticResource engineIcon}"
@@ -183,81 +176,55 @@
                                             <ScaleTransform ScaleX="1"  ScaleY="1"/>
                                         </ContentControl.LayoutTransform>
                                     </ContentControl>
-                                    <TextBlock Margin="20,0,10,0" VerticalAlignment="Center" DockPanel.Dock="Left">Active Engine:</TextBlock>
+                                    <TextBlock Margin="20,0,10,0" VerticalAlignment="Center" DockPanel.Dock="Left" Text="{DynamicResource CoreSettings.ActiveEngine}"/>
                                     <ComboBox x:Name="availableEngines" Margin="0,0,10,0"
                                               DisplayMemberPath="name" Height="24"
                                               VerticalContentAlignment="Center"/>
                                 </DockPanel>
                                 <DockPanel Margin="42,5,0,10" >
-                                    <TextBlock Margin="20,0,10,0" VerticalAlignment="Center" DockPanel.Dock="Left">Active CPython Engine:</TextBlock>
+                                    <TextBlock Margin="20,0,10,0" VerticalAlignment="Center" DockPanel.Dock="Left" Text="{DynamicResource CoreSettings.ActiveCPythonEngine}"/>
                                     <ComboBox x:Name="cpythonEngines" Margin="0,0,10,0"
                                               DisplayMemberPath="name" Height="24"
                                               VerticalContentAlignment="Center"/>
                                 </DockPanel>
                                 <StackPanel Margin="10,5,10,10">
-                                    <TextBlock FontWeight="Medium">Using CPython:</TextBlock>
-                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
-                                        pyRevit can use a CPython (x64) engine to run a command instead of the active IronPython Engine. This means that all
-                                        CPython modules (e.g. numpy, scipy) can be used within Revit environment. Note that Revit is a x64 program and
-                                        will only work with the x64 version of CPython.
-                                    </TextBlock>
-                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
-                                        The CPython engine is shipped with pyRevit so you do not need to have it installed on your machine. However if
-                                        you intend to use third-party libraries, make sure you have the same version of CPython as the selected
-                                        engine here, installed on your machine.
-                                    </TextBlock>
-                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
-                                        PYTHONPATH environment variable must point to the "site-packages" directory, so modules
-                                        installed with "pip" package manager, could be found and loaded.
-                                    </TextBlock>
-                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
-                                        To run a script with CPython, first line of the script file must be:
-                                    </TextBlock>
-                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="20,5,0,0" FontFamily="Consolas">
-                                        #! python3
-                                    </TextBlock>
-                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,20,0,0">
-                                        Save settings after changing the engine and then restart Revit.
-                                    </TextBlock>
+                                    <TextBlock FontWeight="Medium" Text="{DynamicResource CoreSettings.UsingCPython}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.UsingCPython.Description1}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.UsingCPython.Description2}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.UsingCPython.Description3}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0" Text="{DynamicResource CoreSettings.UsingCPython.Description4}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="20,5,0,0" FontFamily="Consolas" Text="#! python3" />
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,20,0,0" Text="{DynamicResource CoreSettings.UsingCPython.Description5}"/>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Development" Margin="0,10,0,0">
+                        <GroupBox Header="{DynamicResource CoreSettings.Development}" Margin="0,10,0,0">
                             <StackPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development</TextBlock>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0" Text="{DynamicResource CoreSettings.Development.Description}"/>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</TextBlock>
+                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.Development.LoadBeta}"/>
                                 </WrapPanel>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Caching" Margin="0,10,0,0">
+                        <GroupBox Header="{DynamicResource CoreSettings.Caching}" Margin="0,10,0,0">
                             <StackPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">pyRevit caches the extension data so it can run faster.
-                                                                                               This section controls the type of caching.
-                                                                                               Restart is required after changing this setting.</TextBlock>
-                                <RadioButton x:Name="bincache_rb" GroupName="cache_type" Margin="10,10,0,5" IsChecked="False">Binary Cache</RadioButton>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,0">Binary cache is the fastest but the cache files are not human readable
-                                                                                              and not very useful for debugging.</TextBlock>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0" Text="{DynamicResource CoreSettings.Caching.Description}"/>
+                                <RadioButton x:Name="bincache_rb" GroupName="cache_type" Margin="10,10,0,5" IsChecked="False" Content="{DynamicResource CoreSettings.BinaryCache}"/>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,0" Text="{DynamicResource CoreSettings.BinaryCache.Description}"/>
 
-                                <RadioButton x:Name="asciicache_rb" GroupName="cache_type" Margin="10,15,0,5" IsChecked="False">ASCII Cache</RadioButton>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,10">ASCII cache files are JSON files and are human readable.
-                                                                                               They are very helpful for debugging purposes.</TextBlock>
+                                <RadioButton x:Name="asciicache_rb" GroupName="cache_type" Margin="10,15,0,5" IsChecked="False" Content="{DynamicResource CoreSettings.ASCIICache}"/>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,10" Text="{DynamicResource CoreSettings.ASCIICache.Description}"/>
 
-                                <Button Content="Reset Caching to default" Height="24" Click="resetcache" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
+                                <Button Content="{DynamicResource CoreSettings.Caching.Button}" Height="24" Click="resetcache" HorizontalAlignment="Right" Width="{DynamicResource CoreSettings.Caching.Button.With}" Margin="0,10,10,10"/>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Environment Variables" IsExpanded="False" Margin="10px">
+                <Expander Header="{DynamicResource EnvironmentVariables.Title}" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
-                        <TextBlock TextWrapping="WrapWithOverflow">
-                            Environment Variables are set in current Application Domain (AppDomain) and
-                            are available to scripts. They're used as global flags for setting
-                            reporting mode, and also by scripts (e.g. Sync Views) to set their current toggle state.
-                            These variables are accessible by scripts through pyrevit.script module.
-                        </TextBlock>
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource EnvironmentVariables.Description}"/>
                         <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="300" FontFamily="Consolas">
                             <ListView.Resources>
                                 <ContextMenu x:Key="ItemContextMenu">
@@ -279,8 +246,8 @@
                             </ListView.ItemContainerStyle>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Variable Name" Width="170" DisplayMemberBinding="{Binding Id}"/>
-                                    <GridViewColumn Header="Value" Width="445">
+                                    <GridViewColumn Header="{DynamicResource EnvironmentVariables.ListView.VariableName}" Width="170" DisplayMemberBinding="{Binding Id}"/>
+                                    <GridViewColumn Header="{DynamicResource EnvironmentVariables.ListView.VariableValue}" Width="445">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding Value}" TextWrapping="Wrap"/>
@@ -293,7 +260,7 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Reporting Levels" IsExpanded="False" Margin="10px">
+                <Expander Header="{DynamicResource ReportingLevels.Title}" IsExpanded="False" Margin="10px">
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="100" />
@@ -309,82 +276,47 @@
                         <Image x:Name="logverbose" Width="100" Height="50" Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" Margin="0,10,0,0" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                         <Image x:Name="logdebug" Width="100" Height="50" Grid.Column="0" Grid.Row="2" VerticalAlignment="Top" Margin="0,10,0,0" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                         <StackPanel Grid.Column="1" Grid.Row="0" Margin="10,0,0,0">
-                            <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" IsChecked="True">
-                                No Reporting (logging.WARNING and above)
-                            </RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0">
-                                No reports will be printed from the logging system. 
-                                This means that pyRevit will not show the output window at
-                                Revit startup and all the INFO messages will be suppressed.
-                                Only Warnings, Errors, and Critical Errors will be printed.
-                            </TextBlock>
+                            <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" IsChecked="True" Content="{DynamicResource ReportingLevels.NoReporting}"/>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0" Text="{DynamicResource ReportingLevels.NoReporting.Description}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Grid.Row="1" Margin="10,10,0,0">
-                            <RadioButton x:Name="verbose_rb" GroupName="reporting_level" IsChecked="True">
-                                Verbose (logging.INFO and above)
-                            </RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0">
-                                Verbose reporting opens the output window and only prints the info messages.
-                                These messages are meant to provide the most basic necessary information about
-                                the current pyRevit session to the user.
-                            </TextBlock>
+                            <RadioButton x:Name="verbose_rb" GroupName="reporting_level" IsChecked="True" Content="{DynamicResource ReportingLevels.Verbose}"/>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0" Text="{DynamicResource ReportingLevels.Verbose.Description}"/>
                             <WrapPanel Margin="20,5,0,0">
-                                <Label Padding="0" VerticalAlignment="Center">If no errors, close startup window after</Label>
+                                <Label Padding="0" VerticalAlignment="Center" Content="{DynamicResource ReportingLevels.Verbose.Timeout.Start}"/>
                                 <TextBox x:Name="startup_log_timeout" Width="48" Height="24"
                                          Margin="5,0,5,0" Padding="5,0,0,0"
                                          IsEnabled="{Binding ElementName=verbose_rb, Path=IsChecked}"
                                          VerticalContentAlignment="Center"/>
-                                <Label  Padding="0" VerticalAlignment="Center">seconds. (Set to 0 to keep it open anyways)</Label>
+                                <Label Padding="0" VerticalAlignment="Center" Content="{DynamicResource ReportingLevels.Verbose.Timeout.Finish}"/>
                             </WrapPanel>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Grid.Row="2" Margin="10,0,0,0">
-                            <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="0,10,0,0" IsChecked="False">
-                                Debug mode (logging.DEBUG and above)
-                            </RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0">
-                                This activates the pyRevit debug mode which enables all components and scripts to
-                                report their debug messages. Generally this causes a very lengthy report and
-                                increases the script running time, but it is very valuable for debugging.
-                                Activate this only for debugging purposes.
-                            </TextBlock>
+                            <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="0,10,0,0" IsChecked="False" Content="{DynamicResource ReportingLevels.Debug}"/>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0" Text="{DynamicResource ReportingLevels.Debug.Description}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="3" Margin="0,10,0,0">
-                            <CheckBox x:Name="filelogging_cb" Margin="0,10,0,0" IsChecked="False">File debug logging</CheckBox>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0">
-                            This activates the pyRevit file debug mode. All debug messages during a session
-                            (from loader or tools) will be written to a log file in pyRevit appdata folder. 
-                            These files are tagged by Revit session and are automatically cleaned up on every Revit load.
-                            </TextBlock>
+                            <CheckBox x:Name="filelogging_cb" Margin="0,10,0,0" IsChecked="False" Content="{DynamicResource ReportingLevels.FileDebug}"/>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="20,10,0,0" Text="{DynamicResource ReportingLevels.FileDebug.Description}"/>
 
-                            <Button Content="Reset Reporting Level to default" Height="24" Click="resetreportinglevel" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
+                            <Button Content="{DynamicResource ReportingLevels.Button}" Height="24" Click="resetreportinglevel" HorizontalAlignment="Right" Width="{DynamicResource ReportingLevels.Button.Width}" Margin="0,10,10,10"/>
                         </StackPanel>
                     </Grid>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Startup Checks" IsExpanded="False" Margin="10px">
+                <Expander Header="{DynamicResource StartupChecks.Title}" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10">
-                        <TextBlock TextWrapping="WrapWithOverflow">
-                            You can set the required host build number.
-                            pyRevit will show a warning if it's being run
-                            on a host with different build number. Set to empty
-                            to disable
-                        </TextBlock>
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource StartupChecks.Description}"/>
                         <DockPanel Margin="0,10,0,10">
-                            <TextBlock x:Name="requiredhostbuild_t" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                        Required Build Number (build):
-                            </TextBlock>
-                            <Button DockPanel.Dock="Right" Content="Set to Current Host Build Number" Width="200" Margin="10,0,0,0"
-                                            Click="reset_requiredhostbuild" ToolTip="Set the required build number to current host build number"/>
+                            <TextBlock x:Name="requiredhostbuild_t" DockPanel.Dock="Left" VerticalAlignment="Center" Text="{DynamicResource StartupChecks.Build}"/>
+                            <Button DockPanel.Dock="Right" Content="{DynamicResource StartupChecks.Build.Button}" Width="{DynamicResource StartupChecks.Build.Button.Width}" Margin="10,0,0,0"
+                                            Click="reset_requiredhostbuild" ToolTip="{DynamicResource StartupChecks.Build.Button.ToolTip}"/>
                             <TextBox x:Name="requiredhostbuild_tb" Margin="10,0,0,0" Height="24" Padding="5,0,0,0"
                                      VerticalContentAlignment="Center"/>
                         </DockPanel>
-                        <TextBlock TextWrapping="WrapWithOverflow">
-                            You can set the minimum free space on host drive.
-                            pyRevit will show a warning if free space is less
-                            than minimum value. Set to 0 to disable.
-                        </TextBlock>
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource StartupChecks.MinimumSpace.Description}"/>
                         <DockPanel Margin="0,10,0,10">
-                            <TextBlock DockPanel.Dock="Left" Margin="0,2,0,0">Minimum Free Space on Host Drive (in GigaByte):</TextBlock>
+                            <TextBlock DockPanel.Dock="Left" Margin="0,2,0,0" Text="{DynamicResource StartupChecks.MinimumSpace}"/>
                             <TextBox x:Name="minhostdrivefreespace_tb"
                                      Margin="10,0,0,0" Height="24" Padding="5,0,0,0"
                                      VerticalContentAlignment="Center"/>
@@ -393,32 +325,30 @@
 
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Routes" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">
+                <Expander Header="{DynamicResource Routes.Title}" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow">
-                            Routes server is a HTTP API micro-framework and server implemented in python as part of pyRevit. The server is accompanied
-                            by a python module (pyrevit.routes) that is inspired by python flask and provides necessary functions,
-                            type, and decorators to easily define your owne APIs in your extensions.
+                            <Run Text="{DynamicResource Routes.Description}" />
                             <LineBreak/>
                             <Hyperlink NavigateUri="https://www.notion.so/pyrevitlabs/pyRevit-Routes-HTTP-API-79ef6d4a77b04aca9be6f4e46ffa728e" Click="handle_url_click">
-                                See pyRevit Routes Documentation
+                                <Run Text="{DynamicResource Routes.Docs}" />
                             </Hyperlink>
                         </TextBlock>
-                        <StackPanel >
+                        <StackPanel>
                             <WrapPanel Margin="0,15,0,0">
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="routes_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Routes Server (Beta)</TextBlock>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium" Text="{DynamicResource Routes.Check}"/>
                             </WrapPanel>
-                            <GroupBox Header="REST API Settings" Padding="10" Margin="0,10,0,0">
+                            <GroupBox Header="{DynamicResource Routes.RestAPI}" Padding="10" Margin="0,10,0,0">
                                 <CheckBox x:Name="coreapi_cb">
                                     <CheckBox.Content>
                                         <TextBlock>
-                                            <TextBlock FontFamily="Consolas" FontWeight="Black" >pyrevit-core/</TextBlock>
+                                            <TextBlock FontFamily="Consolas" FontWeight="Black" Text="{DynamicResource Routes.RestAPI.Check}" />
                                             <LineBreak/>
-                                            pyRevitCore extension implements a basic REST API to manage the pyRevit environment
+                                            <Run Text="{DynamicResource Routes.RestAPI.Check.Description}"/>
                                             <LineBreak/>
                                             <Hyperlink NavigateUri="https://www.notion.so/pyrevitlabs/Runtime-REST-API-c3b96be059ba4af0ad5304d3e0304f3d" Click="handle_url_click">
-                                                See pyRevit Runtime API Documentation
+                                                <Run Text="{DynamicResource Routes.RestAPI.Check.Docs}"/>
                                             </Hyperlink>
                                         </TextBlock>
                                     </CheckBox.Content>
@@ -436,33 +366,28 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Telemetry" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">
+                <Expander Header="{DynamicResource Telemetry.Title}" IsExpanded="False" Margin="10px" Expanded="update_telemetry_status_lights">
                     <StackPanel Margin="10px">
-                        <TextBlock TextWrapping="WrapWithOverflow">
-                            Telemetry system, records each use of tools under any of the pyRevit extensions.
-                            You can activate telemetry and send the data to a server (pyRevit has a builtin telemetry server),
-                            or to a series of JSON files in a given directory. If activated, the system will send telemetry records
-                            to the destinations provided here. Leave any of the fields blank to disable sending telemetry records to that destination.
-                        </TextBlock>
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Telemetry.Description}"/>
                         <StackPanel >
-                            <GroupBox Header="Global Telemetry Settings" Padding="10" Margin="0,10,0,0">
-                                <CheckBox x:Name="telemetry_timestamp_cb" Content="Use UTC Timestamps"></CheckBox>
+                            <GroupBox Header="{DynamicResource Telemetry.Settings}" Padding="10" Margin="0,10,0,0">
+                                <CheckBox x:Name="telemetry_timestamp_cb" Content="{DynamicResource Telemetry.Settings.UseUTC}" />
                             </GroupBox>
                             <WrapPanel Margin="0,15,0,0">
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="telemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Script Telemetry</TextBlock>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium" Text="{DynamicResource Telemetry.ScriptTelemetry}" />
                             </WrapPanel>
-                            <GroupBox Header="Send Telemetry For" Padding="10" Margin="0,10,0,0">
+                            <GroupBox Header="{DynamicResource Telemetry.SendTelemetry}" Padding="10" Margin="0,10,0,0">
                                 <WrapPanel>
-                                    <CheckBox Content="Command Bundles" IsEnabled="False" IsChecked="True"></CheckBox>
-                                    <CheckBox x:Name="telemetry_hooks_cb" Content="Hooks" Margin="15,0,0,0"></CheckBox>
+                                    <CheckBox Content="{DynamicResource Telemetry.CommandBundles}" IsEnabled="False" IsChecked="True" />
+                                    <CheckBox x:Name="telemetry_hooks_cb" Content="{DynamicResource Telemetry.Hooks}" Margin="15,0,0,0" />
                                 </WrapPanel>
                             </GroupBox>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Script Telemetry Server URL or API Endpoint</TextBlock>
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Text="{DynamicResource Telemetry.ServerUrl}" />
                                 <TextBox x:Name="telemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" Margin="0,10,0,5" Height="24" Padding="5,0,0,0" VerticalContentAlignment="Center" TextChanged="telemetryserver_changed"/>
                                 <TextBlock DockPanel.Dock="Bottom" VerticalAlignment="Center" Foreground="DarkGray">
-                                    Example
+                                    <Run Text="{DynamicResource Telemetry.ServerUrl.Example}"/>
                                     <LineBreak/>http://telemetry.mycompany.com:8080/api/v2/scripts/
                                 </TextBlock>
                                 <Border x:Name="telemetryserver_statusbox" MinHeight="25" Padding="10,0,10,0" Background="LightGray">
@@ -470,14 +395,11 @@
                                     </TextBlock>
                                 </Border>
                             </DockPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
-                                If a destination directory is provided here, pyRevit creates a new JSON file for each pyRevit sesssion to avoid creating large files that
-                                would potentially slow down the telemetry service. The session id is added to the JSON file name.
-                            </TextBlock>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0" Text="{DynamicResource Telemetry.ServerUrl.Description}"/>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current Telemetry JSON File:</TextBlock>
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Text="{DynamicResource Telemetry.JsonFile}"/>
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
-                                    <Button Content="Open Folder" Width="90" Margin="6,0,0,0" Height="24"
+                                    <Button Content="{DynamicResource Telemetry.JsonFile.Button}" Width="90" Margin="6,0,0,0" Height="24"
                                             Click="open_telemetry_folder" ToolTip="Open the current telemetry folder"/>
                                 </WrapPanel>
                                 <TextBox x:Name="cur_telemetryfile_tb" FontFamily="Consolas" IsReadOnly="True"
@@ -485,7 +407,7 @@
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="top" VerticalAlignment="Center">Script Telemetry Data Folder (e.g. C:\pyRevitTelemetry):</TextBlock>
+                                <TextBlock DockPanel.Dock="top" VerticalAlignment="Center" Text="{DynamicResource Telemetry.DataFolder}" />
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
                                     <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                                             Width="48" Height="24" Margin="6,0,3,0" Padding="0,0,0,2"
@@ -498,16 +420,14 @@
                             </DockPanel>
                             <WrapPanel Margin="0,25,0,0">
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="apptelemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium">Application Telemetry</TextBlock>
+                                <TextBlock Margin="30,4,0,0" FontWeight="Medium" Text="{DynamicResource Telemetry.Application}"/>
                             </WrapPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
-                                Application Telemetry system, sends event information collected from event handlers to the telemetry server listed below. You can toggle event logging for each of the events listed blow.
-                            </TextBlock>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0" Text="{DynamicResource Telemetry.Application.Description}"/>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Application Telemetry Server URL or API Endpoint (e.g. http://telemetryserver.io):</TextBlock>
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Text="{DynamicResource Telemetry.Application.ServerUrl}"/>
                                 <TextBox x:Name="apptelemetryserver_tb" DockPanel.Dock="Top" FontFamily="Consolas" Margin="0,10,0,5" Height="24" Padding="5,0,0,0" VerticalContentAlignment="Center" TextChanged="apptelemetryserver_changed"/>
                                 <TextBlock DockPanel.Dock="Bottom" VerticalAlignment="Center" Foreground="DarkGray">
-                                    Example
+                                    <Run Text="{DynamicResource Telemetry.ServerUrl.Example}"/>
                                     <LineBreak/>http://telemetry.mycompany.com:8080/api/v2/events/
                                 </TextBlock>
                                 <Border x:Name="apptelemetryserver_statusbox" MinHeight="25" Padding="10,0,10,0" Background="LightGray">
@@ -516,22 +436,17 @@
                             </DockPanel>
                             <StackPanel x:Name="event_telemetry_sp" Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
                                 <DockPanel>
-                                    <Button DockPanel.Dock="Right" Content="Toggle All" Width="80" Height="25" Click="toggle_event_cbs" ></Button>
-                                    <TextBlock VerticalAlignment="Center" FontWeight="Medium">Select Active Application Telemetry Events</TextBlock>
+                                    <Button DockPanel.Dock="Right" Content="{DynamicResource Telemetry.Application.ToggleAll}" Width="80" Height="25" Click="toggle_event_cbs" ></Button>
+                                    <TextBlock VerticalAlignment="Center" FontWeight="Medium" Text="{DynamicResource Telemetry.Events}"/>
                                 </DockPanel>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Supported Revit Versions" IsExpanded="False" Margin="10px">
+                <Expander Header="{DynamicResource SupportedRevitVersions.Title}" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
-                        <TextBlock x:Name="revitversions_tb" TextWrapping="WrapWithOverflow">
-                            You can disable or enable pyRevit for installed
-                            Revit versions from here. This effectively removes the
-                            pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders. Note that attachment to any of Revit versions listed here will be read-only and can not be changed, if it is 
-                            marked with &lt;current&gt; or &lt;all users&gt;
-                        </TextBlock>
+                        <TextBlock x:Name="revitversions_tb" TextWrapping="WrapWithOverflow" Text="{DynamicResource SupportedRevitVersions.Description}"/>
                         <CheckBox x:Name="revit2023_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
                             Autodesk Revit 2023
                         </CheckBox>
@@ -556,30 +471,28 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="UI / UX" IsExpanded="False" Margin="10px">
+                <Expander Header="{DynamicResource UI-UX.Title}" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10,10,10,0">
-                        <TextBlock TextWrapping="WrapWithOverflow">
-                            This section provides all the settings related to User Interface (UI) and User Experience (UX).
-                        </TextBlock>
-                        <GroupBox Header="Region Settings" Margin="0,10,0,0" Padding="10">
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource UI-UX.Description}" />
+                        <GroupBox Header="{DynamicResource UI-UX.RegionSettings}" Margin="0,10,0,0" Padding="10">
                             <StackPanel>
                                 <DockPanel>
-                                    <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,15,0">Select UI Language:</TextBlock>
+                                    <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,15,0" Text="{DynamicResource UI-UX.SelectLanguage}"/>
                                     <ComboBox x:Name="applocales_cb"/>
                                 </DockPanel>
                                 <TextBlock Margin="0,10,0,0">
                                     <Hyperlink NavigateUri="https://www.notion.so/pyrevitlabs/Help-Translate-pyRevit-c26063a6c9824667a07c6a40b28c70d4" Click="handle_url_click">
-                                        Help Translating pyRevit
+                                        <Run Text="{DynamicResource UI-UX.RegionSettingsLink}"/>
                                     </Hyperlink>
                                 </TextBlock>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Tab Coloring" Margin="0,10,0,0" Padding="10">
+                        <GroupBox Header="{DynamicResource UI-UX.TabColoring}" Margin="0,10,0,0" Padding="10">
                             <StackPanel>
-                                <TextBlock DockPanel.Dock="Top" Margin="0,0,0,5" FontWeight="Medium">Coloring Style</TextBlock>
-                                <CheckBox x:Name="colordocs_cb" Margin="0,5,0,0" Content="Colorize Open Documents" IsChecked="False" IsEnabled="True" />
+                                <TextBlock DockPanel.Dock="Top" Margin="0,0,0,5" FontWeight="Medium" Text="{DynamicResource UI-UX.ColoringStyle}" />
+                                <CheckBox x:Name="colordocs_cb" Margin="0,5,0,0" Content="{DynamicResource UI-UX.ColorizeOpenDocuments}" IsChecked="False" IsEnabled="True" />
                                 <StackPanel Margin="0,0,0,5" IsEnabled="{Binding ElementName=colordocs_cb, Path=IsChecked}">
-                                    <CheckBox x:Name="sortdocs_cb" Content="Keep Open Tabs Sorted By Document " IsChecked="False" IsEnabled="False" Checked="tabstyling_changed" Unchecked="tabstyling_changed" Margin="0,5,0,0"/>
+                                    <CheckBox x:Name="sortdocs_cb" Content="{DynamicResource UI-UX.KeepOpenTabs}" IsChecked="False" IsEnabled="False" Checked="tabstyling_changed" Unchecked="tabstyling_changed" Margin="0,5,0,0"/>
                                 </StackPanel>
                                 <StackPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=colordocs_cb, Path=IsChecked}">
                                     <Grid Margin="10,10,10,0">
@@ -596,31 +509,30 @@
                                             <RowDefinition />
                                         </Grid.RowDefinitions>
                                         <DockPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0">
-                                            <Label Content="Project Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
+                                            <Label Content="{DynamicResource UI-UX.ProjectTabStyle}" Width="100" Padding="0,4" FontWeight="Medium"/>
                                             <ComboBox x:Name="project_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
                                         </DockPanel>
                                         <DockPanel Grid.Column="3" Grid.ColumnSpan="2" Grid.Row="0">
-                                            <Label Content="Family Tab Style" Width="100" Padding="0,4" FontWeight="Medium"/>
+                                            <Label Content="{DynamicResource UI-UX.FamilyTabStyle}" Width="100" Padding="0,4" FontWeight="Medium"/>
                                             <ComboBox x:Name="family_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
                                         </DockPanel>
                                         <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" BorderThickness="1,1,1,0" BorderBrush="LightGray" Height="10" Margin="0,5,0,5"/>
                                         <Border Grid.Column="3" Grid.ColumnSpan="2" Grid.Row="1" BorderThickness="1,1,1,0" BorderBrush="LightGray" Height="10" Margin="0,5,0,5"/>
-                                        <TabItem x:Name="tabProjA" Grid.Column="0" Grid.Row="2" Style="{StaticResource revitTab}" Header="Project 1" />
-                                        <TabItem x:Name="tabProjB" Grid.Column="1" Grid.Row="2" Style="{StaticResource revitTab}" Header="Project 2" />
-                                        <TabItem x:Name="tabFamilyA" Grid.Column="3" Grid.Row="2" Style="{StaticResource revitTab}" Header="Family 1" />
-                                        <TabItem x:Name="tabFamilyB" Grid.Column="4" Grid.Row="2" Style="{StaticResource revitTab}" Header="Family 2" />
+                                        <TabItem x:Name="tabProjA" Grid.Column="0" Grid.Row="2" Style="{StaticResource revitTab}" Header="{DynamicResource UI-UX.ProjectSample1}" />
+                                        <TabItem x:Name="tabProjB" Grid.Column="1" Grid.Row="2" Style="{StaticResource revitTab}" Header="{DynamicResource UI-UX.ProjectSample2}" />
+                                        <TabItem x:Name="tabFamilyA" Grid.Column="3" Grid.Row="2" Style="{StaticResource revitTab}" Header="{DynamicResource UI-UX.ProjectSample1}" />
+                                        <TabItem x:Name="tabFamilyB" Grid.Column="4" Grid.Row="2" Style="{StaticResource revitTab}" Header="{DynamicResource UI-UX.ProjectSample2}" />
                                     </Grid>
                                 </StackPanel>
                                 <StackPanel Margin="0,10,0,10" IsEnabled="{Binding ElementName=colordocs_cb, Path=IsChecked}">
-                                    <TextBlock Margin="0,0,0,5" FontWeight="Medium">Coloring Theme</TextBlock>
+                                    <TextBlock Margin="0,0,0,5" FontWeight="Medium" Text="{DynamicResource UI-UX.ColoringTheme}" />
                                     <TextBlock Foreground="Gray" Margin="0,0,0,10" TextWrapping="Wrap">
-                                        Select a series of colors to be applied to document tabs as they open.
+                                        <Run Text="{DynamicResource UI-UX.ColoringTheme.Description1}"/>
                                         <LineBreak />
-                                        Colors in the "By Order" group will be applied to documents in order they open. When all the colors are used, no more tab coloring will be applied.
+                                        <Run Text="{DynamicResource UI-UX.ColoringTheme.Description2}"/>
                                         <LineBreak />
-                                        Colors in "By Filter" group will be applied to tabs matching the given name filter. If a filter matches
-                                        any of the tab names, the by-filter color will take priority over the by-order color of that tab.
-                                    </TextBlock>
+                                        <Run Text="{DynamicResource UI-UX.ColoringTheme.Description3}"/>
+                                        </TextBlock>
                                     <DockPanel>
                                         <Grid DockPanel.Dock="Right" Margin="5,0,0,0" >
                                             <Grid.ColumnDefinitions>
@@ -631,9 +543,9 @@
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Width="26" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_ordercolor" />
                                             <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_ordercolor" />
-                                            <Button Grid.Column="2" Margin="5,0,0,0" Content="Reset" Padding="0,-3,0,0" Background="White" BorderBrush="DarkGray" Click="reset_ordercolors" />
+                                            <Button Grid.Column="2" Margin="5,0,0,0" Content="{DynamicResource UI-UX.ColoringTheme.Reset}" Padding="0,-3,0,0" Background="White" BorderBrush="DarkGray" Click="reset_ordercolors" />
                                         </Grid>
-                                        <TextBlock DockPanel.Dock="Left" Text="By Order" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                        <TextBlock DockPanel.Dock="Left" Text="{DynamicResource UI-UX.ColoringTheme.ByOrder}" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
                                         <ListView x:Name="doc_ordercolor_lb"
                                                   MinHeight="26" Background="Transparent"
                                                   ItemsPanel="{StaticResource swatchPanel}"
@@ -652,11 +564,11 @@
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Width="26" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_filtercolor" />
                                             <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_filtercolor" />
-                                            <Label Grid.Column="2" Content="Filter (Regex)" HorizontalAlignment="Right" />
+                                            <Label Grid.Column="2" Content="{DynamicResource UI-UX.ColoringTheme.FilterRegex}" HorizontalAlignment="Right" />
                                             <TextBox x:Name="filtercolor_filter_tb" TextChanged="filtercolor_filter_changed" Grid.Column="3" Margin="5,0,0,0" MinHeight="26" VerticalContentAlignment="Center"/>
                                             <Ellipse x:Name="filtercolor_filter_warn" Visibility="Hidden" ToolTip="Bad Regex" Grid.Column="3" Fill="Red" Width="8" Height="8" HorizontalAlignment="Right" Margin="0,0,8,0" />
                                         </Grid>
-                                        <TextBlock DockPanel.Dock="Left" Text="By Filter" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                        <TextBlock DockPanel.Dock="Left" Text="{DynamicResource UI-UX.ColoringTheme.ByFilter}" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
                                         <ListView x:Name="doc_filtercolor_lb"
                                                   MinHeight="26" Background="Transparent"
                                                   ItemsPanel="{StaticResource swatchPanel}"
@@ -668,55 +580,47 @@
                                 </StackPanel>
                                 <TextBlock Foreground="#ffffff" Margin="0,10,0,0">
                                         <Hyperlink NavigateUri="https://www.parallaxteam.com/apps/" Click="handle_url_click">
-                                           Kudos to Parallax Team for "Parallax Tabbed Views"
+                                           <Run Text="{DynamicResource UI-UX.ColoringTheme.Parallax}"/>
                                         </Hyperlink>
                                 </TextBlock>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Output Window" Margin="0,10,0,0" Padding="10">
+                        <GroupBox Header="{DynamicResource UI-UX.OutputWindow}" Margin="0,10,0,0" Padding="10">
                             <StackPanel>
                                 <DockPanel Margin="0,10,0,10">
-                                    <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Output Styling (CSS Stylesheet)</TextBlock>
+                                    <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Text="{DynamicResource UI-UX.OutputStyling}"/>
                                     <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
-                                        <Button Content="&#x25CF;&#x25CF;&#x25CF;" Width="48" Margin="6,0,3,0" Height="24" Padding="0,0,0,2" Click="pick_stylesheet" ToolTip="Pick a CSS style sheet to override the default."/>
-                                        <Button Content="Reset" Width="48" Margin="3,0,0,0" Height="24" Click="reset_stylesheet" ToolTip="Reset CSS style sheet back to default"/>
+                                        <Button Content="&#x25CF;&#x25CF;&#x25CF;" Width="48" Margin="6,0,3,0" Height="24" Padding="0,0,0,2" Click="pick_stylesheet" ToolTip="{DynamicResource UI-UX.PickCssToolTip}"/>
+                                        <Button Content="Reset" Width="48" Margin="3,0,0,0" Height="24" Click="reset_stylesheet" ToolTip="{DynamicResource UI-UX.ResetCssToolTip}"/>
                                     </WrapPanel>
                                     <TextBox x:Name="cur_stylesheet_tb" FontFamily="Consolas"  Margin="0,10,0,0" Height="24" Padding="5,0,0,0" VerticalContentAlignment="Center"/>
                                 </DockPanel>
-                                <CheckBox x:Name="loadtooltipex_cb" Content="Add Tool Debug Info toTooltips e.g. Class and Assembly Names" IsChecked="False" IsEnabled="True"/>
+                                <CheckBox x:Name="loadtooltipex_cb" Content="{DynamicResource UI-UX.AddToolDebug}" IsChecked="False" IsEnabled="True"/>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Custom Extension Directories" IsExpanded="True" Margin="10px">
+                <Expander Header="{DynamicResource Extensions.Title}" IsExpanded="True" Margin="10px">
                     <StackPanel Margin="10px">
-                        <TextBlock TextWrapping="WrapWithOverflow">
-                            pyRevit can search in custom folders for extensions.
-                            You can setup your custom extensions in any directory and add the directory address here.
-                            pyRevit searches these folders on startup and loads the extensions. This helps to decouple the
-                            custom extensions from pyRevit's default extension folder so you can upgrade/remove pyRevit without
-                            worrying about your own extension folders.
-                        </TextBlock>
-                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,10,0,0">
-                            Reload is required for changes to take effect.
-                        </TextBlock>
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Extensions.Description}"/>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,10,0,0" Text="{DynamicResource Extensions.Info}"/>
                         <DockPanel HorizontalAlignment="Stretch" Margin="0,10,0,0" Height="120px">
                             <StackPanel MinWidth="120px" MaxWidth="200px" DockPanel.Dock="Right">
-                                <Button Content="Add folder" Click="addfolder" Margin="0,0,0,5" Height="24"/>
-                                <Button Content="Remove Selected" Click="removefolder" Margin="0,0,0,5" Height="24"/>
-                                <Button Content="Remove All" Click="removeallfolders" Margin="0,0,0,5" Height="24"/>
-                                <Button Content="Reveal in Explorer" Click="openextfolder" Margin="0,0,0,5" Height="24"/>
+                                <Button Content="{DynamicResource Extensions.Button.Add}" Click="addfolder" Margin="0,0,0,5" Height="24"/>
+                                <Button Content="{DynamicResource Extensions.Button.Remove}" Click="removefolder" Margin="0,0,0,5" Height="24"/>
+                                <Button Content="{DynamicResource Extensions.Button.RemoveAll}" Click="removeallfolders" Margin="0,0,0,5" Height="24"/>
+                                <Button Content="{DynamicResource Extensions.Button.Reveal}" Click="openextfolder" Margin="0,0,0,5" Height="24"/>
                             </StackPanel>
                             <ListBox x:Name="extfolders_lb" Margin="0,0,10,0" FontFamily="Consolas">
                             </ListBox>
                         </DockPanel>
                     </StackPanel>
                 </Expander>
-                <!-- <GroupBox Header="Import / Export Settings:" Margin="10px">
+                <!-- <GroupBox Header="{DynamicResource Settings.Title}" Margin="10px">
                     <StackPanel>
-                        <Button Content="Import Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,0"/>
-                        <Button Content="Export Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,5,10,10"/>
+                        <Button Content="{DynamicResource Settings.Import}" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,0"/>
+                        <Button Content="{DynamicResource Settings.Export}" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,5,10,10"/>
                     </StackPanel>
                 </GroupBox> -->
             </StackPanel>
