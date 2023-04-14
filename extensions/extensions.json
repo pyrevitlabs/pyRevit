@@ -149,7 +149,7 @@
             },
             "dependencies": []
         },
-                {
+        {
             "builtin": "False",
             "type": "extension",
             "rocket_mode_compatible": "True",
