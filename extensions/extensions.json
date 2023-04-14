@@ -148,6 +148,19 @@
                 "author": "Kyle Bruxvoort"
             },
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pyArchitect",
+            "description": "pyRevit extension for Architectural and Interior design",
+            "author": "Roman Golev",
+            "author_profile": "https://github.com/romangolev",
+            "url": "https://github.com/romangolev/pyArchitect.git",
+            "website": "https://github.com/romangolev/pyArchitect",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
