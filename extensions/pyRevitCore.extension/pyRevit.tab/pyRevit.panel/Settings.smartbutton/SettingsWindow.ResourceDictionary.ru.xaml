@@ -200,13 +200,16 @@
     </system:String>
 
     <system:String x:Key="Telemetry.Application.ToggleAll">Переключить все</system:String>
+    <system:Double x:Key="Telemetry.Application.ToggleAll.Width">120</system:Double>
 
     <system:String x:Key="Telemetry.JsonFile">Текущий JSON-файл телеметрии:</system:String>
     <system:String x:Key="Telemetry.JsonFile.Button">Открыть папку</system:String>
+    <system:Double x:Key="Telemetry.JsonFile.Button.Width">110</system:Double>
     <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">Открывает текущую папку телеметрии</system:String>
     <system:String x:Key="Telemetry.DataFolder">Папка данных скрипта телеметрии (например C:\pyRevitTelemetry):</system:String>
     <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">Выбирает папку скриптов телеметрии</system:String>
     <system:String x:Key="Telemetry.Reset.Button">Сброс</system:String>
+    <system:Double x:Key="Telemetry.Reset.Button.Width">78</system:Double>
     <system:String x:Key="Telemetry.Reset.Button.ToolTip">Сбрасывает папку телеметрии в значение по умолчанию</system:String>
     <system:String x:Key="Telemetry.Events">Выберите события телеметрии приложений</system:String>
 
@@ -232,8 +235,12 @@
     <system:String x:Key="UI-UX.ColoringStyle">Стиль раскраски</system:String>
     <system:String x:Key="UI-UX.ColorizeOpenDocuments">Раскрасить открытые документы</system:String>
     <system:String x:Key="UI-UX.KeepOpenTabs">Сортировка вкладок по документам</system:String>
-    <system:String x:Key="UI-UX.ProjectTabStyle">Стиль вкладки «Проект»</system:String>
-    <system:String x:Key="UI-UX.FamilyTabStyle">Стиль вкладки «Семейство»</system:String>
+
+    <system:String x:Key="UI-UX.ProjectTabStyle">Стиль «Проект»</system:String>
+    <system:Double x:Key="UI-UX.ProjectTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.FamilyTabStyle">Стиль «Семейство»</system:String>
+    <system:Double x:Key="UI-UX.FamilyTabStyle.Width">115</system:Double>
 
     <system:String x:Key="UI-UX.ProjectSample1">Проект 1</system:String>
     <system:String x:Key="UI-UX.ProjectSample2">Проект 2</system:String>
@@ -255,9 +262,19 @@
     </system:String>
 
     <system:String x:Key="UI-UX.ColoringTheme.Reset">Сбросить</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width">75</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width2">165</GridLength>
+
     <system:String x:Key="UI-UX.ColoringTheme.ByOrder">По порядку</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByOrder.Width">65</system:Double>
+
     <system:String x:Key="UI-UX.ColoringTheme.ByFilter">По фильтру</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByFilter.Width">65</system:Double>
+
     <system:String x:Key="UI-UX.ColoringTheme.FilterRegex">По фильтру (Regex)</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width">130</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width2">110</GridLength>
+
     <system:String x:Key="UI-UX.ColoringTheme.Parallax">
         Слава "Parallax Team" за "Parallax Tabbed Views"
     </system:String>
@@ -265,6 +282,8 @@
     <system:String x:Key="UI-UX.OutputWindow">Окно вывода</system:String>
     <system:String x:Key="UI-UX.OutputStyling">Стиль вывода (CSS Stylesheet)</system:String>
     <system:String x:Key="UI-UX.PickCssToolTip">Выберите файл CSS, чтобы переопределить значение по умолчанию.</system:String>
+    <system:String x:Key="UI-UX.ResetCss">Сбросить</system:String>
+    <system:Double x:Key="UI-UX.ResetCss.Width">75</system:Double>
     <system:String x:Key="UI-UX.ResetCssToolTip">Сбросить стили CSS.</system:String>
     <system:String x:Key="UI-UX.AddToolDebug">Добавить отладочную информацию для всплывающих подсказок например: имена класса и сборки</system:String>
 

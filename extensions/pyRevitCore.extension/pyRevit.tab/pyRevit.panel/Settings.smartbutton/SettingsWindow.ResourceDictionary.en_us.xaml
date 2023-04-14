@@ -200,13 +200,16 @@
     </system:String>
 
     <system:String x:Key="Telemetry.Application.ToggleAll">Toggle All</system:String>
+    <system:Double x:Key="Telemetry.Application.ToggleAll.Width">80</system:Double>
 
     <system:String x:Key="Telemetry.JsonFile">Current Telemetry JSON File:</system:String>
     <system:String x:Key="Telemetry.JsonFile.Button">Open Folder</system:String>
+    <system:Double x:Key="Telemetry.JsonFile.Button.Width">90</system:Double>
     <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">Open the current telemetry folder</system:String>
     <system:String x:Key="Telemetry.DataFolder">Script Telemetry Data Folder (e.g. C:\pyRevitTelemetry):</system:String>
     <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">Pick a folder for telemetry</system:String>
     <system:String x:Key="Telemetry.Reset.Button">Reset</system:String>
+    <system:Double x:Key="Telemetry.Reset.Button.Width">48</system:Double>
     <system:String x:Key="Telemetry.Reset.Button.ToolTip">Reset telemetry folder back to default</system:String>
     <system:String x:Key="Telemetry.Events">Select Active Application Telemetry Events</system:String>
 
@@ -231,8 +234,12 @@
     <system:String x:Key="UI-UX.ColoringStyle">Coloring Style</system:String>
     <system:String x:Key="UI-UX.ColorizeOpenDocuments">Colorize Open Documents</system:String>
     <system:String x:Key="UI-UX.KeepOpenTabs">Keep Open Tabs Sorted By Document</system:String>
+
     <system:String x:Key="UI-UX.ProjectTabStyle">Project Tab Style</system:String>
+    <system:Double x:Key="UI-UX.ProjectTabStyle.Width">100</system:Double>
+
     <system:String x:Key="UI-UX.FamilyTabStyle">Family Tab Style</system:String>
+    <system:Double x:Key="UI-UX.FamilyTabStyle.Width">100</system:Double>
 
     <system:String x:Key="UI-UX.ProjectSample1">Project 1</system:String>
     <system:String x:Key="UI-UX.ProjectSample2">Project 2</system:String>
@@ -253,9 +260,19 @@
     </system:String>
 
     <system:String x:Key="UI-UX.ColoringTheme.Reset">Reset</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width">50</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width2">190</GridLength>
+
     <system:String x:Key="UI-UX.ColoringTheme.ByOrder">By Order</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByOrder.Width">55</system:Double>
+
     <system:String x:Key="UI-UX.ColoringTheme.ByFilter">By Filter</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByFilter.Width">55</system:Double>
+
     <system:String x:Key="UI-UX.ColoringTheme.FilterRegex">Filter (Regex)</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width">80</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width2">160</GridLength>
+
     <system:String x:Key="UI-UX.ColoringTheme.Parallax">
         Kudos to Parallax Team for "Parallax Tabbed Views"
     </system:String>
@@ -263,6 +280,8 @@
     <system:String x:Key="UI-UX.OutputWindow">Output Window</system:String>
     <system:String x:Key="UI-UX.OutputStyling">Output Styling (CSS Stylesheet)</system:String>
     <system:String x:Key="UI-UX.PickCssToolTip">Pick a CSS style sheet to override the default.</system:String>
+    <system:String x:Key="UI-UX.ResetCss">Reset</system:String>
+    <system:Double x:Key="UI-UX.ResetCss.Width">50</system:Double>
     <system:String x:Key="UI-UX.ResetCssToolTip">Reset CSS style sheet back to default.</system:String>
     <system:String x:Key="UI-UX.AddToolDebug">Add Tool Debug Info toTooltips e.g. Class and Assembly Names</system:String>
 

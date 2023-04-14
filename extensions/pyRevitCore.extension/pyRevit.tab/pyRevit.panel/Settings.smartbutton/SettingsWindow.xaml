@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="{DynamicResource Title}"
-        Height="800" Width="700" MinWidth="600" MinHeight="700"
+        Height="800" Width="710" MinWidth="600" MinHeight="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
@@ -399,7 +399,7 @@
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
                                 <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Text="{DynamicResource Telemetry.JsonFile}"/>
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
-                                    <Button Content="{DynamicResource Telemetry.JsonFile.Button}" Width="90" Margin="6,0,0,0" Height="24"
+                                    <Button Content="{DynamicResource Telemetry.JsonFile.Button}" Width="{DynamicResource Telemetry.JsonFile.Button.Width}" Margin="6,0,0,0" Height="24"
                                             Click="open_telemetry_folder" ToolTip="{DynamicResource Telemetry.JsonFile.Button.ToolTip}"/>
                                 </WrapPanel>
                                 <TextBox x:Name="cur_telemetryfile_tb" FontFamily="Consolas" IsReadOnly="True"
@@ -412,7 +412,7 @@
                                     <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                                             Width="48" Height="24" Margin="6,0,3,0" Padding="0,0,0,2"
                                             Click="pick_telemetry_folder" ToolTip="{DynamicResource Telemetry.DataFolder.Button.ToolTip}"/>
-                                    <Button Content="{DynamicResource Telemetry.Reset.Button}" Width="48" Height="24" Margin="3,0,0,0" Click="reset_telemetry_folder" ToolTip="{DynamicResource Telemetry.Reset.Button.ToolTip}"/>
+                                    <Button Content="{DynamicResource Telemetry.Reset.Button}" Width="{DynamicResource Telemetry.Reset.Button.Width}" Height="24" Margin="3,0,0,0" Click="reset_telemetry_folder" ToolTip="{DynamicResource Telemetry.Reset.Button.ToolTip}"/>
                                 </WrapPanel>
                                 <TextBox x:Name="telemetryfile_tb" FontFamily="Consolas"
                                          Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
@@ -436,7 +436,7 @@
                             </DockPanel>
                             <StackPanel x:Name="event_telemetry_sp" Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
                                 <DockPanel>
-                                    <Button DockPanel.Dock="Right" Content="{DynamicResource Telemetry.Application.ToggleAll}" Width="80" Height="25" Click="toggle_event_cbs" ></Button>
+                                    <Button DockPanel.Dock="Right" Content="{DynamicResource Telemetry.Application.ToggleAll}" Width="{DynamicResource Telemetry.Application.ToggleAll.Width}" Height="25" Click="toggle_event_cbs" ></Button>
                                     <TextBlock VerticalAlignment="Center" FontWeight="Medium" Text="{DynamicResource Telemetry.Events}"/>
                                 </DockPanel>
                             </StackPanel>
@@ -509,11 +509,11 @@
                                             <RowDefinition />
                                         </Grid.RowDefinitions>
                                         <DockPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0">
-                                            <Label Content="{DynamicResource UI-UX.ProjectTabStyle}" Width="100" Padding="0,4" FontWeight="Medium"/>
+                                            <Label Content="{DynamicResource UI-UX.ProjectTabStyle}" Width="{DynamicResource UI-UX.ProjectTabStyle.Width}" Padding="0,4" FontWeight="Medium"/>
                                             <ComboBox x:Name="project_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
                                         </DockPanel>
                                         <DockPanel Grid.Column="3" Grid.ColumnSpan="2" Grid.Row="0">
-                                            <Label Content="{DynamicResource UI-UX.FamilyTabStyle}" Width="100" Padding="0,4" FontWeight="Medium"/>
+                                            <Label Content="{DynamicResource UI-UX.FamilyTabStyle}" Width="{DynamicResource UI-UX.FamilyTabStyle.Width}" Padding="0,4" FontWeight="Medium"/>
                                             <ComboBox x:Name="family_tabstyle_cb" SelectionChanged="tabstyling_changed" DisplayMemberPath="Name"/>
                                         </DockPanel>
                                         <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" BorderThickness="1,1,1,0" BorderBrush="LightGray" Height="10" Margin="0,5,0,5"/>
@@ -538,14 +538,14 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="26" />
                                                 <ColumnDefinition Width="31" />
-                                                <ColumnDefinition Width="50" />
-                                                <ColumnDefinition Width="190" />
+                                                <ColumnDefinition Width="{DynamicResource UI-UX.ColoringTheme.Reset.Width}" />
+                                                <ColumnDefinition Width="{DynamicResource UI-UX.ColoringTheme.Reset.Width2}" />
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Width="26" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_ordercolor" />
                                             <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_ordercolor" />
                                             <Button Grid.Column="2" Margin="5,0,0,0" Content="{DynamicResource UI-UX.ColoringTheme.Reset}" Padding="0,-3,0,0" Background="White" BorderBrush="DarkGray" Click="reset_ordercolors" />
                                         </Grid>
-                                        <TextBlock DockPanel.Dock="Left" Text="{DynamicResource UI-UX.ColoringTheme.ByOrder}" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                        <TextBlock DockPanel.Dock="Left" Text="{DynamicResource UI-UX.ColoringTheme.ByOrder}" VerticalAlignment="Center" Margin="0,0,10,0" Width="{DynamicResource UI-UX.ColoringTheme.ByOrder.Width}" />
                                         <ListView x:Name="doc_ordercolor_lb"
                                                   MinHeight="26" Background="Transparent"
                                                   ItemsPanel="{StaticResource swatchPanel}"
@@ -559,8 +559,8 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="26" />
                                                 <ColumnDefinition Width="31" />
-                                                <ColumnDefinition Width="80" />
-                                                <ColumnDefinition Width="160" />
+                                                <ColumnDefinition Width="{DynamicResource UI-UX.ColoringTheme.FilterRegex.Width}" />
+                                                <ColumnDefinition Width="{DynamicResource UI-UX.ColoringTheme.FilterRegex.Width2}" />
                                             </Grid.ColumnDefinitions>
                                             <Button Grid.Column="0" Width="26" Margin="0,0,0,0" Content="+" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="add_filtercolor" />
                                             <Button Grid.Column="1" Width="26" Margin="5,0,0,0" Content="-" Padding="0,-3,0,0" FontSize="14" Background="White" BorderBrush="DarkGray" Click="remove_filtercolor" />
@@ -568,7 +568,7 @@
                                             <TextBox x:Name="filtercolor_filter_tb" TextChanged="filtercolor_filter_changed" Grid.Column="3" Margin="5,0,0,0" MinHeight="26" VerticalContentAlignment="Center"/>
                                             <Ellipse x:Name="filtercolor_filter_warn" Visibility="Hidden" ToolTip="Bad Regex" Grid.Column="3" Fill="Red" Width="8" Height="8" HorizontalAlignment="Right" Margin="0,0,8,0" />
                                         </Grid>
-                                        <TextBlock DockPanel.Dock="Left" Text="{DynamicResource UI-UX.ColoringTheme.ByFilter}" VerticalAlignment="Center" Margin="0,0,10,0" Width="55" />
+                                        <TextBlock DockPanel.Dock="Left" Text="{DynamicResource UI-UX.ColoringTheme.ByFilter}" VerticalAlignment="Center" Margin="0,0,10,0" Width="{DynamicResource UI-UX.ColoringTheme.ByFilter.Width}" />
                                         <ListView x:Name="doc_filtercolor_lb"
                                                   MinHeight="26" Background="Transparent"
                                                   ItemsPanel="{StaticResource swatchPanel}"
@@ -591,7 +591,7 @@
                                     <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Text="{DynamicResource UI-UX.OutputStyling}"/>
                                     <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
                                         <Button Content="&#x25CF;&#x25CF;&#x25CF;" Width="48" Margin="6,0,3,0" Height="24" Padding="0,0,0,2" Click="pick_stylesheet" ToolTip="{DynamicResource UI-UX.PickCssToolTip}"/>
-                                        <Button Content="Reset" Width="48" Margin="3,0,0,0" Height="24" Click="reset_stylesheet" ToolTip="{DynamicResource UI-UX.ResetCssToolTip}"/>
+                                        <Button Content="{DynamicResource UI-UX.ResetCss}" Width="{DynamicResource UI-UX.ResetCss.Width}" Margin="3,0,0,0" Height="24" Click="reset_stylesheet" ToolTip="{DynamicResource UI-UX.ResetCssToolTip}"/>
                                     </WrapPanel>
                                     <TextBox x:Name="cur_stylesheet_tb" FontFamily="Consolas"  Margin="0,10,0,0" Height="24" Padding="5,0,0,0" VerticalContentAlignment="Center"/>
                                 </DockPanel>
@@ -606,7 +606,7 @@
                         <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Extensions.Description}"/>
                         <TextBlock TextWrapping="WrapWithOverflow" Margin="0,10,0,0" Text="{DynamicResource Extensions.Info}"/>
                         <DockPanel HorizontalAlignment="Stretch" Margin="0,10,0,0" Height="120px">
-                            <StackPanel MinWidth="120px" MaxWidth="200px" DockPanel.Dock="Right">
+                            <StackPanel MinWidth="120px" MaxWidth="220px" Width="150" DockPanel.Dock="Right">
                                 <Button Content="{DynamicResource Extensions.Button.Add}" Click="addfolder" Margin="0,0,0,5" Height="24"/>
                                 <Button Content="{DynamicResource Extensions.Button.Remove}" Click="removefolder" Margin="0,0,0,5" Height="24"/>
                                 <Button Content="{DynamicResource Extensions.Button.RemoveAll}" Click="removeallfolders" Margin="0,0,0,5" Height="24"/>
