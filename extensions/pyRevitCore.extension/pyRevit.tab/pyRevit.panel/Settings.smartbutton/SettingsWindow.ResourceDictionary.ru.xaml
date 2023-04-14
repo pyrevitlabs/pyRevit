@@ -203,7 +203,11 @@
 
     <system:String x:Key="Telemetry.JsonFile">Текущий JSON-файл телеметрии:</system:String>
     <system:String x:Key="Telemetry.JsonFile.Button">Открыть папку</system:String>
+    <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">Открывает текущую папку телеметрии</system:String>
     <system:String x:Key="Telemetry.DataFolder">Папка данных скрипта телеметрии (например C:\pyRevitTelemetry):</system:String>
+    <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">Выбирает папку скриптов телеметрии</system:String>
+    <system:String x:Key="Telemetry.Reset.Button">Сброс</system:String>
+    <system:String x:Key="Telemetry.Reset.Button.ToolTip">Сбрасывает папку телеметрии в значение по умолчанию</system:String>
     <system:String x:Key="Telemetry.Events">Выберите события телеметрии приложений</system:String>
 
     <system:String x:Key="SupportedRevitVersions.Title">Поддерживаемые версии Revit</system:String>
@@ -327,7 +331,7 @@
     </system:String>
 
     <system:String x:Key="Routes.RestChanged">
-        Параметр pyRevit Core REST API изменился.
+        Настройки pyRevit Core REST API изменились.
         Требуется перезапуск pyRevit, чтобы это изменение вступило в силу.
         Вы хотите перезагрузить сейчас?
     </system:String>

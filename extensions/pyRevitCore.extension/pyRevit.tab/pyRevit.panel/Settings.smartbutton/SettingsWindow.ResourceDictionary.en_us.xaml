@@ -203,7 +203,11 @@
 
     <system:String x:Key="Telemetry.JsonFile">Current Telemetry JSON File:</system:String>
     <system:String x:Key="Telemetry.JsonFile.Button">Open Folder</system:String>
+    <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">Open the current telemetry folder</system:String>
     <system:String x:Key="Telemetry.DataFolder">Script Telemetry Data Folder (e.g. C:\pyRevitTelemetry):</system:String>
+    <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">Pick a folder for telemetry</system:String>
+    <system:String x:Key="Telemetry.Reset.Button">Reset</system:String>
+    <system:String x:Key="Telemetry.Reset.Button.ToolTip">Reset telemetry folder back to default</system:String>
     <system:String x:Key="Telemetry.Events">Select Active Application Telemetry Events</system:String>
 
     <system:String x:Key="SupportedRevitVersions.Title">Supported Revit Versions</system:String>
