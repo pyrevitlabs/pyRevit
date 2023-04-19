@@ -2825,13 +2825,13 @@ def pick_folder(title=None, owner=None):
             return fb_dlg.SelectedPath
 
 
-def result_item_ResultClicked(sender, e, debug=False):
+def result_item_result_clicked(sender, e, debug=False):
     if debug: 
         print("Result clicked") # using print_md here will break the script
     pass
 
 
-def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=False, timestamp = None, click_result = result_item_ResultClicked):
+def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=False, timestamp = None, click_result = result_item_result_clicked):
     r"""Show ballon in the info center section
 
     Args:
