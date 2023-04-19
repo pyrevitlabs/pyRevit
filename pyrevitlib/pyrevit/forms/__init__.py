@@ -2825,8 +2825,9 @@ def pick_folder(title=None, owner=None):
             return fb_dlg.SelectedPath
 
 
-def result_item_ResultClicked(sender, e):
-    # print("Result clicked") # using print_md here will break the script
+def result_item_ResultClicked(sender, e, debug=False):
+    if debug: 
+        print("Result clicked") # using print_md here will break the script
     pass
 
 
