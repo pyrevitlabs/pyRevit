@@ -45,6 +45,8 @@ from pyrevit.userconfig import user_config
 
 import pyevent #pylint: disable=import-error
 
+import Autodesk.Windows.ComponentManager #pylint: disable=import-error
+import Autodesk.Internal.InfoCenter #pylint: disable=import-error
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -2821,6 +2823,46 @@ def pick_folder(title=None, owner=None):
             fb_dlg.Description = title
         if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
             return fb_dlg.SelectedPath
+
+
+def result_item_ResultClicked(sender, e):
+    # print("Result clicked") # using print_md here will break the script
+    pass
+
+
+def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=False, timestamp = None, click_result = result_item_ResultClicked):
+    r"""Show ballon in the info center section
+
+    Args:
+        header (str): Category section (Bold)
+        text (str): Title section (Regular)
+        tooltip (str): Tooltip
+        is_favourite (bool): Add a blue star before header
+        is_new (bool): Flag to new
+        timestamp (str): Set timestamp
+        click_result (def): Executed after a click event
+
+    Returns:
+        sync_balloon: None
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.show_balloon("my header", "Lorem ipsum", tooltip='tooltip')
+        ... 
+    """
+    result_item = Autodesk.Internal.InfoCenter.ResultItem()
+    result_item.Category = header
+    result_item.Title = text
+    result_item.TooltipText = tooltip
+    result_item.Group = group
+    result_item.IsFavorite = is_favourite
+    result_item.IsNew = is_new
+    if timestamp:
+        result_item.Timestamp = timestamp
+    result_item.ResultClicked += click_result
+    sync_balloon = Autodesk.Windows.ComponentManager.InfoCenterPaletteManager.ShowBalloon(
+        result_item)
+    return sync_balloon
 
 
 def pick_file(file_ext='*', files_filter='', init_dir='',
