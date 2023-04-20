@@ -2848,8 +2848,8 @@ def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=
 
     Example:
         >>> from pyrevit import forms
-        >>> forms.show_balloon("my header", "Lorem ipsum", tooltip='tooltip')
-        ... 
+        >>> forms.show_balloon("my header", "Lorem ipsum", tooltip='tooltip', group='group', is_favourite=True, is_new=True, timestamp = '2019-01-01 00:00:00', click_result = forms.result_item_result_clicked)
+        ...
     """
     result_item = Autodesk.Internal.InfoCenter.ResultItem()
     result_item.Category = header
