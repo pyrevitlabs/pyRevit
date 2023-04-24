@@ -9,7 +9,7 @@ view_templates = [v for v in DB.FilteredElementCollector(
     doc).OfClass(DB.View).ToElements() if v.IsTemplate]
 
 selected_view_templates = forms.SelectFromList.show(
-    view_templates, button_name='Select Template', multiselect=True, name_attr='Name')
+    sorted(view_templates, key=lambda template: template.Name), button_name='Select Template', multiselect=True, name_attr='Name')
 
 params_dict = {}
 if selected_view_templates:
@@ -18,7 +18,7 @@ if selected_view_templates:
             if p.Definition.Name not in params_dict.keys():
                 params_dict[p.Definition.Name] = p
 
-    parameters_processed = forms.SelectFromList.show(params_dict.keys(), button_name='Select Parameters', multiselect=True)
+    parameters_processed = forms.SelectFromList.show(sorted(params_dict.keys()), button_name='Select Parameters', multiselect=True)
     if parameters_processed:
         selected_params = [params_dict[p] for p in parameters_processed]
         params_ids = [p.Id for p in selected_params]
