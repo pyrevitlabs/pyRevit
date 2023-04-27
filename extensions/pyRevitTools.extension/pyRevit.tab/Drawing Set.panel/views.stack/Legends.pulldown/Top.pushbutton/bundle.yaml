@@ -1,8 +1,10 @@
 title:
   fr_fr: Orienter le composant de légende sur la vue de Dessus
   en_us: Set Legend Component to Top orientation
+  ru: Установить вид сверху компоненту легенды
 tooltip: 
   fr_fr: Vue de Dessus du composant de légende !!! Tous les composants de la légende ne supportent pas n'importe quel type d'orientation de vue !!!
   en_us: Legend Component Top view !!! Not all legend components support any type of view orientation !!!
+  ru: Компонент легенды вид сверху !!! Не все компоненты легенды поддерживают все типы ориентации вида !!!
 author: Jean-Marc Couffin
 context: selection
