@@ -1,7 +1,9 @@
 title:
   fr_fr: Supprimer les familles sélectionnées
   en_us: Wipe Selected Families
+  ru: Очистить выделенные семейства
 
 tooltip:
   fr_fr: Supprime les familles sélectionnées
   en_us: Wipe families of selected instances
+  ru: Очищает выделенные экземпляры семейств
