@@ -21,7 +21,7 @@ if op.exists(data_file):
         filter_name = \
             'SavedSelection_' + coreutils.timestamp()
 
-    with open(data_file, 'r') as f:
+    with open(data_file, 'rb') as f:
         cursel = pl.load(f)
 
     with revit.Transaction('pySaveSelection'):
