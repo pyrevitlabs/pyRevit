@@ -17,7 +17,8 @@ parameters:
     <parameter-name>:
         type: <Autodesk.Revit.DB.ParameterType> or
         <Autodesk.Revit.DB.ParameterTypeId Members> (2022+)
-        group: <Autodesk.Revit.DB.BuiltInParameterGroup>  or
+        
+        : <Autodesk.Revit.DB.BuiltInParameterGroup>  or
         <Autodesk.Revit.DB.GroupTypeId Members> (2022+)
         instance: <true|false>
         reporting: <true|false>
@@ -390,6 +391,7 @@ def ensure_params(fconfig):
         # going through the parameters in the yaml file
         # and ensure all defined parameters exist
         for pname, popts in param_cfgs.items():
+            print(popts)
             if pname and popts:
                 # extract param config from dict
                 pcfg = get_param_config(pname, popts)
@@ -520,10 +522,8 @@ if __name__ == '__main__':
                 ctype = family_mgr.CurrentType
                 if not ctype:
                     ctype = family_mgr.NewType(TEMP_TYPENAME)
-
                 ensure_params(family_configs)
                 ensure_types(family_configs)
-
                 # Restore current type
                 if ctype.Name != TEMP_TYPENAME:
                     family_mgr.CurrentType = ctype

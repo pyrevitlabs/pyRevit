@@ -237,7 +237,7 @@ def read_configs(selected_fparam_names,
         if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             fparam_type = sparam.fparam.Definition.GetDataType()
             fparam_type_str = fparam_type.TypeId
-            fparam_group = sparam.fparam.Definition.GetGroupTypeId()
+            fparam_group = sparam.fparam.Definition.GetGroupTypeId().TypeId
         else:
             fparam_type = sparam.fparam.Definition.ParameterType
             fparam_type_str = str(fparam_type)
