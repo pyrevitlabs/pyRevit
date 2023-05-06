@@ -9,30 +9,30 @@ by the presence of their GUID.
 The structure of this config file is as shown below:
 
 parameters:
-	<parameter-name>:
-		type: <Autodesk.Revit.DB.ParameterType>
-		category: <Autodesk.Revit.DB.BuiltInParameterGroup>
-		instance: <true|false>
-		reporting: <true|false>
-		formula: <str>
-		default: <str>
+    <parameter-name>:
+        type: <Autodesk.Revit.DB.ParameterType> or <Autodesk.Revit.DB.ParameterTypeId Members> (2022+)
+        group: <Autodesk.Revit.DB.BuiltInParameterGroup>  or <Autodesk.Revit.DB.GroupTypeId Members> (2022+)
+        instance: <true|false>
+        reporting: <true|false>
+        formula: <str>
+        default: <str>
 types:
-	<type-name>:
-		<parameter-name>: <value>
-		<parameter-name>: <value>
-		...
+    <type-name>:
+        <parameter-name>: <value>
+        <parameter-name>: <value>
+        ...
 
 
 Example:
 
 parameters:
-	Shelf Height (Upper):
-		type: Length
-		category: PG_GEOMETRY
-		instance: false
+    Shelf Height (Upper):
+        type: Length
+        group: PG_GEOMETRY or Geometry (2022+)
+        instance: false
 types:
-	24D"x36H":
-		Shelf Height (Upper): 3'-0"
+    24D"x36H":
+        Shelf Height (Upper): 3'-0"
 
 Note: If a parameter is in the revit file and the yaml file,
 but shared in one and family in the other, after import,
@@ -40,8 +40,7 @@ the parameter won't change. So if it was shared in the revit file,
 but family in the yaml file, it will remain shared.
 """
 # pylint: disable=import-error,invalid-name,broad-except
-# TODO: export parameter ordering
-import codecs
+# FIXME export parameter ordering
 
 from pyrevit import HOST_APP
 from pyrevit import revit, DB
@@ -114,7 +113,7 @@ def get_param_typevalue(ftype, fparam):
         # support various types of params that reference other elements
         # these values can not be stored by their id since the same symbol
         # will most probably have a different id in another document
-        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+        if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             if DB.Category.IsBuiltInCategory(fparam.Definition.GetDataType()):
                 # storing type references by their name
                 fparam_value = get_symbol_name(ftype.AsElementId(fparam))
@@ -135,7 +134,7 @@ def get_param_typevalue(ftype, fparam):
         fparam_value = ftype.AsString(fparam)
 
     elif fparam.StorageType == DB.StorageType.Integer:
-        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+        if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             if DB.SpecTypeId.Boolean.YesNo == fparam.Definition.GetDataType():
                 fparam_value = \
                     'true' if ftype.AsInteger(fparam) == 1 else 'false'
@@ -221,7 +220,7 @@ def read_configs(selected_fparam_names,
         fparam_isreport = sparam.fparam.IsReporting
         fparam_formula = sparam.fparam.Formula
         fparam_shared = sparam.fparam.IsShared
-        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+        if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             fparam_type = sparam.fparam.Definition.GetDataType()
             fparam_type_str = fparam_type.TypeId
             fparam_group = sparam.fparam.Definition.GetGroupTypeId().TypeId
@@ -244,7 +243,7 @@ def read_configs(selected_fparam_names,
                 sparam.fparam.GUID
 
         # get the family category if param is FamilyType selector
-        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+        if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             if 'autodesk.revit.category.family' in fparam_type.TypeId:
                 cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
                     get_famtype_famcat(sparam.fparam)
