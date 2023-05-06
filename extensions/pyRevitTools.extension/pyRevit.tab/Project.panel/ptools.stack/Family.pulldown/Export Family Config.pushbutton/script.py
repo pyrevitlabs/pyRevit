@@ -237,7 +237,7 @@ def read_configs(selected_fparam_names,
         if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             fparam_type = sparam.fparam.Definition.GetDataType()
             fparam_type_str = fparam_type.TypeId
-            fparam_group = sparam.fparam.Definition.GetGroupTypeId().TypeId
+            fparam_group = sparam.fparam.Definition.GetGroupTypeId()
         else:
             fparam_type = sparam.fparam.Definition.ParameterType
             fparam_type_str = str(fparam_type)
@@ -321,8 +321,7 @@ def store_sharedparam_def(shared_params):
         try:
             exported_sparams_grp.Definitions.Create(sparamdef_create_options)
         except Exceptions.ArgumentException:
-            forms.alert("A parameter with the same GUID already exists.\nParameter: {} will be ignored.".format(
-                sparam.Definition.Name))
+            forms.alert("A parameter with the same GUID already exists.\nParameter: {} will be ignored.".format(sparam.Definition.Name))
 
 
 def get_shared_param_def_contents(shared_params):
@@ -335,7 +334,7 @@ def get_shared_param_def_contents(shared_params):
             file_id=coreutils.get_file_name(family_cfg_file),
             add_cmd_name=True
         )
-    # make sure the file exists and it is empty
+    # make sure the ParameterGroup file exists and it is empty
     open(temp_defs_filepath, 'wb').close()
     # swap existing shared param with temp
     existing_sharedparam_file = HOST_APP.app.SharedParametersFilename
