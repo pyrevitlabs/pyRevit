@@ -10,8 +10,10 @@ The structure of this config file is as shown below:
 
 parameters:
     <parameter-name>:
-        type: <Autodesk.Revit.DB.ParameterType> or <Autodesk.Revit.DB.ParameterTypeId Members> (2022+)
-        group: <Autodesk.Revit.DB.BuiltInParameterGroup>  or <Autodesk.Revit.DB.GroupTypeId Members> (2022+)
+        type: <Autodesk.Revit.DB.ParameterType> or
+        <Autodesk.Revit.DB.ParameterTypeId Members> (2022+)
+        group: <Autodesk.Revit.DB.BuiltInParameterGroup>  or
+        <Autodesk.Revit.DB.GroupTypeId Members> (2022+)
         instance: <true|false>
         reporting: <true|false>
         formula: <str>
@@ -87,9 +89,11 @@ class SortableParam(object):
 
 
 def get_symbol_name(symbol_id):
-    # get family-symbol formatted name for export
-    # current implementation matches the repr to how Revit shows the value
-    # famil-name : symbol-name
+    '''
+    get family-symbol formatted name for export
+    current implementation matches the repr to how Revit shows the value
+    famil-name : symbol-name
+    '''
     for fsym in DB.FilteredElementCollector(revit.doc)\
                   .OfClass(DB.FamilySymbol)\
                   .ToElements():
@@ -101,14 +105,18 @@ def get_symbol_name(symbol_id):
 
 
 def get_load_class_name(load_class_id):
-    # load_class_id is an element id
+    '''
+    load_class_id is an element id
+    '''
     load_class = revit.doc.GetElement(load_class_id)
     return ELECTRICAL_LOAD_CLASS_FORMAT.format(load_class.Name)
 
 
 def get_param_typevalue(ftype, fparam):
+    '''
+    extract value by param type
+    '''
     fparam_value = None
-    # extract value by param type
     if fparam.StorageType == DB.StorageType.ElementId:
         # support various types of params that reference other elements
         # these values can not be stored by their id since the same symbol
@@ -151,9 +159,10 @@ def get_param_typevalue(ftype, fparam):
 
 
 def include_type_configs(cfgs_dict, sparams):
-    # add the parameter values for all types into the configs dict
+    '''
+    add the parameter values for all types into the configs dict
+    '''
     fm = revit.doc.FamilyManager
-
     # grab param values for each family type
     for ftype in fm.Types:
         # param value dict for this type
@@ -170,9 +179,10 @@ def include_type_configs(cfgs_dict, sparams):
 
 
 def add_default_values(cfgs_dict, sparams):
-    # add the parameter values for all types into the configs dict
+    '''
+    add the parameter values for all types into the configs dict
+    '''
     fm = revit.doc.FamilyManager
-
     # grab value from each param
     for sparam in sparams:
         fparam_name = sparam.fparam.Definition.Name
@@ -184,9 +194,11 @@ def add_default_values(cfgs_dict, sparams):
 
 
 def get_famtype_famcat(fparam):
-    # grab the family category from para with type DB.ParameterType.FamilyType
-    # these parameters point to a family and symbol but the Revit API
-    # does not provide info on what family categories they are assinged to
+    '''
+    Grab the family category from para with type DB.ParameterType.FamilyType
+    These parameters point to a family and symbol but the Revit API
+    Does not provide info on what family categories they are assinged to
+    '''
     fm = revit.doc.FamilyManager
     famtype = revit.doc.GetElement(fm.CurrentType.AsElementId(fparam))
     return famtype.Category.Name
@@ -194,7 +206,9 @@ def get_famtype_famcat(fparam):
 
 def read_configs(selected_fparam_names,
                  include_types=False, include_defaults=False):
-    # read parameter and type configurations into a dictionary
+    '''
+    read parameter and type configurations into a dictionary
+    '''
     cfgs_dict = dict({
         PARAM_SECTION_NAME: {},
         TYPES_SECTION_NAME: {},
@@ -245,11 +259,12 @@ def read_configs(selected_fparam_names,
         # get the family category if param is FamilyType selector
         if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             if 'autodesk.revit.category.family' in fparam_type.TypeId:
-                cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
-                    get_famtype_famcat(sparam.fparam)
+                cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] =\
+                 get_famtype_famcat(sparam.fparam)
         else:
             if fparam_type == DB.ParameterType.FamilyType:
-                cfgs_dict[PARAM_SECTION_NAME][fparam_name][PARAM_SECTION_CAT] = \
+                cfgs_dict[PARAM_SECTION_NAME][fparam_name]\
+                    [PARAM_SECTION_CAT] =\
                     get_famtype_famcat(sparam.fparam)
 
         # Check if the current family parameter is a shared parameter
@@ -267,12 +282,16 @@ def read_configs(selected_fparam_names,
 
 
 def get_config_file():
-    # Get parameter definition yaml file from user
+    '''
+    Get parameter definition yaml file from user
+    '''
     return forms.save_file(file_ext='yaml')
 
 
 def get_parameters():
-    # get list of parameters to be exported from user
+    '''
+    get list of parameters to be exported from user
+    '''
     fm = revit.doc.FamilyManager
     return forms.SelectFromList.show(
         [x.Definition.Name for x in fm.GetParameters()],
@@ -282,11 +301,13 @@ def get_parameters():
 
 
 def store_sharedparam_def(shared_params):
-    # Reads the shared parameters into a txt file
+    '''
+    Reads the shared parameters into a txt file
+    '''
     sparam_file = HOST_APP.app.OpenSharedParameterFile()
     exported_sparams_grp = sparam_file.Groups.Create("Exported Parameters")
     for sparam in shared_params:
-        if HOST_APP.is_newer_than(2022): # ParameterType deprecated in 2023
+        if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
             param_type = sparam.Definition.GetDataType()
         else:
             param_type = sparam.Definition.ParameterType
@@ -300,24 +321,22 @@ def store_sharedparam_def(shared_params):
         try:
             exported_sparams_grp.Definitions.Create(sparamdef_create_options)
         except Exceptions.ArgumentException:
-            forms.alert(
-                "A parameter with the same GUID already exists. "
-                "Parameter: %s will be ignored." % sparam.Definition.Name
-            )
+            forms.alert("A parameter with the same GUID already exists.\nParameter: {} will be ignored.".format(
+                sparam.Definition.Name))
 
 
 def get_shared_param_def_contents(shared_params):
+    '''
+    get a temporary text file to store the generated shared param data
+    '''
     global family_cfg_file
-
-    # get a temporary text file to store the generated shared param data
     temp_defs_filepath = \
         script.get_instance_data_file(
             file_id=coreutils.get_file_name(family_cfg_file),
             add_cmd_name=True
         )
     # make sure the file exists and it is empty
-    open(temp_defs_filepath, 'w').close()
-
+    open(temp_defs_filepath, 'wb').close()
     # swap existing shared param with temp
     existing_sharedparam_file = HOST_APP.app.SharedParametersFilename
     HOST_APP.app.SharedParametersFilename = temp_defs_filepath
@@ -330,7 +349,9 @@ def get_shared_param_def_contents(shared_params):
 
 
 def save_configs(configs_dict, param_file):
-    # Load contents of yaml file into an ordered dict
+    '''
+    Load contents of yaml file into an ordered dict
+    '''
     return yaml.dump_dict(configs_dict, param_file)
 
 
