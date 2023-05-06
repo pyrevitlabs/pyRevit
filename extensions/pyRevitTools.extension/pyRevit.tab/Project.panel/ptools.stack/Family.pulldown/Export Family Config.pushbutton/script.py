@@ -12,7 +12,7 @@ parameters:
     <parameter-name>:
         type: <Autodesk.Revit.DB.ParameterType> or
         <Autodesk.Revit.DB.ParameterTypeId Members> (2022+)
-        group: <Autodesk.Revit.DB.BuiltInParameterGroup>  or
+        group: <Autodesk.Revit.DB.BuiltInParameterGroup> or
         <Autodesk.Revit.DB.GroupTypeId Members> (2022+)
         instance: <true|false>
         reporting: <true|false>
