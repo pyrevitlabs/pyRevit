@@ -292,8 +292,12 @@ else:
         curve_collector = \
             revit.query.get_elements_by_class(DB.CurveElement,
                                             view_id=revit.active_view.Id)
-        overkill_curves(list(curve_collector),
-                        view_specific=view_spec,
-                        include_style=incl_style,
-                        room_sep_only=room_sep_only)
+        try:
+            overkill_curves(list(curve_collector),
+                            view_specific=view_spec,
+                            include_style=incl_style,
+                            room_sep_only=room_sep_only)
+        except Exception as e:
+            print('Exception: {}'.format(e))
+
 
