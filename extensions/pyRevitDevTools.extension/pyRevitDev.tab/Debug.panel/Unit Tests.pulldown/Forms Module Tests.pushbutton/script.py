@@ -47,7 +47,7 @@ print(
         is_favourite=True, 
         is_new=True, 
         timestamp = None, 
-        click_result = result_item_result_clicked(debug=True)
+        click_result = forms.result_item_result_clicked
     ))
 
 print(
