@@ -2826,12 +2826,12 @@ def pick_folder(title=None, owner=None):
 
 
 def result_item_result_clicked(sender, e, debug=False):
-    if debug: 
-        print("Result clicked") # using print_md here will break the script
+    if debug:
+        print("Result clicked")  # using print_md here will break the script
     pass
 
 
-def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=False, timestamp = None, click_result = result_item_result_clicked):
+def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=False, timestamp=None, click_result=result_item_result_clicked):
     r"""Show ballon in the info center section
 
     Args:
@@ -2844,11 +2844,13 @@ def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=
         click_result (def): Executed after a click event
 
     Returns:
-        sync_balloon: None
+        balloon: None
 
     Example:
         >>> from pyrevit import forms
-        >>> forms.show_balloon("my header", "Lorem ipsum", tooltip='tooltip', group='group', is_favourite=True, is_new=True, timestamp = '2019-01-01 00:00:00', click_result = forms.result_item_result_clicked)
+        >>> date = '2019-01-01 00:00:00'
+        >>> date = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+        >>> forms.show_balloon("my header", "Lorem ipsum", tooltip='tooltip',   group='group', is_favourite=True, is_new=True, timestamp = date, click_result = forms.result_item_result_clicked)
         ...
     """
     result_item = Autodesk.Internal.InfoCenter.ResultItem()
@@ -2861,9 +2863,9 @@ def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=
     if timestamp:
         result_item.Timestamp = timestamp
     result_item.ResultClicked += click_result
-    sync_balloon = Autodesk.Windows.ComponentManager.InfoCenterPaletteManager.ShowBalloon(
+    balloon = Autodesk.Windows.ComponentManager.InfoCenterPaletteManager.ShowBalloon(
         result_item)
-    return sync_balloon
+    return balloon
 
 
 def pick_file(file_ext='*', files_filter='', init_dir='',
