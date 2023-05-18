@@ -28,9 +28,12 @@ PARAM_VALUE_EVALUATORS = {
 
 # http://www.revitapidocs.com/2018.1/5da8e3c5-9b49-f942-02fc-7e7783fe8f00.htm
 class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
+    def __init__(self, overwriteParameterValues=True):
+        self._overwriteParameterValues = overwriteParameterValues
+
     def OnFamilyFound(self, familyInUse, overwriteParameterValues): #pylint: disable=W0613
         """A method called when the family was found in the target document."""
-        overwriteParameterValues.Value = True
+        overwriteParameterValues.Value = self._overwriteParameterValues
         return True
 
     def OnSharedFamilyFound(self,
@@ -39,7 +42,7 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
                             source, #pylint: disable=W0613
                             overwriteParameterValues): #pylint: disable=W0613
         source.Value = DB.FamilySource.Family
-        overwriteParameterValues.Value = True
+        overwriteParameterValues.Value = self._overwriteParameterValues
         return True
 
 
