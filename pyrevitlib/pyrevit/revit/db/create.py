@@ -30,6 +30,7 @@ PARAM_VALUE_EVALUATORS = {
 class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
     def OnFamilyFound(self, familyInUse, overwriteParameterValues): #pylint: disable=W0613
         """A method called when the family was found in the target document."""
+        overwriteParameterValues.Value = True
         return True
 
     def OnSharedFamilyFound(self,
@@ -37,8 +38,8 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
                             familyInUse, #pylint: disable=W0613
                             source, #pylint: disable=W0613
                             overwriteParameterValues): #pylint: disable=W0613
-        source = DB.FamilySource.Family
-        overwriteParameterValues = True
+        source.Value = DB.FamilySource.Family
+        overwriteParameterValues.Value = True
         return True
 
 
