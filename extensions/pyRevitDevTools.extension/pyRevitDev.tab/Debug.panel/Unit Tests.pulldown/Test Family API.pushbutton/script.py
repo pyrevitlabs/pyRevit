@@ -79,7 +79,9 @@ def _check_type_parameter_values(family_id):
     family_element = revit.doc.GetElement(family_id)
     for type_id in family_element.GetFamilySymbolIds():
         type_element = revit.doc.GetElement(type_id)
-        type_name = type_element.LookupParameter("Type Name").AsString()
+        type_name = type_element.get_Parameter(
+            DB.BuiltInParameter.ALL_MODEL_TYPE_NAME
+        ).AsString()
         if type_name == TEMP_FAMILY_NAME:
             continue
         if type_name not in TYPES_TO_ADD:
@@ -96,23 +98,58 @@ def test_family_api():
     _purge_family()
     family_template_path = HOST_APP.app.FamilyTemplatePath
     assert os.path.isdir(family_template_path)
+    LOG.info("Family Template Path: {0}".format(family_template_path))
     family_template = os.path.normpath(
         os.path.join(
             family_template_path,
             r"English-Imperial\Annotations\Generic Annotation.rft",
         )
     )
-    assert os.path.isfile(family_template)
+    if not os.path.isfile(family_template):
+        # Older Versions of Revit include the languge in the family template path.
+        family_template = os.path.normpath(
+            os.path.join(
+                family_template_path,
+                r"Annotations\Generic Annotation.rft",
+            )
+        )
+    if not os.path.isfile(family_template):
+        # We're not running on an English copy of Revit.
+        # Return the first template file we find.
+        for base, dirs, files in os.walk(family_template_path):
+            for f in files:
+                if os.path.splitext(f)[1].lower() == ".rft":
+                    family_template = os.path.normpath(os.path.join(base, f))
+                    break
+            if os.path.isfile(family_template):
+                break
+        else:
+            raise EnvironmentError(
+                "Failed to find an RFT file in the Family Template Path."
+            )
+    LOG.info("Using Family Template: {0}".format(os.path.basename(family_template)))
     family_doc = HOST_APP.app.NewFamilyDocument(family_template)
-    LOG.info("Created new family with Generic Annotation template.")
+    LOG.info(
+        "Created new family with {0} template.".format(
+            os.path.splitext(os.path.basename(family_template))[0]
+        )
+    )
     manager = family_doc.FamilyManager
     with Transaction("Add Project Parameter", doc=family_doc):
-        manager.AddParameter(
-            parameterName=TEST_PARAMETER_NAME,
-            groupTypeId=DB.GroupTypeId.General,
-            specTypeId=DB.SpecTypeId.Number,
-            isInstance=False,
-        )
+        if HOST_APP.is_newer_than(2021):
+            manager.AddParameter(
+                parameterName=TEST_PARAMETER_NAME,
+                groupTypeId=DB.GroupTypeId.General,
+                specTypeId=DB.SpecTypeId.Number,
+                isInstance=False,
+            )
+        else:
+            manager.AddParameter(
+                parameterName=TEST_PARAMETER_NAME,
+                parameterGroup=DB.BuiltInParameterGroup.PG_GENERAL,
+                parameterType=DB.ParameterType.Number,
+                isInstance=False,
+            )
     LOG.info("Added test type parameter to new family.")
     temporary_dir = tempfile.mkdtemp()
     family_path = os.path.normpath(
