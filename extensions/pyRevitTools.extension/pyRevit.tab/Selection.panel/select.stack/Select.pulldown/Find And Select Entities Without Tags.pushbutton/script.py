@@ -2,8 +2,9 @@
 #pylint: disable=import-error,invalid-name
 from collections import namedtuple
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, HOST_APP
 from pyrevit import forms
+from System.Collections.Generic import List
 
 
 Taggable = namedtuple('Taggable', ['tag_type', 'element_type'])
@@ -86,6 +87,14 @@ options = {
         tag_type=DB.BuiltInCategory.OST_FurnitureSystemTags,
         element_type=DB.BuiltInCategory.OST_FurnitureSystems
         ),
+    'Structural framing': Taggable(
+        tag_type=DB.BuiltInCategory.OST_StructuralFramingTags,
+        element_type=DB.BuiltInCategory.OST_StructuralFraming
+        ),
+    'Structural foundations': Taggable(
+        tag_type=DB.BuiltInCategory.OST_StructuralFoundationTags,
+        element_type=DB.BuiltInCategory.OST_StructuralFoundation
+        ),
 }
 
 selected_switch = \
@@ -167,9 +176,13 @@ if selected_switch:
         untagged_elements = []
         for eltid in target_tags:
             elt = revit.doc.GetElement(eltid)
-            if elt.TaggedLocalElementId != DB.ElementId.InvalidElementId:
-                tagged_elements.append(elt.TaggedLocalElementId.IntegerValue)
-
+            if HOST_APP.is_newer_than(2022, or_equal=True):
+                if elt.GetTaggedLocalElementIds() != DB.ElementId.InvalidElementId:
+                    tagged_elements.append(List[DB.ElementId](elt.GetTaggedLocalElementIds())[0].IntegerValue)
+            else:
+                if elt.TaggedLocalElementId != DB.ElementId.InvalidElementId:
+                    tagged_elements.append(elt.TaggedLocalElementId.IntegerValue)
+                    
         for elid in target_elements:
             el = revit.doc.GetElement(elid)
             if el.Id.IntegerValue not in tagged_elements:

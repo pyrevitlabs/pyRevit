@@ -1,6 +1,7 @@
 import os.path as op
 
 from pyrevit import HOST_APP, DOCS, PyRevitException
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit import db
@@ -113,3 +114,13 @@ def ensure_text_type(name,
         underline=underline,
         with_factor=with_factor,
         doc=doc)
+
+
+def revision_has_numbertype(revision):
+    none_numtype = coreutils.get_enum_none(DB.RevisionNumberType)
+    if HOST_APP.is_newer_than(2022):
+        numbering = revision.Document.GetElement(revision.RevisionNumberingSequenceId)
+        if numbering:
+            return numbering.NumberType != none_numtype 
+    else:
+        return revision.NumberType != none_numtype

@@ -1,0 +1,14 @@
+{
+    "builtin": "True",
+    "default_enabled": "False",
+    "type": "extension",
+    "rocket_mode_compatible": "True",
+    "name": "pyRevitBundlesCreatorExtension",
+    "description": "Button to create buttons and panels for pyRevit",
+    "author": "Jean-Marc Couffin",
+    "author_profile": "https://www.linkedin.com/in/jmcouffin/",
+    "url": "https://github.com/eirannejad/pyRevit.git",
+    "website": "http://eirannejad.github.io/pyRevit/",
+    "image": "",
+    "dependencies": []
+}

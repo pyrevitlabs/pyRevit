@@ -14,6 +14,7 @@ requests = "*"
 pygount = "*"
 pyyaml = ">=5.4"
 black = "*"
+setuptools = "==65.5.1"
 
 [requires]
 python_version = "3.10"

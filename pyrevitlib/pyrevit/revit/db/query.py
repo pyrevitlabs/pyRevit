@@ -9,7 +9,7 @@ from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import api
 from pyrevit import framework
 from pyrevit import compat
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import PY3, safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
@@ -83,7 +83,7 @@ def get_name(element, title_on_sheet=False):
                 element.Parameter[DB.BuiltInParameter.VIEW_DESCRIPTION]
             view_name = titleos_param.AsString()
 
-        # if view name could bot be extracted from title_on_sheet
+        # if view name could not be extracted from title_on_sheet
         if view_name:
             return view_name
         else:
@@ -94,7 +94,7 @@ def get_name(element, title_on_sheet=False):
 
     # have to use the imported Element otherwise
     # AttributeError occurs
-    if compat.PY3:
+    if PY3:
         return element.Name
     else:
         return Element.Name.__get__(element)
@@ -168,10 +168,15 @@ def get_biparam_stringequals_filter(bip_paramvalue_dict):
     for bip, fvalue in bip_paramvalue_dict.items():
         bip_id = DB.ElementId(bip)
         bip_valueprovider = DB.ParameterValueProvider(bip_id)
-        bip_valuerule = DB.FilterStringRule(bip_valueprovider,
-                                            DB.FilterStringEquals(),
-                                            fvalue,
-                                            True)
+        if HOST_APP.is_newer_than(2022):
+            bip_valuerule = DB.FilterStringRule(bip_valueprovider,
+                                                DB.FilterStringEquals(),
+                                                fvalue)
+        else:
+            bip_valuerule = DB.FilterStringRule(bip_valueprovider,
+                                                DB.FilterStringEquals(),
+                                                fvalue,
+                                                True)
         filters.append(bip_valuerule)
 
     if filters:
@@ -265,7 +270,10 @@ def get_elements_by_param_value(param_name, param_value,
     if param_id:
         pvprov = DB.ParameterValueProvider(param_id)
         pfilter = DB.FilterStringEquals()
-        vrule = DB.FilterStringRule(pvprov, pfilter, param_value, True)
+        if HOST_APP.is_newer_than(2022):
+            vrule = DB.FilterStringRule(pvprov, pfilter, param_value)
+        else:
+            vrule = DB.FilterStringRule(pvprov, pfilter, param_value, True)
         if inverse:
             vrule = DB.FilterInverseRule(vrule)
         param_filter = DB.ElementParameterFilter(vrule)
@@ -962,10 +970,14 @@ def get_connected_circuits(element, spare=False, space=False):
         circuit_types.append(DB.Electrical.CircuitType.Spare)
     if space:
         circuit_types.append(DB.Electrical.CircuitType.Space)
-
-    if element.MEPModel and element.MEPModel.ElectricalSystems:
-        return [x for x in element.MEPModel.ElectricalSystems
-                if x.CircuitType in circuit_types]
+    if HOST_APP.is_newer_than(2021, or_equal=True): # deprecation of ElectricalSystems in 2021
+        if element.MEPModel and element.MEPModel.GetElectricalSystems():
+            return [x for x in element.MEPModel.GetElectricalSystems()
+                    if x.CircuitType in circuit_types]
+    else:
+        if element.MEPModel and element.MEPModel.ElectricalSystems:
+            return [x for x in element.MEPModel.ElectricalSystems
+                    if x.CircuitType in circuit_types]
 
 
 def get_element_categories(elements):

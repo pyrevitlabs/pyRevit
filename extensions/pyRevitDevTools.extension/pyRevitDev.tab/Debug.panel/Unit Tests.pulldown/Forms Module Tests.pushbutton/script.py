@@ -37,7 +37,18 @@ def test_forms(forms_func, test_title, filterfuncstr='', *args, **kwargs):
         print(selection)
     else:
         print('No selection...')
-
+        
+print(
+    forms.show_balloon(
+        "header", 
+        "text", 
+        tooltip='tooltip', 
+        group='my group', 
+        is_favourite=True, 
+        is_new=True, 
+        timestamp = None, 
+        click_result = forms.result_item_result_clicked
+    ))
 
 print(
     forms.ask_for_string(

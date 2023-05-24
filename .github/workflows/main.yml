@@ -37,7 +37,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Checkout Submodules
-        uses: snickerbockers/submodules-init@v4
+        uses: snickerbockers/submodules-init@7ce9774442c0c2d4728e6d3f66141df2102e4cbc
 
       - name: Prepare Python 3.10
         uses: actions/setup-python@v4
@@ -128,7 +128,7 @@ jobs:
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: pyrevit-installers
           path: |

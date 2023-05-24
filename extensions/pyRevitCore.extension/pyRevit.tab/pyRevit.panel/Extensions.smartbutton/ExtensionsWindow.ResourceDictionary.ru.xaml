@@ -1,0 +1,39 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:v="clr-namespace:System;assembly=mscorlib">
+    <v:String x:Key="Window.Title">Менеджер расширений pyRevit</v:String>
+    <v:String x:Key="ExtensionList.TextBlock">Список зарегистрированных расширений:</v:String>
+    <v:String x:Key="ExtensionInfo.DevelopedByLink">Разработчик: </v:String>
+    <v:String x:Key="ExtensionInfo.RepositoryLink">Репозиторий: </v:String>
+    <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">Частный Git репозиторий (Предоставьте учетные данные)</v:String>
+    <v:String x:Key="ExtensionSettings.GroupName">Настройки расширений:</v:String>
+    <v:String x:Key="ExtensionSettings.Username">Логин: </v:String>
+    <v:String x:Key="ExtensionSettings.Password">Пароль (либо Токен): </v:String>
+    <v:String x:Key="Buttons.UpdateExtension">Обновление настроек</v:String>
+    <v:String x:Key="Buttons.InstallExtension">Установить расширение</v:String>
+    <v:String x:Key="Buttons.EnableExtension">Включить расширение</v:String>
+    <v:String x:Key="Buttons.RemoveExtension">Удалить расширение</v:String>
+    <v:String x:Key="Buttons.ToggleButton.Enable">Включить</v:String>
+    <v:String x:Key="Buttons.ToggleButton.Disable">Выключить</v:String>
+    <v:String x:Key="ExtensionsList.ColumnName">Имя</v:String>
+    <v:String x:Key="ExtensionsList.ColumnType">Тип</v:String>
+    <v:String x:Key="ExtensionsList.ColumnAuthor">Автор</v:String>
+    <v:String x:Key="ExtensionsList.ColumnBuiltin">Built-in</v:String>
+    <v:String x:Key="ExtensionsList.ColumnRocketMode">Rocket-Mode</v:String>
+    <v:String x:Key="ExtensionsList.ColumnInstalled">Установлен</v:String>
+    <v:String x:Key="ExtensionsList.ColumnStatus">Статус</v:String>
+    <v:String x:Key="ExtensionsList.ColumnLastCommit">Последний коммит</v:String>
+    <v:String x:Key="ExtensionsList.GitRepository">Ссылка на Git</v:String>
+    <v:String x:Key="Extension.Enabled">Вкл</v:String>
+    <v:String x:Key="Extension.Disabled">Выкл</v:String>
+    <v:String x:Key="Extension.Installed">Да</v:String>
+    <v:String x:Key="Extension.NotInstalled">Нет</v:String>
+    <v:String x:Key="Extension.TypeUnknown">Неизвестно</v:String>
+    <v:String x:Key="Extension.TypeUITools">Инструменты Revit UI</v:String>
+    <v:String x:Key="Extension.TypeIronLibrary">Библиотека IronPython</v:String>
+    <v:String x:Key="Extension.InstallPath">Папка установки: {}</v:String>
+    <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Папка установки:
+{}</v:String>
+    <v:String x:Key="Extension.Dependencies">Зависимости:</v:String>
+</ResourceDictionary>

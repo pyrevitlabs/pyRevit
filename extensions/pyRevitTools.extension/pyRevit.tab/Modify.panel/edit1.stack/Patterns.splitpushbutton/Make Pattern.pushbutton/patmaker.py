@@ -692,7 +692,7 @@ class _RevitPattern:
                         seg *= -1
                     scaled_segments.append(seg * self._scale)
 
-                grid_desc += PAT_SEPARATOR.join(
+                grid_desc += PAT_SEPARATOR + PAT_SEPARATOR.join(
                     [flatten_zeros(x) for x in scaled_segments]
                     )
 

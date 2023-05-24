@@ -32,23 +32,25 @@ class ExtensionPackageListItem:
         Status (str): Package is Enabled/Disabled. '--' if not installed
     """
 
-    def __init__(self, extension_package):
+    def __init__(self, locale, extension_package):
         """Initializing the Extension package list item.
 
         Args:
+            locale (locale resources)
             extension_package (pyrevit.extensions.extpackages.ExtensionPackage):
         """
 
+        self.locale = locale
         # ref to the pkg object received
         self.ext_pkg = extension_package
         # setting up pretty type name that shows up on the list
-        self.Type = 'Unknown'
+        self.Type = self.locale.get_locale_string("Extension.TypeUnknown")
         if self.ext_pkg.type == \
                 exts.ExtensionTypes.LIB_EXTENSION:
-            self.Type = 'IronPython Library'
+            self.Type = self.locale.get_locale_string("Extension.TypeIronLibrary")
         elif self.ext_pkg.type == \
                 exts.ExtensionTypes.UI_EXTENSION:
-            self.Type = 'Revit UI Tools'
+            self.Type = self.locale.get_locale_string("Extension.TypeUITools")
 
         # setting up other list data
         self.Builtin = self.ext_pkg.builtin
@@ -61,12 +63,14 @@ class ExtensionPackageListItem:
         self.GitURL = self.ext_pkg.url
         self.URL = self.ext_pkg.website
 
-        self.Installed = 'Yes' if self.ext_pkg.is_installed else 'No'
+        self.Installed = self.locale.get_locale_string('Extension.Installed') if self.ext_pkg.is_installed\
+            else self.locale.get_locale_string('Extension.NotInstalled')
 
         # setting the disabled/enabled pretty name
         if self.ext_pkg.is_installed:
-            self.Status = 'Enabled' if not self.ext_pkg.config.disabled \
-                                    else 'Disabled'
+            self.Status = self.locale.get_locale_string('Extension.Enabled') if not self.ext_pkg.config.disabled\
+                else self.locale.get_locale_string('Extension.Disabled')
+
             if self.ext_pkg.version:
                 self.Version = self.ext_pkg.version[:7]
         else:
@@ -140,7 +144,7 @@ class ExtensionsWindow(forms.WPFWindow):
             ext_dir_install_menu_item = InstallPackageMenuItem()
             ext_dir_install_menu_item.install_path = ext_dir
             ext_dir_install_menu_item.Header = \
-                'Install to:  {}'.format(ext_dir)
+                self.get_locale_string("Extension.InstallPath").format(ext_dir)
             ext_dir_install_menu_item.Click += self.install_ext_pkg
             self.ext_install_b.ContextMenu.AddChild(ext_dir_install_menu_item)
 
@@ -155,7 +159,7 @@ class ExtensionsWindow(forms.WPFWindow):
 
         self._exts_list = []
         for plugin_ext in ext_pkgs_list:
-            self._exts_list.append(ExtensionPackageListItem(plugin_ext))
+            self._exts_list.append(ExtensionPackageListItem(self, plugin_ext))
 
         self.extpkgs_lb.ItemsSource = \
             sorted(self._exts_list, key=lambda x: x.Builtin, reverse=True)
@@ -208,7 +212,7 @@ class ExtensionsWindow(forms.WPFWindow):
         if ext_pkg_item.ext_pkg.is_installed:
             self.show_element(self.ext_installed_l)
             self.ext_installed_l.Content = \
-                'Installed under:\n{}' \
+                self.get_locale_string("Extension.InstalledPath") \
                 .format(ext_pkg_item.ext_pkg.is_installed)
         else:
             self.hide_element(self.ext_installed_l)
@@ -217,7 +221,7 @@ class ExtensionsWindow(forms.WPFWindow):
         if ext_pkg_item.ext_pkg.dependencies:
             self.show_element(self.ext_dependencies_l)
             self.ext_dependencies_l.Content = \
-                'Dependencies:\n' + \
+                self.get_locale_string("Extension.Dependencies") + '\n' + \
                 ', '.join(ext_pkg_item.ext_pkg.dependencies)
         else:
             self.hide_element(self.ext_dependencies_l)
@@ -226,10 +230,10 @@ class ExtensionsWindow(forms.WPFWindow):
         self.show_element(self.ext_toggle_b)
         if enable:
             self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content.replace('Dis', 'En')
+                self.ext_toggle_b.Content = self.get_locale_string("Buttons.ToggleButton.Enable")
         else:
             self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content.replace('En', 'Dis')
+                self.ext_toggle_b.Content = self.get_locale_string("Buttons.ToggleButton.Disable")
 
         if multiple:
             self.ext_toggle_b.Content = \

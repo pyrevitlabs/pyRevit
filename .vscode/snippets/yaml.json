@@ -1,0 +1,15 @@
+{
+  "Bundle.yaml for pyRevit": {
+    "scope": "yaml",
+    "prefix": "yam",
+    "body": [
+      "title:",
+      "  fr_fr: ${1: french title}",
+      "  en_us: ${2: english title}",
+      "tooltip: ",
+      "  fr_fr: ${3: french tooltip}",
+      "  en_us: ${4: english tooltip}"
+    ],
+    "description": "bundle.yaml for pyRevit"
+  }
+}

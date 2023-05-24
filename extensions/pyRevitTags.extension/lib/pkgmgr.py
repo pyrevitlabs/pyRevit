@@ -189,10 +189,8 @@ def get_commit_points():
                     idx=last_docpkg_idx + i + 1,
                     name='R{}'.format(x.SequenceNumber),
                     desc='{}{} (Sequence #{})'.format(
-                        '{} - '.format(x.RevisionNumber)
-                        if hasattr(x, 'RevisionNumber')
-                        and x.NumberType != none_numtype
-                        else '',
+                        '{} - '.format(revit.query.get_rev_number(x))
+                        if revit.ensure.revision_has_numbertype(x) else '',
                         x.Description,
                         x.SequenceNumber))
         for i, x in enumerate(docrevs)

@@ -167,7 +167,7 @@ class ContentButton(GenericUICommand):
                     exts.ALT_CONTENT_POSTFIX,
                     ])
         if not self.config_script_file:
-            self.config_script_file = ''
+            self.config_script_file = self.script_file
 
 
 class URLButton(GenericUICommand):

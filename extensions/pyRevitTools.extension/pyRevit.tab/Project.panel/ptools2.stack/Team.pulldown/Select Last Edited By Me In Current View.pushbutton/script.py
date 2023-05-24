@@ -4,20 +4,19 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-filteredlist = []
-viewlist = []
+owned_by_me = []
+views = []
 
 selection = revit.get_selection()
 
 if revit.doc.IsWorkshared:
-    viewlist.append(revit.active_view.Id)
+    views.append(revit.active_view.Id)
     if isinstance(revit.active_view, DB.ViewSheet):
         vportids = revit.active_view.GetAllViewports()
         for vportid in vportids:
-            viewlist.append(revit.doc.GetElement(vportid).ViewId)
-    for view in viewlist:
-        curviewelements = DB.FilteredElementCollector(revit.doc)\
-                            .OwnedByView(view)\
+            views.append(revit.doc.GetElement(vportid).ViewId)
+    for view in views:
+        curviewelements = DB.FilteredElementCollector(revit.doc, view)\
                             .WhereElementIsNotElementType()\
                             .ToElements()
 
@@ -27,9 +26,7 @@ if revit.doc.IsWorkshared:
                                                                     el.Id)
                 # wti.Creator, wti.Owner, wti.LastChangedBy
                 if wti.LastChangedBy == HOST_APP.username:
-                    filteredlist.append(el.Id)
-            selection.set_to(filteredlist)
-    else:
-        pass
+                    owned_by_me.append(el.Id)
+            selection.set_to(owned_by_me)
 else:
     forms.alert('Model is not workshared.')

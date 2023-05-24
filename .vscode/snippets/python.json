@@ -1,0 +1,140 @@
+
+	// Place your snippets for python here. Each snippet is defined under a snippet name and has a prefix, body and 
+	// description. The prefix is what is used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. Placeholders with the 
+	// same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+
+{
+"pyRevit snippet 0": {
+		"prefix": "sn0",
+		"body": [
+			"# encoding: utf-8",
+			"",
+			"from pyrevit import revit, DB, forms, script",
+			"",
+			"output = script.get_output()",
+			"output.close_others()",
+			"",
+			"doc = revit.doc",
+			"",
+			"collector = DB.FilteredElementCollector(doc).OfClass(DB.${1:Class}).ToElements()",
+			"",
+			"${2:variable_name} = {e.get_Parameter(DB.BuiltInParameter.${3:BuiltInParamName}).AsString(): e for e in collector}",
+			"",
+			"",
+			"selections = forms.SelectFromList.show(${2:variable_name}.keys(), title='${4:Title}', multiselect=True)",
+			"",
+			"${5:variable_name2} = forms.ask_for_string(default='1.0', prompt='Enter number')",
+			"",
+			"if selections and ${5:variable_name2}:",
+			"    with revit.Transaction('${6:Name the transaction}'):",
+			"        for selection in selections:",
+			"            ${2:variable_name}[selection].get_Parameter(DB.BuiltInParameter.${7:BuiltInParamName}).Set(float(${5:variable_name2}))",
+			"else:",
+			"    script.exit()"
+		],
+		"description": "change stuff thanks to pyrevit"
+	},
+	"pyRevit snippet 1": {
+	  "prefix": "sn1",
+	  "body": [
+		"# -*- coding: utf-8 -*-",
+		"",
+		"from pyrevit import revit, DB, forms, script",
+		"",
+		"output = script.get_output()",
+		"output.close_others()",
+		"",
+		"doc = revit.doc",
+		"uidoc = revit.uidoc",
+		"",
+		"${1:collector_name} = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.${2:OST_Walls}).WhereElementIsNotElementType().ToElements()",
+		"",
+		"${3:class}_ids = []",
+		"for element in ${1:collector_name}:",
+		"   print(element.Id)"
+	  ],
+	  "description": "snippet for pyRevit"
+	},
+	"pyRevit snippet 2": {
+	  "prefix": "sn2",
+	  "body": [
+		"# -*- coding: utf-8 -*-",
+		"",
+		"from pyrevit import revit, DB, forms, script",
+		"",
+		"output = script.get_output()",
+		"output.close_others()",
+		"",
+		"doc = revit.doc",
+		"uidoc = revit.uidoc",
+		"",
+		"${1:collector_name} = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.${2:OST_Walls}).WhereElementIsNotElementType().ToElements()",
+		"",
+		"${3:category}_ids = []",
+		"${3:category}_heights = []",
+		"${3:category}_type_names = []",
+		"",
+		"for element in ${1:collector_name}:",
+		"   ${3:category}_ids.append(output.linkify(element.Id))",
+		"   ${3:category}_height = element.get_Parameter(DB.BuiltInParameter.${4:WALL_USER_HEIGHT_PARAM}).AsValueString()",
+		"   ${3:category}_heights.append(${3:category}_height)",
+		"   ${3:category}_type_name = element.LookupParameter(\"Type\").AsValueString()",
+		"   ${3:category}_type_names.append(${3:category}_type_name)",
+		"",
+		"output.print_md(\"# ${3:category}\")",
+		"output.print_table(zip(${3:category}_ids, ${3:class}_heights, ${3:category}_type_names), columns=[\"Id\", \"${5:Parameter Name}\", \"${3:category} Type Name\"])",
+		"$6"
+	  ],
+	  "description": "more advanced snippet for pyRevit"
+	},
+	"pyRevit snippet 3": {
+	  "prefix": "sn3",
+	  "body": [
+		"# -*- coding: utf-8 -*-",
+		"",
+		"from pyrevit import revit, DB, forms, script",
+		"",
+		"output = script.get_output()",
+		"output.close_others()",
+		"",
+		"doc = revit.doc",
+		"uidoc = revit.uidoc",
+		"",
+		"def ${0:def_name}():",
+		"    # create a filter for walls with analytical model deactivated",
+		"    param = DB.BuiltInParameter.STRUCTURAL_ANALYTICAL_MODEL",
+		"    provider = DB.ParameterValueProvider(DB.ElementId(param))",
+		"    evaluator = DB.FilterNumericEquals()",
+		"    rule = DB.FilterIntegerRule(provider, evaluator, 0)",
+		"    filter = DB.ElementParameterFilter(rule)",
+		"    ${1:collector_name} = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.${2:OST_Walls}).WherePasses(filter).WhereElementIsNotElementType().ToElements()",
+		"    return ${1:collector_name}",
+		"",
+		"${3:class}_ids = []",
+		"${3:class}_heights = []",
+		"${3:class}_type_names = []",
+		"",
+		"for element in ${0:def_name}():",
+		"   ${3:class}_ids.append(output.linkify(element.Id))",
+		"   ${3:class}_height = element.get_Parameter(DB.BuiltInParameter.${4:WALL_USER_HEIGHT_PARAM}).AsValueString()",
+		"   ${3:class}_heights.append(${3:class}_height)",
+		"   ${3:class}_type_name = element.LookupParameter(\"Type\").AsValueString()",
+		"   ${3:class}_type_names.append(${3:class}_type_name)",
+		"",
+		"output.print_md(\"# ${3:class}\")",
+		"output.print_table(zip(${3:class}_ids, ${3:class}_heights, ${3:class}_type_names), columns=[\"Id\", \"${5:Parameter Name}\", \"${3:class} Type Name\"])",
+		"$6"
+	  ],
+	  "description": "more advanced snippet for pyRevit defining a function and a filtered collector"
+	}
+  }

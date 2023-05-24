@@ -17,7 +17,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (parsedQuery["command"] == "select" && parsedQuery["element[]"] != null) {
                 var idList = new List<ElementId>();
                 foreach (string strId in parsedQuery["element[]"].Split(',')) {
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                    idList.Add(new ElementId(Convert.ToInt64(strId)));
+#else
                     idList.Add(new ElementId(Convert.ToInt32(strId)));
+#endif
                 }
 
                 SelectElements(uiApp, idList, parsedQuery.AllKeys.Contains("show") && parsedQuery["show"] == "true");
@@ -64,19 +68,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             var elementIdsToIsolate = new List<ElementId>();
                             foreach (var elid in elementIds) {
                                 var element = doc.GetElement(elid);
-                                #if (REVIT2023)
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022)
                                 if (element.GetType() == typeof(IndependentTag)) {
                                     var hostId = ((IndependentTag)element).GetTaggedLocalElementIds().FirstOrDefault();
                                     if (hostId != ElementId.InvalidElementId)
                                         elementIdsToIsolate.Add(hostId);
                                 }
-                                #else
+#else
                                     if (element.GetType() == typeof(IndependentTag)) {
                                     var hostId = ((IndependentTag)element).TaggedLocalElementId;
                                     if (hostId != ElementId.InvalidElementId)
                                         elementIdsToIsolate.Add(hostId);
                                 }
-                                #endif
+#endif
                             }
 
                             elementIdsToIsolate.AddRange(elementIds);

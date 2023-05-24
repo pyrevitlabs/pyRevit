@@ -23,6 +23,7 @@ from collections import defaultdict
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import compat
+from pyrevit.compat import PY3, PY2
 from pyrevit.compat import safe_strtype
 from pyrevit.compat import winreg as wr
 from pyrevit import framework
@@ -107,9 +108,9 @@ class ScriptFileParser(object):
 
         if isinstance(node_value, ast.Num):
             return node_value.n
-        elif compat.PY2 and isinstance(node_value, ast.Name):
+        elif PY2 and isinstance(node_value, ast.Name):
             return node_value.id
-        elif compat.PY3 and isinstance(node_value, ast.NameConstant):
+        elif PY3 and isinstance(node_value, ast.NameConstant):
             return node_value.value
         elif isinstance(node_value, ast.Str):
             return node_value.s

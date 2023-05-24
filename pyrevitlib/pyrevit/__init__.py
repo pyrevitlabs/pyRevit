@@ -20,6 +20,7 @@ import re
 
 import clr  #pylint: disable=E0401
 
+from pyrevit import compat
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 PYREVIT_CLI_NAME = 'pyrevit.exe'

@@ -76,6 +76,13 @@ class RevitWrapper(types.ModuleType):
         HOST_APP.active_view = value
 
     @property
+    def active_ui_view(self):
+        if isinstance(self.active_view, DB.View):
+            for uiview in self.uidoc.GetOpenUIViews():
+                if uiview.ViewId == self.active_view.Id:
+                    return uiview
+
+    @property
     def servers(self):
         return HOST_APP.available_servers
 

@@ -20,7 +20,7 @@ def iterate(mode, step_size=1):
     selection = revit.get_selection()
 
     if op.exists(index_datafile):
-        with open(index_datafile, 'r') as f:
+        with open(index_datafile, 'rb') as f:
             idx = pickle.load(f)
 
         if mode == '-':
@@ -32,7 +32,7 @@ def iterate(mode, step_size=1):
 
     if op.exists(datafile):
         try:
-            with open(datafile, 'r') as df:
+            with open(datafile, 'rb') as df:
                 cursel = pickle.load(df)
 
             if cursel:
@@ -43,7 +43,7 @@ def iterate(mode, step_size=1):
 
                 selection.set_to([DB.ElementId(int(list(cursel)[idx]))])
 
-                with open(index_datafile, 'w') as f:
+                with open(index_datafile, 'wb') as f:
                     pickle.dump(idx, f)
         except Exception as io_err:
             logger.error(
