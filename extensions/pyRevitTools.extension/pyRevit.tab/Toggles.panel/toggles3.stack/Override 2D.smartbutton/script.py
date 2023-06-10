@@ -7,16 +7,11 @@ op = script.get_output()
 op.close_others()
 
 config = script.get_config('twoDhighlight')
-print(config)
 
 doc = revit.doc
 active_view = revit.active_view
 
 SLEEP_TIME = 0.8
-
-def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    script.toggle_icon(False)
-
 
 def set_config(state, config):
     config.twoDhighlight = state
@@ -24,8 +19,9 @@ def set_config(state, config):
     script.save_config()
 
 
-def get_config(config):
-    return config.get_option('twoDhighlight', False)
+def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
+    off_icon = script_cmp.get_bundle_file('off.png')
+    ui_button_cmp.set_icon(off_icon)
 
 
 def set_override(r=255, g=0, b=0):
