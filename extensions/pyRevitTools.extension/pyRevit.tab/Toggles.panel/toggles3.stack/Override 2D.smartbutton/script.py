@@ -1,19 +1,27 @@
+from time import sleep
 from pyrevit import DB, script, revit
 from pyrevit import forms
-from time import sleep
 from pyrevit.framework import List
 
 op = script.get_output()
 op.close_others()
+
+config = script.get_config('twoDhighlight')
 
 doc = revit.doc
 active_view = revit.active_view
 
 SLEEP_TIME = 0.8
 
+def set_config(state, config):
+    config.twoDhighlight = state
+    script.toggle_icon(state)
+    script.save_config()
+
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    script.toggle_icon(False)
+    off_icon = script_cmp.get_bundle_file('off.png')
+    ui_button_cmp.set_icon(off_icon)
 
 
 def set_override(r=255, g=0, b=0):
@@ -22,6 +30,7 @@ def set_override(r=255, g=0, b=0):
     color = DB.Color(r, g, b)
     src_style.SetProjectionLineColor(color)
     return src_style
+
 
 @revit.carryout('Override 2D elements')
 def override_projection_lines(elements_set):
@@ -86,11 +95,11 @@ if __name__ == '__main__':
                 with forms.WarningBar(title="Clearing 2D elements overrides"):
                     disable_temp_isolation()
                     clear_overrides(elements_set)
-                    script.toggle_icon(False)
+                    set_config(False, config)
                     sleep(SLEEP_TIME)
         else:
             with forms.WarningBar(title="Highlight 2D elements in {}".format(active_view.Name)):
                 enable_temp_isolation()
                 element_count = override_projection_lines(elements_set)
-                script.toggle_icon(True)
+                set_config(True, config)
                 sleep(SLEEP_TIME)
