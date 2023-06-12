@@ -126,7 +126,14 @@ Check the list of [Currently Open](https://github.com/eirannejad/pyRevit/issues)
 
 [Supporters](https://www.notion.so/Supporters-4f3350243ba24dcd8228df6262723629)
 
-&nbsp;
+
+# Contributors
+
+Made with [contrib.rocks](https://contrib.rocks)
+
+<a href="https://github.com/eirannejad/pyRevit/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=eirannejad/pyRevit" />
+</a>&nbsp;
 
 ---
 
