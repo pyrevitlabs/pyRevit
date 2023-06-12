@@ -273,12 +273,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             };
 
             FieldInfo execParamField = null;
-            foreach (var fieldInfo in extCommandType.GetFields())
-                if (fieldInfo.FieldType == typeof(ExecParams))
+            foreach (var fieldInfo in extCommandType.GetFields()) {
+                if (fieldInfo.FieldType == typeof(ExecParams)) {
                     execParamField = fieldInfo;
-
-            if (execParamField != null)
-                execParamField.SetValue(extCommandInstance, execParams);
+                    execParamField.SetValue(extCommandInstance, execParams);
+                } else if (fieldInfo.Name.Equals("execParams", StringComparison.CurrentCultureIgnoreCase)) {
+                    try {
+                        execParamField = fieldInfo;
+                        execParamField.SetValue(extCommandInstance, execParams);
+                    } catch (ArgumentException) {
+                        // skip execParams if field is not object or dynamic
+                    }
+                }
+            }
 
             // reroute console output to runtime stream
             var existingOutStream = Console.Out;

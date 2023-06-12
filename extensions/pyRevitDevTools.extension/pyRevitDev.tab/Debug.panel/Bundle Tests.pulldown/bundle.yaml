@@ -6,6 +6,7 @@ layout:
   - Test C# Script
   - Test Direct Invoke
   - Test Direct Class Invoke
+  - Test Dynamic ExecParams
   - Test Link Button
   - Test Legacy Link Button
   - Test VisualBasic
