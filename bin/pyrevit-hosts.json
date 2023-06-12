@@ -1682,10 +1682,22 @@
     {
         "meta": {
             "schema": "1.0",
-            "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024release_html"
+            "source": "https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
         },
         "product": "Autodesk Revit",
         "release": "2024 First Customer Ship",
+        "version": "24.0.4.427",
+        "build": "20230308_1635",
+        "target": "x64",
+        "notes": "https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024release_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2024.0.1",
         "version": "24.0.5.432",
         "build": "20230411_1515",
         "target": "x64",
