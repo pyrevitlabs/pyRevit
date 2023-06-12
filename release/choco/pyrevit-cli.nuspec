@@ -9,7 +9,7 @@
     <authors>Ehsan Iran-Nejad</authors>
     <projectUrl>https://github.com/eirannejad/pyRevit</projectUrl>
     <iconUrl>https://cdn.jsdelivr.net/gh/eirannejad/pyRevit@master/release/choco/chocoicon.png</iconUrl>
-    <copyright>Copyright © 2014-2022</copyright>
+    <copyright>Copyright © 2014-2023</copyright>
     <licenseUrl>https://github.com/eirannejad/pyRevit/blob/master/LICENSE.txt</licenseUrl>
     <projectSourceUrl>https://github.com/eirannejad/pyRevit/tree/master/dev/pyRevitLabs</projectSourceUrl>
     <docsUrl>https://github.com/eirannejad/pyRevit/blob/master/README.md</docsUrl>
