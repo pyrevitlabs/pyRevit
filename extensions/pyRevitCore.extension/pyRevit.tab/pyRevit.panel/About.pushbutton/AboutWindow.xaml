@@ -212,9 +212,10 @@
                            VerticalAlignment="Top"
                            HorizontalAlignment="Center"
                            FontSize="44">
-                    <Run Text="pyRevit"/><Run x:Name="short_version_info"
-                                              FontSize="20"
-                                              Text=" vX.X"/>
+                    <Run Text="{DynamicResource pyRevit.Title}"/>
+                    <Run x:Name="short_version_info"
+                         FontSize="20"
+                         Text=" vX.X"/>
                 </TextBlock>
                 <TextBlock x:Name="pyrevit_subtitle"
                            HorizontalAlignment="Center"
@@ -291,7 +292,7 @@
                            VerticalAlignment="Top"
                            FontSize="14"
                            LineHeight="20"
-                           Text="Running on IronPython 2.7.7"/>
+                           Text="{DynamicResource pyRevit.Engine}"/>
                 <WrapPanel HorizontalAlignment="Center">
                     <TextBlock x:Name="pyrevit_rmode"
                                HorizontalAlignment="Center"
@@ -300,7 +301,7 @@
                                VerticalAlignment="Top"
                                FontSize="14"
                                LineHeight="20"
-                               Text="Rocket mode enabled"/>
+                               Text="{DynamicResource pyRevit.RocketMode.Enabled}"/>
                     <ContentControl x:Name="rmode_icon" Content="{StaticResource rocketIcon}" Width="24" Height="24" Margin="5,-6,5,0">
                         <ContentControl.LayoutTransform>
                             <ScaleTransform ScaleX="0.7"  ScaleY="0.7"/>
@@ -309,25 +310,25 @@
                 </WrapPanel>
                 <WrapPanel Margin="0,15,0,0"
                            HorizontalAlignment="Center">
-                    <Button Content="Wiki" FontSize="14"
+                    <Button Content="{DynamicResource Button.Wiki}" FontSize="14"
                             Click="openwiki"/>
-                    <Button Content="Twitter" FontSize="14"
+                    <Button Content="{DynamicResource Button.Twitter}" FontSize="14"
                             Click="opentwitter"/>
-                    <Button Content="Blog" FontSize="14"
+                    <Button Content="{DynamicResource Button.Blog}" FontSize="14"
                             Click="openblog"/>
-                    <Button Content="Github" FontSize="14"
+                    <Button Content="{DynamicResource Button.GitHub}" FontSize="14"
                             Click="opengithubrepopage"/>
-                    <Button Content="YouTube" FontSize="14"
+                    <Button Content="{DynamicResource Button.YouTube}" FontSize="14"
                             Click="openyoutubechannel"/>
                 </WrapPanel>
                 <WrapPanel HorizontalAlignment="Center">
-                    <Button Content="License" FontSize="14"
+                    <Button Content="{DynamicResource Button.License}" FontSize="14"
                             Click="openlicensepage"/>
-                    <Button Content="Support" FontSize="14"
+                    <Button Content="{DynamicResource Button.Support}" FontSize="14"
                             Click="opensupportpage"/>
-                    <Button Content="Credits" FontSize="14"
+                    <Button Content="{DynamicResource Button.Credits}" FontSize="14"
                             Click="opencredits"/>
-                    <Button Content="Release Notes" FontSize="14"
+                    <Button Content="{DynamicResource Button.ReleaseNotes}" FontSize="14"
                             Click="openreleasenotes"/>
                 </WrapPanel>
                 <WrapPanel HorizontalAlignment="Center">
@@ -354,7 +355,7 @@
                            Margin="0,5,0,0"
                            HorizontalAlignment="Center"
                            TextAlignment="Center"
-                           Text="2014-2020 copyright message"
+                           Text="2014-2023 copyright message"
                            MouseDown="openkeybaseprofile"/>
             </StackPanel>
         </Grid>

@@ -1,0 +1,370 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Title">pyRevit Settings</system:String>
+    <system:String x:Key="CoreSettings.Title">Core Settings</system:String>
+    <system:String x:Key="CoreSettings.General">General</system:String>
+    <system:String x:Key="CoreSettings.RocketMode">Rocket Mode &#x1F680; (Reload Required)</system:String>
+    <system:String x:Key="CoreSettings.RocketMode.Description">
+        This is the switch for pyRevit Rocket Mode.
+        If enabled, pyRevit will use a shared engine per each extension
+        that supports the Rocket mode. For pyRevit developers,
+        this means that your custom python modules should not use any
+        module level variables that retain information from Revit like
+        the active document, element information, etc.
+        Why Rocket Mode? Yuuuuuge speed boost!!
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CheckUpdates">Check updates at startup</system:String>
+    <system:String x:Key="CoreSettings.CheckUpdates.Description">
+        If activated, pyRevit will check updates for all installed extensions
+        at Revit startup. If no internet connection is detected, update check will be skipped.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Engines">Engines</system:String>
+    <system:String x:Key="CoreSettings.ActiveEngine">Active Engine:</system:String>
+    <system:String x:Key="CoreSettings.ActiveCPythonEngine">Active CPython Engine:</system:String>
+    <system:String x:Key="CoreSettings.UsingCPython">Using CPython:</system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description1">
+        pyRevit can use a CPython (x64) engine to run a command instead of the active IronPython Engine. This means that all
+        CPython modules (e.g. numpy, scipy) can be used within Revit environment. Note that Revit is a x64 program and
+        will only work with the x64 version of CPython.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description2">
+        The CPython engine is shipped with pyRevit so you do not need to have it installed on your machine. However if
+        you intend to use third-party libraries, make sure you have the same version of CPython as the selected
+        engine here, installed on your machine.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description3">
+        PYTHONPATH environment variable must point to the "site-packages" directory, so modules
+        installed with "pip" package manager, could be found and loaded.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description4">
+        To run a script with CPython, first line of the script file must be:
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description5">
+        Save settings after changing the engine and then restart Revit.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Development">Development</system:String>
+    <system:String x:Key="CoreSettings.Development.Description">Misc options for pyRevit development</system:String>
+    <system:String x:Key="CoreSettings.Development.LoadBeta">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</system:String>
+
+    <system:String x:Key="CoreSettings.Caching">Caching</system:String>
+    <system:String x:Key="CoreSettings.Caching.Button">Reset Caching to default</system:String>
+    <system:Double x:Key="CoreSettings.Caching.Button.With">200</system:Double>
+
+    <system:String x:Key="CoreSettings.Caching.Description">
+        pyRevit caches the extension data so it can run faster.
+        This section controls the type of caching.
+        Restart is required after changing this setting.
+    </system:String>
+
+
+    <system:String x:Key="CoreSettings.BinaryCache">Binary Cache</system:String>
+    <system:String x:Key="CoreSettings.BinaryCache.Description">
+        Binary cache is the fastest but the cache files are not human readable
+        and not very useful for debugging.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.ASCIICache">ASCII Cache</system:String>
+    <system:String x:Key="CoreSettings.ASCIICache.Description">
+        ASCII cache files are JSON files and are human readable.
+        They are very helpful for debugging purposes.
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.Title">Environment Variables</system:String>
+    <system:String x:Key="EnvironmentVariables.Description">
+        Environment Variables are set in current Application Domain (AppDomain) and
+        are available to scripts. They're used as global flags for setting
+        reporting mode, and also by scripts (e.g. Sync Views) to set their current toggle state.
+        These variables are accessible by scripts through pyrevit.script module.
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.ListView.VariableName">Variable Name</system:String>
+    <system:String x:Key="EnvironmentVariables.ListView.VariableValue">Value</system:String>
+
+    <system:String x:Key="ReportingLevels.Title">Reporting Levels</system:String>
+    <system:String x:Key="ReportingLevels.Button">Reset Reporting Level to default</system:String>
+    <system:Double x:Key="ReportingLevels.Button.Width">200</system:Double>
+
+    <system:String x:Key="ReportingLevels.NoReporting">No Reporting (logging.WARNING and above)</system:String>
+    <system:String x:Key="ReportingLevels.NoReporting.Description">
+        No reports will be printed from the logging system.
+        This means that pyRevit will not show the output window at
+        Revit startup and all the INFO messages will be suppressed.
+        Only Warnings, Errors, and Critical Errors will be printed.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose">Verbose (logging.INFO and above)</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Description">
+        Verbose reporting opens the output window and only prints the info messages.
+        These messages are meant to provide the most basic necessary information about
+        the current pyRevit session to the user.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Start">If no errors, close startup window after</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Finish">seconds. (Set to 0 to keep it open anyways)</system:String>
+
+    <system:String x:Key="ReportingLevels.Debug">Debug mode (logging.DEBUG and above)</system:String>
+    <system:String x:Key="ReportingLevels.Debug.Description">
+        This activates the pyRevit debug mode which enables all components and scripts to
+        report their debug messages. Generally this causes a very lengthy report and
+        increases the script running time, but it is very valuable for debugging.
+        Activate this only for debugging purposes.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.FileDebug">File debug logging</system:String>
+    <system:String x:Key="ReportingLevels.FileDebug.Description">
+        This activates the pyRevit file debug mode. All debug messages during a session
+        (from loader or tools) will be written to a log file in pyRevit appdata folder.
+        These files are tagged by Revit session and are automatically cleaned up on every Revit load.
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Title">Startup Checks</system:String>
+    <system:String x:Key="StartupChecks.Description">
+        You can set the required host build number.
+        pyRevit will show a warning if it's being run
+        on a host with different build number. Set to empty
+        to disable
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Build">Required Build Number (build):</system:String>
+    <system:String x:Key="StartupChecks.Build.Button">Set to Current Host Build Number</system:String>
+    <system:String x:Key="StartupChecks.Build.Button.ToolTip">Set the required build number to current host build number</system:String>
+    <system:Double x:Key="StartupChecks.Build.Button.Width">200</system:Double>
+
+    <system:String x:Key="StartupChecks.MinimumSpace">Minimum Free Space on Host Drive (in GigaByte):</system:String>
+    <system:String x:Key="StartupChecks.MinimumSpace.Description">
+        You can set the minimum free space on host drive.
+        pyRevit will show a warning if free space is less
+        than minimum value. Set to 0 to disable.
+    </system:String>
+
+    <system:String x:Key="Routes.Title">Routes</system:String>
+    <system:String x:Key="Routes.Docs">See pyRevit Routes Documentation</system:String>
+    <system:String x:Key="Routes.Description">
+        Routes server is a HTTP API micro-framework and server implemented in python as part of pyRevit. The server is accompanied
+        by a python module (pyrevit.routes) that is inspired by python flask and provides necessary functions,
+        type, and decorators to easily define your owne APIs in your extensions.
+    </system:String>
+
+    <system:String x:Key="Routes.Check">Routes Server (Beta)</system:String>
+    <system:String x:Key="Routes.RestAPI">REST API Settings</system:String>
+    <system:String x:Key="Routes.RestAPI.Check">pyrevit-core/</system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Docs">
+        See pyRevit Runtime API Documentation
+    </system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Description">
+        pyRevitCore extension implements a basic REST API to manage the pyRevit environment
+    </system:String>
+
+    <system:String x:Key="Telemetry.Title">Telemetry</system:String>
+    <system:String x:Key="Telemetry.Description">
+        Telemetry system, records each use of tools under any of the pyRevit extensions.
+        You can activate telemetry and send the data to a server (pyRevit has a builtin telemetry server),
+        or to a series of JSON files in a given directory. If activated, the system will send telemetry records
+        to the destinations provided here. Leave any of the fields blank to disable sending telemetry records to that destination.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Settings">Global Telemetry Settings</system:String>
+    <system:String x:Key="Telemetry.Settings.UseUTC">Use UTC Timestamps</system:String>
+    <system:String x:Key="Telemetry.ScriptTelemetry">Script Telemetry</system:String>
+    <system:String x:Key="Telemetry.SendTelemetry">Send Telemetry For</system:String>
+    <system:String x:Key="Telemetry.Hooks">Hooks</system:String>
+    <system:String x:Key="Telemetry.CommandBundles">Command Bundles</system:String>
+    <system:String x:Key="Telemetry.ServerUrl">Script Telemetry Server URL or API Endpoint</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Example">Example</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Description">
+        If a destination directory is provided here, pyRevit creates a new JSON file for each pyRevit sesssion to avoid creating large files that
+        would potentially slow down the telemetry service. The session id is added to the JSON file name.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application">Application Telemetry</system:String>
+    <system:String x:Key="Telemetry.Application.Description">
+        Application Telemetry system, sends event information collected from event handlers to the telemetry server listed below.
+        You can toggle event logging for each of the events listed blow.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ServerUrl">
+        Application Telemetry Server URL or API Endpoint (e.g. http://telemetryserver.io):
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ToggleAll">Toggle All</system:String>
+    <system:Double x:Key="Telemetry.Application.ToggleAll.Width">80</system:Double>
+
+    <system:String x:Key="Telemetry.JsonFile">Current Telemetry JSON File:</system:String>
+    <system:String x:Key="Telemetry.JsonFile.Button">Open Folder</system:String>
+    <system:Double x:Key="Telemetry.JsonFile.Button.Width">90</system:Double>
+    <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">Open the current telemetry folder</system:String>
+    <system:String x:Key="Telemetry.DataFolder">Script Telemetry Data Folder (e.g. C:\pyRevitTelemetry):</system:String>
+    <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">Pick a folder for telemetry</system:String>
+    <system:String x:Key="Telemetry.Reset.Button">Reset</system:String>
+    <system:Double x:Key="Telemetry.Reset.Button.Width">48</system:Double>
+    <system:String x:Key="Telemetry.Reset.Button.ToolTip">Reset telemetry folder back to default</system:String>
+    <system:String x:Key="Telemetry.Events">Select Active Application Telemetry Events</system:String>
+
+    <system:String x:Key="SupportedRevitVersions.Title">Supported Revit Versions</system:String>
+    <system:String x:Key="SupportedRevitVersions.Description">
+        You can disable or enable pyRevit for installed
+        Revit versions from here. This effectively removes the
+        pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders. Note that attachment to any of Revit versions listed here will be read-only and can not be changed, if it is
+        marked with &lt;current&gt; or &lt;all users&gt;
+    </system:String>
+
+    <system:String x:Key="UI-UX.Title">UI / UX</system:String>
+    <system:String x:Key="UI-UX.Description">
+        This section provides all the settings related to User Interface (UI) and User Experience (UX).
+    </system:String>
+
+    <system:String x:Key="UI-UX.RegionSettings">Region Settings</system:String>
+    <system:String x:Key="UI-UX.SelectLanguage">Select UI Language:</system:String>
+    <system:String x:Key="UI-UX.RegionSettingsLink">Help Translating pyRevit</system:String>
+
+    <system:String x:Key="UI-UX.TabColoring">Tab Coloring</system:String>
+    <system:String x:Key="UI-UX.ColoringStyle">Coloring Style</system:String>
+    <system:String x:Key="UI-UX.ColorizeOpenDocuments">Colorize Open Documents</system:String>
+    <system:String x:Key="UI-UX.KeepOpenTabs">Keep Open Tabs Sorted By Document</system:String>
+
+    <system:String x:Key="UI-UX.ProjectTabStyle">Project Tab Style</system:String>
+    <system:Double x:Key="UI-UX.ProjectTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.FamilyTabStyle">Family Tab Style</system:String>
+    <system:Double x:Key="UI-UX.FamilyTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.ProjectSample1">Project 1</system:String>
+    <system:String x:Key="UI-UX.ProjectSample2">Project 2</system:String>
+
+    <system:String x:Key="UI-UX.FamilySample1">Family 2</system:String>
+    <system:String x:Key="UI-UX.FamilySample2">Family 2</system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme">Coloring Theme</system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description1">
+        Select a series of colors to be applied to document tabs as they open.
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description2">
+        Colors in the "By Order" group will be applied to documents in order they open. When all the colors are used, no more tab coloring will be applied.
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description3">
+        Colors in "By Filter" group will be applied to tabs matching the given name filter. If a filter matches
+        any of the tab names, the by-filter color will take priority over the by-order color of that tab.
+    </system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Reset">Reset</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width">50</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width2">190</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByOrder">By Order</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByOrder.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByFilter">By Filter</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByFilter.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.FilterRegex">Filter (Regex)</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width">80</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width2">160</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Parallax">
+        Kudos to Parallax Team for "Parallax Tabbed Views"
+    </system:String>
+
+    <system:String x:Key="UI-UX.OutputWindow">Output Window</system:String>
+    <system:String x:Key="UI-UX.OutputStyling">Output Styling (CSS Stylesheet)</system:String>
+    <system:String x:Key="UI-UX.PickCssToolTip">Pick a CSS style sheet to override the default.</system:String>
+    <system:String x:Key="UI-UX.ResetCss">Reset</system:String>
+    <system:Double x:Key="UI-UX.ResetCss.Width">50</system:Double>
+    <system:String x:Key="UI-UX.ResetCssToolTip">Reset CSS style sheet back to default.</system:String>
+    <system:String x:Key="UI-UX.AddToolDebug">Add Tool Debug Info toTooltips e.g. Class and Assembly Names</system:String>
+
+    <system:String x:Key="Extensions.Title">Custom Extension Directories</system:String>
+    <system:String x:Key="Extensions.Description">
+        pyRevit can search in custom folders for extensions.
+        You can setup your custom extensions in any directory and add the directory address here.
+        pyRevit searches these folders on startup and loads the extensions. This helps to decouple the
+        custom extensions from pyRevit's default extension folder so you can upgrade/remove pyRevit without
+        worrying about your own extension folders.
+    </system:String>
+
+    <system:String x:Key="Extensions.Info">Reload is required for changes to take effect.</system:String>
+    <system:String x:Key="Extensions.Button.Add">Add folder</system:String>
+    <system:String x:Key="Extensions.Button.Remove">Remove Selected</system:String>
+    <system:String x:Key="Extensions.Button.RemoveAll">Remove All</system:String>
+    <system:String x:Key="Extensions.Button.Reveal">Reveal in Explorer</system:String>
+
+    <system:String x:Key="Settings.Title">Import / Export Settings</system:String>
+    <system:String x:Key="Settings.Import">Import Settings</system:String>
+    <system:String x:Key="Settings.Export">Export Settings</system:String>
+
+    <system:String x:Key="JustSave">Just Save Settings</system:String>
+    <system:String x:Key="SaveAndReload">Save Settings and Reload</system:String>
+
+    <system:String x:Key="Events.TypeEvent" xml:space="preserve">API Event Type:           </system:String>
+    <system:String x:Key="Events.pyRevitHook" xml:space="preserve">pyRevit Event/Hook Name:  {}</system:String>
+    <system:String x:Key="Events.NotSupport">Not Supported in this Revit Version</system:String>
+
+    <system:String x:Key="Events.CommandExecuted" xml:space="preserve">Command Executed
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.EventType" xml:space="preserve">Event Type:               journal-command-exec
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.TracksExecution" xml:space="preserve">Tracks execution of commands from active journal file. Includes:
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.BuiltinCommands" xml:space="preserve">  Builtin Commands (e.g. ID_OBJECTS_WALL)
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.ThirdPartyCommands" xml:space="preserve">  Thirdparty Commands (e.g. CustomCtrl_%CustomCtrl_%Site Designer%Modify%Sidewalk)
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.pyRevitCommands" xml:space="preserve">  pyRevit Commands (e.g. CustomCtrl_%CustomCtrl_%pyRevit%pyRevit%Settings)
+</system:String>
+
+    <system:String x:Key="RevitAttachment.Current">&lt;current&gt;</system:String>
+    <system:String x:Key="RevitAttachment.AllUsers">&lt;all users&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotAttached">&lt;Not attached&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotInstalled">Revit {} &lt;Not installed&gt;</system:String>
+
+    <system:String x:Key="Engines.WasChanged">
+        Active engine has changed.
+        Restart Revit for this change to take effect.
+    </system:String>
+
+    <system:String x:Key="Engines.CPython.WasChanged">
+        Active CPython engine has changed.
+        Restart Revit for this change to take effect.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Status">Unknown Status. Click Here to Test</system:String>
+
+    <system:String x:Key="Routes.Changed">
+        Routes server setting has changed.
+        Reloading pyRevit is required for this change to take
+        effect. Do you want to reload now?
+    </system:String>
+
+    <system:String x:Key="Routes.RestChanged">
+        pyRevit Core REST API setting has changed.
+        Reloading pyRevit is required for this change to take effect.
+        Do you want to reload now?
+    </system:String>
+
+    <system:String x:Key="UI-UX.LangChanged">
+        UI language has changed. Reloading pyRevit is
+        required for this change to take effect. Do you
+        want to reload now?
+    </system:String>
+
+    <system:String x:Key="UI-UX.NeedReload">
+        pyRevit UI Configuration has changed. Reloading pyRevit is
+        required for this change to take effect. Do you
+        want to reload now?
+    </system:String>
+
+    <system:String x:Key="pyRevit.AdminInstall">pyRevit settings are set by your admin.</system:String>
+
+</ResourceDictionary>

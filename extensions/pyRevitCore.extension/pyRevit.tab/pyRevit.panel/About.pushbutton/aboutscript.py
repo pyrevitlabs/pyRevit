@@ -55,14 +55,15 @@ class AboutWindow(forms.WPFWindow):
         cpyver = user_config.get_active_cpython_engine()
         if cpyver:
             self.pyrevit_engine.Text = \
-                'Running on IronPython {} (cpython {})'\
+                self.get_locale_string("pyRevit.Engine")\
                     .format(sys.version.split('(')[0].strip(),
                             '.'.join(list(str(cpyver.Version))))
 
-        rocketmodetext = \
-            'Rocket-mode {}' \
-            .format('enabled' if __cachedengine__ else 'disabled')
-        self.pyrevit_rmode.Text = rocketmodetext
+        if __cachedengine__:
+            self.pyrevit_rmode.Text = self.get_locale_string("pyRevit.RocketMode.Enabled")
+        else:
+            self.pyrevit_rmode.Text = self.get_locale_string("pyRevit.RocketMode.Disabled")
+
         if not __cachedengine__:
             self.hide_element(self.rmode_icon)
 
