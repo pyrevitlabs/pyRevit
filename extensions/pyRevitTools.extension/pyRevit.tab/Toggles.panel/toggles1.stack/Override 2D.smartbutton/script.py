@@ -13,6 +13,10 @@ active_view = revit.active_view
 
 SLEEP_TIME = 0.8
 
+THI = DB.TemporaryViewMode.TemporaryHideIsolate
+TVP = DB.TemporaryViewMode.TemporaryViewProperties
+
+
 def set_config(state, config):
     config.twoDhighlight = state
     script.toggle_icon(state)
@@ -72,33 +76,36 @@ def collect_view_specific_elements():
 
 @revit.carryout('Disable temporary isolation')
 def disable_temp_isolation(view=active_view):
-    if active_view.ViewType == DB.ViewType.DrawingSheet and view.IsTemporaryHideIsolateActive == True:
-        view.DisableTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate)
+    if active_view.ViewType == DB.ViewType.DrawingSheet \
+            and view.IsTemporaryHideIsolateActive:
+        view.DisableTemporaryViewMode(THI)
     else:
-        view.DisableTemporaryViewMode(DB.TemporaryViewMode.TemporaryViewProperties)
+        view.DisableTemporaryViewMode(TVP)
 
 
 @revit.carryout('Enable temporary isolation')
 def enable_temp_isolation(view=active_view):
-    if view.ViewType == DB.ViewType.DrawingSheet and view.IsTemporaryHideIsolateActive() == False:
-        view.DisableTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate)
+    if view.ViewType == DB.ViewType.DrawingSheet \
+            and view.IsTemporaryHideIsolateActive() == False:
+        view.DisableTemporaryViewMode(THI)
     else:
         view.EnableTemporaryViewPropertiesMode(view.Id)
 
 
 if __name__ == '__main__':
     elements_set, elements_id_set = collect_view_specific_elements()
-    overrides = active_view.GetElementOverrides(elements_set[0].Id).ProjectionLineColor
+    overrides = active_view.GetElementOverrides(elements_set[0].Id)
+    plcolor = overrides.ProjectionLineColor
     with revit.TransactionGroup('Override 2D elements'):
-        if overrides.IsValid:
-            if overrides.Red == 255 and overrides.Green == 0 and overrides.Blue == 0:
-                with forms.WarningBar(title="Clearing 2D elements overrides"):
+        if plcolor.IsValid:
+            if plcolor.Red == 255 and plcolor.Green == 0 and plcolor.Blue == 0:
+                with forms.WarningBar(title="Clearing 2D Elements Highlights"):
                     disable_temp_isolation()
                     clear_overrides(elements_set)
                     set_config(False, config)
                     sleep(SLEEP_TIME)
         else:
-            with forms.WarningBar(title="Highlight 2D elements in {}".format(active_view.Name)):
+            with forms.WarningBar(title="Highlight 2D Elements"):
                 enable_temp_isolation()
                 element_count = override_projection_lines(elements_set)
                 set_config(True, config)
