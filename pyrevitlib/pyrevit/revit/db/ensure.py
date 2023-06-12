@@ -117,10 +117,11 @@ def ensure_text_type(name,
 
 
 def revision_has_numbertype(revision):
+    doc = revision.Document
     none_numtype = coreutils.get_enum_none(DB.RevisionNumberType)
     if HOST_APP.is_newer_than(2022):
-        numbering = revision.Document.GetElement(revision.RevisionNumberingSequenceId)
+        numbering = doc.GetElement(revision.RevisionNumberingSequenceId)
         if numbering:
-            return numbering.NumberType != none_numtype 
+            return numbering.NumberType != none_numtype
     else:
         return revision.NumberType != none_numtype

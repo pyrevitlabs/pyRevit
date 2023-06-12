@@ -134,7 +134,7 @@ def get_guid(element):
     last_32_bits = int(uid[28:36], 16)
     element_id = int(uid[37:], 16)
     xor = last_32_bits ^ element_id
-    return uid[:28] +  "{0:x}".format(xor)
+    return uid[:28] + "{0:x}".format(xor)
 
 
 def get_param(element, param_name, default=None):
@@ -1583,3 +1583,16 @@ def get_geometry(element, include_invisible=False):
             geom_objs.append(gobj)
     return geom_objs
 
+
+def get_spec_name(forge_id):
+    if HOST_APP.is_newer_than(2021) \
+            and DB.UnitUtils.IsMeasurableSpec(forge_id):
+        return DB.UnitUtils.GetTypeCatalogStringForSpec(forge_id)
+    return ""
+
+
+def get_unit_name(forge_id):
+    if HOST_APP.is_newer_than(2021) \
+            and DB.UnitUtils.IsUnit(forge_id):
+        return DB.UnitUtils.GetTypeCatalogStringForUnit(forge_id)
+    return ""

@@ -23,7 +23,6 @@ switches = ['Graphic Styles',
             'Data Schemas',
             'Data Schema Entities',
             'Sketch Planes',
-            'Views',
             'View Templates',
             'Viewports',
             'Element Types',
@@ -36,7 +35,7 @@ switches = ['Graphic Styles',
             'Revisions',
             'Revision Clouds',
             'Sheets',
-            'Sheets with Hidden Characters',
+            'Sheets with Hidden Characters in Sheet Number',
             'System Categories',
             'System Postable Commands',
             'Worksets',
@@ -74,8 +73,7 @@ elif selected_switch == 'Grids':
                   .WhereElementIsNotElementType().ToElements()
 
     for el in grid_list:
-        print('GRID: {0} ID: {1}'.format(el.Name,
-                                         el.Id))
+        print('GRID: {0} ID: {1}'.format(el.Name, output.linkify(el.Id)))
 
 elif selected_switch == 'Line Patterns':
     cl = DB.FilteredElementCollector(revit.doc).OfClass(DB.LinePatternElement)
@@ -119,7 +117,7 @@ elif selected_switch == 'Project Parameters':
                       [x.Name for x in pp.param_binding.Categories]
                       ))
 
-    output.print_md('# Shared Parameters')
+    output.print_md('## Shared Parameters')
     for pp in revit.query.get_project_parameters():
         if pp.shared:
             output.print_md('#### {} : {}'.format(pp.name, pp.param_guid))
@@ -160,6 +158,9 @@ elif selected_switch == 'Data Schemas':
                                                  sc.GUID))
         if sc.ReadAccessGranted():
             for fl in sc.ListFields():
+                ut = fl.GetSpecTypeId().TypeId \
+                    if HOST_APP.is_newer_than(2021) \
+                    else fl.UnitType
                 print('\t\tFIELD NAME: {0}\n'
                       '\t\t\tDOCUMENTATION:      {1}\n'
                       '\t\t\tCONTAINER TYPE:     {2}\n'
@@ -170,7 +171,7 @@ elif selected_switch == 'Data Schemas':
                               fl.Documentation,
                               fl.ContainerType,
                               fl.KeyType,
-                              fl.UnitType,
+                              ut,
                               fl.ValueType))
 
 elif selected_switch == 'Sketch Planes':
@@ -322,50 +323,6 @@ elif selected_switch == 'System Postable Commands':
         except Exception:
             print('{0}'.format(str(pc).ljust(50)))
 
-elif selected_switch == 'Views':
-    selection = revit.get_selection()
-
-    views = []
-
-    if selection:
-        cl_views = DB.FilteredElementCollector(revit.doc)
-        views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
-                        .WhereElementIsNotElementType().ToElements()
-    else:
-        for el in selection:
-            if isinstance(el, DB.View):
-                views.append(el)
-
-    for v in views:
-        phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
-        if HOST_APP.is_older_than(2016):
-            underlayp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_ID]
-            print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} UNDERLAY:{5} {0}'
-                  .format(revit.query.get_name(v),
-                          str(v.ViewType).ljust(20),
-                          str(v.Id).ljust(10),
-                          str(v.IsTemplate).ljust(10),
-                          phasep.AsValueString().ljust(25)
-                          if phasep else '---'.ljust(25),
-                          underlayp.AsValueString().ljust(25)
-                          if underlayp else '---'.ljust(25)))
-        else:
-            underlaytp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_TOP_ID]
-            underlaybp = \
-                v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_BOTTOM_ID]
-            print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} '
-                  'UNDERLAY TOP:{5} UNDERLAY BOTTOM:{6} {0}'
-                  .format(revit.query.get_name(v),
-                          str(v.ViewType).ljust(20),
-                          str(v.Id).ljust(10),
-                          str(v.IsTemplate).ljust(10),
-                          phasep.AsValueString().ljust(25)
-                          if phasep else '---'.ljust(25),
-                          underlaytp.AsValueString().ljust(25)
-                          if underlaytp else '---'.ljust(25),
-                          underlaybp.AsValueString().ljust(25)
-                          if underlaybp else '---'.ljust(25)))
-
 elif selected_switch == 'View Templates':
     cl_views = DB.FilteredElementCollector(revit.doc)
     views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
@@ -373,8 +330,10 @@ elif selected_switch == 'View Templates':
 
     for v in views:
         if v.IsTemplate:
-            print('ID: {1}		{0}'.format(revit.query.get_name(v),
-                                            str(v.Id).ljust(10)))
+            print('{0} {1}'.format(
+                revit.query.get_name(v),
+                output.linkify(v.Id))
+            )
 
 elif selected_switch == 'Worksets':
     cl = DB.FilteredWorksetCollector(revit.doc)
@@ -486,10 +445,10 @@ elif selected_switch == 'Connected Circuits':
 
 elif selected_switch == 'Point Cloud Instances':
     for pc in revit.query.get_pointclouds(doc=revit.doc):
-        ws = revit.doc.GetElement(pc.WorksetId)
+        ws = revit.query.get_element_workset(pc)
         print('Name: {}\tWorkset:{}'.format(pc.Name, ws.Name if ws else '---'))
 
-elif selected_switch == 'Sheets with Hidden Characters':
+elif selected_switch == 'Sheets with Hidden Characters in Sheet Number':
     for sheet in revit.query.get_sheets(doc=revit.doc):
         sheetnum = sheet.SheetNumber
         sheetnum_repr = repr(str(sheet.SheetNumber).encode("utf-8"))
