@@ -12,6 +12,7 @@ using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
+using SHARED = pyRevitLabs.PyRevit.Runtime.Shared;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class ExecParams {
@@ -33,7 +34,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class CLREngineOutputTarget : TargetWithLayout {
-        public ExecParams CurrentExecParams { get; set; }
+        public SHARED.ExecParams CurrentExecParams { get; set; }
 
         protected override void Write(LogEventInfo logEvent) {
             try {
@@ -254,36 +255,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // set properties if available
             // set ExecParams
-            var execParams = new ExecParams {
-                ExecId = runtime.ExecId,
-                ExecTimeStamp = runtime.ExecTimestamp,
-                ScriptPath = runtime.ScriptData.ScriptPath,
-                ConfigScriptPath = runtime.ScriptData.ConfigScriptPath,
-                CommandUniqueId = runtime.ScriptData.CommandUniqueId,
-                CommandControlId = runtime.ScriptData.CommandControlId,
-                CommandName = runtime.ScriptData.CommandName,
-                CommandBundle = runtime.ScriptData.CommandBundle,
-                CommandExtension = runtime.ScriptData.CommandExtension,
-                HelpSource = runtime.ScriptData.HelpSource,
-                RefreshEngine = runtime.ScriptRuntimeConfigs.RefreshEngine,
-                ConfigMode = runtime.ScriptRuntimeConfigs.ConfigMode,
-                DebugMode = runtime.ScriptRuntimeConfigs.DebugMode,
-                ExecutedFromUI = runtime.ScriptRuntimeConfigs.ExecutedFromUI,
-                UIButton = runtime.UIControl
-            };
+            var execParams = new SHARED.ExecParams(
+                execId: runtime.ExecId,
+                execTimeStamp: runtime.ExecTimestamp,
+                scriptPath: runtime.ScriptData.ScriptPath,
+                configScriptPath: runtime.ScriptData.ConfigScriptPath,
+                commandUniqueId: runtime.ScriptData.CommandUniqueId,
+                commandControlId: runtime.ScriptData.CommandControlId,
+                commandName: runtime.ScriptData.CommandName,
+                commandBundle: runtime.ScriptData.CommandBundle,
+                commandExtension: runtime.ScriptData.CommandExtension,
+                helpSource: runtime.ScriptData.HelpSource,
+                refreshEngine: runtime.ScriptRuntimeConfigs.RefreshEngine,
+                configMode: runtime.ScriptRuntimeConfigs.ConfigMode,
+                debugMode: runtime.ScriptRuntimeConfigs.DebugMode,
+                executedFromUI: runtime.ScriptRuntimeConfigs.ExecutedFromUI,
+                uiButton: runtime.UIControl
+            );
 
             FieldInfo execParamField = null;
             foreach (var fieldInfo in extCommandType.GetFields()) {
-                if (fieldInfo.FieldType == typeof(ExecParams)) {
+                if (fieldInfo.FieldType == typeof(SHARED.ExecParams)) {
                     execParamField = fieldInfo;
                     execParamField.SetValue(extCommandInstance, execParams);
-                } else if (fieldInfo.Name.Equals("execParams", StringComparison.CurrentCultureIgnoreCase)) {
-                    try {
-                        execParamField = fieldInfo;
-                        execParamField.SetValue(extCommandInstance, execParams);
-                    } catch (ArgumentException) {
-                        // skip execParams if field is not object or dynamic
-                    }
                 }
             }
 

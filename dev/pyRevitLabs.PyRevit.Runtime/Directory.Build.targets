@@ -35,6 +35,7 @@
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
         <Reference Include="pyRevitLabs.Emojis" HintPath="$(PyRevitBinDir)\pyRevitLabs.Emojis.dll" />
         <Reference Include="pyRevitLabs.PyRevit" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
+        <Reference Include="pyRevitLabs.PyRevit.Runtime.Shared" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.Runtime.Shared.dll" />
         <Reference Include="pyRevitLabs.TargetApps.Revit" HintPath="$(PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
 
         <Reference Include="AdWindows" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\AdWindows.dll" />

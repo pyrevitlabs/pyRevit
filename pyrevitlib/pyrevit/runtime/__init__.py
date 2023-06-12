@@ -266,6 +266,7 @@ def get_references():
         'pyRevitLabs.Emojis',
         'pyRevitLabs.TargetApps.Revit',
         'pyRevitLabs.PyRevit',
+        'pyRevitLabs.PyRevit.Runtime.Shared',
         ]
 
     # another revit api
@@ -466,6 +467,9 @@ if not EXEC_PARAMS.doc_mode:
     else:
         # else, let's generate the assembly and load it
         RUNTIME_ASSM = _get_runtime_asm()
+
+    if RUNTIME_ASSM is None:
+        raise Exception("Error dynamically compiling pyRevit runtime")
 
     CMD_EXECUTOR_TYPE = \
         assmutils.find_type_by_name(RUNTIME_ASSM, CMD_EXECUTOR_TYPE_NAME)

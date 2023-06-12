@@ -8,7 +8,6 @@ using System.Windows.Controls;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
-using static IronPython.Modules._ast;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public class CommandTypeExecConfigs {
