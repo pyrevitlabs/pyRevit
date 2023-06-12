@@ -39,7 +39,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         className = parts[1];
                     }
 
-                    if (scriptSig == null || CommonUtils.GetFileSignature(assmFile) != scriptSig) {
+                    var currentSig = CommonUtils.GetFileSignature(assmFile);
+                    if (scriptSig == null || currentSig != scriptSig) {
+                        scriptSig = currentSig;
                         scriptAssm = Assembly.Load(File.ReadAllBytes(assmFile));
                     }
 
