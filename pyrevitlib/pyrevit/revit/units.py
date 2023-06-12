@@ -15,11 +15,17 @@ def format_area(area_value, doc=None):
         str: formatted value
     """
     doc = doc or DOCS.doc
-    return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                     unitType=DB.UnitType.UT_Area,
-                                     value=area_value,
-                                     maxAccuracy=False,
-                                     forEditing=False)
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                         specTypeId=DB.SpecTypeId.Area,
+                                         value=area_value,
+                                         forEditing=False)
+    else:
+        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                         unitType=DB.UnitType.UT_Area,
+                                         value=area_value,
+                                         maxAccuracy=False,
+                                         forEditing=False)
 
 
 def format_slope(slope_value, doc=None):
@@ -35,16 +41,15 @@ def format_slope(slope_value, doc=None):
     doc = doc or DOCS.doc
     if HOST_APP.is_newer_than(2021):
         return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                     unitType=DB.SpecTypeId.Slope,
-                                     value=slope_value,
-                                     maxAccuracy=False,
-                                     forEditing=False)
+                                         specTypeId=DB.SpecTypeId.Slope,
+                                         value=slope_value,
+                                         forEditing=False)
     else:
         return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                     unitType=DB.UnitType.UT_Slope,
-                                     value=slope_value,
-                                     maxAccuracy=False,
-                                     forEditing=False)
+                                         unitType=DB.UnitType.UT_Slope,
+                                         value=slope_value,
+                                         maxAccuracy=False,
+                                         forEditing=False)
 
 
 def _create_view_plane(view):
@@ -92,3 +97,17 @@ def project_to_world(uv, view):
     trf.BasisZ = plane.Normal
     trf.Origin = plane.Origin
     return trf.OfPoint(DB.XYZ(uv.U, uv.V, 0))
+
+
+def get_spec_name(forge_id):
+    if HOST_APP.is_newer_than(2021) \
+            and DB.UnitUtils.IsMeasurableSpec(forge_id):
+        return DB.UnitUtils.GetTypeCatalogStringForSpec(forge_id)
+    return ""
+
+
+def get_unit_name(forge_id):
+    if HOST_APP.is_newer_than(2021) \
+            and DB.UnitUtils.IsUnit(forge_id):
+        return DB.UnitUtils.GetTypeCatalogStringForUnit(forge_id)
+    return ""

@@ -1582,17 +1582,3 @@ def get_geometry(element, include_invisible=False):
         else:
             geom_objs.append(gobj)
     return geom_objs
-
-
-def get_spec_name(forge_id):
-    if HOST_APP.is_newer_than(2021) \
-            and DB.UnitUtils.IsMeasurableSpec(forge_id):
-        return DB.UnitUtils.GetTypeCatalogStringForSpec(forge_id)
-    return ""
-
-
-def get_unit_name(forge_id):
-    if HOST_APP.is_newer_than(2021) \
-            and DB.UnitUtils.IsUnit(forge_id):
-        return DB.UnitUtils.GetTypeCatalogStringForUnit(forge_id)
-    return ""
