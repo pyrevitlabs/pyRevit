@@ -145,7 +145,7 @@ def pick_and_match_dim_overrides(src_dim_id):
         if src_dim.NumberOfSegments > 1:
             src_dim = src_dim.Segments[0]
         while True:
-            dest_dim = revit.pick_element()
+            dest_dim = revit.pick_elements()
 
             if not dest_dim:
                 break
@@ -158,19 +158,28 @@ def pick_and_match_dim_overrides(src_dim_id):
                             setup_dim_overrides_per_config(src_dim, segment)
                     else:
                         setup_dim_overrides_per_config(src_dim, dest_dim)
+            else:
+                with revit.Transaction('Match Dimension Overrides'):
+                    for dim in dest_dim:
+                        if isinstance(dim, DB.Dimension):
+                            if dim.NumberOfSegments > 1:
+                                segments = dim.Segments
+                                for segment in segments:
+                                    setup_dim_overrides_per_config(src_dim, segment)
+                            else:
+                                setup_dim_overrides_per_config(src_dim, dim)
 
 
 def pick_and_match_styles(src_style):
     with forms.WarningBar(title='Pick objects to match overrides:'):
         while True:
-            dest_element = revit.pick_element()
-
-            if not dest_element:
+            dest_elements = revit.pick_elements()
+            if not dest_elements:
                 break
-
-            dest_element_ids = [dest_element.Id]
-            if hasattr(dest_element, 'GetSubComponentIds'):
-                dest_element_ids.extend(dest_element.GetSubComponentIds())
+            dest_element_ids = [elem.Id for elem in dest_elements]
+            for dest_element in dest_elements:
+                if hasattr(dest_element, 'GetSubComponentIds'):
+                    dest_element_ids.extend(dest_element.GetSubComponentIds())
             with revit.Transaction('Match Graphics Overrides'):
                 for dest_elid in dest_element_ids:
                     revit.active_view.SetElementOverrides(dest_elid, src_style)
