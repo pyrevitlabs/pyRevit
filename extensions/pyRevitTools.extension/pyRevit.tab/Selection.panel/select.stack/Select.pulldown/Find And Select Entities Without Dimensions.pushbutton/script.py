@@ -1,6 +1,6 @@
 """Selects elements with no associated dimensions in current view."""
 #pylint: disable=import-error,invalid-name
-from pyrevit import revit, DB
+from pyrevit import revit, DB, HOST_APP
 from pyrevit import forms
 
 categories = {
@@ -45,7 +45,10 @@ if selected_switch:
     dimmed_ids = set()
     for dim in all_dims:
         for ref in dim.References:
-            dimmed_ids.add(ref.ElementId.IntegerValue)
+            if HOST_APP.is_newer_than(2023):
+                dimmed_ids.add(ref.ElementId.Value)
+            else:
+                dimmed_ids.add(ref.ElementId.IntegerValue)
 
     # find non dimmed
     not_dimmed_ids = all_ids.difference(dimmed_ids)
