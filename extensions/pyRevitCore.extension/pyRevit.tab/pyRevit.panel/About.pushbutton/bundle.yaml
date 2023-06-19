@@ -2,8 +2,8 @@ title:
   ru: О программе
   en_us: About
   en_gb: About
+  fr_fr: A Propos
   de_de: Über
-  fr_fr: A Propos De
   nl_nl: Over
   pt_br: Sobre pyRevit
   fa: درباره
@@ -25,4 +25,8 @@ tooltip:
     About pyRevit. Opens the pyRevit blog website. You can find
     detailed information on how pyRevit works, updates about the
     new tools and changes, and a lot of other information there.
+  fr_fr: >-
+    À propos de pyRevit. Ouvre le site web du blog pyRevit. Vous pouvez y trouver
+    des informations détaillées sur le fonctionnement de pyRevit, des mises à jour sur les
+    nouveaux outils et les changements, et beaucoup d'autres informations.
 context: zero-doc
