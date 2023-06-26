@@ -758,6 +758,8 @@ class SelectFromList(TemplateUserInputWindow):
 
     """
 
+    in_check = False
+    in_uncheck = False
     xaml_source = 'SelectFromList.xaml'
 
     @property
@@ -967,11 +969,21 @@ class SelectFromList(TemplateUserInputWindow):
 
     def check_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as checked."""
-        self._set_states(state=True, selected=True)
+        if not self.in_check:
+            try:
+                self.in_check = True
+                self._set_states(state=True, selected=True)
+            finally:
+                self.in_check = False
 
     def uncheck_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as unchecked."""
-        self._set_states(state=False, selected=True)
+        if not self.in_uncheck:
+            try:
+                self.in_uncheck = True
+                self._set_states(state=False, selected=True)
+            finally:
+                self.in_uncheck = False
 
     def button_reset(self, sender, args):#pylint: disable=W0613
         if self.reset_func:
