@@ -290,7 +290,7 @@ def setup_telemetry(session_id=None):
         set_apptelemetry_server_url(apptelemetry_server_url)
 
     # setup events
-    new_telemetry_handler = EventTelemetry(session_id, HOST_APP.username)
+    new_telemetry_handler = EventTelemetry(session_id)
     telemetry_handler = get_apptelemetry_handler()
     if telemetry_handler:
         # clear existing

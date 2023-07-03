@@ -64,14 +64,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static EventTelemetryExternalEventHandler extTelemetryEventHandler;
         private static ExternalEvent extTelemetryEvent;
 
-        public EventTelemetry(string handlerId, string username) {
+        public EventTelemetry(string handlerId) {
             if (handlerId == null)
                 handlerId = Guid.NewGuid().ToString();
             HandlerId = handlerId;
             extTelemetryEventHandler = new EventTelemetryExternalEventHandler();
             extTelemetryEvent = ExternalEvent.Create(extTelemetryEventHandler);
-
-            Telemetry.DefaultUser = username;
         }
 
         public static string GetParameterValue(Parameter param) {

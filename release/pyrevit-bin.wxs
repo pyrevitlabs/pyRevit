@@ -119,9 +119,6 @@
             <Component Id="cmpC506B6E44AD9EE35B59D49FDCC4CDD5B" Guid="*">
                 <File Id="fil0BE76B90A7E4B5B16FBC995A8F3A1DA9" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
             </Component>
-            <Component Id="cmpBE1A396D0BFA510B34B2BE6A6C417747" Guid="*">
-                <File Id="fil0E95E5FEE175E97AC105A21AD1221627" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.PyRevit.Runtime.Shared.dll" />
-            </Component>
             <Component Id="cmp587C2B24D8D4F42368199917A09070B4" Guid="*">
                 <File Id="fil94ACE2E9826BB9E51CD933F3789B1410" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevitLabs.TargetApps.AutoCAD.dll" />
             </Component>
@@ -225,7 +222,6 @@
             <ComponentRef Id="cmp82DE5CE1ADBDD7B8D28AB20732744155" />
             <ComponentRef Id="cmpA818E740456105F619245D5C56202514" />
             <ComponentRef Id="cmpC506B6E44AD9EE35B59D49FDCC4CDD5B" />
-            <ComponentRef Id="cmpBE1A396D0BFA510B34B2BE6A6C417747" />
             <ComponentRef Id="cmp587C2B24D8D4F42368199917A09070B4" />
             <ComponentRef Id="cmp772EB0C2F1F614E11229A2802087CC0D" />
             <ComponentRef Id="cmp165A1505F0A7BFAB25C9BF9A177E494A" />
