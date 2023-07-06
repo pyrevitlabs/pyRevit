@@ -97,15 +97,8 @@ def get_pyrevit_env_var(param_name):
     # This function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
 
-    data_dict = AppDomain.CurrentDomain.GetData(ENV_VAR_DICT_NAME)
-
-    if data_dict:
-        try:
-            return data_dict[param_name]
-        except KeyError:
-            return None
-    else:
-        return None
+    data_dict = get_pyrevit_env_vars()
+    return data_dict.get(param_name) if data_dict else None
 
 
 def set_pyrevit_env_var(param_name, param_value):
@@ -117,11 +110,6 @@ def set_pyrevit_env_var(param_name, param_value):
     """
     # Get function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
-    data_dict = AppDomain.CurrentDomain.GetData(ENV_VAR_DICT_NAME)
-
-    if data_dict:
-        data_dict[param_name] = param_value
-    else:
-        data_dict = {param_name: param_value}
-
+    data_dict = get_pyrevit_env_vars() or {}
+    data_dict[param_name] = param_value
     AppDomain.CurrentDomain.SetData(ENV_VAR_DICT_NAME, data_dict)
