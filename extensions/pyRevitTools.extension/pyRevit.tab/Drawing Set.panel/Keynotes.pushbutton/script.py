@@ -63,16 +63,16 @@ class EditRecordWindow(forms.WPFWindow):
         if self._mode == kdb.EDIT_MODE_ADD_CATEG:
             self._cat = True
             self.hide_element(self.recordParentInput)
-            self.Title = 'Add Category'
-            self.recordKeyTitle.Text = 'Create Category Key'
-            self.applyChanges.Content = 'Add Category'
+            self.Title = self.get_locale_string("AddCategoryTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("CreateCategoryKey")
+            self.applyChanges.Content = self.get_locale_string("AddCategoryApply")
 
         elif self._mode == kdb.EDIT_MODE_EDIT_CATEG:
             self._cat = True
             self.hide_element(self.recordParentInput)
-            self.Title = 'Edit Category'
-            self.recordKeyTitle.Text = 'Category Key'
-            self.applyChanges.Content = 'Update Category'
+            self.Title = self.get_locale_string("EditCategoryTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("EditCategoryKey")
+            self.applyChanges.Content = self.get_locale_string("EditCategoryApply")
             self.recordKey.IsEnabled = False
             if self._rkeynote:
                 if self._rkeynote.key:
@@ -82,15 +82,15 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_ADD_KEYNOTE:
             self.show_element(self.recordParentInput)
-            self.Title = 'Add Keynote'
-            self.recordKeyTitle.Text = 'Create Keynote Key'
-            self.applyChanges.Content = 'Add Keynote'
+            self.Title = self.get_locale_string("AddKeynoteTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("CreateKeynoteKey")
+            self.applyChanges.Content = self.get_locale_string("AddKeynoteApply")
 
         elif self._mode == kdb.EDIT_MODE_EDIT_KEYNOTE:
             self.show_element(self.recordParentInput)
-            self.Title = 'Edit Keynote'
-            self.recordKeyTitle.Text = 'Keynote Key'
-            self.applyChanges.Content = 'Update Keynote'
+            self.Title = self.get_locale_string("EditKeynoteTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("EditKeynoteKey")
+            self.applyChanges.Content = self.get_locale_string("EditKeynoteApply")
             self.recordKey.IsEnabled = False
             if self._rkeynote:
                 # start edit
@@ -144,10 +144,10 @@ class EditRecordWindow(forms.WPFWindow):
     def commit(self):
         if self._mode == kdb.EDIT_MODE_ADD_CATEG:
             if not self.active_key:
-                forms.alert('Category must have a unique key.')
+                forms.alert(self.get_locale_string("CategoryKeyValidate"))
                 return False
             elif not self.active_text.strip():
-                forms.alert('Category must have a title.')
+                forms.alert(self.get_locale_string("CategoryTitleValidate"))
                 return False
             logger.debug('Adding category: {} {}'
                          .format(self.active_key, self.active_text))
@@ -162,8 +162,7 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_EDIT_CATEG:
             if not self.active_text:
-                forms.alert('Existing title is removed. '
-                            'Category must have a title.')
+                forms.alert(self.get_locale_string("CategoryTitleRemoved"))
                 return False
             try:
                 # update category title if changed
@@ -178,13 +177,13 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_ADD_KEYNOTE:
             if not self.active_key:
-                forms.alert('Keynote must have a unique key.')
+                forms.alert(self.get_locale_string("KeynoteKeyValidate"))
                 return False
             elif not self.active_text:
-                forms.alert('Keynote must have text.')
+                forms.alert(self.get_locale_string("KeynoteTextValidate"))
                 return False
             elif not self.active_parent_key:
-                forms.alert('Keynote must have a parent.')
+                forms.alert(self.get_locale_string("KeynoteParentValidate"))
                 return False
             try:
                 self._res = kdb.add_keynote(self._conn,
@@ -198,7 +197,7 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_EDIT_KEYNOTE:
             if not self.active_text:
-                forms.alert('Existing text is removed. Keynote must have text.')
+                forms.alert(self.get_locale_string("KeynoteTextRemoved"))
                 return False
             try:
                 # update keynote title if changed
@@ -247,7 +246,7 @@ class EditRecordWindow(forms.WPFWindow):
         reserved_keys.extend([x.LockTargetRecordKey for x in locks])
         # ask for a unique new key
         new_key = forms.ask_for_unique_string(
-            prompt='Enter a Unique Key',
+            prompt=self.get_locale_string("EnterUniqueKey"),
             title=self.Title,
             reserved_values=reserved_keys,
             owner=self)
@@ -265,7 +264,7 @@ class EditRecordWindow(forms.WPFWindow):
         # TODO: pick_parent
         # categories = get_categories(self._conn)
         # keynotes_tree = get_keynotes_tree(self._conn)
-        forms.alert('Pick parent...')
+        forms.alert(self.get_locale_string("PickParent"))
         # remove self from that record if self is not none
         # prompt to select a record
         # apply the record key on the button
@@ -285,14 +284,14 @@ class EditRecordWindow(forms.WPFWindow):
     def select_template(self, sender, args):
         # TODO: get templates from config
         template = forms.SelectFromList.show(
-            ["-- reserved for future use --", "!! do not use !! "],
-            title='Select Template',
+            [self.get_locale_string("TemplateReserved"), self.get_locale_string("TemplateDontUse")],
+            title=self.get_locale_string("SelectTemplate"),
             owner=self)
         if template:
             self.active_text = template
 
     def translate(self, sender, args):
-        forms.alert("Not yet implemented. Coming soon.")
+        forms.alert(self.get_locale_string("ComingSoon"))
 
     def apply_changes(self, sender, args):
         logger.debug('Applying changes...')
