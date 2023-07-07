@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Настройка ключевых пометок (КП)</system:String>
+    
+    <system:String x:Key="ImportKeynotes">Импорт КП</system:String>
+    <system:String x:Key="ImportKeynotesInfo">Импортирует КП из стандартного файла</system:String>
+    
+    <system:String x:Key="ExportKeynotes">Экспорт всех</system:String>
+    <system:String x:Key="ExportKeynotesInfo">Экспортирует все КП в стандартный файл</system:String>
+    
+    <system:String x:Key="ExportVisibleKeynotes">Видимые</system:String>
+    <system:String x:Key="ExportVisibleKeynotesInfo">Экспортирует видимые КП в стандартный файл</system:String>
+
+    <system:String x:Key="RefreshKeynotes">Обновить</system:String>
+    <system:String x:Key="RefreshKeynotesInfo">Перезагружает файл КП в соответствии с изменениями</system:String>
+    
+    <system:String x:Key="ChangeKeynote">Изменить файл КП.</system:String>
+    <system:String x:Key="ShowKeynote">Показать файл КП.</system:String>
+    
+    <system:String x:Key="UpdateKeynote">Обновить модель</system:String>
+    <system:String x:Key="UpdateKeynoteInfo">Перезагружает файл КП в соответствии с изменениями</system:String>
+
+    <system:String x:Key="CategoryKeynotes">Категории</system:String>
+    <system:String x:Key="AddKeynoteCategory">Добавить категорию КП</system:String>
+    <system:String x:Key="EditKeynoteCategory">Редактировать выделенную категорию</system:String>
+    <system:String x:Key="RemoveKeynoteCategory">Удалить выделенную категорию</system:String>
+    <system:String x:Key="ReKeyKeynoteCategory">Изменить ключ для выделенной категории</system:String>
+    <system:String x:Key="ShowChangeKeynoteCategoryHistory">Показать историю изменений категории</system:String>
+
+    <system:String x:Key="Keynotes">Ключевые пометки</system:String>
+    <system:String x:Key="AddKeynote">Добавить новую КП</system:String>
+    <system:String x:Key="SearchKeynote">Найти экземпляры выделенной КП</system:String>
+    <system:String x:Key="EditKeynote">Редактировать выделенную КП</system:String>
+    <system:String x:Key="RemoveKeynote">Удалить выделенную КП</system:String>
+    <system:String x:Key="AddChildKeynote">Добавить новую КП как дочерний элемент в выделенную КП</system:String>
+    <system:String x:Key="DuplicateKeynote">Дублировать выделенную КП</system:String>
+    <system:String x:Key="ChangeKeyKeynote">Изменить ключ выделенной КП</system:String>
+    <system:String x:Key="ChangeCategoryKeynote">Изменить категорию выделенной КП</system:String>
+    <system:String x:Key="ShowChangeKeynoteHistory">Показать историю изменений КП</system:String>
+
+    <system:String x:Key="PlaceKeynote">Вставка</system:String>
+    <system:String x:Key="UserKeynotes">КП для пользователя</system:String>
+    <system:String x:Key="ElementKeynotes">КП для элемента</system:String>
+    <system:String x:Key="MaterialKeynotes">КП для материала</system:String>
+
+    <system:String x:Key="KeynotesHistory">История КП</system:String>
+    <system:String x:Key="EnableHistory">Включить историю</system:String>
+    <system:String x:Key="EnableHistoryInfo">Включить отслеживание истории КП.</system:String>
+    
+    <GridLength x:Key="RightPanelWidth">160</GridLength>
+    <GridLength x:Key="RefreshKeynotesWidth">80</GridLength>
+</ResourceDictionary>
