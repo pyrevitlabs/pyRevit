@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Manage Keynotes</system:String>
+    
+    <system:String x:Key="ImportKeynotes">Import Keynotes</system:String>
+    <system:String x:Key="ImportKeynotesInfo">Import keynotes from Revit standard keynote file</system:String>
+    
+    <system:String x:Key="ExportKeynotes">Export All</system:String>
+    <system:String x:Key="ExportKeynotesInfo">Export keynotes to Revit standard keynote file</system:String>
+    
+    <system:String x:Key="ExportVisibleKeynotes">or Visible</system:String>
+    <system:String x:Key="ExportVisibleKeynotesInfo">Export listed keynotes to Revit standard keynote file</system:String>
+
+    <system:String x:Key="RefreshKeynotes">Refresh</system:String>
+    <system:String x:Key="RefreshKeynotesInfo">Reloads keynote file and updates keynotes per changes</system:String>
+   
+    <system:String x:Key="ChangeKeynote">Change keynote file.</system:String>
+    <system:String x:Key="ShowKeynote">Show keynote file.</system:String>
+    
+    <system:String x:Key="UpdateKeynote">Update Model</system:String>
+    <system:String x:Key="UpdateKeynoteInfo">Reloads keynote file and updates keynotes per changes</system:String>
+
+    <system:String x:Key="CategoryKeynotes">Categories</system:String>
+    <system:String x:Key="AddKeynoteCategory">Add new keynote category</system:String>
+    <system:String x:Key="EditKeynoteCategory">Edit selected category</system:String>
+    <system:String x:Key="RemoveKeynoteCategory">Remove selected category</system:String>
+    <system:String x:Key="ReKeyKeynoteCategory">Change key for selected category</system:String>
+    <system:String x:Key="ShowChangeKeynoteCategoryHistory">Show category change history</system:String>
+
+    <system:String x:Key="Keynotes">Keynotes</system:String>
+    <system:String x:Key="AddKeynote">Add a new keynote</system:String>
+    <system:String x:Key="SearchKeynote">Find instances of selected keynote</system:String>
+    <system:String x:Key="EditKeynote">Edit selected keynote</system:String>
+    <system:String x:Key="RemoveKeynote">Remove selected keynote</system:String>
+    <system:String x:Key="AddChildKeynote">Add a new keynote as a child to the selected keynote</system:String>
+    <system:String x:Key="DuplicateKeynote">Duplicate selected keynote</system:String>
+    <system:String x:Key="ChangeKeyKeynote">Change key of selected keynote</system:String>
+    <system:String x:Key="ChangeCategoryKeynote">Change category of selected keynote</system:String>
+    <system:String x:Key="ShowChangeKeynoteHistory">Show keynote change history</system:String>
+
+    <system:String x:Key="PlaceKeynote">Place</system:String>
+    <system:String x:Key="UserKeynotes">User Keynotes</system:String>
+    <system:String x:Key="ElementKeynotes">Element Keynotes</system:String>
+    <system:String x:Key="MaterialKeynotes">Material Keynotes</system:String>
+
+    <system:String x:Key="KeynotesHistory">Keynotes History</system:String>
+    <system:String x:Key="EnableHistory">Enable History</system:String>
+    <system:String x:Key="EnableHistoryInfo">Enable history tracking on keynotes.</system:String>
+    
+    <GridLength x:Key="RightPanelWidth">140</GridLength>
+    <GridLength x:Key="RefreshKeynotesWidth">70</GridLength>
+</ResourceDictionary>
