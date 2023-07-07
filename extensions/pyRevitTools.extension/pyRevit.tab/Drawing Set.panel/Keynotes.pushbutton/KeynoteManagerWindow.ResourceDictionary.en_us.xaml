@@ -50,4 +50,76 @@
     
     <GridLength x:Key="RightPanelWidth">140</GridLength>
     <GridLength x:Key="RefreshKeynotesWidth">70</GridLength>
+    
+    
+    <system:String x:Key="AllCategories">-- ALL CATEGORIES --</system:String>
+    <system:String x:Key="ADCLockedLocalFile">Keynote file is being modified and locked by: {}. Please try again later</system:String>
+    <system:String x:Key="ADCLockedLocalFileNone">Can not get keynote file from {}</system:String>
+    <system:String x:Key="ADCNotAvailable">
+        This model is using a keynote file that seems to be 
+        managed by {long} ({short}). But {short} is not 
+        running, or is not installed. Please install/run the 
+        {short} and open the keynote manager again
+    </system:String>
+    
+    <system:String x:Key="SetKeynoteFileTransactionName">Set Keynote File</system:String>
+    <system:String x:Key="KeynoteFileNotExists">Keynote file is not accessible. Please select a keynote file.</system:String>
+    <system:String x:Key="KeynoteFileNotSetup">Keynote file is not setup.</system:String>
+    <system:String x:Key="KeynoteFileIsReadOnly">Keynote file is read-only.</system:String>
+    
+    <system:String x:Key="KeynoteFileConnectionFailed" xml:space="preserve">Existing keynote file needs to be converted to a format usable by this tool. The resulting keynote file is still readable by Revit and could be shared with other projects. Users should NOT be making changes to the existing keynote file during the conversion process.
+Are you sure you want to convert?
+    </system:String>
+    
+    <system:String x:Key="KeynoteFileConnectionConvert">Convert</system:String>
+    <system:String x:Key="KeynoteFileConnectionSelectOther">Select a different keynote file</system:String>
+    <system:String x:Key="KeynoteFileConnectionHelp">Give me more info</system:String>
+    <system:String x:Key="KeynoteFileConversionCompleted">Conversion completed!</system:String>
+    <system:String x:Key="KeynoteFileConversionFailed">Conversion failed! %s</system:String>
+    <system:String x:Key="KeynoteFileNotConversion">Keynote file is not yet converted.</system:String>
+    <system:String x:Key="KeynoteFileLaunchAgain">Launch the tool again to manage keynotes.</system:String>
+    
+    <system:String x:Key="KeynoteFileBackupException">Error backing up existing keynote file.</system:String>
+    <system:String x:Key="KeynoteFilePreparingException">Error preparing new keynote file.</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">Enter a Unique Key</system:String>
+    <system:String x:Key="ChooseUniqueKey">Choose New Key</system:String>
+    <system:String x:Key="SelectParentCategory">Select Parent Category</system:String>
+    
+    <system:String x:Key="SelectFilter">Select Filter</system:String>
+    
+    <system:String x:Key="KeynoteLockedUnknownUser">and unknown user</system:String>
+    <system:String x:Key="KeynoteLocked">
+        Category is locked and is being edited by {}. 
+        Wait until their changes are committed. 
+        Meanwhile you can use or modify the keynotes 
+        under this category.
+    </system:String>
+    
+    <system:String x:Key="CategoryLockedUnknownUser">and unknown user</system:String>
+    <system:String x:Key="CategoryLocked">
+        Category is locked and is being edited by {}. 
+        Wait until their changes are committed.
+    </system:String>
+    
+    <system:String x:Key="CategoryChildrenLocked">At least one keynote in this category is locked. Wait until the changes are committed.</system:String>
+    <system:String x:Key="CategoryHasChildren">Category "%s" is not empty. Delete all its keynotes first.</system:String>
+    <system:String x:Key="CategoryUsed">Category "%s" is used in the model. Can not delete.</system:String>
+    <system:String x:Key="PromptToDeleteCategory">Are you sure you want to delete category "%s"?</system:String>
+    
+    <system:String x:Key="KeynoteHasChildren">Keynote "%s" has sub-keynotes. Delete all its sub-keynotes first.</system:String>
+    <system:String x:Key="KeynoteUsed">"Keynote "%s" is used in the model. Can not delete.</system:String>
+    <system:String x:Key="PromptToDeleteKeynote">Are you sure you want to delete keynote "%s"?</system:String>
+    
+    <system:String x:Key="ReKeyKeynoteTransaction">Rekey Keynote {}</system:String>
+    <system:String x:Key="ReKeyKeynoteChildrenLocked">At least one child keynote of this keynote is locked. Wait until the changes are committed.</system:String>
+    <system:String x:Key="ReCatKeynoteChildrenLocked">At least one child keynote of this keynote is locked. Wait until the changes are committed.</system:String>
+    
+    
+    <system:String x:Key="KeynoteName">{} "{}" Keynote @ "{}"</system:String>
+    <system:String x:Key="LastEditKeynote"> - Last Edited By "{}"</system:String>
+    <system:String x:Key="UpdateKeynotesTransactionName">Update Keynotes</system:String>
+    <system:String x:Key="ComingSoon">Not yet implemented. Coming soon.</system:String>
+    <system:String x:Key="SkipDuplicates">Do you want me to skip duplicates if any?</system:String>
+    <system:String x:Key="MainException">Creating keynote manager window</system:String>
 </ResourceDictionary>
