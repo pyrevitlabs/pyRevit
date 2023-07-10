@@ -642,7 +642,11 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     def get_current_attachment(self):
         """Return current pyRevit attachment."""
-        return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+        try:
+            return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+        except PyRevitException as ex:
+            mlogger.error('Error getting current attachment. | %s',
+                          ex)
 
     def get_active_cpython_engine(self):
         """Return active cpython engine."""
