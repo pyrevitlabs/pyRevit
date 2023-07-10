@@ -11,7 +11,7 @@ datafile = script.get_document_data_file("SelList", "pym")
 
 
 try:
-    f = open(datafile, 'r')
+    f = open(datafile, 'rb')
     current_selection = pickle.load(f)
     f.close()
 

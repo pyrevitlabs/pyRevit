@@ -34,7 +34,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public static class Telemetry {
         private static string _exeBuild = null;
-        
+
+        public static string DefaultUser { get; set; } = string.Empty;
+
         public static string SerializeTelemetryRecord(object telemetryRecord) {
             return JsonConvert.SerializeObject(telemetryRecord);
         }
@@ -91,19 +93,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static string GetRevitUser(object source) {
-            string username = string.Empty;
-            
             switch (source) {
                 case UIApplication uiapp:
-                    username = uiapp.Application.Username;
-                    break;
+                    return uiapp.Application.Username;
 
                 case Application app:
-                    username = app.Username;
-                    break;
+                    return app.Username;
             }
 
-            return username;
+            return DefaultUser;
         }
 
         public static string GetRevitVersion(object source) {

@@ -3,6 +3,7 @@
 Example:
     >>> from pyrevit.forms import WPFWindow
 """
+#pylint: disable=consider-using-f-string,wrong-import-position
 
 import sys
 import os
@@ -15,11 +16,11 @@ import datetime
 import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DOCS, BIN_DIR
-from pyrevit import PyRevitCPythonNotSupported, PyRevitException, PyRevitCPythonNotSupported
-import pyrevit.compat as compat
+from pyrevit import PyRevitCPythonNotSupported, PyRevitException
+from pyrevit.compat import PY3, IRONPY340
 from pyrevit.compat import safe_strtype
 
-if compat.PY3:
+if PY3 and not IRONPY340:
     raise PyRevitCPythonNotSupported('pyrevit.forms')
 
 from pyrevit import coreutils
@@ -34,14 +35,18 @@ from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
+from pyrevit.framework import Uri, UriKind, ResourceDictionary
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
 from pyrevit import versionmgr
+from pyrevit.userconfig import user_config
 
 import pyevent #pylint: disable=import-error
 
+import Autodesk.Windows.ComponentManager #pylint: disable=import-error
+import Autodesk.Internal.InfoCenter #pylint: disable=import-error
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -148,6 +153,7 @@ class WPFWindow(framework.Windows.Window):
 
     def __init__(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
         """Initialize WPF window and resources."""
+
         # load xaml
         self.load_xaml(
             xaml_source,
@@ -161,12 +167,7 @@ class WPFWindow(framework.Windows.Window):
         self.window_id = coreutils.new_uuid()
 
         if not literal_string:
-            if not op.exists(xaml_source):
-                wpf.LoadComponent(self,
-                                  os.path.join(EXEC_PARAMS.command_path,
-                                               xaml_source))
-            else:
-                wpf.LoadComponent(self, xaml_source)
+            wpf.LoadComponent(self, self._determine_xaml(xaml_source))
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
@@ -178,6 +179,52 @@ class WPFWindow(framework.Windows.Window):
         WPFWindow.setup_resources(self)
         if handle_esc:
             self.setup_default_handlers()
+
+    def _determine_xaml(self, xaml_source):
+        xaml_file = xaml_source
+        if not op.exists(xaml_file):
+            xaml_file = os.path.join(EXEC_PARAMS.command_path, xaml_source)
+
+        english_xaml_file = xaml_file.replace('.xaml', '.en_us.xaml')
+        localized_xaml_file = xaml_file.replace(
+            '.xaml',
+            '.{}.xaml'.format(user_config.user_locale)
+        )
+
+        english_xaml_resfile = \
+            xaml_file.replace('.xaml', '.ResourceDictionary.en_us.xaml')
+        localized_xaml_resfile = xaml_file.replace(
+            '.xaml',
+            '.ResourceDictionary.{}.xaml'.format(user_config.user_locale)
+        )
+
+        # if localized version of xaml file is provided, use that
+        if os.path.isfile(localized_xaml_file):
+            return localized_xaml_file
+
+        if os.path.isfile(english_xaml_file):
+            return english_xaml_file
+
+        # otherwise look for .ResourceDictionary files and load those,
+        # returning the original xaml_file
+        if os.path.isfile(localized_xaml_resfile):
+            self.merge_resource_dict(localized_xaml_resfile)
+
+        elif os.path.isfile(english_xaml_resfile):
+            self.merge_resource_dict(english_xaml_resfile)
+
+        return xaml_file
+
+    def merge_resource_dict(self, xaml_source):
+        """Reads ResourceDictionary from given xaml file and merged into
+        resource dictionary of this window
+        """
+        lang_dictionary = ResourceDictionary()
+        lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
+        self.Resources.MergedDictionaries.Add(lang_dictionary)
+
+    def get_locale_string(self, string_name):
+        return self.FindResource(string_name)
 
     def setup_owner(self):
         wih = Interop.WindowInteropHelper(self)
@@ -758,6 +805,8 @@ class SelectFromList(TemplateUserInputWindow):
 
     """
 
+    in_check = False
+    in_uncheck = False
     xaml_source = 'SelectFromList.xaml'
 
     @property
@@ -967,11 +1016,21 @@ class SelectFromList(TemplateUserInputWindow):
 
     def check_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as checked."""
-        self._set_states(state=True, selected=True)
+        if not self.in_check:
+            try:
+                self.in_check = True
+                self._set_states(state=True, selected=True)
+            finally:
+                self.in_check = False
 
     def uncheck_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as unchecked."""
-        self._set_states(state=False, selected=True)
+        if not self.in_uncheck:
+            try:
+                self.in_uncheck = True
+                self._set_states(state=False, selected=True)
+            finally:
+                self.in_uncheck = False
 
     def button_reset(self, sender, args):#pylint: disable=W0613
         if self.reset_func:
@@ -1233,8 +1292,9 @@ class GetValueWindow(TemplateUserInputWindow):
             self.sliderPrompt.Text = value_prompt
             self.numberPicker.Minimum = kwargs.get('min', 0)
             self.numberPicker.Maximum = kwargs.get('max', 100)
+            self.numberPicker.TickFrequency = kwargs.get('interval', 1)
             self.numberPicker.Value = \
-                value_default if isinstance(value_default, float) \
+                value_default if isinstance(value_default, (float, int)) \
                     else self.numberPicker.Minimum
 
     def string_value_changed(self, sender, args): #pylint: disable=unused-argument
@@ -1812,7 +1872,10 @@ class RevisionOption(TemplateListItem):
     def name(self):
         """Revision name (description)."""
         revnum = self.item.SequenceNumber
-        if hasattr(self.item, 'RevisionNumber'):
+        rev_settings = \
+            DB.RevisionSettings.GetRevisionSettings(self.item.Document)
+
+        if rev_settings.RevisionNumbering == DB.RevisionNumbering.PerProject:
             revnum = self.item.RevisionNumber
         return '{}-{}-{}'.format(revnum,
                                  self.item.Description,
@@ -2774,6 +2837,49 @@ def pick_folder(title=None, owner=None):
             return fb_dlg.SelectedPath
 
 
+def result_item_result_clicked(sender, e, debug=False):
+    if debug:
+        print("Result clicked")  # using print_md here will break the script
+    pass
+
+
+def show_balloon(header, text, tooltip='', group='', is_favourite=False, is_new=False, timestamp=None, click_result=result_item_result_clicked):
+    r"""Show ballon in the info center section
+
+    Args:
+        header (str): Category section (Bold)
+        text (str): Title section (Regular)
+        tooltip (str): Tooltip
+        is_favourite (bool): Add a blue star before header
+        is_new (bool): Flag to new
+        timestamp (str): Set timestamp
+        click_result (def): Executed after a click event
+
+    Returns:
+        balloon: None
+
+    Example:
+        >>> from pyrevit import forms
+        >>> date = '2019-01-01 00:00:00'
+        >>> date = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+        >>> forms.show_balloon("my header", "Lorem ipsum", tooltip='tooltip',   group='group', is_favourite=True, is_new=True, timestamp = date, click_result = forms.result_item_result_clicked)
+        ...
+    """
+    result_item = Autodesk.Internal.InfoCenter.ResultItem()
+    result_item.Category = header
+    result_item.Title = text
+    result_item.TooltipText = tooltip
+    result_item.Group = group
+    result_item.IsFavorite = is_favourite
+    result_item.IsNew = is_new
+    if timestamp:
+        result_item.Timestamp = timestamp
+    result_item.ResultClicked += click_result
+    balloon = Autodesk.Windows.ComponentManager.InfoCenterPaletteManager.ShowBalloon(
+        result_item)
+    return balloon
+
+
 def pick_file(file_ext='*', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False, title=None):
     r"""Pick file dialog to select a destination file.
@@ -3225,7 +3331,7 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         )
 
 
-def ask_for_number_slider(default=None, min=0, max=100, prompt=None, title=None, **kwargs):
+def ask_for_number_slider(default=None, min=0, max=100, interval=1, prompt=None, title=None, **kwargs):
     """Ask user to select a number value.
 
     This is a shortcut function that configures :obj:`GetValueWindow` for
@@ -3235,6 +3341,7 @@ def ask_for_number_slider(default=None, min=0, max=100, prompt=None, title=None,
         default (str): default unique string. must not be in reserved_values
         min (int): minimum value on slider
         max (int): maximum value on slider
+        interval (int): number interval between values
         prompt (str): prompt message
         title (str): title message
         kwargs (type): other arguments to be passed to :obj:`GetValueWindow`
@@ -3243,20 +3350,27 @@ def ask_for_number_slider(default=None, min=0, max=100, prompt=None, title=None,
         str: selected string value
 
     Example:
-        >>> forms.ask_for_string(
+        >>> forms.ask_for_number_slider(
         ...     default=50,
-        ...     min = 0
-        ...     max = 100
+        ...     min = 0,
+        ...     max = 100,
+        ...     interval = 5,
         ...     prompt='Select a number:',
         ...     title='test title')
         ... '50'
+    
+    In this example, the slider will allow values such as '40, 45, 50, 55, 60' etc
     """
+
     return GetValueWindow.show(
         None,
         value_type='slider',
         default=default,
         prompt=prompt,
         title=title,
+        max=max,
+        min=min,
+        interval=interval,
         **kwargs
         )
 

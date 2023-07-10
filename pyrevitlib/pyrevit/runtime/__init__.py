@@ -266,6 +266,7 @@ def get_references():
         'pyRevitLabs.Emojis',
         'pyRevitLabs.TargetApps.Revit',
         'pyRevitLabs.PyRevit',
+        'pyRevitLabs.PyRevit.Runtime.Shared',
         ]
 
     # another revit api
@@ -331,7 +332,7 @@ def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
 
 
 def create_ext_command_attrs():
-    """Create dotnet attributes for Revit extenrnal commads.
+    """Create dotnet attributes for Revit external commands.
 
     This method is used in creating custom dotnet types for pyRevit commands
     and compiling them into a DLL assembly. Current implementation sets
@@ -466,6 +467,9 @@ if not EXEC_PARAMS.doc_mode:
     else:
         # else, let's generate the assembly and load it
         RUNTIME_ASSM = _get_runtime_asm()
+
+    if RUNTIME_ASSM is None:
+        raise Exception("Error dynamically compiling pyRevit runtime")
 
     CMD_EXECUTOR_TYPE = \
         assmutils.find_type_by_name(RUNTIME_ASSM, CMD_EXECUTOR_TYPE_NAME)

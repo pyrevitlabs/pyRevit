@@ -95,6 +95,7 @@ class SettingsWindow(forms.WPFWindow):
             '2021': self.revit2021_cb,
             '2022': self.revit2022_cb,
             '2023': self.revit2023_cb,
+            '2024': self.revit2024_cb,
             }
 
         self.set_image_source(self.lognone, 'lognone.png')
@@ -267,31 +268,20 @@ class SettingsWindow(forms.WPFWindow):
                     "{}\n".format(' '.join(
                         coreutils.split_words(str(api_title))
                     ))))
-                tblock.Inlines.Add(Documents.Run(
-                    "Not Supported in this Revit Version\n"
-                ))
+                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.NotSupport")))
 
             # if event is JournalCommandExecuted, create better user interface
             elif event_type == EventType.Application_JournalCommandExecuted:
-                tblock.Inlines.Add(Documents.Run("Command Executed\n"))
-                tblock.Inlines.Add(Documents.Run(
-                    "Event Type:               journal-command-exec\n"
-                    ))
+                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.CommandExecuted")))
+                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.CommandExecuted.EventType")))
                 tblock.Inlines.Add(
-                    Documents.Run(
-                        "Tracks execution of commands from active "
-                        "journal file. Includes:\n"))
+                    Documents.Run(self.get_locale_string("Events.CommandExecuted.TracksExecution")))
                 tblock.Inlines.Add(
-                    Documents.Run(
-                        "  Builtin Commands (e.g. ID_OBJECTS_WALL)\n"))
+                    Documents.Run(self.get_locale_string("Events.CommandExecuted.BuiltinCommands")))
                 tblock.Inlines.Add(
-                    Documents.Run(
-                        "  Thirdparty Commands (e.g. CustomCtrl_%CustomCtrl_"
-                        "%Site Designer%Modify%Sidewalk)\n"))
+                    Documents.Run(self.get_locale_string("Events.CommandExecuted.ThirdPartyCommands")))
                 tblock.Inlines.Add(
-                    Documents.Run(
-                        "  pyRevit Commands (e.g. CustomCtrl_%CustomCtrl_"
-                        "%pyRevit%pyRevit%Settings)\n"))
+                    Documents.Run(self.get_locale_string("Events.CommandExecuted.pyRevitCommands")))
 
             # otherwise prepare the option for the event type
             elif event_type in supportedEvents:
@@ -299,16 +289,14 @@ class SettingsWindow(forms.WPFWindow):
                     "{}\n".format(' '.join(
                         coreutils.split_words(str(api_title))
                     ))))
-                tblock.Inlines.Add(Documents.Run(
-                    "API Event Type:           "
-                    ))
+                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.TypeEvent")))
                 hyperlink = Documents.Hyperlink(Documents.Run(api_obj + "\n"))
                 hyperlink.NavigateUri = \
                     System.Uri(apidocs.make_event_uri(api_namespace + api_obj))
                 hyperlink.Click += self.handle_url_click
                 tblock.Inlines.Add(hyperlink)
                 tblock.Inlines.Add(Documents.Run(
-                    "pyRevit Event/Hook Name:  {}".format(
+                    self.get_locale_string("Events.pyRevitHook").format(
                         EventUtils.GetEventName(event_type)
                     )))
             cbox.Content = tblock
@@ -392,14 +380,14 @@ class SettingsWindow(forms.WPFWindow):
                     checkbox.Content = \
                         self._make_product_name(
                             attachments[rvt_ver].Product,
-                            '<current>'
+                            self.get_locale_string("RevitAttachment.Current")
                             )
 
                 checkbox.IsChecked = True
                 if attachments[rvt_ver].AttachmentType == \
                         PyRevit.PyRevitAttachmentType.AllUsers:
                     checkbox.IsEnabled = False
-                    checkbox.Content += " <all users>"
+                    checkbox.Content += self.get_locale_string("RevitAttachment.AllUsers")
                 else:
                     checkbox.IsEnabled = True
             else:
@@ -407,13 +395,13 @@ class SettingsWindow(forms.WPFWindow):
                     checkbox.Content = \
                         self._make_product_name(
                             installed_revits[rvt_ver],
-                            '<Not attached>'
+                            self.get_locale_string("RevitAttachment.NotAttached")
                             )
                     checkbox.IsEnabled = True
                     checkbox.IsChecked = False
                 else:
                     checkbox.Content = \
-                        'Revit {} <Not installed>'.format(rvt_ver)
+                        self.get_locale_string("RevitAttachment.NotInstalled").format(rvt_ver)
                     checkbox.IsEnabled = False
                     checkbox.IsChecked = False
 
@@ -435,8 +423,7 @@ class SettingsWindow(forms.WPFWindow):
             if self.availableEngines.SelectedItem:
                 new_engine = self.availableEngines.SelectedItem.engine.Version
                 if not self.is_same_version_as_running(new_engine):
-                    forms.alert('Active engine has changed. '
-                                'Restart Revit for this change to take effect.')
+                    forms.alert(self.get_locale_string("Engines.WasChanged"))
                 # configure the engine on this version
                 PyRevit.PyRevitAttachments.Attach(
                     int(HOST_APP.version),
@@ -551,7 +538,7 @@ class SettingsWindow(forms.WPFWindow):
                             )
             return
         serverbox.Background = self.Resources['pyRevitDarkBrush']
-        servermsg.Text = "Unknown Status. Click Here to Test"
+        servermsg.Text = self.get_locale_string("Telemetry.Status")
 
     def telemetryserver_changed(self, sender, args):
         """Reset telemetry server status light"""
@@ -848,8 +835,7 @@ class SettingsWindow(forms.WPFWindow):
             user_config.set_active_cpython_engine(engine_cfg.engine)
             if self.active_cpyengine.Version != engine_cfg.engine.Version \
                     and not self.reload_requested:
-                forms.alert('Active CPython engine has changed. '
-                            'Restart Revit for this change to take effect.')
+                forms.alert(self.get_locale_string("Engines.CPython.WasChanged"))
 
     def _save_user_extensions_list(self):
         # set extension folders from the list, after cleanup empty items
@@ -870,9 +856,7 @@ class SettingsWindow(forms.WPFWindow):
                     if current_applocale != applocale \
                             and not self.reload_requested:
                         request_reload = forms.alert(
-                            'UI language has changed. Reloading pyRevit is '
-                            'required for this change to take effect. Do you '
-                            'want to reload now?', yes=True, no=True)
+                            self.get_locale_string("UI-UX.LangChanged"), yes=True, no=True)
         # colorize docs
         user_config.colorize_docs = self.colordocs_cb.IsChecked
 
@@ -891,9 +875,7 @@ class SettingsWindow(forms.WPFWindow):
         if self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info \
                 and not self.reload_requested:
             request_reload = forms.alert(
-                'pyRevit UI Configuration has changed. Reloading pyRevit is '
-                'required for this change to take effect. Do you '
-                'want to reload now?', yes=True, no=True)
+                self.get_locale_string("UI-UX.NeedReload"), yes=True, no=True)
         user_config.tooltip_debug_info = self.loadtooltipex_cb.IsChecked
 
         return request_reload
@@ -905,18 +887,14 @@ class SettingsWindow(forms.WPFWindow):
         if self.routes_cb.IsChecked:
             if not user_config.routes_server:
                 request_reload = forms.alert(
-                    'Routes server setting has changed. '
-                    'Reloading pyRevit is required for this change to take '
-                    'effect. Do you want to reload now?', yes=True, no=True)
+                    self.get_locale_string("Routes.Changed"), yes=True, no=True)
         else:
             routes.deactivate_server()
 
         if user_config.load_core_api != self.coreapi_cb.IsChecked \
                 and not request_reload:
             request_reload = forms.alert(
-                'pyRevit Core REST API setting has changed. '
-                'Reloading pyRevit is required for this change to take effect. '
-                'Do you want to reload now?', yes=True, no=True)
+                self.get_locale_string("Routes.RestChanged"), yes=True, no=True)
 
         # save configs
         user_config.routes_server = self.routes_cb.IsChecked

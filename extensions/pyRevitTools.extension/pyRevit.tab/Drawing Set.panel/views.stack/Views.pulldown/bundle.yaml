@@ -20,5 +20,6 @@ layout:
   - Match Title on Sheet in Open Docs
   - Create Parallel Section
   - Add Views to Sheets
-  - Remove Empty Tags
   - Remove Underlay From Selected Views
+  - -----
+  - Set View Template Controlled Parameters

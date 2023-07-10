@@ -12,7 +12,7 @@ Example:
     >>> from pyrevit.userconfig import user_config
     >>> user_config.add_section('newsection')
     >>> user_config.newsection.property = value
-    >>> user_config.newsection.get('property', default_value)
+    >>> user_config.newsection.get_option('property', default_value)
     >>> user_config.save_changes()
 
 
@@ -28,7 +28,7 @@ Example:
     >>> from pyrevit import script
     >>> cfg = script.get_config()
     >>> cfg.property = value
-    >>> cfg.get('property', default_value)
+    >>> cfg.get_option('property', default_value)
     >>> script.save_config()
 """
 #pylint: disable=C0103,C0413,W0703
@@ -70,7 +70,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         >>> cfg = PyRevitConfig(cfg_file_path)
         >>> cfg.add_section('sectionname')
         >>> cfg.sectionname.property = value
-        >>> cfg.sectionname.get('property', default_value)
+        >>> cfg.sectionname.get_option('property', default_value)
         >>> cfg.save_changes()
     """
 

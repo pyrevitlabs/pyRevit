@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Import existing CSV file as a key schedule.
 
 - First CSV row must be field names
@@ -9,7 +10,7 @@ A,Value11,Value12
 B,Value21,Value22
 C,Value32,Value32
 """
-#pylint: disable=C0103,E0401,W0703
+# pylint: disable=C0103,E0401,W0703
 
 import csv
 import codecs
@@ -19,7 +20,7 @@ from collections import defaultdict
 from pyrevit import PyRevitException
 from pyrevit import forms
 from pyrevit import coreutils
-from pyrevit import revit, DB
+from pyrevit import revit, DB, HOST_APP
 from pyrevit import script
 
 
@@ -32,9 +33,7 @@ def safe_delete_keysched(doc, keysched):
         doc.Delete(keysched.Id)
         return True
     except Exception as ex:
-        forms.alert(
-            "Failed deleting existing key schedule",
-            expanded=str(ex))
+        forms.alert("Failed deleting existing key schedule", expanded=str(ex))
     return False
 
 
@@ -53,9 +52,9 @@ def create_schedule_records(schedule, fields, records):
     # now grab the records and update their param values
     # iterate over elements and records
     for keysched_el, record_data in zip(
-            revit.query.get_all_elements_in_view(schedule),
-            records):
-        logger.debug('Processing record: %s', record_data)
+        revit.query.get_all_elements_in_view(schedule), records
+    ):
+        logger.debug("Processing record: %s", record_data)
         for idx, field_name in enumerate(fields):
             if record_data[idx]:
                 p = keysched_el.LookupParameter(field_name)
@@ -100,29 +99,32 @@ def resolve_naming_conflicts(category, sched_name, fields, doc=None):
     """
     doc = doc or revit.doc
 
-    all_schedules = \
-        revit.query.get_all_views(doc=doc, view_types=[DB.ViewType.Schedule])
+    all_schedules = revit.query.get_all_views(
+        doc=doc, view_types=[DB.ViewType.Schedule]
+    )
     # check for existing key schedules (check 1)
     matching_keysched = next(
         (
-            x for x in all_schedules
+            x
+            for x in all_schedules
             if x.Definition.IsKeySchedule
             and x.Definition.CategoryId == category.Id
         ),
-        None
+        None,
     )
     if matching_keysched:
         cfield = has_field_conflicts(matching_keysched.Definition, fields)
         if cfield:
             if forms.alert(
-                    "Field \"{}\" is already used by another "
-                    "key schedule \"{}\". Multiple key schedules can not "
-                    "set values for same parameter. Do you want to delete "
-                    "the existing key schedule first?".format(
-                        cfield,
-                        matching_keysched.Name
-                        ),
-                    yes=True, no=True):
+                'Field "{}" is already used by another '
+                'key schedule "{}". Multiple key schedules can not '
+                "set values for same parameter. Do you want to delete "
+                "the existing key schedule first?".format(
+                    cfield, matching_keysched.Name
+                ),
+                yes=True,
+                no=True,
+            ):
                 # the the process continue to check matching names below
                 if not safe_delete_keysched(doc, matching_keysched):
                     return None
@@ -131,27 +133,32 @@ def resolve_naming_conflicts(category, sched_name, fields, doc=None):
 
     # by now, if there was a key schdule matching name, it is deleted
     # check for matching view names, of other types
-    all_schedules = \
-        revit.query.get_all_views(doc=doc, view_types=[DB.ViewType.Schedule])
-    existing_sched = \
-        revit.query.get_view_by_name(sched_name,
-                                     view_types=[DB.ViewType.Schedule])
+    all_schedules = revit.query.get_all_views(
+        doc=doc, view_types=[DB.ViewType.Schedule]
+    )
+    existing_sched = revit.query.get_view_by_name(
+        sched_name, view_types=[DB.ViewType.Schedule]
+    )
     if existing_sched:
         if forms.alert(
-                "There is an existing schedule with the same name \"{}\"."
-                "Do you want to choose a new name for this key schedule?"
-                .format(sched_name),
-                yes=True, no=True):
+            'There is an existing schedule with the same name "{}".'
+            "Do you want to choose a new name for this key schedule?".format(
+                sched_name
+            ),
+            yes=True,
+            no=True,
+        ):
             return forms.ask_for_unique_string(
                 reserved_values=[x.Name for x in all_schedules],
-                default='{} {}'.format(sched_name, coreutils.current_date())
+                default="{} {}".format(sched_name, coreutils.current_date()),
             )
         return None
     return sched_name
 
 
-def create_key_schedule(category, key_name, sched_name,
-                        fields=None, records=None, doc=None):
+def create_key_schedule(
+    category, key_name, sched_name, fields=None, records=None, doc=None
+):
     """Create a key schedule for given category and fill with given data."""
     # verify input
     doc = doc or revit.doc
@@ -160,34 +167,37 @@ def create_key_schedule(category, key_name, sched_name,
 
     # set name and key parameter name
     # fields[1:] because first field in keyname
-    new_name = \
-        resolve_naming_conflicts(category, sched_name, fields[1:], doc=doc)
+    new_name = resolve_naming_conflicts(
+        category, sched_name, fields[1:], doc=doc
+    )
     # if not name skip making schedule
     if not new_name:
         return
 
     # create the key schedule view
-    new_key_sched = \
-        DB.ViewSchedule.CreateKeySchedule(doc, category.Id)
+    new_key_sched = DB.ViewSchedule.CreateKeySchedule(doc, category.Id)
     new_key_sched.Name = new_name
     new_key_sched.KeyScheduleParameterName = key_name
     # set the schedulable fields
-    fsched_fields = {x.GetName(doc): x
-                     for x in new_key_sched.Definition.GetSchedulableFields()}
+    fsched_fields = {
+        x.GetName(doc): x
+        for x in new_key_sched.Definition.GetSchedulableFields()
+    }
     cancel_txn = False
     for field in fields:
         if field in fsched_fields:
             try:
                 new_key_sched.Definition.AddField(fsched_fields[field])
             except Exception:
-                logger.debug('Failed adding field: %s', field)
+                logger.debug("Failed adding field: %s", field)
         else:
             cancel_txn = True
             logger.error(
-                "Field \"%s\" is not schedulable for category \"%s\". "
+                'Field "%s" is not schedulable for category "%s". '
                 "Check applicable categories for this project parameter",
-                field, category.Name
-                )
+                field,
+                category.Name,
+            )
     # if any errors lets cancel to remove the created key schedule
     if cancel_txn:
         raise PyRevitException("Cancelling changes due to errors")
@@ -201,16 +211,18 @@ def create_key_schedule(category, key_name, sched_name,
 def find_matching_keyschedule(category, fields, doc=None):
     """Find any existing key schedules that have matching fields"""
     doc = doc or revit.doc
-    all_schedules = \
-        revit.query.get_all_views(doc=doc, view_types=[DB.ViewType.Schedule])
+    all_schedules = revit.query.get_all_views(
+        doc=doc, view_types=[DB.ViewType.Schedule]
+    )
     # check for existing key schedules (check 1)
     matching_keysched = next(
         (
-            x for x in all_schedules
+            x
+            for x in all_schedules
             if x.Definition.IsKeySchedule
             and x.Definition.CategoryId == category.Id
         ),
-        None
+        None,
     )
     if matching_keysched:
         if has_matching_fields(matching_keysched.Definition, fields):
@@ -221,11 +233,14 @@ def update_key_schedule(keyschedule, category, fields, records, doc=None):
     """Update existing key schedule with provided values"""
     doc = doc or revit.doc
     if forms.alert(
-            "key schedule \"{}\" has identical fields. Multiple key "
-            "schedules can not set values for same parameter.\n"
-            "Do you want to update the data in existing schedule?"
-            .format(keyschedule.Name),
-            yes=True, no=True):
+        'key schedule "{}" has identical fields. Multiple key '
+        "schedules can not set values for same parameter.\n"
+        "Do you want to update the data in existing schedule?".format(
+            keyschedule.Name
+        ),
+        yes=True,
+        no=True,
+    ):
         # updating cells is possible but more complex logic was necessary
         # to find existing, new, and deleted records
         # the approach below is simpler but takes more exec time
@@ -233,8 +248,8 @@ def update_key_schedule(keyschedule, category, fields, records, doc=None):
         value_dict = defaultdict(list)
         param_name = keyschedule.KeyScheduleParameterName
         for exst_el in revit.query.get_elements_by_categories(
-                [revit.query.get_builtincategory(category.Name)],
-                doc=doc):
+            [revit.query.get_builtincategory(category.Name)], doc=doc
+        ):
             param = exst_el.LookupParameter(param_name)
             if param:
                 value_dict[param.AsValueString()].append(exst_el.Id)
@@ -242,7 +257,7 @@ def update_key_schedule(keyschedule, category, fields, records, doc=None):
         # remove existing fields
         table_data = keyschedule.GetTableData()
         section_data = table_data.GetSectionData(DB.SectionType.Body)
-        for idx in range(section_data.NumberOfRows-1, 0, -1):
+        for idx in range(section_data.NumberOfRows - 1, 0, -1):
             if section_data.CanRemoveRow(idx):
                 section_data.RemoveRow(idx)
         # create new fields
@@ -251,8 +266,9 @@ def update_key_schedule(keyschedule, category, fields, records, doc=None):
         # update all elements with the same key schedule value
         schedule_els = revit.query.get_all_elements_in_view(keyschedule)
         first_rec = fields[0]
-        sched_items = {x.LookupParameter(first_rec).AsString(): x.Id
-                       for x in schedule_els}
+        sched_items = {
+            x.LookupParameter(first_rec).AsString(): x.Id for x in schedule_els
+        }
         new_possible_values = [x[0] for x in records]
         for param_value, element_ids in value_dict.items():
             if param_value in new_possible_values:
@@ -262,6 +278,44 @@ def update_key_schedule(keyschedule, category, fields, records, doc=None):
                         param = exst_el.LookupParameter(param_name)
                         if param:
                             param.Set(sched_items[param_value])
+
+
+def ensure_schedulable_parameters(category, parameter_defs, doc=None):
+    """Create a temporary key schedule and check of all
+    parameter definitions are schedulable using ScheduleDefinition api
+
+    Args:
+        parameter_defs (list[tuple]): list of (name, type) tuples
+    """
+    doc = doc or revit.doc
+    params_ensured = True
+    with revit.DryTransaction(doc):
+        temp_key_sched = DB.ViewSchedule.CreateKeySchedule(doc, category.Id)
+        fsched_field_names = [
+            x.GetName(doc)
+            for x in temp_key_sched.Definition.GetSchedulableFields()
+        ]
+
+        for param_def in parameter_defs:
+            if param_def[0] not in fsched_field_names:
+                logger.critical(
+                    "Missing schedulable parameter.\n"
+                    'Name: "%s"\n'
+                    "Type: %s\n"
+                    "Category %s",
+                    param_def[0],
+                    param_def[1],
+                    category.Name,
+                )
+                params_ensured = False
+
+    if not params_ensured:
+        logger.critical(
+            "Revit API does not allow creation of "
+            "Project Parameters. Please create the missing parameters "
+            "manually before importing the data from CSV file."
+        )
+    return params_ensured
 
 
 def ensure_parameters(category, parameter_defs, doc=None):
@@ -279,10 +333,13 @@ def ensure_parameters(category, parameter_defs, doc=None):
             if not revit.query.model_has_parameter(param_def[0]):
                 logger.critical(
                     "Missing project parameter.\n"
-                    "Name: \"%s\"\n"
+                    'Name: "%s"\n'
                     "Type: %s\n"
                     "Category %s",
-                    param_def[0], param_def[1], category.Name)
+                    param_def[0],
+                    param_def[1],
+                    category.Name,
+                )
                 params_ensured = False
                 # FIXME: API does not allow creating project parameters
                 # revit.create.create_project_parameter(
@@ -297,16 +354,16 @@ def ensure_parameters(category, parameter_defs, doc=None):
             "Revit API does not allow creation of "
             "Project Parameters. Please create the missing parameters "
             "manually before importing the data from CSV file."
-            )
+        )
     return params_ensured
 
 
 def read_csv_typed_data(csv_file):
     """Read Revit property data from the given CSV file."""
     # open file
-    with codecs.open(csv_file, 'rb', encoding='utf-8') as csvfile:
+    with codecs.open(csv_file, "rb", encoding="utf-8") as csvfile:
         # read lines
-        csv_lines = list(csv.reader(csvfile, delimiter=',', quotechar='\"'))
+        csv_lines = list(csv.reader(csvfile, delimiter=",", quotechar='"'))
         # grab the first line, extract field names
         # if field definition include the type, grab the associated
         # DB.ParameterType as well
@@ -314,59 +371,80 @@ def read_csv_typed_data(csv_file):
         # https://support.spatialkey.com/providing-data-types-in-csv-headers/
         field_defs = []
         for field_def in csv_lines[0]:
-            parts = field_def.split('|')
+            parts = field_def.split("|")
             parts_count = len(parts)
-            if parts_count == 1:
-                if parts[0]:
-                    field_defs.append((parts[0], DB.ParameterType.Text))
-            elif parts_count == 2:
-                field_defs.append((parts[0],
-                                   coreutils.get_enum_value(DB.ParameterType,
-                                                            parts[1])))
+            # added support for Revit 2022+ parameter types
+            if HOST_APP.is_newer_than(2022, or_equal=True):
+                if parts_count == 1:
+                    if parts[0]:
+                        field_defs.append((parts[0], DB.SpecTypeId.String))
+                elif parts_count == 2:
+                    if hasattr(DB.SpecTypeId, parts[1]):
+                        field_defs.append(
+                            (
+                                parts[0],
+                                getattr(DB.SpecTypeId, parts[1]),
+                            )
+                        )
+            else:
+                if parts_count == 1:
+                    if parts[0]:
+                        field_defs.append((parts[0], DB.ParameterType.Text))
+                elif parts_count == 2:
+                    field_defs.append(
+                        (
+                            parts[0],
+                            coreutils.get_enum_value(
+                                DB.ParameterType, parts[1]
+                            ),
+                        )
+                    )
     # return field definitions, and data
     return (field_defs, csv_lines[1:])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # ask user for source CSV file
-    source_file = forms.pick_file(file_ext='csv')
+    source_file = forms.pick_file(file_ext="csv")
     if source_file:
         fname = op.splitext(op.basename(source_file))[0]
         # as user for target key schedule category
         key_sched_cat = forms.SelectFromList.show(
             revit.query.get_key_schedule_categories(),
-            name_attr='Name',
+            name_attr="Name",
             multiselect=False,
             title="Select Key-Schedule Category",
-            )
+        )
         if key_sched_cat:
             # read the csv data
             param_defs, param_data = read_csv_typed_data(source_file)
             # grab the param names
             param_names = [x[0] for x in param_defs]
             # decide to create, or update existing
-            existing_keyschedule = \
-                find_matching_keyschedule(category=key_sched_cat,
-                                          fields=param_names)
+            existing_keyschedule = find_matching_keyschedule(
+                category=key_sched_cat, fields=param_names
+            )
             if existing_keyschedule:
-                with revit.Transaction('Update Schedule from CSV',
-                                       log_errors=False):
+                with revit.Transaction(
+                    "Update Schedule from CSV", log_errors=False
+                ):
                     # update the data in current schedule
                     update_key_schedule(
                         keyschedule=existing_keyschedule,
                         category=key_sched_cat,
                         fields=param_names,
                         records=param_data,
-                        doc=revit.doc
+                        doc=revit.doc,
                     )
             else:
-                with revit.Transaction('Create Schedule from CSV',
-                                       log_errors=False):
+                with revit.Transaction(
+                    "Create Schedule from CSV", log_errors=False
+                ):
                     # make sure field parameters exist
                     # creates project params if not
                     # skip the first on since it is "Key Name" and only applies
                     # to elements inside a key schedule
-                    if ensure_parameters(key_sched_cat, param_defs[1:]):
+                    if ensure_schedulable_parameters(key_sched_cat, param_defs[1:]):
                         # create the schedule and fill with data now
                         create_key_schedule(
                             category=key_sched_cat,
@@ -374,5 +452,5 @@ if __name__ == '__main__':
                             sched_name=fname,
                             fields=param_names,
                             records=param_data,
-                            doc=revit.doc
+                            doc=revit.doc,
                         )

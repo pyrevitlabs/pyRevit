@@ -9,6 +9,7 @@ using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
 using System.Collections.Generic;
 using System.Reflection;
+using IronPython.Runtime.Operations;
 
 namespace PyRevitLoader {
     // Executes a script
@@ -26,7 +27,7 @@ namespace PyRevitLoader {
 
         public string Message { get; private set; } = null;
 
-#if DEFAULTENGINE
+#if PYREVITLABS_ENGINE
         public static string EnginePrefix => "pyRevitLabs.";
 #else
         public static string EnginePrefix => "";
@@ -142,17 +143,16 @@ namespace PyRevitLoader {
         public void AddEmbeddedLib(ScriptEngine engine) {
             // use embedded python lib
             var asm = this.GetType().Assembly;
-#if DEFAULTENGINE
-            var resQuery = from name in asm.GetManifestResourceNames()
-                           where name.ToLowerInvariant().EndsWith("python_default_lib.zip")
-                           select name;
+#if PYREVITLABS_ENGINE
+            string resName = string.Format("python_{0}pr_lib.zip", EngineVersion);
 #else
-            var resQuery = from name in asm.GetManifestResourceNames()
-                           where name.ToLowerInvariant().EndsWith(string.Format("python_{0}_lib.zip", EngineVersion))
-                           select name;
+            string resName = string.Format("python_{0}_lib.zip", EngineVersion);
 #endif
-            var resName = resQuery.Single();
-            var importer = new IronPython.Modules.ResourceMetaPathImporter(asm, resName);
+            var resQuery = from name in asm.GetManifestResourceNames()
+                           where name.ToLowerInvariant().EndsWith(resName)
+                           select name;
+
+            var importer = new IronPython.Modules.ResourceMetaPathImporter(asm, resQuery.Single());
             dynamic sys = IronPython.Hosting.Python.GetSysModule(engine);
             sys.meta_path.append(importer);
         }

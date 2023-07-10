@@ -4,6 +4,7 @@ import codecs
 
 from pyrevit.framework import StringReader, KeyValuePair
 from pyrevit.labs import libyaml
+from pyrevit.compat import PY3, PY2
 
 
 def _convert_yamldotnet_to_dict(ynode, level=0):
@@ -31,14 +32,20 @@ def load(yaml_file):
     Returns:
         obj`YamlDotNet.RepresentationModel.YamlMappingNode`: yaml node
     """
-    with open(yaml_file, 'r') as yamlfile:
-        yamlstr = libyaml.RepresentationModel.YamlStream()
-        yamlstr.Load(
-            StringReader(
-                yamlfile.read().decode('utf-8')
-                ))
-        if yamlstr.Documents.Count >= 1:
-            return yamlstr.Documents[0].RootNode
+    if PY3:
+        with open(yaml_file, 'r', encoding="utf8") as yamlfile:
+            yamlstr = libyaml.RepresentationModel.YamlStream()
+            yamldata = yamlfile.read()
+            yamlstr.Load(StringReader(yamldata))
+            if yamlstr.Documents.Count >= 1:
+                return yamlstr.Documents[0].RootNode
+    else:
+        with open(yaml_file, 'r') as yamlfile:
+            yamlstr = libyaml.RepresentationModel.YamlStream()
+            yamldata = yamlfile.read().decode('utf-8')
+            yamlstr.Load(StringReader(yamldata))
+            if yamlstr.Documents.Count >= 1:
+                return yamlstr.Documents[0].RootNode
 
 
 def load_as_dict(yaml_file):

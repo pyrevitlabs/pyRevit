@@ -18,7 +18,6 @@ def listdwgs(current_view_only=False):
              .ToElements()
 
     dwgInst = defaultdict(list)
-    workset_table = revit.doc.GetWorksetTable()
 
     output.print_md("## LINKED AND IMPORTED DWG FILES:")
     output.print_md('By: [{}]({})'.format('Frederic Beaupere',
@@ -36,7 +35,7 @@ def listdwgs(current_view_only=False):
             dwg_id = dwg.Id
             dwg_name = \
                 dwg.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
-            dwg_workset = workset_table.GetWorkset(dwg.WorksetId).Name
+            dwg_workset = revit.query.get_element_workset(dwg).Name
             dwg_instance_creator = \
                 DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
                                                               dwg.Id).Creator

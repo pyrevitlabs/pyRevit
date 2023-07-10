@@ -5,8 +5,6 @@ using Autodesk.Revit.DB;
 using PyRevitLabs.PyRevit.Runtime;
 using pyRevitLabs.NLog;
 
-using HeyRed.MarkdownSharp;
-
 namespace ExtensionCSScript
 {
    public class ExtensionCSScript : IExternalCommand

@@ -114,7 +114,7 @@ def recall():
     """Load last matched properties from memory."""
     data = []
     try:
-        with open(MEMFILE, 'r') as mf:
+        with open(MEMFILE, 'rb') as mf:
             data = pickle.load(mf)
     except Exception as ex:
         logger.debug(
@@ -125,7 +125,7 @@ def recall():
 
 def remember(src_props):
     """Save selected matched properties to memory."""
-    with open(MEMFILE, 'w') as mf:
+    with open(MEMFILE, 'wb') as mf:
         pickle.dump(src_props, mf)
 
 

@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
-#define MyAppUUID "a241ce67-c9b1-41f8-8c20-65d6de92db16"
-#define MyAppVersion "4.8.12.22247"
+#define MyAppUUID "6a6637c3-859c-4fba-9ed9-03957adee956"
+#define MyAppVersion "4.8.13.23182"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 
@@ -13,7 +13,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2022 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2023 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
@@ -60,6 +60,7 @@ Source: "..\extensions\pyRevitTemplates.extension\*"; DestDir: "{app}\extensions
 Source: "..\extensions\pyRevitDevTools.extension\*"; DestDir: "{app}\extensions\pyRevitDevTools.extension"; Flags: ignoreversion recursesubdirs; Components: dev
 Source: "..\extensions\pyRevitDevHooks.extension\*"; DestDir: "{app}\extensions\pyRevitDevHooks.extension"; Flags: ignoreversion recursesubdirs; Components: dev
 Source: "..\extensions\pyRevitTutor.extension\*"; DestDir: "{app}\extensions\pyRevitTutor.extension"; Flags: ignoreversion recursesubdirs; Components: learn
+Source: "..\extensions\pyRevitBundlesCreatorExtension.extension\*"; DestDir: "{app}\extensions\pyRevitBundlesCreatorExtension.extension"; Flags: ignoreversion recursesubdirs; Components: ext
 ; python libs
 Source: "..\pyrevitlib\*"; DestDir: "{app}\pyrevitlib"; Flags: ignoreversion recursesubdirs; Components: core dev learn
 ; python site_packages

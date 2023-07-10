@@ -656,8 +656,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (HasSelection(uiApp, selectedCategories)) {
                     try {
                         foreach (Category category in selectedCategories)
+                        {
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                            if (category.Id.Value == _categoryId)
+#else
                             if (category.Id.IntegerValue == _categoryId)
+#endif
                                 return true;
+                        }
                     }
                     catch { }
                 }
@@ -667,7 +673,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(Category category) {
                 try {
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                    return category.Id.Value == _categoryId;
+#else
                     return category.Id.IntegerValue == _categoryId;
+#endif
                 }
                 catch { }
                 return false;

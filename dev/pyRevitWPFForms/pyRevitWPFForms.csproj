@@ -26,6 +26,11 @@
     <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Logs.pushbutton\LogViewerWindow.xaml" Link="Debug\LogViewerWindow.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test Sensors.pushbutton\sensors.xaml" Link="Dev\sensors.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML.pushbutton\ui.xaml" Link="Dev\ui.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML (Localized).pushbutton\ui.en_us.xaml" Link="Dev\ui.en_us.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML (Localized).pushbutton\ui.fa.xaml" Link="Dev\ui.fa.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML (Localized Resource).pushbutton\ui.ResourceDictionary.en_us.xaml" Link="Dev\ui.ResourceDictionary.en_us.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML (Localized Resource).pushbutton\ui.ResourceDictionary.fa.xaml" Link="Dev\ui.ResourceDictionary.fa.xaml" />
+    <Page Include="$(PyRevitExtDir)\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Unit Tests.pulldown\Test XAML (Localized Resource).pushbutton\ui.xaml" Link="Dev\ui-translated.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\ManagePackagesWindow.xaml" Link="Tags\ManagePackagesWindow.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\PackagesDataTemplate.xaml" Link="Tags\PackagesDataTemplate.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Tags.pushbutton\ManageTagsWindow.xaml" Link="Tags\ManageTagsWindow.xaml" />

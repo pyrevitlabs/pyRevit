@@ -6,7 +6,7 @@ Example:
 
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
-import pyrevit.compat as compat
+from pyrevit.compat import PY3, PY2
 
 import clr
 import System
@@ -22,12 +22,12 @@ clr.AddReference('System.Xml.Linq')
 clr.AddReference('WindowsBase')
 
 # add linq extensions?
-if compat.PY2:
+if PY2:
     clr.ImportExtensions(System.Linq)
 
 from System import AppDomain, Version
 from System import Type
-from System import Uri, Guid
+from System import Uri, UriKind, Guid
 from System import EventHandler
 from System import Array, IntPtr, Enum, Byte
 from System import Convert
@@ -71,6 +71,7 @@ from System.Windows import Threading
 from System.Windows import Interop
 from System.Windows import Input
 from System.Windows import Data
+from System.Windows import ResourceDictionary
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 from System import Math
 from System.Management import ManagementObjectSearcher
@@ -86,7 +87,7 @@ ASSEMBLY_FILE_EXT = '.dll'
 
 ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
 ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
-if compat.PY3:
+if PY3:
     clr.AddReference(ipy_dllpath)
 else:
     clr.AddReferenceToFileAndPath(ipy_dllpath)
@@ -99,7 +100,7 @@ wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
 wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
 try:
     clr.AddReference(wpf_assmname)
-    if compat.PY3:
+    if PY3:
         wpf = IronPython.Modules.Wpf
     else:
         import wpf
@@ -114,7 +115,7 @@ sqlite3_assmname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
 sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_assmname + ASSEMBLY_FILE_EXT)
 try:
     clr.AddReference(sqlite3_assmname)
-    if compat.PY3:
+    if PY3:
         sqlite3 = IronPython.SQLite
     else:
         import sqlite3

@@ -11,13 +11,13 @@ selection = revit.get_selection()
 selected_ids = {str(elid.IntegerValue) for elid in selection.element_ids}
 
 try:
-    f = open(datafile, 'r')
+    f = open(datafile, 'rb')
     prevsel = pickle.load(f)
     new_selection = prevsel.union(selected_ids)
     f.close()
 except Exception:
     new_selection = selected_ids
 
-f = open(datafile, 'w')
+f = open(datafile, 'wb')
 pickle.dump(new_selection, f)
 f.close()

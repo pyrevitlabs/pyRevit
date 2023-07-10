@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="pyRevit Extension Manager" Height="700" Width="850" ShowInTaskbar="False" ResizeMode="CanResize"
+        Title="{DynamicResource Window.Title}" Height="700" Width="860" ShowInTaskbar="False" ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
         <Style x:Key="ClearButton" TargetType="Button">
@@ -23,9 +23,9 @@
             </Grid.ColumnDefinitions>
             <TextBlock DockPanel.Dock="Left"
                            Grid.Column="0"
-                           VerticalAlignment="Center">
-                           List of Registered Extension Packages:
-            </TextBlock>
+                           VerticalAlignment="Center"
+                       Text="{DynamicResource ExtensionList.TextBlock}"/>
+
             <DockPanel Grid.Column="1">
                 <ContentControl Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="5,0,10,0">
                     <ContentControl.LayoutTransform>
@@ -33,7 +33,7 @@
                     </ContentControl.LayoutTransform>
                 </ContentControl>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0" 
+                    <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
                              VerticalContentAlignment="Center" TextChanged="search_txt_changed"/>
                     <Button x:Name="clrsearch_b" Visibility="Collapsed" Margin="0,-25,2,0" Padding="0,-4,0,0"
                             Width="22px" Height="22px" HorizontalAlignment="Right"
@@ -58,13 +58,13 @@
                         <TextBlock x:Name="ext_gitlink_t"/>
                     </Hyperlink>
                 </TextBlock>
-                <TextBlock Margin="5,0,0,0" FontSize="14" > Developed by:
+                <TextBlock Margin="5,0,0,0" FontSize="14" Text="{DynamicResource ExtensionInfo.DevelopedByLink}">
                     <Hyperlink x:Name="ext_authorlink_hl" Click="handle_url_click">
                         <TextBlock x:Name="ext_author_t" Visibility="Visible"/>
                     </Hyperlink>
                     <TextBlock x:Name="ext_author_nolink_t" Visibility="Collapsed"/>
                 </TextBlock>
-                <TextBlock Margin="5,0,0,0" FontSize="14" > Repository:
+                <TextBlock Margin="5,0,0,0" FontSize="14" Text="{DynamicResource ExtensionInfo.RepositoryLink}">
                     <Hyperlink x:Name="ext_repolink_hl" Click="handle_url_click">
                         <TextBlock x:Name="ext_repolink_t"/>
                     </Hyperlink>
@@ -72,24 +72,24 @@
                 <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
                 <Label x:Name="ext_dependencies_l" Foreground="#bb3a1d" Margin="0,10,0,0"/>
             </StackPanel>
-            <GroupBox x:Name="extCredentials" Header="Extension Package Settings:" Margin="0,10,0,0">
+            <GroupBox x:Name="extCredentials" Header="{DynamicResource ExtensionSettings.GroupName}" Margin="0,10,0,0">
                 <StackPanel>
                     <CheckBox x:Name="privaterepo_cb" Margin="10,10,0,0" IsChecked="False"
                                   Click="handle_private_repo"
                                   Checked="handle_private_repo"
-                                  Unchecked="handle_private_repo">
-                        Git Repository is Private (Provide Account Credentials)
+                                  Unchecked="handle_private_repo"
+                              Content="{DynamicResource ExtensionSettings.PrivateRepositoryCheck}">
                     </CheckBox>
                     <DockPanel x:Name="accountcreds_dp" Margin="23,0,0,10" IsEnabled="False" >
                         <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
                             <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
-                                <Label Content="Username: "/>
+                                <Label Content="{DynamicResource ExtensionSettings.Username}"/>
                                 <TextBox x:Name="repousername_tb" Width="200"
                                          Padding="5,0,5,0" FontFamily="Consolas"
                                          VerticalContentAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
-                                <Label Content="Password (or Access Token): "/>
+                                <Label Content="{DynamicResource ExtensionSettings.Password}"/>
                                 <PasswordBox x:Name="repopassword_pb"  Width="200"
                                          Padding="5,0,5,0" FontFamily="Consolas"
                                          VerticalContentAlignment="Center"/>
@@ -108,9 +108,9 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button x:Name="ext_update_b" Content="Update Extension Settings" Click="save_pkg_settings"
+                <Button x:Name="ext_update_b" Content="{DynamicResource Buttons.UpdateExtension}" Click="save_pkg_settings"
                             Grid.Column="0" Grid.Row="0" Margin="3" />
-                <Button x:Name="ext_install_b" Content="Install Extension" Click="handle_install_button_popup"
+                <Button x:Name="ext_install_b" Content="{DynamicResource Buttons.InstallExtension}" Click="handle_install_button_popup"
                             Grid.Column="1" Grid.Row="0" Margin="3"
                             ContextMenuService.IsEnabled="False">
                     <Button.ContextMenu>
@@ -118,24 +118,47 @@
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
-                <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg" Content="Enable Extension"
+                <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg" Content="{DynamicResource Buttons.EnableExtension}"
                             Grid.Column="2" Grid.Row="0" Margin="3" />
-                <Button x:Name="ext_remove_b" Content="Remove Extension" Click="remove_ext_pkg"
+                <Button x:Name="ext_remove_b" Content="{DynamicResource Buttons.RemoveExtension}" Click="remove_ext_pkg"
                             Grid.Column="3" Grid.Row="0" Margin="3" />
             </Grid>
         </StackPanel>
         <ListView x:Name="extpkgs_lb" SelectionMode="Extended" SelectionChanged="update_ext_info">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.Resources>
+                <Style TargetType="{x:Type CheckBox}" x:Key="DataGridCheckBox">
+                    <Setter Property="HorizontalAlignment" Value="Center" />
+                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                </Style>
+            </ListView.Resources>
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>
-                    <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Type}"/>
-                    <!-- <GridViewColumn Header="Git Repository URL" DisplayMemberBinding="{Binding GitURL}"/> -->
-                    <GridViewColumn Header="Author" DisplayMemberBinding="{Binding Author}"/>
-                    <GridViewColumn Header="Built-in" DisplayMemberBinding="{Binding Builtin}" Width="60"/>
-                    <GridViewColumn Header="Rocket-Mode" DisplayMemberBinding="{Binding RocketMode}" Width="100"/>
-                    <GridViewColumn Header="Installed" DisplayMemberBinding="{Binding Installed}" Width="60"/>
-                    <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="60"/>
-                    <GridViewColumn Header="Last Commit" DisplayMemberBinding="{Binding Version}" Width="100"/>
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnName}" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnType}" DisplayMemberBinding="{Binding Type}"/>
+                    <!-- <GridViewColumn Header="{DynamicResource ExtensionsList.GirRepository}" DisplayMemberBinding="{Binding GitURL}"/> -->
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnAuthor}" DisplayMemberBinding="{Binding Author}"/>
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnBuiltin}" Width="55">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsEnabled="False" IsChecked="{Binding Path=Builtin}" Style="{StaticResource DataGridCheckBox}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnRocketMode}" Width="85">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsEnabled="False" IsChecked="{Binding Path=RocketMode}" Style="{StaticResource DataGridCheckBox}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnInstalled}" DisplayMemberBinding="{Binding Installed}" Width="75"/>
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnStatus}" DisplayMemberBinding="{Binding Status}" Width="60"/>
+                    <GridViewColumn Header="{DynamicResource ExtensionsList.ColumnLastCommit}" DisplayMemberBinding="{Binding Version}" Width="120"/>
                 </GridView>
             </ListView.View>
         </ListView>

@@ -126,12 +126,19 @@ Check the list of [Currently Open](https://github.com/eirannejad/pyRevit/issues)
 
 [Supporters](https://www.notion.so/Supporters-4f3350243ba24dcd8228df6262723629)
 
-&nbsp;
+
+# Contributors
+
+Made with [contrib.rocks](https://contrib.rocks)
+
+<a href="https://github.com/eirannejad/pyRevit/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=eirannejad/pyRevit" />
+</a>&nbsp;
 
 ---
 
 **</>** with 🖤 in [Portland](https://en.m.wikipedia.org/wiki/Portland,_Oregon), Oregon
 
-Copyright © 2014-2022 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
+Copyright © 2014-2023 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
 
 No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher.

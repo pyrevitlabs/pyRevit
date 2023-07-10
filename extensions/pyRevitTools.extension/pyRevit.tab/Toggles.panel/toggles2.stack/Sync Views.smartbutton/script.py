@@ -67,7 +67,7 @@ def copy_zoomstate(sender, args):
             # get zoom corners
             cornerlist = current_ui_view.GetZoomCorners()
             # and save the info
-            f = open(get_datafile(event_doc), 'w')
+            f = open(get_datafile(event_doc), 'wb')
             try:
                 # dump current view type
                 pl.dump(type(args.CurrentActiveView).__name__, f)
@@ -108,7 +108,7 @@ def apply_zoomstate(sender, args):
                 return
 
             # load zoom data
-            f = open(get_datafile(event_doc), 'r')
+            f = open(get_datafile(event_doc), 'rb')
             try:
                 view_type_saved = pl.load(f)
                 if view_type_saved != type(args.CurrentActiveView).__name__:

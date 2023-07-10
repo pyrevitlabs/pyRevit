@@ -7,7 +7,12 @@ Example:
 #pylint: disable=C0103
 import re
 import copy
+from itertools import tee
 from collections import OrderedDict, Callable   #pylint: disable=E0611
+
+from pyrevit.compat import PY2
+if PY2:
+    from itertools import izip as zip
 
 
 class DefaultOrderedDict(OrderedDict):
@@ -92,10 +97,9 @@ def pairwise(iterable, step=2):
         [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
     """
     if step == 1:
-        from itertools import tee, izip    #pylint: disable=E0611
         a, b = tee(iterable)
         next(b, None)
-        return izip(a, b)
+        return zip(a, b)
     elif step == 2:
         a = iter(iterable)
         return zip(a, a)
