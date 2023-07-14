@@ -48,6 +48,8 @@ def merge_solids(solids):
 
 
 selection = revit.get_selection()
+if not selection:
+    forms.alert('You must select one element.', exitscript=True)
 logger.debug('selection: {}'.format(selection))
 
 extracted_solids = []
