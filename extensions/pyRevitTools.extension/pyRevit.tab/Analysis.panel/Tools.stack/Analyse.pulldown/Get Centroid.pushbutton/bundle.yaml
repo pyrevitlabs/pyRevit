@@ -1,0 +1,6 @@
+title: Get Centroid
+tooltip: >
+  Calculates the centroid of the selected elements geometry
+  and places three model lines intersecting at the centroid.
+author: Tamás Déri
+context: selection
