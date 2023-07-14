@@ -1,5 +1,6 @@
 from __future__ import print_function
 from pyrevit import script, revit, DB
+from Autodesk.Revit.Exceptions import InvalidOperationException
 
 doc = revit.doc
 uidoc = revit.uidoc
@@ -27,11 +28,22 @@ def merge_solids(solids):
         if not union:
             union = solid
         else:
-            union = DB.BooleanOperationsUtils.ExecuteBooleanOperation(
-                union,
-                solid,
-                DB.BooleanOperationsType.Union
-            )
+            try:
+                union = DB.BooleanOperationsUtils.ExecuteBooleanOperation(
+                    union,
+                    solid,
+                    DB.BooleanOperationsType.Union
+                )
+            except InvalidOperationException:
+                ref = solid.Faces[0].Reference.ConvertToStableRepresentation(doc)
+                uid = ref.split(':')[0]
+                e = doc.GetElement(uid)
+                logger.error(
+                    'Failed to merge solid from element {}, '
+                    'it will be excluded from the calculation'.format(
+                        revit.ElementWrapper(e).name
+                    )
+                )
     return union
 
 
@@ -43,7 +55,7 @@ extracted_solids = []
 for element in selection:
     logger.debug('processing {}'.format(element.Name))
     extracted_solids.extend([
-        g for g in revit.query.get_geometry(element)
+        g for g in revit.query.get_geometry(element, compute_references=True)
         if isinstance(g, DB.Solid) and g.Faces.Size > 0
     ])
 

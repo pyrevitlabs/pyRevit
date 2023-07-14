@@ -1571,9 +1571,10 @@ def get_element_workset(element):
         return workset_table.GetWorkset(element.WorksetId)
 
 
-def get_geometry(element, include_invisible=False):
+def get_geometry(element, include_invisible=False, compute_references=False):
     geom_opts = DB.Options()
     geom_opts.IncludeNonVisibleObjects = include_invisible
+    geom_opts.ComputeReferences = compute_references
     geom_objs = []
     for gobj in element.Geometry[geom_opts]:
         if isinstance(gobj, DB.GeometryInstance):
