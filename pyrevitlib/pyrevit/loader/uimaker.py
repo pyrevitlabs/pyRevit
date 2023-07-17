@@ -552,7 +552,10 @@ def _produce_ui_panels(ui_maker_params):
     """
     parent_ui_tab = ui_maker_params.parent_ui
     panel = ui_maker_params.component
-
+    
+    if panel.is_beta and not ui_maker_params.create_beta_cmds:
+        return None
+    
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
