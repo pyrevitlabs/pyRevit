@@ -1,5 +1,5 @@
 from __future__ import print_function
-from pyrevit import script, revit, DB, forms
+from pyrevit import script, revit, DB, forms, EXEC_PARAMS
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
 doc = revit.doc
@@ -46,6 +46,36 @@ def merge_solids(solids):
                 )
     return union
 
+cfg = script.get_config()
+logger.debug('loaded config {}'.format(cfg))
+line_category = doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
+line_subcategories = line_category.SubCategories
+line_styles = [
+    lsc.GetGraphicsStyle(DB.GraphicsStyleType.Projection)
+    for lsc in line_subcategories
+]
+line_styles.sort(key=lambda x: x.Name)
+logger.debug('got linestyles: {}'.format([ls.Name for ls in line_styles]))
+try:
+    logger.debug('searching for line style {}'.format(cfg.line_style))
+    line_style = next(
+        (ls for ls in line_styles if ls.Name == cfg.line_style),
+        None
+    )
+    logger.debug('line style found')
+except AttributeError:
+    logger.debug('no line style in config')
+    line_style = None
+if EXEC_PARAMS.config_mode:
+    line_style = forms.SelectFromList.show(
+        line_styles,
+        name_attr='Name',
+        title='Select Line Style to be used'
+    )
+    if line_style:
+        cfg.line_style = line_style.Name
+        script.save_config()
+        logger.debug('saved selected line style to config')
 
 selection = revit.get_selection()
 if not selection:
@@ -97,12 +127,16 @@ with revit.Transaction('Get Centroid'):
         centroid + DB.XYZ.BasisZ
     )
 
-    doc.Create.NewModelCurve(
+    l1 = doc.Create.NewModelCurve(
         c1, sp1
     )
-    doc.Create.NewModelCurve(
+    l2 = doc.Create.NewModelCurve(
         c2, sp1
     )
-    doc.Create.NewModelCurve(
+    l3 = doc.Create.NewModelCurve(
         c3, sp2
     )
+
+    if line_style:
+        for l in [l1, l2, l3]:
+            l.LineStyle = line_style
