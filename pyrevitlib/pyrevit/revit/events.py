@@ -75,7 +75,7 @@ def remove_handler(event_name, event_handler):
     elif event_name == 'view-activated':
         HOST_APP.uiapp.ViewActivated -= event_handler
     
-    elif event_name == 'view-activated':
+    elif event_name == 'theme-changed':
         HOST_APP.uiapp.ThemeChanged -= event_handler
 
 

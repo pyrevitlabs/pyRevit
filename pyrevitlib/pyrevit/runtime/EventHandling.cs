@@ -207,6 +207,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             { EventType.Application_ElementTypeDuplicated, "type-duplicated" },
             { EventType.Application_ElementTypeDuplicating, "type-duplicating" },
             { EventType.UIApplication_ViewActivated, "view-activated" },
+            { EventType.UIApplication_ThemeChanged, "theme-changed" },
             { EventType.UIApplication_ViewActivating, "view-activating" },
             { EventType.Application_ViewExported, "view-exported" },
             { EventType.Application_ViewExporting, "view-exporting" },
