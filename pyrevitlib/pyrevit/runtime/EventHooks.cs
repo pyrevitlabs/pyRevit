@@ -213,12 +213,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.UIApplication_ViewActivated, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
-        public void UIApplication_ThemeChanged(object sender, Autodesk.Revit.UI.Events.ThemeChangedEventArgs e) {
-            ExecuteEventHooks(EventType.UIApplication_ThemeChanged, sender, e);
-        }
-#endif
-
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void UIApplication_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_TransferringProjectStandards, sender, e);

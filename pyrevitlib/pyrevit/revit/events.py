@@ -54,11 +54,6 @@ def add_handler(event_name, handler_func):
             create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
         HOST_APP.uiapp.ViewActivated += event_handler
 
-    elif event_name == 'theme-changed':
-        event_handler = \
-            create_handler(handler_func, UI.Events.ThemeChangeddEventArgs)
-        HOST_APP.uiapp.ThemeChanged += event_handler
-
     return event_handler
 
 
@@ -74,9 +69,6 @@ def remove_handler(event_name, event_handler):
 
     elif event_name == 'view-activated':
         HOST_APP.uiapp.ViewActivated -= event_handler
-    
-    elif event_name == 'theme-changed':
-        HOST_APP.uiapp.ThemeChanged -= event_handler
 
 
 def register_handler(event_name, handler_func, handler_group_id):
