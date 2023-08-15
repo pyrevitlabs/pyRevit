@@ -337,21 +337,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
-        public void UIApplication_ThemeChanged(object sender, Autodesk.Revit.UI.Events.ThemeChangedEventArgs e) {
-            LogEventTelemetryRecord(new EventTelemetryRecord {
-                type = EventUtils.GetEventName(EventType.UIApplication_ThemeChanged),
-                docname = e.Document != null ? e.Document.Title : "",
-                docpath = e.Document != null ? e.Document.PathName : "",
-                projectnum = GetProjectNumber(e.Document),
-                projectname = GetProjectName(e.Document),
-                args = new Dictionary<string, object> {
-                    { "UI Theme was changed" },
-                }
-            }, sender, e);
-        }
-#endif
-
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void UIApplication_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
             var extItems = new Dictionary<string, string>();
