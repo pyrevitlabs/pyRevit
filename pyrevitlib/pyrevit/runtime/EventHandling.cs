@@ -70,6 +70,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         UIApplication_FabricationPartBrowserChanged,
         UIApplication_FormulaEditing,
         UIApplication_Idling,
+        UIApplication_ThemeChanged,
         UIApplication_TransferredProjectStandards,
         UIApplication_TransferringProjectStandards,
         UIApplication_ViewActivated,
@@ -147,6 +148,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         void Application_DocumentChanged(object sender, DocumentChangedEventArgs e);
         void Application_ApplicationInitialized(object sender, ApplicationInitializedEventArgs e);
         void UIApplication_ViewActivating(object sender, ViewActivatingEventArgs e);
+        void UIApplication_ThemeChanged(object sender, ThemeChangedEventArgs e);
         void UIApplication_ViewActivated(object sender, ViewActivatedEventArgs e);
         void UIApplication_Idling(object sender, IdlingEventArgs e);
         void UIApplication_DisplayingOptionsDialog(object sender, DisplayingOptionsDialogEventArgs e);
@@ -206,6 +208,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             { EventType.UIApplication_TransferringProjectStandards, "transferring-project-standards" },
             { EventType.Application_ElementTypeDuplicated, "type-duplicated" },
             { EventType.Application_ElementTypeDuplicating, "type-duplicating" },
+            { EventType.UIApplication_ThemeChanged, "theme-changed" },
             { EventType.UIApplication_ViewActivated, "view-activated" },
             { EventType.UIApplication_ViewActivating, "view-activating" },
             { EventType.Application_ViewExported, "view-exported" },
@@ -687,6 +690,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         uiApp.TransferringProjectStandards += hndlr.UIApplication_TransferringProjectStandards;
                     else
                         uiApp.TransferringProjectStandards -= hndlr.UIApplication_TransferringProjectStandards;
+                    break;
+#else
+                    throw new NotSupportedFeatureException();
+#endif
+
+                case EventType.UIApplication_ThemeChanged:
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                    if (toggle_on)
+                        uiApp.ThemeChanged += hndlr.UIApplication_ThemeChanged;
+                    else
+                        uiApp.ThemeChanged -= hndlr.UIApplication_ThemeChanged;
                     break;
 #else
                     throw new NotSupportedFeatureException();

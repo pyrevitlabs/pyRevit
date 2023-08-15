@@ -40,7 +40,7 @@ class NonModalWindow(forms.WPFWindow):
     def setup(self):
         self.update_ui()
 
-    @revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
+    @revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated', 'theme-changed')
     def uiupdator_eventhandler(sender, args):
         # the decorator captures the function from the class and not from the
         # instance. so the capture function is not bound thus no 'self'
