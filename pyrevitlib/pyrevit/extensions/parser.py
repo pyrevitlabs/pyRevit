@@ -30,17 +30,15 @@ def _get_discovered_comps(comp_path, cmp_types_list):
 def _create_subcomponents(search_dir,
                           cmp_types_list,
                           create_from_search_dir=False):
-    """
-    Parses the provided directory and returns a list of objects of the
-    types in cmp_types_list.
+    """Returns the objects in search_dir of the types in cmp_types_list.
 
     Arguments:
-        search_dir: directory to parse
+        search_dir (str): directory to parse
         cmp_types_list: This methods checks the subfolders in search_dir
-                              against the _get_component types provided
-        in this list.
+            against the _get_component types provided in this list.
+        create_from_search_dir: whether to create the _get_component objects
 
-    Example:
+    Examples:
         _create_subcomponents(search_dir,
                               [LinkButton, PushButton, or ToggleButton])
         this method creates LinkButton, PushButton, or ToggleButton for
@@ -76,13 +74,14 @@ def _get_subcomponents_classes(parent_classes):
 
 
 def _parse_for_components(component):
-    """Recursively parses _get_component.directory for components of type
-    _get_component.allowed_sub_cmps. This method uses get_all_subclasses() to
-    get a list of all subclasses of _get_component.allowed_sub_cmps type.
+    """Recursively parses the component directory for allowed components type.
+
+    This method uses get_all_subclasses() to get a list of all subclasses
+    of _get_component.allowed_sub_cmps type.
     This ensures that if any new type of component_class is added later,
     this method does not need to be updated as the new sub-class will be
     listed by .__subclasses__() method of the parent class and this method
-    will check the directory for its .type_id
+    will check the directory for its .type_id.
     """
     for new_cmp in _create_subcomponents(
             component.directory,
@@ -105,9 +104,9 @@ def parse_comp_dir(comp_path, comp_class):
 
 
 def get_parsed_extension(extension):
-    """
-    Parses package directory and creates and adds components to the package
-    object. Each package object is the root to a tree of components that exists
+    """Creates and adds the extensions components to the package.
+
+    Each package object is the root to a tree of components that exists
     under that package. (e.g. tabs, buttons, ...) sub components of package
     can be accessed by iterating the _get_component.
     See _basecomponents for types.
@@ -117,11 +116,15 @@ def get_parsed_extension(extension):
 
 
 def parse_dir_for_ext_type(root_dir, parent_cmp_type):
-    """
-    Parses root_dir and return a list of objects of type parent_cmp_type
-    for installed extensions. The package objects won't be parsed at this level.
+    """Return the objects of type parent_cmp_type of the extensions in root_dir.
+
+    The package objects won't be parsed at this level.
     This is useful for collecting basic info on an extension type
     for cache cheching or updating extensions using their directory paths.
+
+    Args:
+        root_dir (str): directory to parse
+        parent_cmp_type (type): type of objects to return
     """
     # making sure the provided directory exists.
     # This is mainly for the user defined package directories

@@ -2,6 +2,15 @@
 
 
 def load(inputfile):
+    """Read list of bounding boxes from file.
+
+    Args:
+        inputfile (str): path to input file
+
+    Returns:
+        (list[tuple[tuple[float, float, float], tuple[float, float, float]]]):
+            bounding boxes
+    """
     bboxes = []
     with open(inputfile, 'r') as bbxfile:
         # bbox_count = int(bbxfile.readline())   #noqa
@@ -15,6 +24,13 @@ def load(inputfile):
 
 
 def dump(outputfile, bbox_list):
+    """Write list of bounding boxes to file.
+
+    Args:
+        outputfile (str): path to output file
+        bbox_list (list[tuple[tuple[float, float, float], tuple[float, float, float]]]): 
+            bounding boxes
+    """
     bbox_count = len(bbox_list)
     with open(outputfile, 'w') as bbxfile:
         bbxfile.write(str(bbox_count) + '\n')

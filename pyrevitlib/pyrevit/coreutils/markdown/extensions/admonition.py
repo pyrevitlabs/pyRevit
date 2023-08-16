@@ -1,6 +1,4 @@
-"""
-Admonition extension for Python-Markdown
-========================================
+"""Admonition extension for Python-Markdown.
 
 Adds rST-style admonitions. Inspired by [rST][] feature with the same name.
 
@@ -14,7 +12,6 @@ Original code Copyright [Tiago Serafim](http://www.tiagoserafim.com/).
 All changes Copyright The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -26,10 +23,10 @@ import re
 
 
 class AdmonitionExtension(Extension):
-    """ Admonition extension for Python-Markdown. """
+    """Admonition extension for Python-Markdown."""
 
     def extendMarkdown(self, md, md_globals):
-        """ Add Admonition to Markdown instance. """
+        """Add Admonition to Markdown instance."""
         md.registerExtension(self)
 
         md.parser.blockprocessors.add('admonition',
@@ -38,6 +35,7 @@ class AdmonitionExtension(Extension):
 
 
 class AdmonitionProcessor(BlockProcessor):
+    """Admonition processor."""
 
     CLASSNAME = 'admonition'
     CLASSNAME_TITLE = 'admonition-title'

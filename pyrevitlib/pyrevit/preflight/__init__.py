@@ -1,4 +1,4 @@
-"""Preflight checks framework
+"""Preflight checks framework.
 
 This framework is designed to automate verification and quality control
 checks that need to be completed before model is published. The framework works
@@ -34,7 +34,7 @@ def _get_check_name(check_script):
 
 
 class PreflightCheck(object):
-    """Preflight Check"""
+    """Preflight Check."""
 
     def __init__(self, extension, check_type, script_path):
         self.check_case = check_type
@@ -57,10 +57,11 @@ class PreflightCheck(object):
 
 
 def run_preflight_check(check, doc, output):
-    """Run a preflight check
+    """Run a preflight check.
 
     Args:
         check (PreflightCheck): preflight test case object
+        doc (Document): Revit document
         output (pyrevit.output.PyRevitOutputWindow): output window wrapper
     """
     check_case = check.check_case()
@@ -71,7 +72,7 @@ def run_preflight_check(check, doc, output):
 
 
 def get_all_preflight_checks():
-    """Find all the preflight checks in installed extensions"""
+    """Find all the preflight checks in installed extensions."""
     preflight_checks = []
     # get all installed ui extensions
     for ext in extensionmgr.get_installed_ui_extensions():

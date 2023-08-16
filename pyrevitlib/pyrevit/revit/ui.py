@@ -1,3 +1,4 @@
+"""UI functions."""
 #pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import HOST_APP
 from pyrevit.framework import clr

@@ -1,6 +1,4 @@
-"""
-Meta Data Extension for Python-Markdown
-=======================================
+"""Meta Data Extension for Python-Markdown.
 
 This extension adds Meta Data handling to markdown.
 
@@ -12,7 +10,6 @@ Original code Copyright 2007-2008 [Waylan Limberg](http://achinghead.com).
 All changes Copyright 2008-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -32,20 +29,20 @@ END_RE = re.compile(r'^(-{3}|\.{3})(\s.*)?')
 
 
 class MetaExtension (Extension):
-    """ Meta-Data extension for Python-Markdown. """
+    """Meta-Data extension for Python-Markdown."""
 
     def extendMarkdown(self, md, md_globals):
-        """ Add MetaPreprocessor to Markdown instance. """
+        """Add MetaPreprocessor to Markdown instance."""
         md.preprocessors.add("meta",
                              MetaPreprocessor(md),
                              ">normalize_whitespace")
 
 
 class MetaPreprocessor(Preprocessor):
-    """ Get Meta-Data. """
+    """Get Meta-Data."""
 
     def run(self, lines):
-        """ Parse Meta-Data and store in Markdown.Meta. """
+        """Parse Meta-Data and store in Markdown.Meta."""
         meta = {}
         key = None
         if lines and BEGIN_RE.match(lines[0]):

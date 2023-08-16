@@ -87,7 +87,7 @@ class PyRevitConfigSectionParser(object):
 
     @property
     def subheader(self):
-        """Section sub-header e.g. Section.SubSection"""
+        """Section sub-header e.g. Section.SubSection."""
         return coreutils.get_canonical_parts(self.header)[-1]
 
     def has_option(self, option_name):
@@ -165,7 +165,11 @@ class PyRevitConfigParser(object):
                 .format(section_name))
 
     def get_config_file_hash(self):
-        """Get calculated unique hash for this config."""
+        """Get calculated unique hash for this config.
+
+        Returns:
+            (str): hash of the config.
+        """
         with codecs.open(self._cfg_file_path, 'r', 'utf-8') as cfg_file:
             cfg_hash = coreutils.get_str_hash(cfg_file.read())
 

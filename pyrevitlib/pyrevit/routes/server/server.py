@@ -18,7 +18,7 @@ from pyrevit.routes.server import handler
 from pyrevit.routes.server import router
 
 if PY3:
-    from http.server import BaseHTTPRequestHandler,HTTPServer
+    from http.server import BaseHTTPRequestHandler, HTTPServer
     from socketserver import ThreadingMixIn
 else:
     from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
@@ -37,6 +37,7 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
+    """HTTP Requests Handler."""
     def _parse_api_path(self):
         url_parts = urlparse(self.path)
         if url_parts:
@@ -228,6 +229,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
 
 class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
+    """Threaded HTTP server."""
     allow_reuse_address = True
 
     def shutdown(self):
@@ -236,6 +238,14 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
 
 
 class RoutesServer(object):
+    """Route server thread handler.
+
+    It runs an HTTP server on the given host and port.
+
+    Args:
+        host (str): host
+        port (int): port
+    """
     def __init__(self, host, port):
         self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
         self.host = host

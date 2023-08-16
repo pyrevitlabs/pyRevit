@@ -1,3 +1,4 @@
+"""Ordered dictionary."""
 from __future__ import unicode_literals
 from __future__ import absolute_import
 from . import util
@@ -5,11 +6,9 @@ from copy import deepcopy
 
 
 class OrderedDict(dict):
-    """
-    A dictionary that keeps its keys in the order in which they're inserted.
+    """A dictionary that keeps its keys in the order in which they're inserted.
 
     Copied from Django's SortedDict with some modifications.
-
     """
     def __new__(cls, *args, **kwargs):
         instance = super(OrderedDict, cls).__new__(cls, *args, **kwargs)
@@ -129,10 +128,7 @@ class OrderedDict(dict):
         return self.__class__(self)
 
     def __repr__(self):
-        """
-        Replaces the normal dict.__repr__ with a version that returns the keys
-        in their Ordered order.
-        """
+        """Returns the keys in their Ordered order."""
         return '{%s}' % ', '.join(
             ['%r: %r' % (k, v) for k, v in self._iteritems()]
         )
@@ -142,14 +138,14 @@ class OrderedDict(dict):
         self.keyOrder = []
 
     def index(self, key):
-        """ Return the index of a given key. """
+        """Return the index of a given key."""
         try:
             return self.keyOrder.index(key)
         except ValueError:
             raise ValueError("Element '%s' was not found in OrderedDict" % key)
 
     def index_for_location(self, location):
-        """ Return index or None for a given location. """
+        """Return index or None for a given location."""
         if location == '_begin':
             i = 0
         elif location == '_end':
@@ -168,7 +164,7 @@ class OrderedDict(dict):
         return i
 
     def add(self, key, value, location):
-        """ Insert by key location. """
+        """Insert by key location."""
         i = self.index_for_location(location)
         if i is not None:
             self.insert(i, key, value)
@@ -176,7 +172,7 @@ class OrderedDict(dict):
             self.__setitem__(key, value)
 
     def link(self, key, location):
-        """ Change location of an existing item. """
+        """Change location of an existing item."""
         n = self.keyOrder.index(key)
         del self.keyOrder[n]
         try:

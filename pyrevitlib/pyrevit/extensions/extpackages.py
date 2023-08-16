@@ -20,6 +20,7 @@ mlogger = get_logger(__name__)
 
 
 class PyRevitPluginAlreadyInstalledException(PyRevitException):
+    """Exception raised when extension is already installed."""
     def __init__(self, extpkg):
         super(PyRevitPluginAlreadyInstalledException, self).__init__()
         self.extpkg = extpkg
@@ -27,10 +28,12 @@ class PyRevitPluginAlreadyInstalledException(PyRevitException):
 
 
 class PyRevitPluginNoInstallLinkException(PyRevitException):
+    """Exception raised when extension does not have an install link."""
     pass
 
 
 class PyRevitPluginRemoveException(PyRevitException):
+    """Exception raised when removing an extension."""
     pass
 
 
@@ -41,6 +44,7 @@ EXTENSION_POSTFIXES = [x.POSTFIX for x in exts.ExtensionTypes.get_ext_types()]
 
 
 class DependencyGraph:
+    """Extension packages dependency graph."""
     def __init__(self, extpkg_list):
         self.dep_dict = defaultdict(list)
         self.extpkgs = extpkg_list
@@ -59,9 +63,10 @@ class DependencyGraph:
 
 
 class ExtensionPackage:
-    """
-    Extension package class. This class contains the extension information and
-    also manages installation, user configuration, and removal of the extension.
+    """Extension package class.
+
+    This class contains the extension information and also manages installation,
+    user configuration, and removal of the extension.
     See the ``__init__`` class documentation for the required and
     optional extension information.
 
@@ -77,8 +82,7 @@ class ExtensionPackage:
     """
 
     def __init__(self, info_dict, def_file_path=None):
-        """
-        Initialized the extension class based on provide information
+        """Initialized the extension class based on provide information.
 
         Required info (Dictionary keys):
             type, name, description, url
@@ -171,18 +175,20 @@ class ExtensionPackage:
 
     @property
     def ext_dirname(self):
-        """
+        """Installation directory name to use.
+
         Returns:
-            str: The name that should be used for the installation directory
-                 (based on the extension type)
+            (str): The name that should be used for the installation directory
+                (based on the extension type).
         """
         return self.name + self.type.POSTFIX
 
     @property
     def is_installed(self):
-        """
+        """Installation directory.
+
         Returns:
-            bool: Checked whether this extension is installed or not.
+            (str): Installed directory path or empty string if not installed.
         """
         for ext_dir in user_config.get_ext_root_dirs():
             if op.exists(ext_dir):
@@ -198,28 +204,31 @@ class ExtensionPackage:
 
     @property
     def installed_dir(self):
-        """
+        """Installation directory.
+
         Returns:
-            str: Installed directory path or empty string if not installed
+            (str): Installed directory path or empty string if not installed.
         """
         return self.is_installed
 
     @property
     def is_removable(self):
-        """
+        """Whether the extension is safe to remove.
+
         Checks whether it is safe to remove this extension by confirming if
         a git url is provided for this extension for later re-install.
 
         Returns:
-            bool: True if removable, False if not
+            (bool): True if removable, False if not
         """
         return True if self.url else False
 
     @property
     def version(self):
-        """
+        """Extension version.
+
         Returns:
-            str: Last commit hash of the extension git repo
+            (str): Last commit hash of the extension git repo.
         """
         try:
             if self.is_installed:
@@ -230,15 +239,14 @@ class ExtensionPackage:
 
     @property
     def config(self):
-        """
-        Returns a valid config manager for this extension.
+        """Returns a valid config manager for this extension.
+
         All config parameters will be saved in user config file.
 
         Returns:
-            pyrevit.coreutils.configparser.PyRevitConfigSectionParser:
-            Config section handler
+            (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
+                Config section handler
         """
-
         try:
             return user_config.get_section(self.ext_dirname)
         except Exception:
@@ -254,7 +262,7 @@ class ExtensionPackage:
         """Checks the default and user configured load state of the extension.
 
         Returns:
-            bool: True if package should be loaded
+            (bool): True if package should be loaded
         """
         return not self.config.disabled
 
@@ -263,7 +271,7 @@ class ExtensionPackage:
         """Checks whether current user has access to this extension.
 
         Returns:
-            bool: True is current user has access
+            (bool): True is current user has access
         """
         if self.authusers:
             return HOST_APP.username in self.authusers
@@ -276,28 +284,23 @@ class ExtensionPackage:
             return True
 
     def remove_pkg_config(self):
-        """
-        Removes the installed extension configuration.
-        """
-
+        """Removes the installed extension configuration."""
         user_config.remove_section(self.ext_dirname)
         user_config.save_changes()
 
     def disable_package(self):
-        """
-        Disables package in pyRevit configuration so it won't be loaded
-        in the next session.
-        """
+        """Disables package in pyRevit configuration.
 
+        It won't be loaded in the next session.
+        """
         self.config.disabled = True
         user_config.save_changes()
 
     def toggle_package(self):
-        """
-        Disables/Enables package in pyRevit configuration so it won't be loaded
-        in the next session.
-        """
+        """Disables/Enables package in pyRevit configuration.
 
+        A disabled package won't be loaded in the next session.
+        """
         self.config.disabled = not self.config.disabled
         user_config.save_changes()
 
@@ -398,13 +401,16 @@ def _find_internal_extpkgs(ext_dir):
 
 
 def get_ext_packages(authorized_only=True):
-    """
+    """Returns the registered plugin extensions packages.
+
     Reads the list of registered plug-in extensions and returns a list of
-    ExtensionPackage classes which contain information on the
-    plug-in extension.
+    ExtensionPackage classes which contain information on the plug-in extension.
+
+    Args:
+        authorized_only (bool): Only return authorized extensions
 
     Returns:
-        list: list of registered plugin extensions (ExtensionPackage)
+        (list[ExtensionPackage]): list of registered plugin extensions
     """
     extpkgs = []
     for ext_dir in user_config.get_ext_root_dirs():
@@ -442,11 +448,11 @@ def get_dependency_graph():
 
 
 def install(extpkg, install_dir, install_dependencies=True):
-    """
-    Installed the extension in the given parent directory. This method uses
-    .installed_dir property of extension object as installation directory name
-    for this extension. This method also handles installation of
-    extension dependencies.
+    """Install the extension in the given parent directory.
+
+    This method uses .installed_dir property of extension object 
+    as installation directory name for this extension.
+    This method also handles installation of extension dependencies.
 
     Args:
         extpkg (ExtensionPackage): Extension package to be installed
@@ -468,9 +474,14 @@ def install(extpkg, install_dir, install_dependencies=True):
 
 
 def remove(extpkg, remove_dependencies=True):
-    """
-    Removes the extension from its installed directory and
-    clears its configuration.
+    """Removes the extension.
+
+    Removes the extension from its installed directory
+    and clears its configuration.
+
+    Args:
+        extpkg (ExtensionPackage): Extension package to be removed
+        remove_dependencies (bool): Remove the dependencies as well
 
     Raises:
         PyRevitException: on remove error with error message

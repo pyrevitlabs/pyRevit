@@ -4,7 +4,7 @@ Most times, scripts need to save some data to share between different scripts
 that work on a similar topic or between script executions. This module provides
 the necessary and consistent mechanism for creating and maintaining such files.
 
-Example:
+Examples:
     >>> from pyrevit.coreutils import appdata
     >>> appdata.list_data_files()
 """
@@ -132,7 +132,7 @@ def get_universal_data_file(file_id, file_ext, name_only=False):
         name_only (bool): If true, function returns file name only
 
     Returns:
-        str: File name or full file path (depending on name_only)
+        (str): File name or full file path (depending on name_only)
     """
     return _get_app_file(file_id, file_ext,
                          filename_only=name_only, universal=True)
@@ -149,7 +149,7 @@ def get_data_file(file_id, file_ext, name_only=False):
         name_only (bool): If true, function returns file name only
 
     Returns:
-        str: File name or full file path (depending on name_only)
+        (str): File name or full file path (depending on name_only)
     """
     return _get_app_file(file_id, file_ext, filename_only=name_only)
 
@@ -166,7 +166,7 @@ def get_instance_data_file(file_id, file_ext=TEMP_FILE_EXT, name_only=False):
         name_only (bool): If true, function returns file name only
 
     Returns:
-        str: File name or full file path (depending on name_only)
+        (str): File name or full file path (depending on name_only)
     """
     return _get_app_file(file_id, file_ext,
                          filename_only=name_only, stamped=True)
@@ -179,7 +179,7 @@ def is_pyrevit_data_file(file_name):
         file_name (str): file name
 
     Returns:
-        bool: True if file is a pyRevit data file
+        (bool): True if file is a pyRevit data file
     """
     return pyrevit.PYREVIT_FILE_PREFIX in file_name
 
@@ -193,7 +193,7 @@ def is_file_available(file_name, file_ext, universal=False):
         universal (bool): Check against universal data files
 
     Returns:
-        str: file path if file is available
+        (str | bool): file path if file is available
     """
     if universal:
         full_filename = op.join(
@@ -217,7 +217,7 @@ def is_data_file_available(file_id, file_ext):
         file_ext (str): file extension
 
     Returns:
-        str: file path if file is available
+        (str): file path if file is available
     """
     full_filename = _get_app_file(file_id, file_ext)
     if op.exists(full_filename):
@@ -234,7 +234,7 @@ def list_data_files(file_ext, universal=False):
         universal (bool): Check against universal data files
 
     Returns:
-        :obj:`list`: list of files
+        (list[str]): list of files
     """
     return _list_app_files(
         pyrevit.PYREVIT_FILE_PREFIX,
@@ -250,20 +250,20 @@ def list_instance_data_files(file_ext):
         file_ext (str): data files with this extension will be listed only.
 
     Returns:
-        :obj:`list`: list of data files
+        (list[str]): list of data files
 
     """
     return _list_app_files(pyrevit.PYREVIT_FILE_PREFIX_STAMPED, file_ext)
 
 
 def find_data_files(file_ext):
-    """Find data files in all data files directories
+    """Find data files in all data files directories.
 
     Args:
         file_ext (str): data files with this extension will be listed only
 
     Returns:
-        :obj:`list`: list of files
+        (list[str]): list of files
     """
     all_datafiles = set()
     for app_folder in _list_app_folders():
@@ -280,14 +280,14 @@ def find_data_files(file_ext):
 
 
 def find_instance_data_files(file_ext, instance_id):
-    """Find instance data files in all data files directories
+    """Find instance data files in all data files directories.
 
     Args:
         file_ext (str): data files with this extension will be listed only
         instance_id (int): list data files for this instance id only
 
     Returns:
-        :obj:`list`: list of files
+        (list[str]): list of files
     """
     # instance files names are like pyRevit_2018_14422_
     instance_files = set()

@@ -6,6 +6,13 @@ from pyrevit.revit import query
 
 
 def print_revision(rev, prefix='', print_id=True):
+    """Print a revision.
+
+    Args:
+        rev (DB.Revision): revision to output
+        prefix (str, optional): prefix to add to the output text.
+        print_id (bool, optional): whether to print the revision id.
+    """
     outstr = 'SEQ#: {} REV#: {} DATE: {} TYPE: {} DESC: {} ' \
              .format(rev.SequenceNumber,
                      str(query.get_param(rev, 'RevisionNumber', '')).ljust(5),
@@ -18,6 +25,13 @@ def print_revision(rev, prefix='', print_id=True):
 
 
 def print_sheet(sht, prefix='', print_id=True):
+    """Print the name of a sheet.
+
+    Args:
+        sht (DB.ViewSheet): sheet to output
+        prefix (str, optional): prefix to add to the output text.
+        print_id (bool, optional): whether to print the sheet id.
+    """
     outstr = '{}\t{}'.format(
         sht.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
         sht.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()
@@ -28,6 +42,13 @@ def print_sheet(sht, prefix='', print_id=True):
 
 
 def print_view(view, prefix='', print_id=True):
+    """Print the name of a view.
+
+    Args:
+        view (DB.View): view to output
+        prefix (str, optional): prefix to add to the output text.
+        print_id (bool, optional): whether to print the view id. Defaults to True.
+    """
     outstr = query.get_name(view)
     if print_id:
         outstr = PyRevitOutputWindow.linkify(view.Id) + '\t' + outstr

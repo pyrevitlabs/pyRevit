@@ -18,7 +18,7 @@ pyRevit uses environment variables extensively at its core and making changes
 to the core environment variables (starting with ``PYREVIT_``) through
 scripts is strongly prohibited.
 
-Example:
+Examples:
     >>> from pyrevit.coreutils import envvars
     >>> envvars.set_pyrevit_env_var('MY_SCRIPT_STATUS', True)
     >>> envvars.set_pyrevit_env_var('MY_SCRIPT_CONFIG', {'someconfig': True})
@@ -92,7 +92,7 @@ def get_pyrevit_env_var(param_name):
         param_name (str): name of environment variable
 
     Returns:
-        object: any object stored as the environment variable value
+        (object): any object stored as the environment variable value
     """
     # This function returns None if it can not find the parameter.
     # Thus value of None should not be used for params

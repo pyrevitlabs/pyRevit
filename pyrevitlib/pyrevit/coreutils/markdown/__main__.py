@@ -1,8 +1,4 @@
-"""
-COMMAND-LINE SPECIFIC STUFF
-=============================================================================
-
-"""
+"""COMMAND-LINE SPECIFIC STUFF."""
 
 import sys
 import optparse
@@ -21,9 +17,7 @@ logger = logging.getLogger('MARKDOWN')
 
 
 def parse_options(args=None, values=None):
-    """
-    Define and parse `optparse` options for command-line usage.
-    """
+    """Define and parse `optparse` options for command-line usage."""
     usage = """%prog [options] [INPUTFILE]
        (STDIN is assumed if no INPUTFILE is given)"""
     desc = "A Python implementation of John Gruber's Markdown. " \
@@ -111,7 +105,6 @@ def parse_options(args=None, values=None):
 
 def run():  # pragma: no cover
     """Run Markdown from the command line."""
-
     # Parse options and adjust logging level if necessary
     options, logging_level = parse_options()
     if not options:

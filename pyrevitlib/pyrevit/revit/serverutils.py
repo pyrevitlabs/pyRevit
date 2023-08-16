@@ -28,7 +28,7 @@ def get_server_path(doc, path_dict):
         doc (Document): revit document object
         path_dict (dict): dict of RSN paths and their directory paths
 
-    Example:
+    Examples:
         >>> rsn_paths = {'RSN://SERVERNAME': '//servername/filestore'}
         >>> get_server_path(doc, rsn_paths)
         ... "//servername/filestore/path/to/model.rvt"
@@ -48,9 +48,9 @@ def get_model_sync_history(server_path):
         server_path (str): directory path of revit server filestore
 
     Returns:
-        :obj:`list`(``SyncHistory``): list of SyncHistory instances
+        (list[SyncHistory]): list of SyncHistory instances
 
-    Example:
+    Examples:
         >>> get_model_sync_history("//servername/path/to/model.rvt")
         ... [SyncHistory(index=498, userid="user",
         ...              timestamp="2017-12-13 19:56:20")]

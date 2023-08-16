@@ -1,3 +1,4 @@
+"""Idempotent operations to ensure a datbase object exists."""
 import os.path as op
 
 from pyrevit import HOST_APP, DOCS, PyRevitException

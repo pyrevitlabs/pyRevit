@@ -1,6 +1,6 @@
 """Misc Helper functions for pyRevit.
 
-Example:
+Examples:
     >>> from pyrevit import coreutils
     >>> coreutils.cleanup_string('some string')
 """
@@ -53,7 +53,7 @@ UNICODE_NONPRINTABLE_CHARS = [
 class Timer(object):
     """Timer class using python native time module.
 
-    Example:
+    Examples:
         >>> timer = Timer()
         >>> timer.get_time()
         12
@@ -78,7 +78,7 @@ class ScriptFileParser(object):
     Primarily designed to assist pyRevit in determining script configurations
     but can work for any python script.
 
-    Example:
+    Examples:
         >>> finder = ScriptFileParser('/path/to/coreutils/__init__.py')
         >>> finder.docstring()
         ... "Misc Helper functions for pyRevit."
@@ -100,7 +100,7 @@ class ScriptFileParser(object):
                 self.ast_tree = ast.parse(contents)
 
     def extract_node_value(self, node):
-        """Manual extraction of values from node"""
+        """Manual extraction of values from node."""
         if isinstance(node, ast.Assign):
             node_value = node.value
         else:
@@ -136,7 +136,7 @@ class ScriptFileParser(object):
                 default value to be returned if variable does not exist
 
         Returns:
-            any: value of the variable or :obj:`None`
+            (Any): value of the variable or None
         """
         if self.ast_tree:
             try:
@@ -159,7 +159,7 @@ class FileWatcher(object):
     This is a simple utility class to look for changes in a file based on
     its timestamp.
 
-    Example:
+    Examples:
         >>> watcher = FileWatcher('/path/to/file.ext')
         >>> watcher.has_changed
         True
@@ -191,7 +191,7 @@ class SafeDict(dict):
     This is a dictionary subclass to help with string formatting with unknown
     key values.
 
-    Example:
+    Examples:
         >>> string = '{target} {attr} is {color}.'
         >>> safedict = SafeDict({'target': 'Apple',
         ...                      'attr':   'Color'})
@@ -210,7 +210,7 @@ def get_all_subclasses(parent_classes):
         parent_classes (list): list of python classes
 
     Returns:
-        list: list of python subclasses
+        (list): list of python subclasses
     """
     sub_classes = []
     # if super-class, get a list of sub-classes.
@@ -234,7 +234,7 @@ def get_sub_folders(search_folder):
         search_folder (str): folder path
 
     Returns:
-        list: list of subfolder names
+        (list[str]): list of subfolder names
     """
     sub_folders = []
     for sub_folder in os.listdir(search_folder):
@@ -250,10 +250,10 @@ def verify_directory(folder):
         folder (str): path of folder to verify
 
     Returns:
-        str: path of verified folder, equals to provided folder
+        (str): path of verified folder, equals to provided folder
 
     Raises:
-        OSError on folder creation error.
+        OSError: on folder creation error.
     """
     if not op.exists(folder):
         try:
@@ -272,7 +272,7 @@ def join_strings(str_list, separator=DEFAULT_SEPARATOR):
             defaults to DEFAULT_SEPARATOR
 
     Returns:
-        str: joined string
+        (str): joined string
     """
     if str_list:
         if any(not isinstance(x, str) for x in str_list):
@@ -316,8 +316,9 @@ def cleanup_string(input_str, skip=None):
 
     Args:
         input_str (str): input string to be cleaned
+        skip (Container[str]): special characters to keep
 
-    Example:
+    Examples:
         >>> src_str = 'TEST@Some*<value>'
         >>> cleanup_string(src_str)
         "TESTATSomeSTARvalue"
@@ -335,7 +336,7 @@ def get_revit_instance_count():
     """Return number of open host app instances.
 
     Returns:
-        int: number of open host app instances.
+        (int): number of open host app instances.
     """
     return len(list(framework.Process.GetProcessesByName(HOST_APP.proc_name)))
 
@@ -396,12 +397,12 @@ def make_canonical_name(*args):
     """Join arguments with dot creating a unique id.
 
     Args:
-        *args: Variable length argument list of type :obj:`str`
+        *args (str): Variable length argument list
 
     Returns:
-        str: dot separated unique name
+        (str): dot separated unique name
 
-    Example:
+    Examples:
         >>> make_canonical_name('somename', 'someid', 'txt')
         "somename.someid.txt"
     """
@@ -412,12 +413,12 @@ def get_canonical_parts(canonical_string):
     """Splots argument using dot, returning all composing parts.
 
     Args:
-        canonical_string(:obj:`str`): Source string e.g. "Config.SubConfig"
+        canonical_string (str): Source string e.g. "Config.SubConfig"
 
     Returns:
-        list[:obj:`str`]: list of composing parts
+        (list[str]): list of composing parts
 
-    Example:
+    Examples:
         >>> get_canonical_parts("Config.SubConfig")
         ['Config', 'SubConfig']
     """
@@ -442,7 +443,7 @@ def get_str_hash(source_str):
         source_str (str): source str
 
     Returns:
-        str: hash value as string
+        (str): hash value as string
     """
     return hashlib.md5(source_str.encode('utf-8', 'ignore')).hexdigest()
 
@@ -456,9 +457,9 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
         file_filter (str): exclude files matching this regex
 
     Returns:
-        str: hash value as string
+        (str): hash value as string
 
-    Example:
+    Examples:
         >>> calculate_dir_hash(source_path, '\.extension', '\.json')
         "1a885a0cae99f53d6088b9f7cee3bf4d"
     """
@@ -486,7 +487,7 @@ def prepare_html_str(input_string):
     Args:
         input_string (str): input html string
 
-    Example:
+    Examples:
         >>> prepare_html_str('<p>Some text</p>')
         "&clt;p&cgt;Some text&clt;/p&cgt;"
     """
@@ -506,7 +507,7 @@ def reverse_html(input_html):
     Args:
         input_html (str): input codified html string
 
-    Example:
+    Examples:
         >>> prepare_html_str('&clt;p&cgt;Some text&clt;/p&cgt;')
         "<p>Some text</p>"
     """
@@ -536,7 +537,7 @@ def can_access_url(url_to_open, timeout=1000):
         timeout (int): timeout in milliseconds
 
     Returns:
-        bool: true if accessible
+        (bool): true if accessible
     """
     try:
         client = framework.WebRequest.Create(url_to_open)
@@ -569,7 +570,7 @@ def check_internet_connection(timeout=1000):
         timeout (int): timeout in milliseconds
 
     Returns:
-        url if internet connection is present, None if no internet.
+        (str): url if internet connection is present, None if no internet.
     """
     solid_urls = ["http://google.com/",
                   "http://github.com/",
@@ -605,10 +606,10 @@ def read_source_file(source_file_path):
         source_file_path (str): target file path
 
     Returns:
-        str: file contents
+        (str): file contents
 
     Raises:
-        :obj:`PyRevitException` on read error
+        PyRevitException: on read error
     """
     try:
         with open(source_file_path, 'r') as code_file:
@@ -659,11 +660,12 @@ def cleanup_filename(file_name, windows_safe=False):
 
     Args:
         file_name (str): file name
+        windows_safe (bool): whether to use windows safe characters
 
     Returns:
-        str: cleaned up file name
+        (str): cleaned up file name
 
-    Example:
+    Examples:
         >>> cleanup_filename('Myfile-(3).txt')
         "Myfile(3).txt"
 
@@ -682,11 +684,13 @@ def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
     Args:
         str_id (str): identifier e.g. A310a
         shift (int): number of steps to change the identifier
+        refit (bool): whether to refit the identifier
+        logger (logging.Logger): logger
 
     Returns:
-        str: modified identifier
+        (str): modified identifier
 
-    Example:
+    Examples:
         >>> _inc_or_dec_string('A319z')
         'A320a'
     """
@@ -783,11 +787,12 @@ def increment_str(input_str, step=1, expand=False):
     Args:
         input_str (str): identifier e.g. A310a
         step (int): number of steps to change the identifier
+        expand (bool): removes leading zeroes and duplicate letters
 
     Returns:
-        str: modified identifier
+        (str): modified identifier
 
-    Example:
+    Examples:
         >>> increment_str('A319z')
         'A320a'
     """
@@ -800,11 +805,12 @@ def decrement_str(input_str, step=1, shrink=False):
     Args:
         input_str (str): identifier e.g. A310a
         step (int): number of steps to change the identifier
+        shrink (bool): removes leading zeroes or duplicate letters 
 
     Returns:
-        str: modified identifier
+        (str): modified identifier
 
-    Example:
+    Examples:
         >>> decrement_str('A310a')
         'A309z'
     """
@@ -812,7 +818,7 @@ def decrement_str(input_str, step=1, shrink=False):
 
 
 def extend_counter(input_str, upper=True, use_zero=False):
-    """Add a new level to identifier. e.g. A310 -> A310A
+    """Add a new level to identifier. e.g. A310 -> A310A.
 
     Args:
         input_str (str): identifier e.g. A310
@@ -820,9 +826,9 @@ def extend_counter(input_str, upper=True, use_zero=False):
         use_zero (bool): start from 0 for numeric extension
 
     Returns:
-        str: extended identifier
+        (str): extended identifier
 
-    Example:
+    Examples:
         >>> extend_counter('A310')
         'A310A'
         >>> extend_counter('A310A', use_zero=True)
@@ -838,10 +844,10 @@ def filter_null_items(src_list):
     """Remove None items in the given list.
 
     Args:
-        src_list (:obj:`list`): list of any items
+        src_list (list[Any]): list of any items
 
     Returns:
-        :obj:`list`: cleaned list
+        (list[Any]): cleaned list
     """
     return list(filter(bool, src_list))
 
@@ -850,12 +856,12 @@ def reverse_dict(input_dict):
     """Reverse the key, value pairs.
 
     Args:
-        input_dict (:obj:`dict`): source ordered dict
+        input_dict (dict): source ordered dict
 
     Returns:
-        :obj:`defaultdict`: reversed dictionary
+        (defaultdict): reversed dictionary
 
-    Example:
+    Examples:
         >>> reverse_dict({1: 2, 3: 4})
         defaultdict(<type 'list'>, {2: [1], 4: [3]})
     """
@@ -869,9 +875,9 @@ def timestamp():
     """Return timestamp for current time.
 
     Returns:
-        str: timestamp in string format
+        (str): timestamp in string format
 
-    Example:
+    Examples:
         >>> timestamp()
         '01003075032506808'
     """
@@ -884,9 +890,9 @@ def current_time():
     Current implementation uses %H:%M:%S to format time.
 
     Returns:
-        str: formatted current time.
+        (str): formatted current time.
 
-    Example:
+    Examples:
         >>> current_time()
         '07:50:53'
     """
@@ -899,9 +905,9 @@ def current_date():
     Current implementation uses %Y-%m-%d to format date.
 
     Returns:
-        str: formatted current date.
+        (str): formatted current date.
 
-    Example:
+    Examples:
         >>> current_date()
         '2018-01-03'
     """
@@ -915,9 +921,9 @@ def is_blank(input_string):
         input_string (str): input string
 
     Returns:
-        bool: True if string is blank
+        (bool): True if string is blank
 
-    Example:
+    Examples:
         >>> is_blank('   ')
         True
     """
@@ -933,9 +939,9 @@ def is_url_valid(url_string):
         url_string (str): URL string
 
     Returns:
-        bool: True if URL is in valid format
+        (bool): True if URL is in valid format
 
-    Example:
+    Examples:
         >>> is_url_valid('https://www.google.com')
         True
     """
@@ -963,9 +969,9 @@ def reformat_string(orig_str, orig_format, new_format):
         new_format (str): New pattern (how to recompose the data)
 
     Returns:
-        str: Reformatted string
+        (str): Reformatted string
 
-    Example:
+    Examples:
         >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
                             '{section} - {loc} - {mat} - {rating} - {name}',
                             '{section}:{mat}:{rating} - {name} ({loc})'))
@@ -1010,9 +1016,9 @@ def dletter_to_unc(dletter_path):
         dletter_path (str): drive letter path
 
     Returns:
-        str: UNC path
+        (str): UNC path
 
-    Example:
+    Examples:
         >>> # assuming J: is mapped to //filestore/server/jdrive
         >>> dletter_to_unc('J:/somefile.txt')
         '//filestore/server/jdrive/somefile.txt'
@@ -1031,9 +1037,9 @@ def unc_to_dletter(unc_path):
         unc_path (str): UNC path
 
     Returns:
-        str: drive letter path
+        (str): drive letter path
 
-    Example:
+    Examples:
         >>> # assuming J: is mapped to //filestore/server/jdrive
         >>> unc_to_dletter('//filestore/server/jdrive/somefile.txt')
         'J:/somefile.txt'
@@ -1057,7 +1063,7 @@ def random_alpha():
 def random_hex_color():
     """Return a random color in hex format.
 
-    Example:
+    Examples:
         >>> random_hex_color()
         '#FF0000'
     """
@@ -1069,7 +1075,7 @@ def random_hex_color():
 def random_rgb_color():
     """Return a random color in rgb format.
 
-    Example:
+    Examples:
         >>> random_rgb_color()
         'rgb(255, 0, 0)'
     """
@@ -1081,7 +1087,7 @@ def random_rgb_color():
 def random_rgba_color():
     """Return a random color in rgba format.
 
-    Example:
+    Examples:
         >>> random_rgba_color()
         'rgba(255, 0, 0, 0.5)'
     """
@@ -1103,11 +1109,12 @@ def extract_range(formatted_str, max_range=500):
 
     Args:
         formatted_str (str): string specifying range
+        max_range (int): maximum number of items to create.
 
     Returns:
-        list: list of names in the specified range
+        (list[str]): names in the specified range
 
-    Example:
+    Examples:
         >>> exract_range('A103:A106')
         ['A103', 'A104', 'A105', 'A106']
         >>> exract_range('S203-S206')
@@ -1140,7 +1147,7 @@ def extract_range(formatted_str, max_range=500):
 
 
 def check_encoding_bom(filename, bom_bytes=codecs.BOM_UTF8):
-    """Check if given file contains the given BOM bytes at the start
+    """Check if given file contains the given BOM bytes at the start.
 
     Args:
         filename (str): file path
@@ -1157,7 +1164,7 @@ def has_nonprintable(input_str):
         input_str (str): input string
 
     Returns:
-        bool: True if contains non-printable characters
+        (bool): True if contains non-printable characters
     """
     return any([x in input_str for x in UNICODE_NONPRINTABLE_CHARS])
 
@@ -1168,7 +1175,7 @@ def get_enum_values(enum_type):
 
 
 def get_enum_value(enum_type, value_string):
-    """Return enum value matching given value string (case insensitive)"""
+    """Return enum value matching given value string (case insensitive)."""
     for ftype in get_enum_values(enum_type):
         if str(ftype).lower() == value_string.lower():
             return ftype
@@ -1204,7 +1211,7 @@ def format_hex_rgb(rgb_value):
 
 
 def new_uuid():
-    """Create a new UUID (using dotnet Guid.NewGuid)"""
+    """Create a new UUID (using dotnet Guid.NewGuid)."""
     # RE: https://github.com/eirannejad/pyRevit/issues/413
     # return uuid.uuid1()
     return str(Guid.NewGuid())
@@ -1234,7 +1241,7 @@ def fuzzy_search_ratio(target_string, sfilter, regex=False):
         regex (bool): treat the sfilter as regular expression pattern
 
     Returns:
-        int: integer between 0 to 100, with 100 being the exact match
+        (int): integer between 0 to 100, with 100 being the exact match
     """
     tstring = target_string
 
@@ -1330,9 +1337,9 @@ def get_reg_key(key, subkey):
         subkey (str): subkey path
 
     Returns:
-        PyHKEY: registry key if found, None if not found
+        (PyHKEY): registry key if found, None if not found
 
-    Example:
+    Examples:
         >>> get_reg_key(wr.HKEY_CURRENT_USER, 'Control Panel/International')
         ... <PyHKEY at 0x...>
     """
@@ -1343,12 +1350,12 @@ def get_reg_key(key, subkey):
 
 
 def kill_tasks(task_name):
-    """Kill running tasks matching task_name
+    """Kill running tasks matching task_name.
 
     Args:
         task_name (str): task name
 
-    Example:
+    Examples:
         >>> kill_tasks('Revit.exe')
     """
     os.system("taskkill /f /im %s" % task_name)
@@ -1368,15 +1375,15 @@ def hex2int_long(hex_string):
 
 
 def split_words(input_string):
-    """Splits given string by uppercase characters
+    """Splits given string by uppercase characters.
 
     Args:
         input_string (str): input string
 
     Returns:
-        list[str]: split string
+        (list[str]): split string
 
-    Example:
+    Examples:
         >>> split_words("UIApplication_ApplicationClosing")
         ... ['UIApplication', 'Application', 'Closing']
     """
@@ -1395,10 +1402,10 @@ def split_words(input_string):
 
 
 def get_paper_sizes(printer_name=None):
-    """Get paper sizes defined on this system
+    """Get paper sizes defined on this system.
 
     Returns:
-        list[]: list of papersize instances
+        (list[]): list of papersize instances
     """
     print_settings = framework.Drawing.Printing.PrinterSettings()
     if printer_name:
@@ -1412,5 +1419,5 @@ def get_integer_length(number):
 
 
 def get_my_ip():
-    """Return local ip address of this machine"""
+    """Return local ip address of this machine."""
     return socket.gethostbyname(socket.gethostname())

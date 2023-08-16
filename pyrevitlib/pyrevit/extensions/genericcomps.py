@@ -27,10 +27,12 @@ NAME_KEY = 'name'
 
 
 class TypedComponent(object):
+    """Component with a type id."""
     type_id = None
 
 
 class CachableComponent(TypedComponent):
+    """Cacheable Component."""
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
         if hasattr(self, TYPE_ID_KEY):
@@ -43,18 +45,21 @@ class CachableComponent(TypedComponent):
 
 
 class LayoutDirective(CachableComponent):
+    """Layout directive."""
     def __init__(self, directive_type=None, target=None):
         self.directive_type = directive_type
         self.target = target
 
 
 class LayoutItem(CachableComponent):
+    """Layout item."""
     def __init__(self, name=None, directive=None):
         self.name = name
         self.directive = directive
 
 
 class GenericComponent(CachableComponent):
+    """Generic component object."""
     def __init__(self):
         self.name = None
 
@@ -67,6 +72,7 @@ class GenericComponent(CachableComponent):
 
 
 class GenericUIComponent(GenericComponent):
+    """Generic UI component."""
     def __init__(self, cmp_path=None):
         # using classname otherwise exceptions in superclasses won't show
         GenericComponent.__init__(self)
@@ -100,13 +106,16 @@ class GenericUIComponent(GenericComponent):
 
     @classmethod
     def make_unique_name(cls, cmp_path):
-        """Creates a unique name for the command. This is used to uniquely
-        identify this command and also to create the class in
-        pyRevit dll assembly. Current method create a unique name based on
-        the command full directory address.
-        Example:
+        """Creates a unique name for the command.
+
+        This is used to uniquely identify this command
+        and also to create the class in pyRevit dll assembly.
+        Current method create a unique name based on the command
+        full directory address.
+
+        Examples:
             for 'pyRevit.extension/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
-            unique name would be: 'pyrevit-pyrevit-edit-flipdoors'
+            unique name would be: 'pyrevit-pyrevit-edit-flipdoors'.
         """
         pieces = []
         inside_ext = False
@@ -329,8 +338,8 @@ class GenericUIComponent(GenericComponent):
                 self._resolve_liquid_tag(param_name, key, value)
 
 
-# superclass for all UI group items (tab, panel, button groups, stacks)
 class GenericUIContainer(GenericUIComponent):
+    """Superclass for all UI group items (tab, panel, button groups, stacks)."""
     allowed_sub_cmps = []
 
     def __init__(self, cmp_path=None):
@@ -497,6 +506,7 @@ class GenericUIContainer(GenericUIComponent):
 # can not contain other elements
 class GenericUICommand(GenericUIComponent):
     """Superclass for all single commands.
+
     The information provided by these classes will be used to create a
     push button under Revit UI. However, pyRevit expands the capabilities of
     push button beyond what is provided by Revit UI. (e.g. Toggle button

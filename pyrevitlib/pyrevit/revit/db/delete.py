@@ -1,3 +1,4 @@
+"""Database elements deletion functions."""
 from pyrevit import DOCS
 from pyrevit.framework import List
 from pyrevit import DB

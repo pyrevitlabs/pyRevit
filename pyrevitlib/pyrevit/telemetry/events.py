@@ -22,6 +22,7 @@ def register_event_telemetry(handler, flags):
     """Registers application event telemetry handlers based on given flags.
 
     Args:
+        handler (EventTelemetry): event telemetry handler
         flags (int): event flags
     """
     try:
@@ -36,6 +37,7 @@ def unregister_event_telemetry(handler, flags):
     """Unregisters application event telemetry handlers based on given flags.
 
     Args:
+        handler (EventTelemetry): event telemetry handler
         flags (int): event flags
     """
     try:

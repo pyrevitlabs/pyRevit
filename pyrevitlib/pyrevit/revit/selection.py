@@ -1,3 +1,4 @@
+"""Elements selection utilities."""
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger

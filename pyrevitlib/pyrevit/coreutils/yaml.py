@@ -30,7 +30,7 @@ def load(yaml_file):
         yaml_file (str): file path to yaml file
 
     Returns:
-        obj`YamlDotNet.RepresentationModel.YamlMappingNode`: yaml node
+        (YamlDotNet.RepresentationModel.YamlMappingNode): yaml node
     """
     if PY3:
         with open(yaml_file, 'r', encoding="utf8") as yamlfile:
@@ -55,7 +55,7 @@ def load_as_dict(yaml_file):
         yaml_file (str): file path to yaml file
 
     Returns:
-        obj`dict`: dictionary representing yaml data
+        (dict[str, Any]): dictionary representing yaml data
     """
     return _convert_yamldotnet_to_dict(load(yaml_file))
 

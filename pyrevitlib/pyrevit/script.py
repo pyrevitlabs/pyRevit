@@ -1,6 +1,6 @@
 """Provide basic utilities for pyRevit scripts.
 
-Example:
+Examples:
     >>> from pyrevit import script
     >>> script.clipboard_copy('some text')
     >>> data = script.journal_read('data-key')
@@ -47,7 +47,7 @@ def get_info():
     """Return info on current pyRevit command.
 
     Returns:
-        :obj:`pyrevit.extensions.genericcomps.GenericUICommand`:
+        (pyrevit.extensions.genericcomps.GenericUICommand):
             Command info object
     """
     from pyrevit.extensions.extensionmgr import get_command_from_path
@@ -58,7 +58,7 @@ def get_script_path():
     """Return script path of the current pyRevit command.
 
     Returns:
-        str: script path
+        (str): script path
     """
     return EXEC_PARAMS.command_path
 
@@ -67,7 +67,7 @@ def get_alt_script_path():
     """Return config script path of the current pyRevit command.
 
     Returns:
-        str: config script path
+        (str): config script path
     """
     return EXEC_PARAMS.command_config_path
 
@@ -76,7 +76,7 @@ def get_bundle_name():
     """Return bundle name of the current pyRevit command.
 
     Returns:
-        str: bundle name (e.g. MyButton.pushbutton)
+        (str): bundle name (e.g. MyButton.pushbutton)
     """
     return EXEC_PARAMS.command_bundle
 
@@ -85,7 +85,7 @@ def get_extension_name():
     """Return extension name of the current pyRevit command.
 
     Returns:
-        str: extension name (e.g. MyExtension.extension)
+        (str): extension name (e.g. MyExtension.extension)
     """
     return EXEC_PARAMS.command_extension
 
@@ -94,7 +94,7 @@ def get_unique_id():
     """Return unique id of the current pyRevit command.
 
     Returns:
-        str: command unique id
+        (str): command unique id
     """
     return EXEC_PARAMS.command_uniqueid
 
@@ -103,7 +103,7 @@ def get_results():
     """Return command results dictionary for logging.
 
     Returns:
-        :obj:`pyrevit.telemetry.record.CommandCustomResults`:
+        (pyrevit.telemetry.record.CommandCustomResults):
             Command results dict
     """
     from pyrevit.telemetry.record import CommandCustomResults
@@ -114,7 +114,7 @@ def get_pyrevit_version():
     """Return pyRevit version.
 
     Returns:
-        :obj:`pyrevit.versionmgr._PyRevitVersion`: pyRevit version provider
+        (pyrevit.versionmgr._PyRevitVersion): pyRevit version provider
     """
     return versionmgr.get_pyrevit_version()
 
@@ -123,7 +123,7 @@ def get_logger():
     """Create and return logger named for current script.
 
     Returns:
-        :obj:`pyrevit.coreutils.logger.LoggerWrapper`: Logger object
+        (pyrevit.coreutils.logger.LoggerWrapper): Logger object
     """
     return logger.get_logger(EXEC_PARAMS.command_name)
 
@@ -132,7 +132,7 @@ def get_output():
     """Return object wrapping output window for current script.
 
     Returns:
-        :obj:`pyrevit.output.PyRevitOutputWindow`: Output wrapper object
+        (pyrevit.output.PyRevitOutputWindow): Output wrapper object
     """
     return output.get_output()
 
@@ -141,10 +141,11 @@ def get_config(section=None):
     """Create and return config section parser object for current script.
 
     Args:
-        section (str, optional): config section name
+        section (str, optional): config section name. If not provided,
+            it will default to the command name plus the 'config' suffix.
 
     Returns:
-        :obj:`pyrevit.coreutils.configparser.PyRevitConfigSectionParser`:
+        (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
             Config section parser object
     """
     from pyrevit.userconfig import user_config
@@ -154,7 +155,7 @@ def get_config(section=None):
 
     try:
         return user_config.get_section(section)
-    except Exception:
+    except AttributeError:
         return user_config.add_section(section)
 
 
@@ -199,7 +200,7 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
     File name is generated in this format:
     ``pyRevit_{file_id}.{file_ext}``
 
-    Example:
+    Examples:
         >>> script.get_universal_data_file('mydata', 'data')
         '.../pyRevit_mydata.data'
         >>> script.get_universal_data_file('mydata', 'data', add_cmd_name=True)
@@ -214,7 +215,7 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
         add_cmd_name (bool, optional): add command name to file name
 
     Returns:
-        str: full file path
+        (str): full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -230,7 +231,7 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
     File name is generated in this format:
     ``pyRevit_{Revit Version}_{file_id}.{file_ext}``
 
-    Example:
+    Examples:
         >>> script.get_data_file('mydata', 'data')
         '.../pyRevit_2018_mydata.data'
         >>> script.get_data_file('mydata', 'data', add_cmd_name=True)
@@ -245,7 +246,7 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
         add_cmd_name (bool, optional): add command name to file name
 
     Returns:
-        str: full file path
+        (str): full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -261,7 +262,7 @@ def get_instance_data_file(file_id, add_cmd_name=False):
     File name is generated in this format:
     ``pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}``
 
-    Example:
+    Examples:
         >>> script.get_instance_data_file('mydata')
         '.../pyRevit_2018_6684_mydata.tmp'
         >>> script.get_instance_data_file('mydata', add_cmd_name=True)
@@ -274,7 +275,7 @@ def get_instance_data_file(file_id, add_cmd_name=False):
         add_cmd_name (bool, optional): add command name to file name
 
     Returns:
-        str: full file path
+        (str): full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -290,7 +291,7 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
     File name is generated in this format:
     ``pyRevit_{Revit Version}_{file_id}_{Project Name}.{file_ext}``
 
-    Example:
+    Examples:
         >>> script.get_document_data_file('mydata', 'data')
         '.../pyRevit_2018_mydata_Project1.data'
         >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
@@ -305,7 +306,7 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
         add_cmd_name (bool, optional): add command name to file name
 
     Returns:
-        str: full file path
+        (str): full file path
     """
     proj_info = revit.query.get_project_info()
 
@@ -323,7 +324,7 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
 
 
 def remove_data_file(filepath):
-    """Remove given data file"""
+    """Remove given data file."""
     appdata.garbage_data_file(filepath)
 
 
@@ -334,7 +335,7 @@ def get_bundle_file(file_name):
         file_name (str): bundle file name
 
     Returns:
-        str: full bundle file path
+        (str): full bundle file path
     """
     return op.join(EXEC_PARAMS.command_path, file_name)
 
@@ -343,7 +344,7 @@ def get_bundle_files(sub_path=None):
     """Return full path to all file under current script bundle.
 
     Returns:
-        list[str]: list of bundle file paths
+        (list[str]): list of bundle file paths
     """
     if sub_path:
         command_path = op.join(EXEC_PARAMS.command_path, sub_path)
@@ -374,7 +375,7 @@ def journal_read(data_key):
         data_key (str): data key
 
     Returns:
-        str: data value string
+        (str): data value string
     """
     # Get the StringStringMap class which can write data into.
     data_map = EXEC_PARAMS.command_data.JournalData
@@ -387,7 +388,7 @@ def get_button():
     """Find and return current script ui button.
 
     Returns:
-        :obj:`pyrevit.coreutils.ribbon._PyRevitRibbonButton`: ui button object
+        (pyrevit.coreutils.ribbon._PyRevitRibbonButton): ui button object
     """
     from pyrevit.coreutils.ribbon import get_current_ui
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
@@ -406,7 +407,7 @@ def get_all_buttons():
     icon adjustments.
 
     Returns:
-        :obj:`list(pyrevit.coreutils.ribbon._PyRevitRibbonButton)`:
+        (list[pyrevit.coreutils.ribbon._PyRevitRibbonButton]):
             list of ui button objects
     """
     from pyrevit.coreutils.ribbon import get_current_ui
@@ -431,6 +432,7 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None, icon_size=ICON
                                       default='on.png'
         off_icon_path (str, optional): full path of icon for off state.
                                        default='off.png'
+        icon_size (int): size of the icon. Defaults to medium (24x24)
     """
     # find the ui button
     uibuttons = get_all_buttons()
@@ -543,9 +545,9 @@ def get_envvar(envvar):
         envvar (str): name of environment variable
 
     Returns:
-        any: type of object stored in environment variable
+        (Any): object stored in environment variable
 
-    Example:
+    Examples:
         >>> script.get_envvar('ToolActiveState')
         True
     """
@@ -564,7 +566,7 @@ def set_envvar(envvar, value):
         envvar (str): name of environment variable
         value (any): value of environment variable
 
-    Example:
+    Examples:
         >>> script.set_envvar('ToolActiveState', False)
         >>> script.get_envvar('ToolActiveState')
         False
@@ -591,7 +593,7 @@ def load_json(filepath):
         filepath (str): json file path
 
     Returns:
-        object: deserialized data
+        (object): deserialized data
     """
     with codecs.open(filepath, 'r', "utf-8") as json_file:
         return json.load(json_file)
@@ -610,20 +612,20 @@ def dump_csv(data, filepath):
 
 
 def load_csv(filepath):
-    """Read lines from given csv file
+    """Read lines from given csv file.
 
     Args:
         filepath (str): csv file path
 
     Returns:
-        list[list[str]]: csv data
+        (list[list[str]]): csv data
     """
     with codecs.open(filepath, 'rb', encoding='utf-8') as csvfile:
         return list(csv.reader(csvfile, delimiter=',', quotechar='\"'))
 
 
 def store_data(slot_name, data, this_project=True):
-    """Wraps python pickle.dump() to easily store data to pyRevit data files
+    """Wraps python pickle.dump() to easily store data to pyRevit data files.
 
     To store native Revit objects, use revit.serialize(). See Example
 
@@ -632,7 +634,7 @@ def store_data(slot_name, data, this_project=True):
         data (obj): any pickalable data
         this_project (bool): data belongs to this project only
 
-    Example:
+    Examples:
         >>> from pyrevit import revit
         ... from pyrevit import script
         ...
@@ -677,7 +679,7 @@ def store_data(slot_name, data, this_project=True):
 
 
 def load_data(slot_name, this_project=True):
-    """Wraps python pickle.load() to easily load data from pyRevit data files
+    """Wraps python pickle.load() to easily load data from pyRevit data files.
 
     To recover native Revit objects, use revit.deserialize(). See Example
 
@@ -689,9 +691,9 @@ def load_data(slot_name, this_project=True):
         this_project (bool): data belongs to this project only
 
     Returns:
-        obj: stored data
+        (object): stored data
 
-    Example:
+    Examples:
         >>> from pyrevit import revit
         ... from pyrevit import script
         ...
@@ -739,7 +741,7 @@ def data_exists(slot_name, this_project=True):
         this_project (bool): data belongs to this project only
 
     Returns:
-        bool: true if the path exists
+        (bool): true if the path exists
     """
     # for this specific project?
     if this_project:

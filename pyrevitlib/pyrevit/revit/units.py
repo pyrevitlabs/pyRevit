@@ -12,7 +12,7 @@ def format_area(area_value, doc=None):
         doc (DB.Document, optional): Revit document, defaults to current
 
     Returns:
-        str: formatted value
+        (str): formatted value
     """
     doc = doc or DOCS.doc
     if HOST_APP.is_newer_than(2021):
@@ -36,7 +36,7 @@ def format_slope(slope_value, doc=None):
         doc (DB.Document, optional): Revit document, defaults to current
 
     Returns:
-        str: formatted value
+        (str): formatted value
     """
     doc = doc or DOCS.doc
     if HOST_APP.is_newer_than(2021):
@@ -53,7 +53,7 @@ def format_slope(slope_value, doc=None):
 
 
 def _create_view_plane(view):
-    """Get a plane parallel to a view
+    """Get a plane parallel to a view.
 
     Args:
         view (DB.View): view to align plane
@@ -66,14 +66,14 @@ def _create_view_plane(view):
 
 
 def project_to_viewport(xyz, view):
-    """Project a point to viewport coordinates
+    """Project a point to viewport coordinates.
 
     Args:
         xyz (DB.XYZ): point to project
         view (DB.View): target view
 
     Returns:
-        DB.UV: [description]
+        (DB.UV): [description]
     """
     plane = _create_view_plane(view)
     uv, _ = plane.Project(xyz)
@@ -88,7 +88,7 @@ def project_to_world(uv, view):
         view (DB.View): view to get coordinates from
 
     Returns:
-        DB.XYZ: point in world coordinates
+        (DB.XYZ): point in world coordinates
     """
     plane = _create_view_plane(view)
     trf = DB.Transform.Identity
@@ -100,6 +100,14 @@ def project_to_world(uv, view):
 
 
 def get_spec_name(forge_id):
+    """Returns the measurable spec name for the given unit id.
+
+    Args:
+        forge_id (DB.ForgeTypeId): Unit id
+
+    Returns:
+        (str): Spec name
+    """
     if HOST_APP.is_newer_than(2021) \
             and DB.UnitUtils.IsMeasurableSpec(forge_id):
         return DB.UnitUtils.GetTypeCatalogStringForSpec(forge_id)
@@ -107,6 +115,14 @@ def get_spec_name(forge_id):
 
 
 def get_unit_name(forge_id):
+    """Returns the unit name for the given unit id.
+
+    Args:
+        forge_id (DB.ForgeTypeId): Unit id
+
+    Returns:
+        (str): Unit name
+    """
     if HOST_APP.is_newer_than(2021) \
             and DB.UnitUtils.IsUnit(forge_id):
         return DB.UnitUtils.GetTypeCatalogStringForUnit(forge_id)
