@@ -15,6 +15,7 @@ pygount = "*"
 pyyaml = ">=5.4"
 black = "*"
 setuptools = "==65.5.1"
+ruff = "*"
 
 [requires]
 python_version = "3.10"
@@ -24,3 +25,4 @@ allow_prereleases = true
 
 [scripts]
 pyrevit = "python ./dev/pyrevit.py"
+check-docstrings = "ruff check --fix pyrevitlib/pyrevit"
