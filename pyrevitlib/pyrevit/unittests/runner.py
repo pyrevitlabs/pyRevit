@@ -59,7 +59,7 @@ class PyRevitTestResult(TestResult):
         """Returns the description of the test.
 
         Args:
-            test (Any): Unit test.
+            test (TestCase): Unit test.
 
         Returns:
             (str): test description
@@ -67,22 +67,44 @@ class PyRevitTestResult(TestResult):
         return test.shortDescription() or test
 
     def startTest(self, test):
+        """Starts the test.
+
+        Args:
+            test (TestCase): unit test
+        """
         super(PyRevitTestResult, self).startTest(test)
         mlogger.debug('Running test: %s', self.getDescription(test))
 
     def addSuccess(self, test):
+        """Adds a test success.
+
+        Args:
+            test (TestCase): unit test case
+        """
         super(PyRevitTestResult, self).addSuccess(test)
         mlogger.debug(DEBUG_OKAY_RESULT)
         self.writer.write(RESULT_DIV_OKAY
                           .format(test=self.getDescription(test)))
 
     def addError(self, test, err):
+        """Adds a test error.
+
+        Args:
+            test (TestCase): unit test case
+            err (OptExcInfo): test exception info
+        """
         super(PyRevitTestResult, self).addError(test, err)
         mlogger.debug(DEBUG_FAIL_RESULT)
         self.writer.write(RESULT_DIV_ERROR
                           .format(test=self.getDescription(test)))
 
     def addFailure(self, test, err):
+        """Adds a test failure.
+
+        Args:
+            test (TestCase): unit test case
+            err (OptExcInfo): test exception info
+        """
         super(PyRevitTestResult, self).addFailure(test, err)
         mlogger.debug(DEBUG_FAIL_RESULT)
         self.writer.write(RESULT_DIV_FAIL
