@@ -17,6 +17,7 @@ env:
 jobs:
   build:
     runs-on: windows-latest
+    secrets: inherit
     steps:
       - name: Report Context
         run: |
