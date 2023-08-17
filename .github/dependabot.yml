@@ -12,7 +12,6 @@ updates:
   - package-ecosystem: "gomod"
     # directory required https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#vendor
     directory: "/"
-    vendor: true
     target-branch: "develop"
     schedule:
       interval: "weekly"
