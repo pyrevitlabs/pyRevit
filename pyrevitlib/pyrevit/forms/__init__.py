@@ -90,6 +90,7 @@ class reactive(property):
         super(reactive, self).__init__(newgetter)
 
     def setter(self, setter):
+        """Property setter."""
         def newsetter(ui_control, newvalue):
             oldvalue = self.fget(ui_control)
             if oldvalue != newvalue:
@@ -107,12 +108,19 @@ class Reactive(ComponentModel.INotifyPropertyChanged):
     PropertyChanged, _propertyChangedCaller = pyevent.make_event()
 
     def add_PropertyChanged(self, value):
+        """Called when a property is added to the object."""
         self.PropertyChanged += value
 
     def remove_PropertyChanged(self, value):
+        """Called when a property is removed from the object."""
         self.PropertyChanged -= value
 
     def OnPropertyChanged(self, prop_name):
+        """Called when a property is changed.
+
+        Args:
+            prop_name (str): property name
+        """
         if self._propertyChangedCaller:
             args = ComponentModel.PropertyChangedEventArgs(prop_name)
             self._propertyChangedCaller(self, args)
@@ -163,6 +171,20 @@ class WPFWindow(framework.Windows.Window):
             )
 
     def load_xaml(self, xaml_source, literal_string=False, handle_esc=True, set_owner=True):
+        """Load the window XAML file.
+
+        Args:
+            xaml_source (str): The XAML content or file path to load.
+            literal_string (bool, optional): True if `xaml_source` is content,
+                False if it is a path. Defaults to False.
+            handle_esc (bool, optional): Whether the ESC key should be handled.
+                Defaults to True.
+            set_owner (bool, optional): Whether to se the window owner.
+                Defaults to True.
+
+        Returns:
+            None
+        """
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 
@@ -226,14 +248,24 @@ class WPFWindow(framework.Windows.Window):
         self.Resources.MergedDictionaries.Add(lang_dictionary)
 
     def get_locale_string(self, string_name):
+        """Get localized string.
+
+        Args:
+            string_name (str): string name
+
+        Returns:
+            (str): localized string
+        """
         return self.FindResource(string_name)
 
     def setup_owner(self):
+        """Set the window owner."""
         wih = Interop.WindowInteropHelper(self)
         wih.Owner = AdWindows.ComponentManager.ApplicationWindow
 
     @staticmethod
     def setup_resources(wpf_ctrl):
+        """Sets the WPF resources."""
         #2c3e50
         wpf_ctrl.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
@@ -281,6 +313,7 @@ class WPFWindow(framework.Windows.Window):
         self.set_icon(op.join(BIN_DIR, 'pyrevit_settings.png'))
 
     def hide(self):
+        """Hide window."""
         self.Hide()
 
     def show(self, modal=False):
@@ -321,6 +354,13 @@ class WPFWindow(framework.Windows.Window):
         WPFWindow.set_image_source_file(wpf_element, image_file)
 
     def dispatch(self, func, *args, **kwargs):
+        """Runs the function in a new thread.
+
+        Args:
+            func (Callable): function to run
+            *args (Any): positional arguments to pass to func
+            **kwargs (Any): keyword arguments to pass to func
+        """
         if framework.get_current_thread_id() == self.thread_id:
             t = threading.Thread(
                 target=func,
@@ -338,6 +378,7 @@ class WPFWindow(framework.Windows.Window):
                 )
 
     def conceal(self):
+        """Conceal window."""
         return WindowToggler(self)
 
     @property
@@ -1039,6 +1080,7 @@ class SelectFromList(TemplateUserInputWindow):
                 self.in_uncheck = False
 
     def button_reset(self, sender, args):#pylint: disable=W0613
+        """Handle reset button click."""
         if self.reset_func:
             all_items = self.list_lb.ItemsSource
             self.reset_func(all_items)
@@ -1061,12 +1103,14 @@ class SelectFromList(TemplateUserInputWindow):
         self._list_options(option_filter=self.search_tb.Text)
 
     def selection_changed(self, sender, args):
+        """Handle selection change."""
         if self.info_panel:
             self._toggle_info_panel(state=False)
 
         self._list_options(option_filter=self.search_tb.Text)
 
     def selected_item_changed(self, sender, args):
+        """Handle selected item change."""
         if self.info_panel and self.list_lb.SelectedItem is not None:
             self._toggle_info_panel(state=True)
             self.infoData.Text = \
@@ -2854,6 +2898,7 @@ def pick_folder(title=None, owner=None):
 
 
 def result_item_result_clicked(sender, e, debug=False):
+    """Callback for a result item click event."""
     if debug:
         print("Result clicked")  # using print_md here will break the script
     pass
