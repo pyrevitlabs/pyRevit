@@ -16,7 +16,7 @@ APIDocsApp = namedtuple('APIDocsApp', ['apptitle', 'appslug', 'versionslug'])
 
 
 def get_apps():
-    """Returns a list of application availaboe on apidocs.
+    """Returns a list of application available on apidocs.
 
     Returns:
         (list[APIDocsApp]): applictations documented on apidocs
