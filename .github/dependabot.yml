@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      # Check for npm updates on Sundays
+      day: "sunday"
+    # Raise pull requests for version updates
+    # to pip against the `develop` branch
+    target-branch: "develop"
+  - package-ecosystem: "gomod"
+    # directory required https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#vendor
+    vendor: true
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
