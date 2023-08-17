@@ -34,7 +34,7 @@ def get_apps():
 
 
 def _make_uri(asset_type, asset_id, app_name, app_version):
-    """Retirna a URI for the given asset.
+    """Returns a URI for the given asset.
 
     Args:
         asset_type (str): Asset type
