@@ -135,7 +135,7 @@ def _get_effective_classname(button):
 
 
 def _produce_ui_separator(ui_maker_params):
-    """Crete a separator.
+    """Create a separator.
 
     Args:
         ui_maker_params (UIMakerParams): Standard parameters for making ui item.
