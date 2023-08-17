@@ -25,6 +25,8 @@ from Autodesk.Revit import Attributes
 from Autodesk.Revit import ApplicationServices
 from Autodesk.Revit import DB
 from Autodesk.Revit import UI
+from Autodesk.Revit.DB import ExternalService
+from Autodesk.Revit.DB import DirectContext3D
 
 
 def get_product_serial_number():

@@ -39,6 +39,9 @@ mlogger = logger.get_logger(__name__)
 
 DATAFEXT = 'pym'
 
+ICON_SMALL = 16
+ICON_MEDIUM = 24
+ICON_LARGE = 32
 
 def get_info():
     """Return info on current pyRevit command.
@@ -416,7 +419,7 @@ def get_all_buttons():
     return buttons
 
 
-def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
+def toggle_icon(new_state, on_icon_path=None, off_icon_path=None, icon_size=ICON_MEDIUM):
     """Set the state of button icon (on or off).
 
     This method expects on.png and off.png in command bundle for on and off
@@ -454,7 +457,7 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
                   new_state, icon_path)
 
     for uibutton in uibuttons:
-        uibutton.set_icon(icon_path)
+        uibutton.set_icon(icon_path, icon_size)
 
 
 def exit():     #pylint: disable=W0622

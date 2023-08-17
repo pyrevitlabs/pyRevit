@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Редактор ключевых пометок (КП)</system:String>
+    <system:String x:Key="KeynoteTitle">Ключ КП</system:String>
+    <system:String x:Key="ParentTitle">Родитель КП</system:String>
+    <system:String x:Key="ApplyChanges">Применить изменения</system:String>
+    <system:String x:Key="UpperInfo">К ВЕРХНЕМУ РЕГИСТРУ</system:String>
+    <system:String x:Key="LowerInfo">к нижнему регистру</system:String>
+    <system:String x:Key="TitleCaseInfo">К Первой Букве Каждого Слова</system:String>
+    <system:String x:Key="SentenceCaseInfo">К первому слову предложения</system:String>
+    <system:String x:Key="TranslateInfo">Перевести</system:String>
+    <system:String x:Key="TemplatesInfo">Шаблоны</system:String>
+    
+    
+    <system:String x:Key="AddCategoryTitle">Добавить категорию</system:String>
+    <system:String x:Key="CreateCategoryKey">Создать ключ категории</system:String>
+    <system:String x:Key="AddCategoryApply">Добавить категорию</system:String>
+    
+    <system:String x:Key="EditCategoryTitle">Редактировать категорию</system:String>
+    <system:String x:Key="EditCategoryKey">Ключ категории</system:String>
+    <system:String x:Key="EditCategoryApply">Обновить категорию</system:String>
+    
+    <system:String x:Key="AddKeynoteTitle">Добавить КП</system:String>
+    <system:String x:Key="CreateKeynoteKey">Создать ключ КП</system:String>
+    <system:String x:Key="AddKeynoteApply">Добавить КП</system:String>
+    
+    <system:String x:Key="EditKeynoteTitle">Редактировать КП</system:String>
+    <system:String x:Key="EditKeynoteKey">Ключ КП</system:String>
+    <system:String x:Key="EditKeynoteApply">Обновить КП</system:String>
+    
+    
+    <system:String x:Key="CategoryKeyValidate">Категория должна иметь уникальный ключ.</system:String>
+    <system:String x:Key="CategoryTitleValidate">Категория должна иметь название.</system:String>
+    <system:String x:Key="CategoryTitleRemoved">Существующее название было удалено. Категория должна иметь название.</system:String>
+    
+    <system:String x:Key="KeynoteKeyValidate">КП должна иметь уникальный ключ.</system:String>
+    <system:String x:Key="KeynoteTextValidate">КП должна иметь описание.</system:String>
+    <system:String x:Key="KeynoteParentValidate">КП должна иметь родителя.</system:String>
+    <system:String x:Key="KeynoteTextRemoved">Существующие описание удалено. КП должна иметь описание.</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">Введите уникальный ключ</system:String>
+    <system:String x:Key="PickParent">Выбрать родителя...</system:String>
+    
+    <system:String x:Key="SelectTemplate">Выбрать шаблон</system:String>
+    <system:String x:Key="TemplateReserved">-- зарезервировано для будущего использования --</system:String>
+    <system:String x:Key="TemplateDontUse">!! не использовать !!</system:String>
+    <system:String x:Key="ComingSoon">Еще не реализовано. Скоро появится.</system:String>
+    
+    
+</ResourceDictionary>

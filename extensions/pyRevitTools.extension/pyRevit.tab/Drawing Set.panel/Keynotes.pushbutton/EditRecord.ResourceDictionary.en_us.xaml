@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Edit Keynote</system:String>
+    <system:String x:Key="KeynoteTitle">Keynote Key</system:String>
+    <system:String x:Key="ParentTitle">Keynote Parent</system:String>
+    <system:String x:Key="ApplyChanges">Apply Changes</system:String>
+    <system:String x:Key="UpperInfo">To UPPER</system:String>
+    <system:String x:Key="LowerInfo">To lower</system:String>
+    <system:String x:Key="TitleCaseInfo">To Title Case</system:String>
+    <system:String x:Key="SentenceCaseInfo">To Sentence case</system:String>
+    <system:String x:Key="TranslateInfo">Translate</system:String>
+    <system:String x:Key="TemplatesInfo">Templates</system:String>
+    
+    
+    <system:String x:Key="AddCategoryTitle">Add Category</system:String>
+    <system:String x:Key="CreateCategoryKey">Create Category Key</system:String>
+    <system:String x:Key="AddCategoryApply">Add Category</system:String>
+    
+    <system:String x:Key="EditCategoryTitle">Edit Category</system:String>
+    <system:String x:Key="EditCategoryKey">Category Key</system:String>
+    <system:String x:Key="EditCategoryApply">Update Category</system:String>
+    
+    <system:String x:Key="AddKeynoteTitle">Add Keynote</system:String>
+    <system:String x:Key="CreateKeynoteKey">Create Keynote Key</system:String>
+    <system:String x:Key="AddKeynoteApply">Add Keynote</system:String>
+    
+    <system:String x:Key="EditKeynoteTitle">Edit Keynote</system:String>
+    <system:String x:Key="EditKeynoteKey">Keynote Key</system:String>
+    <system:String x:Key="EditKeynoteApply">Update Keynote</system:String>
+    
+    
+    <system:String x:Key="CategoryKeyValidate">Category must have a unique key.</system:String>
+    <system:String x:Key="CategoryTitleValidate">Category must have a title.</system:String>
+    <system:String x:Key="CategoryTitleRemoved">Existing title is removed. Category must have a title.</system:String>
+    
+    <system:String x:Key="KeynoteKeyValidate">Keynote must have a unique key.</system:String>
+    <system:String x:Key="KeynoteTextValidate">Keynote must have a text.</system:String>
+    <system:String x:Key="KeynoteParentValidate">Keynote must have a parent.</system:String>
+    <system:String x:Key="KeynoteTextRemoved">Existing text is removed. Keynote must have a text.</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">Enter a Unique Key</system:String>
+    <system:String x:Key="PickParent">Pick parent...</system:String>
+    
+    <system:String x:Key="SelectTemplate">Select Template</system:String>
+    <system:String x:Key="TemplateReserved">-- reserved for future use --</system:String>
+    <system:String x:Key="TemplateDontUse">!! do not use !!</system:String>
+    <system:String x:Key="ComingSoon">Not yet implemented. Coming soon.</system:String>
+    
+    
+</ResourceDictionary>

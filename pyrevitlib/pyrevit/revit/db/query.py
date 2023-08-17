@@ -1571,14 +1571,19 @@ def get_element_workset(element):
         return workset_table.GetWorkset(element.WorksetId)
 
 
-def get_geometry(element, include_invisible=False):
+def get_geometry(element, include_invisible=False, compute_references=False):
     geom_opts = DB.Options()
     geom_opts.IncludeNonVisibleObjects = include_invisible
+    geom_opts.ComputeReferences = compute_references
     geom_objs = []
-    for gobj in element.Geometry[geom_opts]:
-        if isinstance(gobj, DB.GeometryInstance):
-            inst_geom = gobj.GetInstanceGeometry()
-            geom_objs.extend(list(inst_geom))
-        else:
-            geom_objs.append(gobj)
-    return geom_objs
+    try:
+        for gobj in element.Geometry[geom_opts]:
+            if isinstance(gobj, DB.GeometryInstance):
+                inst_geom = gobj.GetInstanceGeometry()
+                geom_objs.extend(list(inst_geom))
+            else:
+                geom_objs.append(gobj)
+        return geom_objs
+    except TypeError:
+        mlogger.debug("element %s has no geometry", element.Id.IntegerValue)
+        return
