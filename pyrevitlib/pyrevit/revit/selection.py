@@ -222,7 +222,7 @@ def pick_element(message=''):
         message (str): An optional message to display.
 
     Returns:
-        (Eleement): element selected by the user.
+        (Element): element selected by the user.
     """
     return _pick_obj(UI.Selection.ObjectType.Element,
                      message)
@@ -315,7 +315,7 @@ def pick_elements(message=''):
         message (str): An optional message to display.
 
     Returns:
-        (list[Eleement]): elements selected by the user.
+        (list[Element]): elements selected by the user.
     """
     return _pick_obj(UI.Selection.ObjectType.Element,
                      message,
