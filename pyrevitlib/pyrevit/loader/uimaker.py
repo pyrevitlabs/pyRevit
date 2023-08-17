@@ -30,7 +30,7 @@ class UIMakerParams:
         par_cmp (GenericUIComponent): Parent UI component
         cmp_item (GenericUIComponent): UI component item
         asm_info (AssemblyInfo): Assembly info
-        create_beta (bool): Create beta button
+        create_beta (bool, optional): Create beta button. Defaults to False
     """
     def __init__(self, par_ui, par_cmp, cmp_item, asm_info, create_beta=False):
         self.parent_ui = par_ui
