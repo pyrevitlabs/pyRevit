@@ -10,8 +10,8 @@ def print_revision(rev, prefix='', print_id=True):
 
     Args:
         rev (DB.Revision): revision to output
-        prefix (str, optional): prefix to add to the output text.
-        print_id (bool, optional): whether to print the revision id.
+        prefix (str, optional): prefix to add to the output text. Defaults to empty string.
+        print_id (bool, optional): whether to print the revision id. Defaults to True.
     """
     outstr = 'SEQ#: {} REV#: {} DATE: {} TYPE: {} DESC: {} ' \
              .format(rev.SequenceNumber,
@@ -29,8 +29,8 @@ def print_sheet(sht, prefix='', print_id=True):
 
     Args:
         sht (DB.ViewSheet): sheet to output
-        prefix (str, optional): prefix to add to the output text.
-        print_id (bool, optional): whether to print the sheet id.
+        prefix (str, optional): prefix to add to the output text. Defaults to empty string.
+        print_id (bool, optional): whether to print the sheet id. Defaults to True.
     """
     outstr = '{}\t{}'.format(
         sht.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
@@ -46,7 +46,7 @@ def print_view(view, prefix='', print_id=True):
 
     Args:
         view (DB.View): view to output
-        prefix (str, optional): prefix to add to the output text.
+        prefix (str, optional): prefix to add to the output text. Defaults to empty string.
         print_id (bool, optional): whether to print the view id. Defaults to True.
     """
     outstr = query.get_name(view)
