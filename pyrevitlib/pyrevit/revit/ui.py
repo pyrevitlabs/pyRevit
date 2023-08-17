@@ -15,8 +15,7 @@ from pyrevit.coreutils import envvars
 
 
 def get_mainwindow_hwnd():
-    """
-    Get the handle of the main window.
+    """Get the handle of the main window.
 
     Returns:
         (intptr): The handle of the main window.
@@ -79,8 +78,7 @@ def get_window_rectangle():
 
 
 def is_infocenter_visible():
-    """
-    Check if the InfoCenter toolbar is visible.
+    """Check if the InfoCenter toolbar is visible.
 
     Returns:
         (bool): True if the InfoCenter toolbar is visible, False otherwise.
@@ -90,8 +88,7 @@ def is_infocenter_visible():
 
 
 def toggle_infocenter():
-    """
-    Toggles the visibility of the InfoCenter toolbar.
+    """Toggles the visibility of the InfoCenter toolbar.
 
     This function retrieves the current visibility state of the InfoCenter 
     toolbar and toggles it to the opposite state.
