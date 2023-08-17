@@ -259,7 +259,7 @@ def pick_elementpoint(message='', world=False):
 
     Args:
         message (str, optional): message to display. Defaults to ''.
-        world (bool, optional): whether to use world coordinates.
+        world (bool, optional): whether to use world coordinates. Defaults to False.
 
     Returns:
         (PointOnElement): The selected point.
