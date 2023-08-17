@@ -394,7 +394,7 @@ def pick_elementpoints(message='', world=False):
 
     Args:
         message (str): The message to display when selecting element points.
-        world (bool, optional): Select points in world coordinates.
+        world (bool, optional): Select points in world coordinates. Defaults to False.
 
     Returns:
         (list[PointOnElement]): selected element points.
