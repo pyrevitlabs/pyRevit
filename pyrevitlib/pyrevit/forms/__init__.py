@@ -297,6 +297,7 @@ class WPFWindow(framework.Windows.Window):
             DEFAULT_RECOGNIZE_ACCESS_KEY
 
     def setup_default_handlers(self):
+        """Set the default handlers."""
         self.PreviewKeyDown += self.handle_input_key    #pylint: disable=E1101
 
     def handle_input_key(self, sender, args):    #pylint: disable=W0613
