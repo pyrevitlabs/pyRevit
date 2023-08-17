@@ -36,7 +36,7 @@ def _create_subcomponents(search_dir,
         search_dir (str): directory to parse
         cmp_types_list: This methods checks the subfolders in search_dir
             against the _get_component types provided in this list.
-        create_from_search_dir (bool): whether to create the _get_component objects
+        create_from_search_dir (bool, optional): whether to create the _get_component objects, default to False
 
     Examples:
         _create_subcomponents(search_dir,
