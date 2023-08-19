@@ -371,7 +371,8 @@ class Extension(GenericUIContainer):
         patfile += '|(\\' + exts.CONTENT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'
-        return coreutils.calculate_dir_hash(self.directory, pat, patfile)
+        from pyrevit.revit import ui
+        return coreutils.calculate_dir_hash(self.directory, pat, patfile) + str(ui.get_current_theme())
 
     def _update_from_directory(self):   #pylint: disable=W0221
         # using classname otherwise exceptions in superclasses won't show

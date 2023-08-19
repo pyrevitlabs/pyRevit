@@ -11,6 +11,7 @@ from pyrevit.coreutils import yaml
 from pyrevit.coreutils import applocales
 from pyrevit.coreutils import pyutils
 from pyrevit.compat import PY3
+from pyrevit.revit import ui
 import pyrevit.extensions as exts
 
 
@@ -133,8 +134,7 @@ class GenericUIComponent(GenericComponent):
         self._ui_title = self.name
         self.unique_name = GenericUIComponent.make_unique_name(self.directory)
 
-        full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
-        self.icon_file = full_file_path if op.exists(full_file_path) else None
+        self.icon_file = ui.resolve_icon_file(self.directory, exts.DEFAULT_ICON_FILE)
         mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
 
         self.media_file = \
