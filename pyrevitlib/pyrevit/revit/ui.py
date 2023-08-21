@@ -73,10 +73,41 @@ def get_ribbon_roottype():
 
 
 def get_current_theme():
+    """
+    Get the current UI theme.
+
+    Returns:
+        UITheme: The current UI theme.
+    """
     return UIThemeManager.CurrentTheme
+
+def set_current_theme(theme='Dark'):
+    """
+    Sets the current UI theme to either 'Dark' or 'Light'.
+
+    Args:
+        theme (str, optional): The theme to set. Defaults to 'Dark'.
+    
+    Returns:
+        None
+    """
+    if theme = 'Dark':
+        return UIThemeManager.CurrentTheme = UITheme.Dark
+    else:
+        return UIThemeManager.CurrentTheme = UITheme.Light
 
 
 def resolve_icon_file(directory, icon_name):
+    """
+    Resolves the icon file path based on the current UI theme.
+
+    Args:
+        directory (str): The directory where the icon file is located.
+        icon_name (str): The name of the icon file.
+
+    Returns:
+        str: The full file path of the icon file.
+    """
     full_file_path = op.join(directory, icon_name)
 
     if HOST_APP.is_newer_than(2024, True) and get_current_theme() == UITheme.Dark:
