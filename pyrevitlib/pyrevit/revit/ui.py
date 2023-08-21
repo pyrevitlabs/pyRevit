@@ -1,4 +1,6 @@
-#pylint: disable=import-error,invalid-name,broad-except
+# pylint: disable=import-error,invalid-name,broad-except
+import os.path as op
+
 from pyrevit import HOST_APP
 from pyrevit.framework import clr
 from pyrevit.framework import IntPtr
@@ -11,6 +13,8 @@ from pyrevit.api import UIFrameworkServices as ufs
 from pyrevit.labs import Common
 from pyrevit.runtime import types
 from pyrevit.coreutils import envvars
+from pyrevit.extensions import ICON_FILE_FORMAT, ICON_DARK_SUFFIX
+from Autodesk.Revit.UI import UIThemeManager, UITheme
 
 
 def get_mainwindow_hwnd():
@@ -66,3 +70,18 @@ def get_ribbon_roottype():
     for apt in ap_assm.GetTypes():
         if 'PanelSetListView' in apt.Name:
             return apt
+
+
+def get_current_theme():
+    return UIThemeManager.CurrentTheme
+
+
+def resolve_icon_file(directory, icon_name):
+    full_file_path = op.join(directory, icon_name)
+
+    if HOST_APP.is_newer_than(2024, True) and get_current_theme() == UITheme.Dark:
+        dark_icon_name = op.splitext(icon_name)[0] + ICON_DARK_SUFFIX + ICON_FILE_FORMAT
+        dark_file_path = op.join(directory, dark_icon_name)
+        full_file_path = dark_file_path if op.exists(dark_file_path) else full_file_path
+
+    return full_file_path if op.exists(full_file_path) else None
