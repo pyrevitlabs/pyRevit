@@ -91,10 +91,10 @@ def set_current_theme(theme='Dark'):
     Returns:
         None
     """
-    if theme = 'Dark':
-        return UIThemeManager.CurrentTheme = UITheme.Dark
+    if theme == 'Dark':
+        UIThemeManager.CurrentTheme = UITheme.Dark
     else:
-        return UIThemeManager.CurrentTheme = UITheme.Light
+        UIThemeManager.CurrentTheme = UITheme.Light
 
 
 def resolve_icon_file(directory, icon_name):
