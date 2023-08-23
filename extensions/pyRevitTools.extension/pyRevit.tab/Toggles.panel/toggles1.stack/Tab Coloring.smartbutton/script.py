@@ -9,6 +9,8 @@ from pyrevit import script
 from pyrevit.userconfig import user_config
 from pyrevit.revit import tabs
 from pyrevit import forms
+from pyrevit.revit import ui
+import pyrevit.extensions as exts
 
 
 output = script.get_output()
@@ -23,8 +25,11 @@ COLOR_TAG_HTML_TEMPLATE = '<a title="{0}" class="doc-color-tag{1}">{0}</a>'
 
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
+    on_icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_ON_ICON_FILE)
+    off_icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_OFF_ICON_FILE)
+
     button_icon = script_cmp.get_bundle_file(
-        'on.png' if user_config.colorize_docs else 'off.png'
+        on_icon if user_config.colorize_docs else off_icon
         )
     ui_button_cmp.set_icon(button_icon, icon_size=ICON_MEDIUM)
 
