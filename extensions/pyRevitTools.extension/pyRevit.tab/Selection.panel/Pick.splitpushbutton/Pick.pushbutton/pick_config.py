@@ -71,6 +71,8 @@ def configure_fscats():
     """Ask for users frequently selected categories"""
     prev_fscats = load_configs()
     all_cats = revit.doc.Settings.Categories
+    all_cats = list(all_cats)
+    all_cats.append(revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_AreaSchemeLines))
     prev_fscatnames = [x.Name for x in prev_fscats]
     fscats = forms.SelectFromList.show(
         sorted(
