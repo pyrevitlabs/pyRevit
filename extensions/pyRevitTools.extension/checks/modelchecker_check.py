@@ -3,16 +3,12 @@
 import datetime
 
 from pyrevit import coreutils
-from pyrevit import script
 from pyrevit import revit, DB
 
 from pyrevit.preflight import PreflightTestCase
-from pyrevit.compat import safe_strtype
-
 
 # webpage with explanations of bad practices in revit maybe it could be configurable in the future?
 WIKI_ARTICLE = "https://www.modelical.com/en/gdocs/revit-arc-best-practices/"
-
 
 # LISTS
 # COLORS for chart.js graphs - chartCategories.randomize_colors() sometimes
@@ -1154,7 +1150,6 @@ def checkModel(doc, output):
     print("\n\n\n\n")
 
     # elements by workset graph
-    worksetIds = []
     worksetNames = []
     graphWorksetsData = []
 
@@ -1169,9 +1164,11 @@ def checkModel(doc, output):
         worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
         if worksetKind == "UserWorkset":
             worksetName = worksetTable.GetWorkset(worksetId).Name
-            if worksetName not in worksetNames:
-                worksetNames.append(worksetName)
-            graphWorksetsData.append(worksetName)
+            if element.Name not in ('DefaultLocation', '', None) or element.Category.Name not in ('', None):
+                # Removes the location objects from the list as well as empty elements or proxies
+                if worksetName not in worksetNames:
+                    worksetNames.append(worksetName)
+                graphWorksetsData.append(worksetName)
     # print worksetNames
     # sorting results in chart legend
     worksetNames.sort()
