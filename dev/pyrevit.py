@@ -20,7 +20,6 @@
     nuget                   for signing choco nuget package (https://www.nuget.org/downloads)
     Wix Tools               for building MSI installers (https://wixtoolset.org/releases/)
     pipenv                  for managing python virtual envs (https://pipenv.readthedocs.io/)
-    python 2                for building docs (https://www.python.org/downloads/)
     python 3                for the build tools (https://www.python.org/downloads/)
     pygount                 for counting code lines (https://pypi.org/project/pygount/)
     git                     for creating release reports (https://git-scm.com)
@@ -119,11 +118,9 @@ COMMANDS = [
     Command(name="build", target="engines", args=[], run=labs.build_engines),
     Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
     Command(name="build", target="telem", args=[], run=telem.build_telem),
-    Command(name="build", target="docs", args=[], run=apidocspy.build_docs),
     Command(name="build", target="installers", args=[], run=release.build_installers),
     Command(name="build", target="commit", args=[], run=release.commit_and_tag_build),
     Command(name="clean", target="labs", args=[], run=build.clean_build),
-    Command(name="clean", target="docs", args=[], run=apidocspy.clean_docs),
     # unit testing
     Command(name="test", target="telem", args=[], run=telem.start_telem),
     # manual data setters
@@ -140,7 +137,6 @@ COMMANDS = [
     Command(name="report", target="releasenotes", args=[], run=clog.generate_release_notes),
     # misc
     Command(name="add", target="host", args=[], run=hostdata.add_hostdata),
-    Command(name="open", target="docs", args=[], run=apidocspy.open_docs),
     Command(name="help", target="", args=[], run=print_help),
     # prepare and verify build env
     Command(name="install", target="", args=[], run=install.install),

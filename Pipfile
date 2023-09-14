@@ -5,7 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 mypy = "*"
-pylint = "*"
+pylint = "==2.17.5"
 black = "*"
 
 [packages]
@@ -15,6 +15,14 @@ pygount = "*"
 pyyaml = ">=5.4"
 black = "*"
 setuptools = "==65.5.1"
+mkdocs = "*"
+mkdocstrings = "*"
+mkdocstrings-python = "*"
+mkdocs-gen-files = "*"
+mkdocs-literate-nav = "*"
+mkdocs-exclude = "*"
+mkdocs-section-index = "*"
+mkdocs-material = "*"
 ruff = "*"
 
 [requires]
@@ -25,4 +33,5 @@ allow_prereleases = true
 
 [scripts]
 pyrevit = "python ./dev/pyrevit.py"
+docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"
