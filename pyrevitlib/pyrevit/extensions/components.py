@@ -30,10 +30,12 @@ EXT_HASH_VERSION_KEY = 'pyrvt_version'
 # Commands, or Command groups
 # ------------------------------------------------------------------------------
 class NoButton(GenericUICommand):
+    """This is not a button."""
     type_id = exts.NOGUI_COMMAND_POSTFIX
 
 
 class NoScriptButton(GenericUICommand):
+    """Base for buttons that doesn't run a script."""
     def __init__(self, cmp_path=None, needs_commandclass=False):
         # using classname otherwise exceptions in superclasses won't show
         GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
@@ -88,6 +90,7 @@ class NoScriptButton(GenericUICommand):
 
 
 class LinkButton(NoScriptButton):
+    """Link button."""
     type_id = exts.LINK_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
@@ -108,6 +111,7 @@ class LinkButton(NoScriptButton):
 
 
 class InvokeButton(NoScriptButton):
+    """Invoke button."""
     type_id = exts.INVOKE_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
@@ -116,18 +120,22 @@ class InvokeButton(NoScriptButton):
 
 
 class PushButton(GenericUICommand):
+    """Push button."""
     type_id = exts.PUSH_BUTTON_POSTFIX
 
 
 class PanelPushButton(GenericUICommand):
+    """Panel push button."""
     type_id = exts.PANEL_PUSH_BUTTON_POSTFIX
 
 
 class SmartButton(GenericUICommand):
+    """Smart button."""
     type_id = exts.SMART_BUTTON_POSTFIX
 
 
 class ContentButton(GenericUICommand):
+    """Content Button."""
     type_id = exts.CONTENT_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
@@ -171,6 +179,7 @@ class ContentButton(GenericUICommand):
 
 
 class URLButton(GenericUICommand):
+    """URL button."""
     type_id = exts.URL_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
@@ -197,9 +206,12 @@ class URLButton(GenericUICommand):
         return self.target_url or ""
 
 
-# Command groups only include commands. these classes can include
-# GenericUICommand as sub components
 class GenericUICommandGroup(GenericUIContainer):
+    """Generic UI command group.
+
+    Command groups only include commands.
+    These classes can include GenericUICommand as sub components.
+    """
     allowed_sub_cmps = [GenericUICommand, NoScriptButton]
 
     @property
@@ -221,19 +233,25 @@ class GenericUICommandGroup(GenericUIContainer):
 
 
 class PullDownButtonGroup(GenericUICommandGroup):
+    """Pulldown button group."""
     type_id = exts.PULLDOWN_BUTTON_POSTFIX
 
 
 class SplitPushButtonGroup(GenericUICommandGroup):
+    """Split push button group."""
     type_id = exts.SPLITPUSH_BUTTON_POSTFIX
 
 
 class SplitButtonGroup(GenericUICommandGroup):
+    """Split button group."""
     type_id = exts.SPLIT_BUTTON_POSTFIX
 
 
-# Stacks include GenericUICommand, or GenericUICommandGroup
 class GenericStack(GenericUIContainer):
+    """Generic UI stack.
+
+    Stacks include GenericUICommand, or GenericUICommandGroup.
+    """
     type_id = exts.STACK_BUTTON_POSTFIX
 
     allowed_sub_cmps = \
@@ -255,12 +273,15 @@ class GenericStack(GenericUIContainer):
 
 
 class StackButtonGroup(GenericStack):
+    """Stack buttons group."""
     type_id = exts.STACK_BUTTON_POSTFIX
 
 
-
-# Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
 class Panel(GenericUIContainer):
+    """Panel container.
+
+    Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
+    """
     type_id = exts.PANEL_POSTFIX
     allowed_sub_cmps = \
         [GenericStack, GenericUICommandGroup, GenericUICommand, NoScriptButton]
@@ -315,8 +336,8 @@ class Panel(GenericUIContainer):
                     return True
 
 
-# Tabs include Panels
 class Tab(GenericUIContainer):
+    """Tab container for Panels."""
     type_id = exts.TAB_POSTFIX
     allowed_sub_cmps = [Panel]
 
@@ -327,9 +348,8 @@ class Tab(GenericUIContainer):
         return False
 
 
-# UI Tools extension class
-# ------------------------------------------------------------------------------
 class Extension(GenericUIContainer):
+    """UI Tools extension."""
     type_id = exts.ExtensionTypes.UI_EXTENSION.POSTFIX
     allowed_sub_cmps = [Tab]
 
@@ -460,9 +480,8 @@ class Extension(GenericUIContainer):
         return [op.join(self.checks_path, x) for x in check_scripts]
 
 
-# library extension class
-# ------------------------------------------------------------------------------
 class LibraryExtension(GenericComponent):
+    """Library extension."""
     type_id = exts.ExtensionTypes.LIB_EXTENSION.POSTFIX
 
     def __init__(self, cmp_path=None):

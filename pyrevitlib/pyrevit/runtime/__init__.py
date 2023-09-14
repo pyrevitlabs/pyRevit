@@ -239,6 +239,11 @@ def _get_reference_file(ref_name):
 
 
 def get_references():
+    """Get list of all referenced assemblies.
+
+    Returns:
+        (list): referenced assemblies
+    """
     # 'IronRuby', 'IronRuby.Libraries',
     ref_list = [
         # system stuff
@@ -324,6 +329,16 @@ def _get_runtime_asm():
 
 
 def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
+    """Return the configuration for ipython engine.
+
+    Args:
+        clean (bool, optional): Engine should be clean. Defaults to False.
+        full_frame (bool, optional): Engine shoul be full frame. Defaults to False.
+        persistent (bool, optional): Engine should persist. Defaults to False.
+
+    Returns:
+        (str): Configuration
+    """
     return json.dumps({
         exts.MDATA_ENGINE_CLEAN: clean,
         exts.MDATA_ENGINE_FULLFRAME: full_frame,
@@ -339,8 +354,8 @@ def create_ext_command_attrs():
     ``RegenerationOption.Manual`` and ``TransactionMode.Manual``
 
     Returns:
-        list: list of :obj:`CustomAttributeBuilder` for
-        :obj:`RegenerationOption` and :obj:`TransactionMode` attributes.
+        (list[CustomAttributeBuilder]): object for `RegenerationOption` 
+            and `TransactionMode` attributes.
     """
     regen_const_info = \
         framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
@@ -387,12 +402,12 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
         type_class (type): source dotnet type for the command
         class_name (str): name for the new type
         custom_attr_list (:obj:`list`): list of dotnet attributes for the type
-        *args: list of arguments to be used with type constructor
+        *args (Any): list of arguments to be used with type constructor
 
     Returns:
-        type: returns created dotnet type
+        (type): returns created dotnet type
 
-    Example:
+    Examples:
         >>> asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(
         ... win_asm_name, AssemblyBuilderAccess.RunAndSave, filepath
         ... )

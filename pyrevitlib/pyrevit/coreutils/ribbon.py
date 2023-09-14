@@ -61,7 +61,7 @@ def load_bitmapimage(image_file):
         image_file (str): image file path
 
     Returns:
-        Imaging.BitmapImage: bitmap image object
+        (Imaging.BitmapImage): bitmap image object
     """
     bitmap = Imaging.BitmapImage()
     bitmap.BeginInit()
@@ -135,7 +135,7 @@ class ButtonIcons(object):
             icon_size (int): icon size (width or height)
 
         Returns:
-            Imaging.BitmapSource: object containing image data at given size
+            (Imaging.BitmapSource): object containing image data at given size
         """
         mlogger.debug('Creating %sx%s bitmap from: %s',
                       icon_size, icon_size, self.icon_file_path)
@@ -177,7 +177,7 @@ class ButtonIcons(object):
         """Resamples image and creates bitmap for size :obj:`ICON_SMALL`.
 
         Returns:
-            Imaging.BitmapSource: object containing image data at given size
+            (Imaging.BitmapSource): object containing image data at given size
         """
         return self.create_bitmap(ICON_SMALL)
 
@@ -186,7 +186,7 @@ class ButtonIcons(object):
         """Resamples image and creates bitmap for size :obj:`ICON_MEDIUM`.
 
         Returns:
-            Imaging.BitmapSource: object containing image data at given size
+            (Imaging.BitmapSource): object containing image data at given size
         """
         return self.create_bitmap(ICON_MEDIUM)
 
@@ -195,7 +195,7 @@ class ButtonIcons(object):
         """Resamples image and creates bitmap for size :obj:`ICON_LARGE`.
 
         Returns:
-            Imaging.BitmapSource: object containing image data at given size
+            (Imaging.BitmapSource): object containing image data at given size
         """
         return self.create_bitmap(ICON_LARGE)
 
@@ -333,7 +333,7 @@ class GenericPyRevitUIContainer(object):
             state (bool): flag state to filter children
 
         Returns:
-            list[*]: list of filtered child objects
+            (list[*]): list of filtered child objects
         """
         # FIXME: return type
         flagged_cmps = []
@@ -382,7 +382,6 @@ class GenericPyRevitUIContainer(object):
 
         Args:
             pyrvt_cmp_name (str): target component name
-            val (type): desc
         """
         return pyrvt_cmp_name in self._sub_pyrvt_components.keys()
 
@@ -393,7 +392,7 @@ class GenericPyRevitUIContainer(object):
             child_name (str): target component name
 
         Returns:
-            *: component object if found, otherwise None
+            (Any): component object if found, otherwise None
         """
         for sub_cmp in self._sub_pyrvt_components.values():
             if child_name == sub_cmp.name:
@@ -435,7 +434,7 @@ class GenericPyRevitUIContainer(object):
         return self.get_flagged_children(state=False)
 
     def reorder_before(self, item_name, ritem_name):
-        """Reorder and place item_name before ritem_name
+        """Reorder and place item_name before ritem_name.
 
         Args:
             item_name (str): name of component to be moved
@@ -472,7 +471,7 @@ class GenericPyRevitUIContainer(object):
                 apiobj.Panels.Move(litem_idx, 0)
 
     def reorder_after(self, item_name, ritem_name):
-        """Reorder and place item_name after ritem_name
+        """Reorder and place item_name after ritem_name.
 
         Args:
             item_name (str): name of component to be moved
@@ -569,7 +568,7 @@ class RevitNativeRibbonGroupItem(GenericRevitNativeUIContainer):
             name (str): name of button item to find
 
         Returns:
-            :obj:`RevitNativeRibbonButton`: button object if found
+            (RevitNativeRibbonButton): button object if found
         """
         return super(RevitNativeRibbonGroupItem, self)._get_component(name)
 
@@ -631,7 +630,7 @@ class RevitNativeRibbonPanel(GenericRevitNativeUIContainer):
             item_name (str): name of panel item to find
 
         Returns:
-            object:
+            (object):
                 panel item if found, could be :obj:`RevitNativeRibbonButton`
                 or :obj:`RevitNativeRibbonGroupItem`
         """
@@ -665,7 +664,7 @@ class RevitNativeRibbonTab(GenericRevitNativeUIContainer):
             panel_name (str): name of panel to find
 
         Returns:
-            :obj:`RevitNativeRibbonPanel`: panel if found
+            (RevitNativeRibbonPanel): panel if found
         """
         return super(RevitNativeRibbonTab, self)._get_component(panel_name)
 
@@ -1691,13 +1690,13 @@ def get_current_ui(all_native=False):
 
     Returned class provides min required functionality for user interaction
 
-    Example:
+    Examples:
         >>> current_ui = pyrevit.session.current_ui()
         >>> this_script = pyrevit.session.get_this_command()
         >>> current_ui.update_button_icon(this_script, new_icon)
 
     Returns:
-        :obj:`_PyRevitUI`: wrapper around active ribbon gui
+        (_PyRevitUI): wrapper around active ribbon gui
     """
     return _PyRevitUI(all_native=all_native)
 
@@ -1709,7 +1708,7 @@ def get_uibutton(command_unique_name):
         command_unique_name (str): unique id of pyRevit command
 
     Returns:
-        :obj:`_PyRevitRibbonButton`: ui button wrapper object
+        (_PyRevitRibbonButton): ui button wrapper object
     """
     # FIXME: verify return type
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()

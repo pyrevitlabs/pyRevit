@@ -1,5 +1,5 @@
 # pylint: disable=missing-docstring,invalid-name,too-few-public-methods
-"""Methods and Classes to convert Revit types to serializable"""
+"""Methods and Classes to convert Revit types to serializable."""
 from pyrevit import PyRevitException, api
 from pyrevit import DB
 from pyrevit.compat import Iterable

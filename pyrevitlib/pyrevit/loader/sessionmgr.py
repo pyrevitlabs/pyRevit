@@ -1,12 +1,12 @@
-"""
-The loader module manages the workflow of loading a new pyRevit session.
-It's main purpose is to orchestrate the process of finding pyRevit extensions,
+"""The loader module manages the workflow of loading a new pyRevit session.
+
+Its main purpose is to orchestrate the process of finding pyRevit extensions,
 creating dll assemblies for them, and creating a user interface
 in the host application.
 
-Everything starts from ``sessionmgr.load_session()`` function...
+Everything starts from `sessionmgr.load_session()` function...
 
-The only public function is ``load_session()`` that loads a new session.
+The only public function is `load_session()` that loads a new session.
 Everything else is private.
 """
 import sys
@@ -162,14 +162,7 @@ def _perform_onsessionloadcomplete_ops():
 
 
 def _new_session():
-    """
-    Get all installed extensions (UI extension only) and creates an assembly,
-    and a ui for each.
-
-    Returns:
-        None
-    """
-
+    """Create an assembly and UI for each installed UI extensions."""
     assembled_exts = []
     # get all installed ui extensions
     for ui_ext in extensionmgr.get_installed_ui_extensions():
@@ -256,16 +249,17 @@ def _new_session():
 
 def load_session():
     """Handles loading/reloading of the pyRevit addin and extensions.
+
     To create a proper ui, pyRevit extensions needs to be properly parsed and
     a dll assembly needs to be created. This function handles these tasks
-    through interactions with .extensions, .loader.asmmaker, and .loader.uimaker
+    through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
 
-    Example:
+    Examples:
         >>> from pyrevit.loader.sessionmgr import load_session
         >>> load_session()     # start loading a new pyRevit session
 
     Returns:
-        None
+        (str): sesion uuid
     """
     # setup runtime environment variables
     sessioninfo.setup_runtime_vars()
@@ -333,6 +327,7 @@ def reload_pyrevit():
 # pyrevit command or script in current session
 # -----------------------------------------------------------------------------
 class PyRevitExternalCommandType(object):
+    """PyRevit external command type."""
     def __init__(self, extcmd_type, extcmd_availtype):
         self._extcmd_type = extcmd_type
         self._extcmd = extcmd_type()
@@ -467,12 +462,14 @@ def find_all_available_commands(use_current_context=True, cache=True):
 
 
 def find_pyrevitcmd(pyrevitcmd_unique_id):
-    """Searches the pyRevit-generated assemblies under current session for
+    """Find a pyRevit command.
+
+    Searches the pyRevit-generated assemblies under current session for
     the command with the matching unique name (class name) and returns the
     command type. Notice that this returned value is a 'type' and should be
     instantiated before use.
 
-    Example:
+    Examples:
         >>> cmd = find_pyrevitcmd('pyRevitCorepyRevitpyRevittoolsReload')
         >>> command_instance = cmd()
         >>> command_instance.Execute() # Provide commandData, message, elements
@@ -481,7 +478,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
         pyrevitcmd_unique_id (str): Unique name for the command
 
     Returns:
-        Type for the command with matching unique name
+        (type):Type for the command with matching unique name
     """
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
@@ -546,11 +543,7 @@ def execute_command(pyrevitcmd_unique_id):
 
     Args:
         pyrevitcmd_unique_id (str): Unique/Class Name of the pyRevit command
-
-    Returns:
-        results from the executed command
     """
-
     cmd_class = find_pyrevitcmd(pyrevitcmd_unique_id)
 
     if not cmd_class:
@@ -566,9 +559,8 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
 
     Args:
         script_path (str): Address of the script file
-
-    Returns:
-        results dictionary from the executed script
+        ext_name (str): Name of the extension
+        sys_paths (list): additional search paths
     """
     core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
     if sys_paths:

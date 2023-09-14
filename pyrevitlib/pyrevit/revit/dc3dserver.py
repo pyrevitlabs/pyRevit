@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""DirectContext3DServer wrapper and utilities"""
+"""DirectContext3DServer wrapper and utilities."""
 
 from collections import namedtuple
 import traceback
@@ -13,7 +13,7 @@ Edge = namedtuple('Edge', ['a', 'b', 'color'])
 Triangle = namedtuple('Triangle', ['a', 'b', 'c', 'normal', 'color'])
 
 class Mesh(object):
-    """Geometry container class to generate DirectContext3DServer buffers"""
+    """Geometry container class to generate DirectContext3DServer buffers."""
     def __init__(self, edges, triangles):
         if not isinstance(edges, list):
             raise ValueError("List of Edges should be provided")
@@ -95,7 +95,7 @@ class Mesh(object):
 
     @classmethod
     def from_boundingbox(cls, bounding_box, color, black_edges = True):
-        """Generates a Mesh object from the input BoundigBoxXYZ
+        """Generates a Mesh object from the input BoundigBoxXYZ.
 
         Args:
             bounding_box (DB.BoundingBoxXYZ): The source object.
@@ -105,7 +105,7 @@ class Mesh(object):
                 Defaults to True.
 
         Returns:
-            Mesh: The resulting Mesh
+            (Mesh): The resulting Mesh
         """
         try:
             # get all untransformed vertices of the boundingbox
@@ -247,7 +247,7 @@ class Mesh(object):
 
 
 class Buffer(object):
-    """Buffer container for DirectContext3DServer"""
+    """Buffer container for DirectContext3DServer."""
     def __init__(self,
                  display_style,
                  vertex_buffer,
@@ -438,7 +438,7 @@ class Buffer(object):
 
 
 class Server(dc3d.IDirectContext3DServer):
-    """A generic DirectContext3dServer interface implementation"""
+    """A generic DirectContext3dServer interface implementation."""
     def __init__(
             self,
             guid=None,
@@ -448,7 +448,7 @@ class Server(dc3d.IDirectContext3DServer):
             vendor_id="pyRevit",
             register=True
     ):
-        """Initalize a DirectContext3DServer instance
+        """Initalize a DirectContext3DServer instance.
 
         Args:
             guid (System.Guid, optional):

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Markdown utils."""
 from __future__ import unicode_literals
 import re
 import sys
@@ -93,10 +94,23 @@ def isBlockLevel(tag):
 
 
 def parseBoolValue(value, fail_on_errors=True, preserve_none=False):
-    """Parses a string representing bool value. If parsing was successful,
-       returns True or False. If preserve_none=True, returns True, False,
-       or None. If parsing was not successful, raises  ValueError, or, if
-       fail_on_errors=False, returns None."""
+    """Parses a string representing bool value.
+    
+    If parsing was successful, returns True or False.
+    If preserve_none=True, returns True, False, or None.
+    If parsing was not successful, raises ValueError, or, if
+    fail_on_errors=False, returns None.
+    
+
+    Args:
+        value (str): String to parse.
+        fail_on_errors (bool): If True, raises ValueError.
+        preserve_none (bool): If True and value is None, returns None.
+        
+
+    Returns:
+        (bool): boolean value
+    """
     if not isinstance(value, string_type):
         if preserve_none and value is None:
             return value
@@ -123,37 +137,34 @@ class AtomicString(unicode):
 
 
 class Processor(object):
+    """Base class for Markdown processors."""
     def __init__(self, markdown_instance=None):
         if markdown_instance:
             self.markdown = markdown_instance
 
 
 class HtmlStash(object):
-    """
-    This class is used for stashing HTML objects that we extract
-    in the beginning and replace with place-holders.
-    """
+    """HTML objects stash."""
 
     def __init__(self):
-        """ Create a HtmlStash. """
+        """Create a HtmlStash."""
         self.html_counter = 0  # for counting inline html segments
         self.rawHtmlBlocks = []
         self.tag_counter = 0
         self.tag_data = []  # list of dictionaries in the order tags appear
 
     def store(self, html, safe=False):
-        """
-        Saves an HTML segment for later reinsertion.  Returns a
-        placeholder string that needs to be inserted into the
+        """Saves an HTML segment for later reinsertion.
+
+        Returns a placeholder string that needs to be inserted into the
         document.
 
-        Keyword arguments:
+        Args:
+            html (str): an html segment
+            safe (bool): label an html segment as safe for safemode
 
-        * html: an html segment
-        * safe: label an html segment as safe for safemode
-
-        Returns : a placeholder string
-
+        Returns:
+            (str): a placeholder string
         """
         self.rawHtmlBlocks.append((html, safe))
         placeholder = self.get_placeholder(self.html_counter)

@@ -1,4 +1,4 @@
-"""Builtin routes API
+"""Builtin routes API.
 
 This module also provides the API object to be used by third-party
 api developers to define new apis
@@ -24,7 +24,7 @@ routes_api = routes.API('routes')
 # GET /status
 @routes_api.route('/status', methods=['GET'])
 def get_status():
-    """Get server status"""
+    """Get server status."""
     return {
         "host": HOST_APP.pretty_name,
         "username": HOST_APP.username,
@@ -34,13 +34,13 @@ def get_status():
 # GET /sisters
 @routes_api.route('/sisters', methods=['GET'])
 def get_sisters():
-    """Get other servers running on the same machine"""
+    """Get other servers running on the same machine."""
     return [x.get_cache_data() for x in serverinfo.get_registered_servers()]
 
 
 # GET /sisters/<int:year>
 @routes_api.route('/sisters/<int:version>', methods=['GET'])
 def get_sisters_by_year(version):
-    """Get servers of specific version, running on the same machine"""
+    """Get servers of specific version, running on the same machine."""
     return [x.get_cache_data() for x in serverinfo.get_registered_servers()
             if int(x.version) == version]

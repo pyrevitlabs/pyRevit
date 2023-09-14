@@ -1,3 +1,4 @@
+"""Revit events handler management."""
 #pylint: disable=unused-argument
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
@@ -9,6 +10,7 @@ mlogger = get_logger(__name__)
 
 
 class FuncAsEventHandler(UI.IExternalEventHandler):
+    """Turns a function into an event handler."""
     __namespace__ = EXEC_PARAMS.exec_id
 
     def __init__(self, handler_func, purge=True):

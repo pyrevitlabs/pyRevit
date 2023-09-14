@@ -1,6 +1,4 @@
-"""
-Attribute List Extension for Python-Markdown
-============================================
+"""Attribute List Extension for Python-Markdown.
 
 Adds attribute list syntax. Inspired by
 [maruku](http://maruku.rubyforge.org/proposal.html#attribute_lists)'s
@@ -14,7 +12,6 @@ Original code Copyright 2011 [Waylan Limberg](http://achinghead.com/).
 All changes Copyright 2011-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -63,7 +60,7 @@ _scanner = Scanner([
 
 
 def get_attrs(str):
-    """ Parse attribute list and return a list of attribute tuples. """
+    """Parse attribute list and return a list of attribute tuples."""
     return _scanner.scan(str)[0]
 
 
@@ -72,7 +69,7 @@ def isheader(elem):
 
 
 class AttrListTreeprocessor(Treeprocessor):
-
+    """Attribute List Tree processor."""
     BASE_RE = r'\{\:?([^\}\n]*)\}'
     HEADER_RE = re.compile(r'[ ]+%s[ ]*$' % BASE_RE)
     BLOCK_RE = re.compile(r'\n[ ]*%s[ ]*$' % BASE_RE)
@@ -146,7 +143,7 @@ class AttrListTreeprocessor(Treeprocessor):
                         elem.tail = elem.tail[m.end():]
 
     def assign_attrs(self, elem, attrs):
-        """ Assign attrs to element. """
+        """Assign attrs to element."""
         for k, v in get_attrs(attrs):
             if k == '.':
                 # add to class
@@ -160,14 +157,15 @@ class AttrListTreeprocessor(Treeprocessor):
                 elem.set(self.sanitize_name(k), v)
 
     def sanitize_name(self, name):
-        """
-        Sanitize name as 'an XML Name, minus the ":"'.
-        See http://www.w3.org/TR/REC-xml-names/#NT-NCName
+        """Sanitize name as 'an XML Name, minus the ":"'.
+        
+        See http://www.w3.org/TR/REC-xml-names/#NT-NCName.
         """
         return self.NAME_RE.sub('_', name)
 
 
 class AttrListExtension(Extension):
+    """Attribute List Extension."""
     def extendMarkdown(self, md, md_globals):
         md.treeprocessors.add(
             'attr_list', AttrListTreeprocessor(md), '>prettify'

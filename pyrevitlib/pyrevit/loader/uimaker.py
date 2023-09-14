@@ -23,6 +23,15 @@ CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 
 class UIMakerParams:
+    """UI maker parameters.
+
+    Args:
+        par_ui (_PyRevitUI): Parent UI item
+        par_cmp (GenericUIComponent): Parent UI component
+        cmp_item (GenericUIComponent): UI component item
+        asm_info (AssemblyInfo): Assembly info
+        create_beta (bool, optional): Create beta button. Defaults to False
+    """
     def __init__(self, par_ui, par_cmp, cmp_item, asm_info, create_beta=False):
         self.parent_ui = par_ui
         self.parent_cmp = par_cmp
@@ -106,30 +115,30 @@ def _set_highlights(button, ui_item):
 
 
 def _get_effective_classname(button):
-    """
-    Verifies if button has class_name set. This means that typemaker has
-    created a executor type for this command. If class_name is not set,
-    this function returns button.unique_name. This allows for the UI button
-    to be created and linked to the previously created assembly.
+    """Verifies if button has class_name set.
+
+    This means that typemaker has created a executor type for this command.
+    If class_name is not set, this function returns button.unique_name.
+    This allows for the UI button to be created and linked to the previously 
+    created assembly.
     If the type does not exist in the assembly, the UI button will not work,
     however this allows updating the command with the correct executor type,
     once command script has been fixed and pyrevit is reloaded.
 
     Args:
-        button (pyrevit.extensions.genericcomps.GenericUICommand):
+        button (pyrevit.extensions.genericcomps.GenericUICommand): button
 
     Returns:
-        str: class_name (or unique_name if class_name is None)
-
+        (str): class_name (or unique_name if class_name is None)
     """
     return button.class_name if button.class_name else button.unique_name
 
 
 def _produce_ui_separator(ui_maker_params):
-    """
+    """Create a separator.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui_item = ui_maker_params.parent_ui
     ext_asm_info = ui_maker_params.asm_info
@@ -138,7 +147,7 @@ def _produce_ui_separator(ui_maker_params):
         mlogger.debug('Adding separator to: %s', parent_ui_item)
         try:
             if hasattr(parent_ui_item, 'add_separator'):    # re issue #361
-                parent_ui_item.add_separator()
+                parent_ui_item.z()
         except PyRevitException as err:
             mlogger.error('UI error: %s', err.msg)
 
@@ -146,10 +155,10 @@ def _produce_ui_separator(ui_maker_params):
 
 
 def _produce_ui_slideout(ui_maker_params):
-    """
+    """Create a slide out.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui_item = ui_maker_params.parent_ui
     ext_asm_info = ui_maker_params.asm_info
@@ -165,10 +174,10 @@ def _produce_ui_slideout(ui_maker_params):
 
 
 def _produce_ui_smartbutton(ui_maker_params):
-    """
+    """Create a smart button.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui_item = ui_maker_params.parent_ui
     parent = ui_maker_params.parent_cmp
@@ -276,10 +285,10 @@ def _produce_ui_smartbutton(ui_maker_params):
 
 
 def _produce_ui_linkbutton(ui_maker_params):
-    """
+    """Create a link button.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui_item = ui_maker_params.parent_ui
     parent = ui_maker_params.parent_cmp
@@ -340,10 +349,10 @@ def _produce_ui_linkbutton(ui_maker_params):
 
 
 def _produce_ui_pushbutton(ui_maker_params):
-    """
+    """Create a push button.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui_item = ui_maker_params.parent_ui
     parent = ui_maker_params.parent_cmp
@@ -382,10 +391,10 @@ def _produce_ui_pushbutton(ui_maker_params):
 
 
 def _produce_ui_pulldown(ui_maker_params):
-    """
+    """Create a pulldown button.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ribbon_panel = ui_maker_params.parent_ui
     pulldown = ui_maker_params.component
@@ -406,10 +415,10 @@ def _produce_ui_pulldown(ui_maker_params):
 
 
 def _produce_ui_split(ui_maker_params):
-    """
+    """Produce a split button.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ribbon_panel = ui_maker_params.parent_ui
     split = ui_maker_params.component
@@ -430,10 +439,10 @@ def _produce_ui_split(ui_maker_params):
 
 
 def _produce_ui_splitpush(ui_maker_params):
-    """
+    """Create split push button.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ribbon_panel = ui_maker_params.parent_ui
     splitpush = ui_maker_params.component
@@ -454,10 +463,10 @@ def _produce_ui_splitpush(ui_maker_params):
 
 
 def _produce_ui_stacks(ui_maker_params):
-    """
+    """Create a stack of ui items.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui_panel = ui_maker_params.parent_ui
     stack_parent = ui_maker_params.parent_cmp
@@ -507,10 +516,10 @@ def _produce_ui_stacks(ui_maker_params):
 
 
 def _produce_ui_panelpushbutton(ui_maker_params):
-    """
+    """Create a push button with the given parameters.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui_item = ui_maker_params.parent_ui
     # parent = ui_maker_params.parent_cmp
@@ -545,17 +554,20 @@ def _produce_ui_panelpushbutton(ui_maker_params):
 
 
 def _produce_ui_panels(ui_maker_params):
-    """
+    """Create a panel with the given parameters.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
+
+    Returns:
+        (RevitNativeRibbonPanel): The created panel
     """
     parent_ui_tab = ui_maker_params.parent_ui
     panel = ui_maker_params.component
-    
+
     if panel.is_beta and not ui_maker_params.create_beta_cmds:
         return None
-    
+
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
@@ -583,10 +595,10 @@ def _produce_ui_panels(ui_maker_params):
 
 
 def _produce_ui_tab(ui_maker_params):
-    """
+    """Create a tab with the given parameters.
 
     Args:
-        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
     parent_ui = ui_maker_params.parent_ui
     tab = ui_maker_params.component
@@ -676,9 +688,12 @@ if not EXEC_PARAMS.doc_mode:
 
 
 def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
-    """
-    Updates/Creates pyRevit ui for the given extension and
-    provided assembly dll address.
+    """Updates/Creates pyRevit ui for the extension and assembly dll address.
+
+    Args:
+        ui_ext (GenericUIContainer): UI container.
+        ext_asm_info (AssemblyInfo): Assembly info.
+        create_beta (bool, optional): Create beta ui. Defaults to False.
     """
     mlogger.debug('Creating/Updating ui for extension: %s', ui_ext)
     cmp_count = _recursively_produce_ui_items(
@@ -687,6 +702,11 @@ def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
 
 
 def sort_pyrevit_ui(ui_ext):
+    """Sorts pyRevit UI.
+
+    Args:
+        ui_ext (GenericUIContainer): UI container.
+    """
     # only works on panels so far
     # re-ordering of ui components deeper than panels have not been implemented
     for tab in current_ui.get_pyrevit_tabs():
@@ -703,9 +723,12 @@ def sort_pyrevit_ui(ui_ext):
 
 
 def cleanup_pyrevit_ui():
-    # hide all items that were not touched after a reload
-    # meaning they have been removed in extension folder structure
-    # and thus are not updated
+    """Cleanup the pyrevit UI.
+
+    Hide all items that were not touched after a reload
+    meaning they have been removed in extension folder structure
+    and thus are not updated.
+    """
     untouched_items = current_ui.get_unchanged_items()
     for item in untouched_items:
         if not item.is_native():
@@ -717,7 +740,7 @@ def cleanup_pyrevit_ui():
 
 
 def reflow_pyrevit_ui(direction=applocales.DEFAULT_LANG_DIR):
-    # set flow direction of the tabs
+    """Set the flow direction of the tabs."""
     if direction == "LTR":
         current_ui.set_LTR_flow()
     elif direction == "RTL":

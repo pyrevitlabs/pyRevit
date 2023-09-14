@@ -1,19 +1,18 @@
-"""
-This module manages the telemetry system.
+"""This module manages the telemetry system.
 
-    This function is used to setup the telemetry system on pyRevit startup:
-        >>> setup_telemetry()
+This function is used to setup the telemetry system on pyRevit startup:
+>>> setup_telemetry()
 
-    These functions are used to query information about the logging system:
-        >>> get_telemetry_state()
+These functions are used to query information about the logging system:
+>>> get_telemetry_state()
 
-        >>> get_apptelemetry_state()
+>>> get_apptelemetry_state()
 
-    This module also provides a wrapper class around the command results
-    dictionary that is included with the telemetry record.
+This module also provides a wrapper class around the command results
+dictionary that is included with the telemetry record.
 
-    Scripts should use the instance of this class provided by the
-    script module. See `script.get_results()` for examples
+Scripts should use the instance of this class provided by the
+script module. See `script.get_results()` for examples
 """
 import os.path as op
 import json
@@ -211,7 +210,6 @@ def get_status():
 
 def setup_telemetry(session_id=None):
     """Sets up the telemetry default config and environment values."""
-
     # make sure session id is availabe
     if not session_id:
         session_id = sessioninfo.get_session_uuid()

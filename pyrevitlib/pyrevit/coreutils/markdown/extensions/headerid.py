@@ -1,6 +1,4 @@
-"""
-HeaderID Extension for Python-Markdown
-======================================
+"""HeaderID Extension for Python-Markdown.
 
 Auto-generate id attributes for HTML headers.
 
@@ -12,7 +10,6 @@ Original code Copyright 2007-2011 [Waylan Limberg](http://achinghead.com/).
 All changes Copyright 2011-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -25,7 +22,7 @@ import warnings
 
 
 class HeaderIdTreeprocessor(Treeprocessor):
-    """ Assign IDs to headers. """
+    """Assign IDs to headers."""
 
     IDs = set()
 
@@ -49,7 +46,7 @@ class HeaderIdTreeprocessor(Treeprocessor):
                     elem.tag = 'h%d' % level
 
     def _get_meta(self):
-        """ Return meta data suported by this ext as a tuple """
+        """Return meta data suported by this ext as a tuple."""
         level = int(self.config['level']) - 1
         force = parseBoolValue(self.config['forceid'])
         if hasattr(self.md, 'Meta'):
@@ -61,6 +58,7 @@ class HeaderIdTreeprocessor(Treeprocessor):
 
 
 class HeaderIdExtension(Extension):
+    """Header ID extension."""
     def __init__(self, *args, **kwargs):
         # set defaults
         self.config = {

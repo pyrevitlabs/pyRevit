@@ -1,6 +1,4 @@
-"""
-Python-Markdown Extra Extension
-===============================
+"""Python-Markdown Extra Extension.
 
 A compilation of various Python-Markdown extensions that imitates
 [PHP Markdown Extra](http://michelf.com/projects/php-markdown/extra/).
@@ -26,7 +24,6 @@ for documentation.
 Copyright The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -50,15 +47,15 @@ extensions = [
 
 
 class ExtraExtension(Extension):
-    """ Add various extensions to Markdown class."""
+    """Add various extensions to Markdown class."""
 
     def __init__(self, *args, **kwargs):
-        """ config is a dumb holder which gets passed to actual ext later. """
+        """Config is a dumb holder which gets passed to actual ext later."""
         self.config = kwargs.pop('configs', {})
         self.config.update(kwargs)
 
     def extendMarkdown(self, md, md_globals):
-        """ Register extension instances. """
+        """Register extension instances."""
         md.registerExtensions(extensions, self.config)
         if not md.safeMode:
             # Turn on processing of markdown text within raw html

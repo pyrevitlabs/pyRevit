@@ -1,6 +1,4 @@
-'''
-WikiLinks Extension for Python-Markdown
-======================================
+"""WikiLinks Extension for Python-Markdown.
 
 Converts [[WikiLinks]] to relative links.
 
@@ -12,9 +10,7 @@ Original code Copyright [Waylan Limberg](http://achinghead.com/).
 All changes Copyright The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
-'''
-
+"""
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from . import Extension
@@ -24,12 +20,13 @@ import re
 
 
 def build_url(label, base, end):
-    """ Build a url from the label, a base, and an end. """
+    """Build a url from the label, a base, and an end."""
     clean_label = re.sub(r'([ ]+_)|(_[ ]+)|([ ]+)', '_', label)
     return '%s%s%s' % (base, clean_label, end)
 
 
 class WikiLinkExtension(Extension):
+    """WikiLinks markdown extension."""
 
     def __init__(self, *args, **kwargs):
         self.config = {
@@ -52,6 +49,7 @@ class WikiLinkExtension(Extension):
 
 
 class WikiLinks(Pattern):
+    """WikiLinks parser."""
     def __init__(self, pattern, config):
         super(WikiLinks, self).__init__(pattern)
         self.config = config
@@ -71,7 +69,7 @@ class WikiLinks(Pattern):
         return a
 
     def _getMeta(self):
-        """ Return meta data or config data. """
+        """Return meta data or config data."""
         base_url = self.config['base_url']
         end_url = self.config['end_url']
         html_class = self.config['html_class']

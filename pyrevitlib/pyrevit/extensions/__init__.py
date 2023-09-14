@@ -8,16 +8,19 @@ UI_EXTENSION_POSTFIX = '.extension'
 
 
 class UIExtensionType:
+    """UI extension type."""
     ID = 'extension'
     POSTFIX = '.extension'
 
 
 class LIBExtensionType:
+    """Library extension type."""
     ID = 'lib'
     POSTFIX = '.lib'
 
 
 class ExtensionTypes:
+    """Extension types."""
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
 

@@ -116,7 +116,7 @@ def set_keynote_file(keynote_file, doc=None):
 
 
 def set_crop_region(view, curve_loops):
-    """Sets crop region to a view
+    """Sets crop region to a view.
 
     Args:
         view (DB.View): view to change
@@ -137,7 +137,7 @@ def set_crop_region(view, curve_loops):
 
 
 def set_active_workset(workset_id, doc=None):
-    """Set active workset
+    """Set active workset.
 
     Args:
         workset_id (DB.WorksetId): target workset id

@@ -1,4 +1,4 @@
-"""BIM360-related utilities"""
+"""BIM360-related utilities."""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import os
 import os.path as op
@@ -16,7 +16,7 @@ COLLAB_CACHE_PATH_FORMAT = \
 
 
 class CollabCacheModel(object):
-    """Collaboration cache for a Revit project"""
+    """Collaboration cache for a Revit project."""
     def __init__(self, model_path):
         self.model_path = model_path
         self.model_dir = op.dirname(model_path)
@@ -45,7 +45,7 @@ class CollabCacheModel(object):
 
 
 class CollabCache(object):
-    """Collaboration cache instance containing multiple projects"""
+    """Collaboration cache instance containing multiple projects."""
     def __init__(self, cache_path):
         self.cache_path = cache_path
         self.cache_id = op.basename(cache_path)
@@ -70,7 +70,7 @@ class CollabCache(object):
 
 
 def get_collab_caches():
-    """Get a list of project caches stored under collaboration cache"""
+    """Get a list of project caches stored under collaboration cache."""
     collab_root = op.normpath(op.expandvars(
         COLLAB_CACHE_PATH_FORMAT.format(version=HOST_APP.version)
     ))
@@ -90,7 +90,7 @@ def get_collab_caches():
 
 
 def clear_model_cache(collab_cache_model):
-    """Clear caches for given collaboration cache model
+    """Clear caches for given collaboration cache model.
 
     Args:
         collab_cache_model (bim360.CollabCacheModel): cache model to clear

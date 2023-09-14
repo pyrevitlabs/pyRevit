@@ -1,4 +1,4 @@
-"""Host application feature detectors"""
+"""Host application feature detectors."""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import DB, UI
 

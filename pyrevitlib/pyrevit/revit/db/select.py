@@ -1,3 +1,4 @@
+"""Selection utilities."""
 from pyrevit.revit.db import query
 
 

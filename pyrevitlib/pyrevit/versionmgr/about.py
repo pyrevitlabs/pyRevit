@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Utility module for pyRevit project information.
 
-Example:
+Examples:
     >>> from pyrevit.versionmgr import about
     >>> a = about.get_pyrevit_about()
     >>> a.subtitle
@@ -27,7 +27,7 @@ def get_pyrevit_about():
     """Return information about pyRevit project.
 
     Returns:
-        :obj:`PyRevitAbout`: pyRevit project info tuple
+        (PyRevitAbout): pyRevit project info tuple
     """
     return PyRevitAbout(subtitle='python RAD Environment for Autodesk Revit®',
                         madein="['pdx', 'hio', 'rno', 'sea']",

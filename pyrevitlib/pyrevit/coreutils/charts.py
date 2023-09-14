@@ -1,4 +1,4 @@
-"""Charts engine for output window"""
+"""Charts engine for output window."""
 #pylint: disable=C0103
 from json import JSONEncoder
 
@@ -55,7 +55,7 @@ class PyRevitOutputChartDataset(object):
 
         Arguments are expected to be R, G, B, A values.
 
-        Example:
+        Examples:
             >>> dataset_obj.set_color(0xFF, 0x8C, 0x8D, 0.8)
         """
         if len(args) == 4:
@@ -80,9 +80,9 @@ class PyRevitOutputChartData(object):
             dataset_label (str): dataset label
 
         Returns:
-            :obj:`PyRevitOutputChartDataset`: dataset wrapper object
+            (PyRevitOutputChartDataset): dataset wrapper object
 
-        Example:
+        Examples:
             >>> chart.data.new_dataset('set_a')
         """
         new_dataset = PyRevitOutputChartDataset(dataset_label)
@@ -94,7 +94,7 @@ class PyRevitOutputChart(object):
     """Chart wrapper object for output window.
 
     Attributes:
-        output (:obj:`pyrevit.output.PyRevitOutputWindow`):
+        output (pyrevit.output.PyRevitOutputWindow):
             output window wrapper object
         chart_type (str): chart type name
     
@@ -210,7 +210,7 @@ class PyRevitOutputChart(object):
         Args:
             html_style (str): inline html css styling string
 
-        Example:
+        Examples:
             >>> chart.set_style('height:150px')
         """
         self._style = html_style
