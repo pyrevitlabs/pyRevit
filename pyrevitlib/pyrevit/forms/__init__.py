@@ -5,6 +5,7 @@ Examples:
 """
 #pylint: disable=consider-using-f-string,wrong-import-position
 
+import re
 import sys
 import os
 import os.path as op
@@ -809,7 +810,12 @@ class SelectFromList(TemplateUserInputWindow):
         group_selector_title (str):
             title for list group selector. defaults to 'List Group'
         default_group (str): name of defautl group to be selected
-
+        sort_groups (str, optional): 
+            Determines the sorting type applied to the list groups. This attribute can take one of the following values:
+                'sorted': This will sort the groups in standard alphabetical order
+                'natural': This will sort the groups in a manner that is more intuitive for human perception, especially when there are numbers involved.
+                'unsorted': The groups will maintain the original order in which they were provided, without any reordering.
+                Defaults to 'sorted'.
 
     Examples:
         >>> from pyrevit import forms
@@ -831,7 +837,8 @@ class SelectFromList(TemplateUserInputWindow):
         ...                                 multiselect=True,
         ...                                 name_attr='Name',
         ...                                 group_selector_title='Sheet Sets',
-        ...                                 button_name='Select Sheets')
+        ...                                 button_name='Select Sheets',
+        ...                                 sort_groups='sorted')
 
         This module also provides a wrapper base class :obj:`TemplateListItem`
         for when the checkbox option is wrapping another element,
@@ -902,6 +909,11 @@ class SelectFromList(TemplateUserInputWindow):
 
         self.ctx_groups_active = kwargs.get('default_group', None)
 
+        # group sorting?
+        self.sort_groups = kwargs.get('sort_groups', 'sorted')
+        if self.sort_groups not in ['sorted', 'unsorted', 'natural']:
+            raise PyRevitException("Invalid value for 'sort_groups'. Allowed values are: 'sorted', 'unsorted', 'natural'.")
+
         # check for custom templates
         items_panel_template = kwargs.get('items_panel_template', None)
         if items_panel_template:
@@ -947,12 +959,27 @@ class SelectFromList(TemplateUserInputWindow):
 
         return new_ctx
 
+    @staticmethod
+    def _natural_sort_key(key):
+        return [int(c) if c.isdigit() else c.lower() for c in re.split('(\d+)', key)]
+
     def _prepare_context(self):
         if isinstance(self._context, dict) and self._context.keys():
-            self._update_ctx_groups(sorted(self._context.keys()))
-            new_ctx = {}
-            for ctx_grp, ctx_items in self._context.items():
-                new_ctx[ctx_grp] = self._prepare_context_items(ctx_items)
+            # Sort the groups if necessary
+            if self.sort_groups == "sorted":
+                sorted_groups = sorted(self._context.keys())
+            elif self.sort_groups == "natural":
+                sorted_groups = sorted(self._context.keys(), key=self._natural_sort_key)
+            else:
+                sorted_groups = self._context.keys()  # No sorting
+            
+            self._update_ctx_groups(sorted_groups)
+            
+            new_ctx = OrderedDict()
+            for ctx_grp in sorted_groups:
+                items = self._prepare_context_items(self._context[ctx_grp])
+                new_ctx[ctx_grp] = items  # Do not sort the items within the groups
+
             self._context = new_ctx
         else:
             self._context = self._prepare_context_items(self._context)

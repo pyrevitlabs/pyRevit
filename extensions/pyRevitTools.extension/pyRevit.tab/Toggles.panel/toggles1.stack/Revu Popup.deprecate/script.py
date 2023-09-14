@@ -4,6 +4,8 @@ import os.path as op
 from pyrevit import script
 from pyrevit.compat import winreg as wr
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
+from pyrevit.revit import ui
+import pyrevit.extensions as exts
 
 
 logger = script.get_logger()
@@ -103,8 +105,8 @@ def query_filename_prompt_state(dkeys):
 
 # noinspection PyUnusedLocal
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    on_icon = script_cmp.get_bundle_file('on.png')
-    off_icon = script_cmp.get_bundle_file('off.png')
+    on_icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_ON_ICON_FILE)
+    off_icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_OFF_ICON_FILE)
 
     dkeys = get_driver_keys()
     if dkeys:
