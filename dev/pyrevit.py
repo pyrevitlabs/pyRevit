@@ -59,7 +59,7 @@ from scripts.utils import Command
 
 # functions
 import _install as install
-import _apidocspy as apidocspy
+# import _apidocspy as apidocspy # not used by new documentation workflow
 import _autocomplete as autoc
 import _labs as labs
 import _build as build
