@@ -6,7 +6,7 @@ from typing import Dict
 
 from scripts import configs
 
-import _apidocspy as apidocs
+# import _apidocspy as apidocs # not used by new documentation workflow
 import _autocomplete as autoc
 import _labs as labs
 import _telem as telem
