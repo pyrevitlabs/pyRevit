@@ -92,6 +92,8 @@ class EditRecordWindow(forms.WPFWindow):
             self.recordKeyTitle.Text = self.get_locale_string("EditKeynoteKey")
             self.applyChanges.Content = self.get_locale_string("EditKeynoteApply")
             self.recordKey.IsEnabled = False
+            #allow changing Parent key
+            self.recordParent.IsEnabled = True
             if self._rkeynote:
                 # start edit
                 if self._rkeynote.key:
@@ -261,13 +263,28 @@ class EditRecordWindow(forms.WPFWindow):
             self.active_key = new_key
 
     def pick_parent(self, sender, args):
-        # TODO: pick_parent
-        # categories = get_categories(self._conn)
-        # keynotes_tree = get_keynotes_tree(self._conn)
-        forms.alert(self.get_locale_string("PickParent"))
+        categories = kdb.get_categories(self._conn)
+        keynotes = kdb.get_keynotes(self._conn)
+        available_parents = [x.key for x in categories]
+        available_parents.extend([x.key for x in keynotes])
         # remove self from that record if self is not none
+        if self.active_key in available_parents:
+            available_parents.remove(self.active_key)
         # prompt to select a record
-        # apply the record key on the button
+        new_parent = forms.SelectFromList.show(
+            available_parents,
+            title='Select Parent',
+            multiselect=False
+            )
+        if new_parent:
+            try:
+                kdb.reserve_key(self._conn, self.active_key, category=self._cat)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                return
+            self._reserved_key = self.active_key
+            # apply the record key on the button
+            self.active_parent_key = new_parent
 
     def to_upper(self, sender, args):
         self.active_text = self.active_text.upper()
