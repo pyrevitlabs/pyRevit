@@ -10,6 +10,7 @@ import os.path as op
 import shutil
 import math
 from collections import defaultdict
+from natsort import natsorted
 
 from pyrevit import HOST_APP
 from pyrevit import framework
