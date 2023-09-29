@@ -10,6 +10,7 @@ from pyrevit import forms
 
 DEBUG = False
 MAKELINES = False
+MAX_ITERATIONS = 1
 
 selection = revit.get_selection()
 
@@ -88,19 +89,63 @@ def sortcurvescontiguous(origcurves):
 
 def sheet_to_view_transform(sheetcoord):
     global transmatrix
-    newx = \
-        transmatrix.destmin.X \
-        + (((sheetcoord.X - transmatrix.sourcemin.X)
-            * (transmatrix.destmax.X - transmatrix.destmin.X))
-           / (transmatrix.sourcemax.X - transmatrix.sourcemin.X))
 
-    newy = \
-        transmatrix.destmin.Y \
-        + (((sheetcoord.Y - transmatrix.sourcemin.Y)
-            * (transmatrix.destmax.Y - transmatrix.destmin.Y))
-           / (transmatrix.sourcemax.Y - transmatrix.sourcemin.Y))
+    x_direction = transmatrix.cordinatesystem[0]
+    x_scalar = (transmatrix.destmax - transmatrix.destmin).DotProduct(x_direction) / (transmatrix.sourcemax.X - transmatrix.sourcemin.X)
+    x_transformation = ((sheetcoord.X - transmatrix.sourcemin.X) * x_scalar) * x_direction
 
-    return DB.XYZ(newx, newy, 0.0)
+    y_direction = transmatrix.cordinatesystem[1]
+    y_scalar = (transmatrix.destmax - transmatrix.destmin).DotProduct(y_direction) / (transmatrix.sourcemax.Y - transmatrix.sourcemin.Y)
+    y_transformation = ((sheetcoord.Y - transmatrix.sourcemin.Y) * y_scalar) * y_direction
+
+    tranformed_point = transmatrix.destmin + (x_transformation + y_transformation)
+    return tranformed_point
+
+
+def update_transformation_matrix(transmatrix, view_port, selected_view_crop_shape, selected_view, boundary_offset):
+    # get vp min max points in sheetUCS
+    ol = view_port.GetBoxOutline()
+    vptempmin = ol.MinimumPoint
+    vpmin = DB.XYZ(vptempmin.X + boundary_offset,
+                   vptempmin.Y + boundary_offset,
+                   0.0)
+
+    vptempmax = ol.MaximumPoint
+    vpmax = DB.XYZ(vptempmax.X - boundary_offset,
+                   vptempmax.Y - boundary_offset,
+                   0.0)
+    if DEBUG:
+        print('VP MIN MAX: {0}\n'
+              '            {1}\n'.format(vpmin, vpmax))
+
+    # get view min max points in modelUCS.
+    view_max, view_min = (lambda x: ([-x] * 3, [x-1] * 3))(2**63) # (2) 1x3 vectors with max/min 64 bit numbers
+    cl = selected_view_crop_shape
+    for l in cl:
+        end_point_zero = l.GetEndPoint(0)
+        end_point_one = l.GetEndPoint(1)
+        for i in range(3):
+            view_min[i] = min(view_min[i], end_point_zero[i], end_point_one[i])
+            view_max[i] = max(view_max[i], end_point_zero[i], end_point_one[i])
+        if DEBUG:
+            print('CROP LINE POINTS: {0}\n'
+                  '                  {1}\n'.format(l.GetEndPoint(0),
+                                                   l.GetEndPoint(1)))
+
+    cropmin = DB.XYZ(*view_min)
+    cropmax = DB.XYZ(*view_max)
+    if DEBUG:
+        print('CROP MIN MAX: {0}\n'
+              '              {1}\n'.format(cropmin, cropmax))
+    if DEBUG:
+        print('VIEW BOUNDING BOX ON THIS SHEET: {0}\n'
+              '                                 {1}\n'
+              .format(selected_view.BoundingBox[selected_view].Min,
+                      selected_view.BoundingBox[selected_view].Max))
+    transmatrix.sourcemin = vpmin
+    transmatrix.sourcemax = vpmax
+    transmatrix.destmin = cropmin
+    transmatrix.destmax = cropmax
 
 
 def set_crop_boundary():
@@ -130,74 +175,37 @@ def set_crop_boundary():
         with revit.Transaction('Activate Crop Box'):
             selview.CropBoxActive = True
 
-    # get vp min max points in sheetUCS
-    ol = selvp.GetBoxOutline()
-    vptempmin = ol.MinimumPoint
-    vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset,
-                   vptempmin.Y + vpboundaryoffset,
-                   0.0)
-
-    vptempmax = ol.MaximumPoint
-    vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
-                   vptempmax.Y - vpboundaryoffset,
-                   0.0)
-    if DEBUG:
-        print('VP MIN MAX: {0}\n'
-              '            {1}\n'.format(vpmin, vpmax))
-
-    # get view min max points in modelUCS.
-    modelucsx = []
-    modelucsy = []
     crsm = selview.GetCropRegionShapeManager()
-    cl = crsm.GetCropShape()[0]
-    for l in cl:
-        modelucsx.append(l.GetEndPoint(0).X)
-        modelucsy.append(l.GetEndPoint(0).Y)
-        if DEBUG:
-            print('CROP LINE POINTS: {0}\n'
-                  '                  {1}\n'.format(l.GetEndPoint(0),
-                                                   l.GetEndPoint(1)))
-
-    cropmin = DB.XYZ(min(modelucsx), min(modelucsy), 0.0)
-    cropmax = DB.XYZ(max(modelucsx), max(modelucsy), 0.0)
-    if DEBUG:
-        print('CROP MIN MAX: {0}\n'
-              '              {1}\n'.format(cropmin, cropmax))
-    if DEBUG:
-        print('VIEW BOUNDING BOX ON THIS SHEET: {0}\n'
-              '                                 {1}\n'
-              .format(selview.BoundingBox[selview].Min,
-                      selview.BoundingBox[selview].Max))
-    transmatrix.sourcemin = vpmin
-    transmatrix.sourcemax = vpmax
-    transmatrix.destmin = cropmin
-    transmatrix.destmax = cropmax
+    transmatrix.cordinatesystem = [selview.RightDirection, selview.UpDirection]
 
     with revit.Transaction('Set Crop Region'):
-        curveloop = []
-        for bl in selboundary:
-            newlinestart = sheet_to_view_transform(bl.GeometryCurve.GetEndPoint(0))
-            newlineend = sheet_to_view_transform(bl.GeometryCurve.GetEndPoint(1))
-            geomLine = DB.Line.CreateBound(newlinestart, newlineend)
-            if MAKELINES:
-                sketchp = selview.SketchPlane
-                mline = revit.doc.Create.NewModelCurve(geomLine, sketchp)
-            curveloop.append(geomLine)
-            if DEBUG:
-                print('VP POLY LINE POINTS: {0}\n'
-                      '                     {1}\n'
-                      .format(bl.GeometryCurve.GetEndPoint(0),
-                              bl.GeometryCurve.GetEndPoint(1)))
+        for i in range(max(MAX_ITERATIONS, 1)):
+            update_transformation_matrix(transmatrix, selvp, crsm.GetCropShape()[0], selview, vpboundaryoffset)
+            curveloop = []
+            for bl in selboundary:
+                newlinestart = sheet_to_view_transform(bl.GeometryCurve.GetEndPoint(0))
+                newlineend = sheet_to_view_transform(bl.GeometryCurve.GetEndPoint(1))
+                geomLine = DB.Line.CreateBound(newlinestart, newlineend)
+                if MAKELINES:
+                    sketchp = selview.SketchPlane
+                    mline = revit.doc.Create.NewModelCurve(geomLine, sketchp)
+                curveloop.append(geomLine)
+                if DEBUG:
+                    print('VP POLY LINE POINTS: {0}\n'
+                        '                     {1}\n'
+                        .format(bl.GeometryCurve.GetEndPoint(0),
+                                bl.GeometryCurve.GetEndPoint(1)))
 
-            if DEBUG:
-                print('NEW CROP LINE POINTS: {0}\n'
-                      '                      {1}\n'.format(newlinestart,
-                                                           newlineend))
-        sortedcurves = sortcurvescontiguous(curveloop)
-        if sortedcurves:
-            crsm.SetCropShape(DB.CurveLoop.Create(List[DB.Curve](sortedcurves)))
-        else:
-            forms.alert('Curves must be in a closed loop.')
+                if DEBUG:
+                    print('NEW CROP LINE POINTS: {0}\n'
+                        '                      {1}\n'.format(newlinestart,
+                                                            newlineend))
+            sortedcurves = sortcurvescontiguous(curveloop)
+            if sortedcurves:
+                crsm.SetCropShape(DB.CurveLoop.Create(List[DB.Curve](sortedcurves)))
+            else:
+                forms.alert('Curves must be in a closed loop.')
+            revit.doc.Regenerate()
 
 
 if selection:
