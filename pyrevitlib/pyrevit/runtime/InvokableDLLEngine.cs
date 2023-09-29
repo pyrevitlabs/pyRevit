@@ -44,7 +44,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             string.Format(
                                 "Can not find type \"{0}\" in assembly \"{1}\"",
                                 className,
-                                scriptAssm.Location
+                                assmFile
                                 ));
                     return resultCode;
                 }
