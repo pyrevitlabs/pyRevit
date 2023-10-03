@@ -133,7 +133,7 @@ VERSION_FILES = [
 COPYRIGHT_FILES = [
     DIRECTORY_BUILD_PROPS,
     op.join(PYREVIT_MODULE_PATH, "versionmgr/about.py"),
-    op.join(DOCS_DIR, "conf.py"),
+    # op.join(DOCS_DIR, "conf.py"),# not used by new documentation workflow
     op.join(ROOT, "README.md"),
     PYREVIT_INSTALLERFILE,
     PYREVIT_CLI_INSTALLERFILE,

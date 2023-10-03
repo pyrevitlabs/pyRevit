@@ -1,0 +1,30 @@
+name: pyRevitDocsCI
+on:
+  # when PRs from forked repos are merged
+  push:
+    branches:
+      - docs
+  # when PR from develop->master is created
+  pull_request:
+    branches:
+      - master
+  # manual run
+  workflow_dispatch:
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Prepare Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv install
+
+      - run: pipenv run mkdocs gh-deploy --force

@@ -1,4 +1,4 @@
-"""Wrapper module for pyRevitLabs functionality"""
+"""Wrapper module for pyRevitLabs functionality."""
 import logging
 import os.path as op
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
@@ -101,13 +101,13 @@ class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
 
 
 def extract_build_from_exe(proc_path):
-    """Extract build number from host .exe file
+    """Extract build number from host .exe file.
 
     Args:
         proc_path (str): full path of the host .exe file
 
     Returns:
-        str: build number (e.g. '20170927_1515(x64)')
+        (str): build number (e.g. '20170927_1515(x64)')
     """
     # Revit 2021 has a bug on .VersionBuild
     ## it reports identical value as .VersionNumber

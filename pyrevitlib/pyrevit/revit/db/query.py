@@ -107,7 +107,7 @@ def get_type(element):
         element (DB.Element): source element
 
     Returns:
-        DB.ElementType: type object of given element
+        (DB.ElementType): type object of given element
     """
     type_id = element.GetTypeId()
     return element.Document.GetElement(type_id)
@@ -124,12 +124,12 @@ def get_family_name(element):
 # episode_id and guid explanation
 # https://thebuildingcoder.typepad.com/blog/2009/02/uniqueid-dwf-and-ifc-guid.html
 def get_episodeid(element):
-    """Extract episode id from element"""
+    """Extract episode id from element."""
     return str(element.UniqueId)[:36]
 
 
 def get_guid(element):
-    """Extract guid from given element"""
+    """Extract guid from given element."""
     uid = str(element.UniqueId)
     last_32_bits = int(uid[28:36], 16)
     element_id = int(uid[37:], 16)
@@ -157,7 +157,7 @@ def get_location(element):
         element (DB.Element): source element
 
     Returns:
-        DB.XYZ: X, Y, Z of location point element
+        (DB.XYZ): X, Y, Z of location point element
     """
     locp = element.Location.Point
     return (locp.X, locp.Y, locp.Z)
@@ -1424,7 +1424,7 @@ def get_doors(elements=None, doc=None, room_id=None):
         room_id (DB.ElementId): only doors associated with given room
 
     Returns:
-        list[DB.Element]: room instances
+        (list[DB.Element]): room instances
     """
     doc = doc or DOCS.doc
     all_doors = get_elements_by_categories([DB.BuiltInCategory.OST_Doors],
@@ -1526,13 +1526,13 @@ def get_titleblock_print_settings(tblock, printer_name, doc_psettings):
 
 
 def get_crop_region(view):
-    """Takes crop region of a view
+    """Takes crop region of a view.
 
     Args:
         view (DB.View): view to get crop region from
 
     Returns:
-        list[DB.CurveLoop]: list of curve loops
+        (list[DB.CurveLoop]): list of curve loops
     """
     crsm = view.GetCropRegionShapeManager()
     if HOST_APP.is_newer_than(2015):
@@ -1551,7 +1551,7 @@ def get_crop_region(view):
 
 
 def is_cropable_view(view):
-    """Check if view can be cropped"""
+    """Check if view can be cropped."""
     return not isinstance(view, (DB.ViewSheet, DB.TableView)) \
         and view.ViewType not in (DB.ViewType.Legend, DB.ViewType.DraftingView)
 
@@ -1571,14 +1571,19 @@ def get_element_workset(element):
         return workset_table.GetWorkset(element.WorksetId)
 
 
-def get_geometry(element, include_invisible=False):
+def get_geometry(element, include_invisible=False, compute_references=False):
     geom_opts = DB.Options()
     geom_opts.IncludeNonVisibleObjects = include_invisible
+    geom_opts.ComputeReferences = compute_references
     geom_objs = []
-    for gobj in element.Geometry[geom_opts]:
-        if isinstance(gobj, DB.GeometryInstance):
-            inst_geom = gobj.GetInstanceGeometry()
-            geom_objs.extend(list(inst_geom))
-        else:
-            geom_objs.append(gobj)
-    return geom_objs
+    try:
+        for gobj in element.Geometry[geom_opts]:
+            if isinstance(gobj, DB.GeometryInstance):
+                inst_geom = gobj.GetInstanceGeometry()
+                geom_objs.extend(list(inst_geom))
+            else:
+                geom_objs.append(gobj)
+        return geom_objs
+    except TypeError:
+        mlogger.debug("element %s has no geometry", element.Id.IntegerValue)
+        return

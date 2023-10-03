@@ -1,6 +1,4 @@
-"""
-Sane List Extension for Python-Markdown
-=======================================
+"""Sane List Extension for Python-Markdown.
 
 Modify the behavior of Lists in Python-Markdown to act in a sane manor.
 
@@ -12,7 +10,6 @@ Original code Copyright 2011 [Waylan Limberg](http://achinghead.com)
 All changes Copyright 2011-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -23,6 +20,7 @@ import re
 
 
 class SaneOListProcessor(OListProcessor):
+    """Sane ordered list processor."""
 
     SIBLING_TAGS = ['ol']
 
@@ -33,6 +31,7 @@ class SaneOListProcessor(OListProcessor):
 
 
 class SaneUListProcessor(UListProcessor):
+    """Sane unordered list processor."""
 
     SIBLING_TAGS = ['ul']
 
@@ -43,10 +42,10 @@ class SaneUListProcessor(UListProcessor):
 
 
 class SaneListExtension(Extension):
-    """ Add sane lists to Markdown. """
+    """Add sane lists to Markdown."""
 
     def extendMarkdown(self, md, md_globals):
-        """ Override existing Processors. """
+        """Override existing Processors."""
         md.parser.blockprocessors['olist'] = SaneOListProcessor(md.parser)
         md.parser.blockprocessors['ulist'] = SaneUListProcessor(md.parser)
 

@@ -1,6 +1,4 @@
-"""
-Fenced Code Extension for Python Markdown
-=========================================
+"""Fenced Code Extension for Python Markdown.
 
 This extension adds Fenced Code Blocks to Python-Markdown.
 
@@ -24,9 +22,10 @@ import re
 
 
 class FencedCodeExtension(Extension):
+    """Fenced code extension."""
 
     def extendMarkdown(self, md, md_globals):
-        """ Add FencedBlockPreprocessor to the Markdown instance. """
+        """Add FencedBlockPreprocessor to the Markdown instance."""
         md.registerExtension(self)
 
         md.preprocessors.add('fenced_code_block',
@@ -35,6 +34,7 @@ class FencedCodeExtension(Extension):
 
 
 class FencedBlockPreprocessor(Preprocessor):
+    """Fenced code block preprocessor."""
     FENCED_BLOCK_RE = re.compile(r'''
 (?P<fence>^(?:~{3,}|`{3,}))[ ]*         # Opening ``` or ~~~
 (\{?\.?(?P<lang>[\w#.+-]*))?[ ]*        # Optional {, and lang
@@ -53,8 +53,7 @@ class FencedBlockPreprocessor(Preprocessor):
         self.codehilite_conf = {}
 
     def run(self, lines):
-        """ Match and store Fenced Code Blocks in the HtmlStash. """
-
+        """Match and store Fenced Code Blocks in the HtmlStash."""
         # Check for code hilite extension
         if not self.checked_for_codehilite:
             for ext in self.markdown.registeredExtensions:
@@ -101,7 +100,7 @@ class FencedBlockPreprocessor(Preprocessor):
         return text.split("\n")
 
     def _escape(self, txt):
-        """ basic html escaping """
+        """Basic html escaping."""
         txt = txt.replace('&', '&amp;')
         txt = txt.replace('<', '&lt;')
         txt = txt.replace('>', '&gt;')

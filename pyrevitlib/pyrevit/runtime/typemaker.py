@@ -115,15 +115,13 @@ def create_exec_types(extension, cmd_component, module_builder=None):
 
 # public base class maker function ---------------------------------------------
 def make_bundle_types(extension, cmd_component, module_builder=None):
-    """
+    """Create the types for the bundle.
 
     Args:
-        extension:
+        extension (pyrevit.extensions.components.Extension): pyRevit extension
         cmd_component (pyrevit.extensions.genericcomps.GenericUICommand):
-        module_builder:
-
-    Returns:
-
+            command
+        module_builder (ModuleBuilder): module builder.
     """
     # make command interface type for the given command
     try:

@@ -35,8 +35,7 @@ def check_host_drive_freespace():
 
 
 def system_diag():
-    """Verifies system status is appropriate for a pyRevit session.
-    """
+    """Verifies system status is appropriate for a pyRevit session."""
     # checking available drive space
     check_host_drive_freespace()
 

@@ -1,6 +1,4 @@
-"""
-Python Markdown
-===============
+"""Python Markdown.
 
 Python Markdown converts Markdown to HTML and can be used as a library or
 called from the command line.
@@ -78,39 +76,42 @@ class Markdown(object):
     }
 
     def __init__(self, *args, **kwargs):
+        """Creates a new Markdown instance.
+
+        Args:
+            *args (Any): positional args
+            **kwargs (Any): keyword args
+
+        Keyword Args:
+            extensions (list[Extension | str]): A list of extensions.
+                If they are of type string, the module mdx_name.py will be loaded.
+                If they are a subclass of markdown.Extension, they will be used
+                as-is.
+            extension_configs (dict[str, Any]): Configuration settings for extensions.
+            output_format (str): Format of output. Supported formats are:
+                * "xhtml1": Outputs XHTML 1.x. Default.
+                * "xhtml5": Outputs XHTML style tags of HTML 5
+                * "xhtml": Outputs latest supported version of XHTML
+                  (currently XHTML 1.1).
+                * "html4": Outputs HTML 4
+                * "html5": Outputs HTML style tags of HTML 5
+                * "html": Outputs latest supported version of HTML
+                  (currently HTML 4).
+                Note that it is suggested that the more specific formats ("xhtml1"
+                and "html4") be used as "xhtml" or "html" may change in the future
+                if it makes sense at that time.
+            safe_mode (str): Deprecated! Disallow raw html.
+                One of "remove", "replace" or "escape".
+            html_replacement_text (str): Deprecated! Text used when safe_mode
+                is set to "replace".
+            tab_length (int): Length of tabs in the source. Default: 4
+            enable_attributes (bool): Enable the conversion of attributes.
+                Default: True
+            smart_emphasis (bool): Treat `_connected_words_` intelligently
+                Default: True
+            lazy_ol (bool): Ignore number of first item of ordered lists.
+                Default: True
         """
-        Creates a new Markdown instance.
-
-        Keyword arguments:
-
-        * extensions: A list of extensions.
-           If they are of type string, the module mdx_name.py will be loaded.
-           If they are a subclass of markdown.Extension, they will be used
-           as-is.
-        * extension_configs: Configuration settings for extensions.
-        * output_format: Format of output. Supported formats are:
-            * "xhtml1": Outputs XHTML 1.x. Default.
-            * "xhtml5": Outputs XHTML style tags of HTML 5
-            * "xhtml": Outputs latest supported version of XHTML
-              (currently XHTML 1.1).
-            * "html4": Outputs HTML 4
-            * "html5": Outputs HTML style tags of HTML 5
-            * "html": Outputs latest supported version of HTML
-              (currently HTML 4).
-            Note that it is suggested that the more specific formats ("xhtml1"
-            and "html4") be used as "xhtml" or "html" may change in the future
-            if it makes sense at that time.
-        * safe_mode: Deprecated! Disallow raw html. One of "remove", "replace"
-          or "escape".
-        * html_replacement_text: Deprecated! Text used when safe_mode is set
-          to "replace".
-        * tab_length: Length of tabs in the source. Default: 4
-        * enable_attributes: Enable the conversion of attributes. Default: True
-        * smart_emphasis: Treat `_connected_words_` intelligently Default: True
-        * lazy_ol: Ignore number of first item of ordered lists. Default: True
-
-        """
-
         # For backward compatibility, loop through old positional args
         pos = ['extensions', 'extension_configs', 'safe_mode', 'output_format']
         for c, arg in enumerate(args):
@@ -163,7 +164,7 @@ class Markdown(object):
         self.reset()
 
     def build_parser(self):
-        """ Build the parser from the various parts. """
+        """Build the parser from the various parts."""
         self.preprocessors = build_preprocessors(self)
         self.parser = build_block_parser(self)
         self.inlinePatterns = build_inlinepatterns(self)
@@ -172,14 +173,12 @@ class Markdown(object):
         return self
 
     def registerExtensions(self, extensions, configs):
-        """
-        Register extensions with this instance of Markdown.
+        """Register extensions with this instance of Markdown.
 
-        Keyword arguments:
-
-        * extensions: A list of extensions, which can either
-           be strings or objects.  See the docstring on Markdown.
-        * configs: A dictionary mapping module names to config options.
+        Args:
+            extensions (list[Extension]): extensions strings or objects.
+                See the docstring on Markdown.
+            configs (dict[str, Any]): A dictionary mapping module names to config options.
 
         """
         for ext in extensions:
@@ -205,7 +204,6 @@ class Markdown(object):
         following format: "extname(key1=value1,key2=value2)"
 
         """
-
         configs = dict(configs)
 
         # Parse extensions config params (ignore the order)
@@ -299,14 +297,12 @@ class Markdown(object):
                 raise
 
     def registerExtension(self, extension):
-        """ This gets called by the extension """
+        """This gets called by the extension."""
         self.registeredExtensions.append(extension)
         return self
 
     def reset(self):
-        """
-        Resets all state variables so that we can start with a new text.
-        """
+        """Resets all state variables so that we can start with a new text."""
         self.htmlStash.reset()
         self.references.clear()
 
@@ -317,7 +313,7 @@ class Markdown(object):
         return self
 
     def set_output_format(self, format):
-        """ Set the output format for the class instance. """
+        """Set the output format for the class instance."""
         self.output_format = format.lower()
         try:
             self.serializer = self.output_formats[self.output_format]
@@ -332,12 +328,10 @@ class Markdown(object):
         return self
 
     def convert(self, source):
-        """
-        Convert markdown to serialized XHTML or HTML.
+        """Convert markdown to serialized XHTML or HTML.
 
-        Keyword arguments:
-
-        * source: Source text as a Unicode string.
+        Args:
+            source (str): Source text as a Unicode string.
 
         Markdown processing takes place in five steps:
 
@@ -350,9 +344,7 @@ class Markdown(object):
         4. Some post-processors are run against the text after the ElementTree
            has been serialized into text.
         5. The output is written to a string.
-
         """
-
         # Fixup the source text
         if not source.strip():
             return ''  # a blank unicode string
@@ -414,14 +406,11 @@ class Markdown(object):
         takes place in Python-Markdown.  (All other code is Unicode-in /
         Unicode-out.)
 
-        Keyword arguments:
-
-        * input: File object or path. Reads from stdin if `None`.
-        * output: File object or path. Writes to stdout if `None`.
-        * encoding: Encoding of input and output files. Defaults to utf-8.
-
+        Args:
+            input (str | None): File object or path. Reads from stdin if `None`.
+            output (str | None): File object or path. Writes to stdout if `None`.
+            encoding (str): Encoding of input and output files. Defaults to utf-8.
         """
-
         encoding = encoding or "utf-8"
 
         # Read the source
@@ -484,12 +473,13 @@ def markdown(text, *args, **kwargs):
     basic use case.  It initializes an instance of Markdown, loads the
     necessary extensions and runs the parser on the given text.
 
-    Keyword arguments:
+    Args:
+        text (str): Markdown formatted text as Unicode or ASCII string.
+        *args (Any): Any arguments accepted by the Markdown class.
+        **kwargs (Any): Any arguments accepted by the Markdown class.
 
-    * text: Markdown formatted text as Unicode or ASCII string.
-    * Any arguments accepted by the Markdown class.
-
-    Returns: An HTML document as a string.
+    Returns:
+        (str): An HTML document as a string.
 
     """
     md = Markdown(*args, **kwargs)
@@ -502,12 +492,12 @@ def markdownFromFile(*args, **kwargs):
     This is a shortcut function which initializes an instance of Markdown,
     and calls the convertFile method rather than convert.
 
-    Keyword arguments:
-
-    * input: a file name or readable object.
-    * output: a file name or writable object.
-    * encoding: Encoding of input and output.
-    * Any arguments accepted by the Markdown class.
+    Args:
+        *args (Any): Any arguments accepted by the Markdown class.
+            input (str): a file name or readable object.
+            output (str): a file name or writable object.
+            encoding (str): Encoding of input and output.
+        **kwargs (Any): Any arguments accepted by the Markdown class.
 
     """
     # For backward compatibility loop through positional args

@@ -1,9 +1,7 @@
-"""
-Description:
-LibGit2Sharp wrapper module for pyRevit.
+"""LibGit2Sharp wrapper module for pyRevit.
 
 Documentation:
-https://github.com/libgit2/libgit2sharp/wiki
+    https://github.com/libgit2/libgit2sharp/wiki
 """
 
 import importlib
@@ -152,7 +150,7 @@ def get_repo(repo_dir):
         repo_dir (str): full path of git repo directory
 
     Returns:
-        :obj:`RepoInfo`: repo object
+        (RepoInfo): repo object
     """
     repo = libgit.Repository(repo_dir)
     return RepoInfo(repo)
@@ -162,10 +160,10 @@ def git_pull(repo_info):
     """Pull the current head of given repo.
 
     Args:
-        repo_info (:obj:`RepoInfo`): target repo object
+        repo_info (RepoInfo): target repo object
 
     Returns:
-        :obj:`RepoInfo`: repo object with updated head
+        (RepoInfo): repo object with updated head
     """
     repo = repo_info.repo
     try:
@@ -188,10 +186,10 @@ def git_fetch(repo_info):
     """Fetch current branch of given repo.
 
     Args:
-        repo_info (:obj:`RepoInfo`): target repo object
+        repo_info (RepoInfo): target repo object
 
     Returns:
-        :obj:`RepoInfo`: repo object with updated head
+        (RepoInfo): repo object with updated head
     """
     repo = repo_info.repo
     try:
@@ -214,7 +212,7 @@ def git_fetch(repo_info):
 
 
 def git_clone(repo_url, clone_dir, username=None, password=None):
-    """Clone git repository to given location
+    """Clone git repository to given location.
 
     Args:
         repo_url (str): repo .git url
@@ -240,10 +238,7 @@ def compare_branch_heads(repo_info):
     """Compare local and remote branch heads and return ???
 
     Args:
-        repo_info (:obj:`RepoInfo`): target repo object
-
-    Returns:
-        type: desc
+        repo_info (RepoInfo): target repo object
     """
     # FIXME: need return type. possibly simplify
     repo = repo_info.repo
@@ -277,10 +272,10 @@ def get_all_new_commits(repo_info):
     """Fetch and return new commits ahead of current head.
 
     Args:
-        repo_info (:obj:`RepoInfo`): target repo object
+        repo_info (RepoInfo): target repo object
 
     Returns:
-        OrderedDict[str:str]: ordered dict of commit hash:message
+        (OrderedDict[str, str]): ordered dict of commit hash:message
     """
     repo = repo_info.repo
     current_commit = repo_info.last_commit_hash

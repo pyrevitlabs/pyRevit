@@ -48,14 +48,13 @@ def _does_need_clean_engine(extension, cmd_component):
 
 
 def create_executor_type(extension, module_builder, cmd_component):
-    """
+    """Create the dotnet type for the executor.
 
     Args:
-        module_builder:
+        extension (pyrevit.extensions.components.Extension): pyRevit extension
+        module_builder (ModuleBuilder): module builder
         cmd_component (pyrevit.extensions.genericcomps.GenericUICommand):
-
-    Returns:
-
+            command
     """
     cmd_component.requires_clean_engine = \
         _does_need_clean_engine(extension, cmd_component)

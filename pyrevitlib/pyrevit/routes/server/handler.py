@@ -1,4 +1,4 @@
-"""Revit-aware event handler"""
+"""Revit-aware event handler."""
 #pylint: disable=import-error,invalid-name,broad-except
 import sys
 import traceback
@@ -39,25 +39,25 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @property
     def request(self):
-        """Get registered request"""
+        """Get registered request."""
         with self._lock: #pylint: disable=not-context-manager
             return self._request
 
     @request.setter
     def request(self, request):
-        """Set a new request to be passed to handler when event is raised"""
+        """Set a new request to be passed to handler when event is raised."""
         with self._lock:
             self._request = request
 
     @property
     def handler(self):
-        """Get registered handler"""
+        """Get registered handler."""
         with self._lock: #pylint: disable=not-context-manager
             return self._handler
 
     @handler.setter
     def handler(self, handler):
-        """Set a new handler to be executed when event is raised"""
+        """Set a new handler to be executed when event is raised."""
         if handler and callable(handler):
             with self._lock:
                 self._handler = handler
@@ -66,13 +66,13 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @property
     def response(self):
-        """Get registered response"""
+        """Get registered response."""
         with self._lock: #pylint: disable=not-context-manager
             return self._response
 
     @property
     def done(self):
-        """Check if execution of handler is completed and response is set"""
+        """Check if execution of handler is completed and response is set."""
         with self._lock: #pylint: disable=not-context-manager
             return self._done
 
@@ -82,13 +82,13 @@ class RequestHandler(UI.IExternalEventHandler):
             self._done = True
 
     def reset(self):
-        """Reset internals for new execution"""
+        """Reset internals for new execution."""
         with self._lock: #pylint: disable=not-context-manager
             self._response = None
             self._done = False
 
     def join(self):
-        """Allow other threads to call this method and wait for completion"""
+        """Allow other threads to call this method and wait for completion."""
         # wait until handler signals completion
         while True:
             with self._lock:
@@ -97,7 +97,7 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @staticmethod
     def run_handler(handler, kwargs):
-        """Execute the handler function and return base.Response"""
+        """Execute the handler function and return base.Response."""
         response = None
         kwargs = kwargs or {}
         if handler and callable(handler):
@@ -132,7 +132,7 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @staticmethod
     def make_callback(callback_url, response):
-        """Prepare request from base.Response and submit to callback url"""
+        """Prepare request from base.Response and submit to callback url."""
         # parse response object
         r = RequestHandler.parse_response(response)
         # prepare and submit request
@@ -140,7 +140,7 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @staticmethod
     def wants_api_context(handler):
-        """Check if handler needs host api context"""
+        """Check if handler needs host api context."""
         return modutils.has_any_arguments(
             function_obj=handler,
             arg_name_list=[
@@ -151,7 +151,7 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @staticmethod
     def prepare_handler_kwargs(request, handler, uiapp=None):
-        """Prepare call arguments for handler function"""
+        """Prepare call arguments for handler function."""
         uidoc = doc = None
         if uiapp:
             uidoc = getattr(uiapp, 'ActiveUIDocument', None)
@@ -172,7 +172,7 @@ class RequestHandler(UI.IExternalEventHandler):
 
     @staticmethod
     def parse_response(response):
-        """Parse any given response data and return Response object"""
+        """Parse any given response data and return Response object."""
         status = base.OK
         headers = {}
         data = None

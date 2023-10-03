@@ -1,6 +1,4 @@
-"""
-NL2BR Extension
-===============
+"""NL2BR Extension.
 
 A Python-Markdown extension to treat newlines as hard breaks; like
 GitHub-flavored Markdown does.
@@ -13,7 +11,6 @@ Oringinal code Copyright 2011 [Brian Neal](http://deathofagremmie.com/)
 All changes Copyright 2011-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -25,6 +22,7 @@ BR_RE = r'\n'
 
 
 class Nl2BrExtension(Extension):
+    """Newline to br extension."""
 
     def extendMarkdown(self, md, md_globals):
         br_tag = SubstituteTagPattern(BR_RE, 'br')

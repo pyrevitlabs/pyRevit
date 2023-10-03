@@ -1,6 +1,4 @@
-"""
-Tables Extension for Python-Markdown
-====================================
+"""Tables Extension for Python-Markdown.
 
 Added parsing of tables to Python-Markdown.
 
@@ -12,7 +10,6 @@ Original code Copyright 2009 [Waylan Limberg](http://achinghead.com)
 All changes Copyright 2008-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -24,7 +21,7 @@ import re
 
 
 class TableProcessor(BlockProcessor):
-    """ Process Tables. """
+    """Process Tables."""
 
     RE_CODE_PIPES = re.compile(r'(?:(\\\\)|(\\`+)|(`+)|(\\\|)|(\|))')
     RE_END_BORDER = re.compile(r'(?<!\\)(?:\\\\)*\|$')
@@ -35,8 +32,7 @@ class TableProcessor(BlockProcessor):
         super(TableProcessor, self).__init__(parser)
 
     def test(self, parent, block):
-        """
-        Ensure first two rows (column header and separator row) are valid table rows.
+        """Ensure first two rows (column header and separator row) are valid table rows.
 
         Keep border check and separator row do avoid repeating the work.
         """
@@ -55,7 +51,7 @@ class TableProcessor(BlockProcessor):
         return is_table
 
     def run(self, parent, blocks):
-        """ Parse a table block and build table. """
+        """Parse a table block and build table."""
         block = blocks.pop(0).split('\n')
         header = block[0].strip()
         rows = [] if len(block) < 3 else block[2:]
@@ -82,7 +78,7 @@ class TableProcessor(BlockProcessor):
             self._build_row(row.strip(), tbody, align)
 
     def _build_row(self, row, parent, align):
-        """ Given a row of text, build table cells. """
+        """Given a row of text, build table cells."""
         tr = etree.SubElement(parent, 'tr')
         tag = 'td'
         if parent.tag == 'thead':
@@ -100,7 +96,7 @@ class TableProcessor(BlockProcessor):
                 c.set('align', a)
 
     def _split_row(self, row):
-        """ split a row of text into list of cells. """
+        """Split a row of text into list of cells."""
         if self.border:
             if row.startswith('|'):
                 row = row[1:]
@@ -108,7 +104,7 @@ class TableProcessor(BlockProcessor):
         return self._split(row)
 
     def _split(self, row):
-        """ split a row of text with some code into a list of cells. """
+        """Split a row of text with some code into a list of cells."""
         elements = []
         pipes = []
         tics = []
@@ -181,10 +177,10 @@ class TableProcessor(BlockProcessor):
 
 
 class TableExtension(Extension):
-    """ Add tables to Markdown. """
+    """Add tables to Markdown."""
 
     def extendMarkdown(self, md, md_globals):
-        """ Add an instance of TableProcessor to BlockParser. """
+        """Add an instance of TableProcessor to BlockParser."""
         if '|' not in md.ESCAPED_CHARS:
             md.ESCAPED_CHARS.append('|')
         md.parser.blockprocessors.add('table',

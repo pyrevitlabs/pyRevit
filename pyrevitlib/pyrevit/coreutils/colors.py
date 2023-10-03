@@ -1,8 +1,10 @@
 #pylint: disable=C0302
-"""Provide RGB color constants and a colors dictionary with
-elements formatted: COLORS[colorname] = CONSTANT
+"""Colors constants.
 
-Example:
+Provide RGB color constants and a colors dictionary with
+elements formatted: COLORS[colorname] = CONSTANT.
+
+Examples:
     >>> from pyrevit.coreutils import colors
     >>> colors.COLORS['black']
     ... <RGB #000000>
@@ -34,12 +36,12 @@ class RGB(object):
 
     @property
     def hex_color(self):
-        """Return color in hex format"""
+        """Return color in hex format."""
         return '#{:02X}{:02X}{:02X}'.format(self.red, self.green, self.blue)
 
     @property
     def luminance(self):
-        """Return color luminance (preceived)"""
+        """Return color luminance (preceived)."""
         return 0.299*self.red + 0.587*self.green + 0.114*self.blue
 
     @property

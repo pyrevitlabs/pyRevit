@@ -1,14 +1,13 @@
 """Handle reading and parsing, writin and saving of all user configurations.
 
 This module handles the reading and writing of the pyRevit configuration files.
-It's been used extensively by pyRevit sub-modules. :obj:`user_config` is
+It's been used extensively by pyRevit sub-modules. user_config is
 set up automatically in the global scope by this module and can be imported
 into scripts and other modules to access the default configurations.
 
 All other modules use this module to query user config.
 
-Example:
-
+Examples:
     >>> from pyrevit.userconfig import user_config
     >>> user_config.add_section('newsection')
     >>> user_config.newsection.property = value
@@ -16,15 +15,14 @@ Example:
     >>> user_config.save_changes()
 
 
-The :obj:`user_config` object is also the destination for reading and writing
+The user_config object is also the destination for reading and writing
 configuration by pyRevit scripts through :func:`get_config` of
 :mod:`pyrevit.script` module. Here is the function source:
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/script.py
     :pyobject: get_config
 
-Example:
-
+Examples:
     >>> from pyrevit import script
     >>> cfg = script.get_config()
     >>> cfg.property = value
@@ -66,7 +64,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         cfg_file_path (str): full path to config file to be used.
         config_type (str): type of config file
 
-    Example:
+    Examples:
         >>> cfg = PyRevitConfig(cfg_file_path)
         >>> cfg.add_section('sectionname')
         >>> cfg.sectionname.property = value
@@ -110,30 +108,35 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def environment(self):
+        """Environment section."""
         if not self.has_section(CONSTS.EnvConfigsSectionName):
             self.add_section(CONSTS.EnvConfigsSectionName)
         return self.get_section(CONSTS.EnvConfigsSectionName)
 
     @property
     def core(self):
+        """Core section."""
         if not self.has_section(CONSTS.ConfigsCoreSection):
             self.add_section(CONSTS.ConfigsCoreSection)
         return self.get_section(CONSTS.ConfigsCoreSection)
 
     @property
     def routes(self):
+        """Routes section."""
         if not self.has_section(CONSTS.ConfigsRoutesSection):
             self.add_section(CONSTS.ConfigsRoutesSection)
         return self.get_section(CONSTS.ConfigsRoutesSection)
 
     @property
     def telemetry(self):
+        """Telemetry section."""
         if not self.has_section(CONSTS.ConfigsTelemetrySection):
             self.add_section(CONSTS.ConfigsTelemetrySection)
         return self.get_section(CONSTS.ConfigsTelemetrySection)
 
     @property
     def bin_cache(self):
+        """"Whether to use the cache for extensions."""
         return self.core.get_option(
             CONSTS.ConfigsBinaryCacheKey,
             default_value=CONSTS.ConfigsBinaryCacheDefault,
@@ -148,6 +151,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def check_updates(self):
+        """Whether to check for updates."""
         return self.core.get_option(
             CONSTS.ConfigsCheckUpdatesKey,
             default_value=CONSTS.ConfigsCheckUpdatesDefault,
@@ -162,6 +166,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def auto_update(self):
+        """Whether to automatically update pyRevit."""
         return self.core.get_option(
             CONSTS.ConfigsAutoUpdateKey,
             default_value=CONSTS.ConfigsAutoUpdateDefault,
@@ -176,6 +181,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def rocket_mode(self):
+        """Whether to enable rocket mode."""
         return self.core.get_option(
             CONSTS.ConfigsRocketModeKey,
             default_value=CONSTS.ConfigsRocketModeDefault,
@@ -190,6 +196,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def log_level(self):
+        """Logging level."""
         if self.core.get_option(
                 CONSTS.ConfigsDebugKey,
                 default_value=CONSTS.ConfigsDebugDefault,
@@ -216,6 +223,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def file_logging(self):
+        """Whether to enable file logging."""
         return self.core.get_option(
             CONSTS.ConfigsFileLoggingKey,
             default_value=CONSTS.ConfigsFileLoggingDefault,
@@ -230,6 +238,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def startuplog_timeout(self):
+        """Timeout for the startup log."""
         return self.core.get_option(
             CONSTS.ConfigsStartupLogTimeoutKey,
             default_value=CONSTS.ConfigsStartupLogTimeoutDefault,
@@ -244,6 +253,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def required_host_build(self):
+        """Host build required to run the commands."""
         return self.core.get_option(
             CONSTS.ConfigsRequiredHostBuildKey,
             default_value="",
@@ -258,6 +268,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def min_host_drivefreespace(self):
+        """Minimum free space for running the commands."""
         return self.core.get_option(
             CONSTS.ConfigsMinDriveSpaceKey,
             default_value=CONSTS.ConfigsMinDriveSpaceDefault,
@@ -272,6 +283,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def load_beta(self):
+        """Whether to load commands in beta."""
         return self.core.get_option(
             CONSTS.ConfigsLoadBetaKey,
             default_value=CONSTS.ConfigsLoadBetaDefault,
@@ -286,6 +298,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def cpython_engine_version(self):
+        """CPython engine version to use."""
         return self.core.get_option(
             CONSTS.ConfigsCPythonEngineKey,
             default_value=CONSTS.ConfigsCPythonEngineDefault,
@@ -300,6 +313,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def user_locale(self):
+        """User locale."""
         return self.core.get_option(
             CONSTS.ConfigsLocaleKey,
             default_value="",
@@ -314,6 +328,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def output_stylesheet(self):
+        """Stylesheet used for output."""
         return self.core.get_option(
             CONSTS.ConfigsOutputStyleSheet,
             default_value="",
@@ -331,6 +346,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def routes_host(self):
+        """Routes API host."""
         return self.routes.get_option(
             CONSTS.ConfigsRoutesHostKey,
             default_value=CONSTS.ConfigsRoutesHostDefault,
@@ -345,6 +361,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def routes_port(self):
+        """API routes port."""
         return self.routes.get_option(
             CONSTS.ConfigsRoutesPortKey,
             default_value=CONSTS.ConfigsRoutesPortDefault,
@@ -359,6 +376,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def load_core_api(self):
+        """Whether to load pyRevit core api."""
         return self.routes.get_option(
             CONSTS.ConfigsLoadCoreAPIKey,
             default_value=CONSTS.ConfigsConfigsLoadCoreAPIDefault,
@@ -373,6 +391,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def telemetry_utc_timestamp(self):
+        """Whether to use UTC timestamps in telemetry."""
         return self.telemetry.get_option(
             CONSTS.ConfigsTelemetryUTCTimestampsKey,
             default_value=CONSTS.ConfigsTelemetryUTCTimestampsDefault,
@@ -387,6 +406,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def telemetry_status(self):
+        """Telemetry status."""
         return self.telemetry.get_option(
             CONSTS.ConfigsTelemetryStatusKey,
             default_value=CONSTS.ConfigsTelemetryStatusDefault,
@@ -401,6 +421,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def telemetry_file_dir(self):
+        """Telemetry file directory."""
         return self.telemetry.get_option(
             CONSTS.ConfigsTelemetryFileDirKey,
             default_value="",
@@ -415,6 +436,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def telemetry_server_url(self):
+        """Telemetry server URL."""
         return self.telemetry.get_option(
             CONSTS.ConfigsTelemetryServerUrlKey,
             default_value="",
@@ -429,6 +451,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def telemetry_include_hooks(self):
+        """Whether to include hooks in telemetry."""
         return self.telemetry.get_option(
             CONSTS.ConfigsTelemetryIncludeHooksKey,
             default_value=CONSTS.ConfigsTelemetryIncludeHooksDefault,
@@ -443,6 +466,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def apptelemetry_status(self):
+        """Telemetry status."""
         return self.telemetry.get_option(
             CONSTS.ConfigsAppTelemetryStatusKey,
             default_value=CONSTS.ConfigsAppTelemetryStatusDefault,
@@ -457,6 +481,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def apptelemetry_server_url(self):
+        """App telemetry server URL."""
         return self.telemetry.get_option(
             CONSTS.ConfigsAppTelemetryServerUrlKey,
             default_value="",
@@ -471,6 +496,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def apptelemetry_event_flags(self):
+        """Telemetry event flags."""
         return self.telemetry.get_option(
             CONSTS.ConfigsAppTelemetryEventFlagsKey,
             default_value="",
@@ -485,6 +511,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def user_can_update(self):
+        """Whether the user can update pyRevit repos."""
         return self.core.get_option(
             CONSTS.ConfigsUserCanUpdateKey,
             default_value=CONSTS.ConfigsUserCanUpdateDefault,
@@ -499,6 +526,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def user_can_extend(self):
+        """Whether the user can manage pyRevit Extensions."""
         return self.core.get_option(
             CONSTS.ConfigsUserCanExtendKey,
             default_value=CONSTS.ConfigsUserCanExtendDefault,
@@ -513,6 +541,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def user_can_config(self):
+        """Whether the user can access the configuration."""
         return self.core.get_option(
             CONSTS.ConfigsUserCanConfigKey,
             default_value=CONSTS.ConfigsUserCanConfigDefault,
@@ -527,6 +556,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def colorize_docs(self):
+        """Whether to enable the document colorizer."""
         return self.core.get_option(
             CONSTS.ConfigsColorizeDocsKey,
             default_value=CONSTS.ConfigsColorizeDocsDefault,
@@ -541,6 +571,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def tooltip_debug_info(self):
+        """Whether to append debug info on tooltips."""
         return self.core.get_option(
             CONSTS.ConfigsAppendTooltipExKey,
             default_value=CONSTS.ConfigsAppendTooltipExDefault,
@@ -555,6 +586,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def routes_server(self):
+        """Whether the server routes are enabled."""
         return self.routes.get_option(
             CONSTS.ConfigsRoutesServerKey,
             default_value=CONSTS.ConfigsRoutesServerDefault,
@@ -569,6 +601,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     @property
     def respect_language_direction(self):
+        """Whether the system respects the language direction."""
         return False
 
     @respect_language_direction.setter
@@ -576,14 +609,18 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         pass
 
     def get_config_version(self):
-        """Return version of config file used for change detection."""
+        """Return version of config file used for change detection.
+
+        Returns:
+            (str): hash of the config file
+        """
         return self.get_config_file_hash()
 
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
         Returns:
-            :obj:`list`: list of strings. External user extension directories.
+            (list[str]): External user extension directories.
         """
         dir_list = set()
         if include_default:
@@ -606,7 +643,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         """Return a list of all extension directories.
 
         Returns:
-            :obj:`list`: list of strings. user extension directories.
+            (list[str]): user extension directories.
 
         """
         dir_list = set()
@@ -616,7 +653,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         return list(dir_list)
 
     def get_ext_sources(self):
-        """Return a list of extension definition source files"""
+        """Return a list of extension definition source files."""
         ext_sources = self.environment.get_option(
             CONSTS.EnvConfigsExtensionLookupSourcesKey,
             default_value=[],
@@ -624,7 +661,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         return list(set(ext_sources))
 
     def set_thirdparty_ext_root_dirs(self, path_list):
-        """Updates list of external extension directories in config file
+        """Updates list of external extension directories in config file.
 
         Args:
             path_list (list[str]): list of external extension paths
@@ -642,7 +679,11 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     def get_current_attachment(self):
         """Return current pyRevit attachment."""
-        return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+        try:
+            return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+        except PyRevitException as ex:
+            mlogger.error('Error getting current attachment. | %s',
+                          ex)
 
     def get_active_cpython_engine(self):
         """Return active cpython engine."""
@@ -685,10 +726,16 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
                           'current attachment: %s', attachment)
 
     def set_active_cpython_engine(self, pyrevit_engine):
+        """Set the active CPython engine.
+
+        Args:
+            pyrevit_engine (PyRevitEngine): python engine to set as active
+        """
         self.cpython_engine_version = pyrevit_engine.Version
 
     @property
     def is_readonly(self):
+        """bool: whether the config is read only."""
         return self._admin
 
     def save_changes(self):
@@ -731,7 +778,7 @@ def verify_configs(config_file_path=None):
         config_file_path (str, optional): config file full name and path
 
     Returns:
-        :obj:`pyrevit.userconfig.PyRevitConfig`: pyRevit config file handler
+        (pyrevit.userconfig.PyRevitConfig): pyRevit config file handler
     """
     if config_file_path:
         mlogger.debug('Creating default config file at: %s', config_file_path)

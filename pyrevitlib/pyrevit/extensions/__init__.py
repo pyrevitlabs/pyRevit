@@ -8,16 +8,19 @@ UI_EXTENSION_POSTFIX = '.extension'
 
 
 class UIExtensionType:
+    """UI extension type."""
     ID = 'extension'
     POSTFIX = '.extension'
 
 
 class LIBExtensionType:
+    """Library extension type."""
     ID = 'lib'
     POSTFIX = '.lib'
 
 
 class ExtensionTypes:
+    """Extension types."""
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
 
@@ -170,6 +173,7 @@ SLIDEOUT_IDENTIFIER = '>>>'
 
 # bundle icon
 ICON_FILE_FORMAT = '.png'
+ICON_DARK_SUFFIX = '.dark'
 DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT

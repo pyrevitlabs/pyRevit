@@ -6,7 +6,7 @@
         ResizeMode="CanResizeWithGrip"
         HorizontalContentAlignment="Center"
         WindowStartupLocation="Manual"
-        Title="Manage Keynotes"
+        Title="{DynamicResource Title}"
         Closing="window_closing">
     <Window.Resources>
         <Style x:Key="ClearButton" TargetType="Button">
@@ -228,7 +228,7 @@
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
-            <ColumnDefinition Width="140"/>
+            <ColumnDefinition Width="{DynamicResource RightPanelWidth}"/>
         </Grid.ColumnDefinitions>
         <DockPanel Grid.Column="0" Margin="0,0,10,0">
             <DockPanel DockPanel.Dock="Top">
@@ -267,64 +267,64 @@
         </DockPanel>
         <DockPanel Grid.Column="1" Margin="0,0,0,0">
             <StackPanel DockPanel.Dock="Bottom">
-                <Button Content="Import Keynotes"
+                <Button Content="{DynamicResource ImportKeynotes}"
                         Margin="0,15,0,0"
                         Padding="8,4,8,4"
-                        ToolTip = "Import keynotes from Revit standard keynote file"
+                        ToolTip = "{DynamicResource ImportKeynotesInfo}"
                         Click="import_keynotes"/>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
-                    <Button Content="Export All"
+                    <Button Content="{DynamicResource ExportKeynotes}"
                             BorderThickness="1,1,0,1"
                             Grid.Column="0"
                             Margin="0,5,0,0"
                             Padding="8,4,8,4"
-                            ToolTip = "Export keynotes to Revit standard keynote file"
+                            ToolTip = "{DynamicResource ExportKeynotesInfo}"
                             Click="export_keynotes"/>
-                    <Button Content="or Visible"
+                    <Button Content="{DynamicResource ExportVisibleKeynotes}"
                             BorderThickness="0,1,1,1"
                             Grid.Column="1"
                             Margin="0,5,0,0"
                             Padding="8,4,8,4"
-                            ToolTip = "Export listed keynotes to Revit standard keynote file"
+                            ToolTip = "{DynamicResource ExportVisibleKeynotesInfo}"
                             Click="export_visible_keynotes"/>
                 </Grid>
             </StackPanel>
             <StackPanel DockPanel.Dock="Top">
                 <Grid Height="26">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="{DynamicResource RefreshKeynotesWidth}"/>
                         <ColumnDefinition />
                         <ColumnDefinition Width="26"/>
                     </Grid.ColumnDefinitions>
-                    <Button Content="Refresh"
+                    <Button Content="{DynamicResource RefreshKeynotes}"
                             Grid.Column="0"
                             Padding="8,4,8,4"
-                            ToolTip="Reloads keynote file and updates keynotes per changes"
+                            ToolTip="{DynamicResource RefreshKeynotesInfo}"
                             Click="refresh"/>
                     <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                             Grid.Column="1"
                             Margin="5,0,5,0"
                             Padding="0,4,0,4"
-                            ToolTip="Change keynote file."
+                            ToolTip="{DynamicResource ChangeKeynote}"
                             Click="change_keynote_file"/>
                     <Button Content="{StaticResource showKFileIcon}"
                             Grid.Column="2"
-                            ToolTip="Show keynote file."
+                            ToolTip="{DynamicResource ShowKeynote}"
                             Click="show_keynote_file"/>
                 </Grid>
-                <Button Content="Update Model"
+                <Button Content="{DynamicResource UpdateKeynote}"
                         Margin="0,10,0,0"
                         Padding="8,4,8,4"
-                        ToolTip="Reloads keynote file and updates keynotes per changes"
+                        ToolTip="{DynamicResource UpdateKeynoteInfo}"
                         Click="update_model"/>
             </StackPanel>
             <ScrollViewer VerticalScrollBarVisibility="Hidden">
                 <StackPanel>
-                    <GroupBox Header="Categories" Margin="0,10,0,0" Padding="5">
+                    <GroupBox Header="{DynamicResource CategoryKeynotes}" Margin="0,10,0,0" Padding="5">
                         <Grid Height="74">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1*"/>
@@ -333,7 +333,7 @@
                             <Button Grid.Column="0"
                                     Margin="0,0,2,0"
                                     Content="{StaticResource addCategoryIcon}"
-                                    ToolTip="Add new keynote category"
+                                    ToolTip="{DynamicResource AddKeynoteCategory}"
                                     Click="add_category"/>
                             <Grid x:Name="catEditButtons" Grid.Column="1" IsEnabled="False">
                                 <Grid.ColumnDefinitions>
@@ -347,29 +347,29 @@
                                 <Button Grid.Column="0" Grid.Row="0"
                                         Margin="2,0,2,2"
                                         Content="{StaticResource editCategoryIcon}"
-                                        ToolTip = "Edit selected category"
+                                        ToolTip = "{DynamicResource EditKeynoteCategory}"
                                         Click="edit_category"/>
                                 <Button Grid.Column="1"  Grid.Row="0"
                                         Margin="2,0,0,2"
                                         Content="{StaticResource removeCategoryIcon}"
-                                        ToolTip="Remove selected category"
+                                        ToolTip="{DynamicResource RemoveKeynoteCategory}"
                                         Click="remove_category"/>
                                 <Button Grid.Column="0" Grid.Row="1"
                                         Margin="2,2,2,0"
                                         Content="{StaticResource rekeyCategoryIcon}"
-                                        ToolTip="Change key for selected category"
+                                        ToolTip="{DynamicResource ReKeyKeynoteCategory}"
                                         Click="rekey_category"/>
                                 <!--<Button Grid.Column="1" Grid.Row="1"
                                         IsEnabled="False"
                                         Content="{StaticResource historyCategoryIcon}"
                                         Margin="2,2,0,0"
-                                        ToolTip="Show category change history"
+                                        ToolTip="{DynamicResource ShowChangeKeynoteCategoryHistory}"
                                         Click="show_category_history"/>-->
                             </Grid>
                         </Grid>
                     </GroupBox>
 
-                    <GroupBox Header="Keynotes" Margin="0,10,0,0" Padding="5">
+                    <GroupBox Header="{DynamicResource Keynotes}" Margin="0,10,0,0" Padding="5">
                         <StackPanel IsEnabled="True">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -383,12 +383,12 @@
                                 <Button x:Name="keynoteAdd" Grid.Column="0" Grid.Row="0"
                                         Margin="0,0,2,2"
                                         Content="{StaticResource addKeynoteIcon}"
-                                        ToolTip="Add a new keynote"
+                                        ToolTip="{DynamicResource AddKeynote}"
                                         Click="add_keynote"/>
                                 <Button x:Name="keynoteSearch" Grid.Column="0" Grid.Row="2"
                                         Margin="0,2,2,0" IsEnabled="False"
                                         Content="{StaticResource findKeynoteIcon}"
-                                        ToolTip="Find instances of selected keynote"
+                                        ToolTip="{DynamicResource SearchKeynote}"
                                         Click="show_keynote"/>
                                 <Grid x:Name="keynoteEditButtons" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
                                       Height="117"
@@ -406,38 +406,38 @@
                                     <Button Grid.Column="0" Grid.Row="0"
                                             Margin="2,0,2,2"
                                             Content="{StaticResource editKeynoteIcon}"
-                                            ToolTip = "Edit selected keynote"
+                                            ToolTip = "{DynamicResource EditKeynote}"
                                             Click="edit_keynote"/>
                                     <Button Grid.Column="1"  Grid.Row="0"
                                             Margin="2,0,0,2"
                                             Content="{StaticResource removeKeynoteIcon}"
-                                            ToolTip="Remove selected keynote"
+                                            ToolTip="{DynamicResource RemoveKeynote}"
                                             Click="remove_keynote"/>
                                     <Button x:Name="subkeynoteAdd" Grid.Column="0"  Grid.Row="1"
                                             Margin="2,2,2,2"
                                             Content="{StaticResource addSubKeynoteIcon}"
-                                            ToolTip="Add a new keynote as a child to the selected keynote"
+                                            ToolTip="{DynamicResource AddChildKeynote}"
                                             Click="add_sub_keynote"/>
                                     <Button Grid.Column="1"  Grid.Row="1"
                                             Margin="2,2,0,2"
                                             Content="{StaticResource duplicateKeynoteIcon}"
-                                            ToolTip="Duplicate selected keynote"
+                                            ToolTip="{DynamicResource DuplicateKeynote}"
                                             Click="duplicate_keynote"/>
                                     <Button Grid.Column="0"  Grid.Row="2"
                                             Margin="2,2,2,0"
                                             Content="{StaticResource rekeyKeynoteIcon}"
-                                            ToolTip="Change key of selected keynote"
+                                            ToolTip="{DynamicResource ChangeKeyKeynote}"
                                             Click="rekey_keynote"/>
                                     <Button Grid.Column="1"  Grid.Row="2"
                                             Margin="2,2,0,0"
                                             Content="{StaticResource reCatKeynoteIcon}"
-                                            ToolTip="Change category of selected keynote"
+                                            ToolTip="{DynamicResource ChangeCategoryKeynote}"
                                             Click="recat_keynote" />
                                     <!--<Button Grid.Column="1"  Grid.Row="2"
                                             IsEnabled="False"
                                             Margin="2,2,0,2"
                                             Content="{StaticResource historyKeynoteIcon}"
-                                            ToolTip="Show keynote change history"
+                                            ToolTip="{DynamicResource ShowChangeKeynoteHistory}"
                                             Click="show_keynote_history"/>-->
                                     <!--<Border Grid.Column="1" Grid.Row="3"
                                             Margin="2,2,0,0"
@@ -446,20 +446,20 @@
                             </Grid>
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="Place" Margin="0,10,0,0" Padding="5">
+                    <GroupBox Header="{DynamicResource PlaceKeynote}" Margin="0,10,0,0" Padding="5">
                         <StackPanel>
-                            <RadioButton x:Name="userknote_rb" Content="User Keynotes" Margin="0,0,0,5"/>
-                            <RadioButton x:Name="elementknote_rb" Content="Element Keynotes" Margin="0,0,0,5"/>
-                            <RadioButton x:Name="materialknote_rb" Content="Material Keynotes" />
+                            <RadioButton x:Name="userknote_rb" Content="{DynamicResource UserKeynotes}" Margin="0,0,0,5"/>
+                            <RadioButton x:Name="elementknote_rb" Content="{DynamicResource ElementKeynotes}" Margin="0,0,0,5"/>
+                            <RadioButton x:Name="materialknote_rb" Content="{DynamicResource MaterialKeynotes}" />
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="Keynotes History" Margin="0,10,0,0" Padding="5" Visibility="Collapsed">
+                    <GroupBox Header="{DynamicResource KeynotesHistory}" Margin="0,10,0,0" Padding="5" Visibility="Collapsed">
                         <StackPanel >
-                            <Button Content="Enable History"
+                            <Button Content="{DynamicResource EnableHistory}"
                                     IsEnabled="False"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
-                                    ToolTip="Enable history tracking on keynotes."
+                                    ToolTip="{DynamicResource EnableHistoryInfo}"
                                     Click="enable_history"/>
                         </StackPanel>
                     </GroupBox>

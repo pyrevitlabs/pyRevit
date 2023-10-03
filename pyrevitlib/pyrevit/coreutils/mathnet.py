@@ -2,7 +2,7 @@
 
 See https://www.mathdotnet.com for documentation.
 
-Example:
+Examples:
     >>> from pyrevit.coreutils.mathnet import MathNet
 """
 #pylint: disable=W0703,C0302,C0103
