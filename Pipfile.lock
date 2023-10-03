@@ -729,7 +729,7 @@
                 "sha256:b19e1a85d206b56d7df1d5e683df4a7725252a964e3993648dd0fb5a1c157564"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==2.0.4"
+            "version": "==2.0.6"
         },
         "watchdog": {
             "hashes": [
