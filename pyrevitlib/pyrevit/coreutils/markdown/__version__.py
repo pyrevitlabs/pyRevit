@@ -1,6 +1,4 @@
-#
-# markdown/__version__.py
-#
+"""Markdown version."""
 # version_info should conform to PEP 386
 # (major, minor, micro, alpha/beta/rc/final, #)
 # (1, 1, 2, 'alpha', 0) => "1.1.2.dev"
@@ -9,7 +7,7 @@ version_info = (2, 6, 8, 'final', 0)
 
 
 def _get_version():
-    " Returns a PEP 386-compliant version number from version_info. "
+    """Returns a PEP 386-compliant version number from version_info."""
     assert len(version_info) == 5
     assert version_info[3] in ('alpha', 'beta', 'rc', 'final')
 

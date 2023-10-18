@@ -1,0 +1,6 @@
+[tool.ruff]
+select = ["D"]
+ignore = ["D107", "D105"]
+
+[tool.ruff.pydocstyle]
+convention = "google"

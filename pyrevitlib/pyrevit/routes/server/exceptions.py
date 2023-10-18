@@ -1,10 +1,10 @@
-"""Route custom exceptions"""
+"""Route custom exceptions."""
 #pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import HOST_APP
 
 
 class ServerException(Exception):
-    """Server error"""
+    """Server error."""
     def __init__(self, message, exception_type, exception_traceback):
         message = "Server error (%s): %s\n%s\n" % (
             exception_type.__name__ if exception_type else "",
@@ -16,7 +16,7 @@ class ServerException(Exception):
 
 
 class APINotDefinedException(Exception):
-    """API is not defined exception"""
+    """API is not defined exception."""
     def __init__(self, api_name):
         message = "API is not defined: \"%s\"" % api_name
         super(APINotDefinedException, self).__init__(message)
@@ -24,7 +24,7 @@ class APINotDefinedException(Exception):
 
 
 class RouteHandlerNotDefinedException(Exception):
-    """Route does not exits exception"""
+    """Route does not exits exception."""
     def __init__(self, api_name, route, method):
         message = \
         "Route does not exits: \"%s %s%s\"" % (method, api_name, route)
@@ -33,7 +33,7 @@ class RouteHandlerNotDefinedException(Exception):
 
 
 class RouteHandlerDeniedException(Exception):
-    """Route handler was denied by host"""
+    """Route handler was denied by host."""
     def __init__(self, request):
         message = "Route handler was denied by host: \"%s\"" % request.route
         super(RouteHandlerDeniedException, self).__init__(message)
@@ -42,7 +42,7 @@ class RouteHandlerDeniedException(Exception):
 
 
 class RouteHandlerTimedOutException(Exception):
-    """Route handler was timed out by host"""
+    """Route handler was timed out by host."""
     def __init__(self, request):
         message = "Route handler was timed out by host: \"%s\"" % request.route
         super(RouteHandlerTimedOutException, self).__init__(message)
@@ -51,7 +51,7 @@ class RouteHandlerTimedOutException(Exception):
 
 
 class RouteHandlerIsNotCallableException(Exception):
-    """Route handler is not callable"""
+    """Route handler is not callable."""
     def __init__(self, hndlr_name):
         message = "Route handler is not callable: \"%s\"" % hndlr_name
         super(RouteHandlerIsNotCallableException, self).__init__(message)
@@ -60,7 +60,7 @@ class RouteHandlerIsNotCallableException(Exception):
 
 
 class RouteHandlerExecException(Exception):
-    """Route handler exception"""
+    """Route handler exception."""
     def __init__(self, message):
         message = "Route exception in Execute: %s" % message
         super(RouteHandlerExecException, self).__init__(message)
@@ -69,7 +69,7 @@ class RouteHandlerExecException(Exception):
 
 
 class RouteHandlerException(Exception):
-    """Route handler exception"""
+    """Route handler exception."""
     def __init__(self,
                  message, exception_type, exception_traceback,
                  clsx_message, clsx_source, clsx_stacktrace, clsx_targetsite):

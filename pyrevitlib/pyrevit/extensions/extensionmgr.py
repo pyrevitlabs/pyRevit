@@ -1,7 +1,7 @@
-"""
-The extension module is in charge of finding, parsing, and caching extensions.
+"""Find, parse and cache extensions.
+
 There are two types of extensions: UI Extensions (components.Extension) and
-Library Extensions (components.LibraryExtension)
+Library Extensions (components.LibraryExtension).
 
 This module, finds the ui extensions installed and parses their directory for
 tools or loads them from cache. It also finds the library extensions and adds
@@ -109,14 +109,13 @@ def _parse_or_cache(ext_info):
 
 
 def get_command_from_path(comp_path):
-    """
-    Returns a pyRevit command object from the given bundle directory.
+    """Returns a pyRevit command object from the given bundle directory.
 
     Args:
         comp_path (str): Full directory address of the command bundle
 
     Returns:
-        genericcomps.GenericUICommand: A subclass of pyRevit command object.
+        (genericcomps.GenericUICommand): A subclass of pyRevit command object.
     """
     cmds = parse_comp_dir(comp_path, GenericUICommand)
     if cmds:
@@ -126,12 +125,10 @@ def get_command_from_path(comp_path):
 
 
 def get_thirdparty_extension_data():
-    """
-    Returns a list of all UI and Library extensions (not parsed) that
-    are installed and active.
+    """Returns all installed and active UI and Library extensions (not parsed).
 
     Returns:
-        list: list of components.Extension or components.LibraryExtension
+        (list): list of components.Extension or components.LibraryExtension
     """
     # FIXME: reorganzie this code to use one single method to collect
     # extension data for both lib and ui
@@ -149,15 +146,13 @@ def get_thirdparty_extension_data():
 
 
 def get_installed_lib_extensions(root_dir):
-    """
-    Returns a list of all Library extensions (not parsed)
-    under the given directory that are installed and active.
+    """Returns all the installed and active Library extensions (not parsed).
 
     Args:
         root_dir (str): Extensions directory address
 
     Returns:
-        list: list of components.LibraryExtension objects
+        (list[LibraryExtension]): list of components.LibraryExtension objects
     """
     lib_ext_list = \
         [lib_ext for lib_ext in parse_dir_for_ext_type(root_dir,
@@ -166,13 +161,13 @@ def get_installed_lib_extensions(root_dir):
 
 
 def get_installed_ui_extensions():
-    """
-    Returns a list of all UI extensions (fully parsed) under the given
-    directory. This will also process the Library extensions and will add
+    """Returns all UI extensions (fully parsed) under the given directory.
+
+    This will also process the Library extensions and will add
     their path to the syspath of the UI extensions.
 
     Returns:
-        list: list of components.Extension objects
+        (list[Extension]): list of components.Extension objects
     """
     ui_ext_list = []
     lib_ext_list = []

@@ -30,7 +30,7 @@ mlogger = get_logger(__name__)
 
 
 def init():
-    """Initialize routes. Reset all registered routes and shutdown servers"""
+    """Initialize routes. Reset all registered routes and shutdown servers."""
     # clear all routes
     router.reset_routes()
     # stop existing server
@@ -38,7 +38,7 @@ def init():
 
 
 def activate_server():
-    """Activate routes server for this host instance"""
+    """Activate routes server for this host instance."""
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
         try:
@@ -57,7 +57,7 @@ def activate_server():
 
 
 def deactivate_server():
-    """Deactivate the active routes server for this host instance"""
+    """Deactivate the active routes server for this host instance."""
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if routes_server:
         try:
@@ -69,12 +69,12 @@ def deactivate_server():
 
 
 def get_active_server():
-    """Get active routes server for this host instance"""
+    """Get active routes server for this host instance."""
     return envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
 
 
 def make_response(data, status=OK, headers=None):
-    """Create Reponse object with"""
+    """Create Reponse object with."""
     res = Response(status=status, data=data)
     for key, value in (headers or {}).items():
         res.add_header(key, value)
@@ -82,7 +82,7 @@ def make_response(data, status=OK, headers=None):
 
 
 def get_routes(api_name):
-    """Get all registered routes for given API name
+    """Get all registered routes for given API name.
 
     Args:
         api_name (str): unique name of the api
@@ -91,7 +91,7 @@ def get_routes(api_name):
 
 
 def add_route(api_name, pattern, method, handler_func):
-    """Add new route for given API name
+    """Add new route for given API name.
 
     Args:
         api_name (str): unique name of the api
@@ -103,7 +103,7 @@ def add_route(api_name, pattern, method, handler_func):
 
 
 def remove_route(api_name, pattern, method):
-    """Remove previously registered route for given API name
+    """Remove previously registered route for given API name.
 
     Args:
         api_name (str): unique name of the api

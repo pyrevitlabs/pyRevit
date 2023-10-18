@@ -10,6 +10,7 @@ import os.path as op
 import shutil
 import math
 from collections import defaultdict
+from natsort import natsorted
 
 from pyrevit import HOST_APP
 from pyrevit import framework
@@ -63,16 +64,16 @@ class EditRecordWindow(forms.WPFWindow):
         if self._mode == kdb.EDIT_MODE_ADD_CATEG:
             self._cat = True
             self.hide_element(self.recordParentInput)
-            self.Title = 'Add Category'
-            self.recordKeyTitle.Text = 'Create Category Key'
-            self.applyChanges.Content = 'Add Category'
+            self.Title = self.get_locale_string("AddCategoryTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("CreateCategoryKey")
+            self.applyChanges.Content = self.get_locale_string("AddCategoryApply")
 
         elif self._mode == kdb.EDIT_MODE_EDIT_CATEG:
             self._cat = True
             self.hide_element(self.recordParentInput)
-            self.Title = 'Edit Category'
-            self.recordKeyTitle.Text = 'Category Key'
-            self.applyChanges.Content = 'Update Category'
+            self.Title = self.get_locale_string("EditCategoryTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("EditCategoryKey")
+            self.applyChanges.Content = self.get_locale_string("EditCategoryApply")
             self.recordKey.IsEnabled = False
             if self._rkeynote:
                 if self._rkeynote.key:
@@ -82,16 +83,18 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_ADD_KEYNOTE:
             self.show_element(self.recordParentInput)
-            self.Title = 'Add Keynote'
-            self.recordKeyTitle.Text = 'Create Keynote Key'
-            self.applyChanges.Content = 'Add Keynote'
+            self.Title = self.get_locale_string("AddKeynoteTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("CreateKeynoteKey")
+            self.applyChanges.Content = self.get_locale_string("AddKeynoteApply")
 
         elif self._mode == kdb.EDIT_MODE_EDIT_KEYNOTE:
             self.show_element(self.recordParentInput)
-            self.Title = 'Edit Keynote'
-            self.recordKeyTitle.Text = 'Keynote Key'
-            self.applyChanges.Content = 'Update Keynote'
+            self.Title = self.get_locale_string("EditKeynoteTitle")
+            self.recordKeyTitle.Text = self.get_locale_string("EditKeynoteKey")
+            self.applyChanges.Content = self.get_locale_string("EditKeynoteApply")
             self.recordKey.IsEnabled = False
+            #allow changing Parent key
+            self.recordParent.IsEnabled = True
             if self._rkeynote:
                 # start edit
                 if self._rkeynote.key:
@@ -144,10 +147,10 @@ class EditRecordWindow(forms.WPFWindow):
     def commit(self):
         if self._mode == kdb.EDIT_MODE_ADD_CATEG:
             if not self.active_key:
-                forms.alert('Category must have a unique key.')
+                forms.alert(self.get_locale_string("CategoryKeyValidate"))
                 return False
             elif not self.active_text.strip():
-                forms.alert('Category must have a title.')
+                forms.alert(self.get_locale_string("CategoryTitleValidate"))
                 return False
             logger.debug('Adding category: {} {}'
                          .format(self.active_key, self.active_text))
@@ -162,8 +165,7 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_EDIT_CATEG:
             if not self.active_text:
-                forms.alert('Existing title is removed. '
-                            'Category must have a title.')
+                forms.alert(self.get_locale_string("CategoryTitleRemoved"))
                 return False
             try:
                 # update category title if changed
@@ -178,13 +180,13 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_ADD_KEYNOTE:
             if not self.active_key:
-                forms.alert('Keynote must have a unique key.')
+                forms.alert(self.get_locale_string("KeynoteKeyValidate"))
                 return False
             elif not self.active_text:
-                forms.alert('Keynote must have text.')
+                forms.alert(self.get_locale_string("KeynoteTextValidate"))
                 return False
             elif not self.active_parent_key:
-                forms.alert('Keynote must have a parent.')
+                forms.alert(self.get_locale_string("KeynoteParentValidate"))
                 return False
             try:
                 self._res = kdb.add_keynote(self._conn,
@@ -198,7 +200,7 @@ class EditRecordWindow(forms.WPFWindow):
 
         elif self._mode == kdb.EDIT_MODE_EDIT_KEYNOTE:
             if not self.active_text:
-                forms.alert('Existing text is removed. Keynote must have text.')
+                forms.alert(self.get_locale_string("KeynoteTextRemoved"))
                 return False
             try:
                 # update keynote title if changed
@@ -247,7 +249,7 @@ class EditRecordWindow(forms.WPFWindow):
         reserved_keys.extend([x.LockTargetRecordKey for x in locks])
         # ask for a unique new key
         new_key = forms.ask_for_unique_string(
-            prompt='Enter a Unique Key',
+            prompt=self.get_locale_string("EnterUniqueKey"),
             title=self.Title,
             reserved_values=reserved_keys,
             owner=self)
@@ -262,13 +264,28 @@ class EditRecordWindow(forms.WPFWindow):
             self.active_key = new_key
 
     def pick_parent(self, sender, args):
-        # TODO: pick_parent
-        # categories = get_categories(self._conn)
-        # keynotes_tree = get_keynotes_tree(self._conn)
-        forms.alert('Pick parent...')
+        categories = kdb.get_categories(self._conn)
+        keynotes = kdb.get_keynotes(self._conn)
+        available_parents = [x.key for x in categories]
+        available_parents.extend([x.key for x in keynotes])
         # remove self from that record if self is not none
+        if self.active_key in available_parents:
+            available_parents.remove(self.active_key)
         # prompt to select a record
-        # apply the record key on the button
+        new_parent = forms.SelectFromList.show(
+            natsorted(available_parents),
+            title='Select Parent',
+            multiselect=False
+            )
+        if new_parent:
+            try:
+                kdb.reserve_key(self._conn, self.active_key, category=self._cat)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                return
+            self._reserved_key = self.active_key
+            # apply the record key on the button
+            self.active_parent_key = new_parent
 
     def to_upper(self, sender, args):
         self.active_text = self.active_text.upper()
@@ -285,14 +302,14 @@ class EditRecordWindow(forms.WPFWindow):
     def select_template(self, sender, args):
         # TODO: get templates from config
         template = forms.SelectFromList.show(
-            ["-- reserved for future use --", "!! do not use !! "],
-            title='Select Template',
+            [self.get_locale_string("TemplateReserved"), self.get_locale_string("TemplateDontUse")],
+            title=self.get_locale_string("SelectTemplate"),
             owner=self)
         if template:
             self.active_text = template
 
     def translate(self, sender, args):
-        forms.alert("Not yet implemented. Coming soon.")
+        forms.alert(self.get_locale_string("ComingSoon"))
 
     def apply_changes(self, sender, args):
         logger.debug('Applying changes...')
@@ -338,7 +355,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._connect_kfile()
 
         self._cache = []
-        self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
+        self._allcat = kdb.RKeynote(key='', text=self.get_locale_string("AllCategories"),
                                     parent_key='',
                                     locked=False, owner='',
                                     children=None)
@@ -576,11 +593,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     # check is someone else has locked the file
                     locked, owner = adc.is_locked(self._kfile_ext)
                     if locked:
-                        forms.alert(
-                            "Keynote file is being modified and locked by "
-                            "{}. Please try again later".format(owner),
-                            exitscript=True
-                            )
+                        forms.alert(self.get_locale_string("ADCLockedLocalFile").format(owner), exitscript=True)
                     # force sync to get the latest contents
                     adc.sync_file(self._kfile_ext)
                     adc.lock_file(self._kfile_ext)
@@ -589,27 +602,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._kfile = local_kfile
                     self.Title += ' (BIM360)'   #pylint: disable=no-member
                 else:
-                    forms.alert(
-                        "Can not get keynote file from {}".format(adc.ADC_NAME),
-                        exitscript=True
-                        )
+                    forms.alert(self.get_locale_string("ADCLockedLocalFileNone").format(adc.ADC_NAME), exitscript=True)
             else:
                 forms.alert(
-                    "This model is using a keynote file that seems to be "
-                    "managed by {long} ({short}). But {short} is not "
-                    "running, or is not installed. Please install/run the "
-                    "{short} and open the keynote manager again".format(
-                        long=adc.ADC_NAME, short=adc.ADC_SHORTNAME
-                        ),
-                    exitscript=True
-                    )
+                    self.get_locale_string("ADCNotAvailable")
+                    .format(long=adc.ADC_NAME, short=adc.ADC_SHORTNAME),
+                    exitscript=True)
 
     def _change_kfile(self):
         kfile = forms.pick_file('txt')
         if kfile:
             logger.debug('Setting keynote file: %s' % kfile)
             try:
-                with revit.Transaction("Set Keynote File"):
+                with revit.Transaction(self.get_locale_string("SetKeynoteFileTransactionName")):
                     revit.update.set_keynote_file(kfile, doc=revit.doc)
             except Exception as skex:
                 forms.alert(str(skex),
@@ -620,18 +625,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # by this point we must have a local path to the keynote file
         if not self._kfile or not op.exists(self._kfile):
             self._kfile = None
-            forms.alert("Keynote file is not accessible. "
-                        "Please select a keynote file.")
+            forms.alert(self.get_locale_string("KeynoteFileNotExists"))
             self._change_kfile()
             self._determine_kfile()
 
         # if a keynote file is still not set, return
         if not self._kfile:
-            raise Exception('Keynote file is not setup.')
+            raise Exception(self.get_locale_string("KeynoteFileNotSetup"))
 
         # if a keynote file is still not set, return
         if not os.access(self._kfile, os.W_OK):
-            raise Exception('Keynote file is read-only.')
+            raise Exception(self.get_locale_string("KeynoteFileIsReadOnly"))
 
         try:
             self._conn = kdb.connect(self._kfile)
@@ -642,39 +646,28 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         exitscript=True)
         except Exception as ex:
             logger.debug('Connection failed | %s' % ex)
-            res = forms.alert(
-                "Existing keynote file needs to be converted to "
-                "a format usable by this tool. The resulting keynote "
-                "file is still readble by Revit and could be shared "
-                "with other projects. Users should NOT be making changes to "
-                "the existing keynote file during the conversion process.\n"
-                "Are you sure you want to convert?",
-                options=["Convert",
-                         "Select a different keynote file",
-                         "Give me more info"])
+            res = forms.alert(self.get_locale_string("KeynoteFileConnectionFailed"),
+                              options=[self.get_locale_string("KeynoteFileConnectionConvert"),
+                                       self.get_locale_string("KeynoteFileConnectionSelectOther"),
+                                       self.get_locale_string("KeynoteFileConnectionHelp")])
             if res:
-                if res == "Convert":
+                if res == self.get_locale_string("KeynoteFileConnectionConvert"):
                     try:
                         self._convert_existing()
-                        forms.alert("Conversion completed!")
+                        forms.alert(self.get_locale_string("KeynoteFileConversionCompleted"))
                         if not self._conn:
-                            forms.alert(
-                                "Launch the tool again to manage keynotes.",
-                                exitscript=True
-                                )
+                            forms.alert(self.get_locale_string("KeynoteFileLaunchAgain"), exitscript=True)
                     except Exception as convex:
                         logger.debug('Legacy conversion failed | %s' % convex)
-                        forms.alert("Conversion failed! %s" % convex,
-                                    exitscript=True)
-                elif res == "Select a different keynote file":
+                        forms.alert(self.get_locale_string("KeynoteFileConversionFailed") % convex, exitscript=True)
+                elif res == self.get_locale_string("KeynoteFileConnectionSelectOther"):
                     self._change_kfile()
                     self._determine_kfile()
-                elif res == "Give me more info":
+                elif res == self.get_locale_string("KeynoteFileConnectionHelp"):
                     script.open_url(HELP_URL) #pylint: disable=undefined-variable
                     script.exit()
             else:
-                forms.alert("Keynote file is not yet converted.",
-                            exitscript=True)
+                forms.alert(self.get_locale_string("KeynoteFileNotConversion"), exitscript=True)
 
     def _empty_file(self, filepath):
         open(filepath, 'w').close()
@@ -688,14 +681,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             shutil.copy(self._kfile, temp_kfile)
         except Exception:
-            raise Exception("Error backing up existing keynote file")
+            raise Exception(self.get_locale_string("KeynoteFileBackupException"))
 
         try:
             # don't delete files in keynotes folder
             # usually they're on network or synced drives and the IO is slow
             self._empty_file(self._kfile)
         except Exception:
-            raise Exception("Error preparing new keynote file")
+            raise Exception(self.get_locale_string("KeynoteFilePreparingException"))
 
         # import the keynotes from the backup into the emptied keynote file
         try:
@@ -830,8 +823,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         reserved_keys.extend([x.LockTargetRecordKey for x in locks])
         # ask for a unique new key
         new_key = forms.ask_for_unique_string(
-            prompt='Enter a Unique Key',
-            title='Choose New Key',
+            prompt=self.get_locale_string("EnterUniqueKey"),
+            title=self.get_locale_string("ChooseUniqueKey"),
             reserved_values=reserved_keys,
             owner=self)
         return new_key
@@ -839,11 +832,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def _pick_category(self):
         return forms.SelectFromList.show(
             self.all_categories,
-            title="Select Parent Category",
+            title=self.get_locale_string("SelectParentCategory"),
             name_attr='text',
             item_container_template=self.Resources["treeViewItem"],
-            owner=self
-            )
+            owner=self)
 
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
@@ -864,7 +856,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def custom_filter(self, sender, args):
         sfilter = forms.SelectFromList.show(
             kdb.RKeynoteFilters.get_available_filters(),
-            title='Select Filter',
+            title=self.get_locale_string("SelectFilter"),
             owner=self)
         if sfilter:
             self.search_term = sfilter.format_term(self.search_term)
@@ -915,13 +907,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             target_keynote = selected_keynote
         if target_keynote:
             if target_keynote.locked:
-                forms.alert('Category is locked and is being edited by {}. '
-                            'Wait until their changes are committed. '
-                            'Meanwhile you can use or modify the keynotes '
-                            'under this category.'
+                forms.alert(self.get_locale_string("KeynoteLocked")
                             .format('\"%s\"' % target_keynote.owner
                                     if target_keynote.owner
-                                    else 'and unknown user'))
+                                    else self.get_locale_string("KeynoteLockedUnknownUser")))
             else:
                 try:
                     EditRecordWindow(self, self._conn,
@@ -957,15 +946,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if target_keynote:
             # if category is locked
             if target_keynote.locked:
-                forms.alert('Category is locked and is being edited by {}. '
-                            'Wait until their changes are committed.'
+                forms.alert(self.get_locale_string("CategoryLocked")
                             .format('\"%s\"' % target_keynote.owner
                                     if target_keynote.owner
-                                    else 'and unknown user'))
+                                    else self.get_locale_string("CategoryLockedUnknownUser")))
             # or any of its children are locked
             elif any(x.locked for x in target_keynote.children):
-                forms.alert('At least one keynote in this category is locked. '
-                            'Wait until the changes are committed.')
+                forms.alert(self.get_locale_string("CategoryChildrenLocked"))
             else:
                 try:
                     from_key = selected_keynote.key
@@ -1000,16 +987,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         selected_category = self.selected_category
         if selected_category:
             if selected_category.has_children():
-                forms.alert("Category \"%s\" is not empty. "
-                            "Delete all its keynotes first."
+                forms.alert(self.get_locale_string("CategoryHasChildren")
                             % selected_category.key)
             elif selected_category.used:
-                forms.alert("Category \"%s\" is used in the model. "
-                            "Can not delete."
+                forms.alert(self.get_locale_string("CategoryUsed")
                             % selected_category.key)
             else:
-                if forms.alert("Are you sure you want to delete category "
-                               "\"%s\"?" % selected_category.key,
+                if forms.alert(self.get_locale_string("PromptToDeleteCategory") % selected_category.key,
                                yes=True, no=True):
                     try:
                         kdb.remove_category(self._conn, selected_category.key)
@@ -1105,16 +1089,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         selected_keynote = self.selected_keynote
         if selected_keynote:
             if selected_keynote.children:
-                forms.alert("Keynote \"%s\" has sub-keynotes. "
-                            "Delete all its sub-keynotes first."
+                forms.alert(self.get_locale_string("KeynoteHasChildren")
                             % selected_keynote.key)
             elif selected_keynote.used:
-                forms.alert("Keynote \"%s\" is used in the model. "
-                            "Can not delete."
+                forms.alert(self.get_locale_string("KeynoteUsed")
                             % selected_keynote.key)
             else:
-                if forms.alert("Are you sure you want to delete keynote "
-                               "\"%s\"?" % selected_keynote.key,
+                if forms.alert(self.get_locale_string("PromptToDeleteKeynote") % selected_keynote.key,
                                yes=True, no=True):
                     try:
                         kdb.remove_keynote(self._conn, selected_keynote.key)
@@ -1158,8 +1139,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         selected_keynote = self.selected_keynote
         # if any of its children are locked
         if any(x.locked for x in selected_keynote.children):
-            forms.alert('At least one child keynote of this keynote is locked. '
-                        'Wait until the changes are committed.')
+            forms.alert(self.get_locale_string("ReKeyKeynoteChildrenLocked"))
         else:
             try:
                 from_key = selected_keynote.key
@@ -1187,7 +1167,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._update_ktree_knotes()
 
     def rekey_keynote_refs(self, from_key, to_key):
-        with revit.Transaction("Rekey Keynote {}".format(from_key)):
+        with revit.Transaction(self.get_locale_string("ReKeyKeynoteTransaction").format(from_key)):
             for kid in self.get_used_keynote_elements().get(from_key, []):
                 kel = revit.doc.GetElement(kid)
                 if kel:
@@ -1199,8 +1179,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         selected_keynote = self.selected_keynote
         # if any of its children are locked
         if any(x.locked for x in selected_keynote.children):
-            forms.alert('At least one child keynote of this keynote is locked. '
-                        'Wait until the changes are committed.')
+            forms.alert(self.get_locale_string("ReCatKeynoteChildrenLocked"))
         else:
             try:
                 from_cat = selected_keynote.parent_key
@@ -1237,15 +1216,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         viewname = revit.query.get_name(vel)
                 # prepare report
                 report = \
-                    '{} \"{}\" Keynote @ \"{}\"'.format(
-                        output.linkify(kid),
-                        source,
-                        viewname
-                        )
+                    self.get_locale_string("KeynoteName").format(output.linkify(kid), source, viewname)
 
                 if ehist:
                     report += \
-                        ' - Last Edited By \"{}\"'.format(ehist.last_changed_by)
+                        self.get_locale_string("LastEditKeynote").format(ehist.last_changed_by)
 
                 print(report)
 
@@ -1264,7 +1239,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         HOST_APP.uiapp,
                         revit.doc,
                         self.postable_keynote_command,
-                        "Update Keynotes",
+                        self.get_locale_string("UpdateKeynotesTransactionName"),
                         DB.BuiltInParameter.KEY_VALUE,
                         knote_key
                         )
@@ -1274,13 +1249,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                     self.__class__.__name__))
 
     def enable_history(self, sender, args):
-        forms.alert("Not yet implemented. Coming soon.")
+        forms.alert(self.get_locale_string("ComingSoon"))
 
     def show_category_history(self, sender, args):
-        forms.alert("Not yet implemented. Coming soon.")
+        forms.alert(self.get_locale_string("ComingSoon"))
 
     def show_keynote_history(self, sender, args):
-        forms.alert("Not yet implemented. Coming soon.")
+        forms.alert(self.get_locale_string("ComingSoon"))
 
     def change_keynote_file(self, sender, args):
         self._change_kfile()
@@ -1299,7 +1274,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         kfile = forms.pick_file('txt')
         if kfile:
             logger.debug('Importing keynotes from: %s' % kfile)
-            res = forms.alert("Do you want me to skip duplicates if any?",
+            res = forms.alert(self.get_locale_string("SkipDuplicates"),
                               yes=True, no=True)
             try:
                 kdb.import_legacy_keynotes(self._conn, kfile, skip_dup=res)
@@ -1353,7 +1328,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             adc.unlock_file(self._kfile_ext)
 
         if self._needs_update:
-            with revit.Transaction('Update Keynotes'):
+            with revit.Transaction(self.get_locale_string("UpdateKeynotesTransactionName")):
                 revit.update.update_linked_keynotes(doc=revit.doc)
 
         try:

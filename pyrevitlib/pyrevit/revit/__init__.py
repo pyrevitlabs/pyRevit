@@ -1,3 +1,4 @@
+"""Revit application wrapper."""
 import types
 import sys
 
@@ -30,6 +31,7 @@ from pyrevit.revit import geom
 from pyrevit.revit import units
 from pyrevit.revit import features
 from pyrevit.revit import bim360
+from pyrevit.revit import dc3dserver
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -37,10 +39,19 @@ mlogger = get_logger(__name__)
 
 
 def get_imported_symbol(symbol_name):
+    """Geth an imported symbol by its name.
+
+    Args:
+        symbol_name (str): symbol name
+
+    Returns:
+        (Any): imported symbol, if found, None otherwise.
+    """
     return globals().get(symbol_name, None)
 
 
 class RevitWrapper(types.ModuleType):
+    """Revit application wrapper."""
     def __init__(self):
         pass
 
@@ -57,18 +68,22 @@ class RevitWrapper(types.ModuleType):
 
     @property
     def uidoc(self):
+        """Active UI Document."""
         return HOST_APP.uidoc
 
     @property
     def doc(self):
+        """Active document."""
         return DOCS.doc
 
     @property
     def docs(self):
+        """Active documents."""
         return DOCS.docs
 
     @property
     def active_view(self):
+        """Active view."""
         return HOST_APP.active_view
 
     @active_view.setter
@@ -77,6 +92,7 @@ class RevitWrapper(types.ModuleType):
 
     @property
     def active_ui_view(self):
+        """Active UI view."""
         if isinstance(self.active_view, DB.View):
             for uiview in self.uidoc.GetOpenUIViews():
                 if uiview.ViewId == self.active_view.Id:
@@ -84,6 +100,7 @@ class RevitWrapper(types.ModuleType):
 
     @property
     def servers(self):
+        """Available revit server names."""
         return HOST_APP.available_servers
 
     @staticmethod
@@ -94,7 +111,7 @@ class RevitWrapper(types.ModuleType):
             doc_path (str): document file path
 
         Returns:
-            DB.Document: opened document
+            (DB.Document): opened document
         """
         return HOST_APP.app.OpenDocumentFile(doc_path)
 
@@ -109,7 +126,7 @@ class RevitWrapper(types.ModuleType):
 
     @staticmethod
     def post_command(command_id):
-        """Request Revit to run a command
+        """Request Revit to run a command.
 
         Args:
             command_id (str): command identifier e.g. ID_REVIT_SAVE_AS_TEMPLATE
@@ -118,9 +135,9 @@ class RevitWrapper(types.ModuleType):
 
 
 class ErrorSwallower():
-    """Suppresses warnings during script execution
+    """Suppresses warnings during script execution.
 
-    Example:
+    Examples:
         >>> with ErrorSwallower() as swallower:
         >>>     for fam in families:
         >>>         revit.doc.EditFamily(fam)
@@ -133,7 +150,7 @@ class ErrorSwallower():
         self._logerror = log_errors
 
     def on_failure_processing(self, _, event_args):
-        """Failure processing event handler"""
+        """Failure processing event handler."""
         try:
             failure_accesssor = event_args.GetFailuresAccessor()
             mlogger.debug('request for failure processing...')
@@ -146,20 +163,20 @@ class ErrorSwallower():
             mlogger.error('Error occured while processing failures. | %s', fpex)
 
     def get_swallowed_errors(self):
-        """Return swallowed errors"""
+        """Return swallowed errors."""
         return self._fswallower.get_swallowed_failures()
 
     def reset(self):
-        """Reset swallowed errors"""
+        """Reset swallowed errors."""
         self._fswallower.reset()
 
     def __enter__(self):
-        """Start listening to failure processing events"""
+        """Start listening to failure processing events."""
         HOST_APP.app.FailuresProcessing += self.on_failure_processing
         return self
 
     def __exit__(self, exception, exception_value, traceback):
-        """Stop listening to failure processing events"""
+        """Stop listening to failure processing events."""
         HOST_APP.app.FailuresProcessing -= self.on_failure_processing
         if exception and self._logerror:
             mlogger.error('Error in ErrorSwallower Context. | %s:%s',

@@ -1,16 +1,13 @@
-"""
-Table of Contents Extension for Python-Markdown
-===============================================
+"""Table of Contents Extension for Python-Markdown.
 
 See <https://pythonhosted.org/Markdown/extensions/toc.html>
 for documentation.
 
-Oringinal code Copyright 2008 [Jack Miller](http://codezen.org)
+Original code Copyright 2008 [Jack Miller](http://codezen.org)
 
 All changes Copyright 2008-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -23,7 +20,7 @@ import unicodedata
 
 
 def slugify(value, separator):
-    """ Slugify a string, to make it URL friendly. """
+    """Slugify a string, to make it URL friendly."""
     value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
     value = re.sub('[^\w\s-]', '', value.decode('ascii')).strip().lower()
     return re.sub('[%s\s]+' % separator, separator, value)
@@ -33,7 +30,7 @@ IDCOUNT_RE = re.compile(r'^(.*)_([0-9]+)$')
 
 
 def unique(id, ids):
-    """ Ensure id is unique in set of ids. Append '_1', '_2'... if not """
+    """Ensure id is unique in set of ids. Append '_1', '_2'... if not."""
     while id in ids or not id:
         m = IDCOUNT_RE.match(id)
         if m:
@@ -45,9 +42,9 @@ def unique(id, ids):
 
 
 def stashedHTML2text(text, md):
-    """ Extract raw HTML from stash, reduce to plain text and swap with placeholder. """
+    """Extract raw HTML from stash, reduce to plain text and swap with placeholder."""
     def _html_sub(m):
-        """ Substitute raw html with plain text. """
+        """Substitute raw html with plain text."""
         try:
             raw, safe = md.htmlStash.rawHtmlBlocks[int(m.group(1))]
         except (IndexError, TypeError):  # pragma: no cover
@@ -62,16 +59,17 @@ def stashedHTML2text(text, md):
 
 def nest_toc_tokens(toc_list):
     """Given an unsorted list with errors and skips, return a nested one.
-    [{'level': 1}, {'level': 2}]
-    =>
-    [{'level': 1, 'children': [{'level': 2, 'children': []}]}]
 
-    A wrong list is also converted:
-    [{'level': 2}, {'level': 1}]
-    =>
-    [{'level': 2, 'children': []}, {'level': 1, 'children': []}]
+    Examples:
+        [{'level': 1}, {'level': 2}]
+        =>
+        [{'level': 1, 'children': [{'level': 2, 'children': []}]}].
+
+        A wrong list is also converted:
+        [{'level': 2}, {'level': 1}]
+        =>
+        [{'level': 2, 'children': []}, {'level': 1, 'children': []}]
     """
-
     ordered_list = []
     if len(toc_list):
         # Initialize everything by processing the first entry
@@ -124,6 +122,7 @@ def nest_toc_tokens(toc_list):
 
 
 class TocTreeprocessor(Treeprocessor):
+    """TOC Tree processor."""
     def __init__(self, md, config):
         super(TocTreeprocessor, self).__init__(md)
 
@@ -140,13 +139,13 @@ class TocTreeprocessor(Treeprocessor):
         self.header_rgx = re.compile("[Hh][123456]")
 
     def iterparent(self, root):
-        ''' Iterator wrapper to get parent and child all at once. '''
+        """Iterator wrapper to get parent and child all at once."""
         for parent in root.iter():
             for child in parent:
                 yield parent, child
 
     def replace_marker(self, root, elem):
-        ''' Replace marker with elem. '''
+        """Replace marker with elem."""
         for (p, c) in self.iterparent(root):
             text = ''.join(c.itertext()).strip()
             if not text:
@@ -166,7 +165,7 @@ class TocTreeprocessor(Treeprocessor):
                         break
 
     def set_level(self, elem):
-        ''' Adjust header level according to base level. '''
+        """Adjust header level according to base level."""
         level = int(elem.tag[-1]) + self.base_level
         if level > 6:
             level = 6
@@ -195,7 +194,7 @@ class TocTreeprocessor(Treeprocessor):
         c.append(permalink)
 
     def build_toc_div(self, toc_list):
-        """ Return a string div given a toc list. """
+        """Return a string div given a toc list."""
         div = etree.Element("div")
         div.attrib["class"] = "toc"
 
@@ -264,6 +263,7 @@ class TocTreeprocessor(Treeprocessor):
 
 
 class TocExtension(Extension):
+    """TOC Markdown extension."""
 
     TreeProcessorClass = TocTreeprocessor
 

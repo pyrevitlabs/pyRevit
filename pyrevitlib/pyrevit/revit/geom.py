@@ -11,7 +11,7 @@ def convert_point_coord_system(rvt_point, rvt_transform):
         rvt_transform (DB.Transform): Revit transform for target coord system
 
     Returns:
-        DB.XYZ: Point coordinates in new coordinate system.
+        (DB.XYZ): Point coordinates in new coordinate system.
     """
     # transform the origin of the old coordinate system in the new
     # coordinate system

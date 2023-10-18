@@ -1,3 +1,4 @@
+"""Markdown Treeprocessors."""
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
@@ -7,7 +8,7 @@ from . import util
 
 
 def build_treeprocessors(md_instance, **kwargs):
-    """ Build the default treeprocessors for Markdown. """
+    """Build the default treeprocessors for Markdown."""
     treeprocessors = odict.OrderedDict()
     treeprocessors["inline"] = InlineProcessor(md_instance)
     treeprocessors["prettify"] = PrettifyTreeprocessor(md_instance)
@@ -15,15 +16,14 @@ def build_treeprocessors(md_instance, **kwargs):
 
 
 def isString(s):
-    """ Check if it's string """
+    """Check if it's string."""
     if not isinstance(s, util.AtomicString):
         return isinstance(s, util.string_type)
     return False
 
 
 class Treeprocessor(util.Processor):
-    """
-    Treeprocessors are run on the ElementTree object before serialization.
+    """Treeprocessors are run on the ElementTree object before serialization.
 
     Each Treeprocessor implements a "run" method that takes a pointer to an
     ElementTree, modifies it as necessary and returns an ElementTree
@@ -33,7 +33,8 @@ class Treeprocessor(util.Processor):
 
     """
     def run(self, root):
-        """
+        """Main treeprocessor method.
+
         Subclasses of Treeprocessor should implement a `run` method, which
         takes a root ElementTree. This method can return another ElementTree
         object, and the existing root ElementTree will be replaced, or it can
@@ -43,9 +44,7 @@ class Treeprocessor(util.Processor):
 
 
 class InlineProcessor(Treeprocessor):
-    """
-    A Treeprocessor that traverses a tree, applying inline patterns.
-    """
+    """A Treeprocessor that traverses a tree, applying inline patterns."""
 
     def __init__(self, md):
         self.__placeholder_prefix = util.INLINE_PLACEHOLDER_PREFIX
@@ -57,22 +56,20 @@ class InlineProcessor(Treeprocessor):
         self.inlinePatterns = md.inlinePatterns
 
     def __makePlaceholder(self, type):
-        """ Generate a placeholder """
+        """Generate a placeholder."""
         id = "%04d" % len(self.stashed_nodes)
         hash = util.INLINE_PLACEHOLDER % id
         return hash, id
 
     def __findPlaceholder(self, data, index):
-        """
-        Extract id from data string, start from index
+        """Extract id from data string, start from index.
 
-        Keyword arguments:
+        Args:
+            data (str): text
+            index (int): index from which we start search
 
-        * data: string
-        * index: index, from which we start search
-
-        Returns: placeholder id and string index, after the found placeholder.
-
+        Returns:
+            (str, int): placeholder id and index after the found placeholder.
         """
         m = self.__placeholder_re.search(data, index)
         if m:
@@ -81,23 +78,20 @@ class InlineProcessor(Treeprocessor):
             return None, index + 1
 
     def __stashNode(self, node, type):
-        """ Add node to stash """
+        """Add node to stash."""
         placeholder, id = self.__makePlaceholder(type)
         self.stashed_nodes[id] = node
         return placeholder
 
     def __handleInline(self, data, patternIndex=0):
-        """
-        Process string with inline patterns and replace it
-        with placeholders
+        """Replace placeholders of texts with inline patterns.
 
-        Keyword arguments:
+        Args:
+            data (str): A line of Markdown text
+            patternIndex (int): The index of the inlinePattern to start with
 
-        * data: A line of Markdown text
-        * patternIndex: The index of the inlinePattern to start with
-
-        Returns: String with placeholders.
-
+        Returns:
+            (str): Text with placeholders.
         """
         if not isinstance(data, util.AtomicString):
             startIndex = 0
@@ -110,18 +104,12 @@ class InlineProcessor(Treeprocessor):
         return data
 
     def __processElementText(self, node, subnode, isText=True):
-        """
-        Process placeholders in Element.text or Element.tail
-        of Elements popped from self.stashed_nodes.
+        """Process text placeholders of stashed nodes.
 
-        Keywords arguments:
-
-        * node: parent node
-        * subnode: processing node
-        * isText: bool variable, True - it's text, False - it's tail
-
-        Returns: None
-
+        Args:
+            node (Element): parent node
+            subnode (Element): processing node
+            isText (bool): True - it's text, False - it's tail
         """
         if isText:
             text = subnode.text
@@ -142,16 +130,15 @@ class InlineProcessor(Treeprocessor):
             node.insert(pos, newChild)
 
     def __processPlaceholders(self, data, parent, isText=True):
-        """
-        Process string with placeholders and generate ElementTree tree.
+        """Process string with placeholders and generate ElementTree tree.
 
-        Keyword arguments:
+        Args:
+            data (str): text with placeholders instead of ElementTree elements.
+            parent (Element): Element which contains processing inline data
+            isText (bool): True - it's text, False - it's tail
 
-        * data: string with placeholders instead of ElementTree elements.
-        * parent: Element, which contains processing inline data
-
-        Returns: list with ElementTree elements with applied inline patterns.
-
+        Returns:
+            (list[ElementTree]): elements with applied inline patterns.
         """
         def linkText(text):
             if text:
@@ -217,19 +204,19 @@ class InlineProcessor(Treeprocessor):
         return result
 
     def __applyPattern(self, pattern, data, patternIndex, startIndex=0):
-        """
+        """Add the pattern to stashed_nodes if the line fits the pattern.
+
         Check if the line fits the pattern, create the necessary
         elements, add it to stashed_nodes.
 
-        Keyword arguments:
+        Args:
+            data (str): the text to be processed
+            pattern (str): the pattern to be checked
+            patternIndex (int): index of current pattern
+            startIndex (int): string index, from which we start searching
 
-        * data: the text to be processed
-        * pattern: the pattern to be checked
-        * patternIndex: index of current pattern
-        * startIndex: string index, from which we start searching
-
-        Returns: String with placeholders instead of ElementTree elements.
-
+        Returns:
+            (str): text with placeholders instead of ElementTree elements.
         """
         match = pattern.getCompiledRegExp().match(data[startIndex:])
         leftData = data[:startIndex]
@@ -272,12 +259,11 @@ class InlineProcessor(Treeprocessor):
 
             node.text = markdown.AtomicString("This will not be processed.")
 
-        Arguments:
+        Args:
+            tree (ElementTree): Markdown tree.
 
-        * tree: ElementTree object, representing Markdown tree.
-
-        Returns: ElementTree object with applied inline patterns.
-
+        Returns:
+            (ElementTree): Tree with applied inline patterns.
         """
         self.stashed_nodes = {}
 
@@ -335,11 +321,10 @@ class InlineProcessor(Treeprocessor):
 
 
 class PrettifyTreeprocessor(Treeprocessor):
-    """ Add linebreaks to the html document. """
+    """Add linebreaks to the html document."""
 
     def _prettifyETree(self, elem):
-        """ Recursively add linebreaks to ElementTree children. """
-
+        """Recursively add linebreaks to ElementTree children."""
         i = "\n"
         if util.isBlockLevel(elem.tag) and elem.tag not in ['code', 'pre']:
             if (not elem.text or not elem.text.strip()) \
@@ -354,8 +339,7 @@ class PrettifyTreeprocessor(Treeprocessor):
             elem.tail = i
 
     def run(self, root):
-        """ Add linebreaks to ElementTree root object. """
-
+        """Add linebreaks to ElementTree root object."""
         self._prettifyETree(root)
         # Do <br />'s seperately as they are often in the middle of
         # inline content and missed by _prettifyETree.

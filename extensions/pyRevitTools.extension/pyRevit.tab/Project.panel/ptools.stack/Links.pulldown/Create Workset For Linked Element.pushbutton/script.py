@@ -22,9 +22,12 @@ if len(selection) > 0:
                 revit.doc.EnableWorksharing('Shared Levels and Grids',
                                             'Workset1')
             with revit.Transaction('Create Workset for linked model'):
-                newWs = DB.Workset.Create(revit.doc, linkedModelName)
-                worksetParam = \
-                    el.Parameter[DB.BuiltInParameter.ELEM_PARTITION_PARAM]
-                worksetParam.Set(newWs.Id.IntegerValue)
+                try:
+                    newWs = DB.Workset.Create(revit.doc, linkedModelName)
+                    worksetParam = \
+                        el.Parameter[DB.BuiltInParameter.ELEM_PARTITION_PARAM]
+                    worksetParam.Set(newWs.Id.IntegerValue)
+                except Exception as e:
+                    print('Workset: {} already exists\nError: {}'.format(linkedModelName,e))
 else:
     forms.alert('At least one linked element must be selected.')

@@ -1,0 +1,49 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center"
+        SizeToContent="WidthAndHeight">
+    <StackPanel Margin="5">
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="50"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Margin="5" Grid.Row="0" Grid.Column="0">X Coordinate</TextBlock>
+            <TextBox Margin="5" Grid.Row="0" Grid.Column="1" Name="txtCoordX" Text="0" />
+            <TextBlock Margin="5" Grid.Row="1" Grid.Column="0">Y Coordinate</TextBlock>
+            <TextBox Margin="5" Grid.Row="1" Grid.Column="1" Name="txtCoordY" Text="0" />
+            <TextBlock Margin="5" Grid.Row="2" Grid.Column="0">Z Coordinate</TextBlock>
+            <TextBox Margin="5" Grid.Row="2" Grid.Column="1" Name="txtCoordZ" Text="0" />
+            <TextBlock Margin="5" Grid.Row="3" Grid.Column="0">Width</TextBlock>
+            <TextBox Margin="5" Grid.Row="3" Grid.Column="1" Name="txtWidth" Text="1" />
+            <TextBlock Margin="5" Grid.Row="4" Grid.Column="0">Length</TextBlock>
+            <TextBox Margin="5" Grid.Row="4" Grid.Column="1" Name="txtLength" Text="1" />
+            <TextBlock Margin="5" Grid.Row="5" Grid.Column="0">Height</TextBlock>
+            <TextBox Margin="5" Grid.Row="5" Grid.Column="1" Name="txtHeight" Text="1" />
+            <TextBlock Margin="5" Grid.Row="6" Grid.Column="0">Red</TextBlock>
+            <TextBox Margin="5" Grid.Row="6" Grid.Column="1" Name="txtRed" Text="255" />
+            <TextBlock Margin="5" Grid.Row="7" Grid.Column="0">Green</TextBlock>
+            <TextBox Margin="5" Grid.Row="7" Grid.Column="1" Name="txtGreen" Text="0" />
+            <TextBlock Margin="5" Grid.Row="8" Grid.Column="0">Blue</TextBlock>
+            <TextBox Margin="5" Grid.Row="8" Grid.Column="1" Name="txtBlue" Text="0" />
+            <TextBlock Margin="5" Grid.Row="9" Grid.Column="0">Transparency</TextBlock>
+            <TextBox Margin="5" Grid.Row="9" Grid.Column="1" Name="txtTransp" Text="0" />
+        </Grid>
+        <Button x:Name="btnApply" Click="button_apply" Content="Create Box" />
+        <Button x:Name="btnSelect" Margin="0,5,0,0" Click="button_select" Content="Pick Source Element" />
+    </StackPanel>
+</Window>

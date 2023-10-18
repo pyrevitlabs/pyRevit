@@ -1,6 +1,6 @@
 """Helper functions for python.
 
-Example:
+Examples:
     >>> from pyrevit.coreutils import pyutils
     >>> pyutils.safe_cast('string', int, 0)
 """
@@ -21,7 +21,7 @@ class DefaultOrderedDict(OrderedDict):
     This is similar to defaultdict and maintains the order of items added
     to it so in that regards it functions similar to OrderedDict.
 
-    Example:
+    Examples:
         >>> from pyrevit.coreutils import pyutils
         >>> od = pyutils.DefaultOrderedDict(list)
         >>> od['A'] = [1, 2, 3]
@@ -86,9 +86,9 @@ def pairwise(iterable, step=2):
         step (int): number of steps to move when making pairs
 
     Returns:
-        iterable: list of pairs
+        (Iterable[Any]): list of pairs
 
-    Example:
+    Examples:
         >>> pairwise([1, 2, 3, 4, 5])
         [(1, 2), (3, 4)]    # 5 can not be paired
         >>> pairwise([1, 2, 3, 4, 5, 6])
@@ -116,7 +116,7 @@ def safe_cast(val, to_type, default=None):
         to_type (type): target type
         default (any): value to rerun on conversion exception
 
-    Example:
+    Examples:
         >>> safe_cast('name', int, default=0)
         0
     """
@@ -133,9 +133,9 @@ def isnumber(token):
         token (str): string value
 
     Returns:
-        bool: True of token is int or float
+        (bool): True of token is int or float
 
-    Example:
+    Examples:
         >>> isnumber('12.3')
         True
     """
@@ -170,9 +170,9 @@ def merge(d1, d2):
         d2 (dict): dict to be merge into d1
 
     Returns:
-        dict: updated d1
+        (dict[Any, Any]): updated d1
 
-    Example:
+    Examples:
         >>> d1 = {1: 1, 2: "B"    , 3: {1:"A", 2:"B"}, 4: "b"  , 5: ["a", "b"]}
         >>> d2 = {1: 1, 2: {1:"A"}, 3: {1:"S", 3:"C"}, 4: ["a"], 5: ["c"]}
         >>> merge(d1, d2)
@@ -217,7 +217,7 @@ def merge(d1, d2):
 
 
 def almost_equal(a, b, rnd=5):
-    """Check if two numerical values almost equal
+    """Check if two numerical values almost equal.
 
     Args:
         a (float): value a
@@ -225,6 +225,6 @@ def almost_equal(a, b, rnd=5):
         rnd (int, optional): n digits after comma. Defaults to 5.
 
     Returns:
-        bool: True if almost equal
+        (bool): True if almost equal
     """
     return a == b or int(a*10**rnd) == int(b*10**rnd)

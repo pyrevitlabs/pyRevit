@@ -76,9 +76,9 @@ def get_runtime_info():
     """Return runtime information tuple.
 
     Returns:
-        :obj:`RuntimeInfo`: runtime info tuple
+        (RuntimeInfo): runtime info tuple
 
-    Example:
+    Examples:
         >>> sessioninfo.get_runtime_info()
     """
     # FIXME: add example output
@@ -102,7 +102,7 @@ def get_session_uuid():
     """Read session uuid from environment variable.
 
     Returns:
-        str: session uuid string
+        (str): session uuid string
     """
     return envvars.get_pyrevit_env_var(envvars.SESSIONUUID_ENVVAR)
 
@@ -111,7 +111,7 @@ def new_session_uuid():
     """Create a new uuid for a pyRevit session.
 
     Returns:
-        str: session uuid string
+        (str): session uuid string
     """
     uuid_str = safe_strtype(coreutils.new_uuid())
     set_session_uuid(uuid_str)
@@ -122,7 +122,7 @@ def get_loaded_pyrevit_assemblies():
     """Return list of loaded pyRevit assemblies from environment variable.
 
     Returns:
-        list[str]: list of loaded assemblies
+        (list[str]): list of loaded assemblies
     """
     # FIXME: verify and document return type
     loaded_assms_str = envvars.get_pyrevit_env_var(envvars.LOADEDASSMS_ENVVAR)
@@ -137,7 +137,6 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
 
     Args:
         loaded_assm_name_list (list[str]): list of assembly names
-        val (type): desc
     """
     envvars.set_pyrevit_env_var(
         envvars.LOADEDASSMS_ENVVAR,

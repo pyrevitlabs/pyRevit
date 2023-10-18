@@ -171,13 +171,13 @@ def _produce_asm_file(extension):
 
 
 def create_assembly(extension):
-    """
+    """Create an extension assembly.
 
     Args:
-        extension (pyrevit.extensions.components.Extension):
+        extension (pyrevit.extensions.components.Extension): pyRevit extension.
 
     Returns:
-
+        (ExtensionAssemblyInfo): assembly info
     """
     mlogger.debug('Creating assembly for extension: %s', extension.name)
     # create assembly file and return assembly path to be used in UI creation

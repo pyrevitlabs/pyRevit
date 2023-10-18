@@ -102,12 +102,7 @@ class DispatchingFormatter(object):
 
 
 class LoggerWrapper(logging.Logger):
-    """Custom logging object.
-
-    Args:
-        val (type): desc
-        val (type): desc
-    """
+    """Custom logging object."""
     def __init__(self, *args):
         logging.Logger.__init__(self, *args)
         self._has_errors = False
@@ -130,7 +125,7 @@ class LoggerWrapper(logging.Logger):
                             exc_info=exc_info, extra=extra)
 
     def callHandlers(self, record):
-        """Override logging.Logger.callHandlers"""
+        """Override logging.Logger.callHandlers."""
         for hdlr in self.handlers:
             # stream-handler only records based on current level
             if isinstance(hdlr, logging.StreamHandler) \
@@ -142,7 +137,7 @@ class LoggerWrapper(logging.Logger):
                 hdlr.handle(record)
 
     def isEnabledFor(self, level):
-        """Override logging.Logger.isEnabledFor"""
+        """Override logging.Logger.isEnabledFor."""
         # update current logging level and file logging state
         self._filelogstate = \
             envvars.get_pyrevit_env_var(envvars.FILELOGGING_ENVVAR)
@@ -208,6 +203,12 @@ class LoggerWrapper(logging.Logger):
         return envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
     def log_parse_except(self, parsed_file, parse_ex):
+        """Logs a file parsing exception.
+
+        Args:
+            parsed_file (str): File path that failed the parsing
+            parse_ex (Exception): Parsing exception
+        """
         err_msg = '<strong>Error while parsing file:</strong>\n{file}\n' \
                   '<strong>Error type:</strong> {type}\n' \
                   '<strong>Error Message:</strong> {errmsg}\n' \
@@ -223,16 +224,36 @@ class LoggerWrapper(logging.Logger):
         self.error(coreutils.prepare_html_str(err_msg))
 
     def success(self, message, *args, **kws):
+        """Log a success message.
+
+        Args:
+            message (str): success message
+            *args (Any): extra agruments passed to the log function
+            **kws (Any): extra agruments passed to the log function
+        """
         if self.isEnabledFor(SUCCESS_LOG_LEVEL):
             # Yes, logger takes its '*args' as 'args'.
-            self._log(SUCCESS_LOG_LEVEL, message, args, **kws) 
+            self._log(SUCCESS_LOG_LEVEL, message, args, **kws)
 
     def deprecate(self, message, *args, **kws):
+        """Log a deprecation message.
+
+        Args:
+            message (str): deprecation message
+            *args (Any): extra agruments passed to the log function
+            **kws (Any): extra agruments passed to the log function
+        """
         if self.isEnabledFor(DEPRECATE_LOG_LEVEL):
             # Yes, logger takes its '*args' as 'args'.
             self._log(DEPRECATE_LOG_LEVEL, message, args, **kws)
 
     def dev_log(self, source, message=''):
+        """Appends a message to a log file.
+
+        Args:
+            source (str): source of the message
+            message (str): message to log
+        """
         devlog_fname = \
             '{}.log'.format(EXEC_PARAMS.command_uniqueid or self.name)
         with open(op.join(USER_DESKTOP, devlog_fname), 'a') as devlog_file:
@@ -267,7 +288,7 @@ def get_stdout_hndlr():
     """Return stdout logging handler object.
 
     Returns:
-        logging.StreamHandler:
+        (logging.StreamHandler):
             configured instance of python's native stream handler
     """
     global stdout_hndlr     #pylint: disable=W0603
@@ -279,7 +300,7 @@ def get_file_hndlr():
     """Return file logging handler object.
 
     Returns:
-        logging.FileHandler:
+        (logging.FileHandler):
             configured instance of python's native stream handler
     """
     global file_hndlr       #pylint: disable=W0603
@@ -311,12 +332,11 @@ def get_logger(logger_name):
 
     Args:
         logger_name (str): logger name
-        val (type): desc
 
     Returns:
-        :obj:`LoggerWrapper`: logger object wrapper python's native logger
+        (LoggerWrapper): logger object wrapper python's native logger
 
-    Example:
+    Examples:
         >>> get_logger('my command')
         ... <LoggerWrapper ...>
     """

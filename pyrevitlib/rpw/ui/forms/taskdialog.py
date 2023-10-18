@@ -137,7 +137,7 @@ class TaskDialog(BaseObjectWrapper):
             self.dialog.CommonButtons = common_buttons
 
         # Set Default Button
-        self.dialog.DefaultButton = UI.TaskDialogResult.None
+        self.dialog.DefaultButton = UI.TaskDialogResult["None"]
 
         # Validate Commands
         commands = commands or []

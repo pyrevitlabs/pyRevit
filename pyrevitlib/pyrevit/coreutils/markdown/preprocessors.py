@@ -1,6 +1,4 @@
-"""
-PRE-PROCESSORS
-=============================================================================
+"""PRE-PROCESSORS.
 
 Preprocessors work on source text before we start doing anything too
 complicated.
@@ -16,7 +14,7 @@ from . import util
 
 
 def build_preprocessors(md_instance, **kwargs):
-    """ Build the default set of preprocessors used by Markdown. """
+    """Build the default set of preprocessors used by Markdown."""
     preprocessors = odict.OrderedDict()
     preprocessors['normalize_whitespace'] = NormalizeWhitespace(md_instance)
     if md_instance.safeMode != 'escape':
@@ -26,18 +24,17 @@ def build_preprocessors(md_instance, **kwargs):
 
 
 class Preprocessor(util.Processor):
-    """
-    Preprocessors are run after the text is broken into lines.
+    """Preprocessors are run after the text is broken into lines.
 
     Each preprocessor implements a "run" method that takes a pointer to a
     list of lines of the document, modifies it as necessary and returns
     either the same pointer or a pointer to a new list.
 
     Preprocessors must extend markdown.Preprocessor.
-
     """
     def run(self, lines):
-        """
+        """Main preprocessor task.
+
         Each subclass of Preprocessor should override the `run` method, which
         takes the document as a list of strings split by newlines and returns
         the (possibly modified) list of lines.
@@ -47,7 +44,7 @@ class Preprocessor(util.Processor):
 
 
 class NormalizeWhitespace(Preprocessor):
-    """ Normalize whitespace for consistant parsing. """
+    """Normalize whitespace for consistant parsing."""
 
     def run(self, lines):
         source = '\n'.join(lines)
@@ -146,7 +143,8 @@ class HtmlBlockPreprocessor(Preprocessor):
         return (tag in ['hr', 'hr/'])
 
     def _stringindex_to_listindex(self, stringindex, items):
-        """
+        """Return the index of the item matching the cumulative string index.
+
         Same effect as concatenating the strings in items,
         finding the character to which stringindex refers in that string,
         and returning the index of the item in which that character resides.
@@ -325,7 +323,7 @@ class HtmlBlockPreprocessor(Preprocessor):
 
 
 class ReferencePreprocessor(Preprocessor):
-    """ Remove reference definitions from text and store for later use. """
+    """Remove reference definitions from text and store for later use."""
 
     TITLE = r'[ ]*(\"(.*)\"|\'(.*)\'|\((.*)\))[ ]*'
     RE = re.compile(

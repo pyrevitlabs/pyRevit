@@ -35,14 +35,32 @@ ExtensionEventHook = namedtuple('ExtensionEventHook', [
 
 
 def get_hooks_handler():
+    """Get the hook handler environment variable.
+
+    Returns:
+        (EventHooks): hook handler
+    """
     return envvars.get_pyrevit_env_var(envvars.HOOKSHANDLER_ENVVAR)
 
 
 def set_hooks_handler(handler):
+    """Set the hook handler environment variable.
+
+    Args:
+        handler (EventHooks): hook handler
+    """
     envvars.set_pyrevit_env_var(envvars.HOOKSHANDLER_ENVVAR, handler)
 
 
 def is_valid_hook_script(hook_script):
+    """Check if the given hook script is valid.
+
+    Args:
+        hook_script (str): hook script path
+
+    Returns:
+        (bool): True if the script is valid, False otherwise
+    """
     return op.splitext(op.basename(hook_script))[1] in SUPPORTED_LANGUAGES
 
 
@@ -70,6 +88,14 @@ def _create_hook_id(extension, hook_script):
 
 
 def get_extension_hooks(extension):
+    """Get the hooks of the given extension.
+
+    Args:
+        extension (pyrevit.extensions.components.Extension): pyRevit extension
+
+    Returns:
+        (list[ExtensionEventHook]): list of hooks
+    """
     event_hooks = []
     for hook_script in extension.get_hooks():
         if is_valid_hook_script(hook_script):
@@ -89,11 +115,17 @@ def get_extension_hooks(extension):
 
 
 def get_event_hooks():
+    """Get all the event hooks."""
     hooks_handler = get_hooks_handler()
     return hooks_handler.GetAllEventHooks()
 
 
 def register_hooks(extension):
+    """Register the hooks for the given extension.
+
+    Args:
+        extension (pyrevit.extensions.components.Extension): pyRevit extension
+    """
     hooks_handler = get_hooks_handler()
     for ext_hook in get_extension_hooks(extension):
         try:
@@ -111,27 +143,42 @@ def register_hooks(extension):
 
 
 def unregister_hooks(extension):
+    """Unregister all hooks for the given extension.
+
+    Args:
+        extension (pyrevit.extensions.components.Extension): pyRevit extension
+    """
     hooks_handler = get_hooks_handler()
     for ext_hook in get_extension_hooks(extension):
         hooks_handler.UnRegisterHook(uniqueId=ext_hook.id)
 
 
 def unregister_all_hooks():
+    """Unregister all hooks."""
     hooks_handler = get_hooks_handler()
     hooks_handler.UnRegisterAllHooks(uiApp=HOST_APP.uiapp)
 
 
 def activate():
+    """Activate all event hooks."""
     hooks_handler = get_hooks_handler()
     hooks_handler.ActivateEventHooks(uiApp=HOST_APP.uiapp)
 
 
 def deactivate():
+    """Deactivate all event hooks."""
     hooks_handler = get_hooks_handler()
     hooks_handler.DeactivateEventHooks(uiApp=HOST_APP.uiapp)
 
 
 def setup_hooks(session_id=None):
+    """Setup the hooks for the given session.
+    
+    If no session is specified, use the current one.
+
+    Args:
+        session_id (str, optional): Session. Defaults to None.
+    """
     # make sure session id is availabe
     if not session_id:
         session_id = sessioninfo.get_session_uuid()

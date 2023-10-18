@@ -1,3 +1,4 @@
+"""Rhinoceros interop."""
 # pylint: skip-file
 import os.path as op
 from pyrevit import clr, BIN_DIR
