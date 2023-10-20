@@ -8,6 +8,9 @@ extra:
 theme:
   name: material
   logo: static/pyRevitLogo.svg
+  features:
+    - content.code.select
+    - content.code.copy
   palette:
 
     # Palette toggle for light mode
@@ -58,6 +61,12 @@ plugins:
       nav_file: SUMMARY.md
 
 markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
   - pymdownx.superfences
   - pymdownx.caret
   - pymdownx.keys
@@ -69,6 +78,7 @@ markdown_extensions:
 nav:
   - Home: README.md
   - Contributing: CONTRIBUTING.md
+  - Security: SECURITY.md
   - Code Of Conduct: CODE_OF_CONDUCT.md
   - Credits: CREDITS.md
   - Reference API: reference/
