@@ -9,17 +9,8 @@ theme:
   name: material
   logo: static/pyRevitLogo.svg
   features:
-    - search.suggest
-    - search.highlight
-    - content.tabs.link
-    - navigation.indexes
-    - content.tooltips
-    - navigation.path
-    - content.code.annotate
-    - content.code.copy
     - content.code.select
-    - navigation.tabs
-
+    - content.code.copy
   palette:
 
     # Palette toggle for light mode
@@ -58,13 +49,9 @@ plugins:
             show_if_no_docstring: true
             show_category_heading: true
             inherited_members: true
-            docstring_section_style: spacy
             filters:
               - "!^_"
               - "^_HostApplication"
-            signature_crossrefs: true
-            show_symbol_type_heading: true
-            show_symbol_type_toc: true
           paths: [pyrevitlib]
   - exclude:
       glob:
