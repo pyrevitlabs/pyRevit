@@ -8,6 +8,9 @@ extra:
 theme:
   name: material
   logo: static/pyRevitLogo.svg
+  features:
+    - content.code.select
+    - content.code.copy
   palette:
 
     # Palette toggle for light mode
