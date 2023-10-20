@@ -147,7 +147,7 @@ def _produce_ui_separator(ui_maker_params):
         mlogger.debug('Adding separator to: %s', parent_ui_item)
         try:
             if hasattr(parent_ui_item, 'add_separator'):    # re issue #361
-                parent_ui_item.z()
+                parent_ui_item.add_separator()
         except PyRevitException as err:
             mlogger.error('UI error: %s', err.msg)
 

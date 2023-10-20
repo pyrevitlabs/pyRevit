@@ -10,6 +10,7 @@ import os.path as op
 import shutil
 import math
 from collections import defaultdict
+from natsort import natsorted
 
 from pyrevit import HOST_APP
 from pyrevit import framework
@@ -272,7 +273,7 @@ class EditRecordWindow(forms.WPFWindow):
             available_parents.remove(self.active_key)
         # prompt to select a record
         new_parent = forms.SelectFromList.show(
-            available_parents,
+            natsorted(available_parents),
             title='Select Parent',
             multiselect=False
             )
