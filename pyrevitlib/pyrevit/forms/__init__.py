@@ -2756,7 +2756,7 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
     Args:
         msg (str): message to be displayed
         title (str, optional): task dialog title
-        sub_msg (str, optional): sub message
+        sub_msg (str, optional): sub message, use html to create clickable links
         expanded (str, optional): expanded area message
         footer (str, optional): footer text
         ok (bool, optional): show OK button, defaults to True
@@ -2774,6 +2774,7 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
     Examples:
         >>> from pyrevit import forms
         >>> forms.alert('Are you sure?',
+                         sub_msg='<a href=\"https://discourse.pyrevitlabs.io/ \">Click here if you are not sure and want to go to the pyRevit Forum</a>'
         ...              ok=False, yes=True, no=True, exitscript=True)
     """
     # BUILD DIALOG
