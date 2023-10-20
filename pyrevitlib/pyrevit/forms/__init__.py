@@ -2772,10 +2772,12 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         (bool): True if okay, yes, or retry, otherwise False
 
     Examples:
-            from pyrevit import forms
-            forms.alert('Are you sure?',
-                        sub_msg='<a href=\"https://discourse.pyrevitlabs.io/ \">Click here if you are not sure and want to go to the pyRevit Forum</a>',
-                        ok=False, yes=True, no=True, exitscript=True)
+        ```python
+        from pyrevit import forms
+        forms.alert('Are you sure?',
+                    sub_msg='<a href=\"https://discourse.pyrevitlabs.io/ \">Click here if you are not sure and want to go to the pyRevit Forum</a>',
+                    ok=False, yes=True, no=True, exitscript=True)
+        ```
     """
     # BUILD DIALOG
     cmd_name = EXEC_PARAMS.command_name
