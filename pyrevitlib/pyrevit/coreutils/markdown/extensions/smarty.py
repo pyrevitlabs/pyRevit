@@ -88,16 +88,16 @@ from ..treeprocessors import InlineProcessor
 # Constants for quote education.
 punctClass = r"""[!"#\$\%'()*+,-.\/:;<=>?\@\[\\\]\^_`{|}~]"""
 endOfWordClass = r"[\s.,;:!?)]"
-closeClass = "[^\ \t\r\n\[\{\(\-\u0002\u0003]"
+closeClass = r"[^\ \t\r\n\[\{\(\-\u0002\u0003]"
 
 openingQuotesBase = (
-    '(\s'               # a  whitespace char
-    '|&nbsp;'           # or a non-breaking space entity
-    '|--'               # or dashes
-    '|–|—'              # or unicode
-    '|&[mn]dash;'       # or named dash entities
-    '|&#8211;|&#8212;'  # or decimal entities
-    ')'
+    r'(\s'               # a  whitespace char
+    r'|&nbsp;'           # or a non-breaking space entity
+    r'|--'               # or dashes
+    r'|–|—'              # or unicode
+    r'|&[mn]dash;'       # or named dash entities
+    r'|&#8211;|&#8212;'  # or decimal entities
+    r')'
 )
 
 substitutions = {
