@@ -39,8 +39,10 @@ def _create_subcomponents(search_dir,
         create_from_search_dir (bool, optional): whether to create the _get_component objects, default to False
 
     Examples:
+        '''python
         _create_subcomponents(search_dir,
                               [LinkButton, PushButton, or ToggleButton])
+        '''
         this method creates LinkButton, PushButton, or ToggleButton for
         the parsed sub-directories under search_dir with matching .type_id
         identifiers in their names. (e.g. "folder.LINK_BUTTON_POSTFIX")

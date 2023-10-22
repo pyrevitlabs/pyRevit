@@ -1,10 +1,12 @@
 """Provide basic utilities for pyRevit scripts.
 
 Examples:
-    >>> from pyrevit import script
-    >>> script.clipboard_copy('some text')
-    >>> data = script.journal_read('data-key')
-    >>> script.exit()
+    '''python
+    from pyrevit import script
+    script.clipboard_copy('some text')
+    data = script.journal_read('data-key')
+    script.exit()
+    '''
 """
 #pylint: disable=consider-using-f-string
 
@@ -203,10 +205,14 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{file_id}.{file_ext}``
 
     Examples:
-        >>> script.get_universal_data_file('mydata', 'data')
-        '.../pyRevit_mydata.data'
-        >>> script.get_universal_data_file('mydata', 'data', add_cmd_name=True)
-        '.../pyRevit_Command Name_mydata.data'
+        '''python
+        script.get_universal_data_file('mydata', 'data')
+        '''
+        '/pyRevit_mydata.data'
+        '''python
+        script.get_universal_data_file('mydata', 'data', add_cmd_name=True)
+        '''
+        '/pyRevit_Command Name_mydata.data'
 
     Universal data files are not cleaned up at pyRevit startup.
     Script should manage cleaning up these files.
@@ -234,10 +240,15 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{file_id}.{file_ext}``
 
     Examples:
-        >>> script.get_data_file('mydata', 'data')
-        '.../pyRevit_2018_mydata.data'
-        >>> script.get_data_file('mydata', 'data', add_cmd_name=True)
-        '.../pyRevit_2018_Command Name_mydata.data'
+        '''python
+        script.get_data_file('mydata', 'data')
+        '''
+        '/pyRevit_2018_mydata.data'
+        '''python
+        script.get_data_file('mydata', 'data', add_cmd_name=True)
+        '''
+        '/pyRevit_2018_Command Name_mydata.data'
+        
 
     Data files are not cleaned up at pyRevit startup.
     Script should manage cleaning up these files.
@@ -265,10 +276,14 @@ def get_instance_data_file(file_id, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}``
 
     Examples:
-        >>> script.get_instance_data_file('mydata')
-        '.../pyRevit_2018_6684_mydata.tmp'
-        >>> script.get_instance_data_file('mydata', add_cmd_name=True)
-        '.../pyRevit_2018_6684_Command Name_mydata.tmp'
+        '''python
+        script.get_instance_data_file('mydata')
+        '''
+        '/pyRevit_2018_6684_mydata.tmp'
+        '''python
+        script.get_instance_data_file('mydata', add_cmd_name=True)
+        '''
+        '/pyRevit_2018_6684_Command Name_mydata.tmp'
 
     Instance data files are cleaned up at pyRevit startup.
 
@@ -294,10 +309,14 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{file_id}_{Project Name}.{file_ext}``
 
     Examples:
-        >>> script.get_document_data_file('mydata', 'data')
-        '.../pyRevit_2018_mydata_Project1.data'
-        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
-        '.../pyRevit_2018_Command Name_mydata_Project1.data'
+        '''python
+        script.get_document_data_file('mydata', 'data')
+        '''
+        '/pyRevit_2018_mydata_Project1.data'
+        '''python
+        script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        '''
+        '/pyRevit_2018_Command Name_mydata_Project1.data'
 
     Document data files are not cleaned up at pyRevit startup.
     Script should manage cleaning up these files.
@@ -550,7 +569,9 @@ def get_envvar(envvar):
         (Any): object stored in environment variable
 
     Examples:
-        >>> script.get_envvar('ToolActiveState')
+        '''python
+        script.get_envvar('ToolActiveState')
+        '''
         True
     """
     return envvars.get_pyrevit_env_var(envvar)
@@ -569,8 +590,10 @@ def set_envvar(envvar, value):
         value (any): value of environment variable
 
     Examples:
-        >>> script.set_envvar('ToolActiveState', False)
-        >>> script.get_envvar('ToolActiveState')
+        '''python
+        script.set_envvar('ToolActiveState', False)
+        script.get_envvar('ToolActiveState')
+        '''
         False
     """
     return envvars.set_pyrevit_env_var(envvar, value)
@@ -637,32 +660,34 @@ def store_data(slot_name, data, this_project=True):
         this_project (bool): data belongs to this project only
 
     Examples:
-        >>> from pyrevit import revit
-        ... from pyrevit import script
-        ...
-        ...
-        ... class CustomData(object):
-        ...     def __init__(self, count, element_ids):
-        ...         self._count = count
-        ...         # serializes the Revit native objects
-        ...         self._elmnt_ids = [revit.serialize(x) for x in element_ids]
-        ...
-        ...     @property
-        ...     def count(self):
-        ...         return self._count
-        ...
-        ...     @property
-        ...     def element_ids(self):
-        ...         # de-serializes the Revit native objects
-        ...         return [x.deserialize() for x in self._elmnt_ids]
-        ...
-        ...
-        ... mydata = CustomData(
-        ...     count=3,
-        ...     element_ids=[<DB.ElementId>, <DB.ElementId>, <DB.ElementId>]
-        ... )
-        ...
-        ... script.store_data("Selected Elements", mydata)
+        '''python
+        from pyrevit import revit
+            from pyrevit import script
+        
+        
+            class CustomData(object):
+                def __init__(self, count, element_ids):
+                    self._count = count
+                    # serializes the Revit native objects
+                    self._elmnt_ids = [revit.serialize(x) for x in element_ids]
+        
+                @property
+                def count(self):
+                    return self._count
+        
+                @property
+                def element_ids(self):
+                    # de-serializes the Revit native objects
+                    return [x.deserialize() for x in self._elmnt_ids]
+        
+        
+            mydata = CustomData(
+                count=3,
+                element_ids=[<DB.ElementId>, <DB.ElementId>, <DB.ElementId>]
+            )
+        
+            script.store_data("Selected Elements", mydata)
+        '''
 
     """
     # for this specific project?
@@ -696,28 +721,30 @@ def load_data(slot_name, this_project=True):
         (object): stored data
 
     Examples:
-        >>> from pyrevit import revit
-        ... from pyrevit import script
-        ...
-        ...
-        ... class CustomData(object):
-        ...     def __init__(self, count, element_ids):
-        ...         self._count = count
-        ...         # serializes the Revit native objects
-        ...         self._elmnt_ids = [revit.serialize(x) for x in element_ids]
-        ...
-        ...     @property
-        ...     def count(self):
-        ...         return self._count
-        ...
-        ...     @property
-        ...     def element_ids(self):
-        ...         # de-serializes the Revit native objects
-        ...         return [x.deserialize() for x in self._elmnt_ids]
-        ...
-        ...
-        ... mydata = script.load_data("Selected Elements")
-        ... mydata.element_ids
+        '''python
+        from pyrevit import revit
+        from pyrevit import script
+        
+        
+            class CustomData(object):
+                def __init__(self, count, element_ids):
+                    self._count = count
+                    # serializes the Revit native objects
+                    self._elmnt_ids = [revit.serialize(x) for x in element_ids]
+        
+                @property
+                def count(self):
+                    return self._count
+        
+                @property
+                def element_ids(self):
+                    # de-serializes the Revit native objects
+                    return [x.deserialize() for x in self._elmnt_ids]
+        
+        
+            mydata = script.load_data("Selected Elements")
+            mydata.element_ids
+        '''
         [<DB.ElementId>, <DB.ElementId>, <DB.ElementId>]
     """
     # for this specific project?

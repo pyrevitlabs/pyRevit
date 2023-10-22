@@ -8,11 +8,13 @@ into scripts and other modules to access the default configurations.
 All other modules use this module to query user config.
 
 Examples:
-    >>> from pyrevit.userconfig import user_config
-    >>> user_config.add_section('newsection')
-    >>> user_config.newsection.property = value
-    >>> user_config.newsection.get_option('property', default_value)
-    >>> user_config.save_changes()
+    '''python
+    from pyrevit.userconfig import user_config
+    user_config.add_section('newsection')
+    user_config.newsection.property = value
+    user_config.newsection.get_option('property', default_value)
+    user_config.save_changes()
+    '''
 
 
 The user_config object is also the destination for reading and writing
@@ -23,11 +25,13 @@ configuration by pyRevit scripts through :func:`get_config` of
     :pyobject: get_config
 
 Examples:
-    >>> from pyrevit import script
-    >>> cfg = script.get_config()
-    >>> cfg.property = value
-    >>> cfg.get_option('property', default_value)
-    >>> script.save_config()
+    '''python
+    from pyrevit import script
+    cfg = script.get_config()
+    cfg.property = value
+    cfg.get_option('property', default_value)
+    script.save_config()
+    '''
 """
 #pylint: disable=C0103,C0413,W0703
 import os
@@ -65,11 +69,13 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         config_type (str): type of config file
 
     Examples:
-        >>> cfg = PyRevitConfig(cfg_file_path)
-        >>> cfg.add_section('sectionname')
-        >>> cfg.sectionname.property = value
-        >>> cfg.sectionname.get_option('property', default_value)
-        >>> cfg.save_changes()
+        '''python
+        cfg = PyRevitConfig(cfg_file_path)
+        cfg.add_section('sectionname')
+        cfg.sectionname.property = value
+        cfg.sectionname.get_option('property', default_value)
+        cfg.save_changes()
+        '''
     """
 
     def __init__(self, cfg_file_path=None, config_type='Unknown'):

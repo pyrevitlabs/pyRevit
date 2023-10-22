@@ -56,7 +56,9 @@ class PyRevitOutputChartDataset(object):
         Arguments are expected to be R, G, B, A values.
 
         Examples:
-            >>> dataset_obj.set_color(0xFF, 0x8C, 0x8D, 0.8)
+            '''python
+            dataset_obj.set_color(0xFF, 0x8C, 0x8D, 0.8)
+            '''
         """
         if len(args) == 4:
             self.backgroundColor = 'rgba({},{},{},{})'.format(args[0],
@@ -83,7 +85,9 @@ class PyRevitOutputChartData(object):
             (PyRevitOutputChartDataset): dataset wrapper object
 
         Examples:
-            >>> chart.data.new_dataset('set_a')
+            '''python
+            chart.data.new_dataset('set_a')
+            '''
         """
         new_dataset = PyRevitOutputChartDataset(dataset_label)
         self.datasets.append(new_dataset)
@@ -211,7 +215,9 @@ class PyRevitOutputChart(object):
             html_style (str): inline html css styling string
 
         Examples:
-            >>> chart.set_style('height:150px')
+            '''python
+            chart.set_style('height:150px')
+            '''
         """
         self._style = html_style
 

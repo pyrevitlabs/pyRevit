@@ -79,7 +79,9 @@ def get_runtime_info():
         (RuntimeInfo): runtime info tuple
 
     Examples:
-        >>> sessioninfo.get_runtime_info()
+        '''python
+        sessioninfo.get_runtime_info()
+        '''
     """
     # FIXME: add example output
     return RuntimeInfo(

@@ -22,13 +22,15 @@ class DefaultOrderedDict(OrderedDict):
     to it so in that regards it functions similar to OrderedDict.
 
     Examples:
-        >>> from pyrevit.coreutils import pyutils
-        >>> od = pyutils.DefaultOrderedDict(list)
-        >>> od['A'] = [1, 2, 3]
-        >>> od['B'] = [4, 5, 6]
-        >>> od['C'].extend([7, 8, 9])
-        >>> for k, v in od.items():
-        ...     print(k, v)
+        '''python
+        from pyrevit.coreutils import pyutils
+        od = pyutils.DefaultOrderedDict(list)
+        od['A'] = [1, 2, 3]
+        od['B'] = [4, 5, 6]
+        od['C'].extend([7, 8, 9])
+        for k, v in od.items():
+            print(k, v)
+        '''
         ('A', [1, 2, 3])
         ('B', [4, 5, 6])
         ('C', [7, 8, 9])
@@ -89,11 +91,17 @@ def pairwise(iterable, step=2):
         (Iterable[Any]): list of pairs
 
     Examples:
-        >>> pairwise([1, 2, 3, 4, 5])
+        '''python
+        pairwise([1, 2, 3, 4, 5])
+        '''
         [(1, 2), (3, 4)]    # 5 can not be paired
-        >>> pairwise([1, 2, 3, 4, 5, 6])
+        '''python
+        pairwise([1, 2, 3, 4, 5, 6])
+        '''
         [(1, 2), (3, 4), (5, 6)]
-        >>> pairwise([1, 2, 3, 4, 5, 6], step=1)
+        '''python
+        pairwise([1, 2, 3, 4, 5, 6], step=1)
+        '''
         [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
     """
     if step == 1:
@@ -117,7 +125,9 @@ def safe_cast(val, to_type, default=None):
         default (any): value to rerun on conversion exception
 
     Examples:
-        >>> safe_cast('name', int, default=0)
+        '''python
+        safe_cast('name', int, default=0)
+        '''
         0
     """
     try:
@@ -136,7 +146,9 @@ def isnumber(token):
         (bool): True of token is int or float
 
     Examples:
-        >>> isnumber('12.3')
+        '''python
+        isnumber('12.3')
+        '''
         True
     """
     if token:
@@ -173,15 +185,17 @@ def merge(d1, d2):
         (dict[Any, Any]): updated d1
 
     Examples:
-        >>> d1 = {1: 1, 2: "B"    , 3: {1:"A", 2:"B"}, 4: "b"  , 5: ["a", "b"]}
-        >>> d2 = {1: 1, 2: {1:"A"}, 3: {1:"S", 3:"C"}, 4: ["a"], 5: ["c"]}
-        >>> merge(d1, d2)
-        ... { 1:1,
-        ...   2:{1:'A', 2:'B'},
-        ...   3:{1:'S', 2:'B', 3:'C'},
-        ...   4:['a','b'],
-        ...   5: ['c', 'a', 'b']
-        ... }
+        '''python
+        d1 = {1: 1, 2: "B"    , 3: {1:"A", 2:"B"}, 4: "b"  , 5: ["a", "b"]}
+        d2 = {1: 1, 2: {1:"A"}, 3: {1:"S", 3:"C"}, 4: ["a"], 5: ["c"]}
+        merge(d1, d2)
+        '''
+        { 1:1,
+          2:{1:'A', 2:'B'},
+          3:{1:'S', 2:'B', 3:'C'},
+          4:['a','b'],
+          5: ['c', 'a', 'b']
+        }
     """
     if not (isinstance(d1, dict) and isinstance(d2, dict)):
         raise Exception('Both inputs must be of type dict')

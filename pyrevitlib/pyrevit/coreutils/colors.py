@@ -5,11 +5,15 @@ Provide RGB color constants and a colors dictionary with
 elements formatted: COLORS[colorname] = CONSTANT.
 
 Examples:
-    >>> from pyrevit.coreutils import colors
-    >>> colors.COLORS['black']
-    ... <RGB #000000>
-    >>> colors.BLACK
-    ... <RGB #000000>
+    '''python
+    from pyrevit.coreutils import colors
+    colors.COLORS['black']
+    '''
+    <RGB #000000>
+    '''python
+    colors.BLACK
+    '''
+    <RGB #000000>
 
 """
 from collections import OrderedDict
