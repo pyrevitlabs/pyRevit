@@ -5,14 +5,14 @@ Provide RGB color constants and a colors dictionary with
 elements formatted: COLORS[colorname] = CONSTANT.
 
 Examples:
-    '''python
+    ```python
     from pyrevit.coreutils import colors
     colors.COLORS['black']
-    '''
+    ```
     <RGB #000000>
-    '''python
+    ```python
     colors.BLACK
-    '''
+    ```
     <RGB #000000>
 
 """

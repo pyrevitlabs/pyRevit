@@ -23,7 +23,7 @@ class Transaction():
     before and after the context.
     Automatically rolls back if exception is raised.
 
-    '''python
+    ```python
     with Transaction('Move Wall'):
         wall.DoSomething()
 
@@ -31,7 +31,7 @@ class Transaction():
         wall.DoSomething()
         assert action.status == ActionStatus.Started  # True
         assert action.status == ActionStatus.Committed    # True
-        '''
+        ```
     """
     def __init__(self, name=None,
                  doc=None,
@@ -167,14 +167,14 @@ def carryout(name, doc=None):
         name (str): Name of the Transaction
         doc (Document): Revit document
 
-    '''python
+    ```python
     @doc.carryout('Do Something')
     def set_some_parameter(wall, value):
         wall.parameters['Comments'].value = value
     
     
     set_some_parameter(wall, value)
-    '''
+    ```
     """
     from functools import wraps
 

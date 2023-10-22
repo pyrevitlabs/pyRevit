@@ -337,9 +337,9 @@ def get_logger(logger_name):
         (LoggerWrapper): logger object wrapper python's native logger
 
     Examples:
-        '''python
+        ```python
         get_logger('my command')
-        '''
+        ```
         <LoggerWrapper ...>
     """
     if loggers.get(logger_name):
