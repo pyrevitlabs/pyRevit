@@ -12,12 +12,14 @@ class API(object):
         name (str): URL-safe unique root name of the API
 
     Examples:
-        >>> from pyrevit import routes
-        >>> api = routes.API("pyrevit-core")
-        >>> @api.route('/sessions/', methods=['POST'])
-        >>> def reload_pyrevit(uiapp):
-        ...     new_session_id = sessionmgr.reload_pyrevit()
-        ...     return {"session_id": new_session_id}
+        '''
+        from pyrevit import routes
+        api = routes.API("pyrevit-core")
+        @api.route('/sessions/', methods=['POST'])
+        def reload_pyrevit(uiapp):
+            new_session_id = sessionmgr.reload_pyrevit()
+            return {"session_id": new_session_id}
+        '''
     """
     def __init__(self, name):
         self.name = name
