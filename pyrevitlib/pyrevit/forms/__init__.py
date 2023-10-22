@@ -974,7 +974,7 @@ class SelectFromList(TemplateUserInputWindow):
 
     @staticmethod
     def _natural_sort_key(key):
-        return [int(c) if c.isdigit() else c.lower() for c in re.split('(\d+)', key)]
+        return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', key)]
 
     def _prepare_context(self):
         if isinstance(self._context, dict) and self._context.keys():
