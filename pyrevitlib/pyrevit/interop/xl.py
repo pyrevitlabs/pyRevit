@@ -1,5 +1,5 @@
-0"""Read and Write Excel Files."""
-#pylint: disable=import-error
+"""Read and Write Excel Files."""
+# pylint: disable=import-error
 import xlrd
 import xlsxwriter
 
@@ -29,7 +29,7 @@ def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
             It builds a dictionary for each row with the column name and value.
             If none given (default), it returns a simple list of values.
         datatype (type, optional): Type of the data. Defaults to None.
-        headers (bool, optional): Whether to use the first row as headers. 
+        headers (bool, optional): Whether to use the first row as headers.
             Defaults to True.
 
     Returns:
