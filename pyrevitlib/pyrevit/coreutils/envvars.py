@@ -19,22 +19,22 @@ to the core environment variables (starting with ``PYREVIT_``) through
 scripts is strongly prohibited.
 
 Examples:
-    '''python
+    ```python
     from pyrevit.coreutils import envvars
     envvars.set_pyrevit_env_var('MY_SCRIPT_STATUS', True)
     envvars.set_pyrevit_env_var('MY_SCRIPT_CONFIG', {'someconfig': True})
-    '''
+    ```
 
     Then another script or same script when executed later within the same
     session can query the shared environment variable:
 
-    '''python
+    ```python
     envvars.get_pyrevit_env_vars('MY_SCRIPT_STATUS')
-    '''
+    ```
     True
-    '''python
+    ```python
     envvars.get_pyrevit_env_vars('MY_SCRIPT_CONFIG')
-    '''
+    ```
     {'someconfig': True}
 """
 

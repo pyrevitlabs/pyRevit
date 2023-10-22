@@ -138,13 +138,13 @@ class ErrorSwallower():
     """Suppresses warnings during script execution.
 
     Examples:
-        '''python
+        ```python
         with ErrorSwallower() as swallower:
             for fam in families:
                 revit.doc.EditFamily(fam)
                 if swallower.get_swallowed():
                     logger.warn("Warnings swallowed")
-        '''
+        ```
     """
 
     def __init__(self, log_errors=True):

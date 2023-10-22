@@ -1,10 +1,10 @@
 """Misc Helper functions for pyRevit.
 
 Examples:
-    '''python
+    ```python
     from pyrevit import coreutils
     coreutils.cleanup_string('some string')
-    '''
+    ```
 """
 #pylint: disable=invalid-name
 import os
@@ -81,14 +81,14 @@ class ScriptFileParser(object):
     but can work for any python script.
 
     Examples:
-        '''python
+        ```python
         finder = ScriptFileParser('/path/to/coreutils/__init__.py')
         finder.docstring()
-        '''
+        ```
         "Misc Helper functions for pyRevit."
-        '''python
+        ```python
         finder.extract_param('SomeValue', [])
-        '''
+        ```
         []
     """
 
@@ -166,10 +166,10 @@ class FileWatcher(object):
     its timestamp.
 
     Examples:
-        '''
+        ```
         watcher = FileWatcher('/path/to/file.ext')
         watcher.has_changed
-        '''
+        ```
         True
     """
 
@@ -200,12 +200,12 @@ class SafeDict(dict):
     key values.
 
     Examples:
-        '''python
+        ```python
         string = '{target} {attr} is {color}.'
         safedict = SafeDict({'target': 'Apple',
                              'attr':   'Color'})
         string.format(safedict)  # will not fail with missing 'color' key
-        '''
+        ```
         'Apple Color is {color}.'
     """
 
@@ -329,10 +329,10 @@ def cleanup_string(input_str, skip=None):
         skip (Container[str]): special characters to keep
 
     Examples:
-        '''python
+        ```python
         src_str = 'TEST@Some*<value>'
         cleanup_string(src_str)
-        '''
+        ```
         "TESTATSomeSTARvalue"
     """
     # remove spaces and special characters from strings
@@ -361,9 +361,9 @@ def run_process(proc, cwd='C:'):
         cwd (str): current working directory
 
     Exmaple:
-        '''python
+        ```python
         run_process('notepad.exe', 'c:/')
-        '''
+        ```
     """
     import subprocess
     return subprocess.Popen(proc,
@@ -417,9 +417,9 @@ def make_canonical_name(*args):
         (str): dot separated unique name
 
     Examples:
-        '''python
+        ```python
         make_canonical_name('somename', 'someid', 'txt')
-        '''
+        ```
         "somename.someid.txt"
     """
     return '.'.join(args)
@@ -435,9 +435,9 @@ def get_canonical_parts(canonical_string):
         (list[str]): list of composing parts
 
     Examples:
-        '''python
+        ```python
         get_canonical_parts("Config.SubConfig")
-        '''
+        ```
         ['Config', 'SubConfig']
     """
     return canonical_string.split('.')
@@ -478,9 +478,9 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
         (str): hash value as string
 
     Examples:
-        '''python
+        ```python
         calculate_dir_hash(source_path, '\.extension', '\.json')
-        '''
+        ```
         "1a885a0cae99f53d6088b9f7cee3bf4d"
     """
     mtime_sum = 0
@@ -508,9 +508,9 @@ def prepare_html_str(input_string):
         input_string (str): input html string
 
     Examples:
-        '''python
+        ```python
         prepare_html_str('<p>Some text</p>')
-        '''
+        ```
         "&clt;p&cgt;Some text&clt;/p&cgt;"
     """
     return input_string.replace('<', '&clt;').replace('>', '&cgt;')
@@ -530,9 +530,9 @@ def reverse_html(input_html):
         input_html (str): input codified html string
 
     Examples:
-        '''python
+        ```python
         prepare_html_str('&clt;p&cgt;Some text&clt;/p&cgt;')
-        '''
+        ```
         "<p>Some text</p>"
     """
     return input_html.replace('&clt;', '<').replace('&cgt;', '>')
@@ -690,14 +690,14 @@ def cleanup_filename(file_name, windows_safe=False):
         (str): cleaned up file name
 
     Examples:
-        '''python
+        ```python
         cleanup_filename('Myfile-(3).txt')
-        '''
+        ```
         "Myfile(3).txt"
 
-        '''python
+        ```python
         cleanup_filename('Perforations 1/8" (New)')
-        '''
+        ```
         "Perforations 18 (New).txt"
     """
     if windows_safe:
@@ -719,9 +719,9 @@ def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
         (str): modified identifier
 
     Examples:
-        '''python
+        ```python
         _inc_or_dec_string('A319z')
-        '''
+        ```
         'A320a'
     """
     # if no shift, return given string
@@ -823,9 +823,9 @@ def increment_str(input_str, step=1, expand=False):
         (str): modified identifier
 
     Examples:
-        '''python
+        ```python
         increment_str('A319z')
-        '''
+        ```
         'A320a'
     """
     return _inc_or_dec_string(input_str, abs(step), refit=expand)
@@ -843,9 +843,9 @@ def decrement_str(input_str, step=1, shrink=False):
         (str): modified identifier
 
     Examples:
-        '''python
+        ```python
         decrement_str('A310a')
-        '''
+        ```
         'A309z'
     """
     return _inc_or_dec_string(input_str, -abs(step), refit=shrink)
@@ -863,13 +863,13 @@ def extend_counter(input_str, upper=True, use_zero=False):
         (str): extended identifier
 
     Examples:
-        '''python
+        ```python
         extend_counter('A310')
-        '''
+        ```
         'A310A'
-        '''python
+        ```python
         extend_counter('A310A', use_zero=True)
-        '''
+        ```
         'A310A0'
     """
     if input_str[-1].isdigit():
@@ -900,9 +900,9 @@ def reverse_dict(input_dict):
         (defaultdict): reversed dictionary
 
     Examples:
-        '''python
+        ```python
         reverse_dict({1: 2, 3: 4})
-        '''
+        ```
         defaultdict(<type 'list'>, {2: [1], 4: [3]})
     """
     output_dict = defaultdict(list)
@@ -918,9 +918,9 @@ def timestamp():
         (str): timestamp in string format
 
     Examples:
-        '''python
+        ```python
         timestamp()
-        '''
+        ```
         '01003075032506808'
     """
     return datetime.datetime.now().strftime("%m%j%H%M%S%f")
@@ -935,9 +935,9 @@ def current_time():
         (str): formatted current time.
 
     Examples:
-        '''python
+        ```python
         current_time()
-        '''
+        ```
         '07:50:53'
     """
     return datetime.datetime.now().strftime("%H:%M:%S")
@@ -952,9 +952,9 @@ def current_date():
         (str): formatted current date.
 
     Examples:
-        '''python
+        ```python
         current_date()
-        '''
+        ```
         '2018-01-03'
     """
     return datetime.datetime.now().strftime("%Y-%m-%d")
@@ -970,9 +970,9 @@ def is_blank(input_string):
         (bool): True if string is blank
 
     Examples:
-        '''python
+        ```python
         is_blank('   ')
-        '''
+        ```
         True
     """
     if input_string and input_string.strip():
@@ -990,9 +990,9 @@ def is_url_valid(url_string):
         (bool): True if URL is in valid format
 
     Examples:
-        '''python
+        ```python
         is_url_valid('https://www.google.com')
-        '''
+        ```
         True
     """
     regex = re.compile(
@@ -1022,11 +1022,11 @@ def reformat_string(orig_str, orig_format, new_format):
         (str): Reformatted string
 
     Examples:
-        '''python
+        ```python
         reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
                             '{section} - {loc} - {mat} - {rating} - {name}',
                             '{section}:{mat}:{rating} - {name} ({loc})'))
-        '''
+        ```
         '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
     """
     # find the tags
@@ -1071,10 +1071,10 @@ def dletter_to_unc(dletter_path):
         (str): UNC path
 
     Examples:
-        '''python
+        ```python
         # assuming J: is mapped to //filestore/server/jdrive
         dletter_to_unc('J:/somefile.txt')
-        '''
+        ```
         '//filestore/server/jdrive/somefile.txt'
     """
     drives = get_mapped_drives_dict()
@@ -1094,10 +1094,10 @@ def unc_to_dletter(unc_path):
         (str): drive letter path
 
     Examples:
-        '''python
+        ```python
         # assuming J: is mapped to //filestore/server/jdrive
         unc_to_dletter('//filestore/server/jdrive/somefile.txt')
-        '''
+        ```
         'J:/somefile.txt'
     """
     drives = get_mapped_drives_dict()
@@ -1120,9 +1120,9 @@ def random_hex_color():
     """Return a random color in hex format.
 
     Examples:
-        '''python
+        ```python
         random_hex_color()
-        '''
+        ```
         '#FF0000'
     """
     return '#%02X%02X%02X' % (random_color(),
@@ -1134,9 +1134,9 @@ def random_rgb_color():
     """Return a random color in rgb format.
 
     Examples:
-        '''python
+        ```python
         random_rgb_color()
-        '''
+        ```
         'rgb(255, 0, 0)'
     """
     return 'rgb(%d, %d, %d)' % (random_color(),
@@ -1148,9 +1148,9 @@ def random_rgba_color():
     """Return a random color in rgba format.
 
     Examples:
-        '''python
+        ```python
         random_rgba_color()
-        '''
+        ```
         'rgba(255, 0, 0, 0.5)'
     """
     return 'rgba(%d, %d, %d, %.2f)' % (random_color(),
@@ -1177,17 +1177,17 @@ def extract_range(formatted_str, max_range=500):
         (list[str]): names in the specified range
 
     Examples:
-        '''python
+        ```python
         exract_range('A103:A106')
-        '''
+        ```
         ['A103', 'A104', 'A105', 'A106']
-        '''python
+        ```python
         exract_range('S203-S206')
-        '''
+        ```
         ['S203', 'S204', 'S205', 'S206']
-        '''python
+        ```python
         exract_range('M00A,M00B')
-        '''
+        ```
         ['M00A', 'M00B']
     """
     for rchar, rchartype in {'::': 'range', '--': 'range',
@@ -1408,9 +1408,9 @@ def get_reg_key(key, subkey):
         (PyHKEY): registry key if found, None if not found
 
     Examples:
-        '''python
+        ```python
         get_reg_key(wr.HKEY_CURRENT_USER, 'Control Panel/International')
-        '''
+        ```
         <PyHKEY at 0x...>
     """
     try:
@@ -1426,9 +1426,9 @@ def kill_tasks(task_name):
         task_name (str): task name
 
     Examples:
-        '''python
+        ```python
         kill_tasks('Revit.exe')
-        '''
+        ```
     """
     os.system("taskkill /f /im %s" % task_name)
 
@@ -1456,9 +1456,9 @@ def split_words(input_string):
         (list[str]): split string
 
     Examples:
-        '''python
+        ```python
         split_words("UIApplication_ApplicationClosing")
-        '''
+        ```
         ['UIApplication', 'Application', 'Closing']
     """
     parts = []

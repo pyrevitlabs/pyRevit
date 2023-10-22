@@ -35,14 +35,14 @@ class FencedCodeExtension(Extension):
 
 class FencedBlockPreprocessor(Preprocessor):
     """Fenced code block preprocessor."""
-    FENCED_BLOCK_RE = re.compile(r'''
+    FENCED_BLOCK_RE = re.compile(r```
 (?P<fence>^(?:~{3,}|`{3,}))[ ]*         # Opening ``` or ~~~
 (\{?\.?(?P<lang>[\w#.+-]*))?[ ]*        # Optional {, and lang
 # Optional highlight lines, single- or double-quote-delimited
 (hl_lines=(?P<quot>"|')(?P<hl_lines>.*?)(?P=quot))?[ ]*
 }?[ ]*\n                                # Optional closing }
 (?P<code>.*?)(?<=\n)
-(?P=fence)[ ]*$''', re.MULTILINE | re.DOTALL | re.VERBOSE)
+(?P=fence)[ ]*$```, re.MULTILINE | re.DOTALL | re.VERBOSE)
     CODE_WRAP = '<pre><code%s>%s</code></pre>'
     LANG_TAG = ' class="%s"'
 

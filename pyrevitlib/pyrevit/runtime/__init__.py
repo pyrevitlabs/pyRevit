@@ -408,7 +408,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
         (type): returns created dotnet type
 
     Examples:
-        '''python
+        ```python
         asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(
         win_asm_name, AssemblyBuilderAccess.RunAndSave, filepath
         )
@@ -422,7 +422,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
             runtime.create_ext_command_attrs(),
             [scriptpath, atlscriptpath, searchpath, helpurl, name,
             bundle, extension, uniquename, False, False])
-        '''
+        ```
         <type PyRevitSomeCommandUniqueName>
     """
     # create type builder

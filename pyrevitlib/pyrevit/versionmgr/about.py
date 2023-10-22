@@ -2,11 +2,11 @@
 """Utility module for pyRevit project information.
 
 Examples:
-        '''python
+        ```python
         from pyrevit.versionmgr import about
         a = about.get_pyrevit_about()
         a.subtitle
-        '''
+        ```
         'python RAD Environment for Autodesk Revit®'a.copyright'© 2014-2023 Ehsan Iran-Nejad'
 """
 from collections import namedtuple
