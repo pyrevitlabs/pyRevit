@@ -29,9 +29,11 @@ def get_server_path(doc, path_dict):
         path_dict (dict): dict of RSN paths and their directory paths
 
     Examples:
-        >>> rsn_paths = {'RSN://SERVERNAME': '//servername/filestore'}
-        >>> get_server_path(doc, rsn_paths)
-        ... "//servername/filestore/path/to/model.rvt"
+        '''python
+        rsn_paths = {'RSN://SERVERNAME': '//servername/filestore'}
+        get_server_path(doc, rsn_paths)
+        '''
+        "//servername/filestore/path/to/model.rvt"
     """
     model_path = doc.GetWorksharingCentralModelPath()
     path = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
@@ -51,9 +53,11 @@ def get_model_sync_history(server_path):
         (list[SyncHistory]): list of SyncHistory instances
 
     Examples:
-        >>> get_model_sync_history("//servername/path/to/model.rvt")
-        ... [SyncHistory(index=498, userid="user",
-        ...              timestamp="2017-12-13 19:56:20")]
+        '''python
+        get_model_sync_history("//servername/path/to/model.rvt")
+        '''
+        [SyncHistory(index=498, userid="user",
+                    timestamp="2017-12-13 19:56:20")]
     """
     db_path = server_path + MODEL_HISTORY_SQLDB
     conn = sqlite3.connect(db_path)
