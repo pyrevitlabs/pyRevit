@@ -1,14 +1,16 @@
 """pyRevit root level config for all pyrevit sub-modules.
 
 Examples:
-    >>> from pyrevit import DB, UI
-    >>> from pyrevit import PyRevitException, PyRevitIOError
+        '''
+        from pyrevit import DB, UI
+        from pyrevit import PyRevitException, PyRevitIOError
 
-    >>> # pyrevit module has global instance of the
-    >>> # _HostAppPostableCommand and _ExecutorParams classes already created
-    >>> # import and use them like below
-    >>> from pyrevit import HOST_APP
-    >>> from pyrevit import EXEC_PARAMS
+        # pyrevit module has global instance of the
+        # _HostAppPostableCommand and _ExecutorParams classes already created
+        # import and use them like below
+        from pyrevit import HOST_APP
+        from pyrevit import EXEC_PARAMS
+        '''
 """
 #pylint: disable=W0703,C0302,C0103,C0413,raise-missing-from
 import sys
@@ -180,8 +182,10 @@ class _HostApplication(object):
     postable commands, and other functionality.
 
     Examples:
-        >>> hostapp = _HostApplication()
-        >>> hostapp.is_newer_than(2017)
+            '''
+            hostapp = _HostApplication()
+            hostapp.is_newer_than(2017)
+            '''
     """
 
     def __init__(self):
