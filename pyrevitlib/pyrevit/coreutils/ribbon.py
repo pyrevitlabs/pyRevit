@@ -1691,9 +1691,11 @@ def get_current_ui(all_native=False):
     Returned class provides min required functionality for user interaction
 
     Examples:
-        >>> current_ui = pyrevit.session.current_ui()
-        >>> this_script = pyrevit.session.get_this_command()
-        >>> current_ui.update_button_icon(this_script, new_icon)
+        '''python
+        current_ui = pyrevit.session.current_ui()
+        this_script = pyrevit.session.get_this_command()
+        current_ui.update_button_icon(this_script, new_icon)
+        '''
 
     Returns:
         (_PyRevitUI): wrapper around active ribbon gui
