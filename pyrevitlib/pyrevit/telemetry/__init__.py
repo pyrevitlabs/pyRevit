@@ -1,12 +1,18 @@
 """This module manages the telemetry system.
 
 This function is used to setup the telemetry system on pyRevit startup:
->>> setup_telemetry()
+    '''python
+    setup_telemetry()
+    '''
 
 These functions are used to query information about the logging system:
->>> get_telemetry_state()
+    '''python
+    get_telemetry_state()
+    '''
 
->>> get_apptelemetry_state()
+    '''python
+    get_apptelemetry_state()
+    '''
 
 This module also provides a wrapper class around the command results
 dictionary that is included with the telemetry record.

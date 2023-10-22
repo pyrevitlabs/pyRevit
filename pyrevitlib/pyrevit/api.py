@@ -1,7 +1,9 @@
 """Provide access to Revit API.
 
 Examples:
-    >>> from pyrevit.api import AdWindows
+    '''python
+    from pyrevit.api import AdWindows
+    '''
 """
 import os.path as op
 

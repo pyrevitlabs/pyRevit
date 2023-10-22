@@ -220,11 +220,13 @@ def get_locale_string(string_dict):
         (str): string in correct locale
 
     Examples:
-        >>> data = {"en_us":"Hello", "chinese_s":"你好"}
-        >>> from pyrevit.coreutils import applocales
-        >>> # assuming running Revit is Chinese
-        >>> applocales.get_locale_string(data)
-        ... "你好"
+        '''python
+        data = {"en_us":"Hello", "chinese_s":"你好"}
+        from pyrevit.coreutils import applocales
+        # assuming running Revit is Chinese
+        applocales.get_locale_string(data)
+        '''
+        "你好"
     """
     applocale = get_applocale_by_local_code(user_config.user_locale)
     if applocale:

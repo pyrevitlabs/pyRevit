@@ -94,8 +94,10 @@ def extract_route_params(route_pattern, request_path):
     """Extracts route params from request path based on pattern.
 
     Examples:
-        >>> extract_route_params('api/v1/posts/<int:id>', 'api/v1/posts/12')
-        ... [<RouteParam key:id value=12>]
+        '''python
+        extract_route_params('api/v1/posts/<int:id>', 'api/v1/posts/12')
+        '''
+        [<RouteParam key:id value=12>]
     """
     finder_pattern = _make_finder_pattern(route_pattern)
     route_params = []
@@ -127,7 +129,6 @@ def get_routes(api_name):
 
     Args:
         api_name (str): unique name of the api
-        
 
     Returns:
         (dict[str, Caller[]]): registered routes
