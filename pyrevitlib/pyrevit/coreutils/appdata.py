@@ -5,10 +5,10 @@ that work on a similar topic or between script executions. This module provides
 the necessary and consistent mechanism for creating and maintaining such files.
 
 Examples:
-    '''python
+    ```python
     from pyrevit.coreutils import appdata
     appdata.list_data_files()
-    '''
+    ```
 """
 
 import os

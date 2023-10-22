@@ -13,9 +13,9 @@ class CommandCustomResults(object):
     to use wrapper around it.
 
     Examples:
-        '''python
+        ```python
         CommandCustomResults().returnparam = 'some return value'
-        '''
+        ```
 
     """
 

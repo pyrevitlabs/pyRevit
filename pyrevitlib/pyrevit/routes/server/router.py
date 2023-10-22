@@ -94,9 +94,9 @@ def extract_route_params(route_pattern, request_path):
     """Extracts route params from request path based on pattern.
 
     Examples:
-        '''python
+        ```python
         extract_route_params('api/v1/posts/<int:id>', 'api/v1/posts/12')
-        '''
+        ```
         [<RouteParam key:id value=12>]
     """
     finder_pattern = _make_finder_pattern(route_pattern)
