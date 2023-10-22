@@ -1,10 +1,12 @@
 """Utility functions for managing pyRevit versions.
 
 Examples:
-    >>> from pyrevit import versionmgr
-    >>> v = versionmgr.get_pyrevit_version()
-    >>> v.get_formatted()
-    ... '4.10-beta2'
+        '''
+        from pyrevit import versionmgr
+        v = versionmgr.get_pyrevit_version()
+        v.get_formatted()
+        '''
+        '4.10-beta2'
 """
 import os.path as op
 
