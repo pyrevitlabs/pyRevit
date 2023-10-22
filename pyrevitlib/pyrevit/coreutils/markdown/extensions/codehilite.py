@@ -159,14 +159,14 @@ class CodeHilite(object):
         # pull first line to examine
         fl = lines.pop(0)
 
-        c = re.compile(r```
+        c = re.compile(r'''
             (?:(?:^::+)|(?P<shebang>^[#]!)) # Shebang or 2 or more colons
             (?P<path>(?:/\w+)*[/ ])?        # Zero or 1 path
             (?P<lang>[\w#.+-]*)             # The language
             \s*                             # Arbitrary whitespace
             # Optional highlight lines, single- or double-quote-delimited
             (hl_lines=(?P<quot>"|')(?P<hl_lines>.*?)(?P=quot))?
-            ```,  re.VERBOSE)
+            ''',  re.VERBOSE)
         # search first line for shebang
         m = c.search(fl)
         if m:
