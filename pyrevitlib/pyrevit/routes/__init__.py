@@ -12,7 +12,7 @@ class API(object):
         name (str): URL-safe unique root name of the API
 
     Examples:
-        '''
+        '''python
         from pyrevit import routes
         api = routes.API("pyrevit-core")
         @api.route('/sessions/', methods=['POST'])

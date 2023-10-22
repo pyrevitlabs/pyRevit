@@ -1,7 +1,7 @@
 """Utility functions for managing pyRevit versions.
 
 Examples:
-        '''
+        '''python
         from pyrevit import versionmgr
         v = versionmgr.get_pyrevit_version()
         v.get_formatted()

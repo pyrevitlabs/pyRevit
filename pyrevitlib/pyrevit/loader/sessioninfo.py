@@ -79,7 +79,7 @@ def get_runtime_info():
         (RuntimeInfo): runtime info tuple
 
     Examples:
-        '''
+        '''python
         sessioninfo.get_runtime_info()
         '''
     """

@@ -408,7 +408,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
         (type): returns created dotnet type
 
     Examples:
-        '''
+        '''python
         asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(
         win_asm_name, AssemblyBuilderAccess.RunAndSave, filepath
         )

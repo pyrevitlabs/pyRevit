@@ -42,7 +42,7 @@ def make_link(element_ids, contents=None):
     method.
 
     Examples:
-        '''
+        '''python
         output = pyrevit.output.get_output()
         for idx, elid in enumerate(element_ids):
             print('{}: {}'.format(idx+1, output.linkify(elid)))

@@ -1,7 +1,7 @@
 """Provide access to DotNet Framework.
 
 Examples:
-    '''
+    '''python
     from pyrevit.framework import Assembly, Windows
     '''
 """

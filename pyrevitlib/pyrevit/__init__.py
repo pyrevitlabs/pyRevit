@@ -1,7 +1,7 @@
 """pyRevit root level config for all pyrevit sub-modules.
 
 Examples:
-        '''
+        '''python
         from pyrevit import DB, UI
         from pyrevit import PyRevitException, PyRevitIOError
 
@@ -182,7 +182,7 @@ class _HostApplication(object):
     postable commands, and other functionality.
 
     Examples:
-            '''
+            '''python
             hostapp = _HostApplication()
             hostapp.is_newer_than(2017)
             '''

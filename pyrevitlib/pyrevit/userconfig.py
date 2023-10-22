@@ -8,7 +8,7 @@ into scripts and other modules to access the default configurations.
 All other modules use this module to query user config.
 
 Examples:
-    '''
+    '''python
     from pyrevit.userconfig import user_config
     user_config.add_section('newsection')
     user_config.newsection.property = value
@@ -25,7 +25,7 @@ configuration by pyRevit scripts through :func:`get_config` of
     :pyobject: get_config
 
 Examples:
-    '''
+    '''python
     from pyrevit import script
     cfg = script.get_config()
     cfg.property = value
@@ -69,7 +69,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         config_type (str): type of config file
 
     Examples:
-        '''
+        '''python
         cfg = PyRevitConfig(cfg_file_path)
         cfg.add_section('sectionname')
         cfg.sectionname.property = value

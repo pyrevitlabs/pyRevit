@@ -6,7 +6,7 @@ the :func:`get_output` of :mod:`pyrevit.script` module. This method, in return
 uses the `pyrevit.output` module to get access to the output wrapper.
 
 Examples:
-    '''
+    '''python
     from pyrevit import script
     output = script.get_output()
     '''
@@ -180,7 +180,7 @@ class PyRevitOutputWindow(object):
             attribs (:obj:`dict`): dictionary of attribute names and value
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.inject_to_head('script',
                                   '',   # no script since it's a link
@@ -210,7 +210,7 @@ class PyRevitOutputWindow(object):
             attribs (:obj:`dict`): dictionary of attribute names and value
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.inject_to_body('script',
                                   '',   # no script since it's a link
@@ -240,7 +240,7 @@ class PyRevitOutputWindow(object):
             body (bool, optional): injects script into body instead of head
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.inject_script('',   # no script since it's a link
                                  {'src': js_script_file_path})
@@ -259,7 +259,7 @@ class PyRevitOutputWindow(object):
             attribs (:obj:`dict`): dictionary of attribute names and value
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.add_style('body { color: blue; }')
             '''
@@ -417,7 +417,7 @@ class PyRevitOutputWindow(object):
             max_value (float): total value e.g. 100
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             for i in range(100):
                 output.update_progress(i, 100)
@@ -502,7 +502,7 @@ class PyRevitOutputWindow(object):
         """Add the html code to the output window.
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.print_html('<strong>Title</strong>')
             '''
@@ -515,7 +515,7 @@ class PyRevitOutputWindow(object):
         """Print code to the output window with special formatting.
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.print_code('value = 12')
             '''
@@ -535,7 +535,7 @@ class PyRevitOutputWindow(object):
         """Process markdown code and print to output window.
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.print_md('### Title')
             '''
@@ -558,7 +558,7 @@ class PyRevitOutputWindow(object):
             last_line_style (str): css style of last row
 
         Examples:
-            '''
+            '''python
             data = [
             ['row1', 'data', 'data', 80 ],
             ['row2', 'data', 'data', 45 ],
@@ -624,7 +624,7 @@ class PyRevitOutputWindow(object):
         r"""Prints given image to the output.
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             output.print_image(r'C:\image.gif')
             '''
@@ -662,11 +662,11 @@ class PyRevitOutputWindow(object):
             (str): clickable link
 
         Examples:
-            '''
+            '''python
             output = pyrevit.output.get_output()
             for idx, elid in enumerate(element_ids):
                 print('{}: {}'.format(idx+1, output.linkify(elid)))
-            '''00
+            '''
         """
         return coreutils.prepare_html_str(
             linkmaker.make_link(element_ids, contents=title)

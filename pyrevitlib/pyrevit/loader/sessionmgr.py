@@ -255,7 +255,7 @@ def load_session():
     through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
 
     Examples:
-        '''
+        '''python
         from pyrevit.loader.sessionmgr import load_session
         load_session()     # start loading a new pyRevit session
         '''
@@ -472,7 +472,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     instantiated before use.
 
     Examples:
-        '''
+        '''python
         cmd = find_pyrevitcmd('pyRevitCorepyRevitpyRevittoolsReload')
         command_instance = cmd()
         command_instance.Execute() # Provide commandData, message, elements

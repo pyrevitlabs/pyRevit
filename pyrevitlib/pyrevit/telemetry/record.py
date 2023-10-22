@@ -13,7 +13,7 @@ class CommandCustomResults(object):
     to use wrapper around it.
 
     Examples:
-        '''
+        '''python
         CommandCustomResults().returnparam = 'some return value'
         '''
 

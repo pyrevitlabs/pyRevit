@@ -2,7 +2,7 @@
 """Utility module for pyRevit project information.
 
 Examples:
-        '''
+        '''python
         from pyrevit.versionmgr import about
         a = about.get_pyrevit_about()
         a.subtitle

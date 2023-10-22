@@ -1,7 +1,7 @@
 """Provide basic utilities for pyRevit scripts.
 
 Examples:
-    '''
+    '''python
     from pyrevit import script
     script.clipboard_copy('some text')
     data = script.journal_read('data-key')
@@ -205,11 +205,11 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{file_id}.{file_ext}``
 
     Examples:
-        '''
+        '''python
         script.get_universal_data_file('mydata', 'data')
         '''
         '/pyRevit_mydata.data'
-        '''
+        '''python
         script.get_universal_data_file('mydata', 'data', add_cmd_name=True)
         '''
         '/pyRevit_Command Name_mydata.data'
@@ -240,11 +240,11 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{file_id}.{file_ext}``
 
     Examples:
-        '''
+        '''python
         script.get_data_file('mydata', 'data')
         '''
         '/pyRevit_2018_mydata.data'
-        '''
+        '''python
         script.get_data_file('mydata', 'data', add_cmd_name=True)
         '''
         '/pyRevit_2018_Command Name_mydata.data'
@@ -276,11 +276,11 @@ def get_instance_data_file(file_id, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}``
 
     Examples:
-        '''
+        '''python
         script.get_instance_data_file('mydata')
         '''
         '/pyRevit_2018_6684_mydata.tmp'
-        '''
+        '''python
         script.get_instance_data_file('mydata', add_cmd_name=True)
         '''
         '/pyRevit_2018_6684_Command Name_mydata.tmp'
@@ -309,11 +309,11 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{file_id}_{Project Name}.{file_ext}``
 
     Examples:
-        '''
+        '''python
         script.get_document_data_file('mydata', 'data')
         '''
         '/pyRevit_2018_mydata_Project1.data'
-        '''
+        '''python
         script.get_document_data_file('mydata', 'data', add_cmd_name=True)
         '''
         '/pyRevit_2018_Command Name_mydata_Project1.data'
@@ -569,7 +569,7 @@ def get_envvar(envvar):
         (Any): object stored in environment variable
 
     Examples:
-        '''
+        '''python
         script.get_envvar('ToolActiveState')
         '''
         True
@@ -590,7 +590,7 @@ def set_envvar(envvar, value):
         value (any): value of environment variable
 
     Examples:
-        '''
+        '''python
         script.set_envvar('ToolActiveState', False)
         script.get_envvar('ToolActiveState')
         '''
@@ -660,7 +660,7 @@ def store_data(slot_name, data, this_project=True):
         this_project (bool): data belongs to this project only
 
     Examples:
-        '''
+        '''python
         from pyrevit import revit
             from pyrevit import script
         
@@ -721,7 +721,7 @@ def load_data(slot_name, this_project=True):
         (object): stored data
 
     Examples:
-        '''
+        '''python
         from pyrevit import revit
         from pyrevit import script
         
