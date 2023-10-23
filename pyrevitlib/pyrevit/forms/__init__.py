@@ -2808,7 +2808,7 @@ def select_family_parameters(family_doc,
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
           ok=True, cancel=False, yes=False, no=False, retry=False,
           warn_icon=True, options=None, exitscript=False):
-    """Show a task dialog with given message.
+    r"""Show a task dialog with given message.
 
     Args:
         msg (str): message to be displayed

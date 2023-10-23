@@ -11,15 +11,23 @@ theme:
   features:
     - content.code.select
     - content.code.copy
+    - toc.follow
+    - navigation.top
+    - navigation.path
+    - navigation.expand
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.tracking
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.sections
   palette:
-
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
@@ -28,7 +36,7 @@ theme:
         name: Switch to light mode
 
 extra_css:
-  - style.css
+  - docs/styles.css
 
 watch:
   - pyrevitlib/pyrevit
@@ -70,8 +78,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.caret
   - pymdownx.keys
+  - pymdownx.highlight
   - admonition
-  - codehilite
   - md_in_html
   - toc
 
