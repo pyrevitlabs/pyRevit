@@ -14,7 +14,6 @@ theme:
     - toc.follow
     - navigation.top
     - navigation.path
-    - navigation.expand
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.tracking
