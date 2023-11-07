@@ -15,9 +15,15 @@ namespace pyRevitLabs.TargetApps.Revit {
             doc.Load(manifestFile);
             Name = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/Name").InnerText;
             Assembly = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/Assembly").InnerText.NormalizeAsPath();
-            AddInId = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/AddInId").InnerText;
             FullClassName = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/FullClassName").InnerText;
             VendorId = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/VendorId").InnerText;
+
+            var addInIdNode = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/AddInId");
+            if(addInIdNode != null) {
+                AddInId = addInIdNode.InnerText;
+            } else {
+                AddInId = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/ClientId").InnerText;
+            }
         }
 
         public string FilePath { get; set; }
