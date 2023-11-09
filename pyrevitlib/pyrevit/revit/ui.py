@@ -128,7 +128,7 @@ def get_current_theme():
     """Get the current UI theme.
 
     Returns:
-        (UITheme): The current UI theme.
+        UITheme (UITheme): The current UI theme.
     """
     return UIThemeManager.CurrentTheme
 
