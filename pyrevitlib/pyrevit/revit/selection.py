@@ -378,7 +378,7 @@ def get_picked_elements_by_category(cat_name_or_builtin, message=''):
         message (str, optional): message to display while picking elements.
 
     Yields:
-        The picked elements from the specified category.
+        (DB.Element): The picked elements from the specified category.
     """
     picked_element = True
     while picked_element:

@@ -206,6 +206,7 @@ class WPFWindow(framework.Windows.Window):
         WPFWindow.setup_resources(self)
         if handle_esc:
             self.setup_default_handlers()
+        return None
 
     def _determine_xaml(self, xaml_source):
         xaml_file = xaml_source
