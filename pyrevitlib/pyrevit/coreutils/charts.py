@@ -1,5 +1,5 @@
 """Charts engine for output window."""
-#pylint: disable=C0103
+# pylint: disable=C0103
 from json import JSONEncoder
 
 from pyrevit.coreutils import timestamp, random_rgba_color
@@ -28,7 +28,7 @@ SCRIPT_TEMPLATE = \
 
 class _ChartsDataSetEncode(JSONEncoder):
     """JSON encoder for chart data sets."""
-    def default(self, dataset_obj): #pylint: disable=E0202, W0221
+    def default(self, dataset_obj):  # pylint: disable=E0202, W0221
         data_dict = dataset_obj.__dict__.copy()
         for key, value in data_dict.items():
             if key.startswith('_') or value == '' or value == []:
@@ -101,7 +101,6 @@ class PyRevitOutputChart(object):
         output (pyrevit.output.PyRevitOutputWindow):
             output window wrapper object
         chart_type (str): chart type name
-    
     """
     def __init__(self, output, chart_type=LINE_CHART, version=None):
         self._output = output

@@ -56,8 +56,10 @@ class Timer(object):
     """Timer class using python native time module.
 
     Examples:
-        >>> timer = Timer()
-        >>> timer.get_time()
+        ```python
+        timer = Timer()
+        timer.get_time()
+        ```
         12
     """
 

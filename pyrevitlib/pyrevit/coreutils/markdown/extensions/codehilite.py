@@ -46,8 +46,10 @@ class CodeHilite(object):
     """Determine language of source code, and pass it into pygments hilighter.
 
     Basic Usage:
-        >>> code = CodeHilite(src = 'some text')
-        >>> html = code.hilite()
+        ```python
+        code = CodeHilite(src = 'some text')
+        html = code.hilite()
+        ```
 
     * src: Source string or any object with a .readline attribute.
 
@@ -62,10 +64,12 @@ class CodeHilite(object):
     * hl_lines: (List of integers) Lines to emphasize, 1-indexed.
 
     Low Level Usage:
-        >>> code = CodeHilite()
-        >>> code.src = 'some text' # String or anything with a .readline attr.
-        >>> code.linenos = True  # Turns line numbering on or of.
-        >>> html = code.hilite()
+        ```python
+        code = CodeHilite()
+        code.src = 'some text' # String or anything with a .readline attr.
+        code.linenos = True  # Turns line numbering on or of.
+        html = code.hilite()
+        ```
 
     """
 
