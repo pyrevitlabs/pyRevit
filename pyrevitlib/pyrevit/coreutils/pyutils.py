@@ -1,8 +1,10 @@
 """Helper functions for python.
 
 Examples:
-    >>> from pyrevit.coreutils import pyutils
-    >>> pyutils.safe_cast('string', int, 0)
+    ```python
+    from pyrevit.coreutils import pyutils
+    pyutils.safe_cast('string', int, 0)
+    ```
 """
 #pylint: disable=C0103
 import re
