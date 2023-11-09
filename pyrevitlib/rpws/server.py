@@ -1,3 +1,22 @@
+r"""Python wrapper for Autodesk Revit Server.
+
+Example:
+    ```python
+    name = '<server name>'
+    version = '2017'    # server version in XXXX format
+    rserver = RevitServer(name, version)
+    # listing all files, folders, and models in a server
+    for parent, folders, files, models in rserver.walk():
+        print(parent)
+        for fd in folders:
+            print('\t@d {}'.format(fd.path))
+        for f in files:
+            print('\t@f {}'.format(f.path))
+        for m in models:
+            print('\t@m {}'.format(m.path))
+    ```
+"""
+
 import os.path as op
 import uuid
 import getpass
@@ -38,7 +57,7 @@ class RevitServer(object):
         username (str, optional): Username to be passed to in http calls.
                                   This is set to current user if not provided.
         machine (str, optional): Machine name to be passed to in http calls
-                                 This is set to current machine if not provided.
+                                 Set to current machine if not provided.
 
     Attributes:
         name (str): Server name.
@@ -54,6 +73,7 @@ class RevitServer(object):
     """
 
     def __init__(self, name, version, username=None, machine=None):
+        """Class constructor."""
         # make sure version is of type str
         if type(version) == int:
             version = str(version)
@@ -61,7 +81,8 @@ class RevitServer(object):
         # verify server version is supported
         if version not in sroots:
             raise rpws.ServerVersionNotSupported(
-                'Supported versions are: {}'.format([x for x in sroots.keys()]))
+                'Supported versions are: {}'
+                .format([x for x in sroots.keys()]))
 
         self.name = name
         self.version = version
@@ -78,7 +99,7 @@ class RevitServer(object):
             self._hmachine = socket.gethostname()
 
     def __repr__(self):
-        """ repr for RevitServer object
+        """Repr for RevitServer object.
 
         Example:
             >>> rserver = RevitServer('server01', '2017')
@@ -90,12 +111,11 @@ class RevitServer(object):
 
     @property
     def _header_dict(self):
-        """ Private property that creates and returns the http header dict
+        """Private property that creates and returns the http header dict.
 
         Returns:
             dict: Header dict to be passed to Revit Server
         """
-
         # using uuid module to generate a unique session id that is required
         # by the Revit Server for logging purposes
         return {api.REQ_HEADER_USERNAME: self._huser,
@@ -103,7 +123,8 @@ class RevitServer(object):
                 api.REQ_HEADER_GUID: str(uuid.uuid4())}
 
     def _httpmethod(self, http_method, command, node_uri=None, rootcmd=False):
-        """ The single method that handles all http requests
+        """The single method that handles all http requests.
+
         Args:
             http_method (func): method from requests module (e.g. requests.get)
             command (str): Revit Server API command from rpws.api
@@ -129,7 +150,6 @@ class RevitServer(object):
             rpws.ServerServiceUnavailableError: When service is not available
             rpws.UnhandledException: Any other http status codes
         """
-
         # create the http request url
         if rootcmd:
             req_url = self._base_uri + command
@@ -172,7 +192,7 @@ class RevitServer(object):
                                           .format(r.status_code))
 
     def _get(self, command, node_uri=None, rootcmd=False):
-        """ Send a GET request to Revit Server
+        """Send a GET request to Revit Server.
 
         Args:
             command (str): Revit Server API command from rpws.api
@@ -187,7 +207,7 @@ class RevitServer(object):
         return self._httpmethod(requests.get, command, node_uri, rootcmd)
 
     def _post(self, command, node_uri=None, rootcmd=False):
-        """ Send a POST request to Revit Server
+        """Send a POST request to Revit Server.
 
         Args:
             command (str): Revit Server API command from rpws.api
@@ -202,7 +222,7 @@ class RevitServer(object):
         return self._httpmethod(requests.post, command, node_uri, rootcmd)
 
     def _put(self, command, node_uri=None, rootcmd=False):
-        """ Send a PUT request to Revit Server
+        """Send a PUT request to Revit Server.
 
         Args:
             command (str): Revit Server API command from rpws.api
@@ -217,7 +237,7 @@ class RevitServer(object):
         return self._httpmethod(requests.put, command, node_uri, rootcmd)
 
     def _delete(self, command, node_uri=None, rootcmd=False):
-        """ Send a DELETE request to Revit Server
+        """Send a DELETE request to Revit Server.
 
         Args:
             command (str): Revit Server API command from rpws.api
@@ -233,7 +253,9 @@ class RevitServer(object):
 
     @staticmethod
     def _api_path(nodepath=None):
-        """ Generates a Revit Server directory structure path from provided
+        """Format path for Revit server requests uri.
+
+        Generate a Revit Server directory structure path from provided
         file, folder, or model path. Revit server uses '|' to separate
         directory entries so as not to conflict with '/' in http urls. So:
         "/Training/MyOffice/2017/Model.rvt" will be changed to:
@@ -246,7 +268,6 @@ class RevitServer(object):
         Returns:
             str: Path formatted for Revit Server urls
         """
-
         if nodepath:
             return nodepath.replace(op.sep, api.DIVIDER)
         else:
@@ -254,7 +275,7 @@ class RevitServer(object):
 
     @staticmethod
     def _root_path(nodepath=None):
-        """ Makes sure that the path starts with / as root of the server.
+        """Make sure that the path starts with / as root of the server.
 
         Args:
             nodepath (str, optional): Path to an entry on the server.
@@ -263,16 +284,16 @@ class RevitServer(object):
         Returns:
             str: Reformatted path
         """
-
         if nodepath:
             npath = op.normpath(nodepath)
-            return npath if npath.startswith(op.sep) else op.join(op.sep, npath)
+            return npath if npath.startswith(op.sep) \
+                else op.join(op.sep, npath)
         else:
             return op.sep
 
     @staticmethod
     def _getserverdriveinfo(contents_dict):
-        """ Returns drive space info acquired from server
+        """Return drive space info acquired from server.
 
         Data keys: "DriveFreeSpace" and "DriveSpace"
 
@@ -282,7 +303,6 @@ class RevitServer(object):
         Returns:
             rpws.models.ServerDriveInfo
         """
-
         # make the server drive info obj
         return models.ServerDriveInfo(
             drive_space=contents_dict[api.NODE_DRIVE_TOTALSPACE_KEY],
@@ -290,7 +310,7 @@ class RevitServer(object):
 
     @staticmethod
     def _getlocks(ip_lock_list):
-        """ Extracts locks from list of locks in progress returned by server
+        """Extract locks from list of locks in progress returned by server.
 
         Args:
             ip_lock_list (list): List of dict returned by server representing
@@ -299,7 +319,6 @@ class RevitServer(object):
         Returns:
             rpws.models.IPLockInfo
         """
-
         locks_list = []
 
         # check to make sure ip_lock_list is not None
@@ -332,8 +351,7 @@ class RevitServer(object):
         return locks_list
 
     def _getfiles(self, nodepath, contents_dict):
-        """ Extracts and returns the list of all files
-        under provided server entry.
+        """Extract and return the list of all files under provided path.
 
         Args:
             nodepath (str): Path to an entry on the server.
@@ -342,7 +360,6 @@ class RevitServer(object):
         Returns:
             list of rpws.models.FileInfo
         """
-
         return [models.FileInfo(
             path=op.join(nodepath if nodepath else self.path,
                          x[api.NODE_FILES_NAME_KEY]),
@@ -352,8 +369,7 @@ class RevitServer(object):
             for x in contents_dict.get(api.NODE_FILES_KEY, [])]
 
     def _getfolders(self, nodepath, contents_dict):
-        """ Extracts and returns the list of all folders
-        under provided server entry.
+        """Extract and return the list of subfolders.
 
         Args:
             nodepath (str): Path to an entry on the server.
@@ -362,7 +378,6 @@ class RevitServer(object):
         Returns:
             list of rpws.models.FolderInfo
         """
-
         folder_infos = []
 
         for fdict in contents_dict.get(api.NODE_FOLDERS_KEY, []):
@@ -370,7 +385,8 @@ class RevitServer(object):
             ip_locks = self._getlocks(
                 fdict[api.NODE_FOLDERS_LOCKINPROGRESS_KEY])
             # make lock state obj
-            lock_state = models.LockState(fdict[api.NODE_FOLDERS_LOCKSTATE_KEY])
+            lock_state = \
+                models.LockState(fdict[api.NODE_FOLDERS_LOCKSTATE_KEY])
             # create folder info obj
             finfo = models.FolderInfo(
                 path=op.join(nodepath if nodepath else self.path,
@@ -387,8 +403,7 @@ class RevitServer(object):
         return folder_infos
 
     def _getmodels(self, nodepath, contents_dict):
-        """ Extracts and returns the list of all models
-        under provided server entry.
+        """Extract and return the list of models in source.
 
         Args:
             nodepath (str): Path to an entry on the server.
@@ -397,11 +412,11 @@ class RevitServer(object):
         Returns:
             list of rpws.models.ModelInfo
         """
-
         model_infos = []
         for mdict in contents_dict.get(api.NODE_MODELS_KEY, []):
             # get in-progress lock objs
-            ip_locks = self._getlocks(mdict[api.NODE_MODELS_LOCKINPROGRESS_KEY])
+            ip_locks = \
+                self._getlocks(mdict[api.NODE_MODELS_LOCKINPROGRESS_KEY])
             # make lock state obj
             lock_state = models.LockState(mdict[api.NODE_MODELS_LOCKSTATE_KEY])
             # create model info obj
@@ -422,16 +437,15 @@ class RevitServer(object):
 
     @property
     def path(self):
-        """ Root path of server
+        """Root path of server.
 
         Returns:
             str: Root path
         """
-
         return op.sep
 
     def getinfo(self):
-        """ Returns server properties
+        """Return server properties.
 
         API command:
             /serverproperties
@@ -443,7 +457,6 @@ class RevitServer(object):
             >>> rserver = RevitServer('server01', '2017')
             >>> sinfo = rserver.getinfo()
         """
-
         # get properties dict from server on root
         props_dict = self._get(api.REQ_CMD_SERVERPROP, rootcmd=True)
 
@@ -463,7 +476,7 @@ class RevitServer(object):
             servers=props_dict[api.SERVER_SERVERS_KEY])
 
     def getdriveinfo(self):
-        """ Returns server drive information
+        """Return server drive information.
 
         API command:
             /contents
@@ -479,12 +492,10 @@ class RevitServer(object):
             >>> dinfo = rserver.getdriveinfo()
             >>> print(dinfo.drive_space)
         """
-
         return self._getserverdriveinfo(self._get(api.REQ_CMD_CONTENTS))
 
     def scandir(self, nodepath=None):
-        """ Returns files, folders, and models from root or provided
-        directory in an entry info obj
+        """Return files, folders, and models from root or provided path.
 
         API command:
             /contents
@@ -501,7 +512,6 @@ class RevitServer(object):
             >>> for entry in rserver.scandir('/example/path'):
             ...     print(entry.path)
         """
-
         # get the entry contents (root if nodepath is none
         contents_dict = self._get(api.REQ_CMD_CONTENTS, nodepath)
 
@@ -529,7 +539,7 @@ class RevitServer(object):
             models=node_models)
 
     def listfiles(self, nodepath=None):
-        """ Returns files from root or provided directory
+        """Return files from root or provided path.
 
         API command:
             /contents
@@ -549,12 +559,11 @@ class RevitServer(object):
             >>> for file in rserver.listfiles('/example/path'):
             ...     print(file.path)
         """
-
         return self._getfiles(nodepath,
                               self._get(api.REQ_CMD_CONTENTS, nodepath))
 
     def listfolders(self, nodepath=None):
-        """ Returns folders from root or provided directory
+        """Return folders from root or provided path.
 
         API command:
             /contents
@@ -574,12 +583,11 @@ class RevitServer(object):
             >>> for folder in rserver.listfolders('/example/path'):
             ...     print(folder.path)
         """
-
         return self._getfolders(nodepath,
                                 self._get(api.REQ_CMD_CONTENTS, nodepath))
 
     def listmodels(self, nodepath=None):
-        """ Returns models from root or provided directory
+        """Return models from root or provided path.
 
         API command:
             /contents
@@ -599,12 +607,11 @@ class RevitServer(object):
             >>> for model in rserver.listmodels('/example/path'):
             ...     print(model.path)
         """
-
         return self._getmodels(nodepath,
                                self._get(api.REQ_CMD_CONTENTS, nodepath))
 
     def getfolderinfo(self, nodepath):
-        """ Returns directory info from provided directory
+        """Return directory info for provided path.
 
         API command:
             /directoryinfo
@@ -621,7 +628,6 @@ class RevitServer(object):
             ...     finfo = rserver.getfolderinfo(folder.path)
             ...     print(finfo.date_created)
         """
-
         if nodepath:
             # directory info from the entry
             ddict = self._get(api.REQ_CMD_DIRINFO, nodepath)
@@ -631,7 +637,8 @@ class RevitServer(object):
                 ddict[api.NODE_DIRINFO_LOCKSINPROGRESS_KEY])
 
             # make lock state
-            lock_state = models.LockState(ddict[api.NODE_DIRINFO_LOCKSTATE_KEY])
+            lock_state = \
+                models.LockState(ddict[api.NODE_DIRINFO_LOCKSTATE_KEY])
 
             # make time stamps
             date_created = models.DateEntry.\
@@ -657,7 +664,7 @@ class RevitServer(object):
                 locks_inprogress=ip_locks)
 
     def getmodelinfo(self, nodepath):
-        """ Returns model info from provided model path
+        """Return model info from provided model path.
 
         API command:
             /modelinfo
@@ -674,7 +681,6 @@ class RevitServer(object):
             ...     minfo = rserver.getmodelinfo(model.path)
             ...     print(minfo.size)
         """
-
         if nodepath:
             # model info from the entry
             mdict = self._get(api.REQ_CMD_MODELINFO, nodepath)
@@ -697,7 +703,7 @@ class RevitServer(object):
                 support_size=mdict[api.NODE_MODELINFO_SUPPORTSIZE_KEY])
 
     def getmodelhistory(self, nodepath):
-        """ Returns model info from provided model path
+        """Return model info from provided model path.
 
         API command:
             /history
@@ -715,7 +721,6 @@ class RevitServer(object):
             ...     for hist in mhist.items:
             ...        print(hist.comment, hist.user)
         """
-
         # get history data from server
         mhist_dict = self._get(api.REQ_CMD_MHISTORY, nodepath)
 
@@ -743,7 +748,7 @@ class RevitServer(object):
                                    items=hist_items)
 
     def getprojectinfo(self, nodepath):
-        """ Returns project info from provided model path
+        """Return project info from provided model path.
 
         API command:
             /projectinfo
@@ -761,7 +766,6 @@ class RevitServer(object):
             ...     for pparam in pinfo.paramters:
             ...        print(pparam.name, pparam.value)
         """
-
         param_list = []
 
         if nodepath:
@@ -804,7 +808,7 @@ class RevitServer(object):
         return models.ProjectInfo(param_list)
 
     def lock(self, nodepath):
-        """ Locks the provided model
+        """Lock model.
 
         Args:
             nodepath (str): Path to a model on the server.
@@ -814,11 +818,10 @@ class RevitServer(object):
             >>> for model in rserver.listmodels('/example/path'):
             ...     rserver.lock(model.path)
         """
-
         return self._put(api.REQ_CMD_LOCK, nodepath)
 
     def cancellock(self, nodepath):
-        """ Cancels any in-progress locks one the provided model
+        """Cancel any in-progress locks on model.
 
         Args:
             nodepath (str): Path to a model on the server.
@@ -828,11 +831,10 @@ class RevitServer(object):
             >>> for model in rserver.listmodels('/example/path'):
             ...     rserver.cancellock(model.path)
         """
-
         return self._delete(api.REQ_CMD_CANCELLOCK, nodepath)
 
     def unlock(self, nodepath):
-        """ Unlocks the provided model
+        """Unlock model.
 
         Args:
             nodepath (str): Path to a model on the server.
@@ -842,11 +844,10 @@ class RevitServer(object):
             >>> for model in rserver.listmodels('/example/path'):
             ...     rserver.unlock(model.path)
         """
-
         return self._delete(api.REQ_CMD_UNLOCK, nodepath)
 
     def getdescendentlocks(self, nodepath):
-        """ Returns the decendent locks info
+        """Return the decendent locks info.
 
         API command:
             /descendent/locks
@@ -864,7 +865,6 @@ class RevitServer(object):
             ...     for locked_model_path in clockinfo.items:
             ...         print(locked_model_path)
         """
-
         # get decendent lock data
         chlocks_dict = self._get(api.REQ_CMD_CHILDNLOCKS, nodepath)
         # get the locked children list
@@ -882,7 +882,7 @@ class RevitServer(object):
             lock_context=chlocks_dict[api.CHILDLOCKS_LOCKCTX])
 
     def deletedescendentlocks(self, nodepath):
-        """ Returns the decendent locks info
+        """Delete the decendent locks.
 
         API command:
             /descendent/locks
@@ -898,7 +898,6 @@ class RevitServer(object):
             >>> for folder in rserver.listfolders('/example/path'):
             ...     rserver.deletedescendentlocks(folder.path)
         """
-
         # get decendent lock data
         chlocks_dict = self._delete(api.REQ_CMD_CHILDNLOCKS, nodepath)
         # get the list of failed locks
@@ -910,7 +909,7 @@ class RevitServer(object):
             return []
 
     def mkdir(self, nodepath):
-        """ Create a directory under the provided path
+        """Create a new directory.
 
         Args:
             nodepath (str): Path to a dirctory on the server.
@@ -919,11 +918,10 @@ class RevitServer(object):
             >>> rserver = RevitServer('server01', '2017')
             >>> rserver.mkdir('/example/path')
         """
-
         return self._put(api.REQ_CMD_MKDIR, nodepath)
 
     def rename(self, nodepath, new_nodename):
-        """ Renamed a file, folder, or model under the provided path
+        """Rename a file, folder, or model.
 
         Args:
             nodepath (str): Path to a file, folder, or model on the server.
@@ -933,12 +931,11 @@ class RevitServer(object):
             >>> rserver = RevitServer('server01', '2017')
             >>> rserver.rename('/example/path', '/example/newpath')
         """
-
         return self._delete(api.REQ_CMD_RENAME.format(new_name=new_nodename),
                             nodepath)
 
     def rmdir(self, nodepath):
-        """ Deletes a file, folder, or model under the provided path
+        """Delete a file, folder, or model.
 
         Args:
             nodepath (str): Path to a file, folder, or model on the server.
@@ -947,11 +944,10 @@ class RevitServer(object):
             >>> rserver = RevitServer('server01', '2017')
             >>> rserver.rmdir('/example/path')
         """
-
         return self._delete(api.REQ_CMD_DELETE, nodepath)
 
     def delete(self, nodepath):
-        """ Deletes a file, folder, or model under the provided path
+        """Delete a file, folder, or model.
 
         Args:
             nodepath (str): Path to a file, folder, or model on the server.
@@ -960,11 +956,10 @@ class RevitServer(object):
             >>> rserver = RevitServer('server01', '2017')
             >>> rserver.delete('/example/path/model.rvt')
         """
-
         return self._delete(api.REQ_CMD_DELETE, nodepath)
 
     def copy(self, nodepath, new_nodepath, overwrite=False):
-        """ Copies a file, folder, or model to the new location
+        """Copy a file, folder, or model to new location.
 
         Args:
             nodepath (str): Path to a file, folder, or model on the server.
@@ -975,7 +970,6 @@ class RevitServer(object):
             >>> rserver = RevitServer('server01', '2017')
             >>> rserver.copy('/example/model.rvt', '/example/newmodel.rvt')
         """
-
         # get api path for the new location
         new_apipath = self._api_path(new_nodepath)
         return self._post(api.REQ_CMD_COPY.format(
@@ -983,7 +977,7 @@ class RevitServer(object):
             replace_exist=overwrite), nodepath)
 
     def move(self, nodepath, new_nodepath, overwrite=False):
-        """ Moves a file, folder, or model to the new location
+        """Move a file, folder, or model to new location.
 
         Args:
             nodepath (str): Path to a file, folder, or model on the server.
@@ -994,7 +988,6 @@ class RevitServer(object):
             >>> rserver = RevitServer('server01', '2017')
             >>> rserver.move('/example/model.rvt', '/example/newmodel.rvt')
         """
-
         # get api path for the new location
         new_apipath = self._api_path(new_nodepath)
         return self._post(api.REQ_CMD_MOVE.format(dest_path=new_apipath,
@@ -1002,8 +995,9 @@ class RevitServer(object):
                           nodepath)
 
     def walk(self, top=None, topdown=True, digmodels=False):
-        """ Walks the provided directory or root and yields a 4-tuple of
-        parent directory, folders, files, and models
+        r"""Walk the provided path or root.
+
+        Yields a 4-tuple of parent directory, folders, files, and models
 
         Args:
             top (str, optional): Parent directory. Root if not provided.
@@ -1026,7 +1020,6 @@ class RevitServer(object):
             ...     for m in models:
             ...         print('\t@m {}'.format(m.path))
         """
-
         if not top:
             top = self.path
 
