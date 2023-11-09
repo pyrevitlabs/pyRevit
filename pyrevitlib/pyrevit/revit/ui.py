@@ -138,15 +138,11 @@ def set_current_theme(theme='Dark'):
 
     Args:
         theme (str, optional): The theme to set. Defaults to 'Dark'.
-    
-    Returns:
-        None
     """
     if theme == 'Dark':
         UIThemeManager.CurrentTheme = UITheme.Dark
     else:
         UIThemeManager.CurrentTheme = UITheme.Light
-    return None
 
 
 def resolve_icon_file(directory, icon_name):
