@@ -1,3 +1,5 @@
+"""Revit Server API commands and dictionary keys."""
+
 # http request header
 REQ_HEADER_USERNAME = 'User-Name'
 REQ_HEADER_MACHINE = 'User-Machine-Name'
