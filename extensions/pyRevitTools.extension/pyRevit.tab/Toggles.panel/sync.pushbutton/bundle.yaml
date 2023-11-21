@@ -1,0 +1,13 @@
+title:
+  fr_fr: Synchroniser
+  en_us: Synchronize
+tooltip: 
+  fr_fr: >-
+    Remplace le bouton de synchronisation
+
+    Shift+Clic: Activer ou désactiver la fermeture des fenêtres inactives et l'activation de la vue de départ
+  en_us: >-
+    Replace the sync button
+
+    Shift+Click: Enable or disable closing of inactive windows and activating the starting view
+author: Aniket Dikshit, Jean-Marc Couffin
