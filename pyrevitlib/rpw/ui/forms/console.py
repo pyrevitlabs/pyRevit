@@ -346,8 +346,6 @@ class Console(Window):
         except IndexError:
             if len(lines) == 0:
                 return None
-            if len(lines) < 0:
-                self.history_index += len(lines)
             if len(lines) > 0:
                 self.history_index -= len(lines)
             line = lines[0]
