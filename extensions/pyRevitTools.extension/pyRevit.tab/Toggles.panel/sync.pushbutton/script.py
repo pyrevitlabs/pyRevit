@@ -52,7 +52,7 @@ def close_inactive_views(view_handling="nothing", document=doc):
             if view_handling == "reopen":
                 view_cache.append(ui_view.ViewId)
             doc_view = document.GetElement(ui_view.ViewId)
-            if doc_view.Name != starting_view.Name :
+            if doc_view.Id != starting_view.Id :
                 ui_view.Close()
     else:
         forms.show_balloon(
