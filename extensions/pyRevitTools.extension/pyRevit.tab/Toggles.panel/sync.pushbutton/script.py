@@ -11,6 +11,12 @@ try:
     view_handling = getattr(my_config, "view_handling")
 except:
     view_handling = "nothing"
+    setattr(
+        my_config,
+        "view_handling",
+        "nothing"
+    )
+    script.save_config()
 
 view_cache = []
 

@@ -28,6 +28,7 @@ def close_inactive_views():
         "view_handling",
         next((k for k in options if options[k] == selection), None)
     )
+    script.save_config()
 
 
 if __name__ == "__main__":
