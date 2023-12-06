@@ -6,13 +6,30 @@ doc = revit.doc
 
 def close_inactive_views():
 
-    form = forms.SelectFromList.show(["Yes", "No"], title = "Close all inactive views before synchronisation", height = 200)
-    if form=="Yes": 
-        setattr(my_config, "close_inactive_views", True)
-        script.save_config()
-    else:
-        setattr(my_config, "close_inactive_views", False)
-        script.save_config()
+    try:
+        current_setting = getattr(my_config, "view_handling")
+    except:
+        current_setting = "nothing"
+    options = {
+        "nothing": "Don't touch my views",
+        "reopen": "Close them, but reopen them right after",
+        "close": "Close them, and call it a day"
+    }
+
+    selection = forms.ask_for_one_item(
+        items=options.values(),
+        default=options.get(current_setting),
+        title="View Handling",
+        prompt="Specify what to do with open views"
+    )
+
+    setattr(
+        my_config,
+        "view_handling",
+        next((k for k in options if options[k] == selection), None)
+    )
+    script.save_config()
+
 
 if __name__ == "__main__":
     close_inactive_views()
