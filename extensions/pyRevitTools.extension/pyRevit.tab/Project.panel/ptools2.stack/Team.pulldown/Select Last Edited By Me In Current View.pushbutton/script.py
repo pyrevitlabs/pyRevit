@@ -25,7 +25,7 @@ if revit.doc.IsWorkshared:
                 wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
                                                                     el.Id)
                 # wti.Creator, wti.Owner, wti.LastChangedBy
-                if wti.LastChangedBy == HOST_APP.username:
+                if wti.LastChangedBy.lower() == HOST_APP.username.lower():
                     owned_by_me.append(el.Id)
             selection.set_to(owned_by_me)
 else:

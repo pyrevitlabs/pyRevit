@@ -36,7 +36,7 @@ if revit.doc.IsWorkshared:
                         el.Id
                         )
                     # wti.Creator, wti.Owner, wti.LastChangedBy
-                    if wti.Owner == HOST_APP.username:
+                    if wti.Owner.lower() == HOST_APP.username.lower():
                         filteredlist.append(sheet)
                         print('{0}{1}'
                               .format(
