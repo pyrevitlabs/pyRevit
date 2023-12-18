@@ -20,3 +20,5 @@ tooltip:
     Refactored, pyRevit-ed and added View Filters Creation version by Jean-Marc Couffin, December 2023
     
 author: BIMOne Inc.(2021), Nonica (Jaime Alonso Candau - 2023), BIMOne Inc. (Jean-Marc Couffin - 2023)
+engine:
+  persistent: true
