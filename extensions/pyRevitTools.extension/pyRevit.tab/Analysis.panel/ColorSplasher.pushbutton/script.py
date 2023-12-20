@@ -125,7 +125,7 @@ clr.AddReference("System.Data")
 import System
 from System import String, Enum, Object
 from System.Data import DataTable
-from System.Drawing import Color, Font, FontStyle, Icon, SolidBrush
+from System.Drawing import Color, Font, FontStyle, Icon, SolidBrush, Point, Size
 from System.Windows.Forms import (
     CheckState,
     ColorDialog,
@@ -135,7 +135,14 @@ from System.Windows.Forms import (
     Form,
     FormBorderStyle,
     TextRenderer,
+    ComboBox,
+    CheckedListBox,
+    ListBox,
+    Button,
+    Label,
+    AnchorStyles,
 )
+
 
 from pyrevit import DB, HOST_APP, UI, revit, script
 from pyrevit.forms import alert
@@ -346,9 +353,14 @@ class CreateFilters(UI.IExternalEventHandler):
                     param_storage_type = sel_par._rl_par.StorageType
                     if param_storage_type == DB.StorageType.Double:
                         value = float(sub("[^0-9|.]", "", item._value))
-                        value_to_internal = DB.UnitUtils.ConvertToInternalUnits(
-                            value, sel_par._rl_par.GetUnitTypeId()
-                        )
+                        if version > 2021:
+                            value_to_internal = DB.UnitUtils.ConvertToInternalUnits(
+                                value, sel_par._rl_par.GetUnitTypeId()
+                            )
+                        else:
+                            value_to_internal = DB.UnitUtils.ConvertToInternalUnits(
+                                value, sel_par._rl_par.DisplayUnitType
+                            )
                         equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(
                             parameter_id, value_to_internal, 0.001
                         )
@@ -806,45 +818,45 @@ class FormCats(Form):
         self.InitializeComponent()
 
     def InitializeComponent(self):
-        self._categories = System.Windows.Forms.ComboBox()
-        self._list_box1 = System.Windows.Forms.CheckedListBox()
-        self._list_box2 = System.Windows.Forms.ListBox()
-        self._button1 = System.Windows.Forms.Button()
-        self._button2 = System.Windows.Forms.Button()
-        self._button3 = System.Windows.Forms.Button()
-        self._button4 = System.Windows.Forms.Button()
-        self._button5 = System.Windows.Forms.Button()
-        self._button6 = System.Windows.Forms.Button()
-        self._txt_block2 = System.Windows.Forms.Label()
-        self._txt_block3 = System.Windows.Forms.Label()
-        self._txt_block4 = System.Windows.Forms.Label()
-        self._txt_block5 = System.Windows.Forms.Label()
+        self._categories = ComboBox()
+        self._list_box1 = CheckedListBox()
+        self._list_box2 = ListBox()
+        self._button1 = Button()
+        self._button2 = Button()
+        self._button3 = Button()
+        self._button4 = Button()
+        self._button5 = Button()
+        self._button6 = Button()
+        self._txt_block2 = Label()
+        self._txt_block3 = Label()
+        self._txt_block4 = Label()
+        self._txt_block5 = Label()
         self.SuspendLayout()
         #
         # TextBlock2
         #
         self._txt_block2.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Left
+            AnchorStyles.Bottom
+            | AnchorStyles.Left
         )
-        self._txt_block2.Location = System.Drawing.Point(12, 10)
+        self._txt_block2.Location = Point(12, 10)
         self._txt_block2.Name = "txtBlock2"
-        self._txt_block2.Size = System.Drawing.Size(120, 20)
+        self._txt_block2.Size = Size(120, 20)
         self._txt_block2.Text = "Category:"
         #
         # comboBox1 Cat
         #
         self._categories.Anchor = (
-            System.Windows.Forms.AnchorStyles.Top
-            | System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Left
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Top
+            | AnchorStyles.Bottom
+            | AnchorStyles.Left
+            | AnchorStyles.Right
         )
-        self._categories.Location = System.Drawing.Point(12, 27)
+        self._categories.Location = Point(12, 27)
         self._categories.Name = "dropDown"
         self._categories.DataSource = self._categories_table_data
         self._categories.DisplayMember = "Key"
-        self._categories.Size = System.Drawing.Size(310, 244)
+        self._categories.Size = Size(310, 244)
         self._categories.DropDownWidth = 150
         self._categories.DropDownStyle = ComboBoxStyle.DropDownList
         self._categories.SelectedIndexChanged += self.update_filter
@@ -852,51 +864,51 @@ class FormCats(Form):
         # TextBlock3
         #
         self._txt_block3.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Left
+            AnchorStyles.Bottom
+            | AnchorStyles.Left
         )
-        self._txt_block3.Location = System.Drawing.Point(12, 53)
+        self._txt_block3.Location = Point(12, 53)
         self._txt_block3.Name = "txtBlock3"
-        self._txt_block3.Size = System.Drawing.Size(120, 13)
+        self._txt_block3.Size = Size(120, 13)
         self._txt_block3.Text = "Parameters:"
         #
         # checkedListBox1
         #
         self._list_box1.Anchor = (
-            System.Windows.Forms.AnchorStyles.Top
-            | System.Windows.Forms.AnchorStyles.Left
-            | System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Top
+            | AnchorStyles.Left
+            | AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
         self._list_box1.FormattingEnabled = True
         self._list_box1.CheckOnClick = True
         self._list_box1.HorizontalScrollbar = True
-        self._list_box1.Location = System.Drawing.Point(12, 70)
+        self._list_box1.Location = Point(12, 70)
         self._list_box1.Name = "checkedListBox1"
         self._list_box1.DisplayMember = "Key"
-        self._list_box1.Size = System.Drawing.Size(310, 170)
+        self._list_box1.Size = Size(310, 170)
         self._list_box1.ItemCheck += self.check_item
         #
         # TextBlock4
         #
         self._txt_block4.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Left
+            AnchorStyles.Bottom
+            | AnchorStyles.Left
         )
-        self._txt_block4.Location = System.Drawing.Point(12, 245)
+        self._txt_block4.Location = Point(12, 245)
         self._txt_block4.Name = "txtBlock4"
-        self._txt_block4.Size = System.Drawing.Size(120, 13)
+        self._txt_block4.Size = Size(120, 13)
         self._txt_block4.Text = "Values:"
         #
         # TextBlock5
         #
         self._txt_block5.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Left
+            AnchorStyles.Bottom
+            | AnchorStyles.Left
         )
-        self._txt_block5.Location = System.Drawing.Point(12, 557)
+        self._txt_block5.Location = Point(12, 557)
         self._txt_block5.Name = "txtBlock5"
-        self._txt_block5.Size = System.Drawing.Size(310, 27)
+        self._txt_block5.Size = Size(310, 27)
         self._txt_block5.Text = (
             "*Spaces may require you to apply a color scheme in the view."
         )
@@ -907,29 +919,29 @@ class FormCats(Form):
         # checkedListBox2
         #
         self._list_box2.Anchor = (
-            System.Windows.Forms.AnchorStyles.Top
-            | System.Windows.Forms.AnchorStyles.Left
-            | System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Top
+            | AnchorStyles.Left
+            | AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
         self._list_box2.FormattingEnabled = True
         self._list_box2.HorizontalScrollbar = True
-        self._list_box2.Location = System.Drawing.Point(12, 262)
+        self._list_box2.Location = Point(12, 262)
         self._list_box2.Name = "listBox2"
         self._list_box2.DisplayMember = "Key"
-        self._list_box2.Size = System.Drawing.Size(310, 280)
+        self._list_box2.Size = Size(310, 280)
         self._list_box2.DrawMode = DrawMode.OwnerDrawFixed
         self._list_box2.DrawItem += self.colour_item
         #
         # button1
         #
         self._button1.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
-        self._button1.Location = System.Drawing.Point(222, 592)
+        self._button1.Location = Point(222, 592)
         self._button1.Name = "button1"
-        self._button1.Size = System.Drawing.Size(100, 27)
+        self._button1.Size = Size(100, 27)
         self._button1.Text = "Apply Colors"
         self._button1.UseVisualStyleBackColor = True
         self._button1.Click += self.button_1_click
@@ -937,12 +949,12 @@ class FormCats(Form):
         # button2
         #
         self._button2.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
-        self._button2.Location = System.Drawing.Point(12, 592)
+        self._button2.Location = Point(12, 592)
         self._button2.Name = "button2"
-        self._button2.Size = System.Drawing.Size(100, 27)
+        self._button2.Size = Size(100, 27)
         self._button2.Text = "Reset All Colors"
         self._button2.UseVisualStyleBackColor = True
         self._button2.Click += self.button_2_click
@@ -950,12 +962,12 @@ class FormCats(Form):
         # button3
         #
         self._button3.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
-        self._button3.Location = System.Drawing.Point(11, 538)
+        self._button3.Location = Point(11, 538)
         self._button3.Name = "button3"
-        self._button3.Size = System.Drawing.Size(156, 20)
+        self._button3.Size = Size(156, 20)
         self._button3.Text = "Random Colors"
         self._button3.UseVisualStyleBackColor = True
         self._button3.Click += self.button_3_click
@@ -963,12 +975,12 @@ class FormCats(Form):
         # button4
         #
         self._button4.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
-        self._button4.Location = System.Drawing.Point(167, 538)
+        self._button4.Location = Point(167, 538)
         self._button4.Name = "button4"
-        self._button4.Size = System.Drawing.Size(156, 20)
+        self._button4.Size = Size(156, 20)
         self._button4.Text = "Gradient Colors"
         self._button4.UseVisualStyleBackColor = True
         self._button4.Click += self.button_4_click
@@ -976,12 +988,12 @@ class FormCats(Form):
         # button5
         #
         self._button5.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
-        self._button5.Location = System.Drawing.Point(11, 558)
+        self._button5.Location = Point(11, 558)
         self._button5.Name = "button5"
-        self._button5.Size = System.Drawing.Size(156, 20)
+        self._button5.Size = Size(156, 20)
         self._button5.Text = "Create a Legend"
         self._button5.UseVisualStyleBackColor = True
         self._button5.Click += self.button_5_click
@@ -989,12 +1001,12 @@ class FormCats(Form):
         # button6
         #
         self._button6.Anchor = (
-            System.Windows.Forms.AnchorStyles.Bottom
-            | System.Windows.Forms.AnchorStyles.Right
+            AnchorStyles.Bottom
+            | AnchorStyles.Right
         )
-        self._button6.Location = System.Drawing.Point(167, 558)
+        self._button6.Location = Point(167, 558)
         self._button6.Name = "button6"
-        self._button6.Size = System.Drawing.Size(156, 20)
+        self._button6.Size = Size(156, 20)
         self._button6.Text = "Create View Filters"
         self._button6.UseVisualStyleBackColor = True
         self._button6.Click += self.button_6_click
@@ -1003,7 +1015,7 @@ class FormCats(Form):
         #
         self.TopMost = True
         self.ShowInTaskbar = False
-        self.ClientSize = System.Drawing.Size(334, 630)
+        self.ClientSize = Size(334, 630)
         self.MaximizeBox = 0
         self.MinimizeBox = 0
         self.CenterToScreen()
