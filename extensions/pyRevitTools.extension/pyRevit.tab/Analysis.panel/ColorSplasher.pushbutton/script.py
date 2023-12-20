@@ -352,7 +352,7 @@ class CreateFilters(UI.IExternalEventHandler):
                     parameter_id = DB.ElementId(sel_par._rl_par.Id.IntegerValue)
                     param_storage_type = sel_par._rl_par.StorageType
                     if param_storage_type == DB.StorageType.Double:
-                        value = float(sub("[^0-9|.]", "", item._value))
+                        value = float(item._value)
                         if version > 2021:
                             value_to_internal = DB.UnitUtils.ConvertToInternalUnits(
                                 value, sel_par._rl_par.GetUnitTypeId()
@@ -587,7 +587,7 @@ class ValuesInfo:
     def __init__(self, para, val, id, n1, n2, n3):
         self._par = para
         self._value = val
-        self._name = strip_accents(para.Definition.Name)
+        self._name = para.Definition.Name
         self._eleId = List[DB.ElementId]()
         self._eleId.Add(id)
         self._n1 = n1
@@ -601,12 +601,12 @@ class ParaInfo:
         self._type = type
         self._rl_par = para
         self._par = para.Definition
-        self._name = strip_accents(para.Definition.Name)
+        self._name = para.Definition.Name
 
 
 class CategInfo:
     def __init__(self, cat, param):
-        self._name = strip_accents(cat.Name)
+        self._name = cat.Name
         self._cat = cat
         self._intId = cat.Id.IntegerValue
         self._par = param
