@@ -352,7 +352,7 @@ class CreateFilters(UI.IExternalEventHandler):
                     parameter_id = DB.ElementId(sel_par._rl_par.Id.IntegerValue)
                     param_storage_type = sel_par._rl_par.StorageType
                     if param_storage_type == DB.StorageType.Double:
-                        value = float(item._value)
+                        value = float(sub("[^-\d|.]", "", item._value))
                         if version > 2021:
                             value_to_internal = DB.UnitUtils.ConvertToInternalUnits(
                                 value, sel_par._rl_par.GetUnitTypeId()
@@ -362,7 +362,7 @@ class CreateFilters(UI.IExternalEventHandler):
                                 value, sel_par._rl_par.DisplayUnitType
                             )
                         equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(
-                            parameter_id, value_to_internal, 0.001
+                            parameter_id, value_to_internal, 0.5
                         )
                     elif param_storage_type == DB.StorageType.ElementId:
                         equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(
@@ -380,9 +380,7 @@ class CreateFilters(UI.IExternalEventHandler):
                                     parameter_id, item._value
                                 )
                             )
-                        except (
-                            TypeError
-                        ):  # different method in versions earlier than R2023
+                        except TypeError:  # different method in versions earlier than R2023
                             equals_rule = (
                                 DB.ParameterFilterRuleFactory.CreateEqualsRule(
                                     parameter_id, item._value, True
