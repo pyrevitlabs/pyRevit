@@ -1,6 +1,4 @@
-"""
-Footnotes Extension for Python-Markdown
-=======================================
+"""Footnotes Extension for Python-Markdown.
 
 Adds footnote handling to Python-Markdown.
 
@@ -10,7 +8,6 @@ for documentation.
 Copyright The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -35,11 +32,10 @@ RE_REF_ID = re.compile(r'(fnref)(\d+)')
 
 
 class FootnoteExtension(Extension):
-    """ Footnote Extension. """
+    """Footnote Extension."""
 
     def __init__(self, *args, **kwargs):
-        """ Setup configs. """
-
+        """Setup configs."""
         self.config = {
             'PLACE_MARKER':
                 ["///Footnotes Go Here///",
@@ -63,7 +59,7 @@ class FootnoteExtension(Extension):
         self.reset()
 
     def extendMarkdown(self, md, md_globals):
-        """ Add pieces to Markdown. """
+        """Add pieces to Markdown."""
         md.registerExtension(self)
         self.parser = md.parser
         self.md = md
@@ -97,14 +93,14 @@ class FootnoteExtension(Extension):
         )
 
     def reset(self):
-        """ Clear footnotes on reset, and prepare for distinct document. """
+        """Clear footnotes on reset, and prepare for distinct document."""
         self.footnotes = OrderedDict()
         self.unique_prefix += 1
         self.found_refs = {}
         self.used_refs = set()
 
     def unique_ref(self, reference, found=False):
-        """ Get a unique reference if there are duplicates. """
+        """Get a unique reference if there are duplicates."""
         if not found:
             return reference
 
@@ -125,7 +121,7 @@ class FootnoteExtension(Extension):
         return reference
 
     def findFootnotesPlaceholder(self, root):
-        """ Return ElementTree Element that contains Footnote placeholder. """
+        """Return ElementTree Element that contains Footnote placeholder."""
         def finder(element):
             for child in element:
                 if child.text:
@@ -143,7 +139,7 @@ class FootnoteExtension(Extension):
         return res
 
     def setFootnote(self, id, text):
-        """ Store a footnote for later retrieval. """
+        """Store a footnote for later retrieval."""
         self.footnotes[id] = text
 
     def get_separator(self):
@@ -152,22 +148,21 @@ class FootnoteExtension(Extension):
         return ':'
 
     def makeFootnoteId(self, id):
-        """ Return footnote link id. """
+        """Return footnote link id."""
         if self.getConfig("UNIQUE_IDS"):
             return 'fn%s%d-%s' % (self.get_separator(), self.unique_prefix, id)
         else:
             return 'fn%s%s' % (self.get_separator(), id)
 
     def makeFootnoteRefId(self, id, found=False):
-        """ Return footnote back-link id. """
+        """Return footnote back-link id."""
         if self.getConfig("UNIQUE_IDS"):
             return self.unique_ref('fnref%s%d-%s' % (self.get_separator(), self.unique_prefix, id), found)
         else:
             return self.unique_ref('fnref%s%s' % (self.get_separator(), id), found)
 
     def makeFootnotesDiv(self, root):
-        """ Return div of footnotes as et Element. """
-
+        """Return div of footnotes as et Element."""
         if not list(self.footnotes.keys()):
             return None
 
@@ -211,14 +206,13 @@ class FootnoteExtension(Extension):
 
 
 class FootnotePreprocessor(Preprocessor):
-    """ Find all footnote references and store for later use. """
+    """Find all footnote references and store for later use."""
 
     def __init__(self, footnotes):
         self.footnotes = footnotes
 
     def run(self, lines):
-        """
-        Loop through lines and find, set, and remove footnote definitions.
+        """Loop through lines and find, set, and remove footnote definitions.
 
         Keywords:
 
@@ -245,13 +239,13 @@ class FootnotePreprocessor(Preprocessor):
         return newlines
 
     def detectTabbed(self, lines):
-        """ Find indented text and remove indent before further proccesing.
+        """Find indented text and remove indent before further proccesing.
 
-        Keyword arguments:
+        Args:
+            lines (list[str]): text lines
 
-        * lines: an array of strings
-
-        Returns: a list of post processed items and the index of last line.
+        Returns:
+            (tuple[list, int]): post processed items and the index of last line.
 
         """
         items = []
@@ -303,7 +297,7 @@ class FootnotePreprocessor(Preprocessor):
 
 
 class FootnotePattern(Pattern):
-    """ InlinePattern for footnote markers in a document's body text. """
+    """InlinePattern for footnote markers in a document's body text."""
 
     def __init__(self, pattern, footnotes):
         super(FootnotePattern, self).__init__(pattern)
@@ -326,13 +320,13 @@ class FootnotePattern(Pattern):
 
 
 class FootnotePostTreeprocessor(Treeprocessor):
-    """ Ammend footnote div with duplicates. """
+    """Ammend footnote div with duplicates."""
 
     def __init__(self, footnotes):
         self.footnotes = footnotes
 
     def add_duplicates(self, li, duplicates):
-        """ Adjust current li and add the duplicates: fnref2, fnref3, etc. """
+        """Adjust current li and add the duplicates: fnref2, fnref3, etc."""
         for link in li.iter('a'):
             # Find the link that needs to be duplicated.
             if link.attrib.get('class', '') == 'footnote-backref':
@@ -352,13 +346,13 @@ class FootnotePostTreeprocessor(Treeprocessor):
                 break
 
     def get_num_duplicates(self, li):
-        """ Get the number of duplicate refs of the footnote. """
+        """Get the number of duplicate refs of the footnote."""
         fn, rest = li.attrib.get('id', '').split(self.footnotes.get_separator(), 1)
         link_id = '%sref%s%s' % (fn, self.footnotes.get_separator(), rest)
         return self.footnotes.found_refs.get(link_id, 0)
 
     def handle_duplicates(self, parent):
-        """ Find duplicate footnotes and format and add the duplicates. """
+        """Find duplicate footnotes and format and add the duplicates."""
         for li in list(parent):
             # Check number of duplicates footnotes and insert
             # additional links if needed.
@@ -367,7 +361,7 @@ class FootnotePostTreeprocessor(Treeprocessor):
                 self.add_duplicates(li, count)
 
     def run(self, root):
-        """ Crawl the footnote div and add missing duplicate footnotes. """
+        """Crawl the footnote div and add missing duplicate footnotes."""
         self.offset = 0
         for div in root.iter('div'):
             if div.attrib.get('class', '') == 'footnote':
@@ -379,7 +373,7 @@ class FootnotePostTreeprocessor(Treeprocessor):
 
 
 class FootnoteTreeprocessor(Treeprocessor):
-    """ Build and append footnote div to end of document. """
+    """Build and append footnote div to end of document."""
 
     def __init__(self, footnotes):
         self.footnotes = footnotes
@@ -402,7 +396,7 @@ class FootnoteTreeprocessor(Treeprocessor):
 
 
 class FootnotePostprocessor(Postprocessor):
-    """ Replace placeholders with html entities. """
+    """Replace placeholders with html entities."""
     def __init__(self, footnotes):
         self.footnotes = footnotes
 
@@ -414,5 +408,5 @@ class FootnotePostprocessor(Postprocessor):
 
 
 def makeExtension(*args, **kwargs):
-    """ Return an instance of the FootnoteExtension """
+    """Return an instance of the FootnoteExtension."""
     return FootnoteExtension(*args, **kwargs)

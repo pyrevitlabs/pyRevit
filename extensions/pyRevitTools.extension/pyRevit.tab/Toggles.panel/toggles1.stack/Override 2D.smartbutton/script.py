@@ -2,6 +2,8 @@ from time import sleep
 from pyrevit import DB, script, revit
 from pyrevit import forms
 from pyrevit.framework import List
+from pyrevit.revit import ui
+import pyrevit.extensions as exts
 
 op = script.get_output()
 op.close_others()
@@ -24,7 +26,7 @@ def set_config(state, config):
 
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    off_icon = script_cmp.get_bundle_file('off.png')
+    off_icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_OFF_ICON_FILE)
     ui_button_cmp.set_icon(off_icon)
 
 

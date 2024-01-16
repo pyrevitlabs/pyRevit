@@ -1,4 +1,4 @@
-"""Defines the basic server management api"""
+"""Defines the basic server management api."""
 #pylint: disable=invalid-name,broad-except,useless-object-inheritance
 #pylint: disable=too-few-public-methods,too-many-arguments
 import os.path as op
@@ -19,7 +19,7 @@ mlogger = get_logger(__name__)
 
 
 class RoutesServerInfo(object):
-    """Routes server info"""
+    """Routes server info."""
     def __init__(self,
                  host, version, process_id,
                  server_host, server_port):
@@ -32,7 +32,7 @@ class RoutesServerInfo(object):
         self.server_port = server_port
 
     def get_cache_data(self):
-        """Get json string of this instance"""
+        """Get json string of this instance."""
         data_dict = OrderedDict()
         for key in sorted(self.__dict__.keys()):
             data_dict[key] = self.__dict__[key]
@@ -100,16 +100,16 @@ def _get_new_serverinfo(data_file):
 
 
 def get_registered_servers():
-    """Get all registered servers on this machine
+    """Get all registered servers on this machine.
 
     Returns:
-        list[RoutesServerInfo]: list of registered servers
+        (list[RoutesServerInfo]): list of registered servers
     """
     return _get_all_serverinfo()
 
 
 def register():
-    """Register host:port for this host instance"""
+    """Register host:port for this host instance."""
     data_file = _get_host_serverinfo_file()
     if op.exists(data_file):
         return _read_serverinfo(data_file)
@@ -118,7 +118,7 @@ def register():
 
 
 def unregister():
-    """Remove registered server host:port for this host instance"""
+    """Remove registered server host:port for this host instance."""
     data_file = _get_host_serverinfo_file()
     if op.exists(data_file):
         appdata.garbage_data_file(data_file)

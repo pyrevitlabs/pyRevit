@@ -6,7 +6,7 @@ from typing import Dict
 
 from scripts import configs
 
-import _apidocspy as apidocs
+# import _apidocspy as apidocs # not used by new documentation workflow
 import _autocomplete as autoc
 import _labs as labs
 import _telem as telem
@@ -25,7 +25,7 @@ def clean_build(_: Dict[str, str]):
 
 def build_binaries(_: Dict[str, str]):
     """Build all projects under pyRevit dev"""
-    apidocs.build_docs(_)
+    # apidocs.build_docs(_)
     labs.build_labs(_)
     labs.build_engines(_)
     telem.build_telem(_)

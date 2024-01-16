@@ -11,15 +11,13 @@ mlogger = logger.get_logger(__name__)
 
 
 def create_executor_type(extension, module_builder, cmd_component):
-    """
+    """Create the dotnet type for the executor.
 
     Args:
-        extension:
-        module_builder:
+        extension (pyrevit.extensions.components.Extension): pyRevit extension
+        module_builder (ModuleBuilder): module builder
         cmd_component (pyrevit.extensions.genericcomps.GenericUICommand):
-
-    Returns:
-
+            command
     """
     engine_configs = json.dumps({
         exts.MDATA_ENGINE_CLEAN:

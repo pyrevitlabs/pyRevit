@@ -1,3 +1,4 @@
+"""Revit failures handler."""
 from pyrevit import HOST_APP, DB
 from pyrevit import framework
 from pyrevit import coreutils
@@ -27,6 +28,7 @@ RESOLUTION_TYPES = [DB.FailureResolutionType.MoveElements,
 # http://www.revitapidocs.com/2018.1/f147e6e6-4b2e-d61c-df9b-8b8e5ebe3fcb.htm
 # explains usage of FailureProcessingResult options
 class FailureSwallower(DB.IFailuresPreprocessor):
+    """Swallows all failures."""
     def __init__(self, log_errors=True):
         self._logerror = log_errors
         self._failures_swallowed = []
@@ -60,15 +62,15 @@ class FailureSwallower(DB.IFailuresPreprocessor):
         return failures
 
     def reset(self):
-        """Reset swallowed errors"""
+        """Reset swallowed errors."""
         self._failures_swallowed = []
 
     def preprocess_failures(self, failure_accessor):
-        """Pythonic wrapper for `PreprocessFailures` interface method"""
+        """Pythonic wrapper for `PreprocessFailures` interface method."""
         return self.PreprocessFailures(failure_accessor)
 
     def PreprocessFailures(self, failuresAccessor):
-        """Required IFailuresPreprocessor interface method"""
+        """Required IFailuresPreprocessor interface method."""
         severity = failuresAccessor.GetSeverity()
         # log some info
         mlogger.debug('processing failure with severity: %s', severity)

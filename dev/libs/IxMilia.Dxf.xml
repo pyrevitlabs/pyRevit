@@ -1,0 +1,2884 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>IxMilia.Dxf</name>
+    </assembly>
+    <members>
+        <member name="M:IxMilia.Dxf.DxfBinaryReader.#ctor(System.IO.BinaryReader,System.Boolean)">
+            <summary>
+            Test-only constructor.
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.DxfCodePair.#ctor(System.Int32,System.Object)">
+            <summary>
+            Internal for specific cases where the type isn't known.
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.DxfFile.GetThumbnailBitmap">
+            <summary>
+            Gets the thumbnail bitmap.
+            </summary>
+            <returns>Raw bytes that should serialize to a .BMP file.</returns>
+        </member>
+        <member name="M:IxMilia.Dxf.DxfFile.SetThumbnailBitmap(System.Byte[])">
+            <summary>
+            Sets the bitmap thumbnail.
+            </summary>
+            <param name="thumbnail">Raw data of the thumbnail image.  Should be a 256-color bitmap, 180 pixels wide, any height.</param>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfFile.RawThumbnail">
+            <summary>
+            Raw data of the thumbnail image.  Should be a 256-color bitmap, 180 pixels wide, any height.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfLineWeight.Value">
+            <summary>
+            A non-zero value indicates 1/100th of a mm.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfLineWeight.LineWeightType">
+            <summary>
+            When the line weight type is <see cref="F:IxMilia.Dxf.DxfLineWeightType.Custom" />, the <see cref="P:IxMilia.Dxf.DxfLineWeight.Value" /> property represents the width of the line in 1/100th mm increments.
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.DxfWriter.CreateInternalWriters">
+            <summary>
+            Test-only shortcut.
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.DxfWriter.Flush">
+            <summary>
+            Test-only helper.
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.DxfWriter.WriteStringWithEncoding(System.String)">
+            <summary>
+            Internal to make testing easier.
+            </summary>
+            <param name="value"></param>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfAngularTwoLineDimension">
+            <summary>
+            DxfAngularTwoLineDimension class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfArc">
+            <summary>
+            DxfArc class
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfArc.StartAngle">
+            <summary>
+            Arc start angle in degrees
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfArc.EndAngle">
+            <summary>
+            Arc end angle in degrees
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfAttribute">
+            <summary>
+            DxfAttribute class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfAttributeDefinition">
+            <summary>
+            DxfAttributeDefinition class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfDimensionBase">
+            <summary>
+            DxfDimensionBase class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfAlignedDimension">
+            <summary>
+            DxfAlignedDimension class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfRotatedDimension">
+            <summary>
+            DxfRotatedDimension class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfPolylineType">
+            <summary>
+            Values specific to the CLO software.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.Entities.DxfPolylineType.Baseline">
+            <summary>
+            Baseline polyline not editable by CLO.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.Entities.DxfPolylineType.Internal">
+            <summary>
+            Internal line in CLO.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.Entities.DxfPolylineType.Outline">
+            <summary>
+            Outline pattern in CLO.
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfEntity">
+            <summary>
+            DxfEntity class
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfEntityExtensions.GetPointFromAngle(IxMilia.Dxf.Entities.DxfCircle,System.Double)">
+            <summary>
+            Gets a point corresponding to a specified angle of the given circle.
+            </summary>
+            <param name="angle">The angle in degrees.</param>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfEntityExtensions.GetPointFromAngle(IxMilia.Dxf.Entities.DxfEllipse,System.Double)">
+            <summary>
+            Gets a point corresponding to a specified angle of the given ellipse.
+            </summary>
+            <param name="angle">The angle in radians.</param>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfEntitySection">
+            <summary>
+            DxfEntitySection class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfHatch">
+            <summary>
+            DxfHatch class
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch._zero">
+            <summary>
+            Reserved for future use.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch.GradientColorMode">
+            <summary>
+            Only used by dialog code.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch.NumberOfColors">
+            <summary>
+            Unknown usage.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch.GradientRotationAngle">
+            <summary>
+            Rotation angle for gradients in radians.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch.GradientDefinitionShift">
+            <summary>
+            Unknown usage.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch.ColorTint">
+            <summary>
+            Range is [0.0, 1.0].
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch._reserved">
+            <summary>
+            Reserved for future use.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfHatch.StringValue">
+            <summary>
+            Unknown usage.
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfHelix">
+            <summary>
+            DxfHelix class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfImage">
+            <summary>
+            DxfImage class
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfImage.#ctor(System.String,IxMilia.Dxf.DxfPoint,System.Int32,System.Int32,IxMilia.Dxf.DxfVector)">
+            <param name="imagePath">The path to the image.</param>
+            <param name="location">The bottom left corner of the location to display the image in the drawing.</param>
+            <param name="imageWidth">The width of the image in pixels.</param>
+            <param name="imageHeight">The height of the image in pixels.</param>
+            <param name="displaySize">The display size of the image in drawing units.</param>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfImage.Location">
+            <summary>
+            The location of the bottom-left corner of the image
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfImage.ImageSize">
+            <summary>
+            Image size in pixels
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfInsert">
+            <summary>
+            DxfInsert class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfLeader">
+            <summary>
+            DxfLeader class
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfLeader.#ctor(System.Collections.Generic.IEnumerable{IxMilia.Dxf.DxfPoint})">
+            <summary>
+            Creates a new leader entity with the specified vertices.  NOTE, at least 2 vertices must be specified.
+            </summary>
+            <exception cref="T:System.InvalidOperationException"/>
+            <param name="vertices">The vertices to add.</param>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfLwPolyline">
+            <summary>
+            DxfLwPolyline class
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfLwPolyline.#ctor(System.Collections.Generic.IEnumerable{IxMilia.Dxf.Entities.DxfLwPolylineVertex})">
+            <summary>
+            Creates a new LW polyline entity with the specified vertices.  NOTE, at least 2 vertices must be specified.
+            </summary>
+            <exception cref="T:System.InvalidOperationException"/>
+            <param name="vertices">The vertices to add.</param>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfLwPolyline.AsSimpleEntities">
+            <summary>
+            Converts DxfLwPolyline into a collection of DxfArc and DxfLine entities
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfMLine">
+            <summary>
+            DxfMLine class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfMText">
+            <summary>
+            DxfMText class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfOle2Frame">
+            <summary>
+            DxfOle2Frame class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfOleFrame">
+            <summary>
+            DxfOleFrame class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfPolyline">
+            <summary>
+            DxfPolyline class
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfPolyline.#ctor(System.Collections.Generic.IEnumerable{IxMilia.Dxf.Entities.DxfVertex})">
+            <summary>
+            Creates a new polyline entity with the specified vertices.  NOTE, at least 2 vertices must be specified.
+            </summary>
+            <exception cref="T:System.InvalidOperationException"/>
+            <param name="vertices">The vertices to add.</param>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfPolyline.#ctor(System.Collections.Generic.IEnumerable{IxMilia.Dxf.Entities.DxfVertex},IxMilia.Dxf.Entities.DxfSeqend)">
+            <summary>
+            Creates a new polyline entity with the specified vertices.  NOTE, at least 2 vertices must be specified.
+            </summary>
+            <exception cref="T:System.InvalidOperationException"/>
+            <param name="vertices">The vertices to add.</param>
+            <param name="seqend">The end sequence entity.</param>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfPolyline.AsSimpleEntities">
+            <summary>
+            Converts DxfPolyline into a collection of DxfArc and DxfLine entities
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfPolyline.CLO_PolylineType">
+            <summary>
+            CLO-specific value, not normally used.
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfProxyEntity">
+            <summary>
+            DxfProxyEntity class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfSpline">
+            <summary>
+            DxfSpline class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfUnderlay">
+            <summary>
+            DxfUnderlay class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfVertex">
+            <summary>
+            DxfVertex class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfWipeout">
+            <summary>
+            DxfWipeout class
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.Entities.DxfWipeout.#ctor(System.String,IxMilia.Dxf.DxfPoint,System.Int32,System.Int32,IxMilia.Dxf.DxfVector)">
+            <param name="imagePath">The path to the image.</param>
+            <param name="location">The bottom left corner of the location to display the image in the drawing.</param>
+            <param name="imageWidth">The width of the image in pixels.</param>
+            <param name="imageHeight">The height of the image in pixels.</param>
+            <param name="displaySize">The display size of the image in drawing units.</param>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.Dxf3DFace">
+            <summary>
+            Dxf3DFace class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.Dxf3DSolid">
+            <summary>
+            Dxf3DSolid class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfAngularThreePointDimension">
+            <summary>
+            DxfAngularThreePointDimension class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfArcAlignedText">
+            <summary>
+            DxfArcAlignedText class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfBody">
+            <summary>
+            DxfBody class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfCircle">
+            <summary>
+            DxfCircle class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfDgnUnderlay">
+            <summary>
+            DxfDgnUnderlay class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfDiameterDimension">
+            <summary>
+            DxfDiameterDimension class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfDwfUnderlay">
+            <summary>
+            DxfDwfUnderlay class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfEllipse">
+            <summary>
+            DxfEllipse class
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfEllipse.StartParameter">
+            <summary>
+            Ellipse start angle in radians
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Entities.DxfEllipse.EndParameter">
+            <summary>
+            Ellipse end angle in radians
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfLight">
+            <summary>
+            DxfLight class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfLine">
+            <summary>
+            DxfLine class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfModelPoint">
+            <summary>
+            DxfModelPoint class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfOrdinateDimension">
+            <summary>
+            DxfOrdinateDimension class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfPdfUnderlay">
+            <summary>
+            DxfPdfUnderlay class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfRadialDimension">
+            <summary>
+            DxfRadialDimension class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfRay">
+            <summary>
+            DxfRay class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfRegion">
+            <summary>
+            DxfRegion class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfRText">
+            <summary>
+            DxfRText class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfSeqend">
+            <summary>
+            DxfSeqend class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfShape">
+            <summary>
+            DxfShape class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfSolid">
+            <summary>
+            DxfSolid class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfText">
+            <summary>
+            DxfText class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfTolerance">
+            <summary>
+            DxfTolerance class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfTrace">
+            <summary>
+            DxfTrace class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Entities.DxfXLine">
+            <summary>
+            DxfXLine class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfAcadProxyObject">
+            <summary>
+            DxfAcadProxyObject class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfDataTable">
+            <summary>
+            DxfDataTable class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfDictionary">
+            <summary>
+            DxfDictionary class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfDictionaryVariable">
+            <summary>
+            DxfDictionaryVariable class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfDictionaryWithDefault">
+            <summary>
+            DxfDictionaryWithDefault class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfDimensionAssociativity">
+            <summary>
+            DxfDimensionAssociativity class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfField">
+            <summary>
+            DxfField class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfGeoData">
+            <summary>
+            DxfGeoData class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfGroup">
+            <summary>
+            DxfGroup class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfIdBuffer">
+            <summary>
+            DxfIdBuffer class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfImageDefinition">
+            <summary>
+            DxfImageDefinition class
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Objects.DxfImageDefinition.ImageWidth">
+            <summary>
+            Image width in pixels.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Objects.DxfImageDefinition.ImageHeight">
+            <summary>
+            Image height in pixels.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Objects.DxfImageDefinition.PixelWidth">
+            <summary>
+            Default size of one pixel.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Objects.DxfImageDefinition.PixelHeight">
+            <summary>
+            Default size of one pixel.
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfImageDefinitionReactor">
+            <summary>
+            DxfImageDefinitionReactor class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfLayerFilter">
+            <summary>
+            DxfLayerFilter class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfLayerIndex">
+            <summary>
+            DxfLayerIndex class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfLayout">
+            <summary>
+            DxfLayout class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfLightList">
+            <summary>
+            DxfLightList class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfMaterial">
+            <summary>
+            DxfMaterial class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfMentalRayRenderSettings">
+            <summary>
+            DxfMentalRayRenderSettings class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfMLeaderStyle">
+            <summary>
+            DxfMLeaderStyle class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfMLineStyle">
+            <summary>
+            DxfMLineStyle class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfNavisWorksModelDefinition">
+            <summary>
+            DxfNavisWorksModelDefinition class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfObject">
+            <summary>
+            DxfObject class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfObjectPointer">
+            <summary>
+            DxfObjectPointer class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfPlaceHolder">
+            <summary>
+            DxfPlaceHolder class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfPlotSettings">
+            <summary>
+            DxfPlotSettings class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfRapidRenderSettings">
+            <summary>
+            DxfRapidRenderSettings class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfRapidRTRenderEnvironment">
+            <summary>
+            DxfRapidRTRenderEnvironment class
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.Objects.DxfRapidRTRenderEnvironment.RotationAngle">
+            <summary>
+            Rotation angle in degrees.
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfRasterVariables">
+            <summary>
+            DxfRasterVariables class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfRenderEnvironment">
+            <summary>
+            DxfRenderEnvironment class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfRenderGlobal">
+            <summary>
+            DxfRenderGlobal class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfSectionManager">
+            <summary>
+            DxfSectionManager class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfSectionSettings">
+            <summary>
+            DxfSectionSettings class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfSortentsTable">
+            <summary>
+            DxfSortentsTable class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfSpatialFilter">
+            <summary>
+            DxfSpatialFilter class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfSpatialIndex">
+            <summary>
+            DxfSpatialIndex class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfSunStudy">
+            <summary>
+            DxfSunStudy class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfTableStyle">
+            <summary>
+            DxfTableStyle class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfUnderlayDefinition">
+            <summary>
+            DxfUnderlayDefinition class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfVbaProject">
+            <summary>
+            DxfVbaProject class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfVisualStyle">
+            <summary>
+            DxfVisualStyle class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfWipeoutVariables">
+            <summary>
+            DxfWipeoutVariables class
+            </summary>
+        </member>
+        <member name="T:IxMilia.Dxf.Objects.DxfXRecordObject">
+            <summary>
+            DxfXRecordObject class
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Version">
+            <summary>
+            The $ACADVER header variable.  The AutoCAD drawing database version number.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MaintenanceVersion">
+            <summary>
+            The $ACADMAINTVER header variable.  Maintenance version number (should be ignored).  Minimum AutoCAD version: R14.  Maximum AutoCAD version: R2013.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DrawingCodePage">
+            <summary>
+            The $DWGCODEPAGE header variable.  Drawing code page; set to the system code page when a new drawing is created, but not otherwise maintained by AutoCAD.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LastSavedBy">
+            <summary>
+            The $LASTSAVEDBY header variable.  Name of the last user to modify the file.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.RequiredVersions">
+            <summary>
+            The $REQUIREDVERSIONS header variable.  Unknown.  Minimum AutoCAD version: R2013.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.InsertionBase">
+            <summary>
+            The $INSBASE header variable.  Insertion base set by BASE command (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MinimumDrawingExtents">
+            <summary>
+            The $EXTMIN header variable.  X, Y, and Z drawing extents lower-left corner (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MaximumDrawingExtents">
+            <summary>
+            The $EXTMAX header variable.  X, Y, and Z drawing extents upper-right corner (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MinimumDrawingLimits">
+            <summary>
+            The $LIMMIN header variable.  XY drawing limits lower-left corner (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MaximumDrawingLimits">
+            <summary>
+            The $LIMMAX header variable.  XY drawing limits upper-right corner (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DrawOrthoganalLines">
+            <summary>
+            The $ORTHOMODE header variable.  Ortho mode on.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseRegenMode">
+            <summary>
+            The $REGENMODE header variable.  REGENAUTO mode on.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.FillModeOn">
+            <summary>
+            The $FILLMODE header variable.  Fill mode on.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseQuickTextMode">
+            <summary>
+            The $QTEXTMODE header variable.  Quick text mode on.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MirrorText">
+            <summary>
+            The $MIRRTEXT header variable.  Mirror text.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DragMode">
+            <summary>
+            The $DRAGMODE header variable.  Controls the way dragged objects are displayed.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LineTypeScale">
+            <summary>
+            The $LTSCALE header variable.  Global line type scale.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ObjectSnapFlags">
+            <summary>
+            The $OSMODE header variable.  Running object snap modes.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AttributeVisibility">
+            <summary>
+            The $ATTMODE header variable.  Attribute visibility.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DefaultTextHeight">
+            <summary>
+            The $TEXTSIZE header variable.  Default text height.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.TraceWidth">
+            <summary>
+            The $TRACEWID header variable.  Default trace width.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.TextStyle">
+            <summary>
+            The $TEXTSTYLE header variable.  Current text style name.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentLayer">
+            <summary>
+            The $CLAYER header variable.  Current layer name.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentEntityLineType">
+            <summary>
+            The $CELTYPE header variable.  Entity line type name, or BYBLOCK or BYLAYER.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentEntityColor">
+            <summary>
+            The $CECOLOR header variable.  Current entity color.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentEntityLineTypeScale">
+            <summary>
+            The $CELTSCALE header variable.  Current entity line type scale.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.RetainDeletedObjects">
+            <summary>
+            The $DELOBJ header variable.  Controls object deletion.  Minimum AutoCAD version: R13.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DisplaySilhouetteCurvesInWireframeMode">
+            <summary>
+            The $DISPSILH header variable.  Controls the display of silhouette curves of body objects in wireframe mode.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SolidVisualStylePointer">
+            <summary>
+            The $DRAGVS header variable.  Hard-pointer ID to visual style when creating 3D solid primitives.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensioningScaleFactor">
+            <summary>
+            The $DIMSCALE header variable.  Overall dimensioning scale factor.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensioningArrowSize">
+            <summary>
+            The $DIMASZ header variable.  Dimensioning arrow size.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionExtensionLineOffset">
+            <summary>
+            The $DIMEXO header variable.  Extension line offset.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineIncrement">
+            <summary>
+            The $DIMDLI header variable.  Dimension line increment.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionDistanceRoundingValue">
+            <summary>
+            The $DIMRND header variable.  Rounding value for dimension distances.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineExtension">
+            <summary>
+            The $DIMDLE header variable.  Dimension line extension.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionExtensionLineExtension">
+            <summary>
+            The $DIMEXE header variable.  Extension line extension.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionPlusTolerance">
+            <summary>
+            The $DIMTP header variable.  Plus tolerance.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionMinusTolerance">
+            <summary>
+            The $DIMTM header variable.  Minus tolerance.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensioningTextHeight">
+            <summary>
+            The $DIMTXT header variable.  Dimensioning text height.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CenterMarkSize">
+            <summary>
+            The $DIMCEN header variable.  Size of center mark/lines.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensioningTickSize">
+            <summary>
+            The $DIMTSZ header variable.  Dimensioning tick size.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.GenerateDimensionTolerances">
+            <summary>
+            The $DIMTOL header variable.  Dimension tolerances generated.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.GenerateDimensionLimits">
+            <summary>
+            The $DIMLIM header variable.  Dimension limits generated.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextInsideHorizontal">
+            <summary>
+            The $DIMTIH header variable.  Text inside horizontal.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextOutsideHorizontal">
+            <summary>
+            The $DIMTOH header variable.  Text outside horizontal.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SuppressFirstDimensionExtensionLine">
+            <summary>
+            The $DIMSE1 header variable.  Suppression of first extension line.  Minimum AutoCAD version: R12.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SuppressSecondDimensionExtensionLine">
+            <summary>
+            The $DIMSE2 header variable.  Suppression of second extension line.  Minimum AutoCAD version: R12.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.TextAboveDimensionLine">
+            <summary>
+            The $DIMTAD header variable.  Text above dimension line.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionUnitZeroSuppression">
+            <summary>
+            The $DIMZIN header variable.  Controls suppression of zeros for primary unit values.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ArrowBlockName">
+            <summary>
+            The $DIMBLK header variable.  Arrow block name.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CreateAssociativeDimensioning">
+            <summary>
+            The $DIMASO header variable.  Controls associative dimensioning.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.RecomputeDimensionsWhileDragging">
+            <summary>
+            The $DIMSHO header variable.  Recompute dimensions while dragging.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensioningSuffix">
+            <summary>
+            The $DIMPOST header variable.  General dimensioning suffix.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningSuffix">
+            <summary>
+            The $DIMAPOST header variable.  Alternate dimensioning suffix.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseAlternateDimensioning">
+            <summary>
+            The $DIMALT header variable.  Alternate unit dimensioning performed.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningDecimalPlaces">
+            <summary>
+            The $DIMALTD header variable.  Alternate unit decimal places.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningScaleFactor">
+            <summary>
+            The $DIMALTF header variable.  Alternate unit scale factor.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLinearMeasurementsScaleFactor">
+            <summary>
+            The $DIMLFAC header variable.  Linear measurements scale factor.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ForceDimensionLineExtensionsOutsideIfTextIs">
+            <summary>
+            The $DIMTOFL header variable.  If text is outside extensions, force line extensions between extensions.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionVerticalTextPosition">
+            <summary>
+            The $DIMTVP header variable.  Text vertical position.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ForceDimensionTextInsideExtensions">
+            <summary>
+            The $DIMTIX header variable.  Force text inside extensions.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SuppressOutsideExtensionDimensionLines">
+            <summary>
+            The $DIMSOXD header variable.  Suppress outside-extensions dimension lines.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseSeparateArrowBlocksForDimensions">
+            <summary>
+            The $DIMSAH header variable.  Use separate arrow blocks.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.FirstArrowBlockName">
+            <summary>
+            The $DIMBLK1 header variable.  First arrow block name.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SecondArrowBlockName">
+            <summary>
+            The $DIMBLK2 header variable.  Second arrow block name.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionStyleName">
+            <summary>
+            The $DIMSTYLE header variable.  Dimension style name.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineColor">
+            <summary>
+            The $DIMCLRD header variable.  Dimension line color.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionExtensionLineColor">
+            <summary>
+            The $DIMCLRE header variable.  Dimension extension line color.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextColor">
+            <summary>
+            The $DIMCLRT header variable.  Dimension text color.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionToleranceDisplayScaleFactor">
+            <summary>
+            The $DIMTFAC header variable.  Dimension tolerance display factor.  Minimum AutoCAD version: R12.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineGap">
+            <summary>
+            The $DIMGAP header variable.  Dimension line gap.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextJustification">
+            <summary>
+            The $DIMJUST header variable.  Horizontal dimension text position.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionToleranceVerticalJustification">
+            <summary>
+            The $DIMTOLJ header variable.  Vertical justification for tolerance values.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionToleranceZeroSuppression">
+            <summary>
+            The $DIMTZIN header variable.  Controls suppression of zeros for tolerance values.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningZeroSupression">
+            <summary>
+            The $DIMALTZ header variable.  Controls suppression of zeros for alternate unit dimension values.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningToleranceZeroSupression">
+            <summary>
+            The $DIMALTTZ header variable.  Controls suppression of zeros for alternate tolerance values.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextAndArrowPlacement">
+            <summary>
+            The $DIMFIT header variable.  Placement of text and arrowheads.  Minimum AutoCAD version: R13.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionCursorControlsTextPosition">
+            <summary>
+            The $DIMUPT header variable.  Cursor functionality for user-positioned text.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionUnitFormat">
+            <summary>
+            The $DIMUNIT header variable.  Units format for all dimension style family members except angular.  Minimum AutoCAD version: R13.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionUnitToleranceDecimalPlaces">
+            <summary>
+            The $DIMDEC header variable.  Number of decimal places for the tolerance values of a primary units dimension.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionToleranceDecimalPlaces">
+            <summary>
+            The $DIMTDEC header variable.  Number of decimal places to display the tolerance values.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningUnits">
+            <summary>
+            The $DIMALTU header variable.  Units format for alternate units of all dimension style family members except angular.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningToleranceDecimalPlaces">
+            <summary>
+            The $DIMALTTD header variable.  Number of decimal places for tolerance values of an alternate units dimension.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextStyle">
+            <summary>
+            The $DIMTXSTY header variable.  Dimension text style.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensioningAngleFormat">
+            <summary>
+            The $DIMAUNIT header variable.  Angle format for angular dimensions.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AngularDimensionPrecision">
+            <summary>
+            The $DIMADEC header variable.  Number of precision places displayed in angular dimensions.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlternateDimensioningUnitRounding">
+            <summary>
+            The $DIMALTRND header variable.  Determines rounding of alternate units.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionAngleZeroSuppression">
+            <summary>
+            The $DIMAZIN header variable.  Controls suppression of zeros for angular dimensions.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionDecimalSeparatorChar">
+            <summary>
+            The $DIMDSEP header variable.  Single-character decimal separator used when creating dimensions whose unit format is decimal.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextHeightScaleFactor">
+            <summary>
+            The $DIMFRAC header variable.  Sets the fraction format when DIMLUNIT is set to Architectural or Fractional.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLeaderBlockName">
+            <summary>
+            The $DIMLDRBLK header variable.  Arrow block name for leaders.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionNonAngularUnits">
+            <summary>
+            The $DIMLUNIT header variable.  Sets units for all dimension types except angular.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineWeight">
+            <summary>
+            The $DIMLWD header variable.  Dimension line lineweight.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionExtensionLineWeight">
+            <summary>
+            The $DIMLWE header variable.  Extension line lineweight.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextMovementRule">
+            <summary>
+            The $DIMTMOVE header variable.  Dimension text movement rules.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineFixedLength">
+            <summary>
+            The $DIMFXL header variable.  Sets the total length of the extension lines starting from the dimension line toward the dimension origin.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineFixedLengthOn">
+            <summary>
+            The $DIMFXLON header variable.  Controls whether extension lines are set to a fixed length.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTransverseSegmentAngleInJoggedRadius">
+            <summary>
+            The $DIMJOGANG header variable.  Determines the angle of the transverse segment of the dimension line in a jogged radius dimension.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextBackgroundColorMode">
+            <summary>
+            The $DIMTFILL header variable.  Controls the background of dimension text.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DxfDimensionTextBackgroundCustomColor">
+            <summary>
+            The $DIMTFILLCLR header variable.  Sets the color for the text background in dimensions.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionArcSymbolDisplayMode">
+            <summary>
+            The $DIMARCSYM header variable.  Controls the display of the arc symbol in an arc length dimension.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionLineType">
+            <summary>
+            The $DIMLTYPE header variable.  Sets the line type of the dimension line.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionFirstExtensionLineType">
+            <summary>
+            The $DIMLTEX1 header variable.  Sets the line type of the first extension line.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionSecondExtensionLineType">
+            <summary>
+            The $DIMLTEX2 header variable.  Sets the line type of the second extension line.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionTextDirection">
+            <summary>
+            The $DIMTXTDIRECTION header variable.  Specifies the reading direction of the dimension text.  Minimum AutoCAD version: R2010.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UnitFormat">
+            <summary>
+            The $LUNITS header variable.  Units format for coordinates and distances.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UnitPrecision">
+            <summary>
+            The $LUPREC header variable.  Units precision for coordinates and distances.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SketchRecordIncrement">
+            <summary>
+            The $SKETCHINC header variable.  Sketch record increment.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.FilletRadius">
+            <summary>
+            The $FILLETRAD header variable.  Fillet radius.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AngleUnitFormat">
+            <summary>
+            The $AUNITS header variable.  Units format for angles.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AngleUnitPrecision">
+            <summary>
+            The $AUPREC header variable.  Units precision for angles.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.FileName">
+            <summary>
+            The $MENU header variable.  Name of menu file.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Elevation">
+            <summary>
+            The $ELEVATION header variable.  Current elevation set by ELEV command.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceElevation">
+            <summary>
+            The $PELEVATION header variable.  Current paper space elevation.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Thickness">
+            <summary>
+            The $THICKNESS header variable.  Current thickness set by ELEV command.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseLimitsChecking">
+            <summary>
+            The $LIMCHECK header variable.  Limits checking.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.BlipMode">
+            <summary>
+            The $BLIPMODE header variable.  Display blips for click locations.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.FirstChamferDistance">
+            <summary>
+            The $CHAMFERA header variable.  First chamfer distance.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SecondChamferDistance">
+            <summary>
+            The $CHAMFERB header variable.  Second chamfer distance.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ChamferLength">
+            <summary>
+            The $CHAMFERC header variable.  Chamfer length.  Minimum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ChamferAngle">
+            <summary>
+            The $CHAMFERD header variable.  Chamfer angle.  Minimum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PolylineSketchMode">
+            <summary>
+            The $SKPOLY header variable.  Controls polyline sketch mode.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CreationDate">
+            <summary>
+            The $TDCREATE header variable.  Local date/time of drawing creation.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CreationDateUniversal">
+            <summary>
+            The $TDUCREATE header variable.  Universal date/time the drawing was created.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UpdateDate">
+            <summary>
+            The $TDUPDATE header variable.  Local date/time of last drawing update.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UpdateDateUniversal">
+            <summary>
+            The $TDUUPDATE header variable.  Universal date/time of the last update/save.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.TimeInDrawing">
+            <summary>
+            The $TDINDWG header variable.  Cumulative editing time for this drawing.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserElapsedTimer">
+            <summary>
+            The $TDUSRTIMER header variable.  User-elapsed timer.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserTimerOn">
+            <summary>
+            The $USRTIMER header variable.  User timer on.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AngleZeroDirection">
+            <summary>
+            The $ANGBASE header variable.  Angle 0 direction.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AngleDirection">
+            <summary>
+            The $ANGDIR header variable.  Angle directions.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PointDisplayMode">
+            <summary>
+            The $PDMODE header variable.  Point display mode.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PointDisplaySize">
+            <summary>
+            The $PDSIZE header variable.  Point display size.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DefaultPolylineWidth">
+            <summary>
+            The $PLINEWID header variable.  Default polyline width.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CoordinateDisplay">
+            <summary>
+            The $COORDS header variable.  Controls the display of coordinates.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DisplaySplinePolygonControl">
+            <summary>
+            The $SPLFRAME header variable.  Controls the display of helixes and smoothed mesh objects.  Maximum AutoCAD version: R2013.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PEditSplineCurveType">
+            <summary>
+            The $SPLINETYPE header variable.  Spline curve type for PEDIT Spline.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LineSegmentsPerSplinePatch">
+            <summary>
+            The $SPLINESEGS header variable.  Number of line segments per spline hatch.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ShowAttributeEntryDialogs">
+            <summary>
+            The $ATTDIA header variable.  Controls whether the INSERT command uses a dialog box for attribute value entry.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PromptForAttributeOnInsert">
+            <summary>
+            The $ATTREQ header variable.  Controls whether INSERT uses default attribute settings during insertion of blocks.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.HandlesEnabled">
+            <summary>
+            The $HANDLING header variable.  Handles available.  Maximum AutoCAD version: R12.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NextAvailableHandle">
+            <summary>
+            The $HANDSEED header variable.  Next available handle.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MeshTabulationsInFirstDirection">
+            <summary>
+            The $SURFTAB1 header variable.  Number of mesh tabulations in first direction.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MeshTabulationsInSecondDirection">
+            <summary>
+            The $SURFTAB2 header variable.  Number of mesh tabulations in second direction.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PEditSmoothSurfaceType">
+            <summary>
+            The $SURFTYPE header variable.  Surface type for PEDIT Smooth.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PEditSmoothMDensity">
+            <summary>
+            The $SURFU header variable.  Surface density (for PEDIT Smooth) in M direction.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PEditSmoothNDensity">
+            <summary>
+            The $SURFV header variable.  Surface density (for PEDIT Smooth) in N direction.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSDefinitionName">
+            <summary>
+            The $UCSBASE header variable.  Name of the UCS that defines the origin and orientation of orthographic UCS settings.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSName">
+            <summary>
+            The $UCSNAME header variable.  Name of current UCS.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSOrigin">
+            <summary>
+            The $UCSORG header variable.  Origin of current UCS (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSXAxis">
+            <summary>
+            The $UCSXDIR header variable.  Direction of the current UCS X axis (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSYAxis">
+            <summary>
+            The $UCSYDIR header variable.  Direction of the current UCS Y axis (in WCS).
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.OrthoUCSReference">
+            <summary>
+            The $UCSORTHOREF header variable.  If model space UCS is orthographic (UCSORTHOVIEW not equal to 0), this is the name of the UCS that the orthographic UCS is relative to. If blank, UCS is relative to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.OrthographicViewType">
+            <summary>
+            The $UCSORTHOVIEW header variable.  Orthographic view type of model space UCS.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSOriginTop">
+            <summary>
+            The $UCSORGTOP header variable.  Point which becomes the new UCS origin after changing model space UCS to TOP when UCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSOriginBottom">
+            <summary>
+            The $UCSORGBOTTOM header variable.  Point which becomes the new UCS origin after changing model space UCS to BOTTOM when UCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSOriginLeft">
+            <summary>
+            The $UCSORGLEFT header variable.  Point which becomes the new UCS origin after changing model space UCS to LEFT when UCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSOriginRight">
+            <summary>
+            The $UCSORGRIGHT header variable.  Point which becomes the new UCS origin after changing model space UCS to RIGHT when UCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSOriginFront">
+            <summary>
+            The $UCSORGFRONT header variable.  Point which becomes the new UCS origin after changing model space UCS to FRONT when UCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UCSOriginBack">
+            <summary>
+            The $UCSORGBACK header variable.  Point which becomes the new UCS origin after changing model space UCS to BACK when UCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSDefinitionName">
+            <summary>
+            The $PUCSBASE header variable.  Name of the UCS that defines the origin and orientation of orthographics UCS settings (paper space only).  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSName">
+            <summary>
+            The $PUCSNAME header variable.  Current paper space UCS name.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSOrigin">
+            <summary>
+            The $PUCSORG header variable.  Current paper space UCS origin.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceXAxis">
+            <summary>
+            The $PUCSXDIR header variable.  Current paper space UCS X axis.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceYAxis">
+            <summary>
+            The $PUCSYDIR header variable.  Current paper space UCS Y axis.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceOrthoUCSReference">
+            <summary>
+            The $PUCSORTHOREF header variable.  If paper space UCS is orthographic (PUCSORTHOVIEW not equal to 0), this is the name of the UCS that the orthographic UCS is relative to. If blank, UCS is relative to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceOrthographicViewType">
+            <summary>
+            The $PUCSORTHOVIEW header variable.  Orthographic view type of paper space UCS.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSOriginTop">
+            <summary>
+            The $PUCSORGTOP header variable.  Point which becomes the new UCS origin after changing paper space UCS to TOP when PUCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSOriginBottom">
+            <summary>
+            The $PUCSORGBOTTOM header variable.  Point which becomes the new UCS origin after changing paper space UCS to BOTTOM when PUCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSOriginLeft">
+            <summary>
+            The $PUCSORGLEFT header variable.  Point which becomes the new UCS origin after changing paper space UCS to LEFT when PUCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSOriginRight">
+            <summary>
+            The $PUCSORGRIGHT header variable.  Point which becomes the new UCS origin after changing paper space UCS to RIGHT when PUCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSOriginFront">
+            <summary>
+            The $PUCSORGFRONT header variable.  Point which becomes the new UCS origin after changing paper space UCS to FRONT when PUCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceUCSOriginBack">
+            <summary>
+            The $PUCSORGBACK header variable.  Point which becomes the new UCS origin after changing paper space UCS to BACK when PUCSBASE is set to WORLD.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserInt1">
+            <summary>
+            The $USERI1 header variable.  Integer variable intended for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserInt2">
+            <summary>
+            The $USERI2 header variable.  Integer variable intended for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserInt3">
+            <summary>
+            The $USERI3 header variable.  Integer variable intended for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserInt4">
+            <summary>
+            The $USERI4 header variable.  Integer variable intended for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserInt5">
+            <summary>
+            The $USERI5 header variable.  Integer variable intended for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserReal1">
+            <summary>
+            The $USERR1 header variable.  Real variable indented for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserReal2">
+            <summary>
+            The $USERR2 header variable.  Real variable indented for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserReal3">
+            <summary>
+            The $USERR3 header variable.  Real variable indented for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserReal4">
+            <summary>
+            The $USERR4 header variable.  Real variable indented for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UserReal5">
+            <summary>
+            The $USERR5 header variable.  Real variable indented for use by third-party developers.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SetUCSToWCSInDViewOrVPoint">
+            <summary>
+            The $WORLDVIEW header variable.  Set UCS to WCS during DVIEW/VPOINT.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.EdgeShading">
+            <summary>
+            The $SHADEDGE header variable.  Controls shading of faces.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PercentAmbientToDiffuse">
+            <summary>
+            The $SHADEDIF header variable.  Percent ambient/diffuse light; range 1-100.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PreviousReleaseTileCompatibility">
+            <summary>
+            The $TILEMODE header variable.  Use previous release compatibility mode.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MaximumActiveViewports">
+            <summary>
+            The $MAXACTVP header variable.  Sets the maximum number of viewports to be regenerated.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceInsertionBase">
+            <summary>
+            The $PINSBASE header variable.  Paper space insertion base point.  Minimum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LimitCheckingInPaperspace">
+            <summary>
+            The $PLIMCHECK header variable.  Limits checking in paper space.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceMinimumDrawingExtents">
+            <summary>
+            The $PEXTMIN header variable.  Minimum X, Y, and Z extents for paper space.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceMaximumDrawingExtents">
+            <summary>
+            The $PEXTMAX header variable.  Maximum X, Y, and Z extents for paper space.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceMinimumDrawingLimits">
+            <summary>
+            The $PLIMMIN header variable.  Minimum X and Y limits in paper space.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PaperspaceMaximumDrawingLimits">
+            <summary>
+            The $PLIMMAX header variable.  Maximum X and Y limits in paper space.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DisplayFractionsInInput">
+            <summary>
+            The $UNITMODE header variable.  Display fractions, feet-and-inches, and surveyor's angles in input format.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.RetainXRefDependentVisibilitySettings">
+            <summary>
+            The $VISRETAIN header variable.  Retain xref-dependent visibility settings.  Minimum AutoCAD version: R12.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.IsPolylineContinuousAroundVertices">
+            <summary>
+            The $PLINEGEN header variable.  Governs the generation of line type patterns around the vertices of a 2D polyline.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ScaleLineTypesInPaperspace">
+            <summary>
+            The $PSLTSCALE header variable.  Controls paper space line type scaling.  Minimum AutoCAD version: R11.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SpacialIndexMaxDepth">
+            <summary>
+            The $TREEDEPTH header variable.  Specifies the maximum depth of the spatial index.  Minimum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PickStyle">
+            <summary>
+            The $PICKSTYLE header variable.  Controls the group selection and associative hatch selection.  Minimum AutoCAD version: R13.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentMultilineStyle">
+            <summary>
+            The $CMLSTYLE header variable.  Current multiline style name.  Minimum AutoCAD version: R13.  Maximum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentMultilineJustification">
+            <summary>
+            The $CMLJUST header variable.  Current multiline justification.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentMultilineScale">
+            <summary>
+            The $CMLSCALE header variable.  Current multiline scale.  Minimum AutoCAD version: R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SaveProxyGraphics">
+            <summary>
+            The $PROXYGRAPHICS header variable.  Controls the saving of proxy object images.  Minimum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DrawingUnits">
+            <summary>
+            The $MEASUREMENT header variable.  Sets drawing units.  Minimum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NewObjectLineWeight">
+            <summary>
+            The $CELWEIGHT header variable.  Lineweight of new objects.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.EndCapSetting">
+            <summary>
+            The $ENDCAPS header variable.  Lineweight endcaps setting for new objects.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LineweightJointSetting">
+            <summary>
+            The $JOINSTYLE header variable.  Lineweight join setting for new objects.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DisplayLineweightInModelAndLayoutTab">
+            <summary>
+            The $LWDISPLAY header variable.  Controls the display of lineweights on the Model or Layout tab.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DefaultDrawingUnits">
+            <summary>
+            The $INSUNITS header variable.  Default drawing units for AutoCAD DesignCenter blocks.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.HyperlinkBase">
+            <summary>
+            The $HYPERLINKBASE header variable.  Path for all relative hyperlinks in the drawing.  If null, the drawing path is used.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Stylesheet">
+            <summary>
+            The $STYLESHEET header variable.  Path to the stylesheet for the drawing.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CanUseInPlaceReferenceEditing">
+            <summary>
+            The $XEDIT header variable.  Controls whether the current drawing can be edited in-place when being referenced by another drawing.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NewObjectPlotStyleHandle">
+            <summary>
+            The $CEPSNID header variable.  PlotStyle handle of new objects.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NewObjectPlotStyle">
+            <summary>
+            The $CEPSNTYPE header variable.  Plot style of new objects.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UsesColorDependentPlotStyleTables">
+            <summary>
+            The $PSTYLEMODE header variable.  Indicates whether the current drawing is in a Color-Dependent or Named Plot Style mode.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.FingerprintGuid">
+            <summary>
+            The $FINGERPRINTGUID header variable.  Set at creation time, uniquely identifies a particular drawing.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.VersionGuid">
+            <summary>
+            The $VERSIONGUID header variable.  Uniquely identifies a particular version of a drawing.  Updated when the drawing is modified.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseACad2000SymbolTableNaming">
+            <summary>
+            The $EXTNAMES header variable.  Controls symbol table naming.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ViewportViewScaleFactor">
+            <summary>
+            The $PSVPSCALE header variable.  View scale factor for new viewports.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.OleStartup">
+            <summary>
+            The $OLESTARTUP header variable.  Controls whether the source application of an embedded OLE object loads when plotting.  Minimum AutoCAD version: R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ObjectSortingMethodsFlags">
+            <summary>
+            The $SORTENTS header variable.  Controls the object sorting methods; accessible from the Options dialog box User Preferences tab.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LayerAndSpatialIndexSaveMode">
+            <summary>
+            The $INDEXCTL header variable.  Controls whether layer and spatial indexes are created and saved in drawing files.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.HideTextObjectsWhenProducingHiddenView">
+            <summary>
+            The $HIDETEXT header variable.  Ignore text objects.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.IsXRefClippingBoundaryVisible">
+            <summary>
+            The $XCLIPFRAME header variable.  Controls the visibility of xref clipping boundaries.  Minimum AutoCAD version: R2004.  Maximum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.HaloGapPercent">
+            <summary>
+            The $HALOGAP header variable.  Specifies a gap to be displayed where an object is hidden by another object; the value is specified as a percent of one unit and is independent of the zoom level.  A haloed line is shortened at the point where it is hidden when HIDE or the Hidden option of SHADEMODE is used.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ObscuredLineColor">
+            <summary>
+            The $OBSCOLOR header variable.  Specifies the color of obscured lines.  An obscured line is a hidden line made visible by changing its color and line type and is visible only when the HIDE or SHADEMODE command is used.  The OBSCUREDCOLOR setting is visible only if the OBSCUREDLTYPE is turned ON by setting it to a value other than 0.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ObscuredLineTypeStyle">
+            <summary>
+            The $OBSLTYPE header variable.  Specifies the line type of obscured lines.  Obscured line types are independent of zoom level, unlike regular AutoCAD line types.  Value 0 turns off display of obscured lines and is the default.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DisplayIntersectionPolylines">
+            <summary>
+            The $INTERSECTIONDISPLAY header variable.  Specifies the display of intersection polylines.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.IntersectionPolylineColor">
+            <summary>
+            The $INTERSECTIONCOLOR header variable.  Specifies the entity color of intersection polylines.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DimensionObjectAssociativity">
+            <summary>
+            The $DIMASSOC header variable.  Controls the associativity of dimension objects.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ProjectName">
+            <summary>
+            The $PROJECTNAME header variable.  Assigns a project name to the current drawing.  Used when an external reference or image is not found on its original path.  The project name points to a section in the registry that can contain one or more search paths for each project name defined.  Project names and their search directories are created from the Files tab of the Options dialog box.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseCameraDisplay">
+            <summary>
+            The $CAMERADISPLAY header variable.  Turns the display of camera objects on or off.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LensLength">
+            <summary>
+            The $LENSLENGTH header variable.  Stores the length of the lens in millimeters used in perspective viewing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CameraHeight">
+            <summary>
+            The $CAMERAHEIGHT header variable.  Specifies the default height for new camera objects.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.StepsPerSecondInWalkOrFlyMode">
+            <summary>
+            The $STEPSPERSEC header variable.  Specifies the number of steps taken per second when you are in walk or fly mode.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.StepSizeInWalkOrFlyMode">
+            <summary>
+            The $STEPSIZE header variable.  Specifies the size of each step when in walk or fly mode, in drawing units.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Dwf3DPrecision">
+            <summary>
+            The $3DDWFPREC header variable.  Controls the precision of 3D DWF or 3D DWFx publishing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LastPolySolidWidth">
+            <summary>
+            The $PSOLWIDTH header variable.  Controls the default width for a swept solid object created with the POLYSOLID command.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LastPolySolidHeight">
+            <summary>
+            The $PSOLHEIGHT header variable.  Controls the default height for a swept solid object created with the POLYSOLID command.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LoftOperationFirstDraftAngle">
+            <summary>
+            The $LOFTANG1 header variable.  Sets the draft angle through the first cross section in a loft operation.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LoftOperationSecondDraftAngle">
+            <summary>
+            The $LOFTANG2 header variable.  Sets the draft angle through the second cross section in a loft operation.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LoftOperationFirstMagnitude">
+            <summary>
+            The $LOFTMAG1 header variable.  Sets the magnitude of the draft angle through the first cross section in a loft operation.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LoftOperationSecondMagnitude">
+            <summary>
+            The $LOFTMAG2 header variable.  Sets the magnitude of the draft angle through the second cross section in a loft operation.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LoftFlags">
+            <summary>
+            The $LOFTPARAM header variable.  Controls the shape of lofted solids and surfaces.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.LoftedObjectNormalMode">
+            <summary>
+            The $LOFTNORMALS header variable.  Controls the normals of a lofted object where it passes through cross sections.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Latitude">
+            <summary>
+            The $LATITUDE header variable.  The latitude of the geographic location assigned to the drawing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Longitude">
+            <summary>
+            The $LONGITUDE header variable.  The longitude of the geographic location assigned to the drawing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AngleBetweenYAxisAndNorth">
+            <summary>
+            The $NORTHDIRECTION header variable.  Specifies the angle between the Y axis of WCS and the grid north.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.TimeZone">
+            <summary>
+            The $TIMEZONE header variable.  Sets the time zone for the sun in the drawing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseLightGlyphDisplay">
+            <summary>
+            The $LIGHTGLYPHDISPLAY header variable.  Turns on and off the display of light glyphs.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseTileModeLightSync">
+            <summary>
+            The $TILEMODELIGHTSYNCH header variable.  Unknown.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CurrentMaterialHandle">
+            <summary>
+            The $CMATERIAL header variable.  Sets the material of new objects.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NewSolidsContainHistory">
+            <summary>
+            The $SOLIDHIST header variable.  Controls whether new composite solids retain a history of their original components.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SolidHistoryMode">
+            <summary>
+            The $SHOWHIST header variable.  Controls the Show History property for solids in a drawing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DwfUnderlayFrameMode">
+            <summary>
+            The $DWFFRAME header variable.  Determines whether DWF or DWFx underlay frames are visible or plotted in the current drawing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.DgnUnderlayFrameMode">
+            <summary>
+            The $DGNFRAME header variable.  Determines whether DGN underlay frames are visible or plotted in the current drawing.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.UseRealWorldScale">
+            <summary>
+            The $REALWORLDSCALE header variable.  Drawing is scaled to the real world.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.InterferenceObjectColor">
+            <summary>
+            The $INTERFERECOLOR header variable.  Represents the ACI color index of the "interference objects" created during the interfere command.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.InterferenceObjectVisualStylePointer">
+            <summary>
+            The $INTERFEREOBJVS header variable.  Hard-pointer ID to the visual stype for interference objects.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.InterferenceViewPortVisualStylePointer">
+            <summary>
+            The $INTERFEREVPVS header variable.  Hard-pointer ID to the visual styoe for the viewport during interference checking.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ShadowMode">
+            <summary>
+            The $CSHADOW header variable.  Shadow mode for a 3D object.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ShadowPlaneZOffset">
+            <summary>
+            The $SHADOWPLANELOCATION header variable.  Location of the ground shadow plane.  This is a Z axis ordinate.  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AxisOn">
+            <summary>
+            The $AXISMODE header variable.  Axis on.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AxisTickSpacing">
+            <summary>
+            The $AXISUNIT header variable.  Axis X and Y tick spacing.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.FastZoom">
+            <summary>
+            The $FASTZOOM header variable.  Fast zoom enabled.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.GridOn">
+            <summary>
+            The $GRIDMODE header variable.  Grid mode on.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.GridSpacing">
+            <summary>
+            The $GRIDUNIT header variable.  Grid X and Y spacing.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SnapRotationAngle">
+            <summary>
+            The $SNAPANG header variable.  Snap grid rotation angle.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SnapBasePoint">
+            <summary>
+            The $SNAPBASE header variable.  Snap/grid/base point (in UCS).  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SnapIsometricPlane">
+            <summary>
+            The $SNAPISOPAIR header variable.  Isometric plane.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SnapOn">
+            <summary>
+            The $SNAPMODE header variable.  Snap mode on.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SnapStyle">
+            <summary>
+            The $SNAPSTYLE header variable.  Snap style.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SnapSpacing">
+            <summary>
+            The $SNAPUNIT header variable.  Snap grid X and Y spacing.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ViewCenter">
+            <summary>
+            The $VIEWCTR header variable.  XY center of current view on screen.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ViewDirection">
+            <summary>
+            The $VIEWDIR header variable.  Viewing direction (direction from target in WCS).  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ViewHeight">
+            <summary>
+            The $VIEWSIZE header variable.  Height of view.  Maximum AutoCAD version: R10.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.EndPointSnap">
+            <summary>
+            Snap to line segment endpoints.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.MidPointSnap">
+            <summary>
+            Snap to line segment midpoints.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.CenterSnap">
+            <summary>
+            Snap to circle and arc center points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NodeSnap">
+            <summary>
+            Snap to nodes.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.QuadrantSnap">
+            <summary>
+            Snap to circle quadrants.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.IntersectionSnap">
+            <summary>
+            Snap to segment intersections.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.InsertionSnap">
+            <summary>
+            Snap to block insertion points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.PerpendicularSnap">
+            <summary>
+            Snap to perpendicular points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.TangentSnap">
+            <summary>
+            Snap to tangent points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NearestSnap">
+            <summary>
+            Snap to nearest object points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ApparentIntersectionSnap">
+            <summary>
+            Snap to apparent intersection points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ExtensionSnap">
+            <summary>
+            Snap to extension points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.ParallelSnap">
+            <summary>
+            Snap to parallel points.  Maximum AutoCAD version: R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SortObjectsForObjectSelection">
+            <summary>
+            Sorts for object selection.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SortObjectsForObjectSnap">
+            <summary>
+            Sorts for object snap.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SortObjectsForRedraw">
+            <summary>
+            Sorts for redraws.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SortObjectsForMSlide">
+            <summary>
+            Sorts for MSLIDE command slide creation.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SortObjectsForRegen">
+            <summary>
+            Sorts for REGEN commands.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SortObjectsForPlotting">
+            <summary>
+            Sorts for plotting.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.SortObjectsForPostScriptOutput">
+            <summary>
+            Sorts for PostScript output.  Minimum AutoCAD version: R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.NoTwist">
+            <summary>
+            No twist (minimizes the twist between cross sections).  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.AlignDirection">
+            <summary>
+            Align direction (aligns the start to end direction of each cross section curve).  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Simplify">
+            <summary>
+            Simplify (produces simple solids and surfaces, such as a cylinder or plane, instead of spline solids and surfaces).  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfHeader.Close">
+            <summary>
+            Close (closes the surface or solid between the first and the last cross sections).  Minimum AutoCAD version: R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfBlockRecord.LayoutHandle">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfBlockRecord.InsertionUnits">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfBlockRecord.Explodability">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfBlockRecord.Scalability">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfBlockRecord._bitmapPreviewData">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensioningSuffix">
+            <summary>
+            Corresponds to header variable DIMPOST.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningSuffix">
+            <summary>
+            Corresponds to header variable DIMAPOST.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.ArrowBlockName">
+            <summary>
+            Obsolete.  Corresponds to header variable DIMBLK.  Maximum drawing version R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.FirstArrowBlockName">
+            <summary>
+            Obsolete.  Corresponds to header variable DIMBLK1.  Maximum drawing version R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.SecondArrowBlockName">
+            <summary>
+            Obsolete.  Corresponds to header variable DIMBLK2.  Maximum drawing version R14.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensioningScaleFactor">
+            <summary>
+            Corresponds to header variable DIMSCALE.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensioningArrowSize">
+            <summary>
+            Corresponds to header variable DIMASZ.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionExtensionLineOffset">
+            <summary>
+            Corresponds to header variable DIMEXO.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionLineIncrement">
+            <summary>
+            Corresponds to header variable DIMDLI.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionExtensionLineExtension">
+            <summary>
+            Corresponds to header variable DIMEXE.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionDistanceRoundingValue">
+            <summary>
+            Corresponds to header variable DIMRND.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionLineExtension">
+            <summary>
+            Corresponds to header variable DIMDLE.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionPlusTolerance">
+            <summary>
+            Corresponds to header variable DIMTP.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionMinusTolerance">
+            <summary>
+            Corresponds to header variable DIMTM.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.GenerateDimensionTolerances">
+            <summary>
+            Corresponds to header variable DIMTOL.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.GenerateDimensionLimits">
+            <summary>
+            Corresponds to header variable DIMLIM.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionTextInsideHorizontal">
+            <summary>
+            Corresponds to header variable DIMTIH.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionTextOutsideHorizontal">
+            <summary>
+            Corresponds to header variable DIMTOH.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.SuppressFirstDimensionExtensionLine">
+            <summary>
+            Corresponds to header variable DIMSE1.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.SuppressSecondDimensionExtensionLine">
+            <summary>
+            Corresponds to header variable DIMSE2.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.TextAboveDimensionLine">
+            <summary>
+            Corresponds to header variable DIMTAD.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionUnitZeroSuppression">
+            <summary>
+            Corresponds to header variable DIMZIN.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionAngleZeroSuppression">
+            <summary>
+            Corresponds to header variable DIMAZIN.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensioningTextHeight">
+            <summary>
+            Corresponds to header variable DIMTXT.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.CenterMarkSize">
+            <summary>
+            Corresponds to header variable DIMCEN.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensioningTickSize">
+            <summary>
+            Corresponds to header variable DIMTSZ.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningScaleFactor">
+            <summary>
+            Corresponds to header variable DIMALTF.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionLinearMeasurementScaleFactor">
+            <summary>
+            Corresponds to header variable DIMLFAC.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionVerticalTextPosition">
+            <summary>
+            Corresponds to header variable DIMTVP.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionToleranceDisplaceScaleFactor">
+            <summary>
+            Corresponds to header variable DIMTFAC.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionLineGap">
+            <summary>
+            Corresponds to header variable DIMGAP.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningUnitRounding">
+            <summary>
+            Corresponds to header variable DIMALTRND.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.UseAlternateDimensioning">
+            <summary>
+            Corresponds to header variable DIMALT.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningDecimalPlaces">
+            <summary>
+            Corresponds to header variable DIMALTD.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.ForceDimensionLineExtensionsOutsideIfTextExists">
+            <summary>
+            Corresponds to header variable DIMTOFL.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.UseSeparateArrowBlocksForDimensions">
+            <summary>
+            Corresponds to header variable DIMSAH.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.ForceDimensionTextInsideExtensions">
+            <summary>
+            Corresponds to header variable DIMTIX.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.SuppressOutsideExtensionDimensionLines">
+            <summary>
+            Corresponds to header variable DIMSOXD.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionLineColor">
+            <summary>
+            Corresponds to header variable DIMCLRD.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionExtensionLineColor">
+            <summary>
+            Corresponds to header variable DIMCLRE.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionTextColor">
+            <summary>
+            Corresponds to header variable DIMCLRT.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AngularDimensionPrecision">
+            <summary>
+            Corresponds to header variable DIMADEC.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionUnitFormat">
+            <summary>
+            Obsolete.  Use <see cref="P:IxMilia.Dxf.DxfDimStyle.DimensionNonAngularUnits"/> and <see cref="P:IxMilia.Dxf.DxfDimStyle.DimensionFractionFormat"/> instead.  Corresponds to header variable DIMUNIT.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionUnitToleranceDecimalPlaces">
+            <summary>
+            Corresponds to header variable DIMDEC.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionToleranceDecimalPlaces">
+            <summary>
+            Corresponds to header variable DIMTDEC.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningUnits">
+            <summary>
+            Corresponds to header variable DIMALTU.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningToleranceDecimalPlaces">
+            <summary>
+            Corresponds to header variable DIMALTTD.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensioningAngleFormat">
+            <summary>
+            Corresponds to header variable DIMAUNIT.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionFractionFormat">
+            <summary>
+            Corresponds to header variable DIMFRAC.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionNonAngularUnits">
+            <summary>
+            Corresponds to header variable DIMLUNIT.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionDecimalSeparatorChar">
+            <summary>
+            Corresponds to header variable DIMDSEP.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionTextMovementRule">
+            <summary>
+            Corresponds to header variable DIMTMOVE.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionTextJustification">
+            <summary>
+            Corresponds to header variable DIMJUST.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionToleranceVerticalJustification">
+            <summary>
+            Corresponds to header variable DIMTOLJ.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionToleranceZeroSuppression">
+            <summary>
+            Corresponds to header variable DIMTZIN.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningZeroSuppression">
+            <summary>
+            Corresponds to header variable DIMALTZ.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.AlternateDimensioningToleranceZeroSuppression">
+            <summary>
+            Corresponds to header variable DIMALTTZ.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionTextAndArrowPlacement">
+            <summary>
+            Obsolete.  Use <see cref="P:IxMilia.Dxf.DxfDimStyle.DimensionTextAndArrowPlacement"/> and <see cref="P:IxMilia.Dxf.DxfDimStyle.DimensionTextMovementRule"/> instead.  Corresponds to header variable DIMFIT.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionCursorControlsTextPosition">
+            <summary>
+            Corresponds to header variable DIMUPT.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionTextStyle">
+            <summary>
+            Corresponds to header variable DIMTXSTY.  Minimum drawing version R13.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionLeaderBlockName">
+            <summary>
+            Corresponds to header variable DIMLDRBLK.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionLineWeight">
+            <summary>
+            Corresponds to header variable DIMLWD.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfDimStyle.DimensionExtensionLineWeight">
+            <summary>
+            Corresponds to header variable DIMLWE.  Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="M:IxMilia.Dxf.DxfDimStyle.GenerateStyleDifferenceAsXData(IxMilia.Dxf.DxfDimStyle,IxMilia.Dxf.DxfDimStyle)">
+            <summary>Generates <see cref="T:IxMilia.Dxf.DxfXDataApplicationItemCollection"/> of the difference between the styles.  Result may be <see langword="null"/>.</summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfLayer.IsLayerPlotted">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfLayer.LineWeight">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfLayer.PlotStylePointer">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfLayer.MaterialHandle">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfStyle.FontFlags">
+            <summary>
+            Minimum drawing version R2010.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfUcs.OrthographicViewType">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfUcs.Elevation">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfUcs.BaseUcsHandle">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfUcs.OrthographicType">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfUcs.OrthographicOrigin">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.RenderMode">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.IsAssociatedUCSPresent">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.IsCameraPlottable">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.BackgroundObjectPointer">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.SelectionObjectPointer">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.VisualStyleObjectPointer">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.SunOwnershipPointer">
+            <summary>
+            Minimum drawing version R2010.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.UCSOrigin">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.UCSXAxis">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.UCSYAxis">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.OrthographicViewType">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.UCSElevation">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.UCSHandle">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfView.BaseUCSHandle">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.ViewHeight">
+            <summary>
+            Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.ViewPortAspectRatio">
+            <summary>
+            Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.FastZoom">
+            <summary>
+            Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.SnapOn">
+            <summary>
+            Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.GridOn">
+            <summary>
+            Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.SnapStyle">
+            <summary>
+            Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.SnapIsometricPlane">
+            <summary>
+            Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.PlotStyleSheet">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.RenderMode">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.HasOwnUCS">
+            <summary>
+            Minimum drawing version R2000.  Maximum drawing version R2004.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.UCSOrigin">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.UCSXAxis">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.UCSYAxis">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.OrthographicViewType">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.UCSElevation">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.UCSHandle">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.BaseUCSHandle">
+            <summary>
+            Minimum drawing version R2000.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.ShadePlotSetting">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.MajorGridLines">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.BackgroundObjectPointer">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.ShadePlotObjectPointer">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.VisualStyleObjectPointer">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.IsDefaultLightingOn">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.DefaultLightingType">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.Brightness">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.Contrast">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.AmbientColor">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.AmbientColorInt">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfViewPort.AmbientColorName">
+            <summary>
+            Minimum drawing version R2007.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfUnitZeroSuppression.SuppressLeadingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfUnitZeroSuppression.SuppressTrailingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfUnitZeroSuppression.SuppressLeadingAndTrailingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfToleranceZeroSuppression.SuppressLeadingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfToleranceZeroSuppression.SuppressTrailingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfToleranceZeroSuppression.SuppressLeadingAndTrailingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfAlternateToleranceZeroSuppression.SuppressLeadingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfAlternateToleranceZeroSuppression.SuppressTrailingZeros">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfAlternateUnitZeroSuppression.SuppressLeadingZerosInDecimalDimensions">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfAlternateUnitZeroSuppression.SuppressTrailingZerosInDecimalDimensions">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="F:IxMilia.Dxf.DxfAlternateUnitZeroSuppression.SuppressBothLeadingAndTrailingZerosInDecimalDimensions">
+            <summary>
+            Added in R2017.
+            </summary>
+        </member>
+        <member name="P:IxMilia.Dxf.DxfLineTypeElement.RotationAngle">
+            <summary>
+            The rotation angle in radians.
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,8 +1,10 @@
 """Helper functions for python.
 
-Example:
-    >>> from pyrevit.coreutils import pyutils
-    >>> pyutils.safe_cast('string', int, 0)
+Examples:
+    ```python
+    from pyrevit.coreutils import pyutils
+    pyutils.safe_cast('string', int, 0)
+    ```
 """
 #pylint: disable=C0103
 import re
@@ -21,14 +23,16 @@ class DefaultOrderedDict(OrderedDict):
     This is similar to defaultdict and maintains the order of items added
     to it so in that regards it functions similar to OrderedDict.
 
-    Example:
-        >>> from pyrevit.coreutils import pyutils
-        >>> od = pyutils.DefaultOrderedDict(list)
-        >>> od['A'] = [1, 2, 3]
-        >>> od['B'] = [4, 5, 6]
-        >>> od['C'].extend([7, 8, 9])
-        >>> for k, v in od.items():
-        ...     print(k, v)
+    Examples:
+        ```python
+        from pyrevit.coreutils import pyutils
+        od = pyutils.DefaultOrderedDict(list)
+        od['A'] = [1, 2, 3]
+        od['B'] = [4, 5, 6]
+        od['C'].extend([7, 8, 9])
+        for k, v in od.items():
+            print(k, v)
+        ```
         ('A', [1, 2, 3])
         ('B', [4, 5, 6])
         ('C', [7, 8, 9])
@@ -86,14 +90,20 @@ def pairwise(iterable, step=2):
         step (int): number of steps to move when making pairs
 
     Returns:
-        iterable: list of pairs
+        (Iterable[Any]): list of pairs
 
-    Example:
-        >>> pairwise([1, 2, 3, 4, 5])
+    Examples:
+        ```python
+        pairwise([1, 2, 3, 4, 5])
+        ```
         [(1, 2), (3, 4)]    # 5 can not be paired
-        >>> pairwise([1, 2, 3, 4, 5, 6])
+        ```python
+        pairwise([1, 2, 3, 4, 5, 6])
+        ```
         [(1, 2), (3, 4), (5, 6)]
-        >>> pairwise([1, 2, 3, 4, 5, 6], step=1)
+        ```python
+        pairwise([1, 2, 3, 4, 5, 6], step=1)
+        ```
         [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
     """
     if step == 1:
@@ -116,8 +126,10 @@ def safe_cast(val, to_type, default=None):
         to_type (type): target type
         default (any): value to rerun on conversion exception
 
-    Example:
-        >>> safe_cast('name', int, default=0)
+    Examples:
+        ```python
+        safe_cast('name', int, default=0)
+        ```
         0
     """
     try:
@@ -133,10 +145,12 @@ def isnumber(token):
         token (str): string value
 
     Returns:
-        bool: True of token is int or float
+        (bool): True of token is int or float
 
-    Example:
-        >>> isnumber('12.3')
+    Examples:
+        ```python
+        isnumber('12.3')
+        ```
         True
     """
     if token:
@@ -170,18 +184,20 @@ def merge(d1, d2):
         d2 (dict): dict to be merge into d1
 
     Returns:
-        dict: updated d1
+        (dict[Any, Any]): updated d1
 
-    Example:
-        >>> d1 = {1: 1, 2: "B"    , 3: {1:"A", 2:"B"}, 4: "b"  , 5: ["a", "b"]}
-        >>> d2 = {1: 1, 2: {1:"A"}, 3: {1:"S", 3:"C"}, 4: ["a"], 5: ["c"]}
-        >>> merge(d1, d2)
-        ... { 1:1,
-        ...   2:{1:'A', 2:'B'},
-        ...   3:{1:'S', 2:'B', 3:'C'},
-        ...   4:['a','b'],
-        ...   5: ['c', 'a', 'b']
-        ... }
+    Examples:
+        ```python
+        d1 = {1: 1, 2: "B"    , 3: {1:"A", 2:"B"}, 4: "b"  , 5: ["a", "b"]}
+        d2 = {1: 1, 2: {1:"A"}, 3: {1:"S", 3:"C"}, 4: ["a"], 5: ["c"]}
+        merge(d1, d2)
+        ```
+        { 1:1,
+          2:{1:'A', 2:'B'},
+          3:{1:'S', 2:'B', 3:'C'},
+          4:['a','b'],
+          5: ['c', 'a', 'b']
+        }
     """
     if not (isinstance(d1, dict) and isinstance(d2, dict)):
         raise Exception('Both inputs must be of type dict')
@@ -217,7 +233,7 @@ def merge(d1, d2):
 
 
 def almost_equal(a, b, rnd=5):
-    """Check if two numerical values almost equal
+    """Check if two numerical values almost equal.
 
     Args:
         a (float): value a
@@ -225,6 +241,6 @@ def almost_equal(a, b, rnd=5):
         rnd (int, optional): n digits after comma. Defaults to 5.
 
     Returns:
-        bool: True if almost equal
+        (bool): True if almost equal
     """
     return a == b or int(a*10**rnd) == int(b*10**rnd)

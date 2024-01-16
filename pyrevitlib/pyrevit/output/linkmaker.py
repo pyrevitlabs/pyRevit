@@ -41,10 +41,12 @@ def make_link(element_ids, contents=None):
     links is handled by the output wrapper object through the :func:`linkify`
     method.
 
-    Example:
-        >>> output = pyrevit.output.get_output()
-        >>> for idx, elid in enumerate(element_ids):
-        >>>     print('{}: {}'.format(idx+1, output.linkify(elid)))
+    Examples:
+        ```python
+        output = pyrevit.output.get_output()
+        for idx, elid in enumerate(element_ids):
+            print('{}: {}'.format(idx+1, output.linkify(elid)))
+        ```
     """
     try:
         try:

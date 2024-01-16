@@ -1,3 +1,4 @@
+"""Markdown blocks parser."""
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
@@ -6,7 +7,7 @@ from . import util
 
 
 class State(list):
-    """ Track the current and nested state of the parser.
+    """Track the current and nested state of the parser.
 
     This utility class is used to track the state of the BlockParser and
     support multiple levels if nesting. It's just a simple API wrapped around
@@ -24,15 +25,15 @@ class State(list):
     """
 
     def set(self, state):
-        """ Set a new state. """
+        """Set a new state."""
         self.append(state)
 
     def reset(self):
-        """ Step back one step in nested state. """
+        """Step back one step in nested state."""
         self.pop()
 
     def isstate(self, state):
-        """ Test that top (current) level is of given state. """
+        """Test that top (current) level is of given state."""
         if len(self):
             return self[-1] == state
         else:
@@ -40,7 +41,7 @@ class State(list):
 
 
 class BlockParser:
-    """ Parse Markdown blocks into an ElementTree object.
+    """Parse Markdown blocks into an ElementTree object.
 
     A wrapper class that stitches the various BlockProcessors together,
     looping through them and creating an ElementTree object.
@@ -52,7 +53,7 @@ class BlockParser:
         self.markdown = markdown
 
     def parseDocument(self, lines):
-        """ Parse a markdown document into an ElementTree.
+        """Parse a markdown document into an ElementTree.
 
         Given a list of lines, an ElementTree object (not just a parent
         Element) is created and the root element is passed to the parser
@@ -67,7 +68,7 @@ class BlockParser:
         return util.etree.ElementTree(self.root)
 
     def parseChunk(self, parent, text):
-        """ Parse a chunk of markdown text and attach to given etree node.
+        """Parse a chunk of markdown text and attach to given etree node.
 
         While the ``text`` argument is generally assumed to contain multiple
         blocks which will be split on blank lines, it could contain only one
@@ -81,7 +82,7 @@ class BlockParser:
         self.parseBlocks(parent, text.split('\n\n'))
 
     def parseBlocks(self, parent, blocks):
-        """ Process blocks of markdown text and attach to given etree node.
+        """Process blocks of markdown text and attach to given etree node.
 
         Given a list of ``blocks``, each blockprocessor is stepped through
         until there are no blocks left. While an extension could potentially

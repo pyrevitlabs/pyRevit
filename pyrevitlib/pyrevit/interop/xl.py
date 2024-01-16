@@ -1,5 +1,5 @@
 """Read and Write Excel Files."""
-#pylint: disable=import-error
+# pylint: disable=import-error
 import xlrd
 import xlsxwriter
 
@@ -20,6 +20,22 @@ def _read_xlsheet(xlsheet, columns=[], datatype=None, headers=True):
 
 
 def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
+    """Read data from Excel file.
+
+    Args:
+        xlfile (str): full path of the excel file to read
+        sheets (list, optional): worksheets to read. Defaults to all the sheets.
+        columns (list, optional): Names to give to the columns.
+            It builds a dictionary for each row with the column name and value.
+            If none given (default), it returns a simple list of values.
+        datatype (type, optional): Type of the data. Defaults to None.
+        headers (bool, optional): Whether to use the first row as headers.
+            Defaults to True.
+
+    Returns:
+        (dict[str, dict[str, Any]]): Excel data grouped by worksheet.
+            Each worksheet is a dictionary with `headers` and `rows`.
+    """
     xldata = {}
     xlwb = xlrd.open_workbook(xlfile)
     for xlsheet in xlwb.sheets():
@@ -38,7 +54,14 @@ def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
 
 
 def dump(xlfile, datadict):
-    # create workbook
+    """Write data to Excel file.
+
+    Creates a worksheet for each item of the input dictionary.
+
+    Args:
+        xlfile (str): full path of the target excel file
+        datadict (dict[str, list]): dictionary of worksheets names and data
+    """
     xlwb = xlsxwriter.Workbook(xlfile)
     # bold = xlwb.add_format({'bold': True})
     for xlsheetname, xlsheetdata in datadict.items():

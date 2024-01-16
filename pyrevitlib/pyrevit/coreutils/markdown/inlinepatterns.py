@@ -1,6 +1,4 @@
-"""
-INLINE PATTERNS
-=============================================================================
+"""INLINE PATTERNS.
 
 Inline patterns such as *emphasis* are handled by means of auxiliary
 objects, one per pattern.  Pattern objects must be instances of classes
@@ -60,7 +58,7 @@ except ImportError:  # pragma: no cover
 
 
 def build_inlinepatterns(md_instance, **kwargs):
-    """ Build the default set of inline patterns for Markdown. """
+    """Build the default set of inline patterns for Markdown."""
     inlinePatterns = odict.OrderedDict()
     inlinePatterns["backtick"] = BacktickPattern(BACKTICK_RE)
     inlinePatterns["escape"] = EscapePattern(ESCAPE_RE, md_instance)
@@ -143,7 +141,7 @@ REFERENCE_RE = NOIMG + BRK + r'\s?\[([^\]]*)\]'
 SHORT_REF_RE = NOIMG + r'\[([^\]]+)\]'
 
 # ![alt text][2]
-IMAGE_REFERENCE_RE = r'\!' + BRK + '\s?\[([^\]]*)\]'
+IMAGE_REFERENCE_RE = r'\!' + BRK + r'\s?\[([^\]]*)\]'
 
 # stand-alone * or _
 NOT_STRONG_RE = r'((^| )(\*|_)( |$))'
@@ -173,7 +171,7 @@ def dequote(string):
         return string
 
 
-ATTR_RE = re.compile("\{@([^\}]*)=([^\}]*)}")  # {@id=123}
+ATTR_RE = re.compile(r"\{@([^\}]*)=([^\}]*)}")  # {@id=123}
 
 
 def handleAttributes(text, parent):
@@ -190,16 +188,14 @@ The pattern classes
 
 
 class Pattern(object):
-    """Base class that inline patterns subclass. """
+    """Base class that inline patterns subclass."""
 
     def __init__(self, pattern, markdown_instance=None):
-        """
-        Create an instant of an inline pattern.
+        """Create an instant of an inline pattern.
 
-        Keyword arguments:
-
-        * pattern: A regular expression that matches a pattern
-
+        Args:
+            pattern (str): A regular expression that matches a pattern
+            markdown_instance (markdown.Markdown): Instance of Markdown
         """
         self.pattern = pattern
         self.compiled_re = re.compile("^(.*?)%s(.*)$" % pattern,
@@ -211,7 +207,7 @@ class Pattern(object):
             self.markdown = markdown_instance
 
     def getCompiledRegExp(self):
-        """ Return a compiled regular expression. """
+        """Return a compiled regular expression."""
         return self.compiled_re
 
     def handleMatch(self, m):
@@ -219,26 +215,24 @@ class Pattern(object):
 
         Subclasses should override this method.
 
-        Keyword arguments:
-
-        * m: A re match object containing a match of the pattern.
-
+        Args:
+            m (re.match): A re match object containing a match of the pattern.
         """
         pass  # pragma: no cover
 
     def type(self):
-        """ Return class name, to define pattern type """
+        """Return class name, to define pattern type."""
         return self.__class__.__name__
 
     def unescape(self, text):
-        """ Return unescaped text given text with an inline placeholder. """
+        """Return unescaped text given text with an inline placeholder."""
         try:
             stash = self.markdown.treeprocessors['inline'].stashed_nodes
         except KeyError:  # pragma: no cover
             return text
 
         def itertext(el):  # pragma: no cover
-            ' Reimplement Element.itertext for older python versions '
+            """Reimplement Element.itertext for older python versions."""
             tag = el.tag
             if not isinstance(tag, util.string_type) and tag is not None:
                 return
@@ -263,13 +257,13 @@ class Pattern(object):
 
 
 class SimpleTextPattern(Pattern):
-    """ Return a simple text of group(2) of a Pattern. """
+    """Return a simple text of group(2) of a Pattern."""
     def handleMatch(self, m):
         return m.group(2)
 
 
 class EscapePattern(Pattern):
-    """ Return an escaped character. """
+    """Return an escaped character."""
 
     def handleMatch(self, m):
         char = m.group(2)
@@ -280,11 +274,7 @@ class EscapePattern(Pattern):
 
 
 class SimpleTagPattern(Pattern):
-    """
-    Return element of type `tag` with a text attribute of group(3)
-    of a Pattern.
-
-    """
+    """Return a `tag` element with a text attribute of group(3) of a Pattern."""
     def __init__(self, pattern, tag):
         Pattern.__init__(self, pattern)
         self.tag = tag
@@ -296,13 +286,13 @@ class SimpleTagPattern(Pattern):
 
 
 class SubstituteTagPattern(SimpleTagPattern):
-    """ Return an element of type `tag` with no children. """
+    """Return an element of type `tag` with no children."""
     def handleMatch(self, m):
         return util.etree.Element(self.tag)
 
 
 class BacktickPattern(Pattern):
-    """ Return a `<code>` element containing the matching text. """
+    """Return a `<code>` element containing the matching text."""
     def __init__(self, pattern):
         Pattern.__init__(self, pattern)
         self.ESCAPED_BSLASH = '%s%s%s' % (util.STX, ord('\\'), util.ETX)
@@ -334,14 +324,14 @@ class DoubleTagPattern(SimpleTagPattern):
 
 
 class HtmlPattern(Pattern):
-    """ Store raw inline html and return a placeholder. """
+    """Store raw inline html and return a placeholder."""
     def handleMatch(self, m):
         rawhtml = self.unescape(m.group(2))
         place_holder = self.markdown.htmlStash.store(rawhtml)
         return place_holder
 
     def unescape(self, text):
-        """ Return unescaped text given text with an inline placeholder. """
+        """Return unescaped text given text with an inline placeholder."""
         try:
             stash = self.markdown.treeprocessors['inline'].stashed_nodes
         except KeyError:  # pragma: no cover
@@ -354,13 +344,13 @@ class HtmlPattern(Pattern):
                 try:
                     return self.markdown.serializer(value)
                 except:
-                    return '\%s' % value
+                    return r'\%s' % value
 
         return util.INLINE_PLACEHOLDER_RE.sub(get_stash, text)
 
 
 class LinkPattern(Pattern):
-    """ Return a link element from the given match. """
+    """Return a link element from the given match."""
     def handleMatch(self, m):
         el = util.etree.Element("a")
         el.text = m.group(2)
@@ -380,8 +370,7 @@ class LinkPattern(Pattern):
         return el
 
     def sanitize_url(self, url):
-        """
-        Sanitize a url against xss attacks in "safe_mode".
+        """Sanitize a url against xss attacks in "safe_mode".
 
         Rather than specifically blacklisting `javascript:alert("XSS")` and all
         its aliases (see <http://ha.ckers.org/xss.html>), we whitelist known
@@ -427,7 +416,7 @@ class LinkPattern(Pattern):
 
 
 class ImagePattern(LinkPattern):
-    """ Return a img element from the given match. """
+    """Return a img element from the given match."""
     def handleMatch(self, m):
         el = util.etree.Element("img")
         src_parts = m.group(9).split()
@@ -451,7 +440,7 @@ class ImagePattern(LinkPattern):
 
 
 class ReferencePattern(LinkPattern):
-    """ Match to a stored reference and return link element. """
+    """Match to a stored reference and return link element."""
 
     NEWLINE_CLEANUP_RE = re.compile(r'[ ]?\n', re.MULTILINE)
 
@@ -486,7 +475,7 @@ class ReferencePattern(LinkPattern):
 
 
 class ImageReferencePattern(ReferencePattern):
-    """ Match to a stored reference and return img element. """
+    """Match to a stored reference and return img element."""
     def makeTag(self, href, title, text):
         el = util.etree.Element("img")
         el.set("src", self.sanitize_url(href))
@@ -501,7 +490,7 @@ class ImageReferencePattern(ReferencePattern):
 
 
 class AutolinkPattern(Pattern):
-    """ Return a link Element given an autolink (`<http://example/com>`). """
+    """Return a link Element given an autolink (`<http://example/com>`)."""
     def handleMatch(self, m):
         el = util.etree.Element("a")
         el.set('href', self.unescape(m.group(2)))
@@ -510,9 +499,7 @@ class AutolinkPattern(Pattern):
 
 
 class AutomailPattern(Pattern):
-    """
-    Return a mailto link Element given an automail link (`<foo@example.com>`).
-    """
+    """Return a mailto link Element given an automail link (`<foo@example.com>`)."""
     def handleMatch(self, m):
         el = util.etree.Element('a')
         email = self.unescape(m.group(2))

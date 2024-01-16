@@ -5,16 +5,17 @@ from pyrevit.compat import safe_strtype
 
 
 class CommandCustomResults(object):
-    """
-    This class provides an interface wrapper around the EXEC_PARAMS.result_dict
-    dictionary that is provided by the ScriptExecutor C# object.
+    """Wrapper around ScriptExecutor's EXEC_PARAMS.result_dict.
+    
     ScriptExecutor provides this results dictionary to all scripts, and scripts
     can add key:value pairs to the dictionary. But since the provided
     dictionary is a C# dictionary, this class provides a very easy
     to use wrapper around it.
 
-    Example:
-        >>> CommandCustomResults().returnparam = 'some return value'
+    Examples:
+        ```python
+        CommandCustomResults().returnparam = 'some return value'
+        ```
 
     """
 

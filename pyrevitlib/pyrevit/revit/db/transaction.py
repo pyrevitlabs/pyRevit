@@ -1,3 +1,4 @@
+"""Revit transactions facility."""
 from pyrevit import HOST_APP, DOCS, DB
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
@@ -16,17 +17,21 @@ DEFAULT_TRANSACTION_NAME = 'pyRevit Transaction'
 
 
 class Transaction():
-    """Simplifies transactions by applying ``Transaction.Start()`` and
-    ``Transaction.Commit()`` before and after the context.
+    """Adds a context manager around Revit Transaction object.
+
+    Runs `Transaction.Start()` and `Transaction.Commit()`
+    before and after the context.
     Automatically rolls back if exception is raised.
 
-    >>> with Transaction('Move Wall'):
-    >>>     wall.DoSomething()
+    ```python
+    with Transaction('Move Wall'):
+        wall.DoSomething()
 
-    >>> with Transaction('Move Wall') as action:
-    >>>     wall.DoSomething()
-    >>>     assert action.status == ActionStatus.Started  # True
-    >>> assert action.status == ActionStatus.Committed    # True
+        with Transaction('Move Wall') as action:
+        wall.DoSomething()
+        assert action.status == ActionStatus.Started  # True
+        assert action.status == ActionStatus.Committed    # True
+        ```
     """
     def __init__(self, name=None,
                  doc=None,
@@ -97,11 +102,13 @@ class Transaction():
 
 
 class DryTransaction(Transaction):
+    """Wrapper to a transaction that doesn't commit anything (dry-run)."""
     def __exit__(self, exception, exception_value, traceback):
         self._rvtxn.RollBack()
 
 
 class TransactionGroup():
+    """Transactions group with context manager."""
     def __init__(self, name=None, doc=None, assimilate=True, log_errors=True):
         self._rvtxn_grp = \
             DB.TransactionGroup(doc or DOCS.doc,
@@ -151,19 +158,23 @@ class TransactionGroup():
 
 
 def carryout(name, doc=None):
-    """Transaction Decorator
+    """Transaction Decorator.
 
     Decorate any function with ``@doc.carryout('Txn name')``
     and the funciton will run within an Transaction context.
 
     Args:
         name (str): Name of the Transaction
+        doc (Document): Revit document
 
-    >>> @doc.carryout('Do Something')
-    >>> def set_some_parameter(wall, value):
-    >>>     wall.parameters['Comments'].value = value
-    >>>
-    >>> set_some_parameter(wall, value)
+    ```python
+    @doc.carryout('Do Something')
+    def set_some_parameter(wall, value):
+        wall.parameters['Comments'].value = value
+    
+    
+    set_some_parameter(wall, value)
+    ```
     """
     from functools import wraps
 

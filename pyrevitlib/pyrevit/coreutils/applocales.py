@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Provide conversion services between python.locale and host languages"""
+"""Provide conversion services between python.locale and host languages."""
 # https://www.science.co.il/language/Locale-codes.php
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.api import ApplicationServices
@@ -147,49 +147,86 @@ else:
 
 
 def get_applocale_by_local_code(locale_code):
+    """Return application locale by locale code.
+
+    Args:
+        locale_code (str): locale code
+
+    Returns:
+        (AppLocale): application locale
+    """
     for applocale in APP_LOCALES:
         if locale_code in applocale.locale_codes:
             return applocale
 
 
 def get_applocale_by_lang_type(lang_type):
+    """Return application locale by language type.
+
+    Args:
+        lang_type (ApplicationServices.LanguageType | str): language type
+
+    Returns:
+        (AppLocale): application locale
+    """
     for applocale in APP_LOCALES:
         if lang_type == applocale.lang_type:
             return applocale
 
 
 def get_applocale_by_lang_name(lang_name):
+    """Return application locale by language name.
+
+    Args:
+        lang_name (str): language name
+
+    Returns:
+        (AppLocale): application locale
+    """
     for applocale in APP_LOCALES:
-        if lang_name == applocale.lang_name \
-                or lang_name == str(applocale.lang_type):
+        if lang_name in {applocale.lang_name, str(applocale.lang_type)}:
             return applocale
 
 
 def get_current_applocale():
+    """Return the current locale.
+    
+    This is the user locale, if set, or the host application locale otherwise.
+
+    Returns:
+        (AppLocale): current locale
+    """
     if user_config.user_locale:
         return get_applocale_by_local_code(user_config.user_locale)
     return get_applocale_by_lang_type(HOST_APP.language)
 
 
 def get_host_applocale():
+    """Return host application locale.
+
+    Returns:
+        (AppLocale): host application locale
+    """
     return get_applocale_by_lang_type(HOST_APP.language)
 
 
 def get_locale_string(string_dict):
-    """Returns the correct string from given dict based on host language
+    """Returns the correct string from given dict based on host language.
 
     Args:
-        string_dict (dict[str:str]): dict of strings in various locales
+        string_dict (dict[str, str]): dict of strings in various locales
 
     Returns:
-        str: string in correct locale
+        (str): string in correct locale
 
-    Example:
-        >>> data = {"en_us":"Hello", "chinese_s":"你好"}
-        >>> from pyrevit.coreutils import applocales
-        >>> # assuming running Revit is Chinese
-        >>> applocales.get_locale_string(data)
-        ... "你好"
+    Examples:
+        ```python
+        data = {"en_us":"Hello", "chinese_s":"你好"}
+        from pyrevit.coreutils import applocales
+        # assuming running Revit is Chinese
+        applocales.get_locale_string(data)
+        ```
+        "你好"
     """
     applocale = get_applocale_by_local_code(user_config.user_locale)
     if applocale:

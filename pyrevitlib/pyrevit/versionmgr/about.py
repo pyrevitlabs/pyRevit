@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """Utility module for pyRevit project information.
 
-Example:
-    >>> from pyrevit.versionmgr import about
-    >>> a = about.get_pyrevit_about()
-    >>> a.subtitle
-    ... 'python RAD Environment for Autodesk Revit®'
-    >>> a.copyright
-    ... '© 2014-2023 Ehsan Iran-Nejad'
+Examples:
+        ```python
+        from pyrevit.versionmgr import about
+        a = about.get_pyrevit_about()
+        a.subtitle
+        ```
+        'python RAD Environment for Autodesk Revit®'a.copyright'© 2014-2024 Ehsan Iran-Nejad'
 """
 from collections import namedtuple
 
@@ -27,8 +27,8 @@ def get_pyrevit_about():
     """Return information about pyRevit project.
 
     Returns:
-        :obj:`PyRevitAbout`: pyRevit project info tuple
+        (PyRevitAbout): pyRevit project info tuple
     """
     return PyRevitAbout(subtitle='python RAD Environment for Autodesk Revit®',
                         madein="['pdx', 'hio', 'rno', 'sea']",
-                        copyright='© 2014-2023 Ehsan Iran-Nejad')
+                        copyright='© 2014-2024 Ehsan Iran-Nejad')

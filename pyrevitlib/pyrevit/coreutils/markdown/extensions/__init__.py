@@ -1,7 +1,4 @@
-"""
-Extensions
------------------------------------------------------------------------------
-"""
+"""Markdown Extensions."""
 
 from __future__ import unicode_literals
 from ..util import parseBoolValue
@@ -9,7 +6,7 @@ import warnings
 
 
 class Extension(object):
-    """ Base class for extensions to subclass. """
+    """Base class for extensions to subclass."""
 
     # Default config -- to be overriden by a subclass
     # Must be of the following format:
@@ -21,8 +18,7 @@ class Extension(object):
     config = {}
 
     def __init__(self, *args, **kwargs):
-        """ Initiate Extension and set up configs. """
-
+        """Initiate Extension and set up configs."""
         # check for configs arg for backward compat.
         # (there only ever used to be one so we use arg[0])
         if len(args):
@@ -51,22 +47,22 @@ class Extension(object):
         self.setConfigs(kwargs)
 
     def getConfig(self, key, default=''):
-        """ Return a setting for the given key or an empty string. """
+        """Return a setting for the given key or an empty string."""
         if key in self.config:
             return self.config[key][0]
         else:
             return default
 
     def getConfigs(self):
-        """ Return all configs settings as a dict. """
+        """Return all configs settings as a dict."""
         return dict([(key, self.getConfig(key)) for key in self.config.keys()])
 
     def getConfigInfo(self):
-        """ Return all config descriptions as a list of tuples. """
+        """Return all config descriptions as a list of tuples."""
         return [(key, self.config[key][1]) for key in self.config.keys()]
 
     def setConfig(self, key, value):
-        """ Set a config setting for `key` with the given `value`. """
+        """Set a config setting for `key` with the given `value`."""
         if isinstance(self.config[key][0], bool):
             value = parseBoolValue(value)
         if self.config[key][0] is None:
@@ -74,7 +70,7 @@ class Extension(object):
         self.config[key][0] = value
 
     def setConfigs(self, items):
-        """ Set multiple config settings given a dict or list of tuples. """
+        """Set multiple config settings given a dict or list of tuples."""
         if hasattr(items, 'items'):
             # it's a dict
             items = items.items()
@@ -82,16 +78,13 @@ class Extension(object):
             self.setConfig(key, value)
 
     def extendMarkdown(self, md, md_globals):
-        """
-        Add the various proccesors and patterns to the Markdown Instance.
+        """Add the various proccesors and patterns to the Markdown Instance.
 
         This method must be overriden by every extension.
 
-        Keyword arguments:
-
-        * md: The Markdown instance.
-
-        * md_globals: Global variables in the markdown module namespace.
+        Args:
+            md (Markdown): The Markdown instance.
+            md_globals (list[Any]): Global variables in the markdown module namespace.
 
         """
         raise NotImplementedError(

@@ -1,4 +1,4 @@
-"""Wrapping Autodesk Desktop Connector API"""
+"""Wrapping Autodesk Desktop Connector API."""
 #pylint: disable=bare-except,broad-except
 import os.path as op
 from pyrevit import PyRevitException
@@ -123,7 +123,7 @@ def _get_item_property_id_value(adc, drive, item, prop_id):
 
 
 def is_available():
-    """Check if ADC service is available"""
+    """Check if ADC service is available."""
     try:
         _get_adc().Discover()
         return True
@@ -132,13 +132,13 @@ def is_available():
 
 
 def get_drive_paths():
-    """Get dict of local paths for ADC drives"""
+    """Get dict of local paths for ADC drives."""
     adc = _get_adc()
     return {x.Name: x.WorkspaceLocation for x in _get_drives_info(adc)}
 
 
 def get_local_path(path):
-    """Convert ADC BIM360 drive path to local path"""
+    """Convert ADC BIM360 drive path to local path."""
     adc = _get_adc()
     drv_info = _get_drive_from_path(adc, path)
     if drv_info:
@@ -146,14 +146,14 @@ def get_local_path(path):
 
 
 def lock_file(path):
-    """Lock given file"""
+    """Lock given file."""
     adc = _get_adc()
     item = _get_item(adc, path)
     adc.LockFile(item.Id)
 
 
 def is_locked(path):
-    """Check if file is locked"""
+    """Check if file is locked."""
     adc = _get_adc()
     item = _get_item(adc, path)
     lock_status = _get_item_lockstatus(adc, item)
@@ -162,14 +162,14 @@ def is_locked(path):
 
 
 def unlock_file(path):
-    """Unlock given file"""
+    """Unlock given file."""
     adc = _get_adc()
     item = _get_item(adc, path)
     adc.UnlockFile(item.Id)
 
 
 def is_synced(path):
-    """Check if file is synchronized"""
+    """Check if file is synchronized."""
     adc = _get_adc()
     item = _get_item(adc, path)
     drive = _get_item_drive(adc, item)
@@ -188,7 +188,7 @@ def is_synced(path):
 
 
 def sync_file(path, force=False):
-    """Force ADC to sync given file to latest version"""
+    """Force ADC to sync given file to latest version."""
     if not force and is_synced(path):
         return
     adc = _get_adc()

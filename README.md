@@ -6,7 +6,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/eirannejad/pyRevit.svg?style=for-the-badge)](https://github.com/eirannejad/pyRevit/network)
 [![GitHub stars](https://img.shields.io/github/stars/eirannejad/pyRevit.svg?style=for-the-badge&colorB=red)](https://github.com/eirannejad/pyRevit/stargazers)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=for-the-badge)](http://www.gnu.org/licenses/gpl-3.0)
-[![madewithloveinportland](https://img.shields.io/badge/%3C%2F%3E%20with%20%3C3-Portland%2C%20OR-green.svg?style=for-the-badge)](https://en.wikipedia.org/wiki/Portland,_Oregon)
+[![made with love in portland](https://img.shields.io/badge/%3C%2F%3E%20with%20%3C3-Portland%2C%20OR-green.svg?style=for-the-badge)](https://en.wikipedia.org/wiki/Portland,_Oregon)
 
 &nbsp;
 
@@ -125,12 +125,11 @@ Check the list of [Currently Open](https://github.com/eirannejad/pyRevit/issues)
 
 ## Share Your Coins
 
-**↓** Help making pyRevit financially stronger 
+**↓** Help making pyRevit financially stronger
 
 [Support on Patreon](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
 
 [Supporters](https://www.notion.so/Supporters-4f3350243ba24dcd8228df6262723629)
-
 
 # Contributors
 

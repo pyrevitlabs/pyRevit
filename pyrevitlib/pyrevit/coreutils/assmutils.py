@@ -1,3 +1,4 @@
+"""Utilities to load and manage assemblies."""
 import os.path as op
 
 from pyrevit import PyRevitException
@@ -16,7 +17,7 @@ def load_asm(asm_name):
         asm_name (str): assembly name
 
     Returns:
-        returns the loaded assembly, None if not loaded.
+        (Any): the loaded assembly, None if not loaded.
     """
     return framework.AppDomain.CurrentDomain.Load(asm_name)
 
@@ -28,7 +29,7 @@ def load_asm_file(asm_file):
         asm_file (str): assembly file path
 
     Returns:
-        returns the loaded assembly, None if not loaded.
+        (Any): loaded assembly, None if not loaded.
     """
     try:
         return framework.Assembly.LoadFrom(asm_file)
@@ -56,9 +57,9 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
         by_location (bool): returns all assemblies matching location
 
     Returns:
-        list: List of all loaded assemblies matching the provided info
-        If only one assembly has been found, it returns the assembly.
-        :obj:`None` will be returned if assembly is not loaded.
+        (list): List of all loaded assemblies matching the provided info
+            If only one assembly has been found, it returns the assembly.
+            None will be returned if assembly is not loaded.
     """
     loaded_asm_list = []
     cleaned_asm_info = \
@@ -86,14 +87,14 @@ def find_type_by_name(assembly, type_name):
     """Find type by name in assembly.
 
     Args:
-        assembly (:obj:`Assembly`): assembly to find the type in
+        assembly (Assembly): assembly to find the type in
         type_name (str): type name
 
     Returns:
-        returns the type if found.
+        (type): type if found.
 
     Raises:
-        :obj:`PyRevitException` if type not found.
+        PyRevitException: if type not found.
     """
     base_class = assembly.GetType(type_name)
     if base_class is not None:

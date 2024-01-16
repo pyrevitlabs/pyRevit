@@ -6,18 +6,20 @@ from pyrevit.routes.server import *
 
 
 class API(object):
-    """API root object
+    """API root object.
 
     Args:
         name (str): URL-safe unique root name of the API
 
-    Example:
-        >>> from pyrevit import routes
-        >>> api = routes.API("pyrevit-core")
-        >>> @api.route('/sessions/', methods=['POST'])
-        >>> def reload_pyrevit(uiapp):
-        ...     new_session_id = sessionmgr.reload_pyrevit()
-        ...     return {"session_id": new_session_id}
+    Examples:
+        ```python
+        from pyrevit import routes
+        api = routes.API("pyrevit-core")
+        @api.route('/sessions/', methods=['POST'])
+        def reload_pyrevit(uiapp):
+            new_session_id = sessionmgr.reload_pyrevit()
+            return {"session_id": new_session_id}
+        ```
     """
     def __init__(self, name):
         self.name = name
@@ -38,5 +40,5 @@ class API(object):
 
 
 def active_routes_api():
-    """Activates routes API"""
+    """Activates routes API."""
     from pyrevit.routes import api

@@ -2,8 +2,10 @@
 
 See https://www.mathdotnet.com for documentation.
 
-Example:
-    >>> from pyrevit.coreutils.mathnet import MathNet
+Examples:
+    ```python
+    from pyrevit.coreutils.mathnet import MathNet
+    ```
 """
 #pylint: disable=W0703,C0302,C0103
 from pyrevit import EXEC_PARAMS

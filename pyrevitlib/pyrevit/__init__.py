@@ -1,14 +1,16 @@
 """pyRevit root level config for all pyrevit sub-modules.
 
 Examples:
-    >>> from pyrevit import DB, UI
-    >>> from pyrevit import PyRevitException, PyRevitIOError
+        ```python
+        from pyrevit import DB, UI
+        from pyrevit import PyRevitException, PyRevitIOError
 
-    >>> # pyrevit module has global instance of the
-    >>> # _HostAppPostableCommand and _ExecutorParams classes already created
-    >>> # import and use them like below
-    >>> from pyrevit import HOST_APP
-    >>> from pyrevit import EXEC_PARAMS
+        # pyrevit module has global instance of the
+        # _HostAppPostableCommand and _ExecutorParams classes already created
+        # import and use them like below
+        from pyrevit import HOST_APP
+        from pyrevit import EXEC_PARAMS
+        ```
 """
 #pylint: disable=W0703,C0302,C0103,C0413,raise-missing-from
 import sys
@@ -18,7 +20,7 @@ from collections import namedtuple
 import traceback
 import re
 
-import clr  #pylint: disable=E0401
+import clr  # pylint: disable=E0401
 
 from pyrevit import compat
 
@@ -141,7 +143,7 @@ class PyRevitIOError(PyRevitException):
 
 
 class PyRevitCPythonNotSupported(PyRevitException):
-    """Common base class for all pyRevit io-related exceptions."""
+    """Exception for features not supported under CPython."""
     def __init__(self, feature_name):
         super(PyRevitCPythonNotSupported, self).__init__()
         self.feature_name = feature_name
@@ -179,12 +181,11 @@ class _HostApplication(object):
     info on the active screen, active document and ui-document, available
     postable commands, and other functionality.
 
-    Args:
-        host_uiapp (``UIApplication``): Instance of running host.
-
-    Example:
-        >>> hostapp = _HostApplication()
-        >>> hostapp.is_newer_than(2017)
+    Examples:
+            ```python
+            hostapp = _HostApplication()
+            hostapp.is_newer_than(2017)
+            ```
     """
 
     def __init__(self):
@@ -211,7 +212,7 @@ class _HostApplication(object):
 
     @property
     def has_api_context(self):
-        """Determine if host application is in API context"""
+        """Determine if host application is in API context."""
         return self.app.ActiveAddInId is not None
 
     @property
@@ -278,8 +279,13 @@ class _HostApplication(object):
 
     @property
     def pretty_name(self):
-        """str: Pretty name of the host
-        (e.g. 'Autodesk Revit 2019.2 build: 20190808_0900(x64)')
+        """Returns the pretty name of the host.
+
+        Examples:
+            Autodesk Revit 2019.2 build: 20190808_0900(x64)
+
+        Returns:
+            (str): Pretty name of the host
         """
         host_name = self.version_name
         if self.is_newer_than(2017):
@@ -359,6 +365,7 @@ class _HostApplication(object):
 
         Args:
             version (str or int): version to check against.
+            or_equal (bool): Whether to include `version` in the comparison
         """
         if or_equal:
             return int(self.version) >= int(version)
@@ -385,7 +392,7 @@ class _HostApplication(object):
         """Return list of postable commands.
 
         Returns:
-            :obj:`list` of :obj:`_HostAppPostableCommand`
+            (list[_HostAppPostableCommand]): postable commands.
         """
         # if list of postable commands is _not_ already created
         # make the list and store in instance parameter
@@ -408,7 +415,7 @@ class _HostApplication(object):
         return self._postable_cmds
 
     def post_command(self, command_id):
-        """Request Revit to run a command
+        """Request Revit to run a command.
 
         Args:
             command_id (str): command identifier e.g. ID_REVIT_SAVE_AS_TEMPLATE
@@ -435,7 +442,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def exec_id(self):
-        """Return execution unique id"""
+        """Return execution unique id."""
         try:
             return __execid__
         except NameError:
@@ -443,7 +450,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def exec_timestamp(self):
-        """Return execution timestamp"""
+        """Return execution timestamp."""
         try:
             return __timestamp__
         except NameError:
@@ -451,7 +458,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def engine_id(self):
-        """Return engine id"""
+        """Return engine id."""
         try:
             return __cachedengineid__
         except NameError:
@@ -488,25 +495,25 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def output_stream(self):
-        """Return ScriptIO"""
+        """Return ScriptIO."""
         if self.script_runtime:
             return self.script_runtime.OutputStream
 
     @property   # read-only
     def script_data(self):
-        """Return ScriptRuntime.ScriptData"""
+        """Return ScriptRuntime.ScriptData."""
         if self.script_runtime:
             return self.script_runtime.ScriptData
 
     @property   # read-only
     def script_runtime_cfgs(self):
-        """Return ScriptRuntime.ScriptRuntimeConfigs"""
+        """Return ScriptRuntime.ScriptRuntimeConfigs."""
         if self.script_runtime:
             return self.script_runtime.ScriptRuntimeConfigs
 
     @property   # read-only
     def engine_cfgs(self):
-        """Return ScriptRuntime.ScriptRuntimeConfigs"""
+        """Return ScriptRuntime.ScriptRuntimeConfigs."""
         if self.script_runtime:
             return self.script_runtime.EngineConfigs
 
@@ -598,15 +605,13 @@ class _ExecutorParams(object):
 
     @property   # read
     def window_handle(self):
-        """``PyRevitLabs.PyRevit.Runtime.ScriptConsole``:
-                Return output window. handle
-        """
+        """Output window handle."""
         if self.script_runtime:
             return self.script_runtime.OutputWindow
 
     @property
     def command_data(self):
-        """``ExternalCommandData``: Return current command data."""
+        """ExternalCommandData: Return current command data."""
         if self.script_runtime_cfgs:
             return self.script_runtime_cfgs.CommandData
 
@@ -710,16 +715,16 @@ EXEC_PARAMS = _ExecutorParams()
 # -----------------------------------------------------------------------------
 
 class _DocsGetter(object):
-    """Instance to safely get document from HOST_APP instance or EXEC_PARAMS"""
+    """Instance to safely get document from HOST_APP instance or EXEC_PARAMS."""
 
     @property
     def doc(self):
-        """Active document"""
+        """Active document."""
         return HOST_APP.doc or EXEC_PARAMS.event_doc
 
     @property
     def docs(self):
-        """List of active documents"""
+        """List of active documents."""
         return HOST_APP.docs
 
 

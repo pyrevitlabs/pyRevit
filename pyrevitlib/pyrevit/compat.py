@@ -1,8 +1,10 @@
 """python engine compatibility module.
 
-Example:
-    >>> from pyrevit.compat import IRONPY277
-    >>> from pyrevit.compat import safe_strtype
+Examples:
+    ```python
+    from pyrevit.compat import IRONPY277
+    from pyrevit.compat import safe_strtype
+    ```
 """
 
 import sys
@@ -42,14 +44,24 @@ if PY2:
 
 
 def urlopen(url):
-    """urlopen wrapper"""
+    """Urlopen wrapper.
+
+    Args:
+        url (str): request url
+    """
     if PY3:
         return urllib.request.urlopen(url)
     return urllib2.urlopen(url)
 
 
 def make_request(url, headers, data):
-    """urlopen wrapper to create and send a request"""
+    """Urlopen wrapper to create and send a request.
+
+    Args:
+        url (str): request url
+        headers (dict[str, str]): headers
+        data (bytes | None): request data
+    """
     if PY3:
         req = urllib.request.Request(url, headers, data)
         urllib.request.urlopen(req).close()

@@ -1,3 +1,4 @@
+"""Unit tests facility."""
 import time
 from unittest import TestResult, TestLoader
 
@@ -30,39 +31,80 @@ RESULT_DIV_ERROR = '<div class="unittest unittesterror">' \
 
 
 class OutputWriter:
+    """Output writer for tests results."""
     def __init__(self):
         self._output = get_output()
 
     def write(self, output_str):
+        """Prints the results to the output window.
+
+        Args:
+            output_str (str): Text to output
+        """
         self._output.print_html(output_str)
 
 
 class PyRevitTestResult(TestResult):
+    """Pyrevit Test Result.
+
+    Args:
+        verbosity (int): verbosity level.
+    """
     def __init__(self, verbosity):
         super(PyRevitTestResult, self).__init__(verbosity=verbosity)
         self.writer = OutputWriter()
 
     @staticmethod
     def getDescription(test):
-        return test.shortDescription() if test.shortDescription() else test
+        """Returns the description of the test.
+
+        Args:
+            test (TestCase): Unit test.
+
+        Returns:
+            (str): test description
+        """
+        return test.shortDescription() or test
 
     def startTest(self, test):
+        """Starts the test.
+
+        Args:
+            test (TestCase): unit test
+        """
         super(PyRevitTestResult, self).startTest(test)
         mlogger.debug('Running test: %s', self.getDescription(test))
 
     def addSuccess(self, test):
+        """Adds a test success.
+
+        Args:
+            test (TestCase): unit test case
+        """
         super(PyRevitTestResult, self).addSuccess(test)
         mlogger.debug(DEBUG_OKAY_RESULT)
         self.writer.write(RESULT_DIV_OKAY
                           .format(test=self.getDescription(test)))
 
     def addError(self, test, err):
+        """Adds a test error.
+
+        Args:
+            test (TestCase): unit test case
+            err (OptExcInfo): test exception info
+        """
         super(PyRevitTestResult, self).addError(test, err)
         mlogger.debug(DEBUG_FAIL_RESULT)
         self.writer.write(RESULT_DIV_ERROR
                           .format(test=self.getDescription(test)))
 
     def addFailure(self, test, err):
+        """Adds a test failure.
+
+        Args:
+            test (TestCase): unit test case
+            err (OptExcInfo): test exception info
+        """
         super(PyRevitTestResult, self).addFailure(test, err)
         mlogger.debug(DEBUG_FAIL_RESULT)
         self.writer.write(RESULT_DIV_FAIL
@@ -79,6 +121,15 @@ class PyRevitTestResult(TestResult):
 
 
 class PyRevitTestRunner(object):
+    """Test runner.
+
+    Args:
+        verbosity (int): level of vermosity. Defaults to 1.
+        failfast (bool): if True, stops at the first failure. Defaults to False.
+        use_buffer (bool): use a buffer. Defaults to False.
+        resultclass (type): Class to use to hold the results. 
+            Defaults to `PyRevitTestResult`.
+    """
     resultclass = PyRevitTestResult
 
     def __init__(self, verbosity=1, failfast=False,
@@ -93,6 +144,14 @@ class PyRevitTestRunner(object):
         return self.resultclass(self.verbosity)
 
     def run(self, test):
+        """Runs a test suite.
+
+        Args:
+            test (TestSuite): Test suite to run
+
+        Returns:
+            (PyRevitTestResult): Test suite results.
+        """
         # setup results object
         result = self._make_result()
         result.failfast = self.failfast
@@ -156,6 +215,14 @@ class PyRevitTestRunner(object):
 
 
 def run_module_tests(test_module):
+    """Runs the unit tests of the given module.
+
+    Args:
+        test_module (module): module with tests
+
+    Returns:
+        (PyRevitTestResult): tests results.
+    """
     test_runner = PyRevitTestRunner()
     test_loader = TestLoader()
     # load all testcases from the given module into a testsuite

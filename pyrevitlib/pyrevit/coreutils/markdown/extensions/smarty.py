@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
-Smarty extension for Python-Markdown
-====================================
+"""Smarty extension for Python-Markdown.
 
 Adds conversion of ASCII dashes, quotes and ellipses to their HTML
 entity equivalents.
@@ -77,8 +75,7 @@ smartypants.py license:
    theory of liability, whether in contract, strict liability, or tort
    (including negligence or otherwise) arising in any way out of the use
    of this software, even if advised of the possibility of such damage.
-
-'''
+"""
 
 
 from __future__ import unicode_literals
@@ -91,16 +88,16 @@ from ..treeprocessors import InlineProcessor
 # Constants for quote education.
 punctClass = r"""[!"#\$\%'()*+,-.\/:;<=>?\@\[\\\]\^_`{|}~]"""
 endOfWordClass = r"[\s.,;:!?)]"
-closeClass = "[^\ \t\r\n\[\{\(\-\u0002\u0003]"
+closeClass = r"[^\ \t\r\n\[\{\(\-\u0002\u0003]"
 
 openingQuotesBase = (
-    '(\s'               # a  whitespace char
-    '|&nbsp;'           # or a non-breaking space entity
-    '|--'               # or dashes
-    '|–|—'              # or unicode
-    '|&[mn]dash;'       # or named dash entities
-    '|&#8211;|&#8212;'  # or decimal entities
-    ')'
+    r'(\s'               # a  whitespace char
+    r'|&nbsp;'           # or a non-breaking space entity
+    r'|--'               # or dashes
+    r'|–|—'              # or unicode
+    r'|&[mn]dash;'       # or named dash entities
+    r'|&#8211;|&#8212;'  # or decimal entities
+    r')'
 )
 
 substitutions = {
@@ -151,8 +148,9 @@ HTML_STRICT_RE = HTML_RE + r'(?!\>)'
 
 
 class SubstituteTextPattern(HtmlPattern):
+    """Text pattern substitution handler."""
     def __init__(self, pattern, replace, markdown_instance):
-        """ Replaces matches with some text. """
+        """Replaces matches with some text."""
         HtmlPattern.__init__(self, pattern)
         self.replace = replace
         self.markdown = markdown_instance
@@ -168,6 +166,7 @@ class SubstituteTextPattern(HtmlPattern):
 
 
 class SmartyExtension(Extension):
+    """Smarty Extension."""
     def __init__(self, *args, **kwargs):
         self.config = {
             'smart_quotes': [True, 'Educate quotes'],

@@ -1,7 +1,9 @@
 """Provide access to DotNet Framework.
 
-Example:
-    >>> from pyrevit.framework import Assembly, Windows
+Examples:
+    ```python
+    from pyrevit.framework import Assembly, Windows
+    ```
 """
 
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports

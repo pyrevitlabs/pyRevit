@@ -1,6 +1,4 @@
-"""
-Definition List Extension for Python-Markdown
-=============================================
+"""Definition List Extension for Python-Markdown.
 
 Adds parsing of Definition Lists to Python-Markdown.
 
@@ -12,7 +10,6 @@ Original code Copyright 2008 [Waylan Limberg](http://achinghead.com)
 All changes Copyright 2008-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -24,7 +21,7 @@ import re
 
 
 class DefListProcessor(BlockProcessor):
-    """ Process Definition Lists. """
+    """Process Definition Lists."""
 
     RE = re.compile(r'(^|\n)[ ]{0,3}:[ ]{1,3}(.*?)(\n|$)')
     NO_INDENT_RE = re.compile(r'^[ ]{0,3}[^ :]')
@@ -87,22 +84,22 @@ class DefListProcessor(BlockProcessor):
 
 
 class DefListIndentProcessor(ListIndentProcessor):
-    """ Process indented children of definition list items. """
+    """Process indented children of definition list items."""
 
     ITEM_TYPES = ['dd']
     LIST_TYPES = ['dl']
 
     def create_item(self, parent, block):
-        """ Create a new dd and parse the block with it as the parent. """
+        """Create a new dd and parse the block with it as the parent."""
         dd = etree.SubElement(parent, 'dd')
         self.parser.parseBlocks(dd, [block])
 
 
 class DefListExtension(Extension):
-    """ Add definition lists to Markdown. """
+    """Add definition lists to Markdown."""
 
     def extendMarkdown(self, md, md_globals):
-        """ Add an instance of DefListProcessor to BlockParser. """
+        """Add an instance of DefListProcessor to BlockParser."""
         md.parser.blockprocessors.add('defindent',
                                       DefListIndentProcessor(md.parser),
                                       '>indent')

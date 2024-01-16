@@ -1,0 +1,91 @@
+site_name: pyRevit
+repo_url: https://github.com/eirannejad/pyRevit
+repo_name: eirannejad/pyRevit
+
+extra:
+  homepage: https://pyrevitlabs.notion.site
+
+theme:
+  name: material
+  logo: static/pyRevitLogo.svg
+  features:
+    - content.code.select
+    - content.code.copy
+    - toc.follow
+    - navigation.top
+    - navigation.path
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.tracking
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.sections
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+extra_css:
+  - docs/styles.css
+
+watch:
+  - pyrevitlib/pyrevit
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+  - section-index
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            members_order: source
+            merge_init_into_class: true
+            show_if_no_docstring: true
+            show_category_heading: true
+            inherited_members: true
+            filters:
+              - "!^_"
+              - "^_HostApplication"
+          paths: [pyrevitlib]
+  - exclude:
+      glob:
+        - "*.py"
+        - "*.rst"
+  - literate-nav:
+      nav_file: SUMMARY.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.highlight
+  - admonition
+  - md_in_html
+  - toc
+
+nav:
+  - Home: README.md
+  - Contributing: CONTRIBUTING.md
+  - Security: SECURITY.md
+  - Code Of Conduct: CODE_OF_CONDUCT.md
+  - Credits: CREDITS.md
+  - Reference API: reference/

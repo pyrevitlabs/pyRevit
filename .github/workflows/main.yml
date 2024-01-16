@@ -31,7 +31,7 @@ jobs:
           echo "commit: ${{ github.sha }}"
 
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
@@ -53,7 +53,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
 
       - name: Prepare git
-        uses: fregante/setup-git-user@v1
+        uses: fregante/setup-git-user@v2
 
       - name: Check Build Environment
         run: pipenv run pyrevit check

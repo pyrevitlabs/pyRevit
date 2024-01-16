@@ -123,32 +123,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
             });
 
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Colors.xaml")
+                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Themes/Light.Blue.xaml")
             });
 
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/FlatButton.xaml")
-            });
-
-            var accentResDict = new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Accents/Steel.xaml")
-            };
+            var accentResDict = Resources;
 
             var pyrevitHighlightColor = Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12);
             var pyrevitBackground = new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
             var pyrevitHighlight = new SolidColorBrush() { Color = pyrevitHighlightColor };
-            accentResDict["AccentColorBrush"] = pyrevitBackground;
-            accentResDict["WindowTitleColorBrush"] = pyrevitBackground;
+            accentResDict["MahApps.Brushes.Accent"] = pyrevitBackground;
+            accentResDict["MahApps.Brushes.WindowTitle"] = pyrevitBackground;
 
             // overriding colors on the progressbar control
             var progressBarOverlay = Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF);
-            accentResDict["ProgressBrush"] = pyrevitHighlight;
-            accentResDict["ProgressIndeterminateColor1"] = progressBarOverlay;
-            accentResDict["ProgressIndeterminateColor2"] = progressBarOverlay;
-            accentResDict["ProgressIndeterminateColor3"] = pyrevitHighlightColor;
-            accentResDict["ProgressIndeterminateColor4"] = pyrevitHighlightColor;
-
-            Resources.MergedDictionaries.Add(accentResDict);
+            accentResDict["MahApps.Brushes.Progress"] = pyrevitHighlight;
+            accentResDict["MahApps.Colors.ProgressIndeterminate1"] = progressBarOverlay;
+            accentResDict["MahApps.Colors.ProgressIndeterminate2"] = progressBarOverlay;
+            accentResDict["MahApps.Colors.ProgressIndeterminate3"] = pyrevitHighlightColor;
+            accentResDict["MahApps.Colors.ProgressIndeterminate4"] = pyrevitHighlightColor;
         }
 
         private void ScriptOutput_SizeChanged(object sender, SizeChangedEventArgs e) {
@@ -346,7 +338,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             #endregion
 
             this.Width = 900; this.MinWidth = 700;
-            this.Height = 600; this.MinHeight = this.TitlebarHeight;
+            this.Height = 600; this.MinHeight = this.TitleBarHeight;
             this.ResizeMode = ResizeMode.CanResize;
 
             // setup auto-collapse
@@ -926,7 +918,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void CollapseWindow() {
             prevHeight = Height;
-            Height = TitlebarHeight;
+            Height = TitleBarHeight;
             //ResizeBorderThickness = new Thickness(0);
             IsCollapsed = true;
         }

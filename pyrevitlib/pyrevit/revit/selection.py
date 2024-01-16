@@ -1,3 +1,4 @@
+"""Elements selection utilities."""
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger
@@ -17,11 +18,16 @@ __all__ = ('pick_element', 'pick_element_by_category',
            'get_selection')
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
 class ElementSelection:
+    """Element selection handler.
+
+    Args:
+        element_list (list[DB.Element]): list of selected elements
+    """
     def __init__(self, element_list=None):
         if element_list is None:
             if HOST_APP.uidoc:
@@ -210,11 +216,33 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
 
 
 def pick_element(message=''):
+    """Asks the user to pick an element.
+
+    Args:
+        message (str): An optional message to display.
+
+    Returns:
+        (Element): element selected by the user.
+    """
     return _pick_obj(UI.Selection.ObjectType.Element,
                      message)
 
 
 def pick_element_by_category(cat_name_or_builtin, message=''):
+    """Returns the element of the specified category picked by the user.
+
+    Args:
+        cat_name_or_builtin (str): name or built-in category of the element
+            to pick.
+        message (str, optional): message to display on selection.
+            Defaults to ''.
+
+    Returns:
+        (Element): picked element.
+
+    Raises:
+        PyRevitException: If no category matches the specified name or builtin.
+    """
     category = query.get_category(cat_name_or_builtin)
     if category:
         pick_filter = PickByCategorySelectionFilter(category.Id)
@@ -227,33 +255,88 @@ def pick_element_by_category(cat_name_or_builtin, message=''):
 
 
 def pick_elementpoint(message='', world=False):
+    """Returns the element point selected by the user.
+
+    Args:
+        message (str, optional): message to display. Defaults to ''.
+        world (bool, optional): whether to use world coordinates. Defaults to False.
+
+    Returns:
+        (PointOnElement): The selected point.
+    """
     return _pick_obj(UI.Selection.ObjectType.PointOnElement,
                      message,
                      world=world)
 
 
 def pick_edge(message=''):
+    """Returns the edge selected by the user.
+
+    Args:
+        message (str, optional): message to display. Defaults to ''.
+
+    Returns:
+        (Edge): The selected edge.
+    """
     return _pick_obj(UI.Selection.ObjectType.Edge,
                      message)
 
 
 def pick_face(message=''):
+    """Returns the face selected by the user.
+
+    Args:
+        message (str, optional): message to display. Defaults to ''.
+
+    Returns:
+        (Face): The selected face.
+    """
     return _pick_obj(UI.Selection.ObjectType.Face,
                      message)
 
 
 def pick_linked(message=''):
+    """Returns the linked element selected by the user.
+
+    Args:
+        message (str, optional): message to display. Defaults to ''.
+
+    Returns:
+        (LinkedElement): The selected linked element.
+    """
     return _pick_obj(UI.Selection.ObjectType.LinkedElement,
                      message)
 
 
 def pick_elements(message=''):
+    """Asks the user to pick multiple elements.
+
+    Args:
+        message (str): An optional message to display.
+
+    Returns:
+        (list[Element]): elements selected by the user.
+    """
     return _pick_obj(UI.Selection.ObjectType.Element,
                      message,
                      multiple=True)
 
 
 def pick_elements_by_category(cat_name_or_builtin, message=''):
+    """Returns the elements of the specified category picked by the user.
+
+    Args:
+        cat_name_or_builtin (str): name or built-in category of the elements
+            to pick.
+        message (str, optional): message to display on selection.
+            Defaults to ''.
+
+    Returns:
+        (list[Element]): picked elements.
+
+    Raises:
+        PyRevitException: If no category matches the specified name or builtin.
+    """
     category = query.get_category(cat_name_or_builtin)
     if category:
         pick_filter = PickByCategorySelectionFilter(category.Id)
@@ -267,6 +350,16 @@ def pick_elements_by_category(cat_name_or_builtin, message=''):
 
 
 def get_picked_elements(message=''):
+    """Allows the user to pick multple elements, one at a time.
+
+    It keeps asking the user to pick an element until no elements are selected.
+
+    Args:
+        message (str, optional): The message to display. Defaults to ''.
+
+    Yields:
+        (DB.Element): selected element
+    """
     picked_element = True
     while picked_element:
         picked_element = pick_element(message=message)
@@ -276,6 +369,17 @@ def get_picked_elements(message=''):
 
 
 def get_picked_elements_by_category(cat_name_or_builtin, message=''):
+    """Pick elements by category.
+
+    Keeps asking the user to pick an element until no elements are selected.
+
+    Args:
+        cat_name_or_builtin (str): category name or built-in category.
+        message (str, optional): message to display while picking elements.
+
+    Yields:
+        (DB.Element): The picked elements from the specified category.
+    """
     picked_element = True
     while picked_element:
         picked_element = pick_element_by_category(cat_name_or_builtin,
@@ -286,30 +390,72 @@ def get_picked_elements_by_category(cat_name_or_builtin, message=''):
 
 
 def pick_elementpoints(message='', world=False):
+    """Selects element points.
+
+    Args:
+        message (str): The message to display when selecting element points.
+        world (bool, optional): Select points in world coordinates. Defaults to False.
+
+    Returns:
+        (list[PointOnElement]): selected element points.
+    """
     return _pick_obj(UI.Selection.ObjectType.PointOnElement,
                      message,
                      multiple=True, world=world)
 
 
 def pick_edges(message=''):
+    """Selects edges.
+
+    Args:
+        message (str): The message to display when selecting edges.
+
+    Returns:
+        (list[Edge]): selected edges.
+    """
     return _pick_obj(UI.Selection.ObjectType.Edge,
                      message,
                      multiple=True)
 
 
 def pick_faces(message=''):
+    """Selects faces.
+
+    Args:
+        message (str): The message to display when selecting the faces.
+
+    Returns:
+        (list[Face]): selected faces.
+    """
     return _pick_obj(UI.Selection.ObjectType.Face,
                      message,
                      multiple=True)
 
 
 def pick_linkeds(message=''):
+    """Selects linked elements.
+
+    Args:
+        message (str): The message to display when selecting linked elements.
+
+    Returns:
+        (list[LinkedElement]): selected linked elements.
+    """
     return _pick_obj(UI.Selection.ObjectType.LinkedElement,
                      message,
                      multiple=True)
 
 
 def pick_point(message=''):
+    """Pick a point from the user interface.
+
+    Args:
+        message (str): A message to display when prompting for the point.
+
+    Returns:
+        (tuple or None): A tuple representing the picked point as (x, y, z)
+            coordinates, or None if no point was picked or an error occurred.
+    """
     try:
         return HOST_APP.uidoc.Selection.PickPoint(message)
     except Exception:
@@ -317,6 +463,17 @@ def pick_point(message=''):
 
 
 def pick_rectangle(message='', pick_filter=None):
+    """Picks elements from the user interface by specifying a rectangular area.
+
+    Args:
+        message (str, optional): A custom message to display when prompting
+            the user to pick elements. Default is an empty string.
+        pick_filter (object, optional): An object specifying the filter to apply
+            when picking elements. Default is None.
+
+    Returns:
+        (list[DB.ElementId]): The selected elements.
+    """
     if pick_filter:
         return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_filter,
                                                                 message)
@@ -325,6 +482,11 @@ def pick_rectangle(message='', pick_filter=None):
 
 
 def get_selection_category_set():
+    """Returns a CategorySet with the categories of the selected elements.
+
+    Returns:
+        (CategorySet): categories of the selected elements.
+    """
     selection = ElementSelection()
     cset = DB.CategorySet()
     for element in selection:
@@ -333,4 +495,9 @@ def get_selection_category_set():
 
 
 def get_selection():
+    """Returns the current selected items.
+
+    Returns:
+        (ElementSelection): the current selected items
+    """
     return ElementSelection()

@@ -1,6 +1,4 @@
-"""
-CodeHilite Extension for Python-Markdown
-========================================
+"""CodeHilite Extension for Python-Markdown.
 
 Adds code/syntax highlighting to standard Python-Markdown code blocks.
 
@@ -12,7 +10,6 @@ Original code Copyright 2006-2008 [Waylan Limberg](http://achinghead.com/).
 All changes Copyright 2008-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
-
 """
 
 from __future__ import absolute_import
@@ -46,12 +43,13 @@ def parse_hl_lines(expr):
 
 # ------------------ The Main CodeHilite Class ----------------------
 class CodeHilite(object):
-    """
-    Determine language of source code, and pass it into pygments hilighter.
+    """Determine language of source code, and pass it into pygments hilighter.
 
     Basic Usage:
-        >>> code = CodeHilite(src = 'some text')
-        >>> html = code.hilite()
+        ```python
+        code = CodeHilite(src = 'some text')
+        html = code.hilite()
+        ```
 
     * src: Source string or any object with a .readline attribute.
 
@@ -66,10 +64,12 @@ class CodeHilite(object):
     * hl_lines: (List of integers) Lines to emphasize, 1-indexed.
 
     Low Level Usage:
-        >>> code = CodeHilite()
-        >>> code.src = 'some text' # String or anything with a .readline attr.
-        >>> code.linenos = True  # Turns line numbering on or of.
-        >>> html = code.hilite()
+        ```python
+        code = CodeHilite()
+        code.src = 'some text' # String or anything with a .readline attr.
+        code.linenos = True  # Turns line numbering on or of.
+        html = code.hilite()
+        ```
 
     """
 
@@ -88,16 +88,16 @@ class CodeHilite(object):
         self.use_pygments = use_pygments
 
     def hilite(self):
-        """
+        """Highlites the code.
+
         Pass code to the [Pygments](http://pygments.pocoo.org/) highliter with
         optional line numbers. The output should then be styled with css to
         your liking. No styles are applied by default - only styling hooks
         (i.e.: <span class="k">).
 
-        returns : A string of html.
-
+        Returns:
+            (str): html text of the highlighted code.
         """
-
         self.src = self.src.strip('\n')
 
         if self.lang is None:
@@ -139,7 +139,8 @@ class CodeHilite(object):
                    (self.css_class, class_str, txt)
 
     def _parseHeader(self):
-        """
+        """Parse the code block header.
+
         Determines language of a code block from shebang line and whether said
         line should be removed or left in place. If the sheband line contains a
         path (even a single /) then it is assumed to be a real shebang line and
@@ -155,7 +156,6 @@ class CodeHilite(object):
 
             :::python hl_lines="1 3"
         """
-
         import re
 
         # split text into lines
@@ -198,10 +198,10 @@ class CodeHilite(object):
 
 
 class HiliteTreeprocessor(Treeprocessor):
-    """ Hilight source code in code blocks. """
+    """Hilight source code in code blocks."""
 
     def run(self, root):
-        """ Find code blocks and store in htmlStash. """
+        """Find code blocks and store in htmlStash."""
         blocks = root.iter('pre')
         for block in blocks:
             if len(block) == 1 and block[0].tag == 'code':
@@ -226,7 +226,7 @@ class HiliteTreeprocessor(Treeprocessor):
 
 
 class CodeHiliteExtension(Extension):
-    """ Add source code hilighting to markdown codeblocks. """
+    """Add source code hilighting to markdown codeblocks."""
 
     def __init__(self, *args, **kwargs):
         # define default configs
@@ -253,7 +253,7 @@ class CodeHiliteExtension(Extension):
         super(CodeHiliteExtension, self).__init__(*args, **kwargs)
 
     def extendMarkdown(self, md, md_globals):
-        """ Add HilitePostprocessor to Markdown instance. """
+        """Add HilitePostprocessor to Markdown instance."""
         hiliter = HiliteTreeprocessor(md)
         hiliter.config = self.getConfigs()
         md.treeprocessors.add("hilite", hiliter, "<inline")

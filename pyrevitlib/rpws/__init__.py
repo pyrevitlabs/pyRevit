@@ -1,4 +1,5 @@
-""" python wrapper for Autodesk Revit Server
+r"""Python wrapper for Autodesk Revit Server.
+
 This is a python module for interacting with Autodesk Revit Server using
 its RESTful API. This module requires 'requests' module for handling http
 requests to the Revit Server.

@@ -5,9 +5,11 @@ pyRevit command. The proper way to access this wrapper object is through
 the :func:`get_output` of :mod:`pyrevit.script` module. This method, in return
 uses the `pyrevit.output` module to get access to the output wrapper.
 
-Example:
-    >>> from pyrevit import script
-    >>> output = script.get_output()
+Examples:
+    ```python
+    from pyrevit import script
+    output = script.get_output()
+    ```
 
 Here is the source of :func:`pyrevit.script.get_output`. As you can see this
 functions calls the :func:`pyrevit.output.get_output` to receive the
@@ -103,7 +105,7 @@ class PyRevitOutputWindow(object):
         """Return html renderer inside output window.
 
         Returns:
-            ``System.Windows.Forms.WebBrowser`` (In current implementation)
+            (System.Windows.Forms.WebBrowser): HTML renderer
         """
         if self.window:
             return self.window.renderer
@@ -133,10 +135,12 @@ class PyRevitOutputWindow(object):
 
     @property
     def is_closed_by_user(self):
+        """Whether the window has been closed by the user."""
         return self.window.ClosedByUser
 
     @property
     def last_line(self):
+        """Last line of the output window."""
         return self.window.GetLastLine()
 
     @property
@@ -175,11 +179,13 @@ class PyRevitOutputWindow(object):
             element_contents (str): html code of the element contents
             attribs (:obj:`dict`): dictionary of attribute names and value
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.inject_to_head('script',
-                                      '',   # no script since it's a link
-                                      {'src': js_script_file_path})
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.inject_to_head('script',
+                                  '',   # no script since it's a link
+                                  {'src': js_script_file_path})
+            ```
         """
         html_element = self.renderer.Document.CreateElement(element_tag)
         if element_contents:
@@ -203,11 +209,13 @@ class PyRevitOutputWindow(object):
             element_contents (str): html code of the element contents
             attribs (:obj:`dict`): dictionary of attribute names and value
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.inject_to_body('script',
-                                      '',   # no script since it's a link
-                                      {'src': js_script_file_path})
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.inject_to_body('script',
+                                  '',   # no script since it's a link
+                                  {'src': js_script_file_path})
+            ```
         """
         html_element = self.renderer.Document.CreateElement(element_tag)
         if element_contents:
@@ -231,10 +239,12 @@ class PyRevitOutputWindow(object):
             attribs (:obj:`dict`): dictionary of attribute names and value
             body (bool, optional): injects script into body instead of head
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.inject_script('',   # no script since it's a link
-                                     {'src': js_script_file_path})
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.inject_script('',   # no script since it's a link
+                                 {'src': js_script_file_path})
+            ```
         """
         if body:
             self.inject_to_body('script', script_code, attribs=attribs)
@@ -248,9 +258,11 @@ class PyRevitOutputWindow(object):
             style_code (str): css styling code
             attribs (:obj:`dict`): dictionary of attribute names and value
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.add_style('body { color: blue; }')
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.add_style('body { color: blue; }')
+            ```
         """
         self.inject_to_head('style', style_code, attribs=attribs)
 
@@ -292,7 +304,7 @@ class PyRevitOutputWindow(object):
         self.set_height(height)
 
     def center(self):
-        """Center the output window on the screen"""
+        """Center the output window on the screen."""
         screen_area = HOST_APP.proc_screen_workarea
         left = \
             (abs(screen_area.Right - screen_area.Left) / 2) \
@@ -404,10 +416,12 @@ class PyRevitOutputWindow(object):
             cur_value (float): current progress value e.g. 50
             max_value (float): total value e.g. 100
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> for i in range(100):
-            >>>     output.update_progress(i, 100)
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            for i in range(100):
+                output.update_progress(i, 100)
+            ```
         """
         if self.window:
             self.window.UpdateActivityBar(cur_value, max_value)
@@ -428,7 +442,7 @@ class PyRevitOutputWindow(object):
             self.window.SetActivityBarVisibility(True)
 
     def indeterminate_progress(self, state):
-        """Show or hide indeterminate progress bar. """
+        """Show or hide indeterminate progress bar."""
         if self.window:
             self.window.UpdateActivityBar(state)
 
@@ -487,9 +501,11 @@ class PyRevitOutputWindow(object):
     def print_html(html_str):
         """Add the html code to the output window.
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.print_html('<strong>Title</strong>')
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.print_html('<strong>Title</strong>')
+            ```
         """
         print(coreutils.prepare_html_str(html_str),
               end="")
@@ -498,9 +514,11 @@ class PyRevitOutputWindow(object):
     def print_code(code_str):
         """Print code to the output window with special formatting.
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.print_code('value = 12')
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.print_code('value = 12')
+            ```
         """
         code_div = '<div class="code">{}</div>'
         print(
@@ -516,9 +534,11 @@ class PyRevitOutputWindow(object):
     def print_md(md_str):
         """Process markdown code and print to output window.
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.print_md('### Title')
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.print_md('### Title')
+            ```
         """
         tables_ext = 'pyrevit.coreutils.markdown.extensions.tables'
         markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
@@ -531,24 +551,26 @@ class PyRevitOutputWindow(object):
         """Print provided data in a table in output window.
 
         Args:
-            table_data (:obj:`list` of iterables): 2D array of data
+            table_data (list[iterable[Any]]): 2D array of data
             title (str): table title
-            columns (:obj:`list` str): list of column names
-            formats (:obj:`list` str): column data formats
+            columns (list[str]): list of column names
+            formats (list[str]): column data formats
             last_line_style (str): css style of last row
 
-        Example:
-            >>> data = [
-            ... ['row1', 'data', 'data', 80 ],
-            ... ['row2', 'data', 'data', 45 ],
-            ... ]
-            >>> output.print_table(
-            ... table_data=data,
-            ... title="Example Table",
-            ... columns=["Row Name", "Column 1", "Column 2", "Percentage"],
-            ... formats=['', '', '', '{}%'],
-            ... last_line_style='color:red;'
-            ... )
+        Examples:
+            ```python
+            data = [
+            ['row1', 'data', 'data', 80 ],
+            ['row2', 'data', 'data', 45 ],
+            ]
+            output.print_table(
+            table_data=data,
+            title="Example Table",
+            columns=["Row Name", "Column 1", "Column 2", "Percentage"],
+            formats=['', '', '', '{}%'],
+            last_line_style='color:red;'
+            )
+            ```
         """
         if not columns:
             columns = []
@@ -601,9 +623,11 @@ class PyRevitOutputWindow(object):
     def print_image(self, image_path):
         r"""Prints given image to the output.
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.print_image(r'C:\image.gif')
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            output.print_image(r'C:\image.gif')
+            ```
         """
         self.print_html(
             "<span><img src=\"file:///{0}\"></span>".format(
@@ -630,14 +654,19 @@ class PyRevitOutputWindow(object):
         This method, creates the link but does not print it directly.
 
         Args:
-            element_ids (`ElementId`) or
-            element_ids (:obj:`list` of `ElementId`): single or multiple ids
+            element_ids (ElementId | list[ElementId]): single or multiple ids
             title (str): tile of the link. defaults to list of element ids
+            
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> for idx, elid in enumerate(element_ids):
-            >>>     print('{}: {}'.format(idx+1, output.linkify(elid)))
+        Returns:
+            (str): clickable link
+
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            for idx, elid in enumerate(element_ids):
+                print('{}: {}'.format(idx+1, output.linkify(elid)))
+            ```
         """
         return coreutils.prepare_html_str(
             linkmaker.make_link(element_ids, contents=title)

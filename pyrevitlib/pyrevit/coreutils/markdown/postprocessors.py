@@ -1,11 +1,8 @@
-"""
-POST-PROCESSORS
-=============================================================================
+"""POST-PROCESSORS.
 
 Markdown also allows post-processors, which are similar to preprocessors in
 that they need to implement a "run" method. However, they are run after core
 processing.
-
 """
 
 from __future__ import absolute_import
@@ -19,7 +16,7 @@ from . import util
 
 
 def build_postprocessors(md_instance, **kwargs):
-    """ Build the default postprocessors for Markdown. """
+    """Build the default postprocessors for Markdown."""
     postprocessors = odict.OrderedDict()
     postprocessors["raw_html"] = RawHtmlPostprocessor(md_instance)
     postprocessors["amp_substitute"] = AndSubstitutePostprocessor()
@@ -28,8 +25,7 @@ def build_postprocessors(md_instance, **kwargs):
 
 
 class Postprocessor(util.Processor):
-    """
-    Postprocessors are run after the ElementTree it converted back into text.
+    """Postprocessors are run after the ElementTree it converted back into text.
 
     Each Postprocessor implements a "run" method that takes a pointer to a
     text string, modifies it as necessary and returns a text string.
@@ -39,20 +35,20 @@ class Postprocessor(util.Processor):
     """
 
     def run(self, text):
-        """
+        """Main postprocessor method.
+
         Subclasses of Postprocessor should implement a `run` method, which
         takes the html document as a single text string and returns a
         (possibly modified) string.
-
         """
         pass  # pragma: no cover
 
 
 class RawHtmlPostprocessor(Postprocessor):
-    """ Restore raw html to the document. """
+    """Restore raw html to the document."""
 
     def run(self, text):
-        """ Iterate over html stash and restore "safe" html. """
+        """Iterate over html stash and restore "safe" html."""
         replacements = OrderedDict()
         for i in range(self.markdown.htmlStash.html_counter):
             html, safe = self.markdown.htmlStash.rawHtmlBlocks[i]
@@ -77,7 +73,7 @@ class RawHtmlPostprocessor(Postprocessor):
         return text
 
     def escape(self, html):
-        """ Basic html escaping """
+        """Basic html escaping."""
         html = html.replace('&', '&amp;')
         html = html.replace('<', '&lt;')
         html = html.replace('>', '&gt;')
@@ -94,7 +90,7 @@ class RawHtmlPostprocessor(Postprocessor):
 
 
 class AndSubstitutePostprocessor(Postprocessor):
-    """ Restore valid entities """
+    """Restore valid entities."""
 
     def run(self, text):
         text = text.replace(util.AMP_SUBSTITUTE, "&")
@@ -102,9 +98,9 @@ class AndSubstitutePostprocessor(Postprocessor):
 
 
 class UnescapePostprocessor(Postprocessor):
-    """ Restore escaped chars """
+    """Restore escaped chars."""
 
-    RE = re.compile('%s(\d+)%s' % (util.STX, util.ETX))
+    RE = re.compile(r'%s(\d+)%s' % (util.STX, util.ETX))
 
     def unescape(self, m):
         return util.int2str(int(m.group(1)))

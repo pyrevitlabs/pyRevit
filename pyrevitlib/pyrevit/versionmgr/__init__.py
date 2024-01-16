@@ -1,10 +1,12 @@
 """Utility functions for managing pyRevit versions.
 
-Example:
-    >>> from pyrevit import versionmgr
-    >>> v = versionmgr.get_pyrevit_version()
-    >>> v.get_formatted()
-    ... '4.10-beta2'
+Examples:
+        ```python
+        from pyrevit import versionmgr
+        v = versionmgr.get_pyrevit_version()
+        v.get_formatted()
+        ```
+        '4.10-beta2'
 """
 import os.path as op
 
@@ -38,7 +40,7 @@ class _PyRevitVersion(object):
         self.signature = safe_strtype(signature)[:7]
 
     def as_int_tuple(self):
-        """Returns version as an int tuple (major, minor, patch)"""
+        """Returns version as an int tuple (major, minor, patch)."""
         try:
             signature = int(self.patch, 16)
         except Exception:
@@ -48,14 +50,14 @@ class _PyRevitVersion(object):
         return ver_tuple
 
     def as_str_tuple(self):
-        """Returns version as an string tuple ('major', 'minor', 'patch')"""
+        """Returns version as an string tuple ('major', 'minor', 'patch')."""
         ver_tuple = (safe_strtype(_PyRevitVersion.major),
                      safe_strtype(_PyRevitVersion.minor),
                      safe_strtype(self.patch))
         return ver_tuple
 
     def get_formatted(self, strict=False, extended=False):
-        """Returns 'major.minor.patch' in string"""
+        """Returns 'major.minor.patch' in string."""
         formatted_ver = '{}.{}.{}'.format(_PyRevitVersion.major,
                                           _PyRevitVersion.minor,
                                           _PyRevitVersion.patch)
@@ -73,7 +75,7 @@ def get_pyrevit_repo():
     """Return pyRevit repository.
 
     Returns:
-        :obj:`pyrevit.coreutils.git.RepoInfo`: repo wrapper object
+        (pyrevit.coreutils.git.RepoInfo): repo wrapper object
     """
     try:
         return git.get_repo(HOME_DIR)
@@ -86,7 +88,7 @@ def get_pyrevit_version():
     """Return information about active pyRevit version.
 
     Returns:
-        :obj:`_PyRevitVersion`: version wrapper object
+        (_PyRevitVersion): version wrapper object
     """
     try:
         return _PyRevitVersion(get_pyrevit_repo().last_commit_hash)
@@ -99,6 +101,6 @@ def get_pyrevit_cli_version():
     """Return version of shipped pyRevit CLI utility.
 
     Returns:
-        str: version string of pyRevit CLI utility binary
+        (str): version string of pyRevit CLI utility binary
     """
     return coreutils.get_exe_version(PYREVIT_CLI_PATH)

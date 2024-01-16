@@ -1,4 +1,4 @@
-"""Route dictionary"""
+"""Route dictionary."""
 #pylint: disable=import-error,invalid-name,broad-except
 import re
 import uuid
@@ -62,7 +62,7 @@ def _cast_value(cast, val):
 
 
 def route_match(route, path, method):
-    """Test if route pattern matches given request path"""
+    """Test if route pattern matches given request path."""
     finder_pattern = _make_finder_pattern(route.pattern)
     # if same method and matching pattern
     if route.method == method \
@@ -91,11 +91,13 @@ def route_match(route, path, method):
 
 
 def extract_route_params(route_pattern, request_path):
-    """Extracts route params from request path based on pattern
+    """Extracts route params from request path based on pattern.
 
-    Example:
-        >>> extract_route_params('api/v1/posts/<int:id>', 'api/v1/posts/12')
-        ... [<RouteParam key:id value=12>]
+    Examples:
+        ```python
+        extract_route_params('api/v1/posts/<int:id>', 'api/v1/posts/12')
+        ```
+        [<RouteParam key:id value=12>]
     """
     finder_pattern = _make_finder_pattern(route_pattern)
     route_params = []
@@ -118,15 +120,18 @@ def extract_route_params(route_pattern, request_path):
 
 
 def reset_routes():
-    """Reset registered APIs and routes"""
+    """Reset registered APIs and routes."""
     envvars.set_pyrevit_env_var(envvars.ROUTES_ROUTES, {})
 
 
 def get_routes(api_name):
-    """Get all registered routes for given API name
+    """Get all registered routes for given API name.
 
     Args:
         api_name (str): unique name of the api
+
+    Returns:
+        (dict[str, Caller[]]): registered routes
     """
     if api_name is None:
         raise Exception("API name can not be None.")
@@ -145,7 +150,7 @@ def get_routes(api_name):
 
 
 def get_route_handler(api_name, path, method):
-    """Return registered handler for given API, path, and method
+    """Return registered handler for given API, path, and method.
 
     Args:
         api_name (str): unique name of the api
@@ -153,7 +158,8 @@ def get_route_handler(api_name, path, method):
         method (str): method name
 
     Returns:
-        function: registered route handler function
+        api_route (Route): API route
+        route_handler (Caller): registered route handler function
     """
     for api_route, route_handler in get_routes(api_name).items():
         if route_match(api_route, path, method):
@@ -162,7 +168,7 @@ def get_route_handler(api_name, path, method):
 
 
 def add_route(api_name, pattern, method, handler_func):
-    """Add new route for given API name
+    """Add new route for given API name.
 
     Args:
         api_name (str): unique name of the api
@@ -179,7 +185,7 @@ def add_route(api_name, pattern, method, handler_func):
 
 
 def remove_route(api_name, pattern, method):
-    """Remove prevriously defined route for given API name
+    """Remove prevriously defined route for given API name.
 
     Args:
         api_name (str): unique name of the api

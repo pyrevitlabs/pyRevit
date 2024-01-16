@@ -1,4 +1,4 @@
-"""Perform upgrades between version, e.g. adding a new config parameter"""
+"""Perform upgrades between version, e.g. adding a new config parameter."""
 #pylint: disable=W0611
 import os
 import os.path as op
@@ -11,7 +11,6 @@ def upgrade_user_config(user_config):   #pylint: disable=W0613
 
     Args:
         user_config (:obj:`pyrevit.userconfig.PyRevitConfig`): config object
-        val (type): desc
     """
     # upgrade value formats
     for section in user_config:
@@ -20,8 +19,9 @@ def upgrade_user_config(user_config):   #pylint: disable=W0613
 
 
 def remove_leftover_temp_files():
-    """4.8.5 had a bug that would create temp files with extension ..bak
-    This cleans them up
+    """4.8.5 had a bug that would create temp files with extension ..bak.
+
+    This cleans them up.
     """
     univ_path = op.dirname(appdata.get_universal_data_file("X", 'bak'))
     if op.exists(univ_path):
