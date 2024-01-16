@@ -53,6 +53,9 @@
             <Component Id="cmp22F8D282DB59EF9E4E43C92C5C180A12" Guid="*">
                 <File Id="fil5512F1826793049537DA79C9E3A80EEF" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.WindowsAPICodePack.Shell.dll" />
             </Component>
+            <Component Id="cmp6107C12C2A55CB8E7E97FF2C9A33F385" Guid="*">
+                <File Id="fil135F9AEEB4A74E1EE438100986E97C41" KeyPath="yes" Source="$(var.PyRevitBinDir)\Microsoft.Xaml.Behaviors.dll" />
+            </Component>
             <Component Id="cmp550D607B33F84FC216C0115A1C1E23CB" Guid="*">
                 <File Id="filE2BC268E62F7A7982601ED07B26DEF13" KeyPath="yes" Source="$(var.PyRevitBinDir)\Nett.dll" />
             </Component>
@@ -83,8 +86,8 @@
             <Component Id="cmp44262A3F05199E34BE178696B174841B" Guid="*">
                 <File Id="filD78B1123BC32B4A724AD9BA93BD81C33" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit.exe" />
             </Component>
-            <Component Id="cmp9FE2ADAEDA49D31438376E35EEC4C648" Guid="*">
-                <File Id="fil6B0F17330CC0235EF560397295BB4DA8" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyRevit.ico" />
+            <Component Id="cmp3CEC5015C7B171D037911709CEA5182A" Guid="*">
+                <File Id="fil50909B4363EE90B90B36C55CDCA1A303" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit.ico" />
             </Component>
             <Component Id="cmp07A828E8285DD2E10CAF0641C7D791C8" Guid="*">
                 <File Id="fil54099BC32B04324CFD77CF4B0DD9498D" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit.svg" />
@@ -203,6 +206,7 @@
             <ComponentRef Id="cmp32F256F0739B5E664E97843D18BECABB" />
             <ComponentRef Id="cmpD50AAEBA16B0EDC9604A98ACE658A845" />
             <ComponentRef Id="cmp22F8D282DB59EF9E4E43C92C5C180A12" />
+            <ComponentRef Id="cmp6107C12C2A55CB8E7E97FF2C9A33F385" />
             <ComponentRef Id="cmp550D607B33F84FC216C0115A1C1E23CB" />
             <ComponentRef Id="cmp2C13014804B31A86960CDE6C4362FF03" />
             <ComponentRef Id="cmpED2BCA0ECDAF005115E320BA8CE268FB" />
@@ -213,7 +217,7 @@
             <ComponentRef Id="cmpABFD324B27973D0D293493CB552AA06E" />
             <ComponentRef Id="cmp7FCE70C746C5770A34DFCEFA376C5385" />
             <ComponentRef Id="cmp44262A3F05199E34BE178696B174841B" />
-            <ComponentRef Id="cmp9FE2ADAEDA49D31438376E35EEC4C648" />
+            <ComponentRef Id="cmp3CEC5015C7B171D037911709CEA5182A" />
             <ComponentRef Id="cmp07A828E8285DD2E10CAF0641C7D791C8" />
             <ComponentRef Id="cmp7870E964FC396780D995F70F6F572A78" />
             <ComponentRef Id="cmpC155C95B634240EBE33C1A445573458C" />
