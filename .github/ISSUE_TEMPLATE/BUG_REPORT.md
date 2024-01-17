@@ -9,7 +9,7 @@ about: Create a report to help us improve
 
 ---
 
-**🙏 PLease use the search in the issue section before filing a new issue**
+**🙏 Please use the search in the issue section before filing a new issue**
 
 ---
 

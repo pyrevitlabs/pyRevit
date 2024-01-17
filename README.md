@@ -46,9 +46,14 @@ pyRevit helps you quickly sketch out your automation and addon ideas, in whichev
 
 [Create Your First Command](https://www.notion.so/Create-Your-First-Command-2509b43e28bd498fba937f5c1be7f485)
 
+**↓** Read the pyRevit API reference to know everything about pyRevit available modules, functions, ...
+
+[pyRevit API Reference](https://ein.sh/pyRevit/reference/pyrevit/)
+
 **↓** Read the docs to know everything about pyRevit scripts, extensions, ...
 
 [Developer Docs](https://www.notion.so/Developer-Docs-2c88f3ecccde422d9504e20b6b9e04f8)
+
 
 **↓** pyRevit has a powerful command line utility
 
