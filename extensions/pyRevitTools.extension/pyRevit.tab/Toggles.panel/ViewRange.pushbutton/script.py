@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 from pyrevit import script, forms, revit
+from pyrevit.revit import dc3dserver as d3d
 import traceback
 
 from Autodesk.Revit import DB, UI
@@ -51,7 +52,7 @@ class Context(object):
     @active_view.setter
     def active_view(self, value):
         self._active_view = value
-        self.view_model.update(self)
+        self.context_changed()
 
     @property
     def source_plan_view(self):
@@ -59,7 +60,103 @@ class Context(object):
     @source_plan_view.setter
     def source_plan_view(self, value):
         self._source_plan_view = value
-        self.view_model.update(self)
+        self.context_changed()
+
+    def context_changed(self):
+        server.uidoc = UI.UIDocument(self.active_view.Document)
+        if self.view_model:
+             self.view_model.update(self)
+        if not self.is_valid():
+            server.meshes = None
+            server.uidoc.RefreshActiveView()
+            return
+        try:
+            shape_loops = list(
+                self.source_plan_view.GetCropRegionShapeManager().GetCropShape())
+            shape_outline = DB.Outline(DB.XYZ.Zero, DB.XYZ.Zero)
+            for loop in shape_loops:
+                for curve in loop:
+                    shape_outline.AddPoint(curve.GetEndPoint(0))
+
+
+            bbox = self.active_view.GetSectionBox()
+            transform = bbox.Transform
+
+            corners = [
+                bbox.Min,
+                bbox.Min + DB.XYZ.BasisX * (bbox.Max - bbox.Min).X,
+                bbox.Max,
+                bbox.Min + DB.XYZ.BasisY * (bbox.Max - bbox.Min).Y
+            ]
+
+            corners = [transform.OfPoint(c) for c in corners]
+
+            view_level = self.source_plan_view.GenLevel
+            view_range = self.source_plan_view.GetViewRange()
+            cut_plane_level = self.source_plan_view.Document.GetElement(
+                view_range.GetLevelId(DB.PlanViewPlane.CutPlane)
+            )
+            cut_plane_elevation = (
+                cut_plane_level.Elevation
+                + view_range.GetOffset(DB.PlanViewPlane.CutPlane)
+            )
+
+            cut_plane_vertices = [
+                DB.XYZ(c.X, c.Y, cut_plane_elevation) for c in corners
+            ]
+
+            color = DB.ColorWithTransparency(255, 0, 0, 180)
+
+            edges = [
+                revit.dc3dserver.Edge(
+                    cut_plane_vertices[i-1],
+                    cut_plane_vertices[i],
+                    color
+                ) for i in range(len(cut_plane_vertices))
+            ]
+            triangles = [
+                revit.dc3dserver.Triangle(
+                    cut_plane_vertices[0],
+                    cut_plane_vertices[1],
+                    cut_plane_vertices[2],
+                    revit.dc3dserver.Mesh.calculate_triangle_normal(
+                        cut_plane_vertices[0],
+                        cut_plane_vertices[1],
+                        cut_plane_vertices[2],
+                    ),
+                    color
+                ),
+                revit.dc3dserver.Triangle(
+                    cut_plane_vertices[2],
+                    cut_plane_vertices[3],
+                    cut_plane_vertices[0],
+                    revit.dc3dserver.Mesh.calculate_triangle_normal(
+                        cut_plane_vertices[2],
+                        cut_plane_vertices[3],
+                        cut_plane_vertices[0],
+                    ),
+                    color
+                )
+            ]
+
+            mesh = revit.dc3dserver.Mesh(
+                edges,
+                triangles
+            )
+
+            server.meshes = [mesh]
+            server.uidoc.RefreshActiveView()
+        except:
+            print(traceback.format_exc())
+
+
+
+    def is_valid(self):
+        return (
+            isinstance(context.source_plan_view, DB.ViewPlan) and
+            isinstance(context.active_view, DB.View3D) and
+            context.active_view.IsSectionBoxActive
+        )
 
 class MainViewModel(forms.Reactive):
 
@@ -76,11 +173,13 @@ class MainViewModel(forms.Reactive):
 
     def update(self, context):
         try:
-            if not isinstance(context.active_view, DB.View3D):
-                message = "Please activate a 3D View!"
-            elif isinstance(context.source_plan_view, DB.ViewPlan):
+            if context.is_valid():
                 message = "Showing View Range of [{}]".format(context.source_plan_view.Name)
-            else:
+            elif not isinstance(context.active_view, DB.View3D):
+                message = "Please activate a 3D View!"
+            elif not context.active_view.IsSectionBoxActive:
+                message = "3D View has no Section Box!"
+            elif not isinstance(context.source_plan_view, DB.ViewPlan):
                 message = "Please select a Plan View in the Project Browser!"
             self.message = message
         except:
@@ -91,13 +190,13 @@ class MainWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
         self.Closed += self.window_closed
         subscribe()
+        server.add_server()
 
-    def btn_click(self, sender, args):
-        print("hey from button")
-        external_event.Raise()
 
     def window_closed(self, sender, args):
         external_event.Raise()
+        server.remove_server()
+        uidoc.RefreshActiveView()
 
 def subscribe():
     try:
@@ -108,6 +207,7 @@ def subscribe():
     except:
         print(traceback.format_exc())
 
+
 def unsubscribe():
     try:
         print("unsubscribe")
@@ -116,6 +216,7 @@ def unsubscribe():
         ui_app.SelectionChanged -= EventHandler[SelectionChangedEventArgs](selection_changed)
     except:
         print(traceback.format_exc())
+
 
 def view_activated(sender, args):
     try:
@@ -138,11 +239,13 @@ def selection_changed(sender, args):
         print(traceback.format_exc())
 
 
+server = revit.dc3dserver.Server(register=False)
 
 vm = MainViewModel()
 context = Context()
 context.view_model = vm
 context.active_view = uidoc.ActiveGraphicalView
+
 
 event_handler = SimpleEventHandler(unsubscribe)
 
