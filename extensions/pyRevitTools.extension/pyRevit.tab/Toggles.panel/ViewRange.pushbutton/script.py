@@ -10,6 +10,7 @@ from Autodesk.Revit.Exceptions import InvalidOperationException
 from Autodesk.Revit.UI.Events import ViewActivatedEventArgs, SelectionChangedEventArgs
 
 from System import EventHandler
+from System.Collections.Generic import List
 
 doc = revit.doc
 uidoc = revit.uidoc
@@ -27,7 +28,7 @@ class SimpleEventHandler(UI.IExternalEventHandler):
 
     def Execute(self, uiapp):
         try:
-            self.do_this()
+            self.do_this(uiapp)
         except InvalidOperationException:
             print('InvalidOperationException catched')
 
@@ -68,7 +69,7 @@ class Context(object):
              self.view_model.update(self)
         if not self.is_valid():
             server.meshes = None
-            server.uidoc.RefreshActiveView()
+            refresh_event.Raise()
             return
         try:
             shape_loops = list(
@@ -145,7 +146,7 @@ class Context(object):
             )
 
             server.meshes = [mesh]
-            server.uidoc.RefreshActiveView()
+            refresh_event.Raise()
         except:
             print(traceback.format_exc())
 
@@ -194,9 +195,9 @@ class MainWindow(forms.WPFWindow):
 
 
     def window_closed(self, sender, args):
-        external_event.Raise()
         server.remove_server()
-        uidoc.RefreshActiveView()
+        refresh_event.Raise()
+        unsubscribe_event.Raise()
 
 def subscribe():
     try:
@@ -208,14 +209,21 @@ def subscribe():
         print(traceback.format_exc())
 
 
-def unsubscribe():
+def unsubscribe(uiapp):
     try:
         print("unsubscribe")
-        ui_app = UI.UIApplication(doc.Application)
-        ui_app.ViewActivated -= EventHandler[ViewActivatedEventArgs](view_activated)
-        ui_app.SelectionChanged -= EventHandler[SelectionChangedEventArgs](selection_changed)
+        uiapp.ViewActivated -= EventHandler[ViewActivatedEventArgs](view_activated)
+        uiapp.SelectionChanged -= EventHandler[SelectionChangedEventArgs](selection_changed)
     except:
         print(traceback.format_exc())
+
+
+def refresh_active_view(uiapp):
+    uidoc = uiapp.ActiveUIDocument
+    uidoc.ActiveView = context.active_view
+    uidoc.RefreshActiveView()
+    if context.source_plan_view:
+        uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_plan_view.Id]))
 
 
 def view_activated(sender, args):
@@ -241,15 +249,13 @@ def selection_changed(sender, args):
 
 server = revit.dc3dserver.Server(register=False)
 
+unsubscribe_event = UI.ExternalEvent.Create(SimpleEventHandler(unsubscribe))
+refresh_event = UI.ExternalEvent.Create(SimpleEventHandler(refresh_active_view))
+
 vm = MainViewModel()
 context = Context()
 context.view_model = vm
 context.active_view = uidoc.ActiveGraphicalView
-
-
-event_handler = SimpleEventHandler(unsubscribe)
-
-external_event = UI.ExternalEvent.Create(event_handler)
 
 main_window = MainWindow()
 main_window.DataContext = vm
