@@ -1,0 +1,7 @@
+title: "Show View Range"
+tooltip:
+author: Tamás Déri
+engine:
+  clean: true
+  full_frame: false
+  persistent: true
