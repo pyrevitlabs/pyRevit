@@ -78,8 +78,7 @@ namespace pyRevitLabs.Common {
 
             // add username and password to clone options, if provided by user
             if (creds is GitInstallerCredentials && creds.IsValid())
-                cloneOps.CredentialsProvider = (_url, _usernameFromUrl, _credTypes) => creds.GetCredentials();
-
+                cloneOps.FetchOptions.CredentialsProvider = (_url, _usernameFromUrl, _credTypes) => creds.GetCredentials();
             try
             {
                 // attempt at cloning the repo
