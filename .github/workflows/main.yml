@@ -3,7 +3,7 @@ on:
   # when PRs from forked repos are merged
   # eirannejad 02/12/2024: disabled develop ci/cd builds for pyRevit 5
   # we will reactivate when changes are ready to build on every commit
-  push:
+  # push:
     # branches:
     #   - develop
   # when PR from develop->master is created
