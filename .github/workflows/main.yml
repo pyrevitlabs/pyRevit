@@ -3,7 +3,7 @@ on:
   # when PRs from forked repos are merged
   push:
     branches:
-      - develop
+      - develop-4
   # when PR from develop->master is created
   pull_request:
     branches:
