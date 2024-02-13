@@ -316,7 +316,7 @@ namespace pyRevitCLI {
                     if (arguments["default"].IsTrue)
                         engineVersion = PyRevitEngineVersion.Default;
                     else {
-                        // try parse the engine version as an integer e.g. 277 for 2.7.7
+                        // try parse the engine version as an integer e.g. 2711 for 2.7.11
                         if (int.TryParse(engStrVer, out var engIntVer))
                             engineVersion = (PyRevitEngineVersion)engIntVer;
                     }
