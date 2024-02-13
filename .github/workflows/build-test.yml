@@ -1,0 +1,34 @@
+name: Build test
+on:
+  push:
+
+jobs:
+  build:
+    if: github.repository != 'eirannejad/pyRevit'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Checkout Submodules
+        uses: snickerbockers/submodules-init@7ce9774442c0c2d4728e6d3f66141df2102e4cbc
+
+      - name: Prepare Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv install
+
+      - name: Prepare msbuild
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Build Products
+        run: |
+          pipenv run pyrevit build products
