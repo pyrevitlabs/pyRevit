@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2024", "pyRevitLabs.PyRevit.Runtime.2024.csproj", "{E4C1B0B3-DE42-4D10-A4FB-8A478ED9DDFC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.2025", "pyRevitLabs.PyRevit.Runtime.2025.csproj", "{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -57,6 +59,10 @@ Global
 		{E4C1B0B3-DE42-4D10-A4FB-8A478ED9DDFC}.Debug|x64.Build.0 = Debug|x64
 		{E4C1B0B3-DE42-4D10-A4FB-8A478ED9DDFC}.Release|x64.ActiveCfg = Release|x64
 		{E4C1B0B3-DE42-4D10-A4FB-8A478ED9DDFC}.Release|x64.Build.0 = Release|x64
+		{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}.Debug|x64.Build.0 = Debug|Any CPU
+		{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}.Release|x64.ActiveCfg = Release|Any CPU
+		{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
