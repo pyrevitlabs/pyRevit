@@ -13,18 +13,18 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <OutputPath>bin\$(Configuration)\</OutputPath>
-    <PyRevitRootDir>$(MSBuildThisFileDirectory)\..\</PyRevitRootDir>
+    <OutputPath>bin\$(Configuration)</OutputPath>
+    <PyRevitRootDir>$(MSBuildThisFileDirectory)..</PyRevitRootDir>
     
     <PyRevitBinDir>$(PyRevitRootDir)\bin\$(NetFolder)</PyRevitBinDir>
-    <PyRevitEnginesDir>$(PyRevitBinDir)engines\</PyRevitEnginesDir>
+    <PyRevitEnginesDir>$(PyRevitBinDir)\engines</PyRevitEnginesDir>
     
-    <PyRevitDevDir>$(PyRevitRootDir)\dev\</PyRevitDevDir>
+    <PyRevitDevDir>$(PyRevitRootDir)\dev</PyRevitDevDir>
     <PyRevitDevLibsDir>$(PyRevitDevDir)\libs\$(NetFolder)</PyRevitDevLibsDir>
-    <PyRevitDevModulesDir>$(PyRevitDevDir)\modules\</PyRevitDevModulesDir>
+    <PyRevitDevModulesDir>$(PyRevitDevDir)\modules</PyRevitDevModulesDir>
     
-    <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib\</PyRevitLibDir>
-    <PyRevitExtDir>$(PyRevitRootDir)\extensions\</PyRevitExtDir>
+    <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib</PyRevitLibDir>
+    <PyRevitExtDir>$(PyRevitRootDir)\extensions</PyRevitExtDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
