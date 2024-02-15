@@ -5,6 +5,7 @@
     <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
     <ApplicationManifest>pyrevit.manifest</ApplicationManifest>
     <SignAssembly>true</SignAssembly>
+    <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

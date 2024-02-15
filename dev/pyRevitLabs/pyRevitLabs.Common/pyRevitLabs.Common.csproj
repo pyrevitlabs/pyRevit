@@ -1,4 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
     <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
@@ -12,7 +16,9 @@
     <PackageReference Include="YamlDotNet" Version="8.1.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.4.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="3.4.0" />
-    <Reference Include="System.Management" />
+    
+    <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Management" />
+    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="System.Management" Version="8.0.0" />
   </ItemGroup>
 
   <Target Name="DeployDependencies" AfterTargets="Deploy">

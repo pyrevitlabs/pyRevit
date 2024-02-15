@@ -1,4 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Reference Include="System.IO.Compression" />
   </ItemGroup>

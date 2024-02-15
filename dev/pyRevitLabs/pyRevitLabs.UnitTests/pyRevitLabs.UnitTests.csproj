@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TestProjectType>UnitTest</TestProjectType>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

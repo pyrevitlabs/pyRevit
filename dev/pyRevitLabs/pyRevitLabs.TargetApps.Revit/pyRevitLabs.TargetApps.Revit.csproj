@@ -1,4 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
     <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
