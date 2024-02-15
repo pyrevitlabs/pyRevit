@@ -2,31 +2,10 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+<!--    <TargetFramework>net48</TargetFramework>-->
+<!--    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>-->
     <PlatformTarget>x64</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
-      <NetFolder Condition="'$(TargetFramework)' == 'net48'">netfx</NetFolder>
-      <NetFolder Condition="'$(TargetFramework)' == 'net8.0-windows'">netcore</NetFolder>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-    <OutputPath>bin\$(Configuration)</OutputPath>
-    <PyRevitRootDir>$(MSBuildThisFileDirectory)..</PyRevitRootDir>
-    
-    <PyRevitBinDir>$(PyRevitRootDir)\bin</PyRevitBinDir>
-    <PyRevitEnginesDir>$(PyRevitBinDir)\engines</PyRevitEnginesDir>
-    
-    <PyRevitDevDir>$(PyRevitRootDir)\dev</PyRevitDevDir>
-    <PyRevitDevLibsDir>$(PyRevitDevDir)\libs</PyRevitDevLibsDir>
-    <PyRevitDevModulesDir>$(PyRevitDevDir)\modules</PyRevitDevModulesDir>
-    
-    <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib</PyRevitLibDir>
-    <PyRevitExtDir>$(PyRevitRootDir)\extensions</PyRevitExtDir>
-
-    <RevitDevDir>$(PyRevitDevLibsDir)\Revit</RevitDevDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">

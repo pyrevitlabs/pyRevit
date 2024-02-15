@@ -1,3 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <NetFolder Condition="'$(TargetFramework)' == 'net48'">netfx</NetFolder>
+        <NetFolder Condition="'$(TargetFramework)' == 'net8.0-windows'">netcore</NetFolder>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <OutputPath>bin\$(Configuration)</OutputPath>
+        <PyRevitRootDir>$(MSBuildThisFileDirectory)..</PyRevitRootDir>
+
+        <PyRevitBinDir>$(PyRevitRootDir)\bin\$(NetFolder)</PyRevitBinDir>
+        <PyRevitEnginesDir>$(PyRevitBinDir)\engines</PyRevitEnginesDir>
+
+        <PyRevitDevDir>$(PyRevitRootDir)\dev</PyRevitDevDir>
+        <PyRevitDevLibsDir>$(PyRevitDevDir)\libs\$(NetFolder)</PyRevitDevLibsDir>
+        <PyRevitDevModulesDir>$(PyRevitDevDir)\modules</PyRevitDevModulesDir>
+
+        <PyRevitLibDir>$(PyRevitRootDir)\pyrevitlib</PyRevitLibDir>
+        <PyRevitExtDir>$(PyRevitRootDir)\extensions</PyRevitExtDir>
+
+        <RevitDevDir>$(PyRevitDevDir)\libs\Revit</RevitDevDir>
+    </PropertyGroup>
+
+    <Import Condition="'$(UseRevit)' == 'true'" Project="RevitVersionsProps/Autodesk.Revit.Sdk.Refs.targets"/>
 </Project>
