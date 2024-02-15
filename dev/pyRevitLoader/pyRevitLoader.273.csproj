@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IronPythonVersion>IPY273</IronPythonVersion>
     <IronPythonStdLib>python_273_lib.zip</IronPythonStdLib>
-    <Version>$(RevitVersion).2.7.3</Version>
+    <Version>2.7.3</Version>
   </PropertyGroup>
 
   <Import Project="Loader.Common.Props" />

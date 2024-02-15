@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="../Directory.Build.targets"/>
+    
+    <PropertyGroup>
+    </PropertyGroup>
+    
     <ItemGroup Condition="$(UseRunner)=='' OR $(UseRunner)==False">
         <Compile Include="Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
         <Compile Include="Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
@@ -28,6 +33,10 @@
         <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Dynamic.dll"/>
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Scripting.dll"/>
     </ItemGroup>
+    
+    <ItemGroup>
+        <Reference Include="Microsoft.CSharp"/>
+    </ItemGroup>
 
     <ItemGroup>
         <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)"/>
@@ -36,6 +45,4 @@
     <Target Name="Deploy" AfterTargets="AfterBuild">
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)"/>
     </Target>
-
-    <Import Project="../Directory.Build.targets"/>
 </Project>

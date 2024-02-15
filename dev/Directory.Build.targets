@@ -20,6 +20,7 @@
         <PyRevitExtDir>$(PyRevitRootDir)\extensions</PyRevitExtDir>
 
         <RevitDevDir>$(PyRevitDevDir)\libs\Revit</RevitDevDir>
+        <IronPythonStdLibDir>$(PyRevitDevDir)\libs\IronPython\</IronPythonStdLibDir>
     </PropertyGroup>
 
     <Import Condition="'$(UseRevit)' == 'true'" Project="RevitVersionsProps/Autodesk.Revit.Sdk.Refs.targets"/>
