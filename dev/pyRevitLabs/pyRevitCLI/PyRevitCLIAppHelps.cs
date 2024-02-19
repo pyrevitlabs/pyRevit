@@ -132,7 +132,7 @@ namespace pyRevitCLI {
                         options: new Dictionary<string, string>() {
                             { "<clone_name>",           "Name of target clone" },
                             { "<revit_year>",           "Revit version year e.g. 2019" },
-                            { "<engine_version>",       "Engine version to be used e.g. 277" },
+                            { "<engine_version>",       "Engine version to be used e.g. 2711" },
                             { "latest",                 "Use latest engine" },
                             { "dynamosafe",             "Use latest engine that is compatible with DynamoBIM" },
                             { "--installed",            "All installed Revits" },

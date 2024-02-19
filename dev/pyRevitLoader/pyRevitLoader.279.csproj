@@ -1,9 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <IronPythonVersion>IPY279</IronPythonVersion>
-    <IronPythonStdLib>python_279_lib.zip</IronPythonStdLib>
-    <Version>2.7.9</Version>
-  </PropertyGroup>
-
-  <Import Project="Loader.Common.Props" />
-</Project>
