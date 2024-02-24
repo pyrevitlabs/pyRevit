@@ -279,12 +279,12 @@ def _build_msi_installers():
 
 
 def _build_choco_packages():
-    install_version = props.get_version(install=True)
-    install_version_urlsafe = props.get_version(install=True, url_safe=True)
+    build_version_urlsafe = props.get_version(install=False, url_safe=True)
     base_url = (
         "https://github.com/eirannejad/pyRevit/"
-        f"releases/download/v{install_version_urlsafe}/"
+        f"releases/download/v{build_version_urlsafe}/"
     )
+    install_version = props.get_version(install=True)
     pyrevit_cli_admin_installer = (
         configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=install_version)
         + ".exe"
