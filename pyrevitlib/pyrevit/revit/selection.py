@@ -165,6 +165,7 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
             else picker_func(obj_type, message)
         )
     except RevitExceptions.OperationCanceledException:
+        mlogger.debug("Operation canceled by user")
         return None
     refs = list(pick_result) if multiple else [pick_result]
     if not refs:
