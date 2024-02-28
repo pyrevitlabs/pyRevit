@@ -7,13 +7,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="WindowsBase" />
-        <Reference Include="WindowsFormsIntegration" />
-        <Reference Include="PresentationCore" />
-        <Reference Include="PresentationFramework" />
-        <Reference Include="System.Windows.Forms" />
-        <Reference Include="System.Xaml" />
-        <Reference Include="System.Web" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="WindowsBase" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="WindowsFormsIntegration" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="PresentationCore" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="PresentationFramework" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Windows.Forms" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Xaml" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Web" />
 
         <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLoader.dll" />
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.dll" />
@@ -37,7 +37,8 @@
     <ItemGroup>
         <PackageReference Include="docopt.net" Version="0.6.1.10" />
         <PackageReference Include="AirspaceFixer" Version="1.0.5" />
-        <PackageReference Include="ControlzEx" Version="3.0.2.4" />
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'"  Include="ControlzEx" Version="4.4.0" />
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"  Include="ControlzEx" Version="3.0.2.4" />
     </ItemGroup>
 
     <Import Project="../Directory.Build.targets" />
