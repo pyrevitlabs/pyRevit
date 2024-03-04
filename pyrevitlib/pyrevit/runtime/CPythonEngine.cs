@@ -197,15 +197,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // manually add PYTHONPATH since we are overwriting the sys paths
             var pythonPath = Environment.GetEnvironmentVariable("PYTHONPATH");
-            if (pythonPath != null && pythonPath != string.Empty) {
+            if (!string.IsNullOrEmpty(pythonPath)) {
                 var searthPathStr = new PyString(pythonPath);
-                sysPaths.Insert(0, searthPathStr);
+                sysPaths.Append(searthPathStr);
             }
 
             // now add the search paths for the script bundle
-            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths.Reverse<string>()) {
+            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths) {
                 var searthPathStr = new PyString(searchPath);
-                sysPaths.Insert(0, searthPathStr);
+                sysPaths.Append(searthPathStr);
             }
         }
 
