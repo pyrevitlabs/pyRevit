@@ -732,11 +732,11 @@
         },
         "typing-extensions": {
             "hashes": [
-                "sha256:ada05f19b82a2ea6eeac4e7412a2328e70b5237f05f3ffef49cae6db558a914e",
-                "sha256:aee036f82b858bd4b43160c5dc2deb1780129223957eab47c3cac26b93b50e65"
+                "sha256:69b1a937c3a517342112fb4c6df7e72fc39a38e7891a5730ed4985b5214b5475",
+                "sha256:b0abd7c89e8fb96f98db18d86106ff1d90ab692004eb746cf6eda2682f91b3cb"
             ],
             "markers": "python_version < '3.11'",
-            "version": "==4.10.0rc1"
+            "version": "==4.10.0"
         },
         "urllib3": {
             "hashes": [
