@@ -2670,7 +2670,7 @@ def select_parameters(src_element,
     param_defs = []
     non_storage_type = coreutils.get_enum_none(DB.StorageType)
     if include_instance:
-        # collect instance parameters
+        # collect instance parameters        
         param_defs.extend(
             [ParamDef(name=x.Definition.Name,
                       istype=False,
@@ -2681,16 +2681,17 @@ def select_parameters(src_element,
         )
 
     if include_type:
-        # collect type parameters
-        src_type = revit.query.get_type(src_element)
-        param_defs.extend(
-            [ParamDef(name=x.Definition.Name,
-                      istype=True,
-                      definition=x.Definition,
-                      isreadonly=x.IsReadOnly)
-             for x in src_type.Parameters
-             if x.StorageType != non_storage_type]
-        )
+        # collect type parameters        
+        if src_type is not None:
+            src_type = revit.query.get_type(src_element)
+            param_defs.extend(
+                [ParamDef(name=x.Definition.Name,
+                          istype=True,
+                          definition=x.Definition,
+                          isreadonly=x.IsReadOnly)
+                 for x in src_type.Parameters
+                 if x.StorageType != non_storage_type]
+            )
 
     if exclude_readonly:
         param_defs = filter(lambda x: not x.isreadonly, param_defs)
