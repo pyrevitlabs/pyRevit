@@ -1,0 +1,62 @@
+---
+name: Bug report
+description: Thanks for taking the time to report a bug!
+title: "[Bug]: "
+labels: [Bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **🚧 If you have SentinelOne installed as an antivirus, look no further.**
+        > **You will need to create exceptions for Revit and pyRevit, both on the software and the %appdata% folders.**
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: ✈ Pre-Flight checks
+      description: before submitting an issue, make sure you've checked the following
+      options:
+        - label: I **don't have SentinelOne** antivirus installed (see above for the solution)
+          required: true
+        - label: I have **searched in the issues** (open and closed) but couldn't find a similar issue
+          required: true
+        - label: I have **searched in the [pyRevit Forum](https://discourse.pyrevitlabs.io)** for similar issues
+          required: true
+        - label: I already **followed the [installation troubleshooting guide](https://pyrevitlabs.notion.site/Installation-issues-f6495adb56254e9e8021f8a68e3b2ab7) thoroughly**
+          required: true
+        - label: I am using the **latest pyRevit Version**
+          required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: 🐞 Describe the bug
+      description: Be as specific as possible and list steps to reproduce the issue. If you have any suggestions for the solution, please list that as well.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce-steps
+    attributes:
+      label: ♻️ To Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: ⏲️ Expected behavior
+      description: A clear and concise description of what you expected to happen.
+  - type: textarea
+    id: env
+    attributes:
+      label: 🖥️ Hardware and Software Setup (please complete the following information)
+      description: Open a command prompt 🖥 and run the command `pyrevit env`. Paste the output here.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here.
