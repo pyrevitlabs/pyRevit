@@ -2670,7 +2670,7 @@ def select_parameters(src_element,
     param_defs = []
     non_storage_type = coreutils.get_enum_none(DB.StorageType)
     if include_instance:
-        # collect instance parameters        
+        # collect instance parameters
         param_defs.extend(
             [ParamDef(name=x.Definition.Name,
                       istype=False,
