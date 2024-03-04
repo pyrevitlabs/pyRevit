@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
-#define MyAppUUID "6a6637c3-859c-4fba-9ed9-03957adee956"
-#define MyAppVersion "4.8.13.23182"
+#define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
+#define MyAppVersion "4.8.14.24016"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 
@@ -13,7 +13,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2023 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2024 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
@@ -80,7 +80,7 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; Value
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master 277 --installed"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master 2711 --installed"; Flags: runhidden
 
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden

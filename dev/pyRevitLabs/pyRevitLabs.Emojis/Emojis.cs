@@ -2,6 +2,7 @@
 using System.IO;
 using System.IO.Compression;
 using System.Drawing;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Reflection;
@@ -2645,10 +2646,12 @@ namespace pyRevitLabs.Emojis {
             if (_emojiZip is null)
                 ExtractEmojis();
 
-            var matches = new Regex(@"\:(?<code>[^\s]+?)\:").Matches(input);
+            var matches = new Regex(@"\:(?<code>[^\s]+?)\:").Matches(input)
+                .Cast<Match>()
+                .Select(m => m.Groups["code"].Value)
+                .Distinct();
             // find the emoji shorthands
-            foreach (Match match in matches) {
-                var emojiShortCode = match.Groups["code"].Value;
+            foreach (var emojiShortCode in matches) {
                 if (EmojiDict.ContainsKey(emojiShortCode)) {
                     // find the emoji unicode
                     var shortHand = string.Format(":{0}:", emojiShortCode);

@@ -273,6 +273,10 @@ class EditNamingFormatsWindow(forms.WPFWindow):
                 desc='Sheet Name (with _ for space) e.g. "1ST_FLOOR_PLAN"'
             ),
             NamingFormatter(
+                template='{current_date}',
+                desc='Today''s Date e.g. "2019-10-12"'
+            ),
+            NamingFormatter(
                 template='{issue_date}',
                 desc='Sheet Issue Date e.g. "2019-10-12"'
             ),
@@ -1061,6 +1065,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                     name=sheet.name,
                     name_dash=sheet.name.replace(' ', '-'),
                     name_underline=sheet.name.replace(' ', '_'),
+                    current_date=coreutils.current_date(),
                     issue_date=sheet.issue_date,
                     rev_number=sheet.revision.number if sheet.revision else '',
                     rev_desc=sheet.revision.desc if sheet.revision else '',

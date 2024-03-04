@@ -73,7 +73,7 @@ class CopyPasteStateAction(object):
         Example:
             >>>def paste(self, datafile):
             >>>    view_scale_saved = datafile.load()
-            >>>    with revit.Transacction('Paste view scale'):
+            >>>    with revit.Transaction('Paste view scale'):
             >>>        try:
             >>>            revit.active_view.Scale = view_scale_saved
             >>>        except:

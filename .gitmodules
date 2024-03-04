@@ -13,3 +13,15 @@
 [submodule "dev/modules/pyRevitLabs.ironpython3"]
 	path = dev/modules/pyRevitLabs.ironpython3
 	url = https://github.com/pyrevitlabs/ironpython3.git
+[submodule "dev/modules/pyRevitLabs.MahApps.Metro"]
+	path = dev/modules/pyRevitLabs.MahApps.Metro
+	url = https://github.com/pyrevitlabs/MahApps.Metro.git
+	branch = pyrevit-main
+[submodule "dev/modules/pyRevitLabs.NLog"]
+	path = dev/modules/pyRevitLabs.NLog
+	url = https://github.com/pyrevitlabs/NLog.git
+	branch = pyrevit-main
+[submodule "dev/modules/pyRevitLabs.Newtonsoft.Json"]
+	path = dev/modules/pyRevitLabs.Newtonsoft.Json
+	url = https://github.com/pyrevitlabs/Newtonsoft.Json.git
+	branch = pyrevit-main

@@ -1,0 +1,450 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FileFormatWavefront</name>
+    </assembly>
+    <members>
+        <member name="M:FileFormatWavefront.FileFormatObj.Load(System.String,System.Boolean)">
+            <summary>
+            Loads a scene into a FileLoadResult object from a Wavefromt *.obj file.
+            All warning and error messages are in the returned object's 'Messages' collection.
+            The actual scene data is in the returned object's 'Model' data.
+            </summary>
+            <param name="path">The path to the *.obj file.</param>
+            <param name="loadTextureImages">if set to <c>true</c> texture images
+            will be loaded and set in the <see cref="P:FileFormatWavefront.Model.TextureMap.Image"/> property.</param>
+            <returns>
+            A <see cref="T:FileFormatWavefront.FileLoadResult`1"/> containing the file load result.
+            </returns>
+        </member>
+        <member name="M:FileFormatWavefront.FileFormatObj.ReadScene(System.IO.StreamReader,System.String,System.Boolean)">
+            <summary>
+            Internally used to reads the scene.
+            </summary>
+            <param name="reader">The reader.</param>
+            <param name="path">The path.</param>
+            <param name="loadTextureImages">if set to <c>true</c> [load texture images].</param>
+            <returns>
+            The file load result.
+            </returns>
+        </member>
+        <member name="M:FileFormatWavefront.FileFormatObj.MapIndex(System.Int32,System.Int32)">
+            <summary>
+            Maps an index defined in the file.
+            Indexes are 1 based, so we fix this. Also, if they're negative they're 1 based
+            but going backwards from the last element - which is why we need the <paramref name="currentElementCount"/>.
+            </summary>
+            <param name="currentElementCount">The current element count.</param>
+            <param name="index">The index.</param>
+            <returns></returns>
+        </member>
+        <member name="F:FileFormatWavefront.FileFormatObj.dataSeparators">
+            <summary>
+            The data separators, any valid value that can separate data in a line.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.FileFormatMtl">
+            <summary>
+            A file loader for the Wavefront *.mtl file format.
+            </summary>
+        </member>
+        <member name="M:FileFormatWavefront.FileFormatMtl.Load(System.String,System.Boolean)">
+            <summary>
+            Loads materials from the specified stream.
+            </summary>
+            <param name="path">The path.</param>
+            <param name="loadTextureImages">if set to <c>true</c> texture images
+            will be loaded and set in the <see cref="P:FileFormatWavefront.Model.TextureMap.Image"/> property.</param>
+            <returns>The results of the file load.</returns>
+        </member>
+        <member name="M:FileFormatWavefront.FileFormatMtl.Read(System.IO.TextReader,System.String,System.Boolean)">
+            <summary>
+            Read the material data from the specified stream.
+            </summary>
+            <param name="reader">The reader.</param>
+            <param name="path">The path. This can be null - it is only used for recording diagnostic information.</param>
+            <param name="loadTextureImages">if set to <c>true</c> [load texture images].</param>
+            <returns>
+            The results of the file load.
+            </returns>
+        </member>
+        <member name="T:FileFormatWavefront.FileLoadResult`1">
+            <summary>
+            Represents the results of a file loading operation.
+            </summary>
+            <typeparam name="TModel">The type of the model.</typeparam>
+        </member>
+        <member name="M:FileFormatWavefront.FileLoadResult`1.#ctor(`0,System.Collections.Generic.List{FileFormatWavefront.Message})">
+            <summary>
+            Initializes a new instance of the <see cref="T:FileFormatWavefront.FileLoadResult`1"/> class.
+            </summary>
+            <param name="messages">The messages.</param>
+            <param name="model">The model.</param>
+        </member>
+        <member name="P:FileFormatWavefront.FileLoadResult`1.Model">
+            <summary>
+            Gets the loaded model.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.FileLoadResult`1.Messages">
+            <summary>
+            Gets the file load messages.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Internals.LineData">
+            <summary>
+            This helper class aids us in dealing with Wavefront line data.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.Colour">
+            <summary>
+            Represents a colour.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Colour.r">
+            <summary>
+            The red component.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Colour.g">
+            <summary>
+            The green component.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Colour.b">
+            <summary>
+            The blue component.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Colour.a">
+            <summary>
+            The alpha component.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.Face">
+            <summary>
+            Represents a face.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Face.Material">
+            <summary>
+            Gets the material.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Face.Indices">
+            <summary>
+            Gets the indices.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.Group">
+            <summary>
+            Represents a group of faces.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Group.Names">
+            <summary>
+            Gets the group names. A group doesn't necessarily have to have any names.
+            Groups can also share names (i.e one group can be part of another).
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Group.SmoothingGroup">
+            <summary>
+            Gets the smoothing group.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Group.Faces">
+            <summary>
+            Gets the faces.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.Index">
+            <summary>
+            Represents an index.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Index.vertex">
+            <summary>
+            The vertex index.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Index.uv">
+            <summary>
+            The uv index.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Index.normal">
+            <summary>
+            The normal index.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.Material">
+            <summary>
+            Represents a material.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.Name">
+            <summary>
+            Gets the name.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.Ambient">
+            <summary>
+            Gets the ambient.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.Diffuse">
+            <summary>
+            Gets the diffuse.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.Specular">
+            <summary>
+            Gets the specular.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.Shininess">
+            <summary>
+            Gets the shininess.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.Transparency">
+            <summary>
+            Gets the transparency.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.TextureMapAmbient">
+            <summary>
+            Gets the ambient texture map.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.TextureMapDiffuse">
+            <summary>
+            Gets the diffuse texture map.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.TextureMapSpecular">
+            <summary>
+            Gets the specular texture map.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.TextureMapSpecularHighlight">
+            <summary>
+            Gets the specular highlight texture map.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.TextureMapAlpha">
+            <summary>
+            Gets the alpha texture map.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.TextureMapBump">
+            <summary>
+            Gets the bump texture map.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.IlluminationModel">
+            <summary>
+            Gets the illumination model.
+            See the specification at http://paulbourke.net/dataformats/mtl/ for details on this value.
+            </summary>
+            <value>
+            The illumination model.
+            </value>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.OpticalDensity">
+            <summary>
+            Gets the optical density, also known as the Index of Refraction.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Material.BumpStrength">
+            <summary>
+            Gets the occasionally used bump strength.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.Scene">
+            <summary>
+            Represent a scene of data loaded from an *.obj file.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Scene.Vertices">
+            <summary>
+            Gets the vertices.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Scene.Uvs">
+            <summary>
+            Gets the uvs.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Scene.Normals">
+            <summary>
+            Gets the normals.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Scene.UngroupedFaces">
+            <summary>
+            Gets the faces which don't belong to any groups.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Scene.Groups">
+            <summary>
+            Gets the groups.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Scene.Materials">
+            <summary>
+            Gets the materials.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.Scene.ObjectName">
+            <summary>
+            Gets the name of the object in the file. This can be (and in many cases will be) null. 
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Message">
+            <summary>
+            Represents a message of a specific severity relating to the loading of data from a file.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Message.messageType">
+            <summary>
+            The message type.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Message.fileName">
+            <summary>
+            The file name. May be null.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Message.lineNumber">
+            <summary>
+            The line number. May be null.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Message.details">
+            <summary>
+            The actual message details.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Message.exception">
+            <summary>
+            The exception associated with the message, may be null.
+            </summary>
+        </member>
+        <member name="M:FileFormatWavefront.Message.#ctor(FileFormatWavefront.MessageType,System.String,System.Nullable{System.Int32},System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FileFormatWavefront.Message"/> class.
+            </summary>
+            <param name="messageType">Type of the message.</param>
+            <param name="fileName">Name of the file.</param>
+            <param name="lineNumber">The line number.</param>
+            <param name="details">The message details.</param>
+            <param name="exception">The exception.</param>
+        </member>
+        <member name="P:FileFormatWavefront.Message.MessageType">
+            <summary>
+            Gets the type of the message.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Message.FileName">
+            <summary>
+            Gets the name of the file.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Message.LineNumber">
+            <summary>
+            Gets the line number.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Message.Details">
+            <summary>
+            Gets the details.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Message.Exception">
+            <summary>
+            Gets the exception.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.MessageType">
+            <summary>
+            Represents a message type for a loading message.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.MessageType.Warning">
+            <summary>
+            A warning message - indicates something may be wrong with the data.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.MessageType.Error">
+            <summary>
+            An error message - indicates that we KNOW something is wrong with the data.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.TextureMap">
+            <summary>
+            Represents a texture map.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.TextureMap.Path">
+            <summary>
+            Gets the path to the texture file.
+            </summary>
+        </member>
+        <member name="P:FileFormatWavefront.Model.TextureMap.Image">
+            <summary>
+            Gets the texture image.
+            Note that this is only set if the file is loaded with the 'loadTextureImages' option set to <c>true</c>.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.UV">
+            <summary>
+            Represents a texture coordinate.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.UV.u">
+            <summary>
+            The u coordinate.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.UV.v">
+            <summary>
+            The v coordinate.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Model.Vertex">
+            <summary>
+            Represents a vertex.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Vertex.x">
+            <summary>
+            The x coordinate.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Vertex.y">
+            <summary>
+            The y cooredinate.
+            </summary>
+        </member>
+        <member name="F:FileFormatWavefront.Model.Vertex.z">
+            <summary>
+            The z coordinate.
+            </summary>
+        </member>
+        <member name="T:FileFormatWavefront.Extensions.StringExtensions">
+            <summary>
+            String extensions used internally just make make the comparison with a string
+            and a line type a little cleaner.
+            </summary>
+        </member>
+        <member name="M:FileFormatWavefront.Extensions.StringExtensions.IsLineType(System.String,System.String)">
+            <summary>
+            Determines whether this string matches the specified line type.
+            </summary>
+            <param name="this">The string.</param>
+            <param name="lineType">The line type.</param>
+            <returns>True if the string matches the linetype.</returns>
+        </member>
+    </members>
+</doc>
