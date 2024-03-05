@@ -290,18 +290,19 @@ def _generate_runtime_asm():
     source_list = list(_get_source_files())
     # now try to compile
     try:
-        mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
+        messages = List[str]()
         res, msgs = labs.Common.CodeCompiler.CompileCSharp(
-            sourceFiles=Array[str](source_list),
-            outputPath=RUNTIME_ASSM_FILE,
-            references=Array[str](
-                get_references()
+            Array[str](source_list),
+            RUNTIME_ASSM_FILE,
+            Array[str](get_references()),
+            Array[str](
+                [
+                    "REVIT{}".format(HOST_APP.version),
+                    "REVIT{}".format(HOST_APP.subversion.replace(".", "_")),
+                ]
             ),
-            defines=Array[str]([
-                "REVIT{}".format(HOST_APP.version),
-                "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
-            ]),
-            debug=False
+            False,
+            messages,
         )
         # log results
         logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
