@@ -20,6 +20,7 @@ jobs:
                                 If you still need assistance or have additional information to share, please feel free to comment, and we'll be happy to help! 🚀
                                 Thanks for your understanding!"
           close-issue-message: "This issue was closed because it has been inactive for 14 days since being marked as stale."
+          any-of-issue-labels: needs-more-info
           days-before-pr-stale: -1
           days-before-pr-close: -1
   
