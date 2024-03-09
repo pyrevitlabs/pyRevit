@@ -4,10 +4,20 @@ on:
   push:
     branches:
       - docs
+    paths:
+      - 'mkdocs.yml'
+      - 'docs/**'
+      - 'pyrevitlib/**'
+      - '*.md'
   # when PR from develop->master is created
   pull_request:
     branches:
       - master
+    paths:
+      - 'mkdocs.yml'
+      - 'docs/**'
+      - 'pyrevitlib/**'
+      - '*.md'
   # manual run
   workflow_dispatch:
 
