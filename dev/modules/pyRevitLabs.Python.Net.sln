@@ -8,16 +8,13 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		ReleasePY37|Any CPU = ReleasePY37|Any CPU
-		ReleasePY38|Any CPU = ReleasePY38|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.ReleasePY37|Any CPU.ActiveCfg = ReleasePY37|Any CPU
-		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.ReleasePY37|Any CPU.Build.0 = ReleasePY37|Any CPU
-		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.ReleasePY38|Any CPU.ActiveCfg = ReleasePY38|Any CPU
-		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.ReleasePY38|Any CPU.Build.0 = ReleasePY38|Any CPU
+		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12A1F593-296C-4BAF-BC61-6065ED8D09C3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

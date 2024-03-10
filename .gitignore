@@ -11,6 +11,9 @@ extensions/*
 !extensions/extensions.json
 !extensions/README.md
 !extensions/pyRevitBundlesCreatorExtension.extension/
+pyRevitLabs.PythonNet.dll
+pyRevitLoader.dll
+pyRevitRunner.dll
 bin/*
 !bin/engines
 !bin/pyrevit.svg

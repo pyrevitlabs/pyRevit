@@ -29,7 +29,7 @@
         <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll" />
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll" />
 
-        <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitEnginesDir)\CPY385\pyRevitLabs.PythonNet.dll" />
+        <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitEnginesDir)\CPY3122\pyRevitLabs.PythonNet.dll" />
 
         <Reference Include="pyRevitLabs.Common" HintPath="$(PyRevitBinDir)\pyRevitLabs.Common.dll" />
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />

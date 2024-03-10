@@ -17,14 +17,6 @@ path = 'bin\engines\IPY2711PR'
 assembly = 'pyRevitLoader.dll'
 description = 'Custom pyRevit IronPython Engine'
 
-[engines.CPY378]
-kernel = 'CPython'
-version = 378
-runtime = false
-path = 'bin\engines\CPY378'
-assembly = 'pyRevitLabs.PythonNet.dll'
-description = 'CPython Engine'
-
 [engines.CPY385]
 kernel = 'CPython'
 version = 385
@@ -32,6 +24,14 @@ runtime = false
 path = 'bin\engines\CPY385'
 assembly = 'pyRevitLabs.PythonNet.dll'
 description = 'CPython Engine'
+
+[engines.CPY3122]
+kernel = 'CPython'
+version = 3122
+runtime = false
+path = 'bin\engines\CPY3122'
+assembly = 'pyRevitLabs.PythonNet.dll'
+description = 'CPython 3.12.2 Engine'
 
 [deployments]
 core = ['bin',

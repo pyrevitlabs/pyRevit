@@ -1,5 +1,5 @@
 """Manage pyRevit labs tasks"""
-# pylint: disable=invalid-name,broad-except
+
 import sys
 import os.path as op
 import logging
@@ -37,7 +37,7 @@ def _build(name: str, sln: str, config: str, print_output: Optional[bool] = Fals
             "-c",
             f"{config}",
         ],
-        dump_stdout=print_output
+        dump_stdout=print_output,
     )
     passed, report = utils.parse_dotnet_build_output(report)
     if not passed:
@@ -49,8 +49,7 @@ def _build(name: str, sln: str, config: str, print_output: Optional[bool] = Fals
 def build_engines(_: Dict[str, str]):
     """Build pyRevit engines"""
     _build("ironpython engines", configs.LOADERS, "Release")
-    _build("cpython 3.7 engine", configs.CPYTHONRUNTIME, "ReleasePY37")
-    _build("cpython 3.8 engine", configs.CPYTHONRUNTIME, "ReleasePY38")
+    _build("cpython engine", configs.CPYTHONRUNTIME, "Release")
 
 
 def build_labs(_: Dict[str, str]):

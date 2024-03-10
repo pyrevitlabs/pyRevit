@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using Python.Runtime;
 using CpyRuntime = Python.Runtime.Runtime;
 
+using pyRevitLabs.PyRevit;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 
@@ -31,13 +32,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 PythonEngine.ProgramName = "pyrevit";
                 using (Py.GIL()) {
                     if (!PythonEngine.IsInitialized)
+                        CpyRuntime.PythonDLL = GetPythonDll(runtime);
                         PythonEngine.Initialize();
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();
             }
 
-            SetupBuiltins(ref runtime);
             SetupStreams(ref runtime);
             SetupCaching(ref runtime);
             SetupSearchPaths(ref runtime);
@@ -54,6 +55,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // create new scope and set globals
                 var scope = Py.CreateScope("__main__");
                 scope.Set("__file__", runtime.ScriptSourceFile);
+                // Setup the builtins
+                SetupBuiltins(ref runtime, scope);
 
                 // execute
                 try {
@@ -124,59 +127,58 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PythonEngine.Shutdown();
         }
 
-        private void SetupBuiltins(ref ScriptRuntime runtime) {
-            // get builtins
-            IntPtr builtins = CpyRuntime.PyEval_GetBuiltins();
-
+        private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {
+            var builtInsDict = new PyDict();
             // Add timestamp and executuin uuid
-            SetVariable(builtins, "__execid__", runtime.ExecId);
-            SetVariable(builtins, "__timestamp__", runtime.ExecTimestamp);
+            builtInsDict.SetItem("__execid__".ToPython(), runtime.ExecId.ToPython());
+            builtInsDict.SetItem("__timestamp__".ToPython(), runtime.ExecTimestamp.ToPython());
 
-            // set builtins
-            SetVariable(builtins, "__cachedengine__", RecoveredFromCache);
-            SetVariable(builtins, "__cachedengineid__", TypeId);
-            SetVariable(builtins, "__scriptruntime__", runtime);
+            builtInsDict.SetItem("__cachedengine__".ToPython(), RecoveredFromCache.ToPython());
+            builtInsDict.SetItem("__cachedengineid__".ToPython(), TypeId.ToPython());
+            builtInsDict.SetItem("__scriptruntime__".ToPython(), runtime.ToPython());
 
             if (runtime.UIApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIApp);
+                builtInsDict.SetItem("__revit__".ToPython(), runtime.UIApp.ToPython());
             else if (runtime.UIControlledApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIControlledApp);
+                builtInsDict.SetItem("__revit__".ToPython(), runtime.UIControlledApp.ToPython());
             else if (runtime.App != null)
-                SetVariable(builtins, "__revit__", runtime.App);
+                builtInsDict.SetItem("__revit__".ToPython(), runtime.App.ToPython());
             else
-                SetVariable(builtins, "__revit__", null);
+                builtInsDict.SetItem("__revit__".ToPython(), PyObject.FromManagedObject(null));
 
             // Adding data provided by IExternalCommand.Execute
-            SetVariable(builtins, "__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
-            SetVariable(builtins, "__elements__", runtime.ScriptRuntimeConfigs.SelectedElements);
+            builtInsDict.SetItem("__commanddata__".ToPython(), runtime.ScriptRuntimeConfigs.CommandData.ToPython());
+            builtInsDict.SetItem("__elements__".ToPython(), runtime.ScriptRuntimeConfigs.SelectedElements.ToPython());
 
             // Add ui button handle
-            SetVariable(builtins, "__uibutton__", runtime.UIControl);
+            builtInsDict.SetItem("__uibutton__".ToPython(), runtime.UIControl.ToPython());
 
             // Adding information on the command being executed
-            SetVariable(builtins, "__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
-            SetVariable(builtins, "__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
-            SetVariable(builtins, "__commandname__", runtime.ScriptData.CommandName);
-            SetVariable(builtins, "__commandbundle__", runtime.ScriptData.CommandBundle);
-            SetVariable(builtins, "__commandextension__", runtime.ScriptData.CommandExtension);
-            SetVariable(builtins, "__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
-            SetVariable(builtins, "__commandcontrolid__", runtime.ScriptData.CommandControlId);
-            SetVariable(builtins, "__forceddebugmode__", runtime.ScriptRuntimeConfigs.DebugMode);
-            SetVariable(builtins, "__shiftclick__", runtime.ScriptRuntimeConfigs.ConfigMode);
+            builtInsDict.SetItem("__commandpath__".ToPython(), Path.GetDirectoryName(runtime.ScriptData.ScriptPath).ToPython());
+            builtInsDict.SetItem("__configcommandpath__".ToPython(), Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath).ToPython());
+            builtInsDict.SetItem("__commandname__".ToPython(), runtime.ScriptData.CommandName.ToPython());
+            builtInsDict.SetItem("__commandbundle__".ToPython(), runtime.ScriptData.CommandBundle.ToPython());
+            builtInsDict.SetItem("__commandextension__".ToPython(), runtime.ScriptData.CommandExtension.ToPython());
+            builtInsDict.SetItem("__commanduniqueid__".ToPython(), runtime.ScriptData.CommandUniqueId.ToPython());
+            builtInsDict.SetItem("__commandcontrolid__".ToPython(), runtime.ScriptData.CommandControlId.ToPython());
+            builtInsDict.SetItem("__forceddebugmode__".ToPython(), runtime.ScriptRuntimeConfigs.DebugMode.ToPython());
+            builtInsDict.SetItem("__shiftclick__".ToPython(), runtime.ScriptRuntimeConfigs.ConfigMode.ToPython());
 
             // Add reference to the results dictionary
             // so the command can add custom values for logging
-            SetVariable(builtins, "__result__", runtime.GetResultsDictionary());
+            builtInsDict.SetItem("__result__".ToPython(), runtime.GetResultsDictionary().ToPython());
 
             // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
             // set event arguments for engine
-            SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
-            SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
+            builtInsDict.SetItem("__eventsender__".ToPython(), runtime.ScriptRuntimeConfigs.EventSender.ToPython());
+            builtInsDict.SetItem("__eventargs__".ToPython(), runtime.ScriptRuntimeConfigs.EventArgs.ToPython());
+
+            module.SetBuiltins(builtInsDict);
         }
 
         private void SetupStreams(ref ScriptRuntime runtime) {
             // set output stream
-            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sys = PyModule.Import("sys");
             var baseStream = PyObject.FromManagedObject(runtime.OutputStream);
             sys.SetAttr("stdout", baseStream);
             sys.SetAttr("stdin", baseStream);
@@ -185,7 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void SetupCaching(ref ScriptRuntime runtime) {
             // set output stream
-            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sys = PyModule.Import("sys");
             // dont write bytecode (__pycache__)
             // https://docs.python.org/3.7/library/sys.html?highlight=pythondontwritebytecode#sys.dont_write_bytecode
             sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
@@ -211,7 +213,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void SetupArguments(ref ScriptRuntime runtime) {
             // setup arguments (sets sys.argv)
-            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sys = PyModule.Import("sys");
             PyObject sysArgv = sys.GetAttr("argv");
 
             var pythonArgv = new PyList();
@@ -240,12 +242,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void StoreSearchPaths() {
             var currentSysPath = GetSysPaths();
             _sysPaths = new List<string>();
-            long itemsCount = currentSysPath.Length();
-            for (long i = 0; i < itemsCount; i++) {
-                BorrowedReference item = 
-                    CpyRuntime.PyList_GetItem(currentSysPath.Handle, i);
-                string path = CpyRuntime.GetManagedString(item);
-                _sysPaths.Add(path);
+            foreach (var path in currentSysPath) {
+                _sysPaths.Add(path.As<string>());
             }
         }
 
@@ -263,26 +261,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private PyList GetSysPaths() {
             // set sys paths
-            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sys = PyModule.Import("sys");
             PyObject sysPathsObj = sys.GetAttr("path");
             return PyList.AsList(sysPathsObj);
         }
 
         private void SetSysPaths(PyList sysPaths) {
-            PyObject sys = PythonEngine.ImportModule("sys");
+            PyObject sys = PyModule.Import("sys");
             sys.SetAttr("path", sysPaths);
         }
 
-        private static void SetVariable(IntPtr? globals, string key, IntPtr value) {
-            CpyRuntime.PyDict_SetItemString(
-                pointer: globals.Value,
-                key: key,
-                value: value
-            );
-        }
-
-        private static void SetVariable(IntPtr? globals, string key, object value) {
-            SetVariable(globals, key, PyObject.FromManagedObject(value).Handle);
+        private string GetPythonDll(ScriptRuntime runtime) {
+            var engineVersion = new PyRevitEngineVersion(int.Parse(runtime.EngineVersion));
+            var attachment = PyRevitAttachments.GetAttached(int.Parse(runtime.App.VersionNumber));
+            var clone = attachment.Clone;
+            var engine = clone.GetEngine(engineVersion);
+            // TODO: build the dll name from the major+minor version, or add it to pyrevitfile
+            return Path.Combine(clone.ClonePath, engine.Path, "python312.dll");
         }
     }
 }
