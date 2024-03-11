@@ -23,15 +23,21 @@ body:
           required: true
         - label: I already **followed the [installation troubleshooting guide](https://pyrevitlabs.notion.site/Installation-issues-f6495adb56254e9e8021f8a68e3b2ab7) thoroughly**
           required: true
-        - label: Issues related to tools/scripts, I tried to run them in debug mode (CTRL+click on the button) and copy over the contents of the output window
-          required: true
         - label: I am using the **latest pyRevit Version**
           required: true
   - type: textarea
     id: description
     attributes:
       label: 🐞 Describe the bug
-      description: Be as specific as possible and list steps to reproduce the issue. If you have any suggestions for the solution, please list that as well.
+      description: Be as specific as possible and list steps to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: error-message
+    attributes:
+      label: ⌨ Error/Debug Message
+      description: If you have any suggestions for the solution, please list that as well. Issues related to tools/scripts, I tried to run them in debug mode (CTRL+click on the button) and copy over the contents of the output window.
+      render: shell
     validations:
       required: true
   - type: textarea
