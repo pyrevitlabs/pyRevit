@@ -12,28 +12,33 @@ using pyRevitLabs.PyRevit;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 
-namespace PyRevitLabs.PyRevit.Runtime {
-    public class CPythonEngine : ScriptEngine {
+namespace PyRevitLabs.PyRevit.Runtime
+{
+    public class CPythonEngine : ScriptEngine
+    {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private List<string> _sysPaths = new List<string>();
 
-        public override void Init(ref ScriptRuntime runtime) {
+        public override void Init(ref ScriptRuntime runtime)
+        {
             base.Init(ref runtime);
 
             // If the user is asking to refresh the cached engine for the command,
             UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
-        public override void Start(ref ScriptRuntime runtime) {
+        public override void Start(ref ScriptRuntime runtime)
+        {
             // if this is the first run
-            if (!RecoveredFromCache) {
+            if (!RecoveredFromCache)
+            {
+                CpyRuntime.PythonDLL = GetPythonDll(runtime);
                 // initialize
                 PythonEngine.ProgramName = "pyrevit";
-                using (Py.GIL()) {
-                    if (!PythonEngine.IsInitialized)
-                        CpyRuntime.PythonDLL = GetPythonDll(runtime);
-                        PythonEngine.Initialize();
+                if (!PythonEngine.IsInitialized)
+                {
+                    PythonEngine.Initialize();
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();
@@ -45,10 +50,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetupArguments(ref runtime);
         }
 
-        public override int Execute(ref ScriptRuntime runtime) {
+        public override int Execute(ref ScriptRuntime runtime)
+        {
             int result = ScriptExecutorResultCodes.Succeeded;
 
-            using (Py.GIL()) {
+            using (Py.GIL())
+            {
                 // read script
                 var scriptContents = File.ReadAllText(runtime.ScriptSourceFile, encoding: System.Text.Encoding.UTF8);
 
@@ -59,28 +66,35 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 SetupBuiltins(ref runtime, scope);
 
                 // execute
-                try {
+                try
+                {
                     scope.Exec(scriptContents);
                 }
-                catch (PythonException cpyex) {
+                catch (PythonException cpyex)
+                {
                     string cleanedPyTraceback = string.Empty;
                     string pyNetTraceback = string.Empty;
-                    if (cpyex.StackTrace != null && cpyex.StackTrace != string.Empty) {
+                    if (cpyex.StackTrace != null && cpyex.StackTrace != string.Empty)
+                    {
                         var traceBackParts = cpyex.StackTrace.Split(']');
                         int nextIdx = 0;
                         // if stack trace contains file info, clean it up
-                        if (traceBackParts.Count() == 2) {
+                        if (traceBackParts.Count() == 2)
+                        {
                             nextIdx = 1;
                             string pyTraceback = traceBackParts[0].Trim() + "]";
                             cleanedPyTraceback = string.Empty;
-                            foreach (string tbLine in pyTraceback.ConvertFromTomlListString()) {
-                                if (tbLine.Contains("File \"<string>\"")) {
+                            foreach (string tbLine in pyTraceback.ConvertFromTomlListString())
+                            {
+                                if (tbLine.Contains("File \"<string>\""))
+                                {
                                     var fixedTbLine = tbLine.Replace("File \"<string>\"", string.Format("File \"{0}\"", runtime.ScriptSourceFile));
                                     cleanedPyTraceback += fixedTbLine;
                                     var lineNo = new Regex(@"\,\sline\s(?<lineno>\d+)\,").Match(tbLine).Groups["lineno"].Value;
                                     cleanedPyTraceback += scriptContents.Split('\n')[int.Parse(lineNo.Trim()) - 1] + "\n";
                                 }
-                                else {
+                                else
+                                {
                                     cleanedPyTraceback += tbLine;
                                 }
                             }
@@ -105,11 +119,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     runtime.OutputStream.WriteError(traceMessage, ScriptEngineType.CPython);
                     result = ScriptExecutorResultCodes.ExecutionException;
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     runtime.OutputStream.WriteError(ex.Message, ScriptEngineType.CPython);
                     result = ScriptExecutorResultCodes.ExecutionException;
                 }
-                finally {
+                finally
+                {
                     // remove scope
                     scope.Dispose();
                 }
@@ -118,16 +134,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return result;
         }
 
-        public override void Stop(ref ScriptRuntime runtime) {
+        public override void Stop(ref ScriptRuntime runtime)
+        {
         }
 
-        public override void Shutdown() {
+        public override void Shutdown()
+        {
             CleanupBuiltins();
             CleanupStreams();
             PythonEngine.Shutdown();
         }
 
-        private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {
+        private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module)
+        {
             var builtInsDict = new PyDict();
             // Add timestamp and executuin uuid
             builtInsDict.SetItem("__execid__".ToPython(), runtime.ExecId.ToPython());
@@ -176,7 +195,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             module.SetBuiltins(builtInsDict);
         }
 
-        private void SetupStreams(ref ScriptRuntime runtime) {
+        private void SetupStreams(ref ScriptRuntime runtime)
+        {
             // set output stream
             PyObject sys = PyModule.Import("sys");
             var baseStream = PyObject.FromManagedObject(runtime.OutputStream);
@@ -185,7 +205,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             sys.SetAttr("stderr", baseStream);
         }
 
-        private void SetupCaching(ref ScriptRuntime runtime) {
+        private void SetupCaching(ref ScriptRuntime runtime)
+        {
             // set output stream
             PyObject sys = PyModule.Import("sys");
             // dont write bytecode (__pycache__)
@@ -193,25 +214,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
             sys.SetAttr("dont_write_bytecode", PyObject.FromManagedObject(true));
         }
 
-        private void SetupSearchPaths(ref ScriptRuntime runtime) {
+        private void SetupSearchPaths(ref ScriptRuntime runtime)
+        {
             // set sys paths
             PyList sysPaths = RestoreSearchPaths();
 
             // manually add PYTHONPATH since we are overwriting the sys paths
             var pythonPath = Environment.GetEnvironmentVariable("PYTHONPATH");
-            if (!string.IsNullOrEmpty(pythonPath)) {
+            if (!string.IsNullOrEmpty(pythonPath))
+            {
                 var searthPathStr = new PyString(pythonPath);
                 sysPaths.Append(searthPathStr);
             }
 
             // now add the search paths for the script bundle
-            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths) {
+            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths)
+            {
                 var searthPathStr = new PyString(searchPath);
                 sysPaths.Append(searthPathStr);
             }
         }
 
-        private void SetupArguments(ref ScriptRuntime runtime) {
+        private void SetupArguments(ref ScriptRuntime runtime)
+        {
             // setup arguments (sets sys.argv)
             PyObject sys = PyModule.Import("sys");
             PyObject sysArgv = sys.GetAttr("argv");
@@ -223,7 +248,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             pythonArgv.Append(scriptSourceStr);
 
             // add the rest of the args
-            foreach (string arg in runtime.ScriptRuntimeConfigs.Arguments) {
+            foreach (string arg in runtime.ScriptRuntimeConfigs.Arguments)
+            {
                 var argStr = new PyString(arg);
                 pythonArgv.Append(argStr);
             }
@@ -231,26 +257,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
             sys.SetAttr("argv", pythonArgv);
         }
 
-        private void CleanupBuiltins() {
+        private void CleanupBuiltins()
+        {
 
         }
 
-        private void CleanupStreams() {
+        private void CleanupStreams()
+        {
 
         }
 
-        private void StoreSearchPaths() {
+        private void StoreSearchPaths()
+        {
             var currentSysPath = GetSysPaths();
             _sysPaths = new List<string>();
-            foreach (var path in currentSysPath) {
+            foreach (var path in currentSysPath)
+            {
                 _sysPaths.Add(path.As<string>());
             }
         }
 
-        private PyList RestoreSearchPaths() {
+        private PyList RestoreSearchPaths()
+        {
             var newList = new PyList();
             int i = 0;
-            foreach (var searchPath in _sysPaths) {
+            foreach (var searchPath in _sysPaths)
+            {
                 var searthPathStr = new PyString(searchPath);
                 newList.Insert(i, searthPathStr);
                 i++;
@@ -259,25 +291,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return newList;
         }
 
-        private PyList GetSysPaths() {
+        private PyList GetSysPaths()
+        {
             // set sys paths
             PyObject sys = PyModule.Import("sys");
             PyObject sysPathsObj = sys.GetAttr("path");
             return PyList.AsList(sysPathsObj);
         }
 
-        private void SetSysPaths(PyList sysPaths) {
+        private void SetSysPaths(PyList sysPaths)
+        {
             PyObject sys = PyModule.Import("sys");
             sys.SetAttr("path", sysPaths);
         }
 
-        private string GetPythonDll(ScriptRuntime runtime) {
+        private string GetPythonDll(ScriptRuntime runtime)
+        {
             var engineVersion = new PyRevitEngineVersion(int.Parse(runtime.EngineVersion));
             var attachment = PyRevitAttachments.GetAttached(int.Parse(runtime.App.VersionNumber));
             var clone = attachment.Clone;
             var engine = clone.GetEngine(engineVersion);
             // TODO: build the dll name from the major+minor version, or add it to pyrevitfile
-            return Path.Combine(clone.ClonePath, engine.Path, "python312.dll");
+            var dllPath = Path.Combine(engine.Path, "python312.dll");
+            if (!File.Exists(dllPath))
+            {
+                throw new Exception(string.Format("Python DLL not found at {0}", dllPath));
+            }
+            return dllPath;
         }
     }
 }
