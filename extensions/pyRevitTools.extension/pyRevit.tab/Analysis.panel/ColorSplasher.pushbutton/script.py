@@ -299,6 +299,20 @@ class ResetColors(UI.IExternalEventHandler):
         try:
             new_doc = revit.DOCS.doc
             view = get_active_view(new_doc)
+            sel_cat = wndw._categories.SelectedItem['Value']
+            sel_par = wndw._listBox1.SelectedItem['Value']
+            filter_name = sel_cat._name + "/"
+            filters = view.GetFilters()
+            if len(filters) != 0:
+                with revit.Transaction(doc=new_doc, name="Reset colors in elements"):
+	                for filt_id in filters:
+		                filt_ele = new_doc.GetElement(filt_id)
+		                if filt_ele.Name.StartsWith(filter_name):
+			            view.RemoveFilter(filt_id)
+			            try:
+				            new_doc.Delete(filt_id)
+			            except:
+				            pass
             if view != 0:
                 ogs = DB.OverrideGraphicSettings().Dispose()
                 ogs = DB.OverrideGraphicSettings()
@@ -1095,8 +1109,9 @@ class FormCats(Form):
             self.legend_ev.Raise()
 
     def button_6_click(self, sender, e):
-        if self._list_box2.Items.Count > 0:
-            self.filter_ev.Raise()
+	    if self._listBox2.Items.Count > 0:
+		    self.reset_ev.Raise()
+		    self.filter_ev.Raise()
 
     def get_gradient_colors(self, start_color, end_color, steps):
         aStep = float((end_color.A - start_color.A) / steps)
