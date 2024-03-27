@@ -1,15 +1,18 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import print_function
-from pyrevit import script, forms, revit
+from pyrevit import script, forms, revit, HOST_APP
 from pyrevit.revit import dc3dserver as d3d
 import traceback
 
 from Autodesk.Revit import DB, UI
 from Autodesk.Revit.Exceptions import InvalidOperationException
 from Autodesk.Revit.UI.Events import ViewActivatedEventArgs, SelectionChangedEventArgs
+from Autodesk.Revit.DB.Events import DocumentChangedEventArgs
 
-from System import EventHandler
+from System import EventHandler, Convert
+from System.Windows.Media import Color, SolidColorBrush
+
 from System.Collections.Generic import List
 
 doc = revit.doc
@@ -17,6 +20,13 @@ uidoc = revit.uidoc
 
 logger = script.get_logger()
 output = script.get_output()
+
+PLANES = {
+    DB.PlanViewPlane.TopClipPlane: [0, 255, 0],
+    DB.PlanViewPlane.CutPlane: [255, 0, 0],
+    DB.PlanViewPlane.BottomClipPlane: [0, 0, 255],
+    DB.PlanViewPlane.ViewDepthPlane: [255, 127, 0]
+}
 
 class SimpleEventHandler(UI.IExternalEventHandler):
     """
@@ -72,73 +82,89 @@ class Context(object):
             refresh_event.Raise()
             return
         try:
-            shape_loops = list(
-                self.source_plan_view.GetCropRegionShapeManager().GetCropShape())
-            shape_outline = DB.Outline(DB.XYZ.Zero, DB.XYZ.Zero)
-            for loop in shape_loops:
-                for curve in loop:
-                    shape_outline.AddPoint(curve.GetEndPoint(0))
+            def corners_from_bb(bbox):
+                transform = bbox.Transform
 
+                corners = [
+                    bbox.Min,
+                    bbox.Min + DB.XYZ.BasisX * (bbox.Max - bbox.Min).X,
+                    bbox.Max,
+                    bbox.Min + DB.XYZ.BasisY * (bbox.Max - bbox.Min).Y
+                ]
+                return [transform.OfPoint(c) for c in corners]
 
-            bbox = self.active_view.GetSectionBox()
-            transform = bbox.Transform
+            if self.active_view.get_Parameter(
+                    DB.BuiltInParameter.VIEWER_MODEL_CLIP_BOX_ACTIVE
+            ).AsInteger() == 1:
+                bbox = self.active_view.GetSectionBox()
 
-            corners = [
-                bbox.Min,
-                bbox.Min + DB.XYZ.BasisX * (bbox.Max - bbox.Min).X,
-                bbox.Max,
-                bbox.Min + DB.XYZ.BasisY * (bbox.Max - bbox.Min).Y
-            ]
+                bb_corners = corners_from_bb(bbox)
+            else:
+                bb_corners = None
 
-            corners = [transform.OfPoint(c) for c in corners]
-
-            view_level = self.source_plan_view.GenLevel
             view_range = self.source_plan_view.GetViewRange()
-            cut_plane_level = self.source_plan_view.Document.GetElement(
-                view_range.GetLevelId(DB.PlanViewPlane.CutPlane)
-            )
-            cut_plane_elevation = (
-                cut_plane_level.Elevation
-                + view_range.GetOffset(DB.PlanViewPlane.CutPlane)
-            )
 
-            cut_plane_vertices = [
-                DB.XYZ(c.X, c.Y, cut_plane_elevation) for c in corners
-            ]
+            edges = []
+            triangles = []
+            for plane in PLANES:
 
-            color = DB.ColorWithTransparency(255, 0, 0, 180)
+                plane_level = self.source_plan_view.Document.GetElement(
+                    view_range.GetLevelId(plane)
+                )
 
-            edges = [
-                revit.dc3dserver.Edge(
-                    cut_plane_vertices[i-1],
-                    cut_plane_vertices[i],
-                    color
-                ) for i in range(len(cut_plane_vertices))
-            ]
-            triangles = [
-                revit.dc3dserver.Triangle(
-                    cut_plane_vertices[0],
-                    cut_plane_vertices[1],
-                    cut_plane_vertices[2],
-                    revit.dc3dserver.Mesh.calculate_triangle_normal(
+                if bb_corners:
+                    corners = bb_corners
+                else:
+                    level_bbox = plane_level.get_BoundingBox(self.active_view)
+                    corners = corners_from_bb(level_bbox)
+
+                plane_elevation = (
+                    plane_level.Elevation
+                    + view_range.GetOffset(plane)
+                )
+
+                cut_plane_vertices = [
+                    DB.XYZ(c.X, c.Y, plane_elevation) for c in corners
+                ]
+
+                color = DB.ColorWithTransparency(
+                    PLANES[plane][0],
+                    PLANES[plane][1],
+                    PLANES[plane][2],
+                    180
+                )
+
+                edges.extend([
+                    revit.dc3dserver.Edge(
+                        cut_plane_vertices[i-1],
+                        cut_plane_vertices[i],
+                        color
+                    ) for i in range(len(cut_plane_vertices))
+                ])
+                triangles.extend([
+                    revit.dc3dserver.Triangle(
                         cut_plane_vertices[0],
                         cut_plane_vertices[1],
                         cut_plane_vertices[2],
+                        revit.dc3dserver.Mesh.calculate_triangle_normal(
+                            cut_plane_vertices[0],
+                            cut_plane_vertices[1],
+                            cut_plane_vertices[2],
+                        ),
+                        color
                     ),
-                    color
-                ),
-                revit.dc3dserver.Triangle(
-                    cut_plane_vertices[2],
-                    cut_plane_vertices[3],
-                    cut_plane_vertices[0],
-                    revit.dc3dserver.Mesh.calculate_triangle_normal(
+                    revit.dc3dserver.Triangle(
                         cut_plane_vertices[2],
                         cut_plane_vertices[3],
                         cut_plane_vertices[0],
-                    ),
-                    color
-                )
-            ]
+                        revit.dc3dserver.Mesh.calculate_triangle_normal(
+                            cut_plane_vertices[2],
+                            cut_plane_vertices[3],
+                            cut_plane_vertices[0],
+                        ),
+                        color
+                    )
+                ])
 
             mesh = revit.dc3dserver.Mesh(
                 edges,
@@ -155,14 +181,29 @@ class Context(object):
     def is_valid(self):
         return (
             isinstance(context.source_plan_view, DB.ViewPlan) and
-            isinstance(context.active_view, DB.View3D) and
-            context.active_view.IsSectionBoxActive
+            isinstance(context.active_view, DB.View3D)
         )
 
 class MainViewModel(forms.Reactive):
 
     def __init__(self):
         self._message = None
+        self.topplane_brush = SolidColorBrush(Color.FromRgb(
+            *[Convert.ToByte(i) for i in PLANES[DB.PlanViewPlane.TopClipPlane]]
+        ))
+        self.cutplane_brush = SolidColorBrush(Color.FromRgb(
+            *[Convert.ToByte(i) for i in PLANES[DB.PlanViewPlane.CutPlane]]
+        ))
+        self.bottomplane_brush = SolidColorBrush(Color.FromRgb(
+            *[Convert.ToByte(i) for i in PLANES[DB.PlanViewPlane.BottomClipPlane]]
+        ))
+        self.viewdepth_brush = SolidColorBrush(Color.FromRgb(
+            *[Convert.ToByte(i) for i in PLANES[DB.PlanViewPlane.ViewDepthPlane]]
+        ))
+        self.topplane_elevation = None
+        self.cutplane_elevation = None
+        self.bottomplane_elevation = None
+        self.viewdepth_elevation = None
 
     @forms.reactive
     def message(self):
@@ -178,8 +219,6 @@ class MainViewModel(forms.Reactive):
                 message = "Showing View Range of [{}]".format(context.source_plan_view.Name)
             elif not isinstance(context.active_view, DB.View3D):
                 message = "Please activate a 3D View!"
-            elif not context.active_view.IsSectionBoxActive:
-                message = "3D View has no Section Box!"
             elif not isinstance(context.source_plan_view, DB.ViewPlan):
                 message = "Please select a Plan View in the Project Browser!"
             self.message = message
@@ -201,19 +240,21 @@ class MainWindow(forms.WPFWindow):
 
 def subscribe():
     try:
-        print("subscribe")
-        ui_app = UI.UIApplication(doc.Application)
+        # print("subscribe")
+        ui_app = UI.UIApplication(HOST_APP.app)
         ui_app.ViewActivated += EventHandler[ViewActivatedEventArgs](view_activated)
         ui_app.SelectionChanged += EventHandler[SelectionChangedEventArgs](selection_changed)
+        ui_app.Application.DocumentChanged += EventHandler[DocumentChangedEventArgs](doc_changed)
     except:
         print(traceback.format_exc())
 
 
 def unsubscribe(uiapp):
     try:
-        print("unsubscribe")
+        # print("unsubscribe")
         uiapp.ViewActivated -= EventHandler[ViewActivatedEventArgs](view_activated)
         uiapp.SelectionChanged -= EventHandler[SelectionChangedEventArgs](selection_changed)
+        uiapp.Application.DocumentChanged += EventHandler[DocumentChangedEventArgs](doc_changed)
     except:
         print(traceback.format_exc())
 
@@ -245,6 +286,13 @@ def selection_changed(sender, args):
         context.source_plan_view = None
     except:
         print(traceback.format_exc())
+
+def doc_changed(sender, args):
+    try:
+        context.context_changed()
+    except:
+        print(traceback.format_exc())
+
 
 
 server = revit.dc3dserver.Server(register=False)
