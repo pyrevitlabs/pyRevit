@@ -1,9 +1,11 @@
 name: pyRevitCI
 on:
   # when PRs from forked repos are merged
-  push:
-    branches:
-      - develop
+  # eirannejad 02/12/2024: disabled develop ci/cd builds for pyRevit 5
+  # we will reactivate when changes are ready to build on every commit
+  # push:
+    # branches:
+    #   - develop
   # when PR from develop->master is created
   pull_request:
     branches:
@@ -16,6 +18,7 @@ env:
 
 jobs:
   build:
+    if: github.repository == 'eirannejad/pyRevit'
     runs-on: windows-latest
     steps:
       - name: Report Context

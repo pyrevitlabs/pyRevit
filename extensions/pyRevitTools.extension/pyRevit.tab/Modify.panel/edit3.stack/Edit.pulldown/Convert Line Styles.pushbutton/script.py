@@ -124,7 +124,15 @@ class StyleConvert(object):
 class ConvertLineStylesWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
+        self.Closing += self.Close_Click
         self._setup_styles()
+
+
+    def Close_Click(self, sender, args):
+        try:
+            print('Closing window')
+        except Exception as ex:
+            print(ex)
 
     def _setup_styles(self):
         self._styles = revit.query.get_line_styles(doc=revit.doc)
