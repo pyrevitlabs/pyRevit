@@ -5,7 +5,7 @@ issues:
 
   install-fix:
     comment: >
-      Hi @{{ author }}, Thy these steps:
+      Hi @{{ author }}, Try these steps:
 
       1. Uninstall pyRevit
 
