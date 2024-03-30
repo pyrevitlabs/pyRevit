@@ -8,10 +8,10 @@ updates:
       day: "sunday"
     # Raise pull requests for version updates
     # to pip against the `develop` branch
-    target-branch: "develop"
+    target-branch: "develop-4"
   - package-ecosystem: "gomod"
     # directory required https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#vendor
     directory: "/"
-    target-branch: "develop"
+    target-branch: "develop-4"
     schedule:
       interval: "weekly"

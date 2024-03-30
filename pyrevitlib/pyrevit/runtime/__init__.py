@@ -290,19 +290,35 @@ def _generate_runtime_asm():
     source_list = list(_get_source_files())
     # now try to compile
     try:
-        mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
-        res, msgs = labs.Common.CodeCompiler.CompileCSharp(
-            sourceFiles=Array[str](source_list),
-            outputPath=RUNTIME_ASSM_FILE,
-            references=Array[str](
-                get_references()
-            ),
-            defines=Array[str]([
-                "REVIT{}".format(HOST_APP.version),
-                "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
-            ]),
-            debug=False
-        )
+        mlogger.debug("Compiling base types to: %s", RUNTIME_ASSM_FILE)
+        try:
+            res, msgs = labs.Common.CodeCompiler.CompileCSharp(
+                sourceFiles=Array[str](source_list),
+                outputPath=RUNTIME_ASSM_FILE,
+                references=Array[str](get_references()),
+                defines=Array[str](
+                    [
+                        "REVIT{}".format(HOST_APP.version),
+                        "REVIT{}".format(HOST_APP.subversion.replace(".", "_")),
+                    ]
+                ),
+                debug=False,
+            )
+        except TypeError:
+            msgs = List[str]()
+            res = labs.Common.CodeCompiler.CompileCSharp(
+                Array[str](source_list),
+                RUNTIME_ASSM_FILE,
+                Array[str](get_references()),
+                Array[str](
+                    [
+                        "REVIT{}".format(HOST_APP.version),
+                        "REVIT{}".format(HOST_APP.subversion.replace(".", "_")),
+                    ]
+                ),
+                False,
+                msgs,
+            )
         # log results
         logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
         with open(logfile, 'w') as lf:
