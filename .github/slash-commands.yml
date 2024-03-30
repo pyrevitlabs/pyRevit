@@ -1,0 +1,27 @@
+issues:
+  more-info:
+    label:
+      - needs-more-info
+
+  install-fix:
+    comment: >
+      Hi @{{ author }}, Thy these steps:
+
+      1. Uninstall pyRevit
+
+      2. Delete C:\ProgramData and %AppData%\ pyRevit and pyrevit-master folders
+      
+      3. Move all Revit addins to a temporary location. Usual addins locations include:
+         - %AppData%\Autodesk\Revit\Addins<year>
+         - %AppData%\Autodesk\ApplicationPlugins
+         - %ProgramData%\Autodesk\Revit\Addins<year>
+         - %ProgramData%\Autodesk\ApplicationPlugins
+
+      4. [Reboot computer]
+      
+      5. Reinstall pyRevit
+      
+      6. Started each version of Revit confirming pyRevit successfully compiled at startup.
+      
+      7. Move all Revit addins that were moved in step 3 back to their original location.
+         You may want to add them one at a time and start a revit session everytime to figure out which ones are causing the issue.
