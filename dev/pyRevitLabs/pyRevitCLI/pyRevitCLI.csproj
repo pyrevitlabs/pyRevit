@@ -6,6 +6,8 @@
     <ApplicationManifest>pyrevit.manifest</ApplicationManifest>
     <SignAssembly>true</SignAssembly>
     
+    <UseDefaultBin>true</UseDefaultBin>
+    
     <Platforms>x64</Platforms>
     <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
