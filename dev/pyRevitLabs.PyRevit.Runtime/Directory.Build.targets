@@ -7,14 +7,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="WindowsBase" />
-        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="WindowsFormsIntegration" />
-        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="PresentationCore" />
-        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="PresentationFramework" />
-        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Windows.Forms" />
-        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Xaml" />
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Web" />
-
+        
         <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLoader.dll" />
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.dll" />
         <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Modules.dll" />
@@ -35,8 +29,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="docopt.net" Version="0.6.1.10" />
-        <PackageReference Include="AirspaceFixer" Version="1.0.5" />
+        <PackageReference Include="docopt.net" Version="0.8.1" />
+        <PackageReference Include="AirspaceFixer" Version="1.0.6" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'"  Include="ControlzEx" Version="4.4.0" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"  Include="ControlzEx" Version="3.0.2.4" />
     </ItemGroup>
