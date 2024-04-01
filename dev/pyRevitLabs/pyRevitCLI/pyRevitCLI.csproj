@@ -5,6 +5,8 @@
     <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
     <ApplicationManifest>pyrevit.manifest</ApplicationManifest>
     <SignAssembly>true</SignAssembly>
+    
+    <Platforms>x64</Platforms>
     <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
 
@@ -14,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Colorful.Console" Version="1.2.10" />
-    <PackageReference Include="docopt.net" Version="0.6.1.10" />
+    <PackageReference Include="Colorful.Console" Version="1.2.15" />
+    <PackageReference Include="docopt.net" Version="0.8.1" />
   </ItemGroup>
 
   <ItemGroup>

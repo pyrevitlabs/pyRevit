@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>pyrevit-doctor</AssemblyName>
     <ApplicationIcon>pyrevit-doctor.ico</ApplicationIcon>
+
+    <Platforms>x64</Platforms>
     <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
 </Project>
