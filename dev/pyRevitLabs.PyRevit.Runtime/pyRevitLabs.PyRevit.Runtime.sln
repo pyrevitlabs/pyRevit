@@ -3,23 +3,23 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2017", "pyRevitLabs.PyRevit.Runtime.2017.csproj", "{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2017", "net48/pyRevitLabs.PyRevit.Runtime.2017.csproj", "{1B786F43-6125-42FF-8EA2-C4AEF640AEE4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2018", "pyRevitLabs.PyRevit.Runtime.2018.csproj", "{8CEA0B80-D74F-411F-A607-DC1599AA934E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2018", "net48/pyRevitLabs.PyRevit.Runtime.2018.csproj", "{8CEA0B80-D74F-411F-A607-DC1599AA934E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2019", "pyRevitLabs.PyRevit.Runtime.2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2019", "net48/pyRevitLabs.PyRevit.Runtime.2019.csproj", "{EFBE5B7E-227A-4122-98D7-D1F353AAF157}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2020", "pyRevitLabs.PyRevit.Runtime.2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2020", "net48/pyRevitLabs.PyRevit.Runtime.2020.csproj", "{F5A23012-880A-4FE6-89EC-6F9DAB148DEF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2021", "pyRevitLabs.PyRevit.Runtime.2021.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2021", "net48/pyRevitLabs.PyRevit.Runtime.2021.csproj", "{479435EA-C820-49E4-942F-1274C151EE71}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2022", "pyRevitLabs.PyRevit.Runtime.2022.csproj", "{DB535262-30DA-404D-A32E-F024FF37935C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2022", "net48/pyRevitLabs.PyRevit.Runtime.2022.csproj", "{DB535262-30DA-404D-A32E-F024FF37935C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2023", "pyRevitLabs.PyRevit.Runtime.2023.csproj", "{E05891D9-4833-45B5-84B4-8237D9AF6A4C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2023", "net48/pyRevitLabs.PyRevit.Runtime.2023.csproj", "{E05891D9-4833-45B5-84B4-8237D9AF6A4C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2024", "pyRevitLabs.PyRevit.Runtime.2024.csproj", "{E4C1B0B3-DE42-4D10-A4FB-8A478ED9DDFC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.2024", "net48/pyRevitLabs.PyRevit.Runtime.2024.csproj", "{E4C1B0B3-DE42-4D10-A4FB-8A478ED9DDFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.2025", "pyRevitLabs.PyRevit.Runtime.2025.csproj", "{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.2025", "net8.0/pyRevitLabs.PyRevit.Runtime.2025.csproj", "{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
