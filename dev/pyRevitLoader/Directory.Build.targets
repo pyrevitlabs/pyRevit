@@ -4,6 +4,10 @@
     
     <PropertyGroup>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Remove="obj\**" />
+    </ItemGroup>
     
     <ItemGroup Condition="$(UseRunner)=='' OR $(UseRunner)==False">
         <Compile Include="Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
@@ -35,7 +39,7 @@
     </ItemGroup>
     
     <ItemGroup>
-        <Reference Include="Microsoft.CSharp"/>
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp"/>
     </ItemGroup>
 
     <ItemGroup>
