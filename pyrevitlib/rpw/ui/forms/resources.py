@@ -7,7 +7,6 @@ import sys
 
 from abc import ABCMeta
 
-from pyrevit import revit
 import clr
 
 import os.path as op
