@@ -7,9 +7,12 @@ import sys
 
 from abc import ABCMeta
 
-from rpw import revit
-from rpw.utils.dotnet import clr
-from rpw.utils.logger import logger
+from pyrevit import revit
+import clr
+
+import os.path as op
+from pyrevit.compat import PY3, PY2
+import pyrevit.engine as eng
 
 # WPF/Form Imports
 clr.AddReference("PresentationFramework")  # System.Windows: Controls, ?
@@ -33,16 +36,29 @@ from System.Windows import HorizontalAlignment, VerticalAlignment, Thickness
 # OS Dialogs
 from System.Windows import Forms
 
-if revit.host == 'Dynamo':
-    # IronPython 2.7.3 - Dynamo + RPS w/out pyRevit
-    # Conflicts with PyRevit. Must Ensure exact path is specified
-    # https://github.com/architecture-building-systems/revitpythonshell/issues/46
-    clr.AddReferenceToFileAndPath(r'C:\Program Files (x86)\IronPython 2.7\Platforms\Net40\IronPython.Wpf.dll')
-    import wpf
-    # on 2.7.7 this raises wpf import error
+
+ASSEMBLY_FILE_TYPE = 'dll'
+ASSEMBLY_FILE_EXT = '.dll'
+
+ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
+ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
+if PY3:
+    clr.AddReference(ipy_dllpath)
 else:
-    # IronPython 2.7.7 - pyRevit
-    # clr.AddReference('IronPython')    # Works W/Out
-    clr.AddReference('IronPython.Wpf')  # 2.7.
-    from IronPython.Modules import Wpf as wpf
-    # on 2.7.7 this works. On 2.7.3 you get a LoadComponent 3 args error
+    clr.AddReferenceToFileAndPath(ipy_dllpath)
+
+import IronPython
+
+# WPF
+wpf = None
+wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
+try:
+    clr.AddReference(wpf_assmname)
+    if PY3:
+        wpf = IronPython.Modules.Wpf
+    else:
+        import wpf
+except Exception:
+    clr.AddReferenceToFileAndPath(wpf_dllpath)
+    import wpf
