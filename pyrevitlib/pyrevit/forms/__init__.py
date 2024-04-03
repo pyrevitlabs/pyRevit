@@ -2682,8 +2682,8 @@ def select_parameters(src_element,
 
     if include_type:
         # collect type parameters
+        src_type = revit.query.get_type(src_element) if src_element else None
         if src_type is not None:
-            src_type = revit.query.get_type(src_element)
             param_defs.extend(
                 [ParamDef(name=x.Definition.Name,
                           istype=True,
