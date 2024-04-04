@@ -30,6 +30,7 @@ env:
 
 jobs:
   build:
+    if: github.repository == 'eirannejad/pyRevit'
     runs-on: windows-latest
     steps:
       - name: Report Context
