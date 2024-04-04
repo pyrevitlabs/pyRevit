@@ -1,5 +1,6 @@
 name: Build test
 on:
+  push:
   workflow_dispatch:
 
 env:
