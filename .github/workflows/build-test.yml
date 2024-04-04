@@ -11,10 +11,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: reqursive
-
-      - name: Checkout Submodules
-        uses: snickerbockers/submodules-init@7ce9774442c0c2d4728e6d3f66141df2102e4cbc
+          submodules: recursive
 
       - name: Prepare Python 3.10
         uses: actions/setup-python@v4
