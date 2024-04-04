@@ -1,5 +1,46 @@
 [engines]
 
+[engines.IPY273]
+kernel = 'IronPython'
+version = 273
+runtime = true
+path = 'bin\engines\IPY273'
+assembly = 'pyRevitLoader.dll'
+description = 'IronPython Engine'
+
+[engines.IPY277]
+kernel = 'IronPython'
+version = 277
+runtime = true
+path = 'bin\engines\IPY277'
+assembly = 'pyRevitLoader.dll'
+description = 'IronPython Engine'
+
+[engines.IPY278]
+kernel = 'IronPython'
+version = 278
+runtime = true
+path = 'bin\engines\IPY278'
+assembly = 'pyRevitLoader.dll'
+description = 'IronPython Engine'
+
+[engines.IPY279]
+kernel = 'IronPython'
+version = 279
+runtime = true
+path = 'bin\engines\IPY279'
+assembly = 'pyRevitLoader.dll'
+description = 'IronPython Engine'
+
+[engines.IPY2710]
+kernel = 'IronPython'
+version = 2710
+runtime = true
+path = 'bin\engines\IPY2710'
+assembly = 'pyRevitLoader.dll'
+compatproducts = []
+description = 'IronPython Engine'
+
 [engines.IPY340PR]
 kernel = 'IronPython 3'
 version = 340

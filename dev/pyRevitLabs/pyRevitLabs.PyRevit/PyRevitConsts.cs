@@ -52,6 +52,8 @@ namespace pyRevitLabs.PyRevit {
         public const string AddinClassName = "PyRevitLoader.PyRevitLoaderApplication";
         public const string VendorId = "eirannejad";
         public const string LegacyEngineDllName = "pyRevitLoader.dll";
+        public const int ConfigsDynamoCompatibleEnginerVer = 273;
+
 
         // core configs
         public const string ConfigsTrueString = "true";

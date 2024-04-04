@@ -539,7 +539,7 @@ namespace pyRevitLabs.PyRevit {
         // find engine path with given version
         // @handled @logs
         private static PyRevitEngine FindEngine(string enginesDir, int engineVer = 000) {
-            // engines are stored in directory named XXX based on engine version (e.g. 2711)
+            // engines are stored in directory named XXX based on engine version (e.g. 273)
             // return latest if zero
             if (engineVer == 000) {
                 PyRevitEngine latestEngine = null;
@@ -574,7 +574,7 @@ namespace pyRevitLabs.PyRevit {
         // find all engines under a given engine path
         // @handled @logs
         private static List<PyRevitEngine> FindEngines(string enginesDir) {
-            // engines are stored in directory named XXX based on engine version (e.g. 2711)
+            // engines are stored in directory named XXX based on engine version (e.g. 273)
             var engines = new List<PyRevitEngine>();
             var engineFinder = new Regex(@"\d\d\d");
 
