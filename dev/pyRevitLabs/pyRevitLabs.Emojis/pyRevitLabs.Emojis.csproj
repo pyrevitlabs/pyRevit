@@ -8,7 +8,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Reference Include="System.IO.Compression" />
+    <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.IO.Compression" />
   </ItemGroup>
 
   <ItemGroup>

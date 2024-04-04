@@ -4,9 +4,7 @@
     <OutputType>Library</OutputType>
 <!--    <TargetFramework>net48</TargetFramework>-->
 <!--    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>-->
-    <PlatformName>windows</PlatformName>
     <PlatformTarget>x64</PlatformTarget>
-    <AppendTargetFrameworkToOutputPath>False</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
