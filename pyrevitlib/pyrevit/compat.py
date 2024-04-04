@@ -2,7 +2,7 @@
 
 Examples:
     ```python
-    from pyrevit.compat import IRONPY277
+    from pyrevit.compat import IRONPY2711
     from pyrevit.compat import safe_strtype
     ```
 """
@@ -11,10 +11,7 @@ import sys
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-IRONPY273 = sys.version_info[:3] == (2, 7, 3)
-IRONPY277 = sys.version_info[:3] == (2, 7, 7)
-IRONPY278 = sys.version_info[:3] == (2, 7, 8)
-IRONPY279 = sys.version_info[:3] == (2, 7, 9)
+IRONPY2711 = sys.version_info[:3] == (2, 7, 11)
 IRONPY340 = sys.version_info[:3] == (3, 4, 0)
 
 #pylint: disable=import-error,unused-import

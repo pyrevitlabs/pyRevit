@@ -3,11 +3,25 @@ on:
   # when PRs from forked repos are merged
   push:
     branches:
-      - develop
+      - develop-4
+    paths:
+      - 'bin/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
   # when PR from develop->master is created
   pull_request:
     branches:
       - master
+    paths:
+      - 'bin/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
   # manual run
   workflow_dispatch:
 

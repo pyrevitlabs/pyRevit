@@ -1,0 +1,13 @@
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: Toggle needs-more-info label
+    steps:
+      - name: Toggle needs-more-info label of issues
+        uses: jd-solanki/gh-action-toggle-awaiting-reply-label@v1.0.1      
+        with:
+          label: needs-more-info
