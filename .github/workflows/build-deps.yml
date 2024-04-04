@@ -1,5 +1,6 @@
 name: build deps
 on:
+  push:
   workflow_dispatch:
 
 env:
