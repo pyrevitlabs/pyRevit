@@ -214,11 +214,11 @@
         },
         "griffe": {
             "hashes": [
-                "sha256:384df6b802a60f70e65fdb7e83f5b27e2da869a12eac85b25b55250012dbc263",
-                "sha256:fb83ee602701ffdf99c9a6bf5f0a5a3bd877364b3bffb2c451dc8fbd9645b0cf"
+                "sha256:57046131384043ed078692b85d86b76568a686266cc036b9b56b704466f803ce",
+                "sha256:7e805e35617601355edcac0d3511cedc1ed0cb1f7645e2d336ae4b05bbae7b3b"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==0.42.0"
+            "version": "==0.42.1"
         },
         "idna": {
             "hashes": [
@@ -413,12 +413,12 @@
         },
         "mkdocstrings-python": {
             "hashes": [
-                "sha256:6e1a442367cf75d30cf69774cbb1ad02aebec58bfff26087439df4955efecfde",
-                "sha256:fad27d7314b4ec9c0359a187b477fb94c65ef561fdae941dca1b717c59aae96f"
+                "sha256:8546a103c9b22e1778c72c887696acc39a6635fedde3c912ce00f967518a8847",
+                "sha256:96d82f6424e08db6245e4a15ca95619f4ecd0ddd254c0aa590d4181814e16ee5"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==1.9.0"
+            "version": "==1.9.2"
         },
         "mypy-extensions": {
             "hashes": [
