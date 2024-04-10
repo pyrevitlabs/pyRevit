@@ -161,7 +161,7 @@ namespace pyRevitLabs.Common {
             }
             catch (Exception dlEx) {
                 logger.Debug("Error downloading file. | {0}", dlEx.Message);
-                throw dlEx;
+                throw;
             }
 
             return destPath;
@@ -375,21 +375,6 @@ namespace pyRevitLabs.Common {
         public static string GetProcessFileName() => Process.GetCurrentProcess().MainModule.FileName;
         public static string GetProcessPath() => Path.GetDirectoryName(GetProcessFileName());
         public static string GetAssemblyPath<T>() => Path.GetDirectoryName(typeof(T).Assembly.Location);
-
-        public static string GenerateSHA1Hash(string filePath) {
-            // Use input string to calculate SHA1 hash
-            using (FileStream fs = new FileStream(filePath, FileMode.Open)) {
-                using (BufferedStream bs = new BufferedStream(fs)) {
-                    using (var sha1 = new System.Security.Cryptography.SHA1Managed()) {
-                        StringBuilder sb = new StringBuilder();
-                        foreach (byte b in sha1.ComputeHash(bs)) {
-                            sb.Append(b.ToString("X2"));
-                        }
-                        return sb.ToString();
-                    }
-                }
-            }
-        }
     }
 }
 
