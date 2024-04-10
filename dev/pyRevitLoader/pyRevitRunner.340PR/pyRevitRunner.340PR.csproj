@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+      <AssemblyName>pyRevitRunner</AssemblyName>
+      <RootNamespace>pyRevitRunner</RootNamespace>
+      
       <DefineConstants>$(DefineConstants);PYREVITLABS_ENGINE</DefineConstants>
       <UseRunner>true</UseRunner>
       <IronPythonVersion>IPY340PR</IronPythonVersion>
@@ -7,6 +10,4 @@
       <IronPythonStdLib>python_340pr_lib.zip</IronPythonStdLib>
       <Version>3.4.0</Version>
       </PropertyGroup>
-  
-    <Import Project="Loader.Common.Props" />
   </Project>

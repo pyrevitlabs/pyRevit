@@ -3,6 +3,7 @@
     <Import Project="../Directory.Build.targets"/>
     
     <PropertyGroup>
+        <DeployDestinationFiles>$(PyRevitEnginesDir)\$(IronPythonVersion)\$(AssemblyName).dll</DeployDestinationFiles>
     </PropertyGroup>
 
     <ItemGroup>
@@ -10,14 +11,14 @@
     </ItemGroup>
     
     <ItemGroup Condition="$(UseRunner)=='' OR $(UseRunner)==False">
-        <Compile Include="Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
-        <Compile Include="Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
+        <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
+        <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
     </ItemGroup>
 
     <ItemGroup Condition="$(UseRunner)==True">
-        <Compile Include="Source\PyRevitRunnerApplication.cs" Link="Source\PyRevitRunnerApplication.cs"/>
-        <Compile Include="Source\PyRevitRunnerCommand.cs" Link="Source\PyRevitRunnerCommand.cs"/>
-        <Compile Include="Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
+        <Compile Include="..\Source\PyRevitRunnerApplication.cs" Link="Source\PyRevitRunnerApplication.cs"/>
+        <Compile Include="..\Source\PyRevitRunnerCommand.cs" Link="Source\PyRevitRunnerCommand.cs"/>
+        <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
     </ItemGroup>
 
     <ItemGroup Condition="$(UsePyRevitIronPython)=='' OR $(UsePyRevitIronPython)==False">
@@ -47,6 +48,7 @@
     </ItemGroup>
 
     <Target Name="Deploy" AfterTargets="AfterBuild">
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)"/>
+        <Copy  SourceFiles="$(TargetPath)" DestinationFiles="$(DeployDestinationFiles)"/>
+        <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(DeployDestinationFiles)'))" />
     </Target>
 </Project>
