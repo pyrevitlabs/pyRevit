@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="../Directory.Build.targets" />
+    
+    <PropertyGroup>
+        <DeployDestinationFiles>$(PyRevitBinDir)\$(AssemblyName).dll</DeployDestinationFiles>
+    </PropertyGroup>
+    
     <ItemGroup>
         <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
         <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
@@ -35,5 +41,8 @@
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"  Include="ControlzEx" Version="3.0.2.4" />
     </ItemGroup>
 
-    <Import Project="../Directory.Build.targets" />
+    <Target Name="Deploy" AfterTargets="AfterBuild">
+        <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(DeployDestinationFiles)"/>
+        <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(DeployDestinationFiles)'))" />
+    </Target>
 </Project>
