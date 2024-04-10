@@ -8,5 +8,7 @@
     
     <Platforms>x64</Platforms>
     <TargetFramework>net8.0-windows</TargetFramework>
+
+    <PermitDeploy>true</PermitDeploy>
   </PropertyGroup>
 </Project>
