@@ -34,6 +34,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private long prevLen = -1;
         private string JournalFile = "";
         private Thread jtail;
+        private CancellationTokenSource _cancellationTokenSource;
 
         private static List<Regex> JournalCommandExtractors = new List<Regex> {
                 new Regex(@".*Jrn\.RibbonEvent\s""Execute external command\:(?<command_id>.+)\:(.+)"""),
@@ -51,6 +52,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void Start() {
+            _cancellationTokenSource = new CancellationTokenSource();
             FileInfo fi = new FileInfo(JournalFile);
             prevLen = fi.Length;
             jtail = new Thread(TailJournal);
@@ -58,11 +60,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void Stop() {
-            if (jtail != null)
-                jtail.Abort();
+            _cancellationTokenSource?.Cancel();
         }
 
-        private void TailJournal() { while (true) { Tail(); } }
+        private void TailJournal() { while (!_cancellationTokenSource.IsCancellationRequested) { Tail(); } }
 
         private void Tail() {
             FileInfo fi = new FileInfo(JournalFile);
