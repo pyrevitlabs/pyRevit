@@ -25,12 +25,8 @@
 
   <ItemGroup Condition="'$(UseRevit)' == 'true'">
     <PackageReference Include="Autodesk.Revit.Sdk.Refs" Version="*" />
-    
-    <Reference Include="AdWindows" HintPath="$(RevitDevDir)\$(RevitVersion)\AdWindows.dll"/>
-    <Reference Include="UIFramework" HintPath="$(RevitDevDir)\$(RevitVersion)\UIFramework.dll"/>
-    <Reference Include="RevitAPI" HintPath="$(RevitDevDir)\$(RevitVersion)\RevitAPI.dll"/>
-    <Reference Include="RevitAPIUI" HintPath="$(RevitDevDir)\$(RevitVersion)\RevitAPIUI.dll"/>
-    
+    <PackageReference Include="Autodesk.Revit.Sdk.Refs.$(RevitVersion)" Version="*" />
+
     <Reference
             Condition="'$(RevitVersion)' != '' and $(RevitVersion) &gt;= 2018"
             Include="Xceed.Wpf.AvalonDock"
