@@ -27,5 +27,8 @@
         <PyRevitBinDir>$(PyRevitRootDir)\bin</PyRevitBinDir>
     </PropertyGroup>
 
-    <Import Condition="'$(UseRevit)' == 'true'" Project="RevitVersionsProps/Autodesk.Revit.Sdk.Refs.targets"/>
+    <PropertyGroup>
+        <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net48'">2017</RevitVersion>
+        <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net8.0-windows'">2025</RevitVersion>
+    </PropertyGroup>
 </Project>

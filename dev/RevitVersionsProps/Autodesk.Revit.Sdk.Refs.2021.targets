@@ -1,9 +1,0 @@
-<Project>
-    <PropertyGroup Condition="'$(RevitVersion)' != '' and $(RevitVersion) == 2021">
-        <DefineConstants>$(DefineConstants);REVIT2021</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(RevitVersion)' != '' and $(RevitVersion) &gt;= 2021">
-        <DefineConstants>$(DefineConstants);REVIT2021_OR_GREATER</DefineConstants>
-    </PropertyGroup>
-</Project>

@@ -1,8 +1,0 @@
-<Project>
-    <PropertyGroup>
-        <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net48'">2017</RevitVersion>
-        <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net8.0-windows'">2025</RevitVersion>
-    </PropertyGroup>
-    
-    <Import Project="Autodesk.Revit.Sdk.Refs.*.targets"/>
-</Project>
