@@ -5,7 +5,6 @@
     
     <DefineConstants>$(DefineConstants);PYREVITLABS_ENGINE</DefineConstants>
     <IronPythonVersion>IPY340PR</IronPythonVersion>
-    <UsePyRevitIronPython>true</UsePyRevitIronPython>
     <IronPythonStdLib>python_340pr_lib.zip</IronPythonStdLib>
     <Version>3.4.0</Version>
   </PropertyGroup>
