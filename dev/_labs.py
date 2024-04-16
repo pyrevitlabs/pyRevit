@@ -74,3 +74,8 @@ def build_labs(_: Dict[str, str]):
     _build("labs", configs.LABS, "Release")
     _build("cli", configs.LABS_CLI, "Release", configs.BINPATH)
     _build("doctor", configs.LABS_DOCTOR, "Release", configs.BINPATH)
+
+
+def build_runtime(_: Dict[str, str]):
+    """Build pyRevit runtime"""
+    _build("runtime", configs.RUNTIME, "Release")
