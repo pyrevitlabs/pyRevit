@@ -11,6 +11,8 @@ VERSION_RANGE = 2017, 2021
 
 # binaries
 BINPATH = op.join(ROOT, "bin")
+LIBSPATH_NETFX = op.join("dev", "libs", "netfx")
+LIBSPATH_NETCORE = op.join("dev", "libs", "netcore")
 
 # root path for non-deployable source files
 DEVPATH = op.join(ROOT, "dev")
@@ -22,6 +24,14 @@ DEFAULT_IPY = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
 LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
 CPYTHONRUNTIME = op.join(DEVPATH, "modules/pyRevitLabs.Python.Net.sln")
 DIRECTORY_BUILD_PROPS = op.join(DEVPATH, "Directory.Build.props")
+
+# pyRevit deps
+MAHAPPS = op.join(DEVPATH, "modules/pyRevitLabs.MahApps.Metro/src/MahApps.Metro/MahApps.Metro.csproj")
+NEWTONSOFTJSON = op.join(DEVPATH, "modules/pyRevitLabs.Newtonsoft.Json/Src/Newtonsoft.Json/Newtonsoft.Json.csproj")
+NLOG = op.join(DEVPATH, "modules/pyRevitLabs.NLog/src/NLog/NLog.csproj")
+
+IRONPYTHON2 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
+IRONPYTHON3 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3.sln")
 
 # cli autocomplete files
 USAGEPATTERNS = op.join(

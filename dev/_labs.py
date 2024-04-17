@@ -21,7 +21,7 @@ def _abort(message):
     sys.exit(1)
 
 
-def _build(name: str, sln: str, config: str, publish_dir: str = None, print_output: Optional[bool] = False):
+def _build(name: str, sln: str, config: str = "Release", framework: str = None, publish_dir: str = None, print_output: Optional[bool] = False):
     utils.ensure_windows()
 
     # clean
@@ -46,11 +46,13 @@ def _build(name: str, sln: str, config: str, publish_dir: str = None, print_outp
             [
                 install.get_tool("dotnet"),
                 "publish",
-                slnpath,
+                f"\"{slnpath}\"",
                 "-c",
                 f"{config}",
+                "-f",
+                f"{framework}",
                 "-o",
-                f"{publish_dir}",
+                f"\"{publish_dir}\"",
             ],
             dump_stdout=print_output
         )
@@ -62,9 +64,30 @@ def _build(name: str, sln: str, config: str, publish_dir: str = None, print_outp
         print(f"Building {name} completed successfully")
 
 
+def build_deps(_: Dict[str, str]):
+    """Build pyRevit deps"""
+    _build("MahApps.Metro (netfx)", configs.MAHAPPS, framework="net47", publish_dir=configs.LIBSPATH_NETFX)
+    _build("MahApps.Metro (netcore)", configs.MAHAPPS, framework="netcoreapp3.1", publish_dir=configs.LIBSPATH_NETCORE)
+
+    _build("Newtonsoft.Json (netfx)", configs.NEWTONSOFTJSON, framework="net45", publish_dir=configs.LIBSPATH_NETFX)
+    _build("Newtonsoft.Json (netcore)", configs.NEWTONSOFTJSON, framework="net6.0", publish_dir=configs.LIBSPATH_NETCORE)
+
+    _build("Newtonsoft.Json (netfx)", configs.NEWTONSOFTJSON, framework="net45", publish_dir=configs.LIBSPATH_NETFX)
+    _build("Newtonsoft.Json (netcore)", configs.NEWTONSOFTJSON, framework="net6.0", publish_dir=configs.LIBSPATH_NETCORE)
+
+    _build("NLog (netfx)", configs.NLOG, framework="net46", publish_dir=configs.LIBSPATH_NETFX)
+    _build("NLog (netcore)", configs.NLOG, framework="netstandard2.0", publish_dir=configs.LIBSPATH_NETCORE)
+
+    _build("IronPython2 (netfx)", configs.IRONPYTHON2, framework="net48", publish_dir=configs.LIBSPATH_NETFX)
+    _build("IronPython2 (netcore)", configs.IRONPYTHON2, framework="netstandard2.0", publish_dir=configs.LIBSPATH_NETCORE)
+
+    _build("IronPython3 (netfx)", configs.IRONPYTHON3, framework="net48", publish_dir=configs.LIBSPATH_NETFX)
+    _build("IronPython3 (netcore)", configs.IRONPYTHON3, framework="net6.0", publish_dir=configs.LIBSPATH_NETCORE)
+
+
 def build_engines(_: Dict[str, str]):
     """Build pyRevit engines"""
-    _build("ironpython engines", configs.LOADERS, "Release")
+    _build("loaders", configs.LOADERS, "Release")
     _build("cpython 3.7 engine", configs.CPYTHONRUNTIME, "ReleasePY37")
     _build("cpython 3.8 engine", configs.CPYTHONRUNTIME, "ReleasePY38")
 
@@ -72,8 +95,8 @@ def build_engines(_: Dict[str, str]):
 def build_labs(_: Dict[str, str]):
     """Build pyRevit labs"""
     _build("labs", configs.LABS, "Release")
-    _build("cli", configs.LABS_CLI, "Release", configs.BINPATH)
-    _build("doctor", configs.LABS_DOCTOR, "Release", configs.BINPATH)
+    _build("cli", configs.LABS_CLI, "Release", "net8.0-windows", configs.BINPATH)
+    _build("doctor", configs.LABS_DOCTOR, "Release", "net8.0-windows", configs.BINPATH)
 
 
 def build_runtime(_: Dict[str, str]):
