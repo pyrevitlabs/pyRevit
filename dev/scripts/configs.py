@@ -14,6 +14,12 @@ BINPATH = op.join(ROOT, "bin")
 LIBSPATH_NETFX = op.join(ROOT, "dev", "libs", "netfx")
 LIBSPATH_NETCORE = op.join(ROOT, "dev", "libs", "netcore")
 
+ENGINES2PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY2711PR")
+ENGINES2PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY2711PR")
+
+ENGINES3PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY340PR")
+ENGINES3PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY340PR")
+
 # root path for non-deployable source files
 DEVPATH = op.join(ROOT, "dev")
 RUNTIME = op.join(DEVPATH, "pyRevitLabs/pyRevitLabs.PyRevit.Runtime/pyRevitLabs.PyRevit.Runtime.sln")
@@ -31,7 +37,10 @@ NEWTONSOFTJSON = op.join(DEVPATH, "modules/pyRevitLabs.Newtonsoft.Json/Src/Newto
 NLOG = op.join(DEVPATH, "modules/pyRevitLabs.NLog/src/NLog/NLog.csproj")
 
 IRONPYTHON2 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
+IRONPYTHON2_WPF = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPythonWpf/IronPythonWpf.csproj")
+
 IRONPYTHON3 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3.sln")
+IRONPYTHON3_WPF = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPythonWpf/IronPythonWpf.csproj")
 
 # cli autocomplete files
 USAGEPATTERNS = op.join(
