@@ -1,7 +1,7 @@
 [submodule "dev/modules/pyRevitLabs.Python.Net"]
 	path = dev/modules/pyRevitLabs.Python.Net
 	url = https://github.com/pyrevitlabs/pythonnet.git
-	branch = pyrevit-main
+	branch = pyrevit-5-main
 [submodule "dev/modules/pyRevitLabs.dlr"]
 	path = dev/modules/pyRevitLabs.dlr
 	url = https://github.com/pyrevitlabs/dlr.git
