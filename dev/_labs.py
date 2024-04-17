@@ -79,13 +79,13 @@ def build_deps(_: Dict[str, str]):
     _build("NLog (netcore)", configs.NLOG, framework="netstandard2.0", publish_dir=configs.LIBSPATH_NETCORE)
 
     _build("IronPython2 (netfx)", configs.IRONPYTHON2, framework="net48", publish_dir=configs.ENGINES2PATH_NETFX)
-    _build("IronPython2 (netcore)", configs.IRONPYTHON2, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE)
+    _build("IronPython2 (netcore)", configs.IRONPYTHON2_LIB, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE)
     _build("IronPython2 (netcore)", configs.IRONPYTHON2_MODULES, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE)
     _build("IronPython2 (netcore)", configs.IRONPYTHON2_SQLITE, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE)
     _build("IronPython2 (netcore)", configs.IRONPYTHON2_WPF, framework="net6.0-windows", publish_dir=configs.ENGINES2PATH_NETCORE)
 
     _build("IronPython3 (netfx)", configs.IRONPYTHON3, framework="net48", publish_dir=configs.ENGINES3PATH_NETFX)
-    _build("IronPython3 (netcore)", configs.IRONPYTHON3, framework="net6.0", publish_dir=configs.ENGINES3PATH_NETCORE)
+    _build("IronPython3 (netcore)", configs.IRONPYTHON3_LIB, framework="net6.0", publish_dir=configs.ENGINES3PATH_NETCORE)
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_MODULES, framework="net6.0", publish_dir=configs.ENGINES3PATH_NETCORE)
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_SQLITE, framework="net6.0", publish_dir=configs.ENGINES3PATH_NETCORE)
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_WPF, framework="net6.0-windows", publish_dir=configs.ENGINES3PATH_NETCORE)

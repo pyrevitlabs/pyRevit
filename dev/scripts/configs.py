@@ -37,11 +37,13 @@ NEWTONSOFTJSON = op.join(DEVPATH, "modules/pyRevitLabs.Newtonsoft.Json/Src/Newto
 NLOG = op.join(DEVPATH, "modules/pyRevitLabs.NLog/src/NLog/NLog.csproj")
 
 IRONPYTHON2 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
+IRONPYTHON2_LIB = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython/IronPython.csproj")
 IRONPYTHON2_MODULES = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython.Modules/IronPython.Modules.csproj")
 IRONPYTHON2_SQLITE = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython.SQLite/IronPython.SQLite.csproj")
 IRONPYTHON2_WPF = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython.Wpf/IronPython.Wpf.csproj")
 
 IRONPYTHON3 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3.sln")
+IRONPYTHON3_LIB = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython/IronPython.csproj")
 IRONPYTHON3_MODULES = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython.Modules/IronPython.Modules.csproj")
 IRONPYTHON3_SQLITE = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython.SQLite/IronPython.SQLite.csproj")
 IRONPYTHON3_WPF = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython.Wpf/IronPython.Wpf.csproj")
