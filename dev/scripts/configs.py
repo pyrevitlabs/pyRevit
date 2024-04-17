@@ -14,8 +14,8 @@ BINPATH = op.join(ROOT, "bin")
 LIBSPATH_NETFX = op.join(ROOT, "dev", "libs", "netfx")
 LIBSPATH_NETCORE = op.join(ROOT, "dev", "libs", "netcore")
 
-ENGINES2PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY2711PR")
-ENGINES2PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY2711PR")
+ENGINES2PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY2712PR")
+ENGINES2PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY2712PR")
 
 ENGINES3PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY340PR")
 ENGINES3PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY340PR")
