@@ -22,7 +22,7 @@ ENGINES3PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY340PR")
 
 # root path for non-deployable source files
 DEVPATH = op.join(ROOT, "dev")
-RUNTIME = op.join(DEVPATH, "pyRevitLabs/pyRevitLabs.PyRevit.Runtime/pyRevitLabs.PyRevit.Runtime.sln")
+RUNTIME = op.join(DEVPATH, "pyRevitLabs.PyRevit.Runtime/pyRevitLabs.PyRevit.Runtime.sln")
 LABS = op.join(DEVPATH, "pyRevitLabs/pyRevitLabs.sln")
 LABS_CLI = op.join(DEVPATH, "pyRevitLabs/pyRevitClI/pyRevitCLI.csproj")
 LABS_DOCTOR = op.join(DEVPATH, "pyRevitLabs/pyRevitDoctor/pyRevitDoctor.csproj")
