@@ -16,14 +16,14 @@
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Web" />
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Net.Http" />
         
-        <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLoader.dll" />
-        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.dll" />
-        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Modules.dll" />
-        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.SQLite.dll" />
-        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll" />
-        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll" />
-        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll" />
-        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll" />
+        <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLoader.dll" />
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.dll" />
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Modules.dll" />
+        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.SQLite.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Wpf.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Wpf.dll" />
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Dynamic.dll" />
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Scripting.dll" />
 
         <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitEnginesDir)\CPY385\pyRevitLabs.PythonNet.dll" />
 
