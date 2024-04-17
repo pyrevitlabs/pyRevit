@@ -34,15 +34,17 @@ def system(
     cwd: Optional[str] = None,
     dump_stdout: Optional[bool] = False,
 ):
+    print(f"> {' '.join(args)}")
+
     """Run a command and return the stdout"""
     if dump_stdout:
         res = subprocess.run(
             args, stderr=subprocess.STDOUT, check=False, cwd=cwd
         )
-        return ""
+        return "", res.returncode
     else:
         res = subprocess.run(args, capture_output=True, check=False, cwd=cwd)
-        return res.stdout.decode().strip()
+        return res.stdout.decode().strip(), res.returncode
 
 
 def where(program_name):
@@ -83,12 +85,11 @@ def run_command(commands: List[Command], args: Dict[str, str]):
 
 def parse_dotnet_build_output(output):
     """Parse dotnet build output to find the result and error reports"""
-    result = True
     build_finder = re.compile(r"^Build (success.*|FAIL.*)$")
     time_finder = re.compile(r"^Time Elapsed (.+)$")
     capture = False
     report = ""
-    for oline in output.split("\n"):
+    for oline in output[0].split("\n"):
         if time_finder.match(oline):
             break
         if capture:
@@ -97,7 +98,7 @@ def parse_dotnet_build_output(output):
             if "fail" in match.groups()[0].lower():
                 result = False
                 capture = True
-    return result, report
+    return output[1] == 0, output[0]
 
 
 def ensure_windows():

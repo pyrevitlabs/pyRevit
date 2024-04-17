@@ -11,8 +11,8 @@ VERSION_RANGE = 2017, 2021
 
 # binaries
 BINPATH = op.join(ROOT, "bin")
-LIBSPATH_NETFX = op.join("dev", "libs", "netfx")
-LIBSPATH_NETCORE = op.join("dev", "libs", "netcore")
+LIBSPATH_NETFX = op.join(ROOT, "dev", "libs", "netfx")
+LIBSPATH_NETCORE = op.join(ROOT, "dev", "libs", "netcore")
 
 # root path for non-deployable source files
 DEVPATH = op.join(ROOT, "dev")

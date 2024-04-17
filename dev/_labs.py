@@ -46,13 +46,13 @@ def _build(name: str, sln: str, config: str = "Release", framework: str = None, 
             [
                 install.get_tool("dotnet"),
                 "publish",
-                f"\"{slnpath}\"",
+                f"{slnpath}",
                 "-c",
                 f"{config}",
                 "-f",
                 f"{framework}",
                 "-o",
-                f"\"{publish_dir}\"",
+                f"{publish_dir}",
             ],
             dump_stdout=print_output
         )
