@@ -34,3 +34,7 @@ jobs:
       - name: Build Products
         run: |
           pipenv run pyrevit build products
+
+      - name: Build Installers
+        run: |
+          pipenv run pyrevit build installers
