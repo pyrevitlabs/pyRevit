@@ -52,7 +52,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Checkout Submodules
-        uses: snickerbockers/submodules-init@7ce9774442c0c2d4728e6d3f66141df2102e4cbc
+        uses: jmcouffin/submodules-init@V5
 
       - name: Prepare Python 3.10
         uses: actions/setup-python@v4
