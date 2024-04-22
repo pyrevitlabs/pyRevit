@@ -55,7 +55,7 @@ jobs:
         uses: jmcouffin/submodules-init@V5
 
       - name: Prepare Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -65,7 +65,7 @@ jobs:
           pipenv install
 
       - name: Prepare msbuild
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Prepare git
         uses: fregante/setup-git-user@v2
