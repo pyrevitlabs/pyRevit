@@ -52,7 +52,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Checkout Submodules
-        uses: jmcouffin/submodules-init@V5
+        uses: jmcouffin/submodules-init@ae47afe19152906d341ee759b39034176873f8ff
 
       - name: Prepare Python 3.10
         uses: actions/setup-python@v5
