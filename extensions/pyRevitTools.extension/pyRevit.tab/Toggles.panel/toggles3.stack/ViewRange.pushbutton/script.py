@@ -55,6 +55,11 @@ class Context(object):
     def __init__(self):
         self._active_view = None
         self._source_plan_view = None
+        self._length_unit = (doc.GetUnits()
+                             .GetFormatOptions(DB.SpecTypeId.Length)
+                             .GetUnitTypeId())
+
+        self.height_data = {}
         self.view_model = None
 
     @property
@@ -75,11 +80,14 @@ class Context(object):
 
     def context_changed(self):
         server.uidoc = UI.UIDocument(self.active_view.Document)
-        if self.view_model:
-             self.view_model.update(self)
         if not self.is_valid():
             server.meshes = None
             refresh_event.Raise()
+
+            self.view_model.topplane_elevation = None
+            self.view_model.cutplane_elevation = None
+            self.view_model.bottomplane_elevation = None
+            self.view_model.viewdepth_elevation = None
             return
         try:
             def corners_from_bb(bbox):
@@ -121,6 +129,14 @@ class Context(object):
                 plane_elevation = (
                     plane_level.Elevation
                     + view_range.GetOffset(plane)
+                )
+
+                self.height_data[plane] = round(
+                    DB.UnitUtils.ConvertFromInternalUnits(
+                        plane_elevation,
+                        self._length_unit
+                    ),
+                    2
                 )
 
                 cut_plane_vertices = [
@@ -173,16 +189,33 @@ class Context(object):
 
             server.meshes = [mesh]
             refresh_event.Raise()
+
+            self.view_model.topplane_elevation = self.height_data[
+                DB.PlanViewPlane.TopClipPlane]
+            self.view_model.cutplane_elevation = self.height_data[
+                DB.PlanViewPlane.CutPlane]
+            self.view_model.bottomplane_elevation = self.height_data[
+                DB.PlanViewPlane.BottomClipPlane]
+            self.view_model.viewdepth_elevation = self.height_data[
+                DB.PlanViewPlane.ViewDepthPlane]
         except:
             print(traceback.format_exc())
 
 
 
     def is_valid(self):
-        return (
-            isinstance(context.source_plan_view, DB.ViewPlan) and
-            isinstance(context.active_view, DB.View3D)
-        )
+        if not isinstance(context.source_plan_view, DB.ViewPlan):
+            self.view_model.message = \
+                "Please select a Plan View in the Project Browser!"
+            return False
+        elif not isinstance(context.active_view, DB.View3D):
+            self.view_model.message = "Please activate a 3D View!"
+            return False
+        else:
+            self.view_model.message = "Showing View Range of\n[{}]".format(
+                    self.source_plan_view.Name)
+            return True
+
 
 class MainViewModel(forms.Reactive):
 
@@ -200,10 +233,10 @@ class MainViewModel(forms.Reactive):
         self.viewdepth_brush = SolidColorBrush(Color.FromRgb(
             *[Convert.ToByte(i) for i in PLANES[DB.PlanViewPlane.ViewDepthPlane]]
         ))
-        self.topplane_elevation = None
-        self.cutplane_elevation = None
-        self.bottomplane_elevation = None
-        self.viewdepth_elevation = None
+        self._topplane_elevation = None
+        self._cutplane_elevation = None
+        self._bottomplane_elevation = None
+        self._viewdepth_elevation = None
 
     @forms.reactive
     def message(self):
@@ -213,17 +246,38 @@ class MainViewModel(forms.Reactive):
     def message(self, value):
         self._message = value
 
-    def update(self, context):
-        try:
-            if context.is_valid():
-                message = "Showing View Range of [{}]".format(context.source_plan_view.Name)
-            elif not isinstance(context.active_view, DB.View3D):
-                message = "Please activate a 3D View!"
-            elif not isinstance(context.source_plan_view, DB.ViewPlan):
-                message = "Please select a Plan View in the Project Browser!"
-            self.message = message
-        except:
-            print(traceback.format_exc())
+    @forms.reactive
+    def topplane_elevation(self):
+        return self._topplane_elevation
+
+    @topplane_elevation.setter
+    def topplane_elevation(self, value):
+        self._topplane_elevation = value
+
+    @forms.reactive
+    def cutplane_elevation(self):
+        return self._cutplane_elevation
+
+    @cutplane_elevation.setter
+    def cutplane_elevation(self, value):
+        self._cutplane_elevation = value
+
+    @forms.reactive
+    def bottomplane_elevation(self):
+        return self._bottomplane_elevation
+
+    @bottomplane_elevation.setter
+    def bottomplane_elevation(self, value):
+        self._bottomplane_elevation = value
+
+    @forms.reactive
+    def viewdepth_elevation(self):
+        return self._viewdepth_elevation
+
+    @viewdepth_elevation.setter
+    def viewdepth_elevation(self, value):
+        self._viewdepth_elevation = value
+
 
 class MainWindow(forms.WPFWindow):
     def __init__(self):

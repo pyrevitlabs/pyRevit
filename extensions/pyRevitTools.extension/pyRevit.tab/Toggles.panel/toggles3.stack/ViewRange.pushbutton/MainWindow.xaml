@@ -2,10 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="View Range" Height="200" Width="400">
         <StackPanel Margin="10">
-            <TextBlock Text="{Binding message}" />
+            <TextBlock Text="{Binding message}" Margin="0,0,0,10" FontSize="14"/>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="100" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
@@ -16,16 +17,16 @@
                 </Grid.RowDefinitions>
                 <Rectangle Grid.Row="0" Grid.Column="0" Width="5" Height="20" Fill="{Binding topplane_brush}" RadiusX="3" RadiusY="3"/>
                 <TextBlock Grid.Row="0" Grid.Column="1" Text="Top Plane:"/>
-                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding topplane_elevation}"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding topplane_elevation}" FontWeight="Bold"/>
                 <Rectangle Grid.Row="1" Grid.Column="0" Width="5" Height="20" Fill="{Binding cutplane_brush}" RadiusX="3" RadiusY="3"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="Cut Plane:"/>
-                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding cutplane_elevation}"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding cutplane_elevation}" FontWeight="Bold"/>
                 <Rectangle Grid.Row="2" Grid.Column="0" Width="5" Height="20" Fill="{Binding bottomplane_brush}" RadiusX="3" RadiusY="3"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="Bottom Plane:"/>
-                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding bottomplane_elevation}"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding bottomplane_elevation}" FontWeight="Bold"/>
                 <Rectangle Grid.Row="3" Grid.Column="0" Width="5" Height="20" Fill="{Binding viewdepth_brush}" RadiusX="3" RadiusY="3"/>
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="View Depth:"/>
-                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding viewdepth_elevation}"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding viewdepth_elevation}" FontWeight="Bold"/>
             </Grid>
         </StackPanel>
 </Window>
