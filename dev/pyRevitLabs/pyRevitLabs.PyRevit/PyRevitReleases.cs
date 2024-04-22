@@ -18,10 +18,10 @@ namespace pyRevitLabs.PyRevit {
         public static PyRevitRelease GetLatestRelease(bool includePreRelease = false) {
             if (includePreRelease)
                 return GetReleases().Where(r => r.IsPyRevitRelease)
-                                          .OrderByDescending(r => r.Version).ToList().First();
+                                          .OrderByDescending(r => r.Version).ToList().FirstOrDefault();
             else
                 return GetReleases().Where(r => r.IsPyRevitRelease && !r.PreRelease)
-                                          .OrderByDescending(r => r.Version).ToList().First();
+                                          .OrderByDescending(r => r.Version).ToList().FirstOrDefault();
         }
 
         // Find releases
