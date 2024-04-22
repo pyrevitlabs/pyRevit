@@ -15,3 +15,10 @@ updates:
     target-branch: "develop-4"
     schedule:
       interval: "weekly"
+    # Set update schedule for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every week
+      interval: "weekly"
+    target-branch: "develop-4"
