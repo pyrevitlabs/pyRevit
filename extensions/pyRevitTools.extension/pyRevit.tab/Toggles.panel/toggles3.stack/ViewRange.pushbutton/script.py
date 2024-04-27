@@ -52,15 +52,16 @@ class Context(object):
             cls.instance = super(Context, cls).__new__(cls, *args, **kwargs)
         return cls.instance
 
-    def __init__(self):
+    def __init__(self, view_model):
         self._active_view = None
         self._source_plan_view = None
-        self._length_unit = (doc.GetUnits()
+        self.length_unit = (doc.GetUnits()
                              .GetFormatOptions(DB.SpecTypeId.Length)
                              .GetUnitTypeId())
 
         self.height_data = {}
-        self.view_model = None
+        self.view_model = view_model
+        view_model.unit_label = DB.LabelUtils.GetLabelForUnit(self.length_unit)
 
     @property
     def active_view(self):
@@ -84,10 +85,10 @@ class Context(object):
             server.meshes = None
             refresh_event.Raise()
 
-            self.view_model.topplane_elevation = None
-            self.view_model.cutplane_elevation = None
-            self.view_model.bottomplane_elevation = None
-            self.view_model.viewdepth_elevation = None
+            self.view_model.topplane_elevation = "-"
+            self.view_model.cutplane_elevation = "-"
+            self.view_model.bottomplane_elevation = "-"
+            self.view_model.viewdepth_elevation = "-"
             return
         try:
             def corners_from_bb(bbox):
@@ -134,7 +135,7 @@ class Context(object):
                 self.height_data[plane] = round(
                     DB.UnitUtils.ConvertFromInternalUnits(
                         plane_elevation,
-                        self._length_unit
+                        self.length_unit
                     ),
                     2
                 )
@@ -190,14 +191,14 @@ class Context(object):
             server.meshes = [mesh]
             refresh_event.Raise()
 
-            self.view_model.topplane_elevation = self.height_data[
-                DB.PlanViewPlane.TopClipPlane]
-            self.view_model.cutplane_elevation = self.height_data[
-                DB.PlanViewPlane.CutPlane]
-            self.view_model.bottomplane_elevation = self.height_data[
-                DB.PlanViewPlane.BottomClipPlane]
-            self.view_model.viewdepth_elevation = self.height_data[
-                DB.PlanViewPlane.ViewDepthPlane]
+            self.view_model.topplane_elevation = str(self.height_data[
+                DB.PlanViewPlane.TopClipPlane])
+            self.view_model.cutplane_elevation = str(self.height_data[
+                DB.PlanViewPlane.CutPlane])
+            self.view_model.bottomplane_elevation = str(self.height_data[
+                DB.PlanViewPlane.BottomClipPlane])
+            self.view_model.viewdepth_elevation = str(self.height_data[
+                DB.PlanViewPlane.ViewDepthPlane])
         except:
             print(traceback.format_exc())
 
@@ -233,10 +234,12 @@ class MainViewModel(forms.Reactive):
         self.viewdepth_brush = SolidColorBrush(Color.FromRgb(
             *[Convert.ToByte(i) for i in PLANES[DB.PlanViewPlane.ViewDepthPlane]]
         ))
-        self._topplane_elevation = None
-        self._cutplane_elevation = None
-        self._bottomplane_elevation = None
-        self._viewdepth_elevation = None
+        self._topplane_elevation = "-"
+        self._cutplane_elevation = "-"
+        self._bottomplane_elevation = "-"
+        self._viewdepth_elevation = "-"
+
+        self.unit_label = ""
 
     @forms.reactive
     def message(self):
@@ -355,8 +358,7 @@ unsubscribe_event = UI.ExternalEvent.Create(SimpleEventHandler(unsubscribe))
 refresh_event = UI.ExternalEvent.Create(SimpleEventHandler(refresh_active_view))
 
 vm = MainViewModel()
-context = Context()
-context.view_model = vm
+context = Context(vm)
 context.active_view = uidoc.ActiveGraphicalView
 
 main_window = MainWindow()
