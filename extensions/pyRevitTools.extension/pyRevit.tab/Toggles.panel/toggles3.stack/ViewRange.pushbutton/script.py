@@ -297,7 +297,6 @@ class MainWindow(forms.WPFWindow):
 
 def subscribe():
     try:
-        # print("subscribe")
         ui_app = UI.UIApplication(HOST_APP.app)
         ui_app.ViewActivated += EventHandler[ViewActivatedEventArgs](view_activated)
         ui_app.SelectionChanged += EventHandler[SelectionChangedEventArgs](selection_changed)
@@ -308,10 +307,9 @@ def subscribe():
 
 def unsubscribe(uiapp):
     try:
-        # print("unsubscribe")
         uiapp.ViewActivated -= EventHandler[ViewActivatedEventArgs](view_activated)
         uiapp.SelectionChanged -= EventHandler[SelectionChangedEventArgs](selection_changed)
-        uiapp.Application.DocumentChanged += EventHandler[DocumentChangedEventArgs](doc_changed)
+        uiapp.Application.DocumentChanged -= EventHandler[DocumentChangedEventArgs](doc_changed)
     except:
         print(traceback.format_exc())
 
