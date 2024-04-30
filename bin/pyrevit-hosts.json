@@ -218,7 +218,7 @@
     {
         "meta": {
             "schema": "1.0",
-            "source": "https://github.com/eirannejad/pyRevit/issues/622"
+            "source": "https://github.com/pyrevitlabs/pyRevit/issues/622"
         },
         "product": "Autodesk Revit",
         "release": "2013 Update Release 3",
@@ -290,7 +290,7 @@
     {
         "meta": {
             "schema": "1.0",
-            "source": "//https://github.com/eirannejad/pyRevit/issues/543"
+            "source": "//https://github.com/pyrevitlabs/pyRevit/issues/543"
         },
         "product": "Autodesk Revit",
         "release": "2014 Update Release 3",
@@ -902,7 +902,7 @@
     {
         "meta": {
             "schema": "1.0",
-            "source": "https://github.com/eirannejad/pyRevit/issues/456"
+            "source": "https://github.com/pyrevitlabs/pyRevit/issues/456"
         },
         "product": "Autodesk Revit",
         "release": "2017.0.4",
@@ -1034,7 +1034,7 @@
     {
         "meta": {
             "schema": "1.0",
-            "source": "https://github.com/eirannejad/pyRevit/issues/456"
+            "source": "https://github.com/pyrevitlabs/pyRevit/issues/456"
         },
         "product": "Autodesk Revit",
         "release": "2018.3",
