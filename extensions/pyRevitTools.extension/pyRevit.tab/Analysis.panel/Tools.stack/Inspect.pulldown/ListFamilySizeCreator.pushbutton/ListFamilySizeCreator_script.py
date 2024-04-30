@@ -8,7 +8,7 @@ from pyrevit import revit, forms, script, DB, HOST_APP
 __title__ = 'Lists Family Sizes'
 __authors__ = ['Frederic Beaupere', 'Alex Melnikov']
 __contact__ = 'https://github.com/frederic-beaupere'
-__credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
+__credits__ = 'http://pyrevitlabs.github.io/pyRevit/credits/'
 
 FIELDS = ["Size", "Name", "Category", "Creator"]
 # temporary path for saving families

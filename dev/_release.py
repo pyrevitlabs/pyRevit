@@ -281,7 +281,7 @@ def _build_msi_installers():
 def _build_choco_packages():
     build_version_urlsafe = props.get_version(install=False, url_safe=True)
     base_url = (
-        "https://github.com/eirannejad/pyRevit/"
+        "https://github.com/pyrevitlabs/pyRevit/"
         f"releases/download/v{build_version_urlsafe}/"
     )
     install_version = props.get_version(install=True)

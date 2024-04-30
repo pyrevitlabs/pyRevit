@@ -1,0 +1,11 @@
+title:
+  fr_fr: Illustrer Profondeur de Vue
+  en_us: Show View Range
+tooltip: 
+  fr_fr: Outil pour illustrer la profondeur de vue des vues en plan dans une vue 3D à l'aide de plans colorés. Ouvrir une vue 3D et sélectionner les vues en plan à illustrer dans le navigateur de projet. 
+  en_us: Tool to illustrate the view range of plan views in a 3D view using colored planes. Open a 3D view and select the plan views to illustrate in the project browser.
+author: Tamás Déri
+engine:
+  clean: true
+  full_frame: false
+  persistent: true

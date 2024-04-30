@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop';
 
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$url64      = 'https://github.com/eirannejad/pyRevit/releases/download/v4.8.15.24089%2B0912/pyRevit_CLI_4.8.15.24089_admin_signed.exe'
+$url64      = 'https://github.com/pyrevitlabs/pyRevit/releases/download/v4.8.15.24089%2B0912/pyRevit_CLI_4.8.15.24089_admin_signed.exe'
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName

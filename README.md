@@ -2,9 +2,9 @@
 
 &nbsp;
 
-[![GitHub issues](https://img.shields.io/github/issues/eirannejad/pyRevit.svg?style=for-the-badge)](https://github.com/eirannejad/pyRevit/issues)
-[![GitHub forks](https://img.shields.io/github/forks/eirannejad/pyRevit.svg?style=for-the-badge)](https://github.com/eirannejad/pyRevit/network)
-[![GitHub stars](https://img.shields.io/github/stars/eirannejad/pyRevit.svg?style=for-the-badge&colorB=red)](https://github.com/eirannejad/pyRevit/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/pyrevitlabs/pyRevit.svg?style=for-the-badge)](https://github.com/pyrevitlabs/pyRevit/issues)
+[![GitHub forks](https://img.shields.io/github/forks/pyrevitlabs/pyRevit.svg?style=for-the-badge)](https://github.com/pyrevitlabs/pyRevit/network)
+[![GitHub stars](https://img.shields.io/github/stars/pyrevitlabs/pyRevit.svg?style=for-the-badge&colorB=red)](https://github.com/pyrevitlabs/pyRevit/stargazers)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=for-the-badge)](http://www.gnu.org/licenses/gpl-3.0)
 [![made with love in portland](https://img.shields.io/badge/%3C%2F%3E%20with%20%3C3-Portland%2C%20OR-green.svg?style=for-the-badge)](https://en.wikipedia.org/wiki/Portland,_Oregon)
 
@@ -48,7 +48,7 @@ pyRevit helps you quickly sketch out your automation and addon ideas, in whichev
 
 **↓** Read the pyRevit API reference to know everything about pyRevit available modules, functions, ...
 
-[pyRevit API Reference](https://ein.sh/pyRevit/reference/pyrevit/)
+[pyRevit API Reference](https://pyrevitlabs.github.io/pyRevit/reference/pyrevit/)
 
 **↓** Read the docs to know everything about pyRevit scripts, extensions, ...
 
@@ -67,7 +67,7 @@ pyRevit helps you quickly sketch out your automation and addon ideas, in whichev
 
 # Staying Updated
 
-Follow [pyRevit on Twitter](https://twitter.com/pyrevit) to stay notified about the upcoming changes and follow [pyRevit Release Notes](https://github.com/eirannejad/pyRevit/releases) for the breaking changes
+Follow [pyRevit on Twitter](https://twitter.com/pyrevit) to stay notified about the upcoming changes and follow [pyRevit Release Notes](https://github.com/pyrevitlabs/pyRevit/releases) for the breaking changes
 
 **↓** Check out the blog for news
 
@@ -81,7 +81,7 @@ Follow [pyRevit on Twitter](https://twitter.com/pyrevit) to stay notified about 
 
 # Dealing with Issues
 
-Check the list of [Currently Open](https://github.com/eirannejad/pyRevit/issues) and [Previously Reported Issues](https://github.com/eirannejad/pyRevit/issues?q=is%3Aissue+is%3Aclosed) for anything similar to yours.
+Check the list of [Currently Open](https://github.com/pyrevitlabs/pyRevit/issues) and [Previously Reported Issues](https://github.com/pyrevitlabs/pyRevit/issues?q=is%3Aissue+is%3Aclosed) for anything similar to yours.
 
 **↓** See the FAQ page for questions
 
@@ -135,8 +135,8 @@ Check the list of [Currently Open](https://github.com/eirannejad/pyRevit/issues)
 
 Made with [contrib.rocks](https://contrib.rocks)
 
-<a href="https://github.com/eirannejad/pyRevit/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=eirannejad/pyRevit" />
+<a href="https://github.com/pyrevitlabs/pyRevit/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=pyrevitlabs/pyRevit" />
 </a>&nbsp;
 
 ---

@@ -11,6 +11,7 @@ extensions/*
 !extensions/extensions.json
 !extensions/README.md
 !extensions/pyRevitBundlesCreatorExtension.extension/
+
 # bin/*
 # !bin/engines
 # !bin/pyrevit.svg
