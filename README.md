@@ -48,7 +48,7 @@ pyRevit helps you quickly sketch out your automation and addon ideas, in whichev
 
 **↓** Read the pyRevit API reference to know everything about pyRevit available modules, functions, ...
 
-[pyRevit API Reference](https://pyrevitlabs.github.io/pyRevit//reference/pyrevit/)
+[pyRevit API Reference](https://pyrevitlabs.github.io/pyRevit/reference/pyrevit/)
 
 **↓** Read the docs to know everything about pyRevit scripts, extensions, ...
 
