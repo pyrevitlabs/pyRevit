@@ -175,9 +175,9 @@ def is_synced(path):
     drive = _get_item_drive(adc, item)
     # ADC uses translated property names so
     # check status property by its type "LocalState"
-    # see https://github.com/eirannejad/pyRevit/issues/1152
+    # see https://github.com/pyrevitlabs/pyRevit/issues/1152
     # ADC version 15 changed property_id_value
-    # see https://github.com/eirannejad/pyRevit/issues/1371
+    # see https://github.com/pyrevitlabs/pyRevit/issues/1371
     prop_val = _get_item_property_id_value(adc, drive, item, 'DesktopConnector.Core.LocalState')
     if prop_val is None:
         # version older than ADC 15

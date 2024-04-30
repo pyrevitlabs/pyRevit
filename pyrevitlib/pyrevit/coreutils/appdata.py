@@ -95,7 +95,7 @@ def _match_file(file_name):
     if match:
         return match.groupdict()
 
-    # e.g. pyRevit_2018_eirannejad_
+    # e.g. pyRevit_2018_pyrevitlabs_
     match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_USER_REGEX,
                      string=file_name)
     if match:
@@ -107,7 +107,7 @@ def _match_file(file_name):
     if match:
         return match.groupdict()
 
-    # e.g. pyRevit_eirannejad_
+    # e.g. pyRevit_pyrevitlabs_
     match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_UNIVERSAL_USER_REGEX,
                      string=file_name)
     if match:
@@ -126,7 +126,7 @@ def get_universal_data_file(file_id, file_ext, name_only=False):
     """Get path to file that is shared between all host versions.
 
     These data files are not cleaned up at Revit restart.
-    e.g pyrevit_eirannejad_file_id.file_ext
+    e.g pyrevit_pyrevitlabs_file_id.file_ext
 
     Args:
         file_id (str): Unique identifier for the file
@@ -143,7 +143,7 @@ def get_universal_data_file(file_id, file_ext, name_only=False):
 def get_data_file(file_id, file_ext, name_only=False):
     """Get path to file that will not be cleaned up at Revit load.
 
-    e.g pyrevit_2016_eirannejad_file_id.file_ext
+    e.g pyrevit_2016_pyrevitlabs_file_id.file_ext
 
     Args:
         file_id (str): Unique identifier for the file
@@ -160,7 +160,7 @@ def get_instance_data_file(file_id, file_ext=TEMP_FILE_EXT, name_only=False):
     """Get path to file that should be used by current instance only.
 
     These data files will be cleaned up at Revit restart.
-    e.g pyrevit_2016_eirannejad_2353_file_id.file_ext
+    e.g pyrevit_2016_pyrevitlabs_2353_file_id.file_ext
 
     Args:
         file_id (str): Unique identifier for the file
