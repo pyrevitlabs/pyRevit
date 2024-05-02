@@ -1315,6 +1315,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         elif args.Key == Input.Key.Enter:
             active_button = self._get_active_button()
             if active_button:
+                if isinstance(active_button,
+                              framework.Controls.Primitives.ToggleButton):
+                    return
                 self.process_option(active_button, None)
                 args.Handled = True
         elif args.Key != Input.Key.Tab \
