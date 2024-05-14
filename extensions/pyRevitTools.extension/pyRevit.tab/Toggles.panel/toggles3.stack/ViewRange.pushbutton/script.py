@@ -128,7 +128,7 @@ class Context(object):
                     corners = corners_from_bb(level_bbox)
 
                 plane_elevation = (
-                    plane_level.Elevation
+                    plane_level.ProjectElevation
                     + view_range.GetOffset(plane)
                 )
 
