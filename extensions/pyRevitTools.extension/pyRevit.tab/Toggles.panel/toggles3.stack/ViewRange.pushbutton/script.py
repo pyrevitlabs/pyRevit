@@ -65,19 +65,25 @@ class Context(object):
 
     @property
     def active_view(self):
+        if self._active_view and not self._active_view.IsValidObject:
+            self._active_view = None
         return self._active_view
     @active_view.setter
     def active_view(self, value):
-        self._active_view = value
-        self.context_changed()
+        if not compare_views(self._active_view, value):
+            self._active_view = value
+            self.context_changed()
 
     @property
     def source_plan_view(self):
+        if self._source_plan_view and not self._source_plan_view.IsValidObject:
+            self._source_plan_view = None
         return self._source_plan_view
     @source_plan_view.setter
     def source_plan_view(self, value):
-        self._source_plan_view = value
-        self.context_changed()
+        if not compare_views(self._source_plan_view, value):
+            self._source_plan_view = value
+            self.context_changed()
 
     def context_changed(self):
         server.uidoc = UI.UIDocument(self.active_view.Document)
@@ -107,9 +113,10 @@ class Context(object):
             ).AsInteger() == 1:
                 bbox = self.active_view.GetSectionBox()
 
-                bb_corners = corners_from_bb(bbox)
+                corners = corners_from_bb(bbox)
             else:
-                bb_corners = None
+                crop_bbox = self.source_plan_view.CropBox
+                corners = corners_from_bb(crop_bbox)
 
             view_range = self.source_plan_view.GetViewRange()
 
@@ -121,12 +128,9 @@ class Context(object):
                     view_range.GetLevelId(plane)
                 )
 
-                if bb_corners:
-                    corners = bb_corners
-                else:
-                    level_bbox = plane_level.get_BoundingBox(self.active_view)
-                    corners = corners_from_bb(level_bbox)
-
+                if not plane_level:
+                    self.height_data[plane] = "N/A"
+                    continue
                 plane_elevation = (
                     plane_level.ProjectElevation
                     + view_range.GetOffset(plane)
@@ -212,6 +216,16 @@ class Context(object):
         elif not isinstance(context.active_view, DB.View3D):
             self.view_model.message = "Please activate a 3D View!"
             return False
+        elif (
+                not context.source_plan_view.CropBoxActive and
+                not context.active_view.get_Parameter(
+                    DB.BuiltInParameter.VIEWER_MODEL_CLIP_BOX_ACTIVE
+                ).AsInteger() == 1
+        ):
+            self.view_model.message = ("Please activate the \"Section Box\" "
+                                       "on the active view,\nor the "
+                                       "\"Crop View\" on the selected view!")
+
         else:
             self.view_model.message = "Showing View Range of\n[{}]".format(
                     self.source_plan_view.Name)
@@ -315,11 +329,16 @@ def unsubscribe(uiapp):
 
 
 def refresh_active_view(uiapp):
-    uidoc = uiapp.ActiveUIDocument
-    uidoc.ActiveView = context.active_view
-    uidoc.RefreshActiveView()
-    if context.source_plan_view:
-        uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_plan_view.Id]))
+    try:
+        uidoc = uiapp.ActiveUIDocument
+        if not compare_views(uidoc.ActiveView, context.active_view):
+            uidoc.ActiveView = context.active_view
+        uidoc.RefreshActiveView()
+        if context.source_plan_view:
+            uidoc.Selection.SetElementIds(
+                List[DB.ElementId]([context.source_plan_view.Id]))
+    except:
+        print(traceback.format_exc())
 
 
 def view_activated(sender, args):
@@ -330,6 +349,10 @@ def view_activated(sender, args):
 
 
 def selection_changed(sender, args):
+    # only handle selections made in the Project Browser
+    if not args.GetDocument().ActiveView.ViewType == DB.ViewType.ProjectBrowser:
+        return
+
     try:
         doc = args.GetDocument()
         sel_ids = list(args.GetSelectedElements())
@@ -344,10 +367,27 @@ def selection_changed(sender, args):
 
 def doc_changed(sender, args):
     try:
+        affected_ids = list(args.GetModifiedElementIds())
+        affected_ids.extend(list(args.GetDeletedElementIds()))
+        if any([view.Id in affected_ids for view
+                in [context.source_plan_view, context.active_view]]):
+            context.context_changed()
+    except AttributeError:
         context.context_changed()
     except:
         print(traceback.format_exc())
 
+
+
+def compare_views(view1, view2):
+    if not view1 and not view2:
+        return True
+    elif not view1 or not view2:
+        return False
+    if view1.Document.GetHashCode() != view2.Document.GetHashCode():
+        return False
+    else:
+        return view1.Id == view2.Id
 
 
 server = revit.dc3dserver.Server(register=False)
