@@ -126,6 +126,7 @@ Check the list of [Currently Open](https://github.com/pyrevitlabs/pyRevit/issues
 ## Share Your Coins
 
 **↓** Help making pyRevit financially stronger
+[Support on OpenCollective]((https://opencollective.com/pyrevitlabs))
 
 [Support on Patreon](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
 
