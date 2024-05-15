@@ -4,11 +4,12 @@ repo_name: pyrevitlabs/pyRevit
 
 
 extra:
-  homepage: https://pyrevitlabs.notion.site
+  homepage: https://pyrevitlabs.io
 
 theme:
   name: material
   logo: static/pyRevitLogo.svg
+  favicon: static/logo/favicon.ico
   features:
     - content.code.select
     - content.code.copy
