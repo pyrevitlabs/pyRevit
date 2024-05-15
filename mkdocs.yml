@@ -8,6 +8,7 @@ extra:
 theme:
   name: material
   logo: static/pyRevitLogo.svg
+  favicon: images/favicon.ico
   features:
     - content.code.select
     - content.code.copy
