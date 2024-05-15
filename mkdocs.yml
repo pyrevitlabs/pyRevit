@@ -1,6 +1,7 @@
 site_name: pyRevit
 repo_url: https://github.com/pyrevitlabs/pyRevit
 repo_name: pyrevitlabs/pyRevit
+site_favicon: img/favicon.ico
 
 
 extra:
