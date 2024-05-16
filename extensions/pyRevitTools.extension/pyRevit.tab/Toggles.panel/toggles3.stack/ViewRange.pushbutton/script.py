@@ -54,7 +54,7 @@ class Context(object):
 
     def __init__(self, view_model):
         self._active_view = None
-        self._source_plan_view = None
+        self._source_view = None
         self.length_unit = (doc.GetUnits()
                              .GetFormatOptions(DB.SpecTypeId.Length)
                              .GetUnitTypeId())
@@ -75,117 +75,121 @@ class Context(object):
             self.context_changed()
 
     @property
-    def source_plan_view(self):
-        if self._source_plan_view and not self._source_plan_view.IsValidObject:
-            self._source_plan_view = None
-        return self._source_plan_view
-    @source_plan_view.setter
-    def source_plan_view(self, value):
-        if not compare_views(self._source_plan_view, value):
-            self._source_plan_view = value
+    def source_view(self):
+        if self._source_view and not self._source_view.IsValidObject:
+            self._source_view = None
+        return self._source_view
+    @source_view.setter
+    def source_view(self, value):
+        if not compare_views(self._source_view, value):
+            self._source_view = value
             self.context_changed()
 
     def context_changed(self):
         server.uidoc = UI.UIDocument(self.active_view.Document)
+        self.view_model.topplane_elevation = "-"
+        self.view_model.cutplane_elevation = "-"
+        self.view_model.bottomplane_elevation = "-"
+        self.view_model.viewdepth_elevation = "-"
+
         if not self.is_valid():
             server.meshes = None
             refresh_event.Raise()
 
-            self.view_model.topplane_elevation = "-"
-            self.view_model.cutplane_elevation = "-"
-            self.view_model.bottomplane_elevation = "-"
-            self.view_model.viewdepth_elevation = "-"
             return
         try:
-            def corners_from_bb(bbox):
-                transform = bbox.Transform
 
-                corners = [
-                    bbox.Min,
-                    bbox.Min + DB.XYZ.BasisX * (bbox.Max - bbox.Min).X,
-                    bbox.Max,
-                    bbox.Min + DB.XYZ.BasisY * (bbox.Max - bbox.Min).Y
-                ]
-                return [transform.OfPoint(c) for c in corners]
-
-            if self.active_view.get_Parameter(
-                    DB.BuiltInParameter.VIEWER_MODEL_CLIP_BOX_ACTIVE
-            ).AsInteger() == 1:
-                bbox = self.active_view.GetSectionBox()
-
-                corners = corners_from_bb(bbox)
-            else:
-                crop_bbox = self.source_plan_view.CropBox
-                corners = corners_from_bb(crop_bbox)
-
-            view_range = self.source_plan_view.GetViewRange()
 
             edges = []
             triangles = []
-            for plane in PLANES:
+            if isinstance(self.source_view, DB.ViewPlan):
 
-                plane_level = self.source_plan_view.Document.GetElement(
-                    view_range.GetLevelId(plane)
-                )
+                if self.active_view.get_Parameter(
+                        DB.BuiltInParameter.VIEWER_MODEL_CLIP_BOX_ACTIVE
+                ).AsInteger() == 1:
+                    bbox = self.active_view.GetSectionBox()
 
-                if not plane_level:
-                    self.height_data[plane] = "N/A"
-                    continue
-                plane_elevation = (
-                    plane_level.ProjectElevation
-                    + view_range.GetOffset(plane)
-                )
+                    corners = corners_from_bb(bbox)
+                else:
+                    crop_bbox = self.source_view.CropBox
+                    corners = corners_from_bb(crop_bbox)
 
-                self.height_data[plane] = round(
-                    DB.UnitUtils.ConvertFromInternalUnits(
-                        plane_elevation,
-                        self.length_unit
-                    ),
-                    2
-                )
+                view_range = self.source_view.GetViewRange()
 
-                cut_plane_vertices = [
-                    DB.XYZ(c.X, c.Y, plane_elevation) for c in corners
-                ]
+                for plane in PLANES:
 
-                color = DB.ColorWithTransparency(
-                    PLANES[plane][0],
-                    PLANES[plane][1],
-                    PLANES[plane][2],
-                    180
-                )
-
-                edges.extend([
-                    revit.dc3dserver.Edge(
-                        cut_plane_vertices[i-1],
-                        cut_plane_vertices[i],
-                        color
-                    ) for i in range(len(cut_plane_vertices))
-                ])
-                triangles.extend([
-                    revit.dc3dserver.Triangle(
-                        cut_plane_vertices[0],
-                        cut_plane_vertices[1],
-                        cut_plane_vertices[2],
-                        revit.dc3dserver.Mesh.calculate_triangle_normal(
-                            cut_plane_vertices[0],
-                            cut_plane_vertices[1],
-                            cut_plane_vertices[2],
-                        ),
-                        color
-                    ),
-                    revit.dc3dserver.Triangle(
-                        cut_plane_vertices[2],
-                        cut_plane_vertices[3],
-                        cut_plane_vertices[0],
-                        revit.dc3dserver.Mesh.calculate_triangle_normal(
-                            cut_plane_vertices[2],
-                            cut_plane_vertices[3],
-                            cut_plane_vertices[0],
-                        ),
-                        color
+                    plane_level = self.source_view.Document.GetElement(
+                        view_range.GetLevelId(plane)
                     )
-                ])
+
+                    if not plane_level:
+                        self.height_data[plane] = "N/A"
+                        continue
+                    plane_elevation = (
+                        plane_level.ProjectElevation
+                        + view_range.GetOffset(plane)
+                    )
+
+                    self.height_data[plane] = round(
+                        DB.UnitUtils.ConvertFromInternalUnits(
+                            plane_elevation,
+                            self.length_unit
+                        ),
+                        2
+                    )
+
+                    cut_plane_vertices = [
+                        DB.XYZ(c.X, c.Y, plane_elevation) for c in corners
+                    ]
+
+                    color = get_color_from_plane(plane)
+
+                    edges.extend(
+                        create_edges(cut_plane_vertices, color))
+
+                    triangles.extend(
+                        create_triangles(cut_plane_vertices, color))
+
+                self.view_model.topplane_elevation = str(self.height_data[
+                    DB.PlanViewPlane.TopClipPlane])
+                self.view_model.cutplane_elevation = str(self.height_data[
+                    DB.PlanViewPlane.CutPlane])
+                self.view_model.bottomplane_elevation = str(self.height_data[
+                    DB.PlanViewPlane.BottomClipPlane])
+                self.view_model.viewdepth_elevation = str(self.height_data[
+                    DB.PlanViewPlane.ViewDepthPlane])
+
+            else:
+                crop_bbox = self.source_view.CropBox
+                cut_plane_vertices = corners_from_bb(crop_bbox)
+
+                plane = DB.PlanViewPlane.ViewDepthPlane
+
+                color = get_color_from_plane(plane)
+
+                edges.extend(
+                        create_edges(cut_plane_vertices, color))
+
+                triangles.extend(
+                    create_triangles(cut_plane_vertices, color))
+
+                view_dir_transform = DB.Transform.CreateTranslation(
+                    self.source_view.ViewDirection.Negate()
+                    * self.source_view.CropBox.Min.Z
+                )
+                cut_plane_vertices = [view_dir_transform.OfPoint(pt)
+                                      for pt in cut_plane_vertices]
+                plane = DB.PlanViewPlane.CutPlane
+
+                color = get_color_from_plane(plane)
+
+                edges.extend(
+                        create_edges(cut_plane_vertices, color))
+
+                triangles.extend(
+                    create_triangles(cut_plane_vertices, color))
+
+
 
             mesh = revit.dc3dserver.Mesh(
                 edges,
@@ -195,29 +199,21 @@ class Context(object):
             server.meshes = [mesh]
             refresh_event.Raise()
 
-            self.view_model.topplane_elevation = str(self.height_data[
-                DB.PlanViewPlane.TopClipPlane])
-            self.view_model.cutplane_elevation = str(self.height_data[
-                DB.PlanViewPlane.CutPlane])
-            self.view_model.bottomplane_elevation = str(self.height_data[
-                DB.PlanViewPlane.BottomClipPlane])
-            self.view_model.viewdepth_elevation = str(self.height_data[
-                DB.PlanViewPlane.ViewDepthPlane])
         except:
             print(traceback.format_exc())
 
 
 
     def is_valid(self):
-        if not isinstance(context.source_plan_view, DB.ViewPlan):
+        if not can_use_view_as_source(self.source_view):
             self.view_model.message = \
-                "Please select a Plan View in the Project Browser!"
+                "Please select a Plan or Section View in the Project Browser!"
             return False
         elif not isinstance(context.active_view, DB.View3D):
             self.view_model.message = "Please activate a 3D View!"
             return False
         elif (
-                not context.source_plan_view.CropBoxActive and
+                not context.source_view.CropBoxActive and
                 not context.active_view.get_Parameter(
                     DB.BuiltInParameter.VIEWER_MODEL_CLIP_BOX_ACTIVE
                 ).AsInteger() == 1
@@ -228,7 +224,7 @@ class Context(object):
 
         else:
             self.view_model.message = "Showing View Range of\n[{}]".format(
-                    self.source_plan_view.Name)
+                    self.source_view.Name)
             return True
 
 
@@ -334,9 +330,9 @@ def refresh_active_view(uiapp):
         if not compare_views(uidoc.ActiveView, context.active_view):
             uidoc.ActiveView = context.active_view
         uidoc.RefreshActiveView()
-        if context.source_plan_view:
+        if context.source_view:
             uidoc.Selection.SetElementIds(
-                List[DB.ElementId]([context.source_plan_view.Id]))
+                List[DB.ElementId]([context.source_view.Id]))
     except:
         print(traceback.format_exc())
 
@@ -358,10 +354,10 @@ def selection_changed(sender, args):
         sel_ids = list(args.GetSelectedElements())
         if len(sel_ids) == 1:
             sel = doc.GetElement(sel_ids[0])
-            if isinstance(sel, DB.ViewPlan):
-                context.source_plan_view = sel
+            if can_use_view_as_source(sel):
+                context.source_view = sel
                 return
-        context.source_plan_view = None
+        context.source_view = None
     except:
         print(traceback.format_exc())
 
@@ -370,13 +366,12 @@ def doc_changed(sender, args):
         affected_ids = list(args.GetModifiedElementIds())
         affected_ids.extend(list(args.GetDeletedElementIds()))
         if any([view.Id in affected_ids for view
-                in [context.source_plan_view, context.active_view]]):
+                in [context.source_view, context.active_view]]):
             context.context_changed()
     except AttributeError:
         context.context_changed()
     except:
         print(traceback.format_exc())
-
 
 
 def compare_views(view1, view2):
@@ -388,6 +383,72 @@ def compare_views(view1, view2):
         return False
     else:
         return view1.Id == view2.Id
+
+
+def can_use_view_as_source(view):
+    return (
+        isinstance(view, DB.ViewPlan) or
+        isinstance(view, DB.ViewSection)
+    )
+
+
+def corners_from_bb(bbox):
+    transform = bbox.Transform
+
+    corners = [
+        bbox.Min,
+        bbox.Min + DB.XYZ.BasisX * (bbox.Max - bbox.Min).X,
+        bbox.Min + DB.XYZ.BasisX * (bbox.Max - bbox.Min).X
+        + DB.XYZ.BasisY * (bbox.Max - bbox.Min).Y,
+        bbox.Min + DB.XYZ.BasisY * (bbox.Max - bbox.Min).Y
+    ]
+    return [transform.OfPoint(c) for c in corners]
+
+
+def create_edges(vertices, color):
+    return [
+        revit.dc3dserver.Edge(
+            vertices[i-1],
+            vertices[i],
+            color
+        ) for i in range(len(vertices))
+    ]
+
+
+def create_triangles(vertices, color):
+    return [
+        revit.dc3dserver.Triangle(
+            vertices[0],
+            vertices[1],
+            vertices[2],
+            revit.dc3dserver.Mesh.calculate_triangle_normal(
+                vertices[0],
+                vertices[1],
+                vertices[2],
+            ),
+            color
+        ),
+        revit.dc3dserver.Triangle(
+            vertices[2],
+            vertices[3],
+            vertices[0],
+            revit.dc3dserver.Mesh.calculate_triangle_normal(
+                vertices[2],
+                vertices[3],
+                vertices[0],
+            ),
+            color
+        )
+    ]
+
+
+def get_color_from_plane(plane):
+    return DB.ColorWithTransparency(
+        PLANES[plane][0],
+        PLANES[plane][1],
+        PLANES[plane][2],
+        180
+    )
 
 
 server = revit.dc3dserver.Server(register=False)
