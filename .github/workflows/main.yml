@@ -153,7 +153,7 @@ jobs:
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.exe
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
-
+          run:  echo 'Artifact URL is ${{ steps.artifact-upload-step.outputs.artifact-url }}'
       - name: Generate Release Notes (Release)
         if: (github.base_ref == env.ReleaseBranch)
         env:
