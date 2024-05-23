@@ -58,7 +58,7 @@ class Transaction():
                     self._fhndlr_ops.SetFailuresPreprocessor(
                         failure.FailureSwallower()
                         )
-            self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
+                self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
         self._logerror = log_errors
 
     def __enter__(self):
