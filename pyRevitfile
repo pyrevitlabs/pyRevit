@@ -11,9 +11,9 @@ description = 'IronPython 3 Engine'
 
 [engines.DEFAULT]
 kernel = 'IronPython'
-version = 2711
+version = 2712
 runtime = true
-path = 'bin\engines\IPY2711PR'
+path = 'bin\engines\IPY2712PR'
 assembly = 'pyRevitLoader.dll'
 description = 'Custom pyRevit IronPython Engine'
 
