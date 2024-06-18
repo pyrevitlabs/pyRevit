@@ -844,11 +844,6 @@ class Form_cats(Form):
         self.Controls.Add(self._listBox2)
         self.Name = "Color Elements By Parameter"
         self.Text = "Color Elements By Parameter"
-        iconFilename = 'C:\\NONICAPRO\\OtherFiles\\System\\Nonicafavicon.ICO'
-        if not os.path.exists(iconFilename):
-            iconFilename = 'C:\\NONICA\\OtherFiles\\System\\Nonicafavicon.ICO'
-        icon = Icon(iconFilename)
-        self.Icon = icon
         self.Closing += self.closingEvent
         self.ResumeLayout(False)
         
