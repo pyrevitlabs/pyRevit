@@ -11,7 +11,7 @@ from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
 from pyrevit.compat import safe_strtype
-from pyrevit import RUNTIME_DIR
+from pyrevit import BIN_DIR, RUNTIME_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import logger
@@ -115,9 +115,10 @@ if not EXEC_PARAMS.doc_mode:
             )[:HASH_CUTOFF_LENGTH]
     RUNTIME_ASSM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
+
     RUNTIME_ASSM_FILE = \
-        appdata.get_data_file(RUNTIME_ASSM_FILE_ID,
-                              framework.ASSEMBLY_FILE_TYPE)
+        op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(__revit__.Application.VersionNumber))
+
     # taking the name of the generated data file and use it as assembly name
     RUNTIME_ASSM_NAME = op.splitext(op.basename(RUNTIME_ASSM_FILE))[0]
     mlogger.debug('Interface types assembly file is: %s', RUNTIME_ASSM_NAME)
@@ -288,31 +289,9 @@ def get_references():
 
 def _generate_runtime_asm():
     source_list = list(_get_source_files())
-    # now try to compile
+    # now try to load compiled runtime assembly
     try:
-        mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
-        res, msgs = labs.Common.CodeCompiler.CompileCSharp(
-            sourceFiles=Array[str](source_list),
-            outputPath=RUNTIME_ASSM_FILE,
-            references=Array[str](
-                get_references()
-            ),
-            defines=Array[str]([
-                "REVIT{}".format(HOST_APP.version),
-                "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
-            ]),
-            debug=False
-        )
-        # log results
-        logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
-        with open(logfile, 'w') as lf:
-            lf.write('\n'.join(msgs))
-        # load compiled dll if successful
-        if res:
-            return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
-        # otherwise raise hell
-        else:
-            raise PyRevitException('\n'.join(msgs))
+        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',
