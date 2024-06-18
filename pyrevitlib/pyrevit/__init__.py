@@ -54,8 +54,14 @@ try:
 except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
+
+# try get net folder
+net_folder = "netfx"
+if int(__revit__.Application.VersionNumber) >= 2025:
+    net_folder = "netcore"
+
 # BIN directory
-BIN_DIR = op.join(HOME_DIR, 'bin')
+BIN_DIR = op.join(HOME_DIR, 'bin/{}'.format(net_folder))
 
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
