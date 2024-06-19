@@ -4,7 +4,7 @@
 kernel = 'IronPython 3'
 version = 340
 runtime = true
-path = 'bin\engines\IPY340PR'
+path = 'IPY340PR'
 assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'IronPython 3 Engine'
@@ -13,7 +13,7 @@ description = 'IronPython 3 Engine'
 kernel = 'IronPython'
 version = 2712
 runtime = true
-path = 'bin\engines\IPY2712PR'
+path = 'IPY2712PR'
 assembly = 'pyRevitLoader.dll'
 description = 'Custom pyRevit IronPython Engine'
 
@@ -21,7 +21,7 @@ description = 'Custom pyRevit IronPython Engine'
 kernel = 'CPython'
 version = 378
 runtime = false
-path = 'bin\engines\CPY378'
+path = 'CPY378'
 assembly = 'pyRevitLabs.PythonNet.dll'
 description = 'CPython Engine'
 
@@ -29,7 +29,7 @@ description = 'CPython Engine'
 kernel = 'CPython'
 version = 385
 runtime = false
-path = 'bin\engines\CPY385'
+path = 'CPY385'
 assembly = 'pyRevitLabs.PythonNet.dll'
 description = 'CPython Engine'
 
