@@ -24,6 +24,11 @@ if int(__revit__.Application.VersionNumber) >= 2025:
     clr.AddReference('System.Net.Requests')
     clr.AddReference('System.Net.WebProxy')
     clr.AddReference('System.Runtime.Serialization.Formatters')
+    clr.AddReference('System.Reflection.Emit')
+    clr.AddReference('Lokad.ILPack')
+    clr.AddReference('System.ComponentModel')
+    clr.AddReference('System.ObjectModel')
+    clr.AddReference('System.Diagnostics.FileVersionInfo')
 
 clr.AddReference('System.Core')
 clr.AddReference('System.Management')
