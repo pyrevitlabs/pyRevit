@@ -1,9 +1,8 @@
 #pylint: disable=E0401,W0613,C0103,C0111
 import sys
+
 from pyrevit.framework import List
-from pyrevit import revit, DB
-from pyrevit import script
-from pyrevit import forms
+from pyrevit import revit, DB, script, forms
 
 
 logger = script.get_logger()
