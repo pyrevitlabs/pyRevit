@@ -46,47 +46,43 @@ if open_docs and legends:
                 skipped_docs.append(dest_doc.Title)
                 continue
 
-        # iterate over interfacetypes legend views
-        for src_legend in legends:
-            pb.title = 'Processing Document: {} > Copying: {}'.format(
-                dest_doc.Title,
-                revit.query.get_name(src_legend))
-            pb.update_progress(0)
-            
-            print('\tCopying: {0}'.format(revit.query.get_name(src_legend)))
-            # get legend view elements and exclude non-copyable elements
-            view_elements = \
-                DB.FilteredElementCollector(revit.doc, src_legend.Id)\
-                  .ToElements()
+            doc_processed = False
+            with revit.TransactionGroup('Copy Legends to document', doc=dest_doc) as copy_transaction_group:
+                # iterate over interfacetypes legend views
+                for src_legend in legends:
+                    pb.title = 'Processing Document: {} > Copying: {}'.format(
+                        dest_doc.Title, revit.query.get_name(src_legend))
+                    pb.update_progress(0)
 
-            elements_to_copy = []
-            for el in view_elements:
-                if isinstance(el, DB.Element) and el.Category:
-                    elements_to_copy.append(el.Id)
-                else:
-                    logger_messages.append('Skipping element: {}'.format(el.Id))
-            if not elements_to_copy:
-                logger_messages.append('Skipping empty view: {}'.format(revit.query.get_name(src_legend)))
-                continue
+                    # get legend view elements and exclude non-copyable elements
+                    view_elements = DB.FilteredElementCollector(revit.doc, src_legend.Id).ToElements()
 
-            # start creating views and copying elements
-            with revit.Transaction('Copy Legends to this document',
-                                   doc=dest_doc):
-                dest_view = dest_doc.GetElement(
-                    base_legend.Duplicate(
-                        DB.ViewDuplicateOption.Duplicate
-                        )
-                    )
+                    # start creating views and copying elements
+                    with revit.Transaction('Copy Legends to document', doc=dest_doc) as copy_transaction:
+                        elements_to_copy = []
+                        for el in view_elements:
+                            if isinstance(el, DB.Element) and el.Category:
+                                elements_to_copy.append(el.Id)
+                            else:
+                                logger_messages.append('Skipping element: {}'.format(el.Id))
+                        if not elements_to_copy:
+                            logger_messages.append(
+                                'Skipping empty view: {}'.format(
+                                    revit.query.get_name(src_legend)))
+                            copy_transaction.status = DB.TransactionStatus.RolledBack
+                            continue
 
-                options = DB.CopyPasteOptions()
-                options.SetDuplicateTypeNamesHandler(CopyUseDestination())
-                copied_elements = \
-                    DB.ElementTransformUtils.CopyElements(
-                        src_legend,
-                        List[DB.ElementId](elements_to_copy),
-                        dest_view,
-                        None,
-                        options)
+                        dest_view = dest_doc.GetElement(base_legend.Duplicate(
+                            DB.ViewDuplicateOption.Duplicate))
+
+                        options = DB.CopyPasteOptions()
+                        options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+                        copied_elements = DB.ElementTransformUtils.CopyElements(
+                            src_legend,
+                            List[DB.ElementId](elements_to_copy),
+                            dest_view,
+                            None,
+                            options)
 
                 # matching element graphics overrides and view properties
                 for dest, src in zip(copied_elements, elements_to_copy):
