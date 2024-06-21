@@ -38,12 +38,13 @@ if open_docs and legends:
             all_legend_names = [revit.query.get_name(x) for x in all_graphviews
                                 if x.ViewType == DB.ViewType.Legend]
 
-        print('Processing Document: {0}'.format(dest_doc.Title))
-        # finding first available legend view
-        base_legend = revit.query.find_first_legend(doc=dest_doc)
-        if not base_legend:
-            forms.alert('At least one Legend must exist in target document.',
-                        exitscript=True)
+            # finding first available legend view
+            base_legend = revit.query.find_first_legend(doc=dest_doc)
+            if not base_legend:
+                forms.alert('At least one Legend must exist in target document.\n'
+                            'Skipping document: {}'.format(dest_doc.Title))
+                skipped_docs.append(dest_doc.Title)
+                continue
 
         # iterate over interfacetypes legend views
         for src_legend in legends:
