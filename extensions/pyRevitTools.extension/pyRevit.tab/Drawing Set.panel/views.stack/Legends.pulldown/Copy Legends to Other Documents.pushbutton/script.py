@@ -84,21 +84,47 @@ if open_docs and legends:
                             None,
                             options)
 
-                # matching element graphics overrides and view properties
-                for dest, src in zip(copied_elements, elements_to_copy):
-                    try:
-                        dest_view.SetElementOverrides(dest, src_legend.GetElementOverrides(src))
-                    except Exception as ex:
-                        logger_messages.append('Error setting element overrides: {}\n{} in '
-                                               '{}'.format(ex, src, dest_doc.Title))
+                        # matching element graphics overrides and view properties
+                        for dest, src in zip(copied_elements, elements_to_copy):
+                            try:
+                                dest_view.SetElementOverrides(dest,
+                                                              src_legend.GetElementOverrides(src))
+                            except Exception as ex:
+                                logger_messages.append(
+                                    'Error setting element overrides: {}\n{} in '
+                                    '{}'.format(ex, src, dest_doc.Title))
+                        # matching view name and scale
+                        src_name = revit.query.get_name(src_legend)
+                        count = 0
+                        new_name = src_name
+                        while new_name in all_legend_names:
+                            count += 1
+                            new_name = src_name + ' (Duplicate %s)' % count
+                            logger_messages.append(
+                                'Legend name already exists. Renaming to: {}'.format(new_name))
+                        revit.update.set_name(dest_view, new_name)
+                        dest_view.Scale = src_legend.Scale
 
-                # matching view name and scale
-                src_name = revit.query.get_name(src_legend)
-                count = 0
-                new_name = src_name
-                while new_name in all_legend_names:
-                    count += 1
-                    new_name = src_name + ' (Duplicate %s)' % count
-                    logger_messages.append('Legend name already exists. Renaming to: {}'.format(new_name))
-                revit.update.set_name(dest_view, new_name)
-                dest_view.Scale = src_legend.Scale
+                    if copy_transaction.status == DB.TransactionStatus.Committed:
+                        doc_processed = True
+
+    if doc_processed:
+        if skipped_docs:
+            processed_docs = [doc for doc in open_docs if doc.Title not in skipped_docs]
+        else:
+            processed_docs = open_docs
+        processed_docs_names = [doc.Title for doc in processed_docs]
+
+        legend_plural = 's' if len(legends) > 1 else ''
+        dest_docs_str = '\n'.join(processed_docs_names) if len(open_docs) > 1 else open_docs[0].Title
+
+        forms.alert('Legend{} copied successfully to:\n{}'.format(
+            legend_plural,
+            dest_docs_str))
+    else:
+        forms.alert('Copy operation failed.')
+
+    if logger_messages:
+        logger.warning('\n- ' + '\n- '.join(logger_messages))
+else:
+    forms.alert('No Legend Views selected.')
