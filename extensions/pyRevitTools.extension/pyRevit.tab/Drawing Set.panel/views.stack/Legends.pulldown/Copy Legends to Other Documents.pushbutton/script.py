@@ -47,6 +47,11 @@ if open_docs and legends:
 
         # iterate over interfacetypes legend views
         for src_legend in legends:
+            pb.title = 'Processing Document: {} > Copying: {}'.format(
+                dest_doc.Title,
+                revit.query.get_name(src_legend))
+            pb.update_progress(0)
+            
             print('\tCopying: {0}'.format(revit.query.get_name(src_legend)))
             # get legend view elements and exclude non-copyable elements
             view_elements = \
