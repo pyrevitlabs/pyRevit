@@ -19,18 +19,24 @@ if not open_docs:
     sys.exit(0)
 
 # get a list of selected legends
-legends = forms.select_views(
-    title='Select Drafting Views',
-    filterfunc=lambda x: x.ViewType == DB.ViewType.Legend,
-    use_selection=True)
+legends = forms.select_views(title='Select Legend Views',
+                             filterfunc=lambda x: x.ViewType == DB.ViewType.Legend,
+                             use_selection=True)
 
-if legends:
-    for dest_doc in open_docs:
-        # get all views and collect names
-        all_graphviews = revit.query.get_all_views(doc=dest_doc)
-        all_legend_names = [revit.query.get_name(x)
-                            for x in all_graphviews
-                            if x.ViewType == DB.ViewType.Legend]
+skipped_docs = []
+if open_docs and legends:
+    with forms.ProgressBar(title='Processing',
+                           indeterminate=True,
+                           cancellable=True) as pb:
+        pb.update_progress(0)
+        for dest_doc in open_docs:
+            pb.title = 'Processing Document: {}'.format(dest_doc.Title)
+            pb.update_progress(0)
+
+            # get all views and collect names
+            all_graphviews = revit.query.get_all_views(doc=dest_doc)
+            all_legend_names = [revit.query.get_name(x) for x in all_graphviews
+                                if x.ViewType == DB.ViewType.Legend]
 
         print('Processing Document: {0}'.format(dest_doc.Title))
         # finding first available legend view
