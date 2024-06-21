@@ -4,8 +4,8 @@ import sys
 from pyrevit.framework import List
 from pyrevit import revit, DB, script, forms
 
-
 logger = script.get_logger()
+logger_messages = []
 
 
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
@@ -58,10 +58,9 @@ if open_docs and legends:
                 if isinstance(el, DB.Element) and el.Category:
                     elements_to_copy.append(el.Id)
                 else:
-                    logger.debug('Skipping element: %s', el.Id)
+                    logger_messages.append('Skipping element: {}'.format(el.Id))
             if not elements_to_copy:
-                logger.debug('Skipping empty view: %s',
-                             revit.query.get_name(src_legend))
+                logger_messages.append('Skipping empty view: {}'.format(revit.query.get_name(src_legend)))
                 continue
 
             # start creating views and copying elements
@@ -85,10 +84,11 @@ if open_docs and legends:
 
                 # matching element graphics overrides and view properties
                 for dest, src in zip(copied_elements, elements_to_copy):
-                    dest_view.SetElementOverrides(
-                        dest,
-                        src_legend.GetElementOverrides(src)
-                        )
+                    try:
+                        dest_view.SetElementOverrides(dest, src_legend.GetElementOverrides(src))
+                    except Exception as ex:
+                        logger_messages.append('Error setting element overrides: {}\n{} in '
+                                               '{}'.format(ex, src, dest_doc.Title))
 
                 # matching view name and scale
                 src_name = revit.query.get_name(src_legend)
@@ -97,7 +97,6 @@ if open_docs and legends:
                 while new_name in all_legend_names:
                     count += 1
                     new_name = src_name + ' (Duplicate %s)' % count
-                    logger.warning(
-                        'Legend already exists. Renaming to: "%s"', new_name)
+                    logger_messages.append('Legend name already exists. Renaming to: {}'.format(new_name))
                 revit.update.set_name(dest_view, new_name)
                 dest_view.Scale = src_legend.Scale
