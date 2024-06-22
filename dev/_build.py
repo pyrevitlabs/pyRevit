@@ -11,6 +11,7 @@ import _autocomplete as autoc
 import _labs as labs
 import _telem as telem
 
+import shutil
 
 ARTIFACTS = ['bin', 'obj', '.vs', 'TestResults']
 
@@ -32,3 +33,10 @@ def build_binaries(_: Dict[str, str]):
     labs.build_runtime(_)
     telem.build_telem(_)
     autoc.build_autocmp(_)
+
+    file_list = os.listdir(configs.BIMPATH_NETCORE)
+    for file in file_list:
+        if file.endswith(".dll"):
+            print(op.join(configs.BIMPATH_NETCORE, file))
+            shutil.copyfile(op.join(configs.BIMPATH_NETCORE, file),
+                            op.join(configs.ENGINES2PATH_NETCORE, file))

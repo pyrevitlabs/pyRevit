@@ -72,9 +72,6 @@ def build_deps(_: Dict[str, str]):
     _build("Newtonsoft.Json (netfx)", configs.NEWTONSOFTJSON, framework="net45", publish_dir=configs.LIBSPATH_NETFX)
     _build("Newtonsoft.Json (netcore)", configs.NEWTONSOFTJSON, framework="net6.0", publish_dir=configs.LIBSPATH_NETCORE)
 
-    _build("Newtonsoft.Json (netfx)", configs.NEWTONSOFTJSON, framework="net45", publish_dir=configs.LIBSPATH_NETFX)
-    _build("Newtonsoft.Json (netcore)", configs.NEWTONSOFTJSON, framework="net6.0", publish_dir=configs.LIBSPATH_NETCORE)
-
     _build("NLog (netfx)", configs.NLOG, framework="net46", publish_dir=configs.LIBSPATH_NETFX)
     _build("NLog (netcore)", configs.NLOG, framework="netstandard2.0", publish_dir=configs.LIBSPATH_NETCORE)
 
@@ -89,6 +86,7 @@ def build_deps(_: Dict[str, str]):
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_MODULES, framework="net6.0", publish_dir=configs.ENGINES3PATH_NETCORE)
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_SQLITE, framework="net6.0", publish_dir=configs.ENGINES3PATH_NETCORE)
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_WPF, framework="net6.0-windows", publish_dir=configs.ENGINES3PATH_NETCORE)
+
 
 
 def build_engines(_: Dict[str, str]):

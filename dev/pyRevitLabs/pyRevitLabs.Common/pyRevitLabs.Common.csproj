@@ -1,26 +1,61 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Platforms>x64</Platforms>
-    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
-  </PropertyGroup>
-  
-  <ItemGroup>
-    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
-    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
-  </ItemGroup>
+    <PropertyGroup>
+        <Platforms>x64</Platforms>
+        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="DotNetVersionFinder" Version="2.1.1" />
-    <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
-    <PackageReference Include="OpenMcdf" Version="2.3.1" />
-    <PackageReference Include="YamlDotNet" Version="15.3.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.10.0" />
-    
-    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6" />
-    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1" />
-    
-    <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Management" />
-    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="System.Management" Version="8.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false"/>
+        <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="DotNetVersionFinder" Version="2.1.1"/>
+        <PackageReference Include="LibGit2Sharp" Version="0.30.0"/>
+        <PackageReference Include="OpenMcdf" Version="2.3.1"/>
+        <PackageReference Include="YamlDotNet" Version="15.3.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.10.0"/>
+
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6"/>
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1"/>
+
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Management"/>
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="System.Management" Version="8.0.0"/>
+    </ItemGroup>
+
+    <Target Name="DeployDependencies" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <LibGit2SharpNative Include="$(OutDir)\lib\win32\x64\*.dll"/>
+        </ItemGroup>
+
+        <Copy SourceFiles="$(OutDir)\DotNetVersionFinder.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\LibGit2Sharp.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="@(LibGit2SharpNative)" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\MadMilkman.Ini.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\OpenMcdf.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\YamlDotNet.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.VisualBasic.dll" DestinationFolder="$(PyRevitBinDir)"/>
+    </Target>
+
+    <Target
+            Name="DeployDependencies2"
+            AfterTargets="AfterBuild"
+            Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+        <Copy SourceFiles="$(OutDir)\System.Reflection.Metadata.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\System.Collections.Immutable.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\System.Text.Encoding.CodePages.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\System.Threading.Tasks.Extensions.dll" DestinationFolder="$(PyRevitBinDir)"/>
+    </Target>
+
+    <Target Name="Deploy-pyRevit-deps" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <dlls Include="$(PyRevitDevLibsDir)\*.dll"/>
+            <exes Include="$(PyRevitDevLibsDir)\*.exe"/>
+        </ItemGroup>
+        <Copy SourceFiles="@(dlls)" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="@(exes)" DestinationFolder="$(PyRevitBinDir)"/>
+    </Target>
 </Project>

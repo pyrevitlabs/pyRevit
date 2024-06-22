@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Nett" Version="0.15.0" />
+    <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
 
     <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6" />
     <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1" />
@@ -27,4 +27,8 @@
     <ProjectReference Include="..\pyRevitLabs.CommonWPF\pyRevitLabs.CommonWPF.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
+
+  <Target Name="DeployDependencies" AfterTargets="Deploy">
+    <Copy SourceFiles="$(OutDir)\Nett.dll" DestinationFolder="$(PyRevitBinDir)" />
+  </Target>
 </Project>
