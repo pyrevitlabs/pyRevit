@@ -16,8 +16,10 @@
 
   <ItemGroup>
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
-    <PackageReference Include="MadMilkman.Ini.Unofficial" Version="1.0.1" />
     <PackageReference Include="Nett" Version="0.15.0" />
+
+    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6" />
+    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
