@@ -27,12 +27,12 @@ def clean_build(_: Dict[str, str]):
 def build_binaries(_: Dict[str, str]):
     """Build all projects under pyRevit dev"""
     # apidocs.build_docs(_)
-    # labs.build_deps(_)
-    # labs.build_labs(_)
-    # labs.build_engines(_)
-    # labs.build_runtime(_)
-    # telem.build_telem(_)
-    # autoc.build_autocmp(_)
+    labs.build_deps(_)
+    labs.build_labs(_)
+    labs.build_engines(_)
+    labs.build_runtime(_)
+    telem.build_telem(_)
+    autoc.build_autocmp(_)
 
     file_list = os.listdir(configs.BINPATH_NETCORE)
     for file in file_list:
