@@ -48,6 +48,9 @@
         <Copy SourceFiles="$(OutDir)\System.Collections.Immutable.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\System.Text.Encoding.CodePages.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\System.Threading.Tasks.Extensions.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\System.Memory.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\System.Numerics.Vectors.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\System.Runtime.CompilerServices.Unsafe.dll" DestinationFolder="$(PyRevitBinDir)"/>
     </Target>
 
     <Target Name="Deploy-pyRevit-deps" AfterTargets="AfterBuild">
