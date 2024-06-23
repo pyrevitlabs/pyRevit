@@ -38,12 +38,11 @@
         <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.VisualBasic.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        
     </Target>
 
-    <Target
-            Name="DeployDependencies2"
-            AfterTargets="AfterBuild"
-            Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Target Name="DeployDependencies2" AfterTargets="AfterBuild"
+    Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
         <Copy SourceFiles="$(OutDir)\System.Reflection.Metadata.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\System.Collections.Immutable.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\System.Text.Encoding.CodePages.dll" DestinationFolder="$(PyRevitBinDir)"/>

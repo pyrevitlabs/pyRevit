@@ -180,7 +180,7 @@ namespace pyRevitLabs.PyRevit {
 
         public List<PyRevitEngine> GetEngines() => GetEngines(ClonePath);
 
-        public PyRevitEngine GetEngine(PyRevitEngineVersion engineVer) => GetEngine(ClonePath, engineVer: engineVer);
+        public PyRevitEngine GetEngine(int revitYear, PyRevitEngineVersion engineVer) => GetEngine(revitYear, ClonePath, engineVer: engineVer);
 
         public PyRevitEngine GetConfiguredEngine(string engineId) => GetConfiguredEngine(ClonePath, engineId);
 
@@ -293,19 +293,30 @@ namespace pyRevitLabs.PyRevit {
         // get engine from clone path
         // returns latest with default engineVer value
         // @handled @logs
-        public static PyRevitEngine GetEngine(string clonePath, PyRevitEngineVersion engineVer)
+        public static PyRevitEngine GetEngine(int revitYear, string clonePath, PyRevitEngineVersion engineVer)
         {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
             if (engineVer == PyRevitEngineVersion.Default)
             {
-                var defaultEng = GetDefaultEngine(clonePath);
+                var defaultEng = GetDefaultEngine(revitYear, clonePath);
                 if (defaultEng is null)
                     throw new PyRevitException("Can not find default engine");
                 return defaultEng;
             }
             else
             {
-                var engines = GetEngines(clonePath).Where(x => x.Version == engineVer);
+                var engines = GetEngines(clonePath)
+                    .Where(x => x.Version == engineVer);
+
+                if (revitYear >= 2025)
+                {
+                    engines = engines.Where(x => x.IsNetCore);
+                }
+                else
+                {
+                    engines = engines.Where(x => !x.IsNetCore);
+                }
+
                 var engineCount = engines.Count();
                 if (engineCount == 0)
                     throw new PyRevitException(
@@ -318,11 +329,19 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        public static PyRevitEngine GetDefaultEngine(string clonePath)
+        public static PyRevitEngine GetDefaultEngine(int revitYear, string clonePath)
         {
             foreach (var eng in GetEngines(clonePath))
-                if (eng.IsDefault)
-                    return eng;
+            {
+                if (revitYear >= 2025 && eng.IsNetCore)
+                    if (eng.IsDefault)
+                        return eng;
+                
+                if (revitYear < 2025 && !eng.IsNetCore)
+                    if (eng.IsDefault)
+                        return eng;
+            }
+
             throw new PyRevitException($"Can not find default engine");
         }
 
@@ -338,8 +357,9 @@ namespace pyRevitLabs.PyRevit {
             else
             {
                 logger.Debug("Finding engines in \"{0}\"", clonePath);
-                var enginesDir = FindEnginesDirectory(clonePath);
-                return FindEngines(enginesDir);
+                return FindEngines(false, FindEnginesDirectory(PyRevitConsts.NetFxFolder, clonePath))
+                    .Union(FindEngines(true, FindEnginesDirectory(PyRevitConsts.NetCoreFolder, clonePath)))
+                    .ToList();
             }
         }
 
@@ -370,7 +390,7 @@ namespace pyRevitLabs.PyRevit {
 
                     string enginesDir = Path.Combine(clonePath,
                         PyRevitConsts.BinDirName,
-                        PyRevitConsts.NetFolder,
+                        PyRevitConsts.NetFxFolder,
                         PyRevitConsts.BinEnginesDirName);
                     
                     engines.Add(
@@ -386,7 +406,31 @@ namespace pyRevitLabs.PyRevit {
                                 : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
                             kernelName: infoTable["kernel"].Get<string>(),
                             engineDescription: infoTable["description"].Get<string>(),
-                            isDefault: engineCfg.Key.Contains("DEFAULT")
+                            isDefault: engineCfg.Key.Contains("DEFAULT"),
+                            isNetCore:false
+                        )
+                    );
+                    
+                    enginesDir = Path.Combine(clonePath,
+                        PyRevitConsts.BinDirName,
+                        PyRevitConsts.NetCoreFolder,
+                        PyRevitConsts.BinEnginesDirName);
+                    
+                    engines.Add(
+                        new PyRevitEngine(
+                            id: engineCfg.Key,
+                            engineVer: new PyRevitEngineVersion(infoTable["version"].Get<int>()),
+                            runtime: infoTable.TryGetValue("runtime") != null
+                                ? infoTable["runtime"].Get<bool>()
+                                : true, // be flexible since its a new feature
+                            enginePath: Path.Combine(clonePath, Path.Combine(enginesDir, infoTable["path"].Get<string>())),
+                            assemblyName: infoTable.TryGetValue("assembly") != null
+                                ? infoTable["assembly"].Get<string>()
+                                : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
+                            kernelName: infoTable["kernel"].Get<string>(),
+                            engineDescription: infoTable["description"].Get<string>(),
+                            isDefault: engineCfg.Key.Contains("DEFAULT"),
+                            isNetCore:true
                         )
                     );
                 }
@@ -629,7 +673,7 @@ namespace pyRevitLabs.PyRevit {
 
         // find engine path with given version
         // @handled @logs
-        private static PyRevitEngine FindEngine(string enginesDir, int engineVer = 000)
+        private static PyRevitEngine FindEngine(bool isNetCore, string enginesDir, int engineVer = 000)
         {
             // engines are stored in directory named XXX based on engine version (e.g. 2711)
             // return latest if zero
@@ -638,7 +682,7 @@ namespace pyRevitLabs.PyRevit {
                 PyRevitEngine latestEngine = null;
 
                 // FindEngines will throw an error if engine directory is missing
-                foreach (var engine in FindEngines(enginesDir))
+                foreach (var engine in FindEngines(isNetCore, enginesDir))
                 {
                     if (engine.Version > engineVer)
                         latestEngine = engine;
@@ -656,7 +700,7 @@ namespace pyRevitLabs.PyRevit {
             }
             else
             {
-                foreach (var engine in FindEngines(enginesDir))
+                foreach (var engine in FindEngines(isNetCore, enginesDir))
                 {
                     if (engine.Version == engineVer)
                     {
@@ -672,7 +716,7 @@ namespace pyRevitLabs.PyRevit {
 
         // find all engines under a given engine path
         // @handled @logs
-        private static List<PyRevitEngine> FindEngines(string enginesDir)
+        private static List<PyRevitEngine> FindEngines(bool isNetCore, string enginesDir)
         {
             // engines are stored in directory named XXX based on engine version (e.g. 2711)
             var engines = new List<PyRevitEngine>();
@@ -701,7 +745,8 @@ namespace pyRevitLabs.PyRevit {
                                 id: engineDirName,
                                 engineVer: (PyRevitEngineVersion) engineVer,
                                 runtime: runtime,
-                                enginePath: engineDir)
+                                enginePath: engineDir,
+                                isNetCore:isNetCore)
                         );
                     }
                 }
@@ -714,12 +759,12 @@ namespace pyRevitLabs.PyRevit {
 
         // find engine path based on repo directory configs
         // @handled @logs
-        private static string FindEnginesDirectory(string clonePath)
+        private static string FindEnginesDirectory(string netFolder, string clonePath)
         {
             // determine repo version based on directory availability
             string enginesDir = Path.Combine(clonePath,
                 PyRevitConsts.BinDirName,
-                PyRevitConsts.NetFolder,
+                netFolder,
                 PyRevitConsts.BinEnginesDirName);
             if (!CommonUtils.VerifyPath(enginesDir))
             {

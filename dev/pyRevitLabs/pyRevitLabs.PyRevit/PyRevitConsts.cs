@@ -42,13 +42,8 @@ namespace pyRevitLabs.PyRevit {
         public const string SitePackagesDirName = "site-packages";
         public const string PyRevitfileFilename = "PyRevitfile";
         
-#if NETCOREAPP
-        public const string NetFolder = "netcore";
-#elif NETFRAMEWORK
-        public const string NetFolder = "netfx";
-#else
-        #error not supported dotnet version.
-#endif
+        public const string NetFxFolder = "netfx";
+        public const string NetCoreFolder = "netcore";
 
         // clones
         public const string DeployFromImageConfigsFilename = ".pyrevitargs";

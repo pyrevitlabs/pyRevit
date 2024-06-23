@@ -1847,5 +1847,17 @@
         "build": "20231029_1515",
         "target": "x64",
         "notes": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=GUID-C81929D7-02CB-4BF7-A637-9B98EC9EB38B"
+        },
+        "product": "Autodesk Revit",
+        "release": "25.0",
+        "version": "25.0.2.419",
+        "build": "20240307_1300",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=GUID-C81929D7-02CB-4BF7-A637-9B98EC9EB38B"
     }
 ]

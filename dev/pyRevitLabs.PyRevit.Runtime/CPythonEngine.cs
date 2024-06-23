@@ -282,7 +282,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var engineVersion = new PyRevitEngineVersion(int.Parse(runtime.EngineVersion));
             var attachment = PyRevitAttachments.GetAttached(int.Parse(runtime.App.VersionNumber));
             var clone = attachment.Clone;
-            var engine = clone.GetEngine(engineVersion);
+
+#if REVIT2017
+            var engine = clone.GetEngine(2017, engineVersion);
+#elif REVIT2018
+            var engine = clone.GetEngine(2018, engineVersion);
+#elif REVIT2019
+            var engine = clone.GetEngine(2019, engineVersion);
+#elif REVIT2020
+            var engine = clone.GetEngine(2020, engineVersion);
+#elif REVIT2021
+            var engine = clone.GetEngine(2021, engineVersion);
+#elif REVIT2022
+            var engine = clone.GetEngine(2022, engineVersion);
+#elif REVIT2023
+            var engine = clone.GetEngine(2023, engineVersion);
+#elif REVIT2024
+            var engine = clone.GetEngine(2024, engineVersion);
+#elif REVIT2025
+            var engine = clone.GetEngine(2025, engineVersion);
+#else
+            #error Revit version not supported
+#endif
+            
             // TODO: build the dll name from the major+minor version, or add it to pyrevitfile
             var dllPath = Path.Combine(engine.Path, "python312.dll");
             if (!File.Exists(dllPath))

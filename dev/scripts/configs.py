@@ -12,7 +12,7 @@ VERSION_RANGE = 2017, 2021
 # binaries
 BINPATH = op.join(ROOT, "bin")
 BINPATH_NETFX = op.join(BINPATH, "netfx")
-BIMPATH_NETCORE = op.join(BINPATH, "netcore")
+BINPATH_NETCORE = op.join(BINPATH, "netcore")
 
 LIBSPATH_NETFX = op.join(ROOT, "dev", "libs", "netfx")
 LIBSPATH_NETCORE = op.join(ROOT, "dev", "libs", "netcore")
