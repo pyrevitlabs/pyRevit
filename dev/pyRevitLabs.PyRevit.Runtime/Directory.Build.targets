@@ -10,6 +10,7 @@
         <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
         <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
         <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
+        <Reference Include="pyRevitLabs.Python.Net" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -24,8 +25,6 @@
         <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Wpf.dll" />
         <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Dynamic.dll" />
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Scripting.dll" />
-
-        <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitEnginesDir)\CPY385\pyRevitLabs.PythonNet.dll" />
 
         <Reference Include="pyRevitLabs.Common" HintPath="$(PyRevitBinDir)\pyRevitLabs.Common.dll" />
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />

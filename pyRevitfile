@@ -17,52 +17,43 @@ path = 'IPY2712PR'
 assembly = 'pyRevitLoader.dll'
 description = 'Custom pyRevit IronPython Engine'
 
-[engines.CPY378]
+[engines.CPY3123]
 kernel = 'CPython'
-version = 378
+version = 3123
 runtime = false
-path = 'CPY378'
-assembly = 'pyRevitLabs.PythonNet.dll'
-description = 'CPython Engine'
-
-[engines.CPY385]
-kernel = 'CPython'
-version = 385
-runtime = false
-path = 'CPY385'
-assembly = 'pyRevitLabs.PythonNet.dll'
+path = 'bin/cengines/CPY3123'
+assembly = 'python312.dll'
 description = 'CPython Engine'
 
 [deployments]
-core = ['bin',
-        'pyrevitlib',
-        'site-packages',
-        'pyRevitfile']
-corex = ['bin',
-         'extensions/pyRevitCore.extension',
-         'extensions/extensions.json',
-         'pyrevitlib',
-         'site-packages',
-         'pyRevitfile']
-base = ['bin',
-        'extensions/pyRevitCore.extension',
-        'extensions/pyRevitTags.extension',
-        'extensions/pyRevitTools.extension',
-        'extensions/extensions.json',
-        'pyrevitlib',
-        'site-packages',
-        'pyRevitfile']
-basepublic = ['bin',
-              'extensions/pyRevitCore.extension',
-              'extensions/pyRevitTags.extension',
-              'extensions/pyRevitTools.extension',
-              'extensions/pyRevitTutor.extension',
-              'extensions/extensions.json',
-              'pyrevitlib',
-              'site-packages',
-              'pyRevitfile']
-basex = ['bin',
-         'extensions',
-         'pyrevitlib',
-         'site-packages',
-         'pyRevitfile']
+core = ['bin', 'pyrevitlib', 'site-packages', 'pyRevitfile']
+corex = [
+    'bin',
+    'extensions/pyRevitCore.extension',
+    'extensions/extensions.json',
+    'pyrevitlib',
+    'site-packages',
+    'pyRevitfile',
+]
+base = [
+    'bin',
+    'extensions/pyRevitCore.extension',
+    'extensions/pyRevitTags.extension',
+    'extensions/pyRevitTools.extension',
+    'extensions/extensions.json',
+    'pyrevitlib',
+    'site-packages',
+    'pyRevitfile',
+]
+basepublic = [
+    'bin',
+    'extensions/pyRevitCore.extension',
+    'extensions/pyRevitTags.extension',
+    'extensions/pyRevitTools.extension',
+    'extensions/pyRevitTutor.extension',
+    'extensions/extensions.json',
+    'pyrevitlib',
+    'site-packages',
+    'pyRevitfile',
+]
+basex = ['bin', 'extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']

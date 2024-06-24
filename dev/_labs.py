@@ -87,12 +87,14 @@ def build_deps(_: Dict[str, str]):
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_SQLITE, framework="net6.0", publish_dir=configs.ENGINES3PATH_NETCORE)
     _build("IronPython3 (netcore)", configs.IRONPYTHON3_WPF, framework="net6.0-windows", publish_dir=configs.ENGINES3PATH_NETCORE)
 
+    _build("Python.Net (netfx)", configs.CPYTHONRUNTIME, framework="netstandard2.0", publish_dir=configs.LIBSPATH_NETFX)
+    _build("Python.Net (netcore)", configs.CPYTHONRUNTIME, framework="netstandard2.0", publish_dir=configs.LIBSPATH_NETCORE)
+
 
 
 def build_engines(_: Dict[str, str]):
     """Build pyRevit engines"""
     _build("loaders", configs.LOADERS, "Release")
-    _build("cpython 3.8.5 engine", configs.CPYTHONRUNTIME, "Release")
 
 
 def build_labs(_: Dict[str, str]):
