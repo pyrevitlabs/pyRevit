@@ -1,0 +1,5 @@
+tooltip:
+  fr_fr: Basculer les bulles de quadrillage dans la vue active par direction
+  en_us: Toggle grid bubbles in the active view by direction
+engine:
+  clean: true
