@@ -205,12 +205,11 @@
         },
         "gitpython": {
             "hashes": [
-                "sha256:c36b6634d069b3f719610175020a9aed919421c87552185b085e04fbbdb10b7c",
-                "sha256:ed66e624884f76df22c8e16066d567aaa5a37d5b5fa19db2c6df6f7156db9048"
+                "sha256:35f314a9f878467f5453cc1fee295c3e18e52f1b99f10f6cf5b1682e968a9e7c",
+                "sha256:eec7ec56b92aad751f9912a73404bc02ba212a23adb2c7098ee668417051a1ff"
             ],
-            "index": "pypi",
             "markers": "python_version >= '3.7'",
-            "version": "==3.1.41"
+            "version": "==3.1.43"
         },
         "griffe": {
             "hashes": [
@@ -476,12 +475,12 @@
         },
         "pygount": {
             "hashes": [
-                "sha256:85b1d06d51398150fe6de3ec39feca867e95dc9c7a1a45f4dee731ab43177bcf",
-                "sha256:fac00c6bd61ab6d7633fe8724ae73943cde169de4f2a014244a488037a14d385"
+                "sha256:a1c530a8ff473c99dc7cd24b034f382d60f51efcac3a1d2181642124dbda2173",
+                "sha256:bb4e27ae3709674a91e349f503240ffeaef7efa59d1e026c7e4b2278dd3deb7f"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.8' and python_version < '4'",
-            "version": "==1.6.1"
+            "markers": "python_version < '3.13' and python_version >= '3.8'",
+            "version": "==1.8.0"
         },
         "pymdown-extensions": {
             "hashes": [
@@ -661,11 +660,11 @@
         },
         "rich": {
             "hashes": [
-                "sha256:2b38e2fe9ca72c9a00170a1a2d20c63c790d0e10ef1fe35eba76e1e7b1d7d245",
-                "sha256:5c14d22737e6d5084ef4771b62d5d4363165b403455a30a1c8ca39dc7b644bef"
+                "sha256:4edbae314f59eb482f54e9e30bf00d33350aaa94f4bfcd4e9e3110e64d0d7222",
+                "sha256:9be308cb1fe2f1f57d67ce99e95af38a1e2bc71ad9813b0e247cf7ffbcc3a432"
             ],
             "markers": "python_full_version >= '3.7.0'",
-            "version": "==13.6.0"
+            "version": "==13.7.1"
         },
         "ruff": {
             "hashes": [
