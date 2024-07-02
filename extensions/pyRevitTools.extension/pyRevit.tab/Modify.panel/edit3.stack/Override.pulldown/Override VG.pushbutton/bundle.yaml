@@ -1,9 +1,0 @@
-title:
-  ru: Изменить В/Г
-  fr_fr: Remplacement V/G
-  en_us: Override V/G
-tooltip:
-  ru: Предоставляет возможности для переопределения видимости/графики на выделенных элементах.
-  fr_fr: Donne des options de remplacement de visibilité/graphismes des éléments sélectionnés
-  en_us: Provides options for overriding Visibility/Graphics on selected elements
-context: selection

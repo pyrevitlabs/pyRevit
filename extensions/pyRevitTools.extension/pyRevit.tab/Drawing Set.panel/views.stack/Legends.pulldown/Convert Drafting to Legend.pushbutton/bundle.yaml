@@ -1,8 +1,0 @@
-title:
-  ru: Конвертировать чертеж в легенду
-  fr_fr: Convertir vues de dessin en légendes
-  en_us: Convert drafting to legend
-tooltip:
-  ru: Конвертирует выделенный чертеж в легенду.
-  fr_fr: Convertir les vues de dessin sélectionnées en vue de légende
-  en_us: Converts selected drafting views to legend views

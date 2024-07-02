@@ -1,9 +1,0 @@
-context: selection
-title:
-  ru: Найти листы, на которых видны выделенные элементы
-  fr_fr: Trouver les feuilles montrant l'élément sélectionné
-  en_us: Find sheets showing selected element
-tooltip:
-  ru: Выводит все листы и виды, на которых видны выбранные элементы.
-  fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
-  en_us: Lists all sheets and views that the selected elements is visible in

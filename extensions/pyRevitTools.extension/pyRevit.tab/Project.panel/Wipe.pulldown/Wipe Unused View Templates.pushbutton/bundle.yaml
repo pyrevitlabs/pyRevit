@@ -1,8 +1,0 @@
-title:
-  ru: Очистить неиспользуемые шаблоны видов
-  fr_fr: Supprimer les gabarits de vue inutilisés
-  en_us: Wipe Unused View Templates
-tooltip:
-  ru: Удаляет все неиспользованные шаблоны видов (Любой шаблон вида, не назначенный к виду).
-  fr_fr: Supprime tous les gabarits de vue inutilisés (Tout gabarit de vue qui n'a pas été affecté à une vue)
-  en_us: Deletes all unused view templates (Any view template that has not been assigned to a view)

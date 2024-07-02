@@ -1,7 +1,0 @@
-title: Test Direct Class Invoke (Custom Title)
-tooltip: Test Direct Class Invoke Tooltip
-author: "{{author}}"
-highlight: new
-context: zero-doc
-assembly: PyRevitTestBundles
-command_class: PyRevitTestInvokeCommand

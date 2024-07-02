@@ -1,9 +1,0 @@
-context: selection
-title:
-  ru: Найти отслеживаемые ссылки Revit
-  fr_fr: Trouver les liens Revit monitorés
-  en_us: Find monitored Revit links
-tooltip:
-  ru: Выводит связи Revit, отслеживаемые у выделенных элементов.
-  fr_fr: Lister les liens Revit qui sont monitorés par l'élément sélectionné
-  en_us: List Revit link that is being monitored by selected element(s)

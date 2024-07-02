@@ -1,9 +1,0 @@
-context: selection
-title:
-  ru: Найти связанные виды у выделенной марки уровня
-  fr_fr: Trouver les vues référencées par l'étiquette d'élévation sélectionnée
-  en_us: Find referenced views by selected elevation tag
-tooltip:
-  ru: Выводит все связанные виды у выделенной марки уровня.
-  fr_fr: Lister toutes les vues référencées par l'étiquette d'élévation sélectionnée
-  en_us: Lists all the views referenced by the selected elevation tag

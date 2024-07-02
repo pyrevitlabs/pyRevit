@@ -1,8 +1,0 @@
-title:
-  ru: Найти все пометочные облака на видах
-  fr_fr: Trouver tous les Nuages de Révision sur des Vues
-  en_us: Find All Revision Clouds On Views
-tooltip:
-  ru: Показывает все пометочные облака в данной модели, которая была размещена на виде, но не на листе.
-  fr_fr: Répertorie tous les nuages ​​de révision de ce modèle qui ont été placés sur une vue et non sur une feuille
-  en_us: Lists all revision clouds in this model that have been placed on a view and not on sheet

@@ -1,8 +1,0 @@
-title:
-  ru: Создать рабочий набор для связанного элемента
-  fr_fr: Créer un sous-projet pour les fichiers liés
-  en_us: Create Workset For Linked Element
-tooltip:
-  ru: Данный инструмент создаст рабочий набор для выделенного связанного элемента на основе его имени. Если модель не является совместной, она будет преобразована в модель для совмесного использования.
-  fr_fr: Cet outil créera un sous-projet pour le fichier lié sélectionné en fonction de son nom. Si le modèle n'est pas partagé, il sera converti en modèle partagé
-  en_us: This tool will create a workset for the selected linked element base on its name. If the model is not workshared, it will be converted to workshared model

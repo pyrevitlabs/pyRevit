@@ -1,7 +1,0 @@
-title: Test Link Button (Custom Title)
-tooltip: Test Link Button Tooltip
-author: "{{author}}"
-highlight: new
-assembly: PyRevitTestBundles
-command_class: PyRevitTestLinkCommand
-availability_class: PyRevitTestLinkCommandAvail

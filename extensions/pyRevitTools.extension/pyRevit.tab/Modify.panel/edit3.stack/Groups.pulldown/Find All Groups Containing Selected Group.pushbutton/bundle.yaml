@@ -1,9 +1,0 @@
-title:
-  ru: Найти все группы содержащие выделенную группу
-  fr_fr: Trouver tous les groupes contenant le groupe sélectionné
-  en_us: Find all groups containing selected group
-tooltip:
-  ru: Показывает все группы, которые включают выделенный элемент группы как вложенную группу.
-  fr_fr: Liste tous les groupes comprenant l'élément du groupe sélectionné comme un groupe imbriqué
-  en_us: List all groups that includethe selected group element as a nested group
-context: selection

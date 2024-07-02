@@ -1,7 +1,0 @@
-title:
-  ru: Конфигурация марок
-  en_us: Tags Config
-tooltip:
-  ru: Открывает настройки маркирования.
-  en_us: Tags configuration options - you need to create a 'doctag' and apply it to the document categories before using the tag tools
-context: zero-doc

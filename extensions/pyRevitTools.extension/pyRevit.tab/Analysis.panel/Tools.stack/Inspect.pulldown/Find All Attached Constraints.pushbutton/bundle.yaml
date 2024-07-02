@@ -1,9 +1,0 @@
-context: selection
-title:
-  ru: Найти все связанные зависимости
-  fr_fr: Trouver toutes les contraintes attachées
-  en_us: Find all attached constraints
-tooltip:
-  ru: Находит все зависимости, связанные с выделенным элементом.
-  fr_fr: Trouver toutes les contraintes attachées à l'élément sélectionné
-  en_us: Find all constraints attached to the selected element

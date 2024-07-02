@@ -1,8 +1,0 @@
-title:
-  ru: Очистить Data Schema
-  fr_fr: Efface les schémas de données
-  en_us: Wipe Data Schema
-tooltip:
-  ru: Очищает выделенную data schema и ее сущности.
-  fr_fr: Supprime les schémas de données sélectionnés et ses entités
-  en_us: Erase selected data schema and its entities

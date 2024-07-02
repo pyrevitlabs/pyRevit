@@ -1,7 +1,0 @@
-title: Test Direct Class Invoke (ExecParams)
-tooltip: Test Direct Class Invoke with ExecParams Tooltip
-author: "{{author}}"
-highlight: new
-context: zero-doc
-assembly: PyRevitTestBundles
-command_class: PyRevitTestInvokeCommandWithExecParams

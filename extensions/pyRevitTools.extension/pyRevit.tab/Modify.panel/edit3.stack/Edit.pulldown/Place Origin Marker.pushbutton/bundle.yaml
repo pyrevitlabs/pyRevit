@@ -1,8 +1,0 @@
-title:
-  ru: Разместить маркер начала координат
-  fr_fr: Placer une borne sur l'origine
-  en_us: Place origin marker
-tooltip:
-  ru: Размещает маркер (крест) в начало координат на 0,0,0.
-  fr_fr: Place une borne en forme de croix sur l'origine de la terre 0,0,0
-  en_us: Place a cross marker at the Earth origin at 0,0,0

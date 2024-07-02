@@ -1,8 +1,0 @@
-title:
-  ru: Найти все листы с выделенными изменениями
-  fr_fr: Trouver toutes les Feuilles avec la Révision Sélectionnée
-  en_us: Find All Sheets With Selected Revision
-tooltip:
-  ru: Выделите пометочное облако и данный скрипт покажет все листы с изменениями, относящиеся к тому же изменению.
-  fr_fr: Sélectionnez un nuage de révision et cet outil listera toutes les feuilles révisées sous la même révision
-  en_us: Select a revision cloud and this tool will list all the sheets revised under the same revision

@@ -1,9 +1,0 @@
-title:
-  ru: Выделить все пометочные облака с одинаковым комментарием
-  fr_fr: Sélectionner tous les nuages de révision avec le même commentaire
-  en_us: Select All Clouds with Same Comment
-tooltip:
-  ru: Выделяет все пометочные облака в модели с комментарием выделенного пометочного облака.
-  fr_fr: Sélectionne tous les nuages de révision dans le modèle avec le commentaire correspondant au nuage de révision sélectionné
-  en_us: Selects all revision clouds in the model with comment matching selected revision cloud
-context: selection

@@ -1,9 +1,0 @@
-title:
-  ru: Рассчитать среднее значение площади
-  fr_fr: Calcul Surface Moyenne
-  en_us: Calculate Average Area
-tooltip:
-  ru: Находит все Помещения/Зоны/Пространства с одинаковыми названиями для выбранного помещения, зоны или поверхности и вычисляет среднее значение площади этого пространства.
-  fr_fr: Trouver tous les pièces/surfaces et espaces avec un nom identique à la pièce sélectionnée et calcul la surface moyenne de ce type d'espace
-  en_us: Find all Rooms/Areas/Spaces with identical names to the select room, area or space and calculates the average area of that space type
-context: selection

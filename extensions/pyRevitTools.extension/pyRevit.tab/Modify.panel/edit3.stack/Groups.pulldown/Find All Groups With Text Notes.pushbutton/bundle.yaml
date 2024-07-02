@@ -1,8 +1,0 @@
-title:
-  ru: Найти все группы с текстовыми примечаниями
-  fr_fr: Trouver tous les groupes avec des notes textuelles
-  en_us: Find all groups with text notes
-tooltip:
-  ru: Показывает все группы, которые включают в себя текстовые примечания. Данный инструмент полезен для проверки правописания.
-  fr_fr: Liste tous les groupes de détail qui incluent une note textuelle. Utile pour la correction orthographique.
-  en_us: List all detail groups that include a text element inside them. This is helpful for spell checking.

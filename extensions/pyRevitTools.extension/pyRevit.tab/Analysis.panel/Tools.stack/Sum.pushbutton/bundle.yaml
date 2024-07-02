@@ -1,9 +1,0 @@
-title:
-  ru: Сумма
-  fr_fr: Somme de Totaux
-  en_us: Sum Total
-tooltip:
-  ru: Суммирует значения выбранного параметра по выделенным элементам. Данный инструмент обрабатывает выделенные элементы и их связанные типы и предоставляет пользователю список параметров, которые являются общими для выбранных элементов. Обрабатываются только параметры целочисленных и вещественных типов.
-  fr_fr: Résume les valeurs du paramètre sélectionné sur les éléments sélectionnés. Cet outil étudie les éléments sélectionnés et leurs types associés et présente à l'utilisateur une liste de paramètres partagés entre les éléments sélectionnés. Seuls les paramètres avec des valeurs Double ou Integer sont inclus.
-  en_us: Sums up the values of selected parameter on selected elements. This tool studies the selected elements and their associated types and presents the user with a list of parameters that are shared between the selected elements. Only parameters with Double or Integer values are included.
-context: selection

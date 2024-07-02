@@ -1,7 +1,0 @@
-title: "Test DirectContext3D"
-tooltip:
-author: Tamás Déri
-engine:
-  clean: false
-  full_frame: false
-  persistent: true

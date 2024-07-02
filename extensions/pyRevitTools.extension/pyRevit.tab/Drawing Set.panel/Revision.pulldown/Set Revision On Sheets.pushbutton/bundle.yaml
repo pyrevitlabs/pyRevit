@@ -1,8 +1,0 @@
-title:
-  ru: Установить изменение на листах
-  fr_fr: Active la Révision sur les Feuilles
-  en_us: Set Revision On Sheets
-tooltip:
-  ru: Выделите изменение и данный скрипт установит данное изменение для всех листов в модели как дополнительное изменение.
-  fr_fr: Sélectionnez une révision dans la liste des révisions et ce script définit cette révision sur toutes les feuilles du modèle en tant que révision supplémentaire
-  en_us: Select a revision from the list of revisions and this script set that revision on all sheets in the model as an additional revision

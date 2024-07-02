@@ -1,8 +1,0 @@
-title:
-  ru: Экспортировать все изображения
-  fr_fr: Exporter toutes les images
-  en_us: Export All Raster Images
-tooltip:
-  ru: Экспортирует все исходные импортированные изображения по выбранному пути и добавляет размер файла к имени типа изображения.
-  fr_fr: Exporte toutes les images importées d'origine vers le chemin choisi et ajoute la taille du fichier au nom du type d'image
-  en_us: Exports all original imported images to chosen path and adds file size to image type name

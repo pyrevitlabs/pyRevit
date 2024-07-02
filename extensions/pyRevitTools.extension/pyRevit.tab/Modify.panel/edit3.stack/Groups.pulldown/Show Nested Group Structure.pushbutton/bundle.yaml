@@ -1,9 +1,0 @@
-title:
-  ru: Показать структуру вложенных групп
-  fr_fr: Montre la structure des groupes imbriqués
-  en_us: Show nested group structure
-tooltip:
-  ru: Показывает структуру вложенных групп выделенной группы или элемента.
-  fr_fr: Répertoriez la structure du groupe imbriqué autour du groupe ou de l'élément sélectionné
-  en_us: List the nested group structure around the selected group or element
-context: selection

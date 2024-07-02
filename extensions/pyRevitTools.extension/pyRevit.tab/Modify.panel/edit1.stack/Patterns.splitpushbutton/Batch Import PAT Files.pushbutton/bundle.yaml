@@ -1,8 +1,0 @@
-title:
-  ru: Пакетный импорт PAT файлов
-  fr_fr: Import de fichier PAT en groupe
-  en_us: Batch import PAT files
-tooltip:
-  ru: Пакетный импорт файлов AutoCAD PAT в Revit модель.
-  fr_fr: Importer en groupe des fichiers de hachures AutoCAD dans le modèle Revit
-  en_us: Batch import AutoCAD PAT files into Revit model

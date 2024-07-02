@@ -1,8 +1,0 @@
-title:
-  ru: Найти все листы с отстутвующими номерами изменений
-  fr_fr: Trouver toutes les Feuilles avec un Numéro de Révision Manquant
-  en_us: Find All Sheets Missing Revision Number
-tooltip:
-  ru: Иногда, когда пометочное облако размещается внутри вида (вместо листа) и вид размещается на листе, спецификация изменений на листе не обновляет номер пометочного облака внутри вставленого вида в лист. Данный скрипт проверяет спецификацию листов с изменениями действительно перечислены все изменения, показанные в видах этого листа.
-  fr_fr: Parfois, lorsqu'un nuage de révision est placé dans une vue (au lieu d'une feuille) et que la vue est placée sur une feuille, le calendrier de révision sur la feuille n'est pas mis à jour avec le numéro de révision du nuage à l'intérieur de la vue feuille. Ce script vérifie que le calendrier de révision de la feuille répertorie réellement toutes les révisions affichées dans les vues de cette feuille.
-  en_us: Sometimes when a revision cloud is placed inside a view (instead of a sheet) and the view is placed on a sheet, the revision schedule on the sheet does not get updated with the revision number of the cloud inside the sheeted view. This script verifies that the sheet revision schedule is actually listing all the revisions shown inside the views of that sheet

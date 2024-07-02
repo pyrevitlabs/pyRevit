@@ -1,8 +1,0 @@
-title:
-  ru: Найти диапазоны уклонов крыш
-  fr_fr: Trouver la pente des toitures
-  en_us: Find Range of Roof Slopes
-tooltip:
-  ru: Список всех уклонов крыш в модели. Данный инструмент анализурет уклоны крыш, созданных из профиля. Крыши сделанные выдавливанием и крыши сделанные формобразующим способом не включаются в анализ.
-  fr_fr: Répertorie toutes les pentes de toit du modèle. Cet outil analyse les pentes définies dans les toits créés à partir d'un profil. Les toits d'extrusion et les toits créés à partir de faces de volume ne sont pas inclus dans l'analyse
-  en_us: Lists all roof slopes in the model. This tool analyzes the slopes defined in roofs created from a profile. Extrusion roofs and roofs created from Mass faces are not included in the analysis

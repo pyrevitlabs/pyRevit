@@ -1,8 +1,0 @@
-title: Test VB Script (Custom Title)
-tooltip: Test VB Script Tooltip
-author: "{{author}}"
-highlight: new
-context:
-  - OST_Walls
-  - OST_TextNotes
-references:

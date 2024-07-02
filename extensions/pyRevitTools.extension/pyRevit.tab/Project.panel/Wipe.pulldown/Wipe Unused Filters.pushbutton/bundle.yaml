@@ -1,8 +1,0 @@
-title:
-  ru: Очистить неиспользуемые фильтры
-  fr_fr: Supprimer les filtres de vue inutilisés
-  en_us: Wipe Unused Filters
-tooltip:
-  ru: Удаляет все фильтры параметров вида которые не были использованы ни в одном из представлений.
-  fr_fr: Supprime tous les filtres de paramètres de vue qui n'ont été répertoriés dans aucune vue. Cela inclut aussi les feuilles
-  en_us: Deletes all view parameter filters that has not been listed on any views. This includes sheets as well

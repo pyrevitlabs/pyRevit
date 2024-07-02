@@ -1,9 +1,0 @@
-title:
-  ru: Разворот
-  fr_fr: Inverser
-  en_us: Flip
-tooltip:
-  ru: Предоставляет настройки для разворота выделенных элементов.
-  fr_fr: Fournit des options pour symétriser (Main/Face) des éléments sélectionnés
-  en_us: Provides options for flipping (Hand/Face) selected elements
-context: selection

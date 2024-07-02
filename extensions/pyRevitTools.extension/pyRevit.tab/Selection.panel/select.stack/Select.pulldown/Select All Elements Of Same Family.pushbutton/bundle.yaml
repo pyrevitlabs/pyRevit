@@ -1,9 +1,0 @@
-title:
-  ru: Выделить все элементы в одинаковым семейством
-  fr_fr: Sélectionner tous les éléments de la même famille
-  en_us: Select All Elements Of Same Family
-tooltip:
-  ru: Выделяет все элементы (в модели) с одинковым семейством, что и текущий выделенный элемент.
-  fr_fr: Sélectionne tous les éléments (dans le modèle) de la même famille que l'objet actuellement sélectionné
-  en_us: Selects all elements (in model) of the same family as the currently selected object
-context: selection

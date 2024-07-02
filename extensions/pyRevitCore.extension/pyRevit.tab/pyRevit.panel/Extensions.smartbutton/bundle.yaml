@@ -1,7 +1,0 @@
-title:
-  ru: Расширения
-  en_us: Extensions
-tooltip:
-  ru: Добавляет или удаляет pyRevit расширения.
-  en_us: Add or remove pyRevit extensions
-context: zero-doc

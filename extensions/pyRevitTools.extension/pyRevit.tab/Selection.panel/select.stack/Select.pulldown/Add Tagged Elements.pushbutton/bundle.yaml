@@ -1,9 +1,0 @@
-title:
-  ru: Добавить промаркированные элементы
-  fr_fr: Ajouter les éléments étiquetés
-  en_us: Add Tagged Elements
-tooltip:
-  ru: Выберите марки а данный инструмент добавит связанные элементы к выделению. Это особенно полезно для выдеделения элементов и их марок.
-  fr_fr: Sélectionnez une série d'étiquettes et cet outil ajoutera leurs éléments associés à la sélection. Ceci est particulièrement utile pour isoler des éléments et leurs étiquettes
-  en_us: Select a series of tags and this tool will add their associated elements to selection. This is especially useful for isolating elements and their tags
-context: selection

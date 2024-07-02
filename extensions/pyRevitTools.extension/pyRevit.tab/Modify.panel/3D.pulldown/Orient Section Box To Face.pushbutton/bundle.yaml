@@ -1,9 +1,0 @@
-help_url: '{{docpath}}b050tpp4vCE&t=42s'
-title:
-  ru: Расположить границы 3D вида по грани
-  fr_fr: Orienter la zone de coupe sur la face
-  en_us: Orient section box to face
-tooltip:
-  ru: Выравнивает границы 3D вида текущего 3D вида по выделенной границе.
-  fr_fr: Aligne la zone de coupe de la vue 3D actuelle sur la face sélectionnée
-  en_us: Aligns the section box of the current 3D view to selected face

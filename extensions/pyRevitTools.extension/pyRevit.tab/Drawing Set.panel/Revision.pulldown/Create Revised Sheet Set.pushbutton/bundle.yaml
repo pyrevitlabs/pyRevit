@@ -1,8 +1,0 @@
-title:
-  ru: Создать комплект листов с изменениями
-  fr_fr: Créer un Jeu de Feuilles Révisées
-  en_us: Create Revised Sheet Set
-tooltip:
-  ru: Выберите изменение из списка и данный скрипт создаст набор листов печати для листов с изменениями в выбранных изменениях и назначит новый комплект листов в качестве набора для печати по умолчанию.
-  fr_fr: Sélectionnez une révision dans la liste des révisions et ce script créera un jeu de feuilles d'impression pour les feuilles révisées sous la révision sélectionnée, et affectera le nouveau jeu de feuilles comme jeu d'impression par défaut
-  en_us: Select a revision from the list of revisions and this script will create a print sheet set for the revised sheets under the selected revision, and will assign the new sheet set as the default print set

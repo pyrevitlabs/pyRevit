@@ -1,9 +1,0 @@
-help_url: '{{docpath}}pIjDd4dZng0'
-title:
-  ru: Расположить вид по границе
-  fr_fr: Orienter la vue sur la face
-  en_us: Orient view to face
-tooltip:
-  ru: Распологает текущую камеру 3D вида перпедикулярно выбранной грани. Данный инструмент установит плоскость эскиза над выделенной грани для 3D проектирования.
-  fr_fr: Réoriente la caméra de vue 3D actuelle, perpendiculairement à la face sélectionnée. Cet outil définira un plan d'esquisse sur la face sélectionnée pour le dessin 3D
-  en_us: Reorients the current 3D view camera, perpendicular to the selected face. This tool will set a sketch plane over the selected face for 3d drawing

@@ -1,8 +1,0 @@
-title:
-  ru: Создать параллельный разрез
-  fr_fr: Créer une coupe parallèle
-  en_us: Create Parallel Section
-tooltip:
-  ru: Создает разрез, параллельный плоскости выделенных стен.
-  fr_fr: Créer une coupe parallèle au plan des murs ou de l'élément planaire sélectionné
-  en_us: Create section parallel to the plane of selected walls or planar element

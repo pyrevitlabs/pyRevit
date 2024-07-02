@@ -1,8 +1,0 @@
-title:
-  ru: Сверить цвет
-  fr_fr: Correspondance de peinture
-  en_us: Match paint
-tooltip:
-  ru: Выберите материал с окрашенной поверхностью и примените для других поверхностей.
-  fr_fr: Permet d'appliquer le matériau paint d'une surface sur une autre surface
-  en_us: Pickup painted surface material and apply to other surfaces

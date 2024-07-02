@@ -1,16 +1,6 @@
 help_url: >-
   https://www.notion.so/pyrevitlabs/Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da
 tooltip:
-  ru: |-
-    Управление ключевыми пометками проекта.
-    
-    Shift+Click
-    
-    Сбрасывает настройки и открывает окно.
-  fr_fr: |-
-    Gérer les notes d'identification du projet.
-    Shift+Click
-    Remise à zéro des fenêtre de configurations et ouvrir.
   en_us: |-
     Manage project keynotes.
 
@@ -18,11 +8,6 @@ tooltip:
 
     Reset window configurations and open.
 title:
-  ru: |-
-    Править КП
-  fr_fr: |-
-    Notes 
-    d'identification
   en_us: |-
     Manage
     Keynotes

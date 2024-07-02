@@ -1,9 +1,0 @@
-title: Get Centroid
-tooltip: >
-  Calculates the centroid of the selected elements geometry
-  and places three model lines intersecting at the centroid.
-
-  Config mode can be used to specify a Line Style that will
-  be used in the future as a default.
-author: Tamás Déri
-context: selection

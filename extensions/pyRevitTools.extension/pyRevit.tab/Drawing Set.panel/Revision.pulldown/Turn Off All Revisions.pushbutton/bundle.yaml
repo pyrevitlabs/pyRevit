@@ -1,8 +1,0 @@
-title:
-  ru: Отключить все изменения
-  fr_fr: Eteindre toutes les révisions
-  en_us: Turn Off all revisions
-tooltip:
-  ru: Устанавливает параметр видимости изменений на 'Нет' для всех изменений.
-  fr_fr: Définit le paramètre de visibilité des révisions sur Aucun pour toutes les révisions
-  en_us: Sets the revision visibility parameter to None for all revisions

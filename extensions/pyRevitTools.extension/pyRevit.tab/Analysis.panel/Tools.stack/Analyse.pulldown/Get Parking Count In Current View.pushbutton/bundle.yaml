@@ -1,8 +1,0 @@
-title:
-  ru: Получить количество парковок на текущем виде
-  fr_fr: Obtenir le nombre de stationnements dans la vue actuelle
-  en_us: Get Parking Count In Current View
-tooltip:
-  ru: Получает общее количество парковочных элементов на текущем виде.
-  fr_fr: Obtenez un nombre total et les types d'éléments de stationnement dans la vue actuelle
-  en_us: Get a total count and types of parking elements in the current view

@@ -1,9 +1,0 @@
-title: Test C# Script (Custom Title)
-tooltip: Test C# Script Tooltip
-author: "{{author}}"
-highlight: new
-context:
-  - OST_Walls
-  - OST_TextNotes
-modules:
-  - Markdown.dll

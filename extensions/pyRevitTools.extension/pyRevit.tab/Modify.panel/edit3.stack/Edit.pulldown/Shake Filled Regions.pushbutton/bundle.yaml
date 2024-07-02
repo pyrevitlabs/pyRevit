@@ -1,8 +1,0 @@
-title:
-  ru: Встряхнуть цветовые области
-  fr_fr: Agiter les zones remplies
-  en_us: Shake filled regions
-tooltip:
-  ru: Перемещает все цветовые области на выделенных видах вперед и назад на небольшую велечину, чтобы подтолкнуть Revit к повторному созданию цветовой области и обновлению вида. Данный инструмент предназначен для использовании в сочетании с инструментом "Конвертировать стили линий". Инструмент преобразования обновляет стили внутри цветовой области, но в настоящее время не меняет цветовую область (Revit аварийно завершает работу на больших моделях).
-  fr_fr: Déplace puis replace toutes les zones remplies dans les vues sélectionnées afin de forcer Revit à régénérer les vues. Cet outil est conçu pour être utilisé avec l'outil "Convertir les styles de lignes". L'outil de conversion met à jour les styles de lignes dans les zones remplies mais n'agite pas les zones remplies (Revit tend à crasher sur les grands modèles)
-  en_us: Moves all Filled Regions on the seleced views back-and-forth by a tiny amount to push Revit to regenerate the filled region and update the display. This tool is meant to be used in conjunction with the "Convert Line Styles" tool. The convert tool updates the line styles inside Filled region but does not currently shake the filled regions (Revit crashes on large models.)

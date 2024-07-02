@@ -1,9 +1,0 @@
-help_url: '{{docpath}}ThzcRM_Tj8g'
-title:
-  ru: Копировать легенды как чертеж в другие документы
-  fr_fr: Copier les légendes comme vues de dessin dans les document ouverts
-  en_us: Copy Legends as Drafting to Other Documents
-tooltip:
-  ru: Конвертирует выделенные легены в чертеж и копирует их во все открыте проекты в Revit.
-  fr_fr: Convertit les vues de légende sélectionnées en vues de détail et les copie dans tous les projets actuellement ouverts dans Revit
-  en_us: Converts selected legend views to detail views and copies them to all projects currently open in Revit

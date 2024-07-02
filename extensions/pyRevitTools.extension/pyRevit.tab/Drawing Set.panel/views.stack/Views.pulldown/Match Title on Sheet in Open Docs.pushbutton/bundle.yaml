@@ -1,8 +1,0 @@
-title:
-  ru: Сопоставить заголовк листа в открытх документах
-  fr_fr: Faire correspondre le titre sur la feuille dans les modèles ouverts
-  en_us: Match Title On Sheet in Open Docs
-tooltip:
-  ru: Сопоставляет значение названия листа всех видов в открытых документах с текущим документом, поэтому все виды с совпадающими именами будут иметь сопадающее значение названия листа.
-  fr_fr: Fait correspondre à la valeur « Titre sur la feuille » de toutes les vues dans les documents ouverts au document actuel afin que toutes les vues avec des noms correspondants aient des valeurs « Titre sur la feuille » correspondantes
-  en_us: Matches the "Title On Sheet" value of all views in open documents to current document so all views with matching names will have matching "Title On Sheet" values

@@ -1,9 +1,0 @@
-title:
-  ru: Удержать раскрашенные элементы
-  fr_fr: Conserve les éléments peints
-  en_us: Keep Painted Elements
-tooltip:
-  ru: Удерживает элементы с расскрашенными гранями в текущем выделении и отфильтровывает все остальное.
-  fr_fr: Conserve les éléments avec des faces peintes dans la sélection actuelle et filtre tout le reste.
-  en_us: Keeps elements with painted faces in current selection and filters everything else out.
-context: Selection

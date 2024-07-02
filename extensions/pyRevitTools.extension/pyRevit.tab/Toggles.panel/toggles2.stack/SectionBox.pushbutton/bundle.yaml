@@ -1,8 +1,0 @@
-title:
-  ru: Границы 3D вида
-  fr_fr: Zone de coupe
-  en_us: Section Box
-tooltip:
-  ru: Переключает видимость границы 3D вида в текущем 3D виде.
-  fr_fr: Bascule la visibilité de la zone de coupe dans la vue 3D actuelle
-  en_us: Toggles visibility of section box in current 3D view

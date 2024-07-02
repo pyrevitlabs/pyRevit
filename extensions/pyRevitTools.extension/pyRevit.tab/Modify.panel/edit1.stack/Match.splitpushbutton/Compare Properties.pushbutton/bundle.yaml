@@ -1,9 +1,0 @@
-title:
-  ru: Сравнить параметры
-  fr_fr: Comparer les propriétés
-  en_us: Compare properties
-tooltip:
-  ru: Сравнивает параметры экземпляри и типа между двумя элементами.
-  fr_fr: Comparer les paramètres d'instance et d'occurence entre deux éléments
-  en_us: Compare instance and type properties between two elements
-author: '{{author}}'

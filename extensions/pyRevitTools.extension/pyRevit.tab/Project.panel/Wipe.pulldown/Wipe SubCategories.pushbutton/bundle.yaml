@@ -1,8 +1,0 @@
-title:
-  ru: Очистить подкатегории
-  fr_fr: Supprimer toutes les sous-catégories
-  en_us: Wipe SubCategories
-tooltip:
-  ru: Сбрасывает все категории и подкатегории моделей до значений по умолчанию.
-  fr_fr: Réinitialise toutes les catégories et sous-catégories
-  en_us: Reset all model categories and subcategories back to default

@@ -1,8 +1,0 @@
-title:
-  ru: Открыть папку с журналами
-  fr_fr: Ouvrir le dossier des fichiers journaux
-  en_us: Open Journals Folder
-tooltip:
-  ru: Открывает папку журналов Revit текущего пользователя.
-  fr_fr: Ouvre le dossier contenant les fichiers journaux Revit pour l'utilisateur actuel
-  en_us: Opens the Revit journals folder for current user

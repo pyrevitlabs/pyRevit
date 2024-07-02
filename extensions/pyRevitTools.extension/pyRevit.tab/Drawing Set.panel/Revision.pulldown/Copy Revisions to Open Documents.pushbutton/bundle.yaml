@@ -1,8 +1,0 @@
-title:
-  ru: Копировать изменения в открытые документы
-  fr_fr: Copier les Révision vers les Documents Ouverts
-  en_us: Copy Revisions to Open Documents
-tooltip:
-  ru: Копирует выделенные изменения из текущей модели в выделенные открытые модели.
-  fr_fr: Copie les révisions sélectionnées du modèle actuel vers les modèles ouverts
-  en_us: Copy selected revisions from current model to selected open models

@@ -1,9 +1,0 @@
-title:
-  ru: Посчитать линии детализации по видам
-  fr_fr: Compteur de lignes par vue
-  en_us: Lines Per View Counter
-tooltip:
-  ru: Перечислите отсортированное количество строк детализации для всех видов со строками детализации. Нажмите SHIFT + щелчок, чтобы получить счетчик ссылок Revit.
-  fr_fr: Lister classée du nombre de lignes de détail par vue contenant des lignes de détail. Utilisez SHIFT+Click pour obtenir le décompte pour les fichiers liés.
-  en_us: List sorted Detail Line Counts for all views with Detail Lines. Press SHIFT+Click to get the count for Revit Links
-author: 'Original by Frederic Beaupere; Improvements by Jean-Marc Couffin'

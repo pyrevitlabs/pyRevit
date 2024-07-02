@@ -1,9 +1,0 @@
-title:
-  ru: Отбросить сгруппированные элементы
-  fr_fr: Enlève les éléments groupés
-  en_us: Discard Grouped Elements
-tooltip:
-  ru: Отбросить (не удалить) сгруппированные элементы с текущего выделения.
-  fr_fr: Supprime (ne supprime pas) les éléments groupés de la sélection actuelle
-  en_us: Discards (not delete) grouped elements from the current selection
-context: Selection

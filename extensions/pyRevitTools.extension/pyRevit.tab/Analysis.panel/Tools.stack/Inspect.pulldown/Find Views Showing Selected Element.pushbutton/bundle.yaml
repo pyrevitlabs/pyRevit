@@ -1,9 +1,0 @@
-context: selection
-title:
-  ru: Найти виды, на которых видны выделенные элементы
-  fr_fr: Trouver les vues montrant l'élément sélectionné
-  en_us: Find views showing selected element
-tooltip:
-  ru: Выводит все виды, на которых видны выбранные элементы.
-  fr_fr: Lister toutes les vues dans lesquelles l'élément sélectionné est visible
-  en_us: Lists all views that the selected elements is visible in
