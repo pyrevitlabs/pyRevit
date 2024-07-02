@@ -9,12 +9,12 @@ def filterfunc(rev):
 
 revisions = forms.select_revisions(button_name='Select Revision',
                                    multiple=True,
-                                   filterfunc=filterfunc))
+                                   filterfunc=filterfunc)
 
 if revisions:
     sheets = forms.select_sheets(button_name='Set Revision',
                                  include_placeholder=True)
-      if sheets:
+    if sheets:
         with revit.Transaction('Set Revision on Sheets'):
             updated_sheets = revit.update.update_sheet_revisions(revisions,
                                                                  sheets)
