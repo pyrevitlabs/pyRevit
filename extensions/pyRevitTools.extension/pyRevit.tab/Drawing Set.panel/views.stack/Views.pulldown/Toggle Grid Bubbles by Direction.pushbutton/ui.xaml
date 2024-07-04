@@ -5,14 +5,17 @@
     AllowsTransparency="True"
     Background="White"
     Title="Toggle Grid Bubbles"
-    MinHeight="300"
-    MinWidth="350"
+    MinHeight="330"
+    MinWidth="320"
     ResizeMode="NoResize"
+    ShowInTaskbar="False"
     ScrollViewer.VerticalScrollBarVisibility="Disabled"
-    Width="316"
+    Width="320"
+    Height="330"
     BorderBrush="#FFA0A0A0"
     BorderThickness="1,1,1,1"
-    MouseLeftButtonDown="move_window" Height="328" Topmost="True">
+    MouseLeftButtonDown="move_window"
+    WindowStartupLocation="CenterOwner">
     <Grid Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -27,7 +30,7 @@
 
         <!-- Header -->
         <TextBlock Grid.Row="0" Text="Toggle Grid Bubbles" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10,0,10" Width="auto" VerticalAlignment="Center"/>
-        <Button Content="❌" Click="close_screen" Background="{x:Null}" FontSize="12" FontWeight="ExtraBlack" Width="auto" Height="auto" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="{x:Null}"/>
+        <Button Content="❌" Click="fermer" Background="{x:Null}" FontSize="12" FontWeight="ExtraBlack" Width="auto" Height="auto" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="{x:Null}"/>
 
         <!-- Toggle All -->
         <GroupBox Grid.Row="1" Header="Toggle all" Margin="10,10,10,18">
@@ -36,8 +39,8 @@
                     <ColumnDefinition Width="1*" />
                     <ColumnDefinition Width="1*" />
                 </Grid.ColumnDefinitions>
-                <RadioButton x:Name="hide_all" Grid.Column="0" GroupName="ToggleAll" Content="Hide" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <RadioButton x:Name="show_all" Grid.Column="1" GroupName="ToggleAll" Content="Show" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <RadioButton x:Name="show_all" Grid.Column="0" GroupName="ToggleAll" Content="Show" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <RadioButton x:Name="hide_all" Grid.Column="1" GroupName="ToggleAll" Content="Hide" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
         </GroupBox>
 
@@ -65,6 +68,13 @@
         </GroupBox>
 
         <!-- Centered Button in the Last Row -->
-        <Button Grid.Row="3" Content="Fermer" Click="fermer" HorizontalAlignment="Center" VerticalAlignment="Center" Width="120" Height="20" Margin="0,5,0,5"/>
+        <Grid Grid.Row="3" Margin="35,0,35,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Valider" Click="fermer" HorizontalAlignment="Center" VerticalAlignment="Center"  Width="100" Height="20"/>
+            <Button Grid.Column="1" Content="Annuler" Click="annuler" HorizontalAlignment="Center"  VerticalAlignment="Center" Width="100" Height="20"/>
+        </Grid>
     </Grid>
 </Window>
