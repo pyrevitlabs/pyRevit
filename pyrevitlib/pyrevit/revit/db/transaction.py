@@ -77,8 +77,9 @@ class Transaction():
                 self._rvtxn.Commit()
             except Exception as errmsg:
                 self._rvtxn.RollBack()
-                mlogger.error('Error in Transaction Commit. '
-                              'Rolling back changes. | %s', errmsg)
+                if self._logerror:
+                    mlogger.error('Error in Transaction Commit. '
+                                  'Rolling back changes. | %s', errmsg)
         self._rvtxn.Dispose()
 
     @property
@@ -137,8 +138,9 @@ class TransactionGroup():
                     self._rvtxn_grp.Commit()
             except Exception as errmsg:
                 self._rvtxn_grp.RollBack()
-                mlogger.error('Error in TransactionGroup Commit: rolled back.')
-                mlogger.error('Error: %s', errmsg)
+                if self._logerror:
+                    mlogger.error('Error in TransactionGroup Commit. '
+                                  'Rolling back changes. | %s', errmsg)
         self._rvtxn_grp.Dispose()
 
     @property
