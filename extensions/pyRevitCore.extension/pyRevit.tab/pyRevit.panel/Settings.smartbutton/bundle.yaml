@@ -21,4 +21,10 @@ tooltip:
     Shift-Click:
 
     Affiche le fichier de configuration dans l'explorateur.
+  es_es: >-
+    Muestra la ventana de preferencias de pyRevit. Puedes personalizar la forma en carga pyRevit así como definir configuraciones base.
+
+    Shift-Click:
+
+    Muestra el archivo de configuración en el explorador.
 context: zero-doc
