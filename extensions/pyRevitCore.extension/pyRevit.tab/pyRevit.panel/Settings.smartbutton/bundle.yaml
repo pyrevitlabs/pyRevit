@@ -2,6 +2,7 @@ title:
   ru: Настройки
   en_us: Settings
   fr_fr: Paramètres
+  es_es: 'Configuración'
 tooltip:
   ru: >-
     Показывает окно настроек pyRevit. Вы можете настраивать как pyRevit загружает и устанавливает некоторые параметры.
@@ -27,4 +28,6 @@ tooltip:
     Shift-Click:
 
     Muestra el archivo de configuración en el explorador.
+    
+    Muestra la ventana de preferencias de pyRevit. Puedes personalizar la forma en carga pyRevit así como definir configuraciones base
 context: zero-doc
