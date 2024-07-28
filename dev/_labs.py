@@ -66,6 +66,7 @@ def _build(name: str, sln: str, config: str = "Release", framework: str = None, 
 
 def build_deps(_: Dict[str, str]):
     """Build pyRevit deps"""
+    _build("MahApps.Metro (styles)", configs.MAHAPPS, framework="net47")
     _build("MahApps.Metro (netfx)", configs.MAHAPPS, framework="net47", publish_dir=configs.LIBSPATH_NETFX)
     _build("MahApps.Metro (netcore)", configs.MAHAPPS, framework="netcoreapp3.1", publish_dir=configs.LIBSPATH_NETCORE)
 
