@@ -9,9 +9,12 @@ from pyrevit import forms
 
 
 output = script.get_output()
-
+output.close_others()
 
 def listdwgs(current_view_only=False):
+    msg_imported = ":angry_face: DWG importé (au lieu de lié)"
+    msg_linked = ":link: DWG lié (non importé)"
+    msg_single_view = ":angry_face: DWG appartient à une seule vue (non pas au modèle)"
     dwgs = DB.FilteredElementCollector(revit.doc)\
              .OfClass(DB.ImportInstance)\
              .WhereElementIsNotElementType()\
@@ -20,47 +23,42 @@ def listdwgs(current_view_only=False):
     dwgInst = defaultdict(list)
 
     output.print_md("## LINKED AND IMPORTED DWG FILES:")
-    output.print_md('By: [{}]({})'.format('Frederic Beaupere',
-                                          'https://github.com/frederic-beaupere'))
+    output.print_md('By: [{}]({})'.format('Frederic Beaupere', 'https://github.com/frederic-beaupere'))
 
-    for dwg in dwgs:
-        if dwg.IsLinked:
-            dwgInst["LINKED DWGs:"].append(dwg)
-        else:
-            dwgInst["IMPORTED DWGs:"].append(dwg)
+#    for dwg in dwgs:
+#        if dwg.IsLinked:
+#            dwgInst["LINKED DWGs:"].append(dwg)
+#        else:
+#            dwgInst["IMPORTED DWGs:"].append(dwg)
 
-    for link_mode in dwgInst:
-        output.print_md("####{}".format(link_mode))
-        for dwg in dwgInst[link_mode]:
-            dwg_id = dwg.Id
-            dwg_name = \
-                dwg.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
-            dwg_workset = revit.query.get_element_workset(dwg).Name
-            dwg_instance_creator = \
-                DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
-                                                              dwg.Id).Creator
+#    for link_mode in dwgInst:
+#        output.print_md("####{}".format(link_mode))
 
-            if current_view_only \
-                    and revit.active_view.Id != dwg.OwnerViewId:
-                continue
+    for ii, dwg in enumerate(dwgs):
+        dwg_id = dwg.Id
+        dwg_name = dwg.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
+        dwg_workset = revit.query.get_element_workset(dwg).Name
+        dwg_instance_creator = DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc, dwg.Id).Creator
 
-            print('\n\n')
-            output.print_md("**DWG name:** {}\n\n"
-                            "- DWG created by:{}\n\n"
-                            "- DWG id: {}\n\n"
-                            "- DWG workset: {}\n\n"
-                            .format(dwg_name,
-                                    dwg_instance_creator,
-                                    output.linkify(dwg_id),
-                                    dwg_workset))
+        if current_view_only \
+                and revit.active_view.Id != dwg.OwnerViewId:
+            continue
+
+        insert_msg = msg_linked if dwg.IsLinked else msg_imported
+        inval = DB.ElementId.InvalidElementId
+        view_msg = "" if dwg.OwnerViewId == inval else msg_single_view
+        # if dwg.OwnerViewId == inval: # then the DWG belongs to one view only
+        print('\n\n')
+        print("{} {} {}".format(output.linkify(dwg_id, title="{}. {}".format(ii+1, dwg_name)), insert_msg, view_msg))
+        print("   created by:{}. Workset: {}".format(dwg_instance_creator, dwg_workset))
 
 
 selected_option = \
     forms.CommandSwitchWindow.show(
-        ['In Current View',
+        ['ONLY in SINGLE current view',
          'In Model'],
-        message='Select search option:'
+        message='Select search options:'
         )
 
 if selected_option:
-    listdwgs(current_view_only=selected_option == 'In Current View')
+    listdwgs(current_view_only=selected_option == 'ONLY in SINGLE current view')
