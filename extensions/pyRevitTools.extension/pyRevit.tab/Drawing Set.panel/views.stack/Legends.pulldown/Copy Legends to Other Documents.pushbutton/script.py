@@ -40,6 +40,20 @@ if legends:
             forms.alert('At least one Legend must exist in target document.',
                         exitscript=True)
 
+        # get reference plane category, subcategories in destination document
+        src_plane_category = \
+            DB.Category.GetCategory(
+                revit.doc, DB.BuiltInCategory.OST_CLines)
+        dest_plane_category = \
+            DB.Category.GetCategory(
+                dest_doc, DB.BuiltInCategory.OST_CLines)
+        dest_subcats = {subcat.Name:subcat 
+                        for subcat in dest_plane_category.SubCategories}
+        dest_pats = {pat.Name:pat for pat in 
+                     DB.FilteredElementCollector(dest_doc)\
+                       .OfClass(DB.LinePatternElement)\
+                       .ToElements()}
+
         # iterate over interfacetypes legend views
         for src_legend in legends:
             print('\tCopying: {0}'.format(revit.query.get_name(src_legend)))
@@ -49,9 +63,13 @@ if legends:
                   .ToElements()
 
             elements_to_copy = []
+            reference_planes = []
             for el in view_elements:
                 if isinstance(el, DB.Element) and el.Category:
-                    elements_to_copy.append(el.Id)
+                    if isinstance(el, DB.ReferencePlane):
+                        reference_planes.append(el)
+                    else:
+                        elements_to_copy.append(el.Id)
                 else:
                     logger.debug('Skipping element: %s', el.Id)
             if not elements_to_copy:
@@ -96,3 +114,44 @@ if legends:
                         'Legend already exists. Renaming to: "%s"', new_name)
                 revit.update.set_name(dest_view, new_name)
                 dest_view.Scale = src_legend.Scale
+
+                # matching reference planes
+                for src_plane in reference_planes:
+                    src_param = \
+                        src_plane.GetParameter(
+                            DB.ParameterTypeId.ClineSubcategory)
+                    src_subcat = \
+                        DB.Category.GetCategory(
+                            revit.doc, src_param.AsElementId())
+                    dest_plane = \
+                        dest_doc.Create.NewReferencePlane(
+                            src_plane.BubbleEnd, 
+                            src_plane.FreeEnd, 
+                            DB.XYZ(0,0,1), 
+                            dest_view)
+                    if src_subcat.Id != src_plane_category.Id:
+                        if src_subcat.Name not in dest_subcats:
+                            p_line_style = DB.GraphicsStyleType.Projection
+                            dest_subcats[src_subcat.Name] = \
+                                dest_doc.Settings.Categories.NewSubcategory(
+                                    dest_plane_category, src_subcat.Name)
+                            dest_subcats[src_subcat.Name].SetLineWeight(
+                                src_subcat.GetLineWeight(p_line_style), 
+                                p_line_style)
+                            dest_subcats[src_subcat.Name].LineColor = \
+                                src_subcat.LineColor
+                            src_pat = revit.doc.GetElement(
+                                src_subcat.GetLinePatternId(p_line_style))
+                            if src_pat is not None:
+                                if src_pat.Name not in dest_pats:
+                                    dest_pats[src_pat.Name] = \
+                                        DB.LinePatternElement\
+                                            .Create(dest_doc, 
+                                                    src_pat.GetLinePattern())
+                                dest_subcats[src_subcat.Name]\
+                                    .SetLinePatternId(
+                                        dest_pats[src_pat.Name].Id, 
+                                        p_line_style)
+                        dest_plane.GetParameter(
+                            DB.ParameterTypeId.ClineSubcategory).Set(
+                                dest_subcats[src_subcat.Name].Id)
