@@ -277,7 +277,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static void ActivateUpdaterListener() {
             if (updaterListener == null) {
                 updaterListener = new UpdaterListener();
-                UpdaterRegistry.RegisterUpdater(updaterListener);
+                UpdaterRegistry.RegisterUpdater(updaterListener, true);
                 UpdaterRegistry.AddTrigger(
                     updaterListener.GetUpdaterId(),
                     new ElementCategoryFilter(BuiltInCategory.INVALID, inverted: true),
