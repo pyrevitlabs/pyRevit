@@ -749,9 +749,19 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def set_tooltip_image(self, tooltip_image):
         try:
             adwindows_obj = self.get_adwindows_object()
-            if adwindows_obj and adwindows_obj.ToolTip:
-                adwindows_obj.ToolTip.ExpandedImage = \
-                    load_bitmapimage(tooltip_image)
+            if adwindows_obj:
+                exToolTip = self.get_rvtapi_object().ToolTip
+                if not isinstance(exToolTip, str):
+                    exToolTip = None
+                adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
+                adwindows_obj.ToolTip.Title = self.ui_title
+                adwindows_obj.ToolTip.Content = exToolTip
+                _StackPanel = System.Windows.Controls.StackPanel()
+                _image = System.Windows.Controls.Image()
+                _image.Source = load_bitmapimage(tooltip_image)
+                _StackPanel.Children.Add(_image)
+                adwindows_obj.ToolTip.ExpandedContent = _StackPanel
+                adwindows_obj.ResolveToolTip()
             else:
                 self.tooltip_image = tooltip_image
         except Exception as ttimage_err:
@@ -761,11 +771,10 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def set_tooltip_video(self, tooltip_video):
         try:
             adwindows_obj = self.get_adwindows_object()
-            if isinstance(self.get_rvtapi_object().ToolTip, str):
-                exToolTip = self.get_rvtapi_object().ToolTip
-            else:
-                exToolTip = None
             if adwindows_obj:
+                exToolTip = self.get_rvtapi_object().ToolTip
+                if not isinstance(exToolTip, str):
+                    exToolTip = None
                 adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
                 adwindows_obj.ToolTip.Title = self.ui_title
                 adwindows_obj.ToolTip.Content = exToolTip
