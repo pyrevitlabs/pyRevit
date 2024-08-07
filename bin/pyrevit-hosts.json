@@ -1658,7 +1658,7 @@
     {
         "meta": {
             "schema": "1.0",
-            "source": https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021updates_2021_1_10_html"
+            "source": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021updates_2021_1_10_html"
         },
         "product": "Autodesk Revit",
         "release": "2021.1.10",
