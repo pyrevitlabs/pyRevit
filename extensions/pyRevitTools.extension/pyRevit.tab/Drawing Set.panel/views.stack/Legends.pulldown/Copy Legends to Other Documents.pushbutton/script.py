@@ -13,6 +13,61 @@ class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
     def OnDuplicateTypeNamesFound(self, args):
         return DB.DuplicateTypeAction.UseDestinationTypes
 
+def match_subcategory(src_subcat, dest_doc):
+    """Create matching subcategory in destination document"""
+    if src_subcat.Name not in dest_subcats:
+        projection = DB.GraphicsStyleType.Projection
+        # create subcategory and add to dest_subcats
+        dest_subcat = dest_doc.Settings.Categories.NewSubcategory(
+            dest_plane_category, 
+            src_subcat.Name
+        )
+        dest_subcats[dest_subcat.Name] = dest_subcat
+        # set subcategory line weight
+        dest_subcat.SetLineWeight(
+            src_subcat.GetLineWeight(projection), 
+            projection)
+        # set subcategory line color
+        dest_subcat.LineColor = src_subcat.LineColor
+        # set subcategory line pattern
+        src_pat = revit.doc.GetElement(
+            src_subcat.GetLinePatternId(projection))
+        solid_id = DB.LinePatternElement.GetSolidPatternId()
+        if src_pat is not None and src_pat.Id != solid_id:
+            if src_pat.Name not in dest_pats:
+                dest_pat = DB.LinePatternElement.Create(
+                    dest_doc, 
+                    src_pat.GetLinePattern())
+                dest_pat.Name = src_pat.Name
+                dest_pats[dest_pat.Name] = dest_pat
+            dest_subcat.SetLinePatternId(
+                dest_pats[src_pat.Name].Id, 
+                projection
+            )
+
+def match_reference_plane(src_plane, dest_doc, dest_view):
+    """Create matching reference plane in destination document"""
+    dest_plane = dest_doc.Create.NewReferencePlane(
+        src_plane.BubbleEnd, 
+        src_plane.FreeEnd, 
+        DB.XYZ(0,0,1), 
+        dest_view
+    )
+    # get subcategory of source reference plane
+    src_param = src_plane.GetParameter(
+        DB.ParameterTypeId.ClineSubcategory
+    )
+    src_subcat = DB.Category.GetCategory(
+        revit.doc, src_param.AsElementId()
+    )
+    # set subcategory of destination reference plane to match source
+    if src_subcat.Id != src_plane_category.Id:
+        match_subcategory(src_subcat,  
+                        dest_doc)
+        dest_plane.GetParameter(
+            DB.ParameterTypeId.ClineSubcategory).Set(
+                dest_subcats[src_subcat.Name].Id)
+
 
 # find open documents other than the active doc
 open_docs = forms.select_open_docs(title='Select Destination Documents')
@@ -40,20 +95,19 @@ if legends:
             forms.alert('At least one Legend must exist in target document.',
                         exitscript=True)
 
-        # get reference plane category, subcategories in destination document
-        src_plane_category = \
-            DB.Category.GetCategory(
-                revit.doc, DB.BuiltInCategory.OST_CLines)
-        dest_plane_category = \
-            DB.Category.GetCategory(
-                dest_doc, DB.BuiltInCategory.OST_CLines)
+        # get reference plane category, subcategories in each document
+        src_plane_category = revit.query.get_category(
+            DB.BuiltInCategory.OST_CLines, doc=revit.doc
+        )
+        dest_plane_category =revit.query.get_category(
+            DB.BuiltInCategory.OST_CLines, doc=dest_doc
+        )
         dest_subcats = {subcat.Name:subcat 
                         for subcat in dest_plane_category.SubCategories}
-        dest_pats = {pat.Name:pat for pat in 
-                     DB.FilteredElementCollector(dest_doc)\
-                       .OfClass(DB.LinePatternElement)\
-                       .ToElements()}
-
+        dest_pats = {pat.Name:pat
+                     for pat in revit.query.get_elements_by_class(
+                        element_class=DB.LinePatternElement, 
+                        doc=dest_doc)}
         # iterate over interfacetypes legend views
         for src_legend in legends:
             print('\tCopying: {0}'.format(revit.query.get_name(src_legend)))
@@ -116,42 +170,5 @@ if legends:
                 dest_view.Scale = src_legend.Scale
 
                 # matching reference planes
-                for src_plane in reference_planes:
-                    src_param = \
-                        src_plane.GetParameter(
-                            DB.ParameterTypeId.ClineSubcategory)
-                    src_subcat = \
-                        DB.Category.GetCategory(
-                            revit.doc, src_param.AsElementId())
-                    dest_plane = \
-                        dest_doc.Create.NewReferencePlane(
-                            src_plane.BubbleEnd, 
-                            src_plane.FreeEnd, 
-                            DB.XYZ(0,0,1), 
-                            dest_view)
-                    if src_subcat.Id != src_plane_category.Id:
-                        if src_subcat.Name not in dest_subcats:
-                            p_line_style = DB.GraphicsStyleType.Projection
-                            dest_subcats[src_subcat.Name] = \
-                                dest_doc.Settings.Categories.NewSubcategory(
-                                    dest_plane_category, src_subcat.Name)
-                            dest_subcats[src_subcat.Name].SetLineWeight(
-                                src_subcat.GetLineWeight(p_line_style), 
-                                p_line_style)
-                            dest_subcats[src_subcat.Name].LineColor = \
-                                src_subcat.LineColor
-                            src_pat = revit.doc.GetElement(
-                                src_subcat.GetLinePatternId(p_line_style))
-                            if src_pat is not None:
-                                if src_pat.Name not in dest_pats:
-                                    dest_pats[src_pat.Name] = \
-                                        DB.LinePatternElement\
-                                            .Create(dest_doc, 
-                                                    src_pat.GetLinePattern())
-                                dest_subcats[src_subcat.Name]\
-                                    .SetLinePatternId(
-                                        dest_pats[src_pat.Name].Id, 
-                                        p_line_style)
-                        dest_plane.GetParameter(
-                            DB.ParameterTypeId.ClineSubcategory).Set(
-                                dest_subcats[src_subcat.Name].Id)
+                for reference_plane in reference_planes:
+                    match_reference_plane(reference_plane, dest_doc, dest_view)
