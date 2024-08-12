@@ -12,13 +12,16 @@ using pyRevitLabs.TargetApps.Revit;
 using Nett;
 using pyRevitLabs.NLog;
 
-namespace pyRevitLabs.PyRevit {
-    public struct PyRevitCloneFromImageArgs {
+namespace pyRevitLabs.PyRevit
+{
+    public struct PyRevitCloneFromImageArgs
+    {
         public string Url;
         public string BranchName;
         public string DeploymentName;
 
-        public override string ToString() {
+        public override string ToString()
+        {
             return string.Format("Url: \"{0}\" | Branch: \"{1}\" | Deployment: \"{2}\"", Url, BranchName, DeploymentName);
         }
     }
@@ -354,7 +357,7 @@ namespace pyRevitLabs.PyRevit {
                 if (revitYear >= 2025 && eng.IsNetCore)
                     if (eng.IsDefault)
                         return eng;
-                
+
                 if (revitYear < 2025 && !eng.IsNetCore)
                     if (eng.IsDefault)
                         return eng;
@@ -406,51 +409,31 @@ namespace pyRevitLabs.PyRevit {
                     foreach (KeyValuePair<string, TomlObject> entry in infoTable)
                         logger.Debug("\"{0}\" : \"{1}\"", entry.Key, entry.Value);
 
-                    string enginesDir = Path.Combine(clonePath,
-                        PyRevitConsts.BinDirName,
-                        PyRevitConsts.NetFxFolder,
-                        PyRevitConsts.BinEnginesDirName);
-                    
-                    engines.Add(
-                        new PyRevitEngine(
-                            id: engineCfg.Key,
-                            engineVer: new PyRevitEngineVersion(infoTable["version"].Get<int>()),
-                            runtime: infoTable.TryGetValue("runtime") != null
-                                ? infoTable["runtime"].Get<bool>()
-                                : true, // be flexible since its a new feature
-                            enginePath: Path.Combine(clonePath, Path.Combine(enginesDir, infoTable["path"].Get<string>())),
-                            assemblyName: infoTable.TryGetValue("assembly") != null
-                                ? infoTable["assembly"].Get<string>()
-                                : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
-                            kernelName: infoTable["kernel"].Get<string>(),
-                            engineDescription: infoTable["description"].Get<string>(),
-                            isDefault: engineCfg.Key.Contains("DEFAULT"),
-                            isNetCore:false
-                        )
-                    );
-                    
-                    enginesDir = Path.Combine(clonePath,
-                        PyRevitConsts.BinDirName,
-                        PyRevitConsts.NetCoreFolder,
-                        PyRevitConsts.BinEnginesDirName);
-                    
-                    engines.Add(
-                        new PyRevitEngine(
-                            id: engineCfg.Key,
-                            engineVer: new PyRevitEngineVersion(infoTable["version"].Get<int>()),
-                            runtime: infoTable.TryGetValue("runtime") != null
-                                ? infoTable["runtime"].Get<bool>()
-                                : true, // be flexible since its a new feature
-                            enginePath: Path.Combine(clonePath, Path.Combine(enginesDir, infoTable["path"].Get<string>())),
-                            assemblyName: infoTable.TryGetValue("assembly") != null
-                                ? infoTable["assembly"].Get<string>()
-                                : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
-                            kernelName: infoTable["kernel"].Get<string>(),
-                            engineDescription: infoTable["description"].Get<string>(),
-                            isDefault: engineCfg.Key.Contains("DEFAULT"),
-                            isNetCore:true
-                        )
-                    );
+                    string kernel = infoTable["kernel"].Get<string>();
+                    if (kernel.Equals("cpython", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        var cenginesDir = Path.Combine(
+                            clonePath,
+                            PyRevitConsts.BinDirName,
+                            PyRevitConsts.BinCEnginesDirName);
+                        AddEngine(engines, engineCfg, infoTable, cenginesDir);
+                    }
+                    else
+                    {
+                        string enginesDir = Path.Combine(
+                            clonePath,
+                            PyRevitConsts.BinDirName,
+                            PyRevitConsts.NetFxFolder,
+                            PyRevitConsts.BinEnginesDirName);
+                        AddEngine(engines, engineCfg, infoTable, enginesDir);
+
+                        enginesDir = Path.Combine(
+                            clonePath,
+                            PyRevitConsts.BinDirName,
+                            PyRevitConsts.NetCoreFolder,
+                            PyRevitConsts.BinEnginesDirName);
+                        AddEngine(engines, engineCfg, infoTable, enginesDir);
+                    }
                 }
             }
             catch (Exception ex)
@@ -460,6 +443,27 @@ namespace pyRevitLabs.PyRevit {
             }
 
             return engines;
+        }
+
+        private static void AddEngine(List<PyRevitEngine> engines, KeyValuePair<string, TomlObject> engineCfg, TomlTable infoTable, string enginesDir)
+        {
+            engines.Add(
+                new PyRevitEngine(
+                    id: engineCfg.Key,
+                    engineVer: new PyRevitEngineVersion(infoTable["version"].Get<int>()),
+                    runtime: infoTable.TryGetValue("runtime") != null
+                        ? infoTable["runtime"].Get<bool>()
+                        : true, // be flexible since its a new feature
+                    enginePath: Path.Combine(enginesDir, infoTable["path"].Get<string>()),
+                    assemblyName: infoTable.TryGetValue("assembly") != null
+                        ? infoTable["assembly"].Get<string>()
+                        : PyRevitConsts.LegacyEngineDllName, // be flexible since its a new feature
+                    kernelName: infoTable["kernel"].Get<string>(),
+                    engineDescription: infoTable["description"].Get<string>(),
+                    isDefault: engineCfg.Key.Contains("DEFAULT"),
+                    isNetCore: false
+                )
+            );
         }
 
         // extract deployment config from pyRevitfile inside the clone
@@ -477,7 +481,7 @@ namespace pyRevitLabs.PyRevit {
                     logger.Debug("\"{0}\" : \"{1}\"", entry.Key, entry.Value);
                     deps.Add(
                         new PyRevitDeployment(entry.Key,
-                            new List<string>(((TomlArray) entry.Value).To<string>()))
+                            new List<string>(((TomlArray)entry.Value).To<string>()))
                     );
                 }
             }
@@ -761,10 +765,10 @@ namespace pyRevitLabs.PyRevit {
                         engines.Add(
                             new PyRevitEngine(
                                 id: engineDirName,
-                                engineVer: (PyRevitEngineVersion) engineVer,
+                                engineVer: (PyRevitEngineVersion)engineVer,
                                 runtime: runtime,
                                 enginePath: engineDir,
-                                isNetCore:isNetCore)
+                                isNetCore: isNetCore)
                         );
                     }
                 }

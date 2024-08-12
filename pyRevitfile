@@ -21,7 +21,7 @@ description = 'Custom pyRevit IronPython Engine'
 kernel = 'CPython'
 version = 3123
 runtime = false
-path = 'bin/cengines/CPY3123'
+path = 'CPY3123'
 assembly = 'python312.dll'
 description = 'CPython Engine'
 

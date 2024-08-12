@@ -28,6 +28,7 @@ namespace pyRevitLabs.PyRevit {
         // directories and files
         public const string BinDirName = "bin";
         public const string BinEnginesDirName = "engines";
+        public const string BinCEnginesDirName = "cengines";
         public const string DevDirName = "dev";
         public const string DocsDirName = "docs";
         public const string ExtensionsDirName = "extensions";
