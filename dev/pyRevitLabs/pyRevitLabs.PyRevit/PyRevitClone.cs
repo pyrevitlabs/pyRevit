@@ -301,20 +301,17 @@ namespace pyRevitLabs.PyRevit
         public static PyRevitEngine GetEngine(int revitYear, string clonePath, PyRevitEngineVersion engineVer)
         {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
-            var netcore = revitYear >= 2025;
+            var isNetCore = revitYear >= 2025;
             if (engineVer == PyRevitEngineVersion.Default)
             {
-                var defaultEng = GetDefaultEngine(netcore, clonePath);
-                if (defaultEng is null)
-                    throw new PyRevitException("Can not find default engine");
-                return defaultEng;
+                return GetDefaultEngine(isNetCore, clonePath);
             }
             else
             {
                 try
                 {
                     return GetEngines(clonePath)
-                        .Single(x => x.Version == engineVer && x.IsNetCore == netcore);
+                        .Single(x => x.Version == engineVer && x.IsNetCore == isNetCore);
                 }
                 catch (InvalidOperationException)
                 {
@@ -338,14 +335,11 @@ namespace pyRevitLabs.PyRevit
             }
         }
 
-        private static PyRevitEngine GetDefaultEngine(bool netcore, string clonePath)
+        private static PyRevitEngine GetDefaultEngine(bool isNetCore, string clonePath)
         {
             var eng = GetEngines(clonePath)
-                .FirstOrDefault(x => x.IsDefault && x.IsNetCore == netcore);
-            if (eng is null){
-                throw new PyRevitException($"Can not find default engine");
-            }
-            return eng;
+                .FirstOrDefault(x => x.IsDefault && x.IsNetCore == isNetCore);
+            return eng is null ? throw new PyRevitException("Can not find default engine") : eng;
         }
 
         // get all engines from clone path
@@ -400,7 +394,7 @@ namespace pyRevitLabs.PyRevit
                             clonePath,
                             PyRevitConsts.BinDirName,
                             PyRevitConsts.BinCEnginesDirName);
-                        AddEngine(engines, engineCfg, infoTable, cenginesDir);
+                        AddEngine(engines, engineCfg, infoTable, cenginesDir, false);
                     }
                     else
                     {
@@ -409,14 +403,14 @@ namespace pyRevitLabs.PyRevit
                             PyRevitConsts.BinDirName,
                             PyRevitConsts.NetFxFolder,
                             PyRevitConsts.BinEnginesDirName);
-                        AddEngine(engines, engineCfg, infoTable, enginesDir);
+                        AddEngine(engines, engineCfg, infoTable, enginesDir, false);
 
                         enginesDir = Path.Combine(
                             clonePath,
                             PyRevitConsts.BinDirName,
                             PyRevitConsts.NetCoreFolder,
                             PyRevitConsts.BinEnginesDirName);
-                        AddEngine(engines, engineCfg, infoTable, enginesDir);
+                        AddEngine(engines, engineCfg, infoTable, enginesDir, true);
                     }
                 }
             }
@@ -429,7 +423,7 @@ namespace pyRevitLabs.PyRevit
             return engines;
         }
 
-        private static void AddEngine(List<PyRevitEngine> engines, KeyValuePair<string, TomlObject> engineCfg, TomlTable infoTable, string enginesDir)
+        private static void AddEngine(List<PyRevitEngine> engines, KeyValuePair<string, TomlObject> engineCfg, TomlTable infoTable, string enginesDir, bool netcore)
         {
             engines.Add(
                 new PyRevitEngine(
@@ -445,7 +439,7 @@ namespace pyRevitLabs.PyRevit
                     kernelName: infoTable["kernel"].Get<string>(),
                     engineDescription: infoTable["description"].Get<string>(),
                     isDefault: engineCfg.Key.Contains("DEFAULT"),
-                    isNetCore: false
+                    isNetCore: netcore
                 )
             );
         }
