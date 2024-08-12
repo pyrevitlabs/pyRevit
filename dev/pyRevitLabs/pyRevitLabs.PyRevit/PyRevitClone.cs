@@ -301,69 +301,51 @@ namespace pyRevitLabs.PyRevit
         public static PyRevitEngine GetEngine(int revitYear, string clonePath, PyRevitEngineVersion engineVer)
         {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
+            var netcore = revitYear >= 2025;
             if (engineVer == PyRevitEngineVersion.Default)
             {
-                var defaultEng = GetDefaultEngine(revitYear, clonePath);
+                var defaultEng = GetDefaultEngine(netcore, clonePath);
                 if (defaultEng is null)
                     throw new PyRevitException("Can not find default engine");
                 return defaultEng;
             }
             else
             {
-                var engines = GetEngines(clonePath)
-                    .Where(x => x.Version == engineVer);
-
-                if (revitYear >= 2025)
+                try
                 {
-                    engines = engines.Where(x => x.IsNetCore);
+                    return GetEngines(clonePath)
+                        .Single(x => x.Version == engineVer && x.IsNetCore == netcore);
                 }
-                else
+                catch (InvalidOperationException)
                 {
-                    engines = engines.Where(x => !x.IsNetCore);
+                    throw new PyRevitException(
+                        $"Can not find engine or more than one engine found with specified version \"{engineVer.Version}\"");
                 }
-
-                var engineCount = engines.Count();
-                if (engineCount == 0)
-                    throw new PyRevitException(
-                        $"Can not find engine with specified version \"{engineVer.Version}\" is found");
-                else if (engineCount > 1)
-                    throw new PyRevitException(
-                        $"More than one engine with specified version \"{engineVer.Version}\" is found");
-
-                return engines.First();
             }
         }
 
         public static PyRevitEngine GetCPythonEngine(string clonePath, PyRevitEngineVersion engineVer)
         {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
-            var engines = GetEngines(clonePath).Where(x => x.Version == engineVer);
-
-            var engineCount = engines.Count();
-            if (engineCount == 0)
+            try
+            {
+                return GetEngines(clonePath).Single(x => x.Version == engineVer);
+            }
+            catch (InvalidOperationException)
+            {
                 throw new PyRevitException(
-                    $"Can not find engine with specified version \"{engineVer.Version}\" is found");
-            else if (engineCount > 1)
-                throw new PyRevitException(
-                    $"More than one engine with specified version \"{engineVer.Version}\" is found");
-
-            return engines.First();
+                    $"Can not find engine or more than one CPython engine found with specified version \"{engineVer.Version}\"");
+            }
         }
 
-        public static PyRevitEngine GetDefaultEngine(int revitYear, string clonePath)
+        private static PyRevitEngine GetDefaultEngine(bool netcore, string clonePath)
         {
-            foreach (var eng in GetEngines(clonePath))
-            {
-                if (revitYear >= 2025 && eng.IsNetCore)
-                    if (eng.IsDefault)
-                        return eng;
-
-                if (revitYear < 2025 && !eng.IsNetCore)
-                    if (eng.IsDefault)
-                        return eng;
+            var eng = GetEngines(clonePath)
+                .FirstOrDefault(x => x.IsDefault && x.IsNetCore == netcore);
+            if (eng is null){
+                throw new PyRevitException($"Can not find default engine");
             }
-
-            throw new PyRevitException($"Can not find default engine");
+            return eng;
         }
 
         // get all engines from clone path
@@ -386,10 +368,12 @@ namespace pyRevitLabs.PyRevit
 
         public static PyRevitEngine GetConfiguredEngine(string clonePath, string engineId)
         {
-            foreach (var eng in GetEngines(clonePath))
-                if (eng.Id.ToLower() == engineId.ToLower())
-                    return eng;
-            throw new PyRevitException($"Can not find engine \"{engineId}\"");
+            var engine = GetEngines(clonePath).FirstOrDefault(eng => eng.Id.ToLower() == engineId.ToLower());
+            if (engine is null)
+            {
+                throw new PyRevitException($"Can not find engine \"{engineId}\"");
+            }
+            return engine;
         }
 
         // extract deployment config from pyRevitfile inside the clone
