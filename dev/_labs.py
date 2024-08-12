@@ -95,12 +95,13 @@ def build_deps(_: Dict[str, str]):
 
 def build_engines(args: Dict[str, str]):
     """Build pyRevit engines."""
-    _build("loaders", configs.LOADERS, config=args.get("<config>", "Release"))
+    config = args.get("<config>") or "Release"
+    _build("loaders", configs.LOADERS, config=config)
 
 
 def build_labs(args: Dict[str, str]):
     """Build pyRevit labs."""
-    config = args.get("<config>", "Release")
+    config = args.get("<config>") or "Release"
     _build("labs", configs.LABS, config=config)
     _build("cli", configs.LABS_CLI, config=config, framework="net8.0-windows", publish_dir=configs.BINPATH)
     _build("doctor", configs.LABS_DOCTOR, config=config, framework="net8.0-windows", publish_dir=configs.BINPATH)
@@ -108,5 +109,5 @@ def build_labs(args: Dict[str, str]):
 
 def build_runtime(args: Dict[str, str]):
     """Build pyRevit runtime."""
-    config = args.get("<config>", "Release")
+    config = args.get("<config>") or "Release"
     _build("runtime", configs.RUNTIME, config=config)
