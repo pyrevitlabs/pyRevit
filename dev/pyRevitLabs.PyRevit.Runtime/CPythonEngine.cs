@@ -127,8 +127,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {
-            var builtins = new PyDict();
-            
+            var builtins = new PyDict(module.Variables()["__builtins__"]);
+
             // Add timestamp and executuin uuid
             SetVariable(builtins, "__execid__", runtime.ExecId);
             SetVariable(builtins, "__timestamp__", runtime.ExecTimestamp);
@@ -200,22 +200,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // manually add PYTHONPATH since we are overwriting the sys paths
             var pythonPath = Environment.GetEnvironmentVariable("PYTHONPATH");
-            if (pythonPath != null && pythonPath != string.Empty) {
-                var searthPathStr = new PyString(pythonPath);
-                sysPaths.Insert(0, searthPathStr);
+            if (!string.IsNullOrEmpty(pythonPath))
+            {
+                sysPaths.Append(new PyString(pythonPath));
             }
 
             // now add the search paths for the script bundle
-            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths.Reverse<string>()) {
-                var searthPathStr = new PyString(searchPath);
-                sysPaths.Insert(0, searthPathStr);
+            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths)
+            {
+                sysPaths.Append(new PyString(searchPath));
             }
         }
 
         private void SetupArguments(ref ScriptRuntime runtime) {
             // setup arguments (sets sys.argv)
             PyObject sys = PyModule.Import("sys");
-            PyObject sysArgv = sys.GetAttr("argv");
 
             var pythonArgv = new PyList();
 
@@ -251,11 +250,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private PyList RestoreSearchPaths() {
             var newList = new PyList();
-            int i = 0;
             foreach (var searchPath in _sysPaths) {
-                var searthPathStr = new PyString(searchPath);
-                newList.Insert(i, searthPathStr);
-                i++;
+                newList.Append(new PyString(searchPath));
             }
             SetSysPaths(newList);
             return newList;

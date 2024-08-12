@@ -45,7 +45,7 @@ print('__eventargs__ = %s' % __eventargs__)
 
 print('\n## Module Tests:')
 import os
-pythonpath=os.environ['PYTHONPATH']
+pythonpath=os.environ.get('PYTHONPATH')
 # this fails on cpy 3.7 (= was added on 3.8)
 print(f'{pythonpath=}')
 
