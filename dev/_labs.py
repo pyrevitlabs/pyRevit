@@ -26,7 +26,7 @@ def _build(name: str, sln: str, config: str = "Release", framework: str = None, 
 
     # clean
     slnpath = op.abspath(sln)
-    logger.debug("building %s solution: %s", name, slnpath)
+    logger.debug("building %s solution: %s, configuration: %s", name, slnpath, config)
     # clean, restore, build
     if publish_dir is None:
         print(f"Building {name}...")
@@ -93,18 +93,20 @@ def build_deps(_: Dict[str, str]):
 
 
 
-def build_engines(_: Dict[str, str]):
-    """Build pyRevit engines"""
-    _build("loaders", configs.LOADERS, "Release")
+def build_engines(args: Dict[str, str]):
+    """Build pyRevit engines."""
+    _build("loaders", configs.LOADERS, config=args.get("<config>", "Release"))
 
 
-def build_labs(_: Dict[str, str]):
-    """Build pyRevit labs"""
-    _build("labs", configs.LABS, "Release")
-    _build("cli", configs.LABS_CLI, "Release", "net8.0-windows", configs.BINPATH)
-    _build("doctor", configs.LABS_DOCTOR, "Release", "net8.0-windows", configs.BINPATH)
+def build_labs(args: Dict[str, str]):
+    """Build pyRevit labs."""
+    config = args.get("<config>", "Release")
+    _build("labs", configs.LABS, config=config)
+    _build("cli", configs.LABS_CLI, config=config, framework="net8.0-windows", publish_dir=configs.BINPATH)
+    _build("doctor", configs.LABS_DOCTOR, config=config, framework="net8.0-windows", publish_dir=configs.BINPATH)
 
 
-def build_runtime(_: Dict[str, str]):
-    """Build pyRevit runtime"""
-    _build("runtime", configs.RUNTIME, "Release")
+def build_runtime(args: Dict[str, str]):
+    """Build pyRevit runtime."""
+    config = args.get("<config>", "Release")
+    _build("runtime", configs.RUNTIME, config=config)

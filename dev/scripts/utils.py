@@ -75,11 +75,10 @@ def format_help(helpstring):
 
 def run_command(commands: List[Command], args: Dict[str, str]):
     """Process cli args and run the appropriate commands"""
-    for cmd in [x for x in commands if args[x.name]]:
-        if cmd.target:
-            if not args[cmd.target]:
-                continue
-        logger.debug("Running %s", cmd)
+    for cmd in commands:
+        if not args[cmd.name] or (cmd.target and not args[cmd.target]):
+            continue
+        logger.debug("Running %s with args %s", cmd, args[cmd.name])
         cmd.run(args)
 
 
