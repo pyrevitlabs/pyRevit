@@ -66,7 +66,7 @@ namespace pyRevitCLI {
             }
             // or find first release matching given pattern
             else if (searchPattern != null) {
-                matchedRelease = PyRevitReleases.FindReleases(searchPattern, includePreRelease: listPreReleases).First();
+                matchedRelease = PyRevitReleases.FindReleases(searchPattern, includePreRelease: listPreReleases).FirstOrDefault();
                 if (matchedRelease is null)
                     throw new PyRevitException(
                         string.Format("No release matching \"{0}\" were found.", searchPattern)
@@ -106,7 +106,15 @@ namespace pyRevitCLI {
             string downloadUrl = null;
             switch (assetType) {
                 case GithubReleaseAssetType.Archive: downloadUrl = matchedRelease.ArchiveURL; break;
-                case GithubReleaseAssetType.Installer: downloadUrl = matchedRelease.InstallerURL; break;
+                case GithubReleaseAssetType.Installer:
+                    {
+                        var rawInstallerUrl = matchedRelease.InstallerURL;
+
+                        downloadUrl = rawInstallerUrl.Replace(".nupkg", "_signed.exe").Replace("_CLI_", "_").Replace("-cli.", "_").Replace("_admin_signed.exe", "_signed.exe");
+
+                    }
+                    break;
+
                 case GithubReleaseAssetType.Unknown: downloadUrl = null; break;
             }
 
@@ -119,7 +127,7 @@ namespace pyRevitCLI {
                 logger.Debug("Saving package to \"{0}\"", destPath);
 
                 // download file and report
-                CommonUtils.DownloadFile(downloadUrl, destPath, progressToken: Path.GetFileName(downloadUrl));
+                CommonUtils.DownloadFile(downloadUrl, destPath);
                 Console.WriteLine(
                     string.Format("Downloaded package to \"{0}\"", destPath)
                     );

@@ -3,7 +3,9 @@ title:
   en_us: "Blog"
   fa: "وبلاگ"
   ar: "بلاگ"
+  es_es: 'Blog'
 tooltip:
   ru: Открывает блог pyRevit.
   en_us: Opens the pyRevit blog.
+  es_es: Abre el blog de pyRevit.
 context: zero-doc
