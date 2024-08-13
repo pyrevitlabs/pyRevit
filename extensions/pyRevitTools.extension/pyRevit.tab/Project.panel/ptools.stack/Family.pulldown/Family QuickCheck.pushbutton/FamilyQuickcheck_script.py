@@ -4,7 +4,7 @@
 Copyright (c) 2017 Frederic Beaupere
 github.com/frederic-beaupere
 
-PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
+PR731 https://github.com/eirannejad/pyRevit/pull/731
 """
 #pylint: disable=invalid-name,import-error,superfluous-parens,broad-except
 from pyrevit import revit

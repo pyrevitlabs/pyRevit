@@ -34,17 +34,15 @@ def system(
     cwd: Optional[str] = None,
     dump_stdout: Optional[bool] = False,
 ):
-    print(f"> {' '.join(args)}")
-
     """Run a command and return the stdout"""
     if dump_stdout:
         res = subprocess.run(
             args, stderr=subprocess.STDOUT, check=False, cwd=cwd
         )
-        return "", res.returncode
+        return ""
     else:
         res = subprocess.run(args, capture_output=True, check=False, cwd=cwd)
-        return res.stdout.decode().strip(), res.returncode
+        return res.stdout.decode().strip()
 
 
 def where(program_name):
@@ -75,20 +73,22 @@ def format_help(helpstring):
 
 def run_command(commands: List[Command], args: Dict[str, str]):
     """Process cli args and run the appropriate commands"""
-    for cmd in commands:
-        if not args[cmd.name] or (cmd.target and not args[cmd.target]):
-            continue
-        logger.debug("Running %s with args %s", cmd, args[cmd.name])
+    for cmd in [x for x in commands if args[x.name]]:
+        if cmd.target:
+            if not args[cmd.target]:
+                continue
+        logger.debug("Running %s", cmd)
         cmd.run(args)
 
 
 def parse_dotnet_build_output(output):
     """Parse dotnet build output to find the result and error reports"""
+    result = True
     build_finder = re.compile(r"^Build (success.*|FAIL.*)$")
     time_finder = re.compile(r"^Time Elapsed (.+)$")
     capture = False
     report = ""
-    for oline in output[0].split("\n"):
+    for oline in output.split("\n"):
         if time_finder.match(oline):
             break
         if capture:
@@ -97,7 +97,7 @@ def parse_dotnet_build_output(output):
             if "fail" in match.groups()[0].lower():
                 result = False
                 capture = True
-    return output[1] == 0, output[0]
+    return result, report
 
 
 def ensure_windows():

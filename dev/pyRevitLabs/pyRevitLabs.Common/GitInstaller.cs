@@ -148,7 +148,7 @@ namespace pyRevitLabs.Common {
 
                 // before updating, let's first
                 // forced checkout to overwrite possible local changes
-                // Re: https://github.com/pyrevitlabs/pyRevit/issues/229
+                // Re: https://github.com/eirannejad/pyRevit/issues/229
                 var checkoutOptions = new CheckoutOptions();
                 checkoutOptions.CheckoutModifiers = CheckoutModifiers.Force;
                 Commands.Checkout(repo, repo.Head, checkoutOptions);

@@ -56,7 +56,8 @@ class AboutWindow(forms.WPFWindow):
         if cpyver:
             self.pyrevit_engine.Text = \
                 self.get_locale_string("pyRevit.Engine")\
-                    .format(sys.version.split('(')[0].strip(), cpyver.Version)
+                    .format(sys.version.split('(')[0].strip(),
+                            '.'.join(list(str(cpyver.Version))))
 
         if __cachedengine__:
             self.pyrevit_rmode.Text = self.get_locale_string("pyRevit.RocketMode.Enabled")

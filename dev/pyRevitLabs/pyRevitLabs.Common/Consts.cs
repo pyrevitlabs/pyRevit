@@ -36,7 +36,7 @@ namespace pyRevitLabs.Common {
 
         // consts for the official pyRevit repo
         public const string OriginalRepoName = ProductName;
-        public static string OriginalRepoId = string.Format(@"pyrevitlabs/{0}", ProductName);
+        public static string OriginalRepoId = string.Format(@"eirannejad/{0}", ProductName);
         public static string OriginalRepoBasePath = string.Format(@"https://github.com/{0}", OriginalRepoId);
         public static string OriginalRepoGitPath = OriginalRepoBasePath + DefaultGitDirName;
 

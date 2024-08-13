@@ -36,7 +36,7 @@ ANGLE_CORR_RATIO = 0.01
 PAT_SEPARATOR = ', '
 PAT_FILE_TEMPLATE = \
     ";        Written by \"Make Pattern\" tool for pyRevit\n"                 \
-    ";          http://pyrevitlabs.github.io/pyRevit/\n"                       \
+    ";          http://eirannejad.github.io/pyRevit/\n"                       \
     ";-Date                                   : {date}\n"                     \
     ";-Time                                   : {time}\n"                     \
     ";-pyRevit Version                        : {version}\n"                  \

@@ -76,7 +76,7 @@ namespace pyRevitLabs.Common {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public const string APIReleasesURL = @"https://api.github.com/repos/{0}/releases";
-        
+
         public const string ArchiveFileExtension = ".zip";
         public const string ArchiveInternalBranchPath = @"{0}-{1}";
         public const string APIArchiveURL = @"https://github.com/{0}/archive/{1}" + ArchiveFileExtension;
@@ -87,10 +87,10 @@ namespace pyRevitLabs.Common {
             // make github api call and get a list of releases
             // https://developer.github.com/v3/repos/releases/
             HttpWebRequest request = CommonUtils.GetHttpWebRequest(endpoint);
-            // if (AuthToken is null)
-                // throw new Exception("Missing authorization token. Set on GITHUBTOKEN env var");
+            if (AuthToken is null)
+                throw new Exception("Missing authorization token. Set on GITHUBTOKEN env var");
             
-            // request.Headers.Add(HttpRequestHeader.Authorization, $"token {AuthToken}");
+            request.Headers.Add(HttpRequestHeader.Authorization, $"token {AuthToken}");
             var response = request.GetResponse();
 
             // extract list of  PyRevitRelease from json

@@ -1,6 +1,6 @@
 """ Standard IO Dialogs
 
-Original code by github.com/pyrevitlabs/pyRevit
+Original code by github.com/eirannejad/pyRevit
 
 """  #
 

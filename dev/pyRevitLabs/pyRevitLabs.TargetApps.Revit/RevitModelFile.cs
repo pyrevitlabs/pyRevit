@@ -168,7 +168,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                         RevitProduct = revitProduct;
                 }
 
-                // Last Save Path: C:\Users\pyrevitlabs\Desktop\Project1.rvt
+                // Last Save Path: C:\Users\eirannejad\Desktop\Project1.rvt
                 match = buildFieldRegex("Last Save Path: ", "lastpath").Match(line);
                 if (match.Success) {
                     var path = match.Groups["lastpath"].Value;

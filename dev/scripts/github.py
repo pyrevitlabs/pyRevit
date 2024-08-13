@@ -10,7 +10,7 @@ logger = logging.getLogger()
 
 
 AUTH_TOKEN = os.environ.get("GITHUB_TOKEN", "")
-API_ROOT = "https://api.github.com/repos/pyrevitlabs/pyRevit/"
+API_ROOT = "https://api.github.com/repos/eirannejad/pyRevit/"
 
 API_ISSUES = API_ROOT + "issues/{ticket}"
 API_ISSUE_COMMENTS = API_ROOT + "issues/{ticket}/comments"

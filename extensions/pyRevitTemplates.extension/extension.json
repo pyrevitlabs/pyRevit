@@ -7,8 +7,8 @@
     "description": "Tools for maintaining Revit Templates",
     "author": "Ehsan Iran-Nejad",
     "author_profile": "https://keybase.io/ein",
-    "url": "https://github.com/pyrevitlabs/pyRevit.git",
-    "website": "http://pyrevitlabs.github.io/pyRevit/",
+    "url": "https://github.com/eirannejad/pyRevit.git",
+    "website": "http://eirannejad.github.io/pyRevit/",
     "image": "",
     "dependencies": []
 }

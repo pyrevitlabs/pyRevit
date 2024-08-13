@@ -114,7 +114,7 @@ namespace pyRevitLabs.Common {
                     }
 
                     logger.Debug("Downloading to \"{0}\"", dataSourceCacheFile);
-                    CommonUtils.DownloadFile(DataSourceURL, dataSourceCacheFile);
+                    CommonUtils.DownloadFile(DataSourceURL, dataSourceCacheFile, progressToken: DataFileName);
                 }
                 catch (Exception dlEx) {
                     logger.Debug("Error downloading host database file. | {0}", dlEx.Message);

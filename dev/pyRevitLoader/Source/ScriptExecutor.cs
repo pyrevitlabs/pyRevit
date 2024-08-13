@@ -9,7 +9,6 @@ using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Windows.Forms;
 using IronPython.Runtime.Operations;
 
 namespace PyRevitLoader {
@@ -37,7 +36,7 @@ namespace PyRevitLoader {
         public static string EngineVersion {
             get {
                 var assmVersion = Assembly.GetAssembly(typeof(ScriptExecutor)).GetName().Version;
-                return string.Format("{0}{1}{2}", assmVersion.Major, assmVersion.Minor, assmVersion.Build);
+                return string.Format("{0}{1}{2}", assmVersion.Minor, assmVersion.Build, assmVersion.Revision);
             }
         }
 
@@ -149,7 +148,6 @@ namespace PyRevitLoader {
 #else
             string resName = string.Format("python_{0}_lib.zip", EngineVersion);
 #endif
-            
             var resQuery = from name in asm.GetManifestResourceNames()
                            where name.ToLowerInvariant().EndsWith(resName)
                            select name;

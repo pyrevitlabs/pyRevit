@@ -1,17 +1,10 @@
 package persistence
 
 import (
-	"context"
-	"fmt"
 	"pyrevittelemetryserver/cli"
-	"time"
 
 	_ "github.com/lib/pq"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
+	"gopkg.in/mgo.v2"
 )
 
 type MongoDBConnection struct {
@@ -25,40 +18,25 @@ func (w MongoDBConnection) GetType() DBBackend {
 func (w MongoDBConnection) GetVersion(logger *cli.Logger) string {
 	// parse and grab database name from uri
 	logger.Debug("grabbing db name from connection string")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	logger.Debug("opening mongodb session")
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(w.Config.ConnString))
-
-	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
-
-	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	pErr := client.Ping(ctx, readpref.Primary())
-
-	if pErr != nil {
+	dialinfo, err := mgo.ParseURL(w.Config.ConnString)
+	if err != nil {
 		return ""
 	}
 
-	// get version from admin DB
-	// is this the best way of doing this?
-	logger.Debug("getting mongodb version")
-	var commandResult bson.M
-	command := bson.D{{"buildInfo", 1}}
-	vErr := client.Database("admin").RunCommand(ctx, command).Decode(&commandResult)
+	logger.Debug("opening mongodb session")
+	session, cErr := mgo.DialWithInfo(dialinfo)
+	if cErr != nil {
+		return ""
+	}
+	defer session.Close()
 
+	logger.Debug("getting mongodb version")
+	buildInfo, vErr := session.BuildInfo()
 	if vErr != nil {
 		return ""
 	}
 
-	// parse version field to get version information
-	ver := fmt.Sprintf("%+v", commandResult["version"])
-	return ver
+	return buildInfo.Version
 }
 
 func (w MongoDBConnection) GetStatus(logger *cli.Logger) ConnectionStatus {
@@ -82,44 +60,38 @@ func (w MongoDBConnection) WriteEventTelemetryV2(logrec *EventTelemetryRecordV2,
 
 func commitMongo(connStr string, targetCollection string, logrec interface{}, logger *cli.Logger) (*Result, error) {
 	// parse and grab database name from uri
-	logger.Debug("check connection string")
-	connStringInfo, err := connstring.ParseAndValidate(connStr)
-
+	logger.Debug("grabbing db name from connection string")
+	dialinfo, err := mgo.ParseURL(connStr)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	logger.Debug("opening mongodb session using connection string")
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connStr))
-
-	if err != nil {
-		return nil, err
+	logger.Debug("opening mongodb session")
+	session, cErr := mgo.DialWithInfo(dialinfo)
+	if cErr != nil {
+		return nil, cErr
 	}
+	defer session.Close()
 
-	logger.Trace(client)
+	// Optional. Switch the session to a monotonic behavior.
+	logger.Debug("setting session properties")
+	session.SetMode(mgo.Monotonic, true)
+	logger.Trace(session)
 
 	logger.Debug("getting target collection")
-	// db := session.DB(dialinfo.Database)
-	db := client.Database(connStringInfo.Database)
-	// c := db.C(targetCollection)
-	c := db.Collection(targetCollection)
+	db := session.DB(dialinfo.Database)
+	c := db.C(targetCollection)
 	logger.Trace(c)
 
 	logger.Debug("opening bulk operation")
-	// bulkop := c.Bulk()
+	bulkop := c.Bulk()
 
 	// build sql data info
 	logger.Debug("building documents")
+	bulkop.Insert(logrec)
 
-	iCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	logger.Debug("inserting new document")
-	_, txnErr := c.InsertOne(iCtx, logrec)
-
+	logger.Debug("running bulk operation")
+	_, txnErr := bulkop.Run()
 	if txnErr != nil {
 		return nil, txnErr
 	}

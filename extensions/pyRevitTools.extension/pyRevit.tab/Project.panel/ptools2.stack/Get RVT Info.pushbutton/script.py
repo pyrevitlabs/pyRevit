@@ -2,7 +2,6 @@
 #pylint: disable=E0401,C0103
 from pyrevit import forms
 from pyrevit.revit import files
-from pyrevit import DB
 
 rvt_file = forms.pick_file(files_filter='Revit Files |*.rvt;*.rte;*.rfa|'
                                         'Revit Model |*.rvt|'
@@ -10,13 +9,9 @@ rvt_file = forms.pick_file(files_filter='Revit Files |*.rvt;*.rte;*.rfa|'
                                         'Revit Family |*.rfa')
 if rvt_file:
     mfile = files.get_file_info(rvt_file)
-    bfi = DB.BasicFileInfo.Extract(rvt_file)
-    if mfile.RevitProduct is not None:
-        print("Created in: {0} ({1}({2}))".format(mfile.RevitProduct,
+    print("Created in: {0} ({1}({2}))".format(mfile.RevitProduct.Name,
                                               mfile.RevitProduct.BuildNumber,
                                               mfile.RevitProduct.BuildTarget))
-    else:
-        print("Created in: {0}".format(bfi.Format))
     print("Workshared: {0}".format("Yes" if mfile.IsWorkshared else "No"))
     if mfile.IsWorkshared:
         print("Central Model Path: {0}".format(mfile.CentralModelPath))

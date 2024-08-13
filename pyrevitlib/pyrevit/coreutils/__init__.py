@@ -31,7 +31,7 @@ from pyrevit.compat import winreg as wr
 from pyrevit import framework
 from pyrevit import api
 
-# RE: https://github.com/pyrevitlabs/pyRevit/issues/413
+# RE: https://github.com/eirannejad/pyRevit/issues/413
 # import uuid
 from System import Guid
 
@@ -1282,7 +1282,7 @@ def format_hex_rgb(rgb_value):
 
 def new_uuid():
     """Create a new UUID (using dotnet Guid.NewGuid)."""
-    # RE: https://github.com/pyrevitlabs/pyRevit/issues/413
+    # RE: https://github.com/eirannejad/pyRevit/issues/413
     # return uuid.uuid1()
     return str(Guid.NewGuid())
 

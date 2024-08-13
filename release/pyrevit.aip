@@ -3257,8 +3257,8 @@
     <ROW Action="DetectProcess" Type="65" Source="aicustact.dll" Target="DetectProcess" Options="3" AdditionalSeq="AI_DATA_SETTER_2"/>
     <ROW Action="InstallAddMaster" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; clones add this master --force" Options="1"/>
     <ROW Action="InstallAddMaster_Admin" Type="2" Source="viewer.exe_1" Target="/RunAsAdmin /HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; clones add this master --force" Options="1"/>
-    <ROW Action="InstallAttachMaster" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; attach master default --installed" Options="1"/>
-    <ROW Action="InstallAttachMaster_Admin" Type="2" Source="viewer.exe_1" Target="/RunAsAdmin /HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; attach master default --installed" Options="1"/>
+    <ROW Action="InstallAttachMaster" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; attach master 2711 --installed" Options="1"/>
+    <ROW Action="InstallAttachMaster_Admin" Type="2" Source="viewer.exe_1" Target="/RunAsAdmin /HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; attach master 2711 --installed" Options="1"/>
     <ROW Action="InstallClearCaches" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; caches clear --all" Options="1"/>
     <ROW Action="InstallClearCaches_Admin" Type="2" Source="viewer.exe_1" Target="/RunAsAdmin /HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; caches clear --all" Options="1"/>
     <ROW Action="InstallDetachAll" Type="2" Source="viewer.exe_1" Target="/HideWindow /dir &quot;[APPDIR]&quot; &quot;[#pyrevit.exe]&quot; detach --all" Options="1"/>
