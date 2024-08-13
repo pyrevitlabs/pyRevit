@@ -10,7 +10,7 @@ tooltip:
     
     github.com/frederic-beaupere
     
-    PR731 https://github.com/eirannejad/pyRevit/pull/731
+    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
   fr_fr: >-
      Vérification non exhaustive pour détecter les familles Revit corrompues.
     
@@ -18,7 +18,7 @@ tooltip:
     
      github.com/frederic-beaupere
      
-         PR731 https://github.com/eirannejad/pyRevit/pull/731
+         PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
   en_us: >-
     Non-exhaustive check to detect corrupt Revit families.
     
@@ -26,7 +26,7 @@ tooltip:
     
     github.com/frederic-beaupere
     
-    PR731 https://github.com/eirannejad/pyRevit/pull/731
+    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
 author:
   - Frederic Beaupere
   - '{{author}}'

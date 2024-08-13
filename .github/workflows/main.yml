@@ -1,15 +1,27 @@
 name: pyRevitCI
 on:
   # when PRs from forked repos are merged
-  # eirannejad 02/12/2024: disabled develop ci/cd builds for pyRevit 5
-  # we will reactivate when changes are ready to build on every commit
-  # push:
-    # branches:
-    #   - develop
+  push:
+    branches:
+      - develop-4
+    paths:
+      - 'bin/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
   # when PR from develop->master is created
   pull_request:
     branches:
       - master
+    paths:
+      - 'bin/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
   # manual run
   workflow_dispatch:
 
@@ -18,7 +30,7 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'eirannejad/pyRevit'
+    if: github.repository == 'pyrevitlabs/pyRevit'
     runs-on: windows-latest
     steps:
       - name: Report Context
@@ -40,10 +52,10 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Checkout Submodules
-        uses: snickerbockers/submodules-init@7ce9774442c0c2d4728e6d3f66141df2102e4cbc
+        uses: jmcouffin/submodules-init@ae47afe19152906d341ee759b39034176873f8ff
 
       - name: Prepare Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -53,7 +65,7 @@ jobs:
           pipenv install
 
       - name: Prepare msbuild
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Prepare git
         uses: fregante/setup-git-user@v2
@@ -131,7 +143,7 @@ jobs:
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       - name: Upload Installers
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pyrevit-installers
           path: |
@@ -141,7 +153,6 @@ jobs:
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.exe
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
-
       - name: Generate Release Notes (Release)
         if: (github.base_ref == env.ReleaseBranch)
         env:
@@ -160,7 +171,7 @@ jobs:
       - name: Publish Release (Release)
         id: publish_release
         if: (github.base_ref == env.ReleaseBranch)
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

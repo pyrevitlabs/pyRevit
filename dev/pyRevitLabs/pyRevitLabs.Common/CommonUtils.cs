@@ -138,7 +138,7 @@ namespace pyRevitLabs.Common {
                 throw new pyRevitNoInternetConnectionException();
         }
 
-        public static string DownloadFile(string url, string destPath, string progressToken = null) {
+        public static string DownloadFile(string url, string destPath) {
             try {
                 using (var client = GetWebClient()) {
                     client.Headers.Add("User-Agent", "pyrevit-cli");

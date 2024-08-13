@@ -30,7 +30,7 @@ def _get_urlsafe_version(version: str):
 def _get_release_url(version: str):
     build_version_urlsafe = _get_urlsafe_version(version)
     return (
-        "https://github.com/eirannejad/pyRevit/"
+        "https://github.com/pyrevitlabs/pyRevit/"
         f"releases/tag/v{build_version_urlsafe}/"
     )
 

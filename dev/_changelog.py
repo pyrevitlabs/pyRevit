@@ -291,7 +291,7 @@ def generate_release_notes(args: Dict[str, str]):
     install_version_urlsafe = props.get_version(install=True, url_safe=True)
 
     base_url = (
-        "https://github.com/eirannejad/pyRevit/"
+        "https://github.com/pyrevitlabs/pyRevit/"
         f"releases/download/v{install_version_urlsafe}/"
     )
 
