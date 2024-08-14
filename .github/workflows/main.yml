@@ -4,14 +4,15 @@ on:
   push:
     branches:
       - develop-4
-    paths:
+      - develop
+   paths:
       - 'bin/**'
       - 'dev/**'
       - 'extensions/**'
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
-  # when PR from develop->master is created
+ # when PR from develop->master is created
   pull_request:
     branches:
       - master
