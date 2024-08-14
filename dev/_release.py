@@ -205,7 +205,7 @@ def setup_certificate(_: Dict[str, str]):
 
 
 def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
-    res = utils.system(
+    res, _ = utils.system(
         [
             install.get_tool("signtool"),
             "sign",
@@ -256,7 +256,7 @@ def sign_binaries(_: Dict[str, str]):
 
 
 def _ensure_clean_tree():
-    res = utils.system(["git", "status"])
+    res, _ = utils.system(["git", "status"])
     if "nothing to commit" not in res:
         print("You have uncommited changes in working tree. Commit those first")
         sys.exit(1)
