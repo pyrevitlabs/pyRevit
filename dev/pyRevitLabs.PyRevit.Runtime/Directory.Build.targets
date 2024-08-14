@@ -35,11 +35,32 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="docopt.net" Version="0.8.1" />
         <PackageReference Include="AirspaceFixer" Version="1.0.6" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'"  Include="ControlzEx" Version="4.4.0" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"  Include="ControlzEx" Version="3.0.2.4" />
+        <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.34.1" />
     </ItemGroup>
+
+    <Target Name="ILRepack" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+        <ItemGroup>
+            <InputAssemblies Include="$(TargetPath)"/>
+            <InputAssemblies Include="$(OutputPath)*.dll" Exclude="$(TargetPath)"/>
+        </ItemGroup>
+
+        <ItemGroup>
+            <DoNotInternalizeAssemblies Include="Revit" />
+        </ItemGroup>
+
+        <ILRepack
+            AllowDuplicateResources="false"
+            DebugInfo="true"
+            Internalize="true"
+            InputAssemblies="@(InputAssemblies)"
+            InternalizeExclude="@(DoNotInternalizeAssemblies)"
+            OutputFile="$(TargetPath)"
+            Parallel="true"
+            TargetKind="SameAsPrimaryAssembly" />
+    </Target>
 
     <Target Name="Deploy" AfterTargets="AfterBuild">
         <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(DeployDestinationFiles)"/>
