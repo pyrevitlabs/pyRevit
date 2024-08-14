@@ -1,10 +1,8 @@
 title:
   ru: RegEx Tool
   en_us: RegEx Tool
-  es_es: Herramiento RegEx
 tooltip:
   ru: Открывает сайт RegExr, которы используется для создания и тестирования регулярных выражений.
   en_us: Opens RegExr website that is used to create and test regular expressions
-  es_es: Abre la página web de RegExr que se usa para crear y probar expresiones regulares
 hyperlink: "http://regexr.com/"
 context: zero-doc

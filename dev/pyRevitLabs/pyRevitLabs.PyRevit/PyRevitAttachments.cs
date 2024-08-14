@@ -28,7 +28,7 @@ namespace pyRevitLabs.PyRevit {
                                   bool allUsers = false,
                                   bool force = false) {
             // make the addin manifest file
-            var engine = clone.GetEngine(revitYear, engineVer);
+            var engine = clone.GetEngine(engineVer);
 
             if (engine.Runtime) {
                 logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}", clone.Name, clone.ClonePath, revitYear));

@@ -1,15 +1,20 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
 using DocoptNet;
-using pyRevitCLI.Properties;
+
 using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
+
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.TargetApps.Revit;
+using pyRevitCLI.Properties;
+
 using Console = Colorful.Console;
 
 
@@ -23,8 +28,7 @@ using Console = Colorful.Console;
 // 6) Make sure PyRevitCLI.ProcessArguments checks and ask for help print
 
 
-namespace pyRevitCLI
-{
+namespace pyRevitCLI {
 
     internal enum PyRevitCLILogLevel {
         Quiet,
@@ -148,10 +152,12 @@ namespace pyRevitCLI
                 try {
                     // now call methods based on inputs
                     ProcessArguments();
+
+                    // process global error codes
+                    ProcessErrorCodes();
                 }
                 catch (Exception ex) {
                     LogException(ex, logLevel);
-                    Environment.ExitCode = -1;
                 }
 
                 // Flush and close down internal threads and timers
@@ -160,7 +166,7 @@ namespace pyRevitCLI
             catch (Exception ex) {
                 // when docopt fails, print help
                 logger.Debug("Arg processing failed. | {0}", ex.Message);
-                PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main, -1);
+                PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
             }
         }
 
@@ -949,6 +955,9 @@ namespace pyRevitCLI
             var activeArgs = arguments.Where(x => x.Value != null && (x.Value.IsTrue || x.Value.IsString));
             foreach (var arg in activeArgs)
                 Console.WriteLine("{0} = {1}", arg.Key, arg.Value.ToString());
+        }
+
+        private static void ProcessErrorCodes() {
         }
 
         private static void LogException(Exception ex, PyRevitCLILogLevel logLevel) {

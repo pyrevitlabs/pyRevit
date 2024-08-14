@@ -1,9 +1,7 @@
 title:
   ru: Wiki
   en_us: Wiki
-  es_es: Wiki
 tooltip:
   ru: Открывает страницу wiki.
   en_us: Opens the wiki page
-  es_es: 'Abre la página de wiki.'
 context: zero-doc

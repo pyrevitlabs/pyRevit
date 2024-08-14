@@ -1,10 +1,8 @@
 title:
   ru: apidocs
   en_us: apidocs
-  es_es: apidocs
 tooltip:
   ru: Открывает последнюю версию документации Revit на apidocs.co.
   en_us: Opens the latest version of Revit on apidocs.co
-  es_es: Abre la última version de Revit en apidocs.so
 hyperlink: "https://apidocs.co/apps/revit/latest"
 context: zero-doc

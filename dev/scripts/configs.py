@@ -11,45 +11,14 @@ VERSION_RANGE = 2017, 2021
 
 # binaries
 BINPATH = op.join(ROOT, "bin")
-BINPATH_NETFX = op.join(BINPATH, "netfx")
-BINPATH_NETCORE = op.join(BINPATH, "netcore")
-
-LIBSPATH_NETFX = op.join(ROOT, "dev", "libs", "netfx")
-LIBSPATH_NETCORE = op.join(ROOT, "dev", "libs", "netcore")
-
-ENGINES2PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY2712PR")
-ENGINES2PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY2712PR")
-
-ENGINES3PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY340PR")
-ENGINES3PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY340PR")
 
 # root path for non-deployable source files
 DEVPATH = op.join(ROOT, "dev")
-RUNTIME = op.join(DEVPATH, "pyRevitLabs.PyRevit.Runtime/pyRevitLabs.PyRevit.Runtime.sln")
 LABS = op.join(DEVPATH, "pyRevitLabs/pyRevitLabs.sln")
-LABS_CLI = op.join(DEVPATH, "pyRevitLabs/pyRevitClI/pyRevitCLI.csproj")
-LABS_DOCTOR = op.join(DEVPATH, "pyRevitLabs/pyRevitDoctor/pyRevitDoctor.csproj")
 DEFAULT_IPY = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
 LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
 CPYTHONRUNTIME = op.join(DEVPATH, "modules/pyRevitLabs.Python.Net.sln")
 DIRECTORY_BUILD_PROPS = op.join(DEVPATH, "Directory.Build.props")
-
-# pyRevit deps
-MAHAPPS = op.join(DEVPATH, "modules/pyRevitLabs.MahApps.Metro/src/MahApps.Metro/MahApps.Metro.csproj")
-NEWTONSOFTJSON = op.join(DEVPATH, "modules/pyRevitLabs.Newtonsoft.Json/Src/Newtonsoft.Json/Newtonsoft.Json.csproj")
-NLOG = op.join(DEVPATH, "modules/pyRevitLabs.NLog/src/NLog/NLog.csproj")
-
-IRONPYTHON2 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
-IRONPYTHON2_LIB = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython/IronPython.csproj")
-IRONPYTHON2_MODULES = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython.Modules/IronPython.Modules.csproj")
-IRONPYTHON2_SQLITE = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython.SQLite/IronPython.SQLite.csproj")
-IRONPYTHON2_WPF = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2/Src/IronPython.Wpf/IronPython.Wpf.csproj")
-
-IRONPYTHON3 = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3.sln")
-IRONPYTHON3_LIB = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython/IronPython.csproj")
-IRONPYTHON3_MODULES = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython.Modules/IronPython.Modules.csproj")
-IRONPYTHON3_SQLITE = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython.SQLite/IronPython.SQLite.csproj")
-IRONPYTHON3_WPF = op.join(DEVPATH, "modules/pyRevitLabs.IronPython3/Src/IronPython.Wpf/IronPython.Wpf.csproj")
 
 # cli autocomplete files
 USAGEPATTERNS = op.join(

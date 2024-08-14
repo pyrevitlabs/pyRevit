@@ -239,7 +239,7 @@ namespace pyRevitLabs.PyRevit {
                     }
 
                     // cleanup completed, now baloon up the exception
-                    throw;
+                    throw ex;
                 }
             }
             else
@@ -373,7 +373,7 @@ namespace pyRevitLabs.PyRevit {
                         }
 
                         // cleanup completed, now baloon up the exception
-                        throw;
+                        throw ex;
                     }
 
                     // register the clone
@@ -411,7 +411,7 @@ namespace pyRevitLabs.PyRevit {
                 }
 
                 // cleanup completed, now baloon up the exception
-                throw;
+                throw ex;
             }
         }
 

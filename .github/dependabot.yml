@@ -19,4 +19,6 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      # Check for updates to GitHub Actions every week
+      interval: "monthly"
+    target-branch: "develop-4"
