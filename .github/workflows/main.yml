@@ -3,9 +3,8 @@ on:
   # when PRs from forked repos are merged
   push:
     branches:
-      - develop-4
       - develop
-   paths:
+    paths:
       - 'bin/**'
       - 'dev/**'
       - 'extensions/**'
