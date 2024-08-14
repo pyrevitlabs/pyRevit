@@ -1,9 +1,7 @@
 title:
   ru: emojis
   en_us: emojis
-  es_es: emojis
 tooltip:
   ru: Печатает все доступные эмоджи с сокращенными кодами.
   en_us: Prints all available emojis with shorthand codes
-  es_es: Imprime todos los emojis disponibles con codigo de caracteres
 context: zero-doc

@@ -14,22 +14,6 @@ import clr
 import System
 
 
-# netcore init
-if int(__revit__.Application.VersionNumber) >= 2025:
-    clr.AddReference('System.Runtime')
-    clr.AddReference('System.Text.RegularExpressions')
-    clr.AddReference('System.Diagnostics.Process')
-    clr.AddReference('System.IO.FileSystem.DriveInfo')
-    clr.AddReference('System.Net.WebClient')
-    clr.AddReference('System.Net.Requests')
-    clr.AddReference('System.Net.WebProxy')
-    clr.AddReference('System.Runtime.Serialization.Formatters')
-    clr.AddReference('System.Reflection.Emit')
-    clr.AddReference('Lokad.ILPack')
-    clr.AddReference('System.ComponentModel')
-    clr.AddReference('System.ObjectModel')
-    clr.AddReference('System.Diagnostics.FileVersionInfo')
-
 clr.AddReference('System.Core')
 clr.AddReference('System.Management')
 clr.AddReference('System.Windows.Forms')

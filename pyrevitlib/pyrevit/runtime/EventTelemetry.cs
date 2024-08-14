@@ -135,7 +135,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // some print parameters throw exceptions
             try {
-#if REVIT2022_OR_GREATER
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022)
                 marginx = printParams.OriginOffsetX;
                 marginy = printParams.OriginOffsetY;
 

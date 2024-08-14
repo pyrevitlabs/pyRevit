@@ -1,9 +1,7 @@
 title:
   ru: Репо
   en_us: Repo
-  es_es: Repo
 tooltip:
   ru: Открывает страницу git репозитория.
   en_us: Opens the git repository page
-  es_es: 'Abre la página del repositorio de git'
 context: zero-doc

@@ -18,7 +18,7 @@ def count_sloc(_: Dict[str, str]):
         "modules",
     ]
     counter_args.extend(configs.SOURCE_DIRS)
-    report, _ = utils.system(counter_args)
+    report = utils.system(counter_args)
     print(report)
 
 

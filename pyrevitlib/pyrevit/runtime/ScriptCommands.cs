@@ -9,9 +9,6 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 
-using MenuItem = System.Windows.Controls.MenuItem;
-using ContextMenu = System.Windows.Controls.ContextMenu;
-
 namespace PyRevitLabs.PyRevit.Runtime {
     public class CommandTypeExecConfigs {
         // unlike fullframe or clean engine modes, the config script mode is determined at

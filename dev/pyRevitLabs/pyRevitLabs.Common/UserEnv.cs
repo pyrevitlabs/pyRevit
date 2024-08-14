@@ -47,7 +47,7 @@ namespace pyRevitLabs.Common {
         }
 
         public static Version GetInstalledDotNetVersion() {
-            return DotNetVersion.GetVersion();
+            return DotNetVersion.Find();
         }
 
         public static List<string> GetInstalledDotnetTargetPacks() {

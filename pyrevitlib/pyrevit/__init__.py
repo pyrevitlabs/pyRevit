@@ -54,14 +54,8 @@ try:
 except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
-
-# try get net folder
-net_folder = "netfx"
-if int(__revit__.Application.VersionNumber) >= 2025:
-    net_folder = "netcore"
-
 # BIN directory
-BIN_DIR = op.join(HOME_DIR, 'bin', net_folder)
+BIN_DIR = op.join(HOME_DIR, 'bin')
 
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
@@ -94,7 +88,7 @@ sys.path.append(ADDIN_DIR)
 sys.path.append(ENGINES_DIR)
 
 
-PYREVIT_CLI_PATH = op.join(HOME_DIR, 'bin', PYREVIT_CLI_NAME)
+PYREVIT_CLI_PATH = op.join(BIN_DIR, PYREVIT_CLI_NAME)
 
 
 # now we can start importing stuff

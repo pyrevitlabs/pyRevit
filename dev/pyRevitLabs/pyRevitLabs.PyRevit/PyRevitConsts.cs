@@ -28,7 +28,6 @@ namespace pyRevitLabs.PyRevit {
         // directories and files
         public const string BinDirName = "bin";
         public const string BinEnginesDirName = "engines";
-        public const string BinCEnginesDirName = "cengines";
         public const string DevDirName = "dev";
         public const string DocsDirName = "docs";
         public const string ExtensionsDirName = "extensions";
@@ -42,9 +41,6 @@ namespace pyRevitLabs.PyRevit {
         public const string ReleaseDirName = "release";
         public const string SitePackagesDirName = "site-packages";
         public const string PyRevitfileFilename = "PyRevitfile";
-        
-        public const string NetFxFolder = "netfx";
-        public const string NetCoreFolder = "netcore";
 
         // clones
         public const string DeployFromImageConfigsFilename = ".pyrevitargs";
