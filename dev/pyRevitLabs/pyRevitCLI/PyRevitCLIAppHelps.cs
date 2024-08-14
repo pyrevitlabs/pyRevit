@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-
-using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.TargetApps.Revit;
-using pyRevitLabs.PyRevit;
 
-namespace pyRevitCLI {
+namespace pyRevitCLI
+{
     internal static class PyRevitCLIAppHelps {
-        internal static void
-        PrintHelp(PyRevitCLICommandType commandType) {
+        internal static void PrintHelp(PyRevitCLICommandType commandType)
+        {
+            PrintHelp(commandType, 0);
+        }
+        internal static void PrintHelp(PyRevitCLICommandType commandType, int exitCode) {
             switch (commandType) {
 
                 case PyRevitCLICommandType.Main:
@@ -366,7 +366,7 @@ namespace pyRevitCLI {
             }
 
             // now exit
-            Environment.Exit(0);
+            Environment.Exit(exitCode);
         }
 
         private static void BuildHelp(IEnumerable<string> docoptKeywords,

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Net;
 using System.IO;
 using System.Diagnostics;
-
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.ApplicationServices;
 
@@ -33,7 +35,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public static class Telemetry {
-        private static string _exeBuild = null;
+#if REVIT2021_OR_GREATER
+        private static string _exeBuild = null;  
+#endif
+
 
         public static string DefaultUser { get; set; } = string.Empty;
 
@@ -41,23 +46,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return JsonConvert.SerializeObject(telemetryRecord);
         }
 
-        public static string PostTelemetryRecord(string telemetryServerUrl, object telemetryRecord) {
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(telemetryServerUrl);
-            httpWebRequest.ContentType = "application/json";
-            httpWebRequest.Method = "POST";
-            httpWebRequest.UserAgent = PyRevitLabsConsts.ProductName;
-
-            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream())) {
-                // serialize and write
-                string json = SerializeTelemetryRecord(telemetryRecord);
-                streamWriter.Write(json);
-                streamWriter.Flush();
-                streamWriter.Close();
-            }
-
-            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream())) {
-                return streamReader.ReadToEnd();
+        public static async void PostTelemetryRecord(string telemetryServerUrl, object telemetryRecord) {
+            try {
+                using(var client = new HttpClient()) {
+                    string jsonValue = SerializeTelemetryRecord(telemetryRecord);
+                    await client.PostAsync(telemetryServerUrl, new StringContent(jsonValue, Encoding.UTF8, "application/json"));
+                }
+            } catch(Exception ex) {
+                Console.WriteLine("Bim4EveryoneSink catch exception{0}{1}", Environment.NewLine, ex);
             }
         }
 

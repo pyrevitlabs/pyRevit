@@ -113,9 +113,9 @@ COMMANDS = [
     Command(name="sign", target="products", args=[], run=release.sign_binaries),
     Command(name="sign", target="installers", args=[], run=release.sign_installers),
     # build
-    Command(name="build", target="products", args=[], run=build.build_binaries),
-    Command(name="build", target="labs", args=[], run=labs.build_labs),
-    Command(name="build", target="engines", args=[], run=labs.build_engines),
+    Command(name="build", target="products", args=["[<config>]"], run=build.build_binaries),
+    Command(name="build", target="labs", args=["[<config>]"], run=labs.build_labs),
+    Command(name="build", target="engines", args=["[<config>]"], run=labs.build_engines),
     Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
     Command(name="build", target="telem", args=[], run=telem.build_telem),
     Command(name="build", target="installers", args=[], run=release.build_installers),

@@ -1,0 +1,7 @@
+title:
+  fr_fr: Décompte des Triangles par type de famille
+  en_us: Triangles count per family type
+tooltip:
+  fr_fr: Compte de Triangles par type de famille. Le résultat est un tableau classé du plus petit nombre de faces au plus grand, avec un grand total.
+  en_us: Triangles count per family type. The result is a table sorted from the smallest number of faces to the largest, with a grand total.
+author: Jean-Marc Couffin, thanks to BIMOne Inc. who allowed me to share this script
