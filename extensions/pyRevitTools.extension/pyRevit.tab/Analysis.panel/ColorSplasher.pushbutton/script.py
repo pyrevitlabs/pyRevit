@@ -158,8 +158,8 @@ class resetColors(IExternalEventHandler):
         
     def Execute(self, uiapp):
         try:
-            new_doc = revit.DOCS.doc
-            view = get_active_view(new_doc)
+            new_doc = uiapp.ActiveUIDocument.Document
+            view = getActiveView(new_doc)
             if view != 0:
                 ogs = OverrideGraphicSettings().Dispose()
                 ogs = OverrideGraphicSettings()
@@ -895,17 +895,18 @@ class Form_cats(Form):
     def Button5Click(self, sender, e):
         if self._listBox2.Items.Count > 0:
             self.legend_ev.Raise()
-
-    def button_6_click(self, sender, e):
-        if self._list_box2.Items.Count > 0:
+            
+    def Button6Click(self, sender, e):
+        if self._listBox2.Items.Count > 0:
+            self.reset_ev.Raise()
             self.filter_ev.Raise()
-
-    def get_gradient_colors(self, start_color, end_color, steps):
-        aStep = float((end_color.A - start_color.A) / steps)
-        rStep = float((end_color.R - start_color.R) / steps)
-        gStep = float((end_color.G - start_color.G) / steps)
-        bStep = float((end_color.B - start_color.B) / steps)
-        colorList = []
+    
+    def getGradientColors(self, startColor, endColor, steps):
+        aStep = float((endColor.A - startColor.A) / steps)
+        rStep = float((endColor.R - startColor.R) / steps)
+        gStep = float((endColor.G - startColor.G) / steps)
+        bStep = float((endColor.B - startColor.B) / steps)
+        colorList=[]
         for index in range(steps):
             a = startColor.A + int(aStep * index)-1;
             r = startColor.R + int(rStep * index)-1;

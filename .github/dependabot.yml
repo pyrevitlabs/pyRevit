@@ -7,16 +7,18 @@ updates:
       # Check for npm updates on Sundays
       day: "sunday"
     # Raise pull requests for version updates
-    # to pip against the `develop-4` branch
-    target-branch: "develop-4"
+    # to pip against the `develop` branch
+    target-branch: "develop"
   - package-ecosystem: "gomod"
     # directory required https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#vendor
     directory: "/"
-    target-branch: "develop-4"
+    target-branch: "develop"
     schedule:
       interval: "monthly"
     # Set update schedule for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      # Check for updates to GitHub Actions every week
+      interval: "monthly"
+    target-branch: "develop"
