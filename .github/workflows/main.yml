@@ -3,14 +3,14 @@ on:
   # when PRs from forked repos are merged
   push:
     branches:
-      - develop
-    paths:
-      - 'bin/**'
-      - 'dev/**'
-      - 'extensions/**'
-      - 'pyrevitlib/**'
-      - 'release/**'
-      - 'site-packages/**'
+      - develop-4
+=========
+  # eirannejad 02/12/2024: disabled develop ci/cd builds for pyRevit 5
+  # we will reactivate when changes are ready to build on every commit
+  # push:
+    # branches:
+    #   - develop
+>>>>>>>>> Temporary merge branch 2
   # when PR from develop->master is created
   pull_request:
     branches:
@@ -31,6 +31,7 @@ env:
 
 jobs:
   build:
+    if: github.repository == 'eirannejad/pyRevit'
     runs-on: windows-latest
     steps:
       - name: Report Context
@@ -49,7 +50,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: recursive
+          ref: ${{ github.head_ref }}
+
+      - name: Checkout Submodules
+        uses: snickerbockers/submodules-init@7ce9774442c0c2d4728e6d3f66141df2102e4cbc
 
       - name: Prepare Python 3.10
         uses: actions/setup-python@v5
@@ -186,8 +190,8 @@ jobs:
 
       - name: Publish Release (Release)
         id: publish_release
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
-        uses: softprops/action-gh-release@v2
+        if: (github.base_ref == env.ReleaseBranch)
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

@@ -278,9 +278,31 @@ def get_references():
 
 def _generate_runtime_asm():
     source_list = list(_get_source_files())
-    # now try to load compiled runtime assembly
+    # now try to compile
     try:
-        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
+        mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
+        res, msgs = labs.Common.CodeCompiler.CompileCSharp(
+            sourceFiles=Array[str](source_list),
+            outputPath=RUNTIME_ASSM_FILE,
+            references=Array[str](
+                get_references()
+            ),
+            defines=Array[str]([
+                "REVIT{}".format(HOST_APP.version),
+                "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
+            ]),
+            debug=False
+        )
+        # log results
+        logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
+        with open(logfile, 'w') as lf:
+            lf.write('\n'.join(msgs))
+        # load compiled dll if successful
+        if res:
+            return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
+        # otherwise raise hell
+        else:
+            raise PyRevitException('\n'.join(msgs))
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',
