@@ -13,7 +13,7 @@ def create_dark_icon(source):
     Returns:
         None
     """
-    image = Image.open(source)
+    image = Image.open(source).convert('RGBA')
     create_bitmap(image, (235, 235, 235), os.path.join(os.path.dirname(source), os.path.splitext(source)[0] + ".dark.png"))
 
 def create_bitmap(source, color, target):
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # all icon.png files in the current directory and subfolders
     for root, dirs, files in os.walk("C:\pyRevit"):         # folder path that requires conversion
         for file in files:
-            if file == "icon.png":
+            if file == "icon.png" and not os.path.exists(os.path.join(root, "icon.dark.png")):
                 try:
                     create_dark_icon(os.path.join(root, file))
                 except Exception as e:

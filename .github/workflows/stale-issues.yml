@@ -1,0 +1,26 @@
+name: Close inactive issues
+on:
+  schedule:
+    - cron: "30 1 * * *"
+
+jobs:
+  close-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          stale-issue-message: |
+                                "👋 Hi there! It looks like there hasn't been any activity on this issue for the past 60 days. We understand that things can get busy.
+                                Just a friendly reminder that this issue is scheduled to be automatically closed in 14 days if there's no further activity. 
+                                If you still need assistance or have additional information to share, please feel free to comment, and we'll be happy to help! 🚀
+                                Thanks for your understanding!"
+          close-issue-message: "This issue was closed because it has been inactive for 14 days since being marked as stale."
+          any-of-issue-labels: needs-more-info
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+  

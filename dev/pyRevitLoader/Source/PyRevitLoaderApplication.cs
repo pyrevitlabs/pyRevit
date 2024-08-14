@@ -22,7 +22,17 @@ namespace PyRevitLoader {
                 // load all engine assemblies
                 // this is to ensure pyRevit is loaded on its own assemblies
                 foreach (var engineDll in Directory.GetFiles(LoaderPath, "*.dll"))
-                    Assembly.LoadFrom(engineDll);
+                {
+                    try
+                    {
+                        Assembly.LoadFrom(engineDll);
+                    }
+                    catch
+                    {
+                        ////
+                    }
+                }
+                    
                 
                 return ExecuteStartupScript(application);
             }

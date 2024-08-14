@@ -239,7 +239,7 @@ namespace pyRevitLabs.PyRevit {
                     }
 
                     // cleanup completed, now baloon up the exception
-                    throw ex;
+                    throw;
                 }
             }
             else
@@ -286,7 +286,7 @@ namespace pyRevitLabs.PyRevit {
                     logger.Info("Downloading package \"{0}\"", imageSource);
                     logger.Debug("Downloading package \"{0}\" to \"{1}\"", imageSource, pkgDest);
                     imageFilePath =
-                        CommonUtils.DownloadFile(imageSource, pkgDest, progressToken: Path.GetFileName(imageSource));
+                        CommonUtils.DownloadFile(imageSource, pkgDest);
                     logger.Debug("Downloaded to \"{0}\"", imageFilePath);
                 }
                 catch (Exception ex) {
@@ -373,7 +373,7 @@ namespace pyRevitLabs.PyRevit {
                         }
 
                         // cleanup completed, now baloon up the exception
-                        throw ex;
+                        throw;
                     }
 
                     // register the clone
@@ -411,7 +411,7 @@ namespace pyRevitLabs.PyRevit {
                 }
 
                 // cleanup completed, now baloon up the exception
-                throw ex;
+                throw;
             }
         }
 

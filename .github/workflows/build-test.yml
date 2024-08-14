@@ -1,0 +1,64 @@
+name: Build test
+on:
+  push:
+
+jobs:
+  build:
+    if: github.repository != 'eirannejad/pyRevit'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Prepare Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+        
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv install
+
+      # needs for MahApps XamlColorSchemeGenerator
+      - name: Prepare .NET 3.1
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 3.1.x
+
+      - name: Prepare .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Prepare msbuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Products
+        run: |
+          pipenv run pyrevit build products
+
+      - name: Build Installers
+        run: |
+          pipenv run pyrevit build installers
+
+      - name: Get Install Version
+        id: installversion
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: release/version
+
+      - name: Upload Installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyrevit-installers
+          path: |
+            dist/pyRevit_${{ steps.installversion.outputs.content }}_signed.exe
+            dist/pyRevit_${{ steps.installversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.exe
+            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
+            dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
