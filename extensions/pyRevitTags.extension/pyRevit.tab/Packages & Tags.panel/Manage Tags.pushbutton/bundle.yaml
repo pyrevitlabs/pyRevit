@@ -7,8 +7,13 @@ title:
     Manage
 
     Tags
+  de_de: >-
+    Tags
+
+    verwalten
 tooltip:
   ru: Управляет марками в проекте или выделенными элементами.
   en_us: Manage tags in project or selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
+  de_de: Alle Tags im Projekt verwalten oder nur von aktuell ausgewählten Elementen. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'
