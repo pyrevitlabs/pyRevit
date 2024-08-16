@@ -1,7 +1,9 @@
 title:
   ru: Конфигурация марок
   en_us: Tags Config
+  de_de: Tags Konfiguration
 tooltip:
   ru: Открывает настройки маркирования.
-  en_us: Tags configuration options - you need to create a 'doctag' and apply it to the document categories before using the tag tools
+  en_us: Tags configuration options. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  de_de: Tags Konfigurationsoptionen. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 context: zero-doc
