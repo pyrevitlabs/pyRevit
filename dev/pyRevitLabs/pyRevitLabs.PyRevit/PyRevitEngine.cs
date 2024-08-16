@@ -38,6 +38,7 @@ namespace pyRevitLabs.PyRevit {
                              PyRevitEngineVersion engineVer,
                              bool runtime,
                              string enginePath,
+                             bool isNetCore,
                              string assemblyName = PyRevitConsts.LegacyEngineDllName,
                              string kernelName = "",
                              string engineDescription = "",
@@ -46,6 +47,7 @@ namespace pyRevitLabs.PyRevit {
             Version = engineVer;
             Runtime = runtime;
             Path = enginePath;
+            IsNetCore = isNetCore;
             AssemblyName = assemblyName;
             KernelName = kernelName;
             Description = engineDescription;
@@ -65,6 +67,7 @@ namespace pyRevitLabs.PyRevit {
         public string AssemblyName { get; private set; }
         public string KernelName { get; private set; }
         public bool IsDefault { get; private set; }
+        public bool IsNetCore { get; private set; }
 
         public string AssemblyPath {
             get {
