@@ -8,4 +8,4 @@ tooltip:
   ru: Выводит все листы и виды, на которых видны выбранные элементы.
   fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
   en_us: Lists all sheets and views that the selected elements is visible in
-  de_de: Es werden alle Pläne und Ansichten aufgelistet, auf denen das/die Element(e) sichtbar sind
+  de_de: Es werden alle Pläne und die dazugehörigen Ansichten aufgelistet, auf denen das/die Element(e) sichtbar sind
