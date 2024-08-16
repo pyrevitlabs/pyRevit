@@ -3,9 +3,9 @@ title:
   ru: Найти все связанные зависимости
   fr_fr: Trouver toutes les contraintes attachées
   en_us: Find all attached constraints
-  de_de: Finde alle zugehörige Abhängigkeiten
+  de_de: Finde alle verbundenen Abhängigkeiten
 tooltip:
   ru: Находит все зависимости, связанные с выделенным элементом.
   fr_fr: Trouver toutes les contraintes attachées à l'élément sélectionné
   en_us: Find all constraints attached to the selected element
-  de_de: Finde alle Abhängigkeiten, die mit dem ausgewählten Element in Zusammenhang stehen. Das können bei einer Wand z.B. Fenster, Bemaßungen, Beschriftungen usw sein. Das sind also alle Abhängigkeiten der verloren gehen würden, wenn man das Element löschen würde. Dadurch hat man insbesondere einen guten Überblick, welche Elemente durch das Löschen auf anderen Ansichten verloren gehen würden.  
+  de_de: Finde alle Abhängigkeiten die mit dem gewählten Element verbunden sind  
