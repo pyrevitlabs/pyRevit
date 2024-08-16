@@ -22,3 +22,4 @@ tooltip:
 author: BIMOne Inc.(2021), Nonica (Jaime Alonso Candau - 2023), BIMOne Inc. (Jean-Marc Couffin - 2023)
 engine:
   persistent: true
+  full_frame: true
