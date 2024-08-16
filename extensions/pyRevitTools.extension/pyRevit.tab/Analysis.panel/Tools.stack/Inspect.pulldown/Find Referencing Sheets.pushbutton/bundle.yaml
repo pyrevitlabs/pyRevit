@@ -2,6 +2,7 @@ title:
   ru: Найти связанные листы
   fr_fr: Trouver les feuilles qui référencent la vue
   en_us: Find Referencing Sheets
+  de_de: Suche alle referenzierten Pläne
 tooltip:
   ru: >-
     Находит все связанные листы с текущим видом.
@@ -15,4 +16,8 @@ tooltip:
     Find all sheets referencing the current view
 
     Especially useful for finding legends
+  de_de: >-
+    Es werden alle Pläne aufgelistet, die die aktuelle Ansicht referenzieren.
+
+    Dies ist insbesondere hilfreich, um Legenden zu finden. 
 author: '{{author}}'

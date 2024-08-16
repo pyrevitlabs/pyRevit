@@ -1,7 +1,9 @@
 title:
   ru: Сверить марки
   en_us: Match Tags
+  de_de: Tags übertragen
 tooltip:
   ru: Сравнивает марки между выделенными элементами.
-  en_us: Match Tags between selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
+  en_us: Match Tags between selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  de_de: Tags zwischen den ausgewählten Elementen übertragen. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 author: '{{author}}'

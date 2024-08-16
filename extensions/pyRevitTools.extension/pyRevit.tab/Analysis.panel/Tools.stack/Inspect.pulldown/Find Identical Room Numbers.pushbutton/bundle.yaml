@@ -2,7 +2,9 @@ title:
   ru: Найти одинаковые номера помещений
   fr_fr: Trouver les numéros de pièces identiques
   en_us: Find identical room numbers
+  de_de: Finde identische Raum Nummern
 tooltip:
   ru: Находит и выводит помещения с одинаковыми номерами.
   fr_fr: Trouver et lister les pièces avec un numéro identique
   en_us: Finds and lists rooms with identical numbers
+  de_de: Es werden alle alle Räume mit identischen Nummern aufgelistet

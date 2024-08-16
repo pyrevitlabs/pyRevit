@@ -3,6 +3,7 @@ title:
   ru: Копировать листы в открытые документы
   fr_fr: Copier des Feuilles vers des Documents Ouverts
   en_us: Copy Sheets To Open Documents
+  de_de: Kopiere Pläne in andere geöffnete Projekte
 tooltip:
   ru: >-
     Копирует выделенные или текущий лист(ы) в другие открытые проекты в
@@ -20,3 +21,9 @@ tooltip:
     Revit. Make sure the destination documents have at least one Legend view
     (Revit API does not provide a method to create Legend views so this script
     needs to duplicate an existing one to create a new Legend)
+  de_de: >-
+    Kopiert die/den ausgewählte(n) oder aktuelle(n) Pläne/Plan in andere, derzeit 
+    in Revit geöffnete Projekte. Stellen Sie sicher, dass in den Zielprojekten 
+    mindestens eine Legendenansicht existiert (die Revit-API bietet keine Methode 
+    zum Erstellen von Legenden. Daher muss dieses Skript eine vorhandene Legende 
+    duplizieren, um eine neue Legende zu erstellen)
