@@ -7,4 +7,4 @@ tooltip:
   ru: Открывает журнал текущего совместного проекта.
   fr_fr: Ouvre le log central du projet partagé en cours
   en_us: Opens the central log for the current workshared project
-  de_de: Öffnet das Änderungsprotkoll der aktiven Projektdatei. Die Zusammenarbeit muss dafür aktiviert sein, da sonst kein Protokoll vorhanden ist. 
+  de_de: Öffnet das Änderungsprotkoll der aktiven Projektdatei. Die Arbeitsteilung muss dafür aktiviert sein, da ansonstten kein Protokoll vorhanden ist. 
