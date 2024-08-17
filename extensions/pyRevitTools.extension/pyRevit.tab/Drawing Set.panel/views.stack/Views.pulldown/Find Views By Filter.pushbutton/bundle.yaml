@@ -17,7 +17,7 @@ tooltip:
     Es werden alle Ansichten mit dazugehöriger ID aufgelistet die 
     den ausgewählten Kriterien entsprechen. 
     Kriterien die zur Auswahl stehen:
-    * Mit Unterlage
-    * Ohne Unterlage
-    * Mit Ansichtsvorlage
-    * Ohne Ansichtsvorlage
+    1) Mit Unterlage
+    2) Ohne Unterlage
+    3) Mit Ansichtsvorlage
+    4) Ohne Ansichtsvorlage
