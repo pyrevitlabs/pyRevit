@@ -13,6 +13,6 @@ tooltip:
     ob die auf der Legende platzierten Legendenbauteile eine Ansichtsrichtung "Rechts" unterstützen 
     oder nicht, kann dieses Skript angewendet werden. Die ausgewählten Legendenbauteile 
     werden in auf die Ansichtsrichtung "Rechts" umgestellt. Nicht alle Legendenbauteile
-    unterstützen jeden Art von Ansichtsrichtung !!!
+    unterstützen jede Art von Ansichtsrichtung !!!
 author: Jean-Marc Couffin
 context: selection
