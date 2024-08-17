@@ -2,7 +2,7 @@ title:
   fr_fr: Orienter le composant de légende sur la vue 3D
   en_us: Set Legend Component to 3D orientation
   ru: Установить 3D вид компоненту легенды
-  de_de: Legendenbauteile auf 3D Darstellung umstellen
+  de_de: Legendenbauteile auf Ansichtsrichtung "3D" umstellen
 tooltip: 
   fr_fr: Vue 3D du composant de légende !!! Tous les composants de la légende ne supportent pas n'importe quel type d'orientation de vue !!!
   en_us: Legend Component 3D view !!! Not all legend components support any type of view orientation !!!
@@ -10,9 +10,9 @@ tooltip:
   de_de: >-
     Im Register Beschriften > Befehlsgruppe Detail > Legendendenbauteil können 
     in einer Legende Legendenbauteile von Familien platziert werden. Je nachdem 
-    ob die auf der Legende platzierten Elemente eine 3D Darstellung unterstützen 
-    oder nicht, kann dieses Skript angewendet werden. Die gewählten Legendenbauteile 
-    werden in auf die 3D Darstellung umgestellt. Nicht alle Legenden unterstützen 
-    jeden Typ von Ansichtsorientierung !!!
+    ob die auf der Legende platzierten Legendenbauteile eine Ansichtsrichtung 3D unterstützen 
+    oder nicht, kann dieses Skript angewendet werden. Die ausgewählten Legendenbauteile 
+    werden in auf die Ansichtsrichtung "3D" umgestellt. Nicht alle Legendenbauteile
+    unterstützen jeden Art von Ansichtsrichtung !!!
 author: Jean-Marc Couffin
 context: selection
