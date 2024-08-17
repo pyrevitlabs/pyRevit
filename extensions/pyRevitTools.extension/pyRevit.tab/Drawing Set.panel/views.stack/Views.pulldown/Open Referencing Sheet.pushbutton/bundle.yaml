@@ -5,10 +5,14 @@ title:
     Ouvrir la feuille en référence
   en_us: |-
     Open Referencing Sheet
+  de_de: |-
+    Öffne den referenzierten Plan
 tooltip:
-  ru:
+  ru: |-
     Открывает лист содержащий данный вид и приближает к видовому экрану.
   fr_fr: |-
     Ouvre la feuille contenant cette vue et effectue un zoom sur la fenêtre
   en_us: |-
     Opens the sheet containing this view and zooms to the viewport
+  de_de: |-
+    Es wird der Plan geöffnet, der die Ansicht enthält und zoomt auf das Ansichtsfenster
