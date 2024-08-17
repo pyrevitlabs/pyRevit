@@ -3,6 +3,7 @@ title:
   ru: Сверка
   fr_fr: Correspondance
   en_us: Match
+  de_de: Gr.Üb.kopieren
 tooltip:
   ru: >-
     Выберите исходный объект, который содержит переопределение графики элемента, с которым вы хотите сверить, а затем выберите объекты назначения один за другим и этот инструмент будет сверять переопределение графики.
@@ -24,3 +25,16 @@ tooltip:
     Shift-Click:
 
     Shows Match Config window
+  de_de: >-
+    Bevor man den Behfehl ausführt sollte man die Einstellungen prüfen (siehe unten) 
+    und damit entscheiden welche Art von grafischen Überschreibungen kopiert werden sollen.
+    Nach dem Ausführen des Befehls muss man ein Element als Quelle auswählen. Anschließend 
+    kann man einzeln weitere Elemente auswählen auf die die grafischen Überschreibungen 
+    kopiert werden sollen. Danach muss man in der Optionsleiste auf den Button 
+    "Fertig stellen" klicken, um den Befehl abzuschliessen. Mit der Taste ESC kann man 
+    den Befehl abbrechen. 
+
+    Shift-Click:
+
+    Es wird ein Dialog mit Einstellungen angezeigt, mit denen man Festlegen kann, 
+    welche Art von grafischen Überschreibungen kopiert werden sollen
