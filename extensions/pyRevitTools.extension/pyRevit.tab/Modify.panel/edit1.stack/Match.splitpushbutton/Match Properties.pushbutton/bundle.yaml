@@ -2,7 +2,7 @@ title:
   ru: Сверить параметры
   fr_fr: Correspondance des propriétés
   en_us: Match properties
-  de_de: Übertrage Eigenschaften
+  de_de: Kopiere Eigenschaften
 tooltip:
   ru: >-
     Сверяет параметры экземпляра или типа между элементами и их типами.
