@@ -11,4 +11,5 @@ tooltip:
   de_de: >-
     Es erscheint ein Auswahldialog mit allen Pfeilspitztypen im Projekt.
     Wählen Sie alle Pfeilspitztypen aus, die gelöscht werden sollen
-    und bestätigen Sie mit dem Button Select.
+    und bestätigen Sie mit dem Button Select. Anschließend erscheint
+    ein Konsolenfenster mit Informationen zu den gelöschten Typen.
