@@ -2,8 +2,10 @@ title:
   fr_fr: Surligner 2D
   en_us: Highlight 2D
   ru: Подсветить 2D
+  de_de: 2D Hervorheben
 tooltip:
   fr_fr: Suriligner les éléments 2D elements en Rouge
   en_us: Higlight 2D elements in red
   ru: Подсвечивает 2D элементы красным цветом
+  de_de: 2D Elemente werden in ror hervorgehoben
 author: Jean-Marc Couffin
