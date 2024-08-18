@@ -44,7 +44,7 @@
     <Target Name="ILRepack" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
         <ItemGroup>
             <InputAssemblies Include="$(TargetPath)"/>
-            <InputAssemblies Include="$(OutputPath)*.dll" Exclude="$(TargetPath)"/>
+            <InputAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)"/>
         </ItemGroup>
 
         <ItemGroup>
