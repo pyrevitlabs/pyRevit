@@ -2,7 +2,9 @@ title:
   ru: Сохранить память как выделение
   fr_fr: Sauvegarder la Mémoire comme une sélection
   en_us: Save Memory as Selection
+  de_de: Speicher als Auswahlsatz speichern
 tooltip:
   ru: Сохраняет текущую выделенную память в качестве фильтра выделения.
   fr_fr: Enregistre la mémoire de sélection actuelle en tant que filtre de sélection
   en_us: Saves current selection memory as a Selection Filter
+  de_de: Speichert den Inhalt des aktuellen Auswahl Speichers als einen Auswahlsatz
