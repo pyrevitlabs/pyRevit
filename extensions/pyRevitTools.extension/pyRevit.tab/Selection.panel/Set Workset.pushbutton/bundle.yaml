@@ -12,14 +12,14 @@ title:
     
     Workset
   de_de: >-
-    Bearbeitungsbereich
+    Set
     
-    festlegen
+    Workset
 tooltip:
   ru: Устанавливает текущий рабочий набор из выделения.
   fr_fr: Rend le sous-projet de la sélection actuel actif
   en_us: Sets the active workset from the selection
-  de_de: In einem Auswahldialog kann der aktive Bearbeitungsbereich festgelegt werden
+  de_de: In einem Auswahldialog kann der aktive Bearbeitungsbereich (Workset) festgelegt werden
 context: selection
 author: 'Jean-Marc Couffin'
 contact: 'https://github.com/jmcouffin'
