@@ -41,7 +41,7 @@
         <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.34.1" />
     </ItemGroup>
 
-    <Target Name="ILRepack" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Target Name="ILRepack" AfterTargets="AfterBuild" Condition="'$(Configuration)' == 'Release'">
         <ItemGroup>
             <InputAssemblies Include="$(TargetPath)"/>
             <InputAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)"/>
@@ -63,7 +63,7 @@
             TargetKind="SameAsPrimaryAssembly" />
     </Target>
 
-    <Target Name="Deploy" AfterTargets="AfterBuild">
+    <Target Name="Deploy" AfterTargets="ILRepack">
         <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(DeployDestinationFiles)"/>
         <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(DeployDestinationFiles)'))" />
     </Target>
