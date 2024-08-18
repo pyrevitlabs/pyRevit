@@ -2,7 +2,12 @@ title:
   ru: Импортер
   fr_fr: Importés
   en_us: Importer
+  de_de: Importiert
 tooltip:
   ru: Переключает видимость импортированных категорий в текущем виде.
   fr_fr: Bascule la visibilité des catégories importées sur la vue actuelle
   en_us: Toggles visibility of imported categories on current view
+  de_de: >- 
+    Schaltet die importierten Kategorien in der aktuellen Ansicht an bzw aus. 
+    Im Grunde werden die Einstellungen im Dialog Sichtbarkeit/Grafiken im Tab
+    Importierte Kategorien umgeschalten.
