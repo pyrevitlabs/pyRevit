@@ -2,7 +2,7 @@ title:
   ru: ПОчистить
   fr_fr: MEffacer
   en_us: MClear
-  de_de: MLeeren
+  de_de: SLöschen
 tooltip:
   ru: >-
     Очищает память проекта.
