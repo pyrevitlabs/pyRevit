@@ -19,7 +19,7 @@ tooltip:
     Every project has its own selection memory saved 
     in %appdata%/pyRevit folder as *.pym files
   de_de: >-
-    Füge die aktuelle Auswahl dem Speicher hinzu.
+    Fügt die aktuelle Auswahl dem Speicher hinzu.
     Funktioniert wie die M+ Taste auf dem Taschenrechner. 
     Dies ist ein Projekt-abhängiger Speicher. 
     Jedes Projekt hat seinen eigenen Auswahlspeicher, 
