@@ -2,6 +2,7 @@ title:
   ru: Импортировать конфигурацию семейства
   fr_fr: Importer une configuration de famille
   en_us: Import Family Config
+  de_de: Familien Konfiguration importieren
 tooltip:
   ru: >-
     Импортирует конфигурацию семейства из yaml файла и изменяет текущее семейство.
@@ -93,6 +94,40 @@ tooltip:
                   type: Length
                   category: PG_GEOMETRY
                   instance: false
+    types:
+          24D"x36H":
+                  Shelf Height (Upper): 3'-0"
+  de_de: >-
+    Importiert die Familien Konfiguration von eine yaml Datei und passt die aktuelle Familie an.
+    
+    Die Familien Konfiguration muss eine yaml Datei sein, die Informationen
+    über die Parameter und Typen enthält, die der Familie hinzugefügt werden sollen. 
+    
+    Die Formatierung der Konfigurationsdatei sieht folgendermaßen aus:
+    
+    parameters:
+          <parameter-name>:
+                  type: <Autodesk.Revit.DB.ParameterType>
+                  category: <Autodesk.Revit.DB.BuiltInParameterGroup>
+                  instance: <true|false>
+                  reporting: <true|false>
+                  formula: <str>
+                  default: <str>
+    
+    types:
+          <type-name>:
+                  <parameter-name>: <value>
+                  <parameter-name>: <value>
+                  ...
+    
+    Beispiel:
+    
+    parameters:
+          Shelf Height (Upper):
+                  type: Length
+                  group: PG_GEOMETRY
+                  instance: false
+                  
     types:
           24D"x36H":
                   Shelf Height (Upper): 3'-0"
