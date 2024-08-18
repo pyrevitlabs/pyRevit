@@ -2,8 +2,13 @@ title:
   fr_fr: Supprimer les têtes de flèches de manière radicale
   en_us: Wipe ArrowHeads type
   ru: Удалить типы засечек
+  de_de: Lösche best. Pfeilspitzen Typen
 
 tooltip:
   fr_fr: Supprimer les têtes de flèches de manière radicale
   en_us: Wipe selected arrow-head types
   ru: Удаляет выделенные типы засечек
+  de_de: >-
+    Es erscheint ein Auswahldialog mit allen Pfeilspitztypen im Projekt.
+    Wählen Sie alle Pfeilspitztypen aus, die gelöscht werden sollen
+    und bestätigen Sie mit dem Button Select.
