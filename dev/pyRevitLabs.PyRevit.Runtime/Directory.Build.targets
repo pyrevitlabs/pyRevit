@@ -48,7 +48,7 @@
         </ItemGroup>
 
         <ItemGroup>
-            <DoNotInternalizeAssemblies Include="Revit" />
+            <DoNotInternalizeAssemblies Include="^Autodesk.*" />
         </ItemGroup>
 
         <ILRepack
@@ -59,6 +59,7 @@
             InternalizeExclude="@(DoNotInternalizeAssemblies)"
             OutputFile="$(TargetPath)"
             Parallel="true"
+            LibraryPath="$(RevitDevDir)\$(RevitVersion)"
             TargetKind="SameAsPrimaryAssembly" />
     </Target>
 
