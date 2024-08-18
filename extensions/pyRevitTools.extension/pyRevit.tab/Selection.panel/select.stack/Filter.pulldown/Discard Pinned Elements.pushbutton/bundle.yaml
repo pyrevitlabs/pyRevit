@@ -7,5 +7,9 @@ tooltip:
   ru: Отбросить (не удалить) прикрепленные элементы с текущего выделения.
   fr_fr: Enlève (ne supprime pas) les éléments épinglés de la sélection courante
   en_us: Discards (not delete) pinned elements from current selection
-  de_de: Gepinnte Elemente von der aktuellen Auswahl ausschliessen (nicht löschen)
+  de_de: >-
+    Die aktuelle Elementauswahl wird so vermindert, 
+    dass keine gepinnte Elemente mehr in der Auswahl vorhanden sind. 
+    Die Elemente werden also nicht gelöscht, 
+    sondern nur aus der aktuellen Auswahl entfernt.
 context: Selection
