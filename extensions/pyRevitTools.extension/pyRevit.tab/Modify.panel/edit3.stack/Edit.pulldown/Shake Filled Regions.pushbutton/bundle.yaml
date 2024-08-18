@@ -34,4 +34,4 @@ tooltip:
     konvertieren“ verwendet. Denn das Werkzeug „Linienstile Konvertieren“ 
     kann auch die Linienstile innerhalb der gefüllten Bereiche Aktualisieren.
     Die Regenierung der gefüllten Bereiche muss jedoch separat 
-    durchgeführt werden, damit Revit bei großen Modellen nicht abstürzt).
+    durchgeführt werden, damit Revit bei großen Modellen nicht abstürzt.
