@@ -2,7 +2,7 @@ title:
   ru: Отбросить прикрепленные элементы
   fr_fr: Enlève les éléments épinglés
   en_us: Discard Pinned Elements
-  de_de: Gepinnte Elemente ausschliessen
+  de_de: Gepinnte Elemente von der aktuellen Auswahl ausschliessen
 tooltip:
   ru: Отбросить (не удалить) прикрепленные элементы с текущего выделения.
   fr_fr: Enlève (ne supprime pas) les éléments épinglés de la sélection courante
