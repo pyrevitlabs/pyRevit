@@ -2,7 +2,7 @@ title:
   ru: Выбрать самую верхнюю группу
   fr_fr: Sélectionner les groupes supérieurs
   en_us: Select topmost groups
-  de_de: Wähle die oberste Gruppe aus
+  de_de: Oberste übergeordnete Gruppe auswählen
 tooltip:
   ru: >-
     Выделяет экземпляры групп, которые содержат выделенные элементы.
