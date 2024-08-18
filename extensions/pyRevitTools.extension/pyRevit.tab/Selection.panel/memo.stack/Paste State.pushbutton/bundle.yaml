@@ -2,6 +2,7 @@ title:
   ru: Вставить
   fr_fr: Coller l'état
   en_us: Paste State
+  de_de: Zustand einfügen
 tooltip:
   ru: >-
     Применяет скопированное состояние к активному виду.
@@ -27,6 +28,15 @@ tooltip:
     Shift-Click:
     
     Show additional options
+  de_de: >-
+    Fügt den zuvor gespeicherten Zustand einer Ansicht, 
+    in die aktive Ansicht ein. Dieses Werkzeug wird in
+    Kombination mit dem pyRevit Werkzeug "Zustand kopieren"
+    verwendet. 
+    
+    Shift-Click:
+    
+    Zeigt zusätzliche Optionen an, z.B. Filter in Ansichtsvorlagen übertragen oder 
 author: >-
   Gui Talarico
 
