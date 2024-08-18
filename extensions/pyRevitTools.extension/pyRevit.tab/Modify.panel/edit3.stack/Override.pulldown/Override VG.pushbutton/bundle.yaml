@@ -10,7 +10,7 @@ tooltip:
   de_de: >-
     Zunächst muss man die Elemente auswählen, die man grafisch überschreiben möchte. 
     Anschließend stehen mehrere Optionen zur Auswahl:
-    1) Rest VG Overrides = Grafische Überschreibung zurücksetzen
+    1) Reset VG Overrides = Grafische Überschreibung zurücksetzen
     2) Halftone Selected = Mit Halbton überschreiben
     3) Solid-Line Selected = Mit Linienmuster kompakt überschreiben
     4) White-out Selected = Mit hellem grau Farbton überschreiben
