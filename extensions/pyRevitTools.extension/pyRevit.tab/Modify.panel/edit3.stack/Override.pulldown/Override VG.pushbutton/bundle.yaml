@@ -2,8 +2,21 @@ title:
   ru: Изменить В/Г
   fr_fr: Remplacement V/G
   en_us: Override V/G
+  de_de: Element grafisch überschreiben
 tooltip:
   ru: Предоставляет возможности для переопределения видимости/графики на выделенных элементах.
   fr_fr: Donne des options de remplacement de visibilité/graphismes des éléments sélectionnés
   en_us: Provides options for overriding Visibility/Graphics on selected elements
+  de_de: >-
+    Zunächst muss man die Elemente auswählen, die man grafisch überschreiben möchte. 
+    Anschließend stehen mehrere Optionen zur Auswahl:
+    1) Rest VG Overrides = Grafische Überschreibung zurücksetzen
+    2) Halftone Selected = Mit Halbton überschreiben
+    3) Solid-Line Selected = Mit Linienmuster kompakt überschreiben
+    4) White-out Selected = Mit hellem grau Farbton überschreiben
+    5) Solid-Red Selected = Mit Farbe rot und Muster Flächenfüllung überschreiben
+    6) Solid-Green Selected = Mit Farbe grün und Muster Flächenfüllung überschreiben
+    7) Solid-Orange Selected = Mit Farbe orange und Muster Flächenfüllung überschreiben
+    8) Solid-Blue Selected = Mit Farbe blau und Muster Flächenfüllung überschreiben
+    9) Dashed-Line Selected = Mit Linienmuster gestrichelt überschreiben
 context: selection
