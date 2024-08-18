@@ -2,7 +2,7 @@ title:
   ru: Экспортировать вид как изображение
   fr_fr: Exporter une vue comme image
   en_us: Export view as image
-  de_de: Exportiere Ansicht als Bild
+  de_de: Exportiere aktive Ansicht als Bild
 tooltip:
   ru: Эспортирует текущий вид в PNG изображение с разрешением 600DPI.
   fr_fr: Exporter la vue actuelle au format PNG avec une résolution de 600DPI
