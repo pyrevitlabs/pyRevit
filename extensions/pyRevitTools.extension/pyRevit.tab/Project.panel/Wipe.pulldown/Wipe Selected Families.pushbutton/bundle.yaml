@@ -2,8 +2,10 @@ title:
   fr_fr: Supprimer les familles sélectionnées
   en_us: Wipe Selected Families
   ru: Очистить выделенные семейства
+  de_de: Lösche best. Familien
 
 tooltip:
   fr_fr: Supprime les familles sélectionnées
   en_us: Wipe families of selected instances
   ru: Очищает выделенные экземпляры семейств
+  de_de: Es werden alle Familien von den ausgewählten Exemplaren aus dem Modell gelöscht
