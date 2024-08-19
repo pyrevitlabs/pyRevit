@@ -2,6 +2,7 @@ title:
   ru: Перезагрузить связи
   fr_fr: Recharger les liens
   en_us: Reload Links
+  de_de: Verknüpfungen neu laden
 tooltip:
   ru: >-
     Перезагружает выбранные Revit, CAD и DWG связи.
@@ -15,3 +16,7 @@ tooltip:
     Reloads choosen Revit, CAD and DWG Links
     
     Can reload links "locally" for workshared models
+  de_de: >-
+    Lädt die ausgewählten Revit, CAD und DWG Verknüpfungen neu
+    
+    Es kann Verknüpfungen von Modellen mit Arbeitsteilung "lokal" neu laden

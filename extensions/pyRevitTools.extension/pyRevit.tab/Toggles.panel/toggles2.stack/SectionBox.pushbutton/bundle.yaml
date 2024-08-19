@@ -2,7 +2,14 @@ title:
   ru: Границы 3D вида
   fr_fr: Zone de coupe
   en_us: Section Box
+  de_de: 3D-Schnittbereich
 tooltip:
   ru: Переключает видимость границы 3D вида в текущем 3D виде.
   fr_fr: Bascule la visibilité de la zone de coupe dans la vue 3D actuelle
   en_us: Toggles visibility of section box in current 3D view
+  de_de: >-
+    Dieses Werkzeug überschreibt in dieser Ansicht die Sichtbarkeit
+    des 3D-Schnittbereiches. Wenn man nochmals auf das Werkzeug klickt 
+    wird die Sichtbareit invertiert. Dies funktioniert nicht, wenn die
+    Kategorie 3D-Schnittbereiche in den Sichtbarkeit/Grafiken 
+    oder über Filter ausgeschalten wurde. 

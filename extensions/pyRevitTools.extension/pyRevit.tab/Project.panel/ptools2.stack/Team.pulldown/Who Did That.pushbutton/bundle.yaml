@@ -2,10 +2,12 @@ title:
   ru: Кто сделал это??
   fr_fr: Qui a fait ça??
   en_us: Who did that??
+  de_de: Wer hat das getan??
 tooltip:
   ru: Выясните, кто внес конкретные изменения в модель.
   fr_fr: Trouver qui a fait un changement spécifique dans le modèle.
   en_us: Figure out who made specific changes in the model.
+  de_de: Hiermit kann man herausfinden wer bestimmte Änderungen am Modell vorgenommen hat.
 author: >-
     Frederic Beaupere
     

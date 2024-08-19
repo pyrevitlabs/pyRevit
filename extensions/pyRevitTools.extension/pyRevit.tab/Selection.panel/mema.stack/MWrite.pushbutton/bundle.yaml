@@ -3,6 +3,7 @@ title:
   ru: ПЗаписать
   fr_fr: MEcrire
   en_us: MWrite
+  de_de: SSchreiben
 tooltip:
   ru: >-
     Перезаписывает в память проекта выделенные элементы.
@@ -16,4 +17,10 @@ tooltip:
     Clear memory and Append current selection
     
     Works like the MC and M+ button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  de_de: >-
+    Löscht den Speicher und schreibt die aktuelle Auswahl in den Speicher
+    Funktioniert wie die MC und M+ Taste auf dem Taschenrechner. 
+    Dies ist ein Projekt-abhängiger Speicher. 
+    Jedes Projekt hat seinen eigenen Auswahlspeicher, 
+    der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.
 context: Selection

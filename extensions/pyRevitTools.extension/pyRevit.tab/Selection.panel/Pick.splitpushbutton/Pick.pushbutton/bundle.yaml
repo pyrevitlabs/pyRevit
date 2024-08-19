@@ -2,6 +2,7 @@ title:
   ru: Выбрать
   fr_fr: Sélectionner
   en_us: Pick
+  de_de: Auswählen
 tooltip:
   ru: >-
     Активирует инструмент выделения, который выбирает определенный тип элемента.
@@ -21,3 +22,11 @@ tooltip:
     Shift-Click:
 
     Pick favorites from all available categories
+  de_de: >-
+    Aktiviert ein besonderes Auswahlwerkzeug, 
+    das nur einen bestimmten Typ von Elementen auswählt. 
+
+    Shift-Click:
+
+    In einem Auswahldialog kann man gezielt Kategorien auswählen, 
+    die dann mit dem Auswahlwerkzeug auswählbar sind.
