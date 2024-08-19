@@ -22,6 +22,7 @@
   <ItemGroup>
     <PackageReference Include="docopt.net" Version="0.8.1" />
     <PackageReference Include="Colorful.Console" Version="1.2.15" />
+    <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.34.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,4 +31,30 @@
     <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
+
+  <Target Name="Log" AfterTargets="Build">
+
+  </Target>
+
+  <Target Name="ILRepack" AfterTargets="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <InputAssemblies Include="$(TargetPath)"/>
+      <InputAssemblies Include="$(TargetDir)*.dll" Exclude="$(TargetPath)"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <DoNotInternalizeAssemblies Include="^Autodesk.*" />
+    </ItemGroup>
+
+    <ILRepack
+        AllowDuplicateResources="false"
+        DebugInfo="true"
+        Internalize="true"
+        InputAssemblies="@(InputAssemblies)"
+        InternalizeExclude="@(DoNotInternalizeAssemblies)"
+        OutputFile="$(TargetPath)"
+        Parallel="true"
+        LibraryPath="$(RevitDevDir)\$(RevitVersion)"
+        TargetKind="SameAsPrimaryAssembly" />
+  </Target>
 </Project>
