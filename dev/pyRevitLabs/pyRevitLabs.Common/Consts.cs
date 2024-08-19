@@ -31,7 +31,8 @@ namespace pyRevitLabs.Common {
         public const string DefaultRemoteName = "origin";
         public const string OriginalRepoDefaultBranch = "master";
 
-        public const string TargetBranch = OriginalRepoDefaultBranch;
+        public const string TragetBranch = OriginalRepoDefaultBranch;
+        //public const string TragetBranch = @"develop/newexec";
 
         // consts for the official pyRevit repo
         public const string OriginalRepoName = ProductName;
