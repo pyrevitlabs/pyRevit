@@ -70,8 +70,8 @@ def _get_revit_version():
             return __revit__.ControlledApplication.VersionNumber
 
 
-# Try to get net folder
-net_folder = "netcore" if _get_revit_version() >= 2025 else "netfx"
+# try get net folder
+net_folder = "netcore" if int(_get_revit_version()) >= 2025 else "netfx"
 
 # BIN directory
 BIN_DIR = op.join(HOME_DIR, 'bin', net_folder)
