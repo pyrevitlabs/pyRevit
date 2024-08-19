@@ -1,12 +1,7 @@
-﻿using System;
+﻿using pyRevitLabs.Common;
 
-using pyRevitLabs.Common;
-using pyRevitLabs.Common.Extensions;
-
-using pyRevitLabs.NLog;
-using pyRevitLabs.Json.Linq;
-
-namespace pyRevitLabs.PyRevit {
+namespace pyRevitLabs.PyRevit
+{
 
     public class PyRevitRelease: GithubReleaseInfo {
         // Check whether this is a pyRevit release

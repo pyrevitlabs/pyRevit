@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Security.AccessControl;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 
-namespace pyRevitLabs.PyRevit {
+namespace pyRevitLabs.PyRevit
+{
     public enum PyRevitAttachmentType {
         AllUsers,
         CurrentUser

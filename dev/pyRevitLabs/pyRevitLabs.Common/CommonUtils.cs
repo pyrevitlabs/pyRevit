@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 using pyRevitLabs.NLog;
-using System.Threading;
 
-namespace pyRevitLabs.Common {
+namespace pyRevitLabs.Common
+{
     public static class CommonUtils {
         // private static object ProgressLock = new object();
         // private static int lastReport;

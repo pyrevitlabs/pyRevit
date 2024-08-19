@@ -10,6 +10,5 @@
 
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
-    <ProjectReference Include="..\pyRevitLabs.CommonCLI\pyRevitLabs.CommonCLI.csproj" />
   </ItemGroup>
 </Project>

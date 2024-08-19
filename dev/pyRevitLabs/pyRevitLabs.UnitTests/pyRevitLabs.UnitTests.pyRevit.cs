@@ -1,17 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using pyRevitLabs.Common;
-using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.PyRevit;
-using pyRevitLabs.UnitTests;
 
-namespace pyRevitLabs.UnitTests.pyRevit {
+namespace pyRevitLabs.UnitTests.pyRevit
+{
     [TestClass()]
     public class PyRevitTests: TemplateUnitTest {
         public override string TempPath =>

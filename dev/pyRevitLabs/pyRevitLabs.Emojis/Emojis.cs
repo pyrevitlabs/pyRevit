@@ -6,9 +6,9 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Reflection;
-using System.Resources;
 
-namespace pyRevitLabs.Emojis {
+namespace pyRevitLabs.Emojis
+{
     public static class Emojis {
         private static ZipArchive _emojiZip = null;
         private static ImageConverter _converter = new ImageConverter();

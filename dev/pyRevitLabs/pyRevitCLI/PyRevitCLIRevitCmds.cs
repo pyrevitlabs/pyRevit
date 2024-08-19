@@ -1,26 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Drawing;
-using System.Diagnostics;
-
 using pyRevitLabs.Common;
-using pyRevitLabs.CommonCLI;
 using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.TargetApps.Revit;
-using pyRevitLabs.PyRevit;
-using pyRevitLabs.Language.Properties;
-
-using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
-using pyRevitLabs.Json.Serialization;
-
+using pyRevitLabs.NLog;
+using pyRevitLabs.PyRevit;
+using pyRevitLabs.TargetApps.Revit;
 using Console = Colorful.Console;
 
-namespace pyRevitCLI {
+namespace pyRevitCLI
+{
     internal static class PyRevitCLIRevitCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 

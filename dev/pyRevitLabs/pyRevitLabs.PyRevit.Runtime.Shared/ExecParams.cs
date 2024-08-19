@@ -1,5 +1,3 @@
-using System;
-
 namespace pyRevitLabs.PyRevit.Runtime.Shared
 {
     public class ExecParams

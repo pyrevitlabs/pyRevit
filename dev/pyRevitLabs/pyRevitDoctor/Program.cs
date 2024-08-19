@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 
 using pyRevitDoctor.Properties;
 
-namespace pyRevitDoctor {
+namespace pyRevitDoctor
+{
     class Program {
         const string helpMessage = @"Fix potential or real problems
 

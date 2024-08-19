@@ -23,7 +23,8 @@ using Xceed.Wpf.AvalonDock.Controls;
 using pyRevitLabs.NLog;
 using pyRevitLabs.PyRevit;
 
-namespace PyRevitLabs.PyRevit.Runtime {
+namespace PyRevitLabs.PyRevit.Runtime
+{
     public enum EventType {
         // Autodesk.Revit.ApplicationServices.Application Events
         Application_ApplicationInitialized,

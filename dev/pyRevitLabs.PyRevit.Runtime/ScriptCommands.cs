@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows.Input;
-using System.Windows.Controls;
 
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
@@ -12,7 +11,8 @@ using Autodesk.Revit.Attributes;
 using MenuItem = System.Windows.Controls.MenuItem;
 using ContextMenu = System.Windows.Controls.ContextMenu;
 
-namespace PyRevitLabs.PyRevit.Runtime {
+namespace PyRevitLabs.PyRevit.Runtime
+{
     public class CommandTypeExecConfigs {
         // unlike fullframe or clean engine modes, the config script mode is determined at
         // script execution by using a shortcut key combination. This parameter is created to

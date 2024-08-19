@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
-
+using System.IO;
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.TargetApps.Revit;
 
-namespace pyRevitLabs.PyRevit {
+namespace pyRevitLabs.PyRevit
+{
     public class PyRevitRunnerCommand {
         public PyRevitRunnerCommand(string commandPath) => Path = commandPath;
 

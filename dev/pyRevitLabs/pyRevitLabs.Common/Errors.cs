@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace pyRevitLabs.Common {
+namespace pyRevitLabs.Common
+{
     // ERROR CODES ===================================================================================================
     // error codes are to be used for non-critical, non-breaking errors
 

@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Management;
 using System.Security.Principal;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.AccessControl;
 
 using DotNetVersionFinder;
 using pyRevitLabs.NLog;
@@ -16,7 +12,8 @@ using pyRevitLabs.NLog;
 
 // user default folder implementation from https://stackoverflow.com/a/21953690/2350244
 
-namespace pyRevitLabs.Common {
+namespace pyRevitLabs.Common
+{
 
     /// <summary>
     /// Standard folders registered with the system. These folders are installed with Windows Vista

@@ -1,15 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Text.RegularExpressions;
-using System.Security.Principal;
-using System.Text;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
-
-using MadMilkman.Ini;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
@@ -18,9 +13,10 @@ using pyRevitLabs.NLog;
  *  - Shipped extensions are the ones shipped as part of a clone (builtin) and specific to a clone
  *  - Installed extensions are installed globally in paths. All clones will see these extension
  *  - Registered extensions are extension metadata registered in json files. They ar used to extract info about an extension and find the install source
- */ 
+ */
 
-namespace pyRevitLabs.PyRevit {
+namespace pyRevitLabs.PyRevit
+{
     public static class PyRevitExtensions {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 

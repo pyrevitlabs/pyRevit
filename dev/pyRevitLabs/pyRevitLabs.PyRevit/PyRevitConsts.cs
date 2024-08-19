@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows.Media;
@@ -6,7 +5,8 @@ using System.Windows.Media;
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.PyRevit {
+namespace pyRevitLabs.PyRevit
+{
     public static class PyRevitConsts {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 

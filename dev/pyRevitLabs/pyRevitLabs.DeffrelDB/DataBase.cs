@@ -6,10 +6,6 @@ using pyRevitLabs.Common;
 using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.NLog.Config;
 
-#if DEBUG
-using pyRevitLabs.CommonCLI;
-#endif
-
 using pyRevitLabs.NLog;
 
 
@@ -125,7 +121,8 @@ using pyRevitLabs.NLog;
  */
 
 
-namespace pyRevitLabs.DeffrelDB {
+namespace pyRevitLabs.DeffrelDB
+{
     public enum ConnectionLockType {
         DataStore,
         DB,

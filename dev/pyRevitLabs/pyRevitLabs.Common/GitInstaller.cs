@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LibGit2Sharp;
 using pyRevitLabs.NLog;
 
-namespace pyRevitLabs.Common {
+namespace pyRevitLabs.Common
+{
     // git exceptions
     public class pyRevitInvalidGitCloneException : PyRevitException {
         public pyRevitInvalidGitCloneException() { }

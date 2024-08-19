@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Security.Principal;
+﻿using System.Security.Principal;
 using System.IO;
-
-using DotNetVersionFinder;
 using System.Security.AccessControl;
 
-namespace pyRevitLabs.Common {
+namespace pyRevitLabs.Common
+{
     // https://stackoverflow.com/a/22020271
     public class UserSecurity {
         WindowsIdentity _currentUser;

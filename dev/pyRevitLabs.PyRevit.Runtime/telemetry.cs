@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.IO;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.ApplicationServices;
 
@@ -13,7 +11,8 @@ using pyRevitLabs.Json;
 using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 
-namespace PyRevitLabs.PyRevit.Runtime {
+namespace PyRevitLabs.PyRevit.Runtime
+{
     public class TelemetryRecord {
         // schema
         public Dictionary<string, string> meta { get; private set; }

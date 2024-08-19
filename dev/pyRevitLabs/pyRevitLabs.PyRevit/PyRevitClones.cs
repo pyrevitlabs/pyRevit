@@ -2,18 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Text.RegularExpressions;
-using System.Security.Principal;
-using System.Text;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
-
-using MadMilkman.Ini;
-using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
-namespace pyRevitLabs.PyRevit {
+namespace pyRevitLabs.PyRevit
+{
     public class pyRevitInvalidPyRevitCloneException : pyRevitInvalidGitCloneException {
         public pyRevitInvalidPyRevitCloneException() { }
 

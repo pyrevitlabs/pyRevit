@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace pyRevitLabs.DeffrelDB {
+namespace pyRevitLabs.DeffrelDB
+{
     internal static class DataFunctions {
         // dstore
         public static void CreateDataStore(DataStore dstore) {

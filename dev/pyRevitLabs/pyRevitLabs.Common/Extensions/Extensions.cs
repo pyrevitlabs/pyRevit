@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using System.CodeDom.Compiler;
 using System.CodeDom;
-using System.Web;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
 
-namespace pyRevitLabs.Common.Extensions {
+namespace pyRevitLabs.Common.Extensions
+{
     public static class CharExtensions {
         /// <summary>
         /// Remaps international characters to ascii compatible ones

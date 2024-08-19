@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
@@ -12,7 +11,8 @@ using VB = Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.Emit;
 
 
-namespace pyRevitLabs.Common {
+namespace pyRevitLabs.Common
+{
     public static class CodeCompiler {
         #region CSharp Compilation
 

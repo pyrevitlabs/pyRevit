@@ -1,18 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-
-using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 
-namespace pyRevitLabs.Common {
+namespace pyRevitLabs.Common
+{
     public enum GithubReleaseAssetType {
         Unknown,
         Archive,

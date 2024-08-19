@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-
-using Microsoft.Win32;
 
 using pyRevitLabs.Common;
-using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 
-namespace pyRevitLabs.PyRevit {
+namespace pyRevitLabs.PyRevit
+{
     public class PyRevitProductInfo {
         public string product { get; set; }
         public string release { get; set; }

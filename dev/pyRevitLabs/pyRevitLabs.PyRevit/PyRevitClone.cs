@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Linq;
 using System.Reflection;
-
+using System.Text.RegularExpressions;
+using Nett;
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.TargetApps.Revit;
-
-using Nett;
 using pyRevitLabs.NLog;
+using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.PyRevit
 {

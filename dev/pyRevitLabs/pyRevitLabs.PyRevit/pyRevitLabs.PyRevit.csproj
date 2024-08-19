@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
-    <ProjectReference Include="..\pyRevitLabs.CommonWPF\pyRevitLabs.CommonWPF.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
 

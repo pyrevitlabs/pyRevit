@@ -1,11 +1,10 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using pyRevitLabs.Common;
 
-// https://docs.microsoft.com/en-us/visualstudio/test/getting-started-with-unit-testing
-namespace pyRevitLabs.UnitTests {
+namespace pyRevitLabs.UnitTests
+{
     [TestClass]
     public class TemplateUnitTest {
         private TestContext _testContextInstance;
@@ -15,7 +14,6 @@ namespace pyRevitLabs.UnitTests {
         [AssemblyInitialize()]
         public static void AssemblyInit(TestContext context) { }
 
-        //https://docs.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.testtools.unittesting.classinitializeattribute
         [ClassInitialize()]
         public static void ClassInit(TestContext context) { }
 
@@ -37,7 +35,6 @@ namespace pyRevitLabs.UnitTests {
             }
         }
 
-        // https://docs.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.testtools.unittesting.classcleanupattribute
         [ClassCleanup()]
         public static void ClassCleanup() { }
 

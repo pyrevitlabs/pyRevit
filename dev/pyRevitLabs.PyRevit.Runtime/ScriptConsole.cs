@@ -10,12 +10,12 @@ using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
-
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
 using pyRevitLabs.Emojis;
 
-namespace PyRevitLabs.PyRevit.Runtime {
+namespace PyRevitLabs.PyRevit.Runtime
+{
     public struct ScriptConsoleDebugger {
         public string Name;
         public Regex PromptFinder;

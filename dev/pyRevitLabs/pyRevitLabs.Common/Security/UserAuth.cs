@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Principal;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Security.Principal;
 
-namespace pyRevitLabs.Common.Security {
+namespace pyRevitLabs.Common.Security
+{
     // access qualifiers
     public static class UserAuth {
         public static bool UserIsInSecurityGroup(string targetSid) {

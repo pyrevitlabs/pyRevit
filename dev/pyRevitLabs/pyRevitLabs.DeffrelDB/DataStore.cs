@@ -4,14 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 using pyRevitLabs.Common;
 
 using pyRevitLabs.NLog;
 
-namespace pyRevitLabs.DeffrelDB {
+namespace pyRevitLabs.DeffrelDB
+{
     // datastore
     public class DataStoreType {
         public readonly string TypeName = "txt";
