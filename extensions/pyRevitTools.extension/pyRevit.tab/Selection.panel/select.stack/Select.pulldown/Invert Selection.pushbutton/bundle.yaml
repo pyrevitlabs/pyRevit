@@ -2,6 +2,7 @@ title:
   ru: Инвертировать выделение
   fr_fr: Inverser la sélection
   en_us: Invert Selection
+  de_de: Aktuelle Auswahl invertieren
 tooltip:
   ru: >-
     Инвертирует выделение в текущем виде.
@@ -21,4 +22,6 @@ tooltip:
     Shift-Click:
     
     Select group members instead of parent group elements
+  de_de: >-
+    Die aktuelle Auswahl in der aktiven Ansicht wird invertiert
 context: selection

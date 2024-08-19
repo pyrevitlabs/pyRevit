@@ -2,7 +2,9 @@ title:
   ru: Выбрать элементы модели
   fr_fr: Sélectionner des éléments de modèle
   en_us: Pick Model Elements
+  de_de: Modell Elemente auswählen
 tooltip:
   ru: Активирует инструмент выбора, который выбирает только элементы модели.
   fr_fr: Active l'outil de sélection qui choisit seulement les éléments de modèle
   en_us: Activates selection tool that picks only Model elements
+  de_de: Aktiviert ein besonderes Auswahlwerkzeug, das nur Modell Elemente auswählt

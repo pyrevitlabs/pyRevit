@@ -3,6 +3,7 @@ title:
   ru: Пакетное создание листов
   fr_fr: Création de Feuilles en Groupe
   en_us: Batch Sheet Maker
+  de_de: Plangenerator
 tooltip:
   ru: >-
     Введите наименование и номера листов в поле для ввода 
@@ -13,3 +14,7 @@ tooltip:
   en_us: >-
     Enter sheet names and numbers in the text box and this tool will create all
     at once
+  de_de: >-
+    Geben Sie die Plannamen und -nummern in das Textfeld ein, und dieses Skript 
+    erstellt alle Pläne auf einmal
+    

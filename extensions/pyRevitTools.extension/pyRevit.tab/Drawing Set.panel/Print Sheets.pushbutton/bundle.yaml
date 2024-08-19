@@ -56,6 +56,24 @@ tooltip:
     non-printable characters from the sheet numbers,
     in case an error in the tool causes these characters
     to remain.
+  de_de: |-
+    Druckt Pläne in der Reihenfolge eines Planindexes.
+
+    Note:
+    Wenn Sie die Option „In eine Datei zusammenfassen“ verwenden
+    in Revit 2022 und neueren Versionen,
+    fügt das Werkzeug das nicht druckbare Zeichen u'\u200e'
+    (Links-nach-Rechts-Markierung) an den Anfang der Plannamen
+    um das interne Drucksystem von Revit zu veranlassen,
+    die Pläne entsprechend der Zeichnungsindexreihenfolge zu sortieren. 
+
+    Stellen Sie sicher, dass Ihre Zeichnungsindizes dies berücksichtigen
+    wenn Sie nach Plannummern filtern.
+
+    Shift-Klick:
+    Wenn Sie mit der Umschalttaste auf das Werkzeug klicken, werden alle
+    nicht druckbaren Zeichen aus den Plannummern entfernt. Dies ist für den Fall, dass ein 
+    Fehler bei der Ausführung dazu führt, dass diese Zeichen im Plan verbleiben.
 title:
   ru: |-
     Печатать
@@ -66,3 +84,6 @@ title:
   en_us: |-
     Print
     Sheets
+  de_de: |-
+    Pläne
+    drucken

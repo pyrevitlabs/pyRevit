@@ -1,6 +1,7 @@
 title:
   fr_fr: Color Splasher
   en_us: Color Splasher
+  de_de: Farbspritzer
 tooltip: 
   fr_fr: >-
     Color Splasher permet de colorer les éléments de la vue active en fonction de leurs valeurs de paramètre. Il permet également la création d'une légende ou d'une liste de filtres de vue.
@@ -18,7 +19,17 @@ tooltip:
     First Dynamo - Python edition December 2023: Nonica by Estudio Alonso Candau SLP - Jaime Alonso Candau - See specific non-commercial license agreement for Nonica in the script
 
     Refactored, pyRevit-ed and added View Filters Creation version by Jean-Marc Couffin, December 2023
+
+  de_de: >-
+    Der Farbspritzer erlaubt dir die Elemente der aktiven Ansicht in Bezug zu deren Parameter Werten einzufärben. Es ist möglich eine Legende erstellen zu lassen oder auch dazu passende Ansichtsfilter. 
+
+    Basiert auf dem Tool ColorSplasher von BIMOne - MIT License - 2021 BIM One Inc.
+
+    First Dynamo - Python edition December 2023: Nonica by Estudio Alonso Candau SLP - Jaime Alonso Candau - See specific non-commercial license agreement for Nonica in the script
+
+    Refaktorisiert, pyRevit-ed und die Ansichtsfilter Erstellung wurde von Jean-Marc Couffin hinzugefügt, December 2023
     
 author: BIMOne Inc.(2021), Nonica (Jaime Alonso Candau - 2023), BIMOne Inc. (Jean-Marc Couffin - 2023)
 engine:
   persistent: true
+  full_frame: true

@@ -2,6 +2,7 @@ title:
   ru: Копировать
   fr_fr: Copier l'état
   en_us: Copy State
+  de_de: Zustand kopieren
 tooltip:
   ru: >-
     Копирует состояние желаемого параметра активного вида в память.
@@ -21,6 +22,17 @@ tooltip:
     view to memory. e.g. Visibility Graphics settings or
     
     Zoom state. Run it and see how it works
+  de_de: >-
+    Kopiert den Zustand von bestimmten Einstellungen der 
+    aktiven Ansicht in den Speicher. Zur Auswahl stehen 
+    1) View Zoom/Pan State (Zoom- u. Pan-Status der Ansicht)
+    2) Visibility Graphics (Sichtbarkeit/Grafik Einstellungen der Ansicht)
+    3) Crop Region (Zuschneidebereich der Ansicht)
+    4) Filter Overrides (bestimmte Filter Überschreibungen der Ansicht(en) auswählen)
+    Es können auch mehrere Ansichten im Projektbrowser ausgewählt werden, 
+    nur stehen dann eventuell nicht alle Einstellungszustände zur Auswahl.
+    In einer anderen Ansicht kann dann das Werkzeug "Zustand einfügen" 
+    verwendet werden, um den gespeicherten Zustand auf die Ansicht zu übertragen. 
 author: >-
   Gui Talarico
 
