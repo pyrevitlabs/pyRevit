@@ -621,7 +621,7 @@ namespace pyRevitLabs.PyRevit
                 var args = new PyRevitCloneFromImageArgs
                 {
                     Url = contents[0] == string.Empty ? PyRevitLabsConsts.OriginalRepoGitPath : contents[0],
-                    BranchName = contents[1] == string.Empty ? PyRevitLabsConsts.TragetBranch : contents[1],
+                    BranchName = contents[1] == string.Empty ? PyRevitLabsConsts.TargetBranch : contents[1],
                     DeploymentName = contents[2] == string.Empty ? null : contents[2]
                 };
                 logger.Debug(args);
