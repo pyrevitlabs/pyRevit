@@ -28,7 +28,7 @@ namespace pyRevitLabs.TargetApps.Revit {
     }
 
     public class RevitProductData {
-        public static string HostFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TragetBranch, @"bin/pyrevit-hosts.json");
+        public static string HostFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TargetBranch, @"bin/pyrevit-hosts.json");
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
