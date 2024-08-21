@@ -55,23 +55,8 @@ except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
 
-def _get_revit_version():
-    if __revit__ is None:
-        raise Exception('Critical Error. __revit__ handle is not available.')
-    try:
-        # UIApplication
-        return __revit__.Application.VersionNumber
-    except AttributeError:
-        try:
-            # Application, (ControlledApplication)
-            return __revit__.VersionNumber
-        except AttributeError:
-            # UIControlledApplication
-            return __revit__.ControlledApplication.VersionNumber
-
-
 # try get net folder
-net_folder = "netcore" if int(_get_revit_version()) >= 2025 else "netfx"
+net_folder = "netcore" if compat.is_netcore() else "netfx"
 
 # BIN directory
 BIN_DIR = op.join(HOME_DIR, 'bin', net_folder)
