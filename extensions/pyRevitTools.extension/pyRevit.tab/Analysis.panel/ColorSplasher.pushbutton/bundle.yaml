@@ -1,7 +1,7 @@
 title:
   fr_fr: Color Splasher
   en_us: Color Splasher
-  de_de: Farbspritzer
+  de_de: Color Splasher
 tooltip: 
   fr_fr: >-
     Color Splasher permet de colorer les éléments de la vue active en fonction de leurs valeurs de paramètre. Il permet également la création d'une légende ou d'une liste de filtres de vue.
@@ -21,7 +21,7 @@ tooltip:
     Refactored, pyRevit-ed and added View Filters Creation version by Jean-Marc Couffin, December 2023
 
   de_de: >-
-    Der Farbspritzer erlaubt dir die Elemente der aktiven Ansicht in Bezug zu deren Parameter Werten einzufärben. Es ist möglich eine Legende erstellen zu lassen oder auch dazu passende Ansichtsfilter. 
+    Der Color Splasher erlaubt dir die Elemente der aktiven Ansicht in Bezug zu deren Parameter Werten einzufärben. Es ist möglich eine Legende erstellen zu lassen oder auch dazu passende Ansichtsfilter. 
 
     Basiert auf dem Tool ColorSplasher von BIMOne - MIT License - 2021 BIM One Inc.
 
