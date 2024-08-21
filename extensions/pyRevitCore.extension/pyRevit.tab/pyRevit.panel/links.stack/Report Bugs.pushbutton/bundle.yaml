@@ -2,7 +2,7 @@ title:
   ru: Сообщить об ошибках
   en_us: Report Bugs
   es_es: Reportar Errores
-  de_de: Bugs melden
+  de_de: Bugs auf GitHub melden
 tooltip:
   ru: Открывает issue на github, чтобы сообщать о багах и ошибках.
   en_us: Opens the issue tracker on github to report bugs and issues
