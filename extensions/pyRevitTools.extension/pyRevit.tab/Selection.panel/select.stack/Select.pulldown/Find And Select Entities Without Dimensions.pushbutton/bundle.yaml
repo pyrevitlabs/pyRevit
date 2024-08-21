@@ -2,7 +2,7 @@ title:
   ru: Найти и выделить элементы без размеров
   fr_fr: Cherche et trouve les éléments sans dimensions
   en_us: Find And Select Entities Without Dimensions
-  de_de: Wähle Elemente ohne Bemaßungsreferenzen
+  de_de: Nur Elemente ohne Bemaßungsreferenzen auswählen
 tooltip:
   ru: Выделяет элементы без связанных размеров в текущем виде.
   fr_fr: Sélectionne les éléments sans dimensions associées dans la vue actuelle
