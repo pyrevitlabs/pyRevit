@@ -2,7 +2,7 @@ title:
   ru: Выбрать
   fr_fr: Sélectionner
   en_us: Pick
-  de_de: Präzise nach Kategorie(n) auswählen
+  de_de: Elemente präzise nach Kategorie(n) auswählen
 tooltip:
   ru: >-
     Активирует инструмент выделения, который выбирает определенный тип элемента.
