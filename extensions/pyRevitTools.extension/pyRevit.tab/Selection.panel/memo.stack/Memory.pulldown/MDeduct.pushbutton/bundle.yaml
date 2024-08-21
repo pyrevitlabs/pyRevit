@@ -2,7 +2,7 @@ title:
   ru: ПУдалить
   fr_fr: MDéduire
   en_us: MDeduct
-  de_de: SAbziehen
+  de_de: Aktuelle Auswahl vom Speicher abziehen
 tooltip:
   ru: >-
     Удаляет выбранные элементы из памяти проекта.
