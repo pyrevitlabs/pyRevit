@@ -1020,8 +1020,7 @@ def getIndexUnits(str_value):
 
 doc = revit.DOCS.doc
 uidoc = HOST_APP.uiapp.ActiveUIDocument
-app = HOST_APP.app
-version = int(app.VersionNumber)
+version = int(HOST_APP.version)
 uiapp = HOST_APP.uiapp
 
 sel_View = getActiveView(doc)
