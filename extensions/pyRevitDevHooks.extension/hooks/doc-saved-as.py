@@ -5,11 +5,12 @@ import hooks_logger as hl
 
 args = EXEC_PARAMS.event_args
 
-hl.log_hook(__file__,
+hl.log_hook(
+    __file__,
     {
         "cancellable?": str(args.Cancellable),
         "doc": str(revit.doc),
-        "master_file": str(args.IsSavingAsMasterFile),
+        "master_file": str(args.IsSavingAsCentralFile if HOST_APP.is_newer_than(2021) else args.IsSavingAsMasterFile),
         "original_path": str(args.OriginalPath),
         "status": str(args.Status),
     },
