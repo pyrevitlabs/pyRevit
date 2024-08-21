@@ -2,7 +2,7 @@ title:
   ru: Выделить все объекты выделенного типа
   fr_fr: Sélectionner tous les objets du type sélectionné
   en_us: Select All Objects Of Selected Type
-  de_de: Wähle alle Objekte des gewählten Typs aus
+  de_de: Alle Objekte des aktuell gewählten Typs auswählen
 tooltip:
   ru: >-
     Выделяет все элементы с одинаковым типом, что и текущий выделенный элемент
