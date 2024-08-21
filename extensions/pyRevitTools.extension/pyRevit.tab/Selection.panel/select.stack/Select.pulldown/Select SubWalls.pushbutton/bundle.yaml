@@ -2,7 +2,7 @@ title:
   ru: Выделить стены в составной стене
   fr_fr: Sélectionner les murs empilés
   en_us: Select SubWalls of Stacked Walls
-  de_de: Wähle UnterWände von geschichteten Wänden aus
+  de_de: Alle UnterWände von geschichteten Wände auswählen
 tooltip:
   ru: Выделить ряд составных стен. Запустите данный инструмент и он заменит выделение стенами из выделенных составных стен.
   fr_fr: Sélectionnez une série de murs empilés. Exécutez cet outil et il remplacera la sélection par des sous-murs des murs empilés sélectionnés
