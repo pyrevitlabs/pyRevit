@@ -7,5 +7,5 @@ tooltip:
   ru: Показывает структуру вложенных групп выделенной группы или элемента.
   fr_fr: Répertoriez la structure du groupe imbriqué autour du groupe ou de l'élément sélectionné
   en_us: List the nested group structure around the selected group or element
-  de_de_ Es wird die verschachtelte Gruppenstruktur der ausgewählten Gruppen oder des ausgewählten Elements angezeigt
+  de_de: Es wird die verschachtelte Gruppenstruktur der ausgewählten Gruppen oder des ausgewählten Elements angezeigt
 context: selection
