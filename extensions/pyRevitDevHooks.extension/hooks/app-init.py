@@ -24,3 +24,5 @@ def log_hook():
 
 
 log_hook()
+
+print('app-init.py hook running')

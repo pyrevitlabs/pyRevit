@@ -4,7 +4,7 @@ from collections import namedtuple, defaultdict
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import framework
 from pyrevit import coreutils
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB, UI, HOST_APP
 from pyrevit import script
 
 
@@ -89,7 +89,7 @@ def call_purge():
         UI.RevitCommandId.LookupPostableCommandId(
             UI.PostableCommand.PurgeUnused
             )
-    __revit__.PostCommand(cid_PurgeUnused) #pylint: disable=undefined-variable
+    HOST_APP.uiapp.PostCommand(cid_PurgeUnused) #pylint: disable=undefined-variable
 
 
 @dependent

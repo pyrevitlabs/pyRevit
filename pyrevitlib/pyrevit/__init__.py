@@ -56,9 +56,7 @@ except NameError:
 
 
 # try get net folder
-net_folder = "netfx"
-if int(__revit__.Application.VersionNumber) >= 2025:
-    net_folder = "netcore"
+net_folder = "netcore" if compat.is_netcore() else "netfx"
 
 # BIN directory
 BIN_DIR = op.join(HOME_DIR, 'bin', net_folder)

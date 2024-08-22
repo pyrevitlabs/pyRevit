@@ -33,6 +33,24 @@ elif PY3:
     from urllib.parse import urlparse
 
 
+def is_netcore():
+    """Returns True if the current Revit version uses .NET Core (from 2025 onward)."""
+    if __revit__ is None:
+        return False
+    netcore_version = 2025
+    try:
+        # UIApplication
+        return int(__revit__.Application.VersionNumber) >= netcore_version
+    except AttributeError:
+        pass
+    try:
+        # Application, (ControlledApplication)
+        return int(__revit__.VersionNumber) >= netcore_version
+    except AttributeError:
+        # UIControlledApplication
+        return int(__revit__.ControlledApplication.VersionNumber) >= netcore_version
+
+
 #pylint: disable=C0103
 safe_strtype = str
 if PY2:

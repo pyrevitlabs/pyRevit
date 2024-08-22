@@ -8,14 +8,14 @@ Examples:
 
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
-from pyrevit.compat import PY3, PY2
+from pyrevit.compat import PY3, PY2, is_netcore
 
 import clr
 import System
 
 
 # netcore init
-if int(__revit__.Application.VersionNumber) >= 2025:
+if is_netcore():
     clr.AddReference('System.Runtime')
     clr.AddReference('System.Text.RegularExpressions')
     clr.AddReference('System.Diagnostics.Process')

@@ -111,7 +111,7 @@ if not EXEC_PARAMS.doc_mode:
         .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
 
     RUNTIME_ASSM_FILE = \
-        op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(__revit__.Application.VersionNumber))
+        op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(HOST_APP.version))
 
     # taking the name of the generated data file and use it as assembly name
     RUNTIME_ASSM_NAME = op.splitext(op.basename(RUNTIME_ASSM_FILE))[0]
