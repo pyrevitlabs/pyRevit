@@ -242,7 +242,7 @@ def get_references():
     # 'IronRuby', 'IronRuby.Libraries',
     ref_list = [
         # system stuff
-        'System', 'System.Core',
+        'System', 'System.Core', 'System.Runtime',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
         'System.Drawing', 'System.Windows.Forms',
         'PresentationCore', 'PresentationFramework',
