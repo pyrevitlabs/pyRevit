@@ -242,9 +242,9 @@ def get_references():
     # 'IronRuby', 'IronRuby.Libraries',
     ref_list = [
         # system stuff
-        'System', 'System.Core', 'System.Runtime',
+        'System', 'System.Core', 'System.Runtime', 'System.Linq', 'System.Collections',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
-        'System.Drawing', 'System.Windows.Forms',
+        'System.Drawing', 'System.Drawing.Common', 'System.Windows.Forms',
         'PresentationCore', 'PresentationFramework',
         'WindowsBase', 'WindowsFormsIntegration',
         # legacy csharp/vb.net compiler
