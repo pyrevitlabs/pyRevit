@@ -244,7 +244,7 @@ def get_references():
         # system stuff
         'System', 'System.Core', 'System.Runtime', 'System.Linq', 'System.Collections',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
-        'System.Drawing', 'System.Drawing.Common', 'System.Windows.Forms',,
+        'System.Drawing', 'System.Drawing.Common', 'System.Windows.Forms',
         'System.ComponentModel.Primitives',
         'PresentationCore', 'PresentationFramework',
         'WindowsBase', 'WindowsFormsIntegration',
