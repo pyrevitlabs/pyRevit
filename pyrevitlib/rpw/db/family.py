@@ -93,7 +93,11 @@ class FamilyInstance(Element, CategoryMixin):
         Returns:
             (bool): True if element is inside an AssemblyInstance
         """
-        if self._revit_object.AssemblyInstanceId.IntegerValue == -1:
+        if HOST_APP.is_newer_than(2023):
+            assembly_id_value = self._revit_object.AssemblyInstanceId.Value
+        else:
+            assembly_id_value = self._revit_object.AssemblyInstanceId.IntegerValue
+        if assembly_id_value == -1:
             return False
         else:
             return True
