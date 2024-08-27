@@ -40,7 +40,10 @@ def line_count(document=doc):
         lines = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Lines).WhereElementIsNotElementType().ToElements()
         for line in lines:
             if line.CurveElementType.ToString() == "DetailCurve":
-                view_id_int = line.OwnerViewId.IntegerValue
+                if HOST_APP.is_newer_than(2023):
+                    view_id_int = line.OwnerViewId.Value
+                else:
+                    view_id_int = line.OwnerViewId.IntegerValue
                 detail_lines[view_id_int] += 1
         for line_count, view_id_int \
                 in sorted(zip(detail_lines.values(), detail_lines.keys()),
