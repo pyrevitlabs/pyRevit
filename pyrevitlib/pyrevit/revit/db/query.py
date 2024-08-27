@@ -760,10 +760,16 @@ def get_schedule_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
-        for cat in all_cats:
-            if cat.Id.IntegerValue == cat_id.IntegerValue:
-                cats.append(cat)
+    if HOST_APP.is_newer_than(2023):
+        for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
+            for cat in all_cats:
+                if cat.Id.Value == cat_id.Value:
+                    cats.append(cat)
+    else:
+        for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
+            for cat in all_cats:
+                if cat.Id.IntegerValue == cat_id.IntegerValue:
+                    cats.append(cat)
     return cats
 
 
@@ -771,10 +777,16 @@ def get_key_schedule_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
-        for cat in all_cats:
-            if cat.Id.IntegerValue == cat_id.IntegerValue:
-                cats.append(cat)
+    if HOST_APP.is_newer_than(2023):
+        for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
+            for cat in all_cats:
+                if cat.Id.Value == cat_id.Value:
+                    cats.append(cat)
+    else:
+        for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
+            for cat in all_cats:
+                if cat.Id.IntegerValue == cat_id.IntegerValue:
+                    cats.append(cat)
     return cats
 
 
@@ -782,10 +794,16 @@ def get_takeoff_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
-        for cat in all_cats:
-            if cat.Id.IntegerValue == cat_id.IntegerValue:
-                cats.append(cat)
+    if HOST_APP.is_newer_than(2023):
+        for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
+            for cat in all_cats:
+                if cat.Id.Value == cat_id.Value:
+                    cats.append(cat)
+    else:
+        for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
+            for cat in all_cats:
+                if cat.Id.IntegerValue == cat_id.IntegerValue:
+                    cats.append(cat)
     return cats
 
 
@@ -797,9 +815,14 @@ def get_category(cat_name_or_builtin, doc=None):
             if cat.Name == cat_name_or_builtin:
                 return cat
     elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
-        for cat in all_cats:
-            if cat.Id.IntegerValue == int(cat_name_or_builtin):
-                return cat
+        if HOST_APP.is_newer_than(2023):
+            for cat in all_cats:
+                if cat.Id.Value == int(cat_name_or_builtin):
+                    return cat
+        else:
+            for cat in all_cats:
+                if cat.Id.IntegerValue == int(cat_name_or_builtin):
+                    return cat
     elif isinstance(cat_name_or_builtin, DB.Category):
         return cat_name_or_builtin
 
@@ -807,12 +830,20 @@ def get_category(cat_name_or_builtin, doc=None):
 def get_builtincategory(cat_name_or_id, doc=None):
     doc = doc or DOCS.doc
     cat_id = None
-    if isinstance(cat_name_or_id, str):
-        cat = get_category(cat_name_or_id)
-        if cat:
-            cat_id = cat.Id.IntegerValue
-    elif isinstance(cat_name_or_id, DB.ElementId):
-        cat_id = cat_name_or_id.IntegerValue
+    if HOST_APP.is_newer_than(2023):
+        if isinstance(cat_name_or_id, str):
+            cat = get_category(cat_name_or_id)
+            if cat:
+                cat_id = cat.Id.Value
+        elif isinstance(cat_name_or_id, DB.ElementId):
+            cat_id = cat_name_or_id.Value
+    else:
+        if isinstance(cat_name_or_id, str):
+            cat = get_category(cat_name_or_id)
+            if cat:
+                cat_id = cat.Id.IntegerValue
+        elif isinstance(cat_name_or_id, DB.ElementId):
+            cat_id = cat_name_or_id.IntegerValue
     if cat_id:
         for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
             if int(bicat) == cat_id:
@@ -823,15 +854,26 @@ def get_subcategories(doc=None, purgable=False, filterfunc=None):
     doc = doc or DOCS.doc
     # collect custom categories
     subcategories = []
-    for cat in doc.Settings.Categories:
-        for subcat in cat.SubCategories:
-            if purgable:
-                if subcat.Id.IntegerValue > 1:
+    if HOST_APP.is_newer_than(2023):
+        for cat in doc.Settings.Categories:
+            for subcat in cat.SubCategories:
+                if purgable:
+                    if subcat.Id.Value > 1:
+                        subcategories.append(subcat)
+                else:
                     subcategories.append(subcat)
-            else:
-                subcategories.append(subcat)
-    if filterfunc:
-        subcategories = filter(filterfunc, subcategories)
+        if filterfunc:
+            subcategories = filter(filterfunc, subcategories)
+    else:
+        for cat in doc.Settings.Categories:
+            for subcat in cat.SubCategories:
+                if purgable:
+                    if subcat.Id.IntegerValue > 1:
+                        subcategories.append(subcat)
+                else:
+                    subcategories.append(subcat)
+        if filterfunc:
+            subcategories = filter(filterfunc, subcategories)
 
     return subcategories
 
@@ -849,8 +891,12 @@ def get_builtinparameter(element, param_name, doc=None):
     doc = doc or DOCS.doc
     eparam = element.LookupParameter(param_name)
     if eparam:
+        if HOST_APP.is_newer_than(2023):
+            eparam_def_id = eparam.Definition.Id.Value
+        else:
+            eparam_def_id = eparam.Definition.Id.IntegerValue
         for biparam in DB.BuiltInParameter.GetValues(DB.BuiltInParameter):
-            if int(biparam) == eparam.Definition.Id.IntegerValue:
+            if int(biparam) == eparam_def_id:
                 return biparam
 
 
@@ -1585,5 +1631,8 @@ def get_geometry(element, include_invisible=False, compute_references=False):
                 geom_objs.append(gobj)
         return geom_objs
     except TypeError:
-        mlogger.debug("element %s has no geometry", element.Id.IntegerValue)
+        if HOST_APP.is_newer_than(2023):
+            mlogger.debug("element %s has no geometry", element.Id.Value)
+        else:
+            mlogger.debug("element %s has no geometry", element.Id.IntegerValue)
         return
