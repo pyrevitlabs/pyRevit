@@ -8,11 +8,15 @@ Examples:
 """
 
 import sys
+import System
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-IRONPY2711 = sys.version_info[:3] == (2, 7, 11)
-IRONPY340 = sys.version_info[:3] == (3, 4, 0)
+IRONPY = '.net' in sys.version.lower()
+IRONPY2 = PY2 and '.net' in sys.version.lower()
+IRONPY3 = PY3 and '.net' in sys.version.lower()
+NETCORE = System.Environment.Version.Major >= 8  # Revit 2025 onwards
+NETFRAMEWORK = not NETCORE # Revit 2024 and earlier
 
 #pylint: disable=import-error,unused-import
 if PY3:
@@ -31,25 +35,6 @@ elif PY3:
     from collections.abc import Iterable
     import urllib
     from urllib.parse import urlparse
-
-
-def is_netcore():
-    """Returns True if the current Revit version uses .NET Core (from 2025 onward)."""
-    if __revit__ is None:
-        return False
-    netcore_version = 2025
-    try:
-        # UIApplication
-        return int(__revit__.Application.VersionNumber) >= netcore_version
-    except AttributeError:
-        pass
-    try:
-        # Application, (ControlledApplication)
-        return int(__revit__.VersionNumber) >= netcore_version
-    except AttributeError:
-        # UIControlledApplication
-        return int(__revit__.ControlledApplication.VersionNumber) >= netcore_version
-
 
 #pylint: disable=C0103
 safe_strtype = str
