@@ -56,7 +56,7 @@ except NameError:
 
 
 # try get net folder
-net_folder = "netcore" if compat.is_netcore() else "netfx"
+net_folder = "netcore" if compat.NETCORE else "netfx"
 
 # BIN directory
 BIN_DIR = op.join(HOME_DIR, 'bin', net_folder)
