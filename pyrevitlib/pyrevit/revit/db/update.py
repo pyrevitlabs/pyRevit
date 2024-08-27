@@ -23,25 +23,33 @@ def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     # make sure revisions is a list
     if not isinstance(revisions, list):
         revisions = [revisions]
-
     updated_sheets = []
     if revisions:
         # get sheets if not available
         for sheet in sheets or query.get_sheets(doc=doc):
-            addrevs = set([x.IntegerValue
-                           for x in sheet.GetAdditionalRevisionIds()])
-            for rev in revisions:
-                # skip issued revisions
-                if not rev.Issued:
-                    if state:
-                        addrevs.add(rev.Id.IntegerValue)
-                    elif rev.Id.IntegerValue in addrevs:
-                        addrevs.remove(rev.Id.IntegerValue)
-
+            if HOST_APP.is_newer_than(2023):
+                addrevs = set([x.Value
+                               for x in sheet.GetAdditionalRevisionIds()])
+                for rev in revisions:
+                    # skip issued revisions
+                    if not rev.Issued:
+                        if state:
+                            addrevs.add(rev.Id.Value)
+                        elif rev.Id.Value in addrevs:
+                            addrevs.remove(rev.Id.Value)
+            else:
+                addrevs = set([x.IntegerValue
+                               for x in sheet.GetAdditionalRevisionIds()])
+                for rev in revisions:
+                    # skip issued revisions
+                    if not rev.Issued:
+                        if state:
+                            addrevs.add(rev.Id.IntegerValue)
+                        elif rev.Id.IntegerValue in addrevs:
+                            addrevs.remove(rev.Id.IntegerValue)
             rev_elids = [DB.ElementId(x) for x in addrevs]
             sheet.SetAdditionalRevisionIds(List[DB.ElementId](rev_elids))
             updated_sheets.append(sheet)
-
     return updated_sheets
 
 
