@@ -292,11 +292,16 @@ def create_revision_sheetset(revisions,
     check_func = any if match_any else all
     for sheet in sheets:
         revs = sheet.GetAllRevisionIds()
-        sheet_revids = [x.IntegerValue for x in revs]
-        if check_func([x.Id.IntegerValue in sheet_revids
-                       for x in revisions]):
-            myviewset.Insert(sheet)
-
+        if HOST_APP.is_newer_than(2023):
+            sheet_revids = [x.Value for x in revs]
+            if check_func([x.Id.Value in sheet_revids
+                           for x in revisions]):
+                myviewset.Insert(sheet)
+        else:
+            sheet_revids = [x.IntegerValue for x in revs]
+            if check_func([x.Id.IntegerValue in sheet_revids
+                           for x in revisions]):
+                myviewset.Insert(sheet)
     # needs transaction
     # delete existing sheet set if any
     # create new sheet set
@@ -436,14 +441,19 @@ def create_param_value_filter(filter_name,
                                             str(pvalue),
                                             False)
             elif isinstance(pvalue, DB.ElementId):
+                if HOST_APP.is_newer_than(2023):
+                    p_id = str(pvalue.Value)
+                else:
+                    p_id = str(pvalue.IntegerValue)
+                
                 if HOST_APP.is_newer_than(2022):
                     rule = DB.FilterStringRule(param_prov,
                                             num_eval(),
-                                            str(pvalue.IntegerValue))
+                                            p_id)
                 else:
                     rule = DB.FilterStringRule(param_prov,
                                             num_eval(),
-                                            str(pvalue.IntegerValue),
+                                            p_id,
                                             False)
         # if value is int, eval is expected to be numeric
         elif isinstance(pvalue, int):
