@@ -296,8 +296,13 @@ class Parameter(BaseObjectWrapper):
             * value: Uses best parameter method based on StorageType
             * value_string: Parameter.AsValueString
         """
-        value = self.value if not isinstance(self.value, DB.ElementId) \
-                           else self.value.IntegerValue
+        if not isinstance(self.value, DB.ElementId):
+            value = self.value
+        else:
+            if HOST_APP.is_newer_than(2023):
+                value = self.value.Value
+            else:
+                value = self.value.IntegerValue
         return {
                 'name': self.name,
                 'type': self.type.__name__,
