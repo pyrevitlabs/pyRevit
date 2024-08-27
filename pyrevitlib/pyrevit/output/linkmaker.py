@@ -50,9 +50,15 @@ def make_link(element_ids, contents=None):
     """
     try:
         try:
-            strids = [safe_strtype(x.IntegerValue) for x in element_ids]
+            if HOST_APP.is_newer_than(2023):
+                strids = [safe_strtype(x.Value) for x in element_ids]
+            else:
+                strids = [safe_strtype(x.IntegerValue) for x in element_ids]
         except TypeError:
-            strids = [safe_strtype(element_ids.IntegerValue)]
+            if HOST_APP.is_newer_than(2023):
+                strids = [safe_strtype(element_ids.Value)]
+            else:
+                strids = [safe_strtype(element_ids.IntegerValue)]
     except AttributeError:
         raise ValueError("One or more items are not ElementIds")
 
