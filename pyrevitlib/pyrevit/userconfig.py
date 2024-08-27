@@ -1,4 +1,4 @@
-"""Handle reading and parsing, writin and saving of all user configurations.
+"""Handle reading and parsing, writing and saving of all user configurations.
 
 This module handles the reading and writing of the pyRevit configuration files.
 It's been used extensively by pyRevit sub-modules. user_config is
