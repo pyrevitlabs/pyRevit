@@ -68,11 +68,16 @@ class CommitedSheet(object):
                     mlogger.debug(self._chistory)
 
         # process revisions
-        sheet_revids = \
-            {x.IntegerValue for x in self.revit_sheet.GetAllRevisionIds()}
-        add_sheet_revids = \
-            {x.IntegerValue
-             for x in self.revit_sheet.GetAdditionalRevisionIds()}
+        if HOST_APP.is_newer_than(2023):
+            sheet_revids = \
+                {x.Value for x in self.revit_sheet.GetAllRevisionIds()}
+            add_sheet_revids = \
+                {x.Value for x in self.revit_sheet.GetAdditionalRevisionIds()}
+        else:
+            sheet_revids = \
+                {x.IntegerValue for x in self.revit_sheet.GetAllRevisionIds()}
+            add_sheet_revids = \
+                {x.IntegerValue for x in self.revit_sheet.GetAdditionalRevisionIds()}
         readonly_sheet_revids = sheet_revids - add_sheet_revids
 
         default_rev_commit_type = CommitPointTypes.Revision.default_commit_type
@@ -183,19 +188,32 @@ def get_commit_points():
     none_numtype = coreutils.get_enum_none(DB.RevisionNumberType)
     docrevs = sorted(revit.query.get_revisions(),
                      key=lambda x: x.SequenceNumber)
-    commit_points.extend([
-        CommitPoint(cptype=CommitPointTypes.Revision,
-                    target=x.Id.IntegerValue,
-                    idx=last_docpkg_idx + i + 1,
-                    name='R{}'.format(x.SequenceNumber),
-                    desc='{}{} (Sequence #{})'.format(
-                        '{} - '.format(revit.query.get_rev_number(x))
-                        if revit.ensure.revision_has_numbertype(x) else '',
-                        x.Description,
-                        x.SequenceNumber))
-        for i, x in enumerate(docrevs)
-        ])
-
+    if HOST_APP.is_newer_than(2023):
+        commit_points.extend([
+            CommitPoint(cptype=CommitPointTypes.Revision,
+                        target=x.Id.Value,
+                        idx=last_docpkg_idx + i + 1,
+                        name='R{}'.format(x.SequenceNumber),
+                        desc='{}{} (Sequence #{})'.format(
+                            '{} - '.format(revit.query.get_rev_number(x))
+                            if revit.ensure.revision_has_numbertype(x) else '',
+                            x.Description,
+                            x.SequenceNumber))
+            for i, x in enumerate(docrevs)
+            ])
+    else:
+        commit_points.extend([
+            CommitPoint(cptype=CommitPointTypes.Revision,
+                        target=x.Id.IntegerValue,
+                        idx=last_docpkg_idx + i + 1,
+                        name='R{}'.format(x.SequenceNumber),
+                        desc='{}{} (Sequence #{})'.format(
+                            '{} - '.format(revit.query.get_rev_number(x))
+                            if revit.ensure.revision_has_numbertype(x) else '',
+                            x.Description,
+                            x.SequenceNumber))
+            for i, x in enumerate(docrevs)
+            ])
     sorted_cpoints = sorted(commit_points, key=lambda x: x.idx)
     mlogger.debug(sorted_cpoints)
     return sorted_cpoints
