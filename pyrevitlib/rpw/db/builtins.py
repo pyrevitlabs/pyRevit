@@ -155,15 +155,20 @@ class _BiCategory(BaseObjectWrapper):
         Returns:
             ``DB.BuiltInCategory`` member
         """
-        bic = Enum.ToObject(DB.BuiltInCategory, category_id.IntegerValue)
-        if DB.ElementId(bic).IntegerValue < -1:
-            return bic
+        if HOST_APP.is_newer_than(2023):
+            bic = Enum.ToObject(DB.BuiltInCategory, category_id.Value)
+            bic_value = DB.ElementId(bic).Value
         else:
-            # If you pass a regular element to category_id, it converts it to BIC.
-            # It should fail, because result is not a valid Category Enum
-            raise RpwCoerceError('category_id: {}'.format(category_id),
-                                 DB.BuiltInCategory)
-        # Similar to: Category.GetCategory(doc, category.Id).Name
+            bic = Enum.ToObject(DB.BuiltInCategory, category_id.IntegerValue)
+            bic_value = DB.ElementId(bic).IntegerValue
+            if bic_value < -1:
+                return bic
+            else:
+                # If you pass a regular element to category_id, it converts it to BIC.
+                # It should fail, because result is not a valid Category Enum
+                raise RpwCoerceError('category_id: {}'.format(category_id),
+                                     DB.BuiltInCategory)
+            # Similar to: Category.GetCategory(doc, category.Id).Name
 
     def __repr__(self):
         return super(_BiCategory, self).__repr__(to_string='Autodesk.Revit.DB.BuiltInCategory')
