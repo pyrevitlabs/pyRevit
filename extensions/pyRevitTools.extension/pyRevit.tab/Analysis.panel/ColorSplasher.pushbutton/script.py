@@ -47,6 +47,8 @@ from System import Array
 from System.Collections.Generic import *
 
 from pyrevit import HOST_APP, revit
+from pyrevit.compat import get_value_func
+
 
 class subscribeView(IExternalEventHandler):
     def __init__(self):
@@ -116,14 +118,15 @@ class applyColors(IExternalEventHandler):
                 t = Transaction(new_doc, "Apply colors to elements")
                 t.Start()
                 sel_cat = wndw._categories.SelectedItem['Value']
-                if sel_cat._cat.Id.IntegerValue == int(BuiltInCategory.OST_Rooms) or sel_cat._cat.Id.IntegerValue == int(BuiltInCategory.OST_MEPSpaces) or sel_cat._cat.Id.IntegerValue == int(BuiltInCategory.OST_Areas):
+                value_func = get_value_func()
+                if value_func(sel_cat._cat.Id) == int(BuiltInCategory.OST_Rooms) or value_func(sel_cat._cat.Id) == int(BuiltInCategory.OST_MEPSpaces) or value_func(sel_cat._cat.Id) == int(BuiltInCategory.OST_Areas):
                     #In case of rooms, spaces and areas. Check Color scheme is applied and if not
                     if version > 2021:
                         if str(wndw.crt_view.GetColorFillSchemeId(sel_cat._cat.Id)) == "-1":
                             fColorScheme = FilteredElementCollector(new_doc).OfClass(ColorFillScheme).ToElements()
                             if len(fColorScheme) > 0:
                                 for sch in fColorScheme:
-                                    if sch.CategoryId.IntegerValue == sel_cat._cat.Id.IntegerValue:
+                                    if sch.CategoryId == sel_cat._cat.Id:
                                         if len(sch.GetEntries()) > 0:
                                             wndw.crt_view.SetColorFillSchemeId(sel_cat._cat.Id, sch.Id)
                                             break
@@ -228,11 +231,12 @@ class createLegend(IExternalEventHandler):
                 old_all_ele = FilteredElementCollector(new_doc, legends[0].Id).ToElements()
                 ele_id_type = ElementId(0)
                 for ele in old_all_ele:
-                    if ele.Id.IntegerValue != newLegend.Id.IntegerValue and ele.Category != None:
+                    if ele.Id != newLegend.Id and ele.Category != None:
                         if isinstance(ele, TextNote):
                             ele_id_type = ele.GetTypeId()
                             break
-                if ele_id_type.IntegerValue == 0:
+                value_func = get_value_func()
+                if value_func(ele_id_type) == 0:
                      #Get any text in model
                     all_text_notes = FilteredElementCollector(new_doc).OfClass(TextNoteType).ToElements()
                     for ele in all_text_notes:
@@ -479,7 +483,8 @@ class categ_info():
     def __init__(self, cat, param):
         self._name = strip_accents(cat.Name)
         self._cat = cat
-        self._intId = cat.Id.IntegerValue
+        value_func = get_value_func()
+        self._intId = value_func(cat.Id)
         self._par = param
 
 def getActiveView(ac_doc):
@@ -509,7 +514,8 @@ def getValuePar(para):
             value = para.AsValueString()
         elif para.StorageType == StorageType.ElementId:
             id_val = para.AsElementId()
-            if id_val.IntegerValue >= 0:
+            value_func = get_value_func()
+            if value_func(id_val) >= 0:
                 value = Element.Name.__get__(doc.GetElement(id_val))
             else:
                 value ="None"
@@ -606,7 +612,8 @@ def getCategoriesAndParametersInUsed(cat_exc, acti_view):
     list_cat = []
     for ele in collector:
         if ele.Category != None:
-            current_int_cat_id = ele.Category.Id.IntegerValue
+            value_func = get_value_func()
+            current_int_cat_id = value_func(ele.Category.Id)
             if not current_int_cat_id in cat_exc and current_int_cat_id < -1:
                 if not any(x._intId == current_int_cat_id for x in list_cat):
                     list_parameters=[]
