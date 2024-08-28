@@ -1,7 +1,10 @@
 from pyrevit import revit, DB
+from pyrevit.compat import get_value_func
 
 
 selection = revit.get_selection()
+
+value_func = get_value_func()
 
 selectedrevs = []
 hasSelectedRevision = False
@@ -9,7 +12,7 @@ multipleRevs = False
 
 for s in selection:
     if isinstance(s, DB.RevisionCloud):
-        selectedrevs.append(s.RevisionId.IntegerValue)
+        selectedrevs.append(value_func(s.RevisionId))
 
 if len(selectedrevs) > 1:
     multipleRevs = True
@@ -26,7 +29,7 @@ sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
 for s in sheets:
     hasSelectedRevision = False
     revision_ids = s.GetAllRevisionIds()
-    revids = [x.IntegerValue for x in revision_ids]
+    revids = [value_func(x) for x in revision_ids]
     for sr in selectedrevs:
         if sr in revids:
             hasSelectedRevision = True
