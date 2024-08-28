@@ -152,6 +152,7 @@ def get_commit_points():
     commit_points = []
     # grab defined packages
     dockpkgs = []
+    value_func = get_value_func()
     docpkg_finder = \
         re.compile(r'docpkg(\d+)\s*[-_]*?\s*(.+)', flags=re.IGNORECASE)
     for project_param in revit.query.get_project_parameters(doc=revit.doc):
@@ -166,7 +167,6 @@ def get_commit_points():
         elif 'docpkg' in project_param.name.lower():
             mlogger.warning('Package parameter "%s" is not formatted '
                             'correctly and is skipped.', project_param.name)
-
     last_docpkg_idx = -1
     for idx, docpkg in enumerate(sorted(dockpkgs, key=lambda x: x.pkg_idx)):
         last_docpkg_idx = idx
@@ -182,32 +182,18 @@ def get_commit_points():
     none_numtype = coreutils.get_enum_none(DB.RevisionNumberType)
     docrevs = sorted(revit.query.get_revisions(),
                      key=lambda x: x.SequenceNumber)
-    if HOST_APP.is_newer_than(2023):
-        commit_points.extend([
-            CommitPoint(cptype=CommitPointTypes.Revision,
-                        target=x.Id.Value,
-                        idx=last_docpkg_idx + i + 1,
-                        name='R{}'.format(x.SequenceNumber),
-                        desc='{}{} (Sequence #{})'.format(
-                            '{} - '.format(revit.query.get_rev_number(x))
-                            if revit.ensure.revision_has_numbertype(x) else '',
-                            x.Description,
-                            x.SequenceNumber))
-            for i, x in enumerate(docrevs)
-            ])
-    else:
-        commit_points.extend([
-            CommitPoint(cptype=CommitPointTypes.Revision,
-                        target=x.Id.IntegerValue,
-                        idx=last_docpkg_idx + i + 1,
-                        name='R{}'.format(x.SequenceNumber),
-                        desc='{}{} (Sequence #{})'.format(
-                            '{} - '.format(revit.query.get_rev_number(x))
-                            if revit.ensure.revision_has_numbertype(x) else '',
-                            x.Description,
-                            x.SequenceNumber))
-            for i, x in enumerate(docrevs)
-            ])
+    commit_points.extend([
+        CommitPoint(cptype=CommitPointTypes.Revision,
+                    target=value_func(x.Id),
+                    idx=last_docpkg_idx + i + 1,
+                    name='R{}'.format(x.SequenceNumber),
+                    desc='{}{} (Sequence #{})'.format(
+                        '{} - '.format(revit.query.get_rev_number(x))
+                        if revit.ensure.revision_has_numbertype(x) else '',
+                        x.Description,
+                        x.SequenceNumber))
+        for i, x in enumerate(docrevs)
+        ])
     sorted_cpoints = sorted(commit_points, key=lambda x: x.idx)
     mlogger.debug(sorted_cpoints)
     return sorted_cpoints
