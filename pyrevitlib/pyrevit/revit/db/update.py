@@ -5,6 +5,7 @@ from pyrevit import HOST_APP, DOCS
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
+from pyrevit.compat import get_value_func
 
 
 def set_name(element, new_name):
@@ -20,6 +21,7 @@ def set_name(element, new_name):
 
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     doc = doc or DOCS.doc
+    value_func = get_value_func()
     # make sure revisions is a list
     if not isinstance(revisions, list):
         revisions = [revisions]
@@ -27,26 +29,15 @@ def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     if revisions:
         # get sheets if not available
         for sheet in sheets or query.get_sheets(doc=doc):
-            if HOST_APP.is_newer_than(2023):
-                addrevs = set([x.Value
-                               for x in sheet.GetAdditionalRevisionIds()])
-                for rev in revisions:
-                    # skip issued revisions
-                    if not rev.Issued:
-                        if state:
-                            addrevs.add(rev.Id.Value)
-                        elif rev.Id.Value in addrevs:
-                            addrevs.remove(rev.Id.Value)
-            else:
-                addrevs = set([x.IntegerValue
-                               for x in sheet.GetAdditionalRevisionIds()])
-                for rev in revisions:
-                    # skip issued revisions
-                    if not rev.Issued:
-                        if state:
-                            addrevs.add(rev.Id.IntegerValue)
-                        elif rev.Id.IntegerValue in addrevs:
-                            addrevs.remove(rev.Id.IntegerValue)
+            addrevs = set([value_func(x)
+                           for x in sheet.GetAdditionalRevisionIds()])
+            for rev in revisions:
+                # skip issued revisions
+                if not rev.Issued:
+                    if state:
+                        addrevs.add(value_func(rev.Id))
+                    elif value_func(rev.Id) in addrevs:
+                        addrevs.remove(value_func(rev.Id))
             rev_elids = [DB.ElementId(x) for x in addrevs]
             sheet.SetAdditionalRevisionIds(List[DB.ElementId](rev_elids))
             updated_sheets.append(sheet)
