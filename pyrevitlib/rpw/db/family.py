@@ -95,11 +95,7 @@ class FamilyInstance(Element, CategoryMixin):
             (bool): True if element is inside an AssemblyInstance
         """
         value_func = get_value_func()
-        assembly_id_value = value_func(self._revit_object.AssemblyInstanceId)
-        if assembly_id_value == -1:
-            return False
-        else:
-            return True
+        return value_func(self._revit_object.AssemblyInstanceId) != -1
 
     @property
     def get_assembly(self, wrapped=True):
