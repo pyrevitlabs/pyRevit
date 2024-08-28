@@ -1,6 +1,6 @@
 """Handle creation of output window helper links."""
 
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import safe_strtype, get_value_func
 from pyrevit import DB
 from pyrevit.coreutils.logger import get_logger
 
@@ -48,17 +48,12 @@ def make_link(element_ids, contents=None):
             print('{}: {}'.format(idx+1, output.linkify(elid)))
         ```
     """
+    value_func = get_value_func()
     try:
         try:
-            if HOST_APP.is_newer_than(2023):
-                strids = [safe_strtype(x.Value) for x in element_ids]
-            else:
-                strids = [safe_strtype(x.IntegerValue) for x in element_ids]
+            strids = [safe_strtype(value_func(x)) for x in element_ids]
         except TypeError:
-            if HOST_APP.is_newer_than(2023):
-                strids = [safe_strtype(element_ids.Value)]
-            else:
-                strids = [safe_strtype(element_ids.IntegerValue)]
+            strids = [safe_strtype(value_func(element_ids))]
     except AttributeError:
         raise ValueError("One or more items are not ElementIds")
 
