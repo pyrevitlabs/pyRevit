@@ -9,7 +9,7 @@ from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import api
 from pyrevit import framework
 from pyrevit import compat
-from pyrevit.compat import PY3, safe_strtype
+from pyrevit.compat import PY3, safe_strtype, get_value_func
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
@@ -760,16 +760,11 @@ def get_schedule_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    if HOST_APP.is_newer_than(2023):
-        for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
-            for cat in all_cats:
-                if cat.Id.Value == cat_id.Value:
-                    cats.append(cat)
-    else:
-        for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
-            for cat in all_cats:
-                if cat.Id.IntegerValue == cat_id.IntegerValue:
-                    cats.append(cat)
+    value_func = get_value_func()
+    for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
+        for cat in all_cats:
+            if value_func(cat.Id) == value_func(cat_id):
+                cats.append(cat)
     return cats
 
 
@@ -777,16 +772,11 @@ def get_key_schedule_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    if HOST_APP.is_newer_than(2023):
-        for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
-            for cat in all_cats:
-                if cat.Id.Value == cat_id.Value:
-                    cats.append(cat)
-    else:
-        for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
-            for cat in all_cats:
-                if cat.Id.IntegerValue == cat_id.IntegerValue:
-                    cats.append(cat)
+    value_func = get_value_func()
+    for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
+        for cat in all_cats:
+            if value_func(cat.Id) == value_func(cat_id):
+                cats.append(cat)
     return cats
 
 
@@ -794,16 +784,11 @@ def get_takeoff_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    if HOST_APP.is_newer_than(2023):
-        for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
-            for cat in all_cats:
-                if cat.Id.Value == cat_id.Value:
-                    cats.append(cat)
-    else:
-        for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
-            for cat in all_cats:
-                if cat.Id.IntegerValue == cat_id.IntegerValue:
-                    cats.append(cat)
+    value_func = get_value_func()
+    for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
+        for cat in all_cats:
+            if value_func(cat.Id) == value_func(cat_id):
+                cats.append(cat)
     return cats
 
 
@@ -815,14 +800,10 @@ def get_category(cat_name_or_builtin, doc=None):
             if cat.Name == cat_name_or_builtin:
                 return cat
     elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
-        if HOST_APP.is_newer_than(2023):
-            for cat in all_cats:
-                if cat.Id.Value == int(cat_name_or_builtin):
-                    return cat
-        else:
-            for cat in all_cats:
-                if cat.Id.IntegerValue == int(cat_name_or_builtin):
-                    return cat
+        value_func = get_value_func()
+        for cat in all_cats:
+            if value_func(cat.Id) == int(cat_name_or_builtin):
+                return cat
     elif isinstance(cat_name_or_builtin, DB.Category):
         return cat_name_or_builtin
 
@@ -830,20 +811,13 @@ def get_category(cat_name_or_builtin, doc=None):
 def get_builtincategory(cat_name_or_id, doc=None):
     doc = doc or DOCS.doc
     cat_id = None
-    if HOST_APP.is_newer_than(2023):
-        if isinstance(cat_name_or_id, str):
-            cat = get_category(cat_name_or_id)
-            if cat:
-                cat_id = cat.Id.Value
-        elif isinstance(cat_name_or_id, DB.ElementId):
-            cat_id = cat_name_or_id.Value
-    else:
-        if isinstance(cat_name_or_id, str):
-            cat = get_category(cat_name_or_id)
-            if cat:
-                cat_id = cat.Id.IntegerValue
-        elif isinstance(cat_name_or_id, DB.ElementId):
-            cat_id = cat_name_or_id.IntegerValue
+    value_func = get_value_func()
+    if isinstance(cat_name_or_id, str):
+        cat = get_category(cat_name_or_id)
+        if cat:
+            cat_id = value_func(cat.Id)
+    elif isinstance(cat_name_or_id, DB.ElementId):
+        cat_id = value_func(cat_name_or_id)
     if cat_id:
         for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
             if int(bicat) == cat_id:
@@ -854,27 +828,16 @@ def get_subcategories(doc=None, purgable=False, filterfunc=None):
     doc = doc or DOCS.doc
     # collect custom categories
     subcategories = []
-    if HOST_APP.is_newer_than(2023):
-        for cat in doc.Settings.Categories:
-            for subcat in cat.SubCategories:
-                if purgable:
-                    if subcat.Id.Value > 1:
-                        subcategories.append(subcat)
-                else:
+    value_func = get_value_func()
+    for cat in doc.Settings.Categories:
+        for subcat in cat.SubCategories:
+            if purgable:
+                if value_func(subcat.Id) > 1:
                     subcategories.append(subcat)
-        if filterfunc:
-            subcategories = filter(filterfunc, subcategories)
-    else:
-        for cat in doc.Settings.Categories:
-            for subcat in cat.SubCategories:
-                if purgable:
-                    if subcat.Id.IntegerValue > 1:
-                        subcategories.append(subcat)
-                else:
-                    subcategories.append(subcat)
-        if filterfunc:
-            subcategories = filter(filterfunc, subcategories)
-
+            else:
+                subcategories.append(subcat)
+    if filterfunc:
+        subcategories = filter(filterfunc, subcategories)
     return subcategories
 
 
@@ -890,14 +853,14 @@ def get_subcategory(cat_name_or_builtin, subcategory_name, doc=None):
 def get_builtinparameter(element, param_name, doc=None):
     doc = doc or DOCS.doc
     eparam = element.LookupParameter(param_name)
+    value_func = get_value_func()
     if eparam:
-        if HOST_APP.is_newer_than(2023):
-            eparam_def_id = eparam.Definition.Id.Value
-        else:
-            eparam_def_id = eparam.Definition.Id.IntegerValue
+        eparam_def_id = value_func(eparam.Definition.Id)
         for biparam in DB.BuiltInParameter.GetValues(DB.BuiltInParameter):
             if int(biparam) == eparam_def_id:
                 return biparam
+    else:
+        raise PyRevitException('Parameter not found: {}'.format(param_name))
 
 
 def get_view_cutplane_offset(view):
@@ -1622,6 +1585,7 @@ def get_geometry(element, include_invisible=False, compute_references=False):
     geom_opts.IncludeNonVisibleObjects = include_invisible
     geom_opts.ComputeReferences = compute_references
     geom_objs = []
+    value_func = get_value_func()
     try:
         for gobj in element.Geometry[geom_opts]:
             if isinstance(gobj, DB.GeometryInstance):
@@ -1631,8 +1595,5 @@ def get_geometry(element, include_invisible=False, compute_references=False):
                 geom_objs.append(gobj)
         return geom_objs
     except TypeError:
-        if HOST_APP.is_newer_than(2023):
-            mlogger.debug("element %s has no geometry", element.Id.Value)
-        else:
-            mlogger.debug("element %s has no geometry", element.Id.IntegerValue)
+        mlogger.debug("element %s has no geometry", value_func(element.Id))
         return
