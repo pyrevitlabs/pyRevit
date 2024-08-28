@@ -88,8 +88,10 @@ cl = DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)\
        .ToElements()
 
 print('\n## list of DB.Walls:')
+from pyrevit.compat import get_value_func
+value_func = get_value_func()
 for wall in cl:
-    print(f'{wall} id:{wall.Id.IntegerValue}')
+    print(f'{wall} id:{value_func(wall.Id)}')
 
 # test unicode
 print("""
