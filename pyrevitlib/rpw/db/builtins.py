@@ -18,6 +18,7 @@ from rpw import revit, DB
 from rpw.base import BaseObject, BaseObjectWrapper
 from rpw.utils.dotnet import Enum
 from rpw.exceptions import RpwCoerceError
+from pyrevit.compat import get_value_func
 
 
 class _BiParameter(BaseObjectWrapper):
@@ -155,20 +156,17 @@ class _BiCategory(BaseObjectWrapper):
         Returns:
             ``DB.BuiltInCategory`` member
         """
-        if HOST_APP.is_newer_than(2023):
-            bic = Enum.ToObject(DB.BuiltInCategory, category_id.Value)
-            bic_value = DB.ElementId(bic).Value
+        value_func = get_value_func()
+        bic = Enum.ToObject(DB.BuiltInCategory, value_func(category_id))
+        bic_value = value_func(DB.ElementId(bic))
+        if bic_value < -1:
+            return bic
         else:
-            bic = Enum.ToObject(DB.BuiltInCategory, category_id.IntegerValue)
-            bic_value = DB.ElementId(bic).IntegerValue
-            if bic_value < -1:
-                return bic
-            else:
-                # If you pass a regular element to category_id, it converts it to BIC.
-                # It should fail, because result is not a valid Category Enum
-                raise RpwCoerceError('category_id: {}'.format(category_id),
-                                     DB.BuiltInCategory)
-            # Similar to: Category.GetCategory(doc, category.Id).Name
+            # If you pass a regular element to category_id, it converts it to BIC.
+            # It should fail, because result is not a valid Category Enum
+            raise RpwCoerceError('category_id: {}'.format(category_id),
+                                 DB.BuiltInCategory)
+        # Similar to: Category.GetCategory(doc, category.Id).Name
 
     def __repr__(self):
         return super(_BiCategory, self).__repr__(to_string='Autodesk.Revit.DB.BuiltInCategory')
