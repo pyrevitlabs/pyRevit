@@ -6,6 +6,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit import DB
 from Autodesk.Revit.DB import Element   #pylint: disable=E0401
+from pyrevit.compat import get_value_func
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -22,7 +23,8 @@ class BaseWrapper(object):
     def __repr__(self, data=None):
         pdata = {}
         if hasattr(self._wrapped, 'Id'):
-            pdata['id'] = self._wrapped.Id.IntegerValue
+            value_func = get_value_func()
+            pdata['id'] = value_func(self._wrapped.Id)
 
         if data:
             pdata.update(data)
