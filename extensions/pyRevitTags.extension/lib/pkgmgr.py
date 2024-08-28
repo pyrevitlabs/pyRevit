@@ -6,6 +6,7 @@ from collections import namedtuple
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import revit, DB
+from pyrevit.compat import get_value_func
 
 from pkgcommits import CommitPointTypes, CommitTypes
 from pkgcommits import CommitPoint, Commit, CommitHistory
@@ -68,16 +69,9 @@ class CommitedSheet(object):
                     mlogger.debug(self._chistory)
 
         # process revisions
-        if HOST_APP.is_newer_than(2023):
-            sheet_revids = \
-                {x.Value for x in self.revit_sheet.GetAllRevisionIds()}
-            add_sheet_revids = \
-                {x.Value for x in self.revit_sheet.GetAdditionalRevisionIds()}
-        else:
-            sheet_revids = \
-                {x.IntegerValue for x in self.revit_sheet.GetAllRevisionIds()}
-            add_sheet_revids = \
-                {x.IntegerValue for x in self.revit_sheet.GetAdditionalRevisionIds()}
+        value_func = get_value_func()
+        sheet_revids = {value_func(x) for x in self.revit_sheet.GetAllRevisionIds()}
+        add_sheet_revids = {value_func(x) for x in self.revit_sheet.GetAdditionalRevisionIds()}
         readonly_sheet_revids = sheet_revids - add_sheet_revids
 
         default_rev_commit_type = CommitPointTypes.Revision.default_commit_type
