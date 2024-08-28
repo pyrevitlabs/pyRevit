@@ -11,7 +11,7 @@ import sys
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-IRONPY2711 = sys.version_info[:3] == (2, 7, 11)
+IRONPY2712 = sys.version_info[:3] == (2, 7, 12)
 IRONPY340 = sys.version_info[:3] == (3, 4, 0)
 
 #pylint: disable=import-error,unused-import
@@ -56,6 +56,35 @@ safe_strtype = str
 if PY2:
     # https://gist.github.com/gornostal/1f123aaf838506038710
     safe_strtype = lambda x: unicode(x)  #pylint: disable=E0602,unnecessary-lambda
+
+
+def get_value_func():
+        """Determines and returns the appropriate value extraction function based on the host application's version.
+
+        Returns:
+            function: A function that takes an item as an argument and returns its value. 
+                      If the host application version is newer than 2023, it returns the `get_value_2024` function, 
+                      which extracts the `Value` attribute from the item. 
+                      Otherwise, it returns the `get_value_2003` function, which extracts the `IntegerValue` attribute from the item.
+    
+        Functions:
+            get_value_2024(item): Extracts the `Value` attribute from the given item.
+            get_value_2003(item): Extracts the `IntegerValue` attribute from the given item.
+        
+        Examples:
+            ```python
+            value_func = get_value_func()
+            sheet_revids = {value_func(x) for x in self.revit_sheet.GetAllRevisionIds()}
+            add_sheet_revids = {value_func(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
+            ```
+        """
+        def get_value_2024(item):
+            return item.Value
+    
+        def get_value_2003(item):
+            return item.IntegerValue
+    
+        return get_value_2024 if __revit__.Application.is_newer_than(2023) else get_value_2003
 
 
 def urlopen(url):
