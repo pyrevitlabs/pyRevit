@@ -6,6 +6,7 @@ from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import revit, DB, UI, HOST_APP
 from pyrevit import script
+from pyrevit.compat import get_value_func
 
 
 logger = coreutils.logger.get_logger(__name__)
@@ -194,11 +195,13 @@ def remove_all_sheets():
                .WhereElementIsNotElementType()\
                .ToElements()
     open_UIViews = revit.uidoc.GetOpenUIViews()
-    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+    value_func = get_value_func()
+    open_views = [value_func(ov.ViewId) for ov in open_UIViews]
 
     def confirm_removal(sht):
+        value_func = get_value_func()
         return isinstance(sht, DB.ViewSheet) \
-                and sht.Id.IntegerValue not in open_views
+                and value_func(sht.Id) not in open_views
 
     print_header('REMOVING SHEETS')
     remove_action('Remove All Sheets',
@@ -428,9 +431,9 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
         .WhereElementIsNotElementType()
         .ToElements()
         )
-
+    value_func = get_value_func()
     open_uiviews = revit.uidoc.GetOpenUIViews()
-    open_views = [x.ViewId.IntegerValue for x in open_uiviews]
+    open_views = [value_func(x.ViewId) for x in open_uiviews]
 
     view_refnames = get_referenced_view_names()
     sheeted_view_ids = get_sheeted_view_ids()
@@ -457,6 +460,7 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
 
     def confirm_removal(view):
         if isinstance(view, viewclass_to_purge):
+            value_func = get_value_func()
             if viewtype_to_purge and view.ViewType != viewtype_to_purge:
                 return False
             elif view.ViewType in READONLY_VIEWS:
@@ -468,7 +472,7 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
                 return False
             elif '<' in revit.query.get_name(view):
                 return False
-            elif view.Id.IntegerValue in open_views:
+            elif value_func(view.Id) in open_views:
                 return False
             elif keep_referenced and is_referenced(view):
                 return False
@@ -766,17 +770,19 @@ def remove_all_schedules():
                         .WhereElementIsNotElementType()
                         .ToElements())
     open_UIViews = revit.uidoc.GetOpenUIViews()
-    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+    value_func = get_value_func()
+    open_views = [value_func(ov.ViewId) for ov in open_UIViews]
 
     def confirm_removal(v):
         if isinstance(v, DB.ViewSchedule):
+            value_func = get_value_func()
             if v.ViewType in READONLY_VIEWS:
                 return False
             elif v.IsTemplate:
                 return False
             elif '<' in revit.query.get_name(v):
                 return False
-            elif v.Id.IntegerValue in open_views:
+            elif value_func(v.Id) in open_views:
                 return False
             elif v.Definition.CategoryId == \
                 DB.Category.GetCategory(revit.doc,
@@ -804,17 +810,19 @@ def remove_all_legends():
                          .ToElements())
 
     open_UIViews = revit.uidoc.GetOpenUIViews()
-    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+    value_func = get_value_func()
+    open_views = [value_func(ov.ViewId) for ov in open_UIViews]
 
     def confirm_removal(v):
         if isinstance(v, DB.View) and v.ViewType == DB.ViewType.Legend:
+            value_func = get_value_func()
             if v.ViewType in READONLY_VIEWS:
                 return False
             elif v.IsTemplate:
                 return False
             elif '<' in revit.query.get_name(v):
                 return False
-            elif v.Id.IntegerValue in open_views:
+            elif value_func(v.Id) in open_views:
                 return False
             else:
                 return True
