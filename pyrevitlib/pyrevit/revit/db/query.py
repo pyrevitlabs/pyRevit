@@ -760,10 +760,9 @@ def get_schedule_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    value_func = get_value_func()
     for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
         for cat in all_cats:
-            if value_func(cat.Id) == value_func(cat_id):
+            if cat.Id == cat_id:
                 cats.append(cat)
     return cats
 
@@ -772,10 +771,9 @@ def get_key_schedule_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    value_func = get_value_func()
     for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
         for cat in all_cats:
-            if value_func(cat.Id) == value_func(cat_id):
+            if cat.Id == cat_id:
                 cats.append(cat)
     return cats
 
@@ -784,10 +782,9 @@ def get_takeoff_categories(doc=None):
     doc = doc or DOCS.doc
     all_cats = get_doc_categories(doc)
     cats = []
-    value_func = get_value_func()
     for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
         for cat in all_cats:
-            if value_func(cat.Id) == value_func(cat_id):
+            if cat.Id == cat_id:
                 cats.append(cat)
     return cats
 
@@ -800,9 +797,8 @@ def get_category(cat_name_or_builtin, doc=None):
             if cat.Name == cat_name_or_builtin:
                 return cat
     elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
-        value_func = get_value_func()
         for cat in all_cats:
-            if value_func(cat.Id) == int(cat_name_or_builtin):
+            if cat.Id == cat_name_or_builtin:
                 return cat
     elif isinstance(cat_name_or_builtin, DB.Category):
         return cat_name_or_builtin
@@ -811,16 +807,15 @@ def get_category(cat_name_or_builtin, doc=None):
 def get_builtincategory(cat_name_or_id, doc=None):
     doc = doc or DOCS.doc
     cat_id = None
-    value_func = get_value_func()
     if isinstance(cat_name_or_id, str):
         cat = get_category(cat_name_or_id)
         if cat:
-            cat_id = value_func(cat.Id)
+            cat_id = cat.Id
     elif isinstance(cat_name_or_id, DB.ElementId):
-        cat_id = value_func(cat_name_or_id)
+        cat_id = cat_name_or_id
     if cat_id:
         for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-            if int(bicat) == cat_id:
+            if bicat == cat_id:
                 return bicat
 
 
@@ -853,11 +848,10 @@ def get_subcategory(cat_name_or_builtin, subcategory_name, doc=None):
 def get_builtinparameter(element, param_name, doc=None):
     doc = doc or DOCS.doc
     eparam = element.LookupParameter(param_name)
-    value_func = get_value_func()
     if eparam:
-        eparam_def_id = value_func(eparam.Definition.Id)
+        eparam_def_id = eparam.Definition.Id
         for biparam in DB.BuiltInParameter.GetValues(DB.BuiltInParameter):
-            if int(biparam) == eparam_def_id:
+            if biparam == eparam_def_id:
                 return biparam
     else:
         raise PyRevitException('Parameter not found: {}'.format(param_name))

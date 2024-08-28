@@ -59,17 +59,17 @@ if PY2:
 
 
 def get_value_func():
-        """Determines and returns the appropriate value extraction function based on the host application's version.
+        """Determines and returns the appropriate value extraction function based on the host application's version. Follows API changes in Revit 2024.
 
         Returns:
             function: A function that takes an item as an argument and returns its value. 
-                      If the host application version is newer than 2023, it returns the `get_value_2024` function, 
+                      If the host application version is newer than 2023, it returns the `get_value_post2024` function, 
                       which extracts the `Value` attribute from the item. 
-                      Otherwise, it returns the `get_value_2003` function, which extracts the `IntegerValue` attribute from the item.
+                      Otherwise, it returns the `get_value_pre2024` function, which extracts the `IntegerValue` attribute from the item.
     
         Functions:
-            get_value_2024(item): Extracts the `Value` attribute from the given item.
-            get_value_2003(item): Extracts the `IntegerValue` attribute from the given item.
+            get_value_post2024(item): Extracts the `Value` attribute from the given item.
+            get_value_pre2024(item): Extracts the `IntegerValue` attribute from the given item.
         
         Examples:
             ```python
@@ -78,13 +78,13 @@ def get_value_func():
             add_sheet_revids = {value_func(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
             ```
         """
-        def get_value_2024(item):
+        def get_value_post2024(item):
             return item.Value
     
-        def get_value_2003(item):
+        def get_value_pre2024(item):
             return item.IntegerValue
     
-        return get_value_2024 if __revit__.Application.is_newer_than(2023) else get_value_2003
+        return get_value_post2024 if __revit__.Application.is_newer_than(2023) else get_value_pre2024
 
 
 def urlopen(url):
