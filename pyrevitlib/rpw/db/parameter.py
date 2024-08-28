@@ -13,6 +13,7 @@ from rpw.base import BaseObjectWrapper
 from rpw.exceptions import RpwException, RpwWrongStorageType
 from rpw.exceptions import RpwParameterNotFound, RpwTypeError
 from rpw.utils.logger import logger
+from pyrevit.compat import get_value_func
 
 
 class ParameterSet(BaseObjectWrapper):
@@ -299,10 +300,8 @@ class Parameter(BaseObjectWrapper):
         if not isinstance(self.value, DB.ElementId):
             value = self.value
         else:
-            if HOST_APP.is_newer_than(2023):
-                value = self.value.Value
-            else:
-                value = self.value.IntegerValue
+            value_func = get_value_func()
+            value = value_func(self.value)
         return {
                 'name': self.name,
                 'type': self.type.__name__,
