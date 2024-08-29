@@ -8,6 +8,7 @@ from pyrevit.framework import List
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.compat import get_value_func
 
 
 logger = script.get_logger()
@@ -41,7 +42,8 @@ class LinearCurveGroup(object):
         self.cgroup_id = (self.dir_x, self.dir_y, self.dir_offset, self.weight)
 
         # set cgroup boundary
-        self.dir_cid = curve.Id.IntegerValue
+        value_func = get_value_func()
+        self.dir_cid = value_func(curve.Id)
         self.add_points([
             self.get_point(p1.X, p1.Y),
             self.get_point(p2.X, p2.Y),

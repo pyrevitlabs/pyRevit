@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from pyrevit import script
 from pyrevit import revit, DB
+from pyrevit.compat import get_value_func
 
 
 __title__ = 'Lines Per View Counter'
@@ -40,7 +41,8 @@ def line_count(document=doc):
         lines = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Lines).WhereElementIsNotElementType().ToElements()
         for line in lines:
             if line.CurveElementType.ToString() == "DetailCurve":
-                view_id_int = line.OwnerViewId.IntegerValue
+                value_func = get_value_func()
+                view_id_int = value_func(line.OwnerViewId)
                 detail_lines[view_id_int] += 1
         for line_count, view_id_int \
                 in sorted(zip(detail_lines.values(), detail_lines.keys()),

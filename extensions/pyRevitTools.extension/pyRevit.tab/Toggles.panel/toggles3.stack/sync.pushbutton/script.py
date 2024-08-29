@@ -1,6 +1,7 @@
 import datetime
 from pyrevit import DB, UI, revit, HOST_APP
 from pyrevit import script, forms, coreutils
+from pyrevit.compat import get_value_func
 
 doc = revit.doc
 
@@ -139,8 +140,9 @@ def sync_document():
                 try:
                     set_active_view(view)
                 except:
+                    value_func = get_value_func()
                     logger.warn(
-                        "Failed to reopen view {}".format(v_id.IntegerValue))
+                        "Failed to reopen view {}".format(value_func(v_id)))
 
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime).seconds)

@@ -1,6 +1,7 @@
 from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit.compat import get_value_func
 
 
 logger = script.get_logger()
@@ -23,8 +24,11 @@ filters = DB.FilteredElementCollector(revit.doc)\
 
 usedFiltersSet = set()
 allFilters = set()
+
+value_func = get_value_func()
+
 for flt in filters:
-    allFilters.add(flt.Id.IntegerValue)
+    allFilters.add(value_func(flt.Id))
 
 # print('{} Filters found.'.format(len(allFilters)))
 
@@ -32,7 +36,7 @@ for v in views:
     if v.AreGraphicsOverridesAllowed():
         view_filters = v.GetFilters()
         for filter_id in view_filters:
-            usedFiltersSet.add(filter_id.IntegerValue)
+            usedFiltersSet.add(value_func(filter_id))
 
 if not allFilters:
     forms.alert('There are no filters available.')

@@ -9,7 +9,7 @@ from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import api
 from pyrevit import framework
 from pyrevit import compat
-from pyrevit.compat import PY3, safe_strtype
+from pyrevit.compat import PY3, safe_strtype, get_value_func
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
@@ -762,7 +762,7 @@ def get_schedule_categories(doc=None):
     cats = []
     for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
         for cat in all_cats:
-            if cat.Id.IntegerValue == cat_id.IntegerValue:
+            if cat.Id == cat_id:
                 cats.append(cat)
     return cats
 
@@ -773,7 +773,7 @@ def get_key_schedule_categories(doc=None):
     cats = []
     for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
         for cat in all_cats:
-            if cat.Id.IntegerValue == cat_id.IntegerValue:
+            if cat.Id == cat_id:
                 cats.append(cat)
     return cats
 
@@ -784,7 +784,7 @@ def get_takeoff_categories(doc=None):
     cats = []
     for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
         for cat in all_cats:
-            if cat.Id.IntegerValue == cat_id.IntegerValue:
+            if cat.Id == cat_id:
                 cats.append(cat)
     return cats
 
@@ -798,7 +798,7 @@ def get_category(cat_name_or_builtin, doc=None):
                 return cat
     elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
         for cat in all_cats:
-            if cat.Id.IntegerValue == int(cat_name_or_builtin):
+            if value_func(cat.Id) == int(cat_name_or_builtin):
                 return cat
     elif isinstance(cat_name_or_builtin, DB.Category):
         return cat_name_or_builtin
@@ -810,12 +810,12 @@ def get_builtincategory(cat_name_or_id, doc=None):
     if isinstance(cat_name_or_id, str):
         cat = get_category(cat_name_or_id)
         if cat:
-            cat_id = cat.Id.IntegerValue
+            cat_id = cat.Id
     elif isinstance(cat_name_or_id, DB.ElementId):
-        cat_id = cat_name_or_id.IntegerValue
+        cat_id = cat_name_or_id
     if cat_id:
         for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-            if int(bicat) == cat_id:
+            if int(bicat) == value_func(cat_id):
                 return bicat
 
 
@@ -823,16 +823,16 @@ def get_subcategories(doc=None, purgable=False, filterfunc=None):
     doc = doc or DOCS.doc
     # collect custom categories
     subcategories = []
+    value_func = get_value_func()
     for cat in doc.Settings.Categories:
         for subcat in cat.SubCategories:
             if purgable:
-                if subcat.Id.IntegerValue > 1:
+                if value_func(subcat.Id) > 1:
                     subcategories.append(subcat)
             else:
                 subcategories.append(subcat)
     if filterfunc:
         subcategories = filter(filterfunc, subcategories)
-
     return subcategories
 
 
@@ -849,9 +849,12 @@ def get_builtinparameter(element, param_name, doc=None):
     doc = doc or DOCS.doc
     eparam = element.LookupParameter(param_name)
     if eparam:
+        eparam_def_id = eparam.Definition.Id
         for biparam in DB.BuiltInParameter.GetValues(DB.BuiltInParameter):
-            if int(biparam) == eparam.Definition.Id.IntegerValue:
+            if int(biparam) == value_func(eparam_def_id):
                 return biparam
+    else:
+        raise PyRevitException('Parameter not found: {}'.format(param_name))
 
 
 def get_view_cutplane_offset(view):
@@ -1576,6 +1579,7 @@ def get_geometry(element, include_invisible=False, compute_references=False):
     geom_opts.IncludeNonVisibleObjects = include_invisible
     geom_opts.ComputeReferences = compute_references
     geom_objs = []
+    value_func = get_value_func()
     try:
         for gobj in element.Geometry[geom_opts]:
             if isinstance(gobj, DB.GeometryInstance):
@@ -1585,5 +1589,5 @@ def get_geometry(element, include_invisible=False, compute_references=False):
                 geom_objs.append(gobj)
         return geom_objs
     except TypeError:
-        mlogger.debug("element %s has no geometry", element.Id.IntegerValue)
+        mlogger.debug("element %s has no geometry", value_func(element.Id))
         return
