@@ -39,8 +39,8 @@ class NoneSerializer(Serializable):
 
 class ElementId(Serializable):
     api_types = DB.ElementId
-    value_func = get_value_func()
     def __init__(self, element_id):
+        value_func = get_value_func()
         self.integer_value = value_func(element_id)
 
     def deserialize(self):
