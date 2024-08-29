@@ -798,7 +798,7 @@ def get_category(cat_name_or_builtin, doc=None):
                 return cat
     elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
         for cat in all_cats:
-            if cat.Id == cat_name_or_builtin:
+            if value_func(cat.Id) == int(cat_name_or_builtin):
                 return cat
     elif isinstance(cat_name_or_builtin, DB.Category):
         return cat_name_or_builtin
@@ -815,7 +815,7 @@ def get_builtincategory(cat_name_or_id, doc=None):
         cat_id = cat_name_or_id
     if cat_id:
         for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-            if bicat == cat_id:
+            if int(bicat) == value_func(cat_id):
                 return bicat
 
 
@@ -851,7 +851,7 @@ def get_builtinparameter(element, param_name, doc=None):
     if eparam:
         eparam_def_id = eparam.Definition.Id
         for biparam in DB.BuiltInParameter.GetValues(DB.BuiltInParameter):
-            if biparam == eparam_def_id:
+            if int(biparam) == value_func(eparam_def_id):
                 return biparam
     else:
         raise PyRevitException('Parameter not found: {}'.format(param_name))
