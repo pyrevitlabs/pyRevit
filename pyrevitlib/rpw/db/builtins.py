@@ -156,11 +156,9 @@ class _BiCategory(BaseObjectWrapper):
         Returns:
             ``DB.BuiltInCategory`` member
         """
-        value_func = get_value_func()
-        bic = Enum.ToObject(DB.BuiltInCategory, value_func(category_id))
-        bic_value = value_func(DB.ElementId(bic))
-        if bic_value < -1:
-            return bic
+        cat_id_value = value_func(category_id)
+        if cat_id_value < -1 and Enum.IsDefined(DB.BuiltInCategory, cat_id_value):
+            return Enum.ToObject(DB.BuiltInCategory, cat_id_value)
         else:
             # If you pass a regular element to category_id, it converts it to BIC.
             # It should fail, because result is not a valid Category Enum
