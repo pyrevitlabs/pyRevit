@@ -119,7 +119,7 @@ class applyColors(IExternalEventHandler):
                 t.Start()
                 sel_cat = wndw._categories.SelectedItem['Value']
                 value_func = get_value_func()
-                if value_func(sel_cat._cat.Id) == int(BuiltInCategory.OST_Rooms) or value_func(sel_cat._cat.Id) == int(BuiltInCategory.OST_MEPSpaces) or value_func(sel_cat._cat.Id) == int(BuiltInCategory.OST_Areas):
+                if value_func(sel_cat._cat.Id) in (int(BuiltInCategory.OST_Rooms), int(BuiltInCategory.OST_MEPSpaces), int(BuiltInCategory.OST_Areas)):
                     #In case of rooms, spaces and areas. Check Color scheme is applied and if not
                     if version > 2021:
                         if str(wndw.crt_view.GetColorFillSchemeId(sel_cat._cat.Id)) == "-1":
