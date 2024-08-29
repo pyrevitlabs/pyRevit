@@ -242,7 +242,7 @@ if selected_switch:
                     tagged_elements.append(List[DB.ElementId](value_func(elt.GetTaggedLocalElementIds())[0]))
             else:
                 if elt.TaggedLocalElementId != DB.ElementId.InvalidElementId:
-                    tagged_elements.append(value_func(elt.TaggedLocalElementId))
+                    tagged_elements.append(elt.TaggedLocalElementId.IntegerValue)
                     
         for elid in target_elements:
             el = revit.doc.GetElement(elid)
