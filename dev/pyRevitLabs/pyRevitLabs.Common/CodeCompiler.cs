@@ -345,6 +345,6 @@ namespace pyRevitLabs.Common {
                 options: compileOpts
                 );
         }
+        #endregion
     }
-    #endregion
 }
