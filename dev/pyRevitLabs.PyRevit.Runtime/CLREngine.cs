@@ -103,6 +103,7 @@ namespace PyRevitLabs.PyRevit.Runtime
                 {
                     // make sure a bad compile is not cached
                     scriptAssm = null;
+                    scriptSig = null;
                     string traceMessage = compileEx.ToString();
                     traceMessage = traceMessage.NormalizeNewLine();
                     runtime.TraceMessage = traceMessage;
