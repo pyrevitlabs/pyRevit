@@ -1,7 +1,7 @@
 # encoding: utf-8
 # from https://discourse.pyrevitlabs.io/t/i-developed-a-tool-need-help-to-get-it-into-the-new-release-of-pyrevit/7639/3
 
-from pyrevit import DB, UI, script, HOST_APP, revit
+from pyrevit import DB, script, revit, HOST_APP
 
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
@@ -14,32 +14,11 @@ def move_viewport_label(viewport, point):
     viewport.LabelOffset = new_label_location
 
 
-def single_point_selection():
-    pick_point = uidoc.Selection.PickPoint()
-    return pick_point
-
-
-def single_viewport_selection():
-    selected_viewport = None
-    filter = ViewportSelectionFilter()
-    pick_ref = uidoc.Selection.PickObject(UI.Selection.ObjectType.Element, filter, "Select a viewport")
-    selected_viewport = doc.GetElement(pick_ref)
-    return selected_viewport
-
-
-class ViewportSelectionFilter(UI.Selection.ISelectionFilter):
-    def AllowElement(self, element):
-        if not isinstance(element, DB.Viewport):
-            return False
-        else:
-            return True
-
-    def AllowReference(self, reference, position):
-        return False
-
-
 if __name__ == '__main__':
-    selected_point = single_point_selection()
-    selected_viewport = single_viewport_selection()
-    with revit.Transaction("Move Label to Point", doc):
-        move_viewport_label(selected_viewport, selected_point)
+    selected_point = revit.selection.pick_point("Select a point")
+    selected_viewport = revit.selection.pick_element_by_category(DB.BuiltInCategory.OST_Viewports, "Select a viewport")
+    if selected_point is not None and selected_viewport is not None:
+        with revit.Transaction("Move Label to Point", doc):
+            move_viewport_label(selected_viewport, selected_point)
+    else:
+        print("Invalid selection. Please try again.")
