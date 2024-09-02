@@ -2,13 +2,11 @@
 # from https://discourse.pyrevitlabs.io/t/i-developed-a-tool-need-help-to-get-it-into-the-new-release-of-pyrevit/7639/3
 
 from pyrevit import DB, HOST_APP
-from pyrevit.script import get_output
 from pyrevit.revit import pick_point, pick_element_by_category, Transaction
 from pyrevit.forms import alert
 
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
-get_output().close_others()
 
 
 def move_viewport_label(viewport, point):
