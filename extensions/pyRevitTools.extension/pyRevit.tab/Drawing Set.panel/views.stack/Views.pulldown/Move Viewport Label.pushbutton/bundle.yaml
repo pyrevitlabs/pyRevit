@@ -25,3 +25,6 @@ tooltip:
 authors:
   - Tim Hevel
   - Jean-Marc Couffin (C# to python and refactor)
+
+min_revit_version: 2022
+context: active-sheet 
