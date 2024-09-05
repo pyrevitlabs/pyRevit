@@ -8,7 +8,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit.db import query
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -291,11 +291,11 @@ def create_revision_sheetset(revisions,
     # find revised sheets
     myviewset = DB.ViewSet()
     check_func = any if match_any else all
-    value_func = get_value_func()
+    get_elementid_value = get_elementid_value_func()
     for sheet in sheets:
         revs = sheet.GetAllRevisionIds()
-        sheet_revids = [value_func(x) for x in revs]
-        if check_func([value_func(x.Id) in sheet_revids for x in revisions]):
+        sheet_revids = [get_elementid_value(x) for x in revs]
+        if check_func([get_elementid_value(x.Id) in sheet_revids for x in revisions]):
                 myviewset.Insert(sheet)
     # needs transaction
     # delete existing sheet set if any
@@ -404,7 +404,7 @@ def create_param_value_filter(filter_name,
         DB.LogicalOrFilter if match_any else DB.LogicalAndFilter
 
     # create the rule set
-    value_func = get_value_func()
+    get_elementid_value = get_elementid_value_func()
     for pvalue in param_values:
         # grab the evaluator
         param_eval = PARAM_VALUE_EVALUATORS.get(evaluator, None)
@@ -437,7 +437,7 @@ def create_param_value_filter(filter_name,
                                             str(pvalue),
                                             False)
             elif isinstance(pvalue, DB.ElementId):
-                p_id = str(value_func(pvalue))
+                p_id = str(get_elementid_value(pvalue))
                 if HOST_APP.is_newer_than(2022):
                     rule = DB.FilterStringRule(param_prov,
                                             num_eval(),

@@ -47,7 +47,7 @@ from System import Array
 from System.Collections.Generic import *
 
 from pyrevit import HOST_APP, revit
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 class subscribeView(IExternalEventHandler):
@@ -118,8 +118,8 @@ class applyColors(IExternalEventHandler):
                 t = Transaction(new_doc, "Apply colors to elements")
                 t.Start()
                 sel_cat = wndw._categories.SelectedItem['Value']
-                value_func = get_value_func()
-                if value_func(sel_cat._cat.Id) in (int(BuiltInCategory.OST_Rooms), int(BuiltInCategory.OST_MEPSpaces), int(BuiltInCategory.OST_Areas)):
+                get_elementid_value = get_elementid_value_func()
+                if get_elementid_value(sel_cat._cat.Id) in (int(BuiltInCategory.OST_Rooms), int(BuiltInCategory.OST_MEPSpaces), int(BuiltInCategory.OST_Areas)):
                     #In case of rooms, spaces and areas. Check Color scheme is applied and if not
                     if version > 2021:
                         if str(wndw.crt_view.GetColorFillSchemeId(sel_cat._cat.Id)) == "-1":
@@ -235,8 +235,8 @@ class createLegend(IExternalEventHandler):
                         if isinstance(ele, TextNote):
                             ele_id_type = ele.GetTypeId()
                             break
-                value_func = get_value_func()
-                if value_func(ele_id_type) == 0:
+                get_elementid_value = get_elementid_value_func()
+                if get_elementid_value(ele_id_type) == 0:
                      #Get any text in model
                     all_text_notes = FilteredElementCollector(new_doc).OfClass(TextNoteType).ToElements()
                     for ele in all_text_notes:
@@ -483,8 +483,8 @@ class categ_info():
     def __init__(self, cat, param):
         self._name = strip_accents(cat.Name)
         self._cat = cat
-        value_func = get_value_func()
-        self._intId = value_func(cat.Id)
+        get_elementid_value = get_elementid_value_func()
+        self._intId = get_elementid_value(cat.Id)
         self._par = param
 
 def getActiveView(ac_doc):
@@ -514,8 +514,8 @@ def getValuePar(para):
             value = para.AsValueString()
         elif para.StorageType == StorageType.ElementId:
             id_val = para.AsElementId()
-            value_func = get_value_func()
-            if value_func(id_val) >= 0:
+            get_elementid_value = get_elementid_value_func()
+            if get_elementid_value(id_val) >= 0:
                 value = Element.Name.__get__(doc.GetElement(id_val))
             else:
                 value ="None"
@@ -612,8 +612,8 @@ def getCategoriesAndParametersInUsed(cat_exc, acti_view):
     list_cat = []
     for ele in collector:
         if ele.Category != None:
-            value_func = get_value_func()
-            current_int_cat_id = value_func(ele.Category.Id)
+            get_elementid_value = get_elementid_value_func()
+            current_int_cat_id = get_elementid_value(ele.Category.Id)
             if not current_int_cat_id in cat_exc and current_int_cat_id < -1:
                 if not any(x._intId == current_int_cat_id for x in list_cat):
                     list_parameters=[]

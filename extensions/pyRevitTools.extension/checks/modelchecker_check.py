@@ -4,7 +4,7 @@ import datetime
 
 from pyrevit import coreutils
 from pyrevit import revit, DB
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 from pyrevit.preflight import PreflightTestCase
 
@@ -258,7 +258,7 @@ def checkModel(doc, output):
     projectNumber = project_info_collector.Number
     projectName = project_info_collector.Name
     projectClient = project_info_collector.ClientName
-    value_func = get_value_func()
+    get_elementid_value = get_elementid_value_func()
     if len(name) == 0:
         # name = "Not saved file"
         printedName = "Not saved file"
@@ -436,7 +436,7 @@ def checkModel(doc, output):
             # to support french files
             or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
-                if value_func(schedule.OwnerViewId) != -1:
+                if get_elementid_value(schedule.OwnerViewId) != -1:
                     # print schedName
                     # print schedule.Id
                     schedulesOnSheet.append(schedName)
@@ -448,7 +448,7 @@ def checkModel(doc, output):
             # to support french files
             or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
-                if value_func(schedule.OwnerViewId) != -1:
+                if get_elementid_value(schedule.OwnerViewId) != -1:
                     # print schedName
                     # print schedule.Id
                     schedulesOnSheet.append(schedName)
@@ -928,7 +928,7 @@ def checkModel(doc, output):
     for element in elements:
         try:
             category = element.Category.Name
-            categoryId = value_func(element.Category.Id)
+            categoryId = get_elementid_value(element.Category.Id)
             # filtering out DWGs and DXFs, categories from banlist
             # filtering out categories in catBanlist
             # DB.BuiltInCategory Ids are negative integers

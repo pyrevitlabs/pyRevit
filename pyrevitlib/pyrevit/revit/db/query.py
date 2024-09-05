@@ -9,7 +9,7 @@ from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import api
 from pyrevit import framework
 from pyrevit import compat
-from pyrevit.compat import PY3, safe_strtype, get_value_func
+from pyrevit.compat import PY3, safe_strtype, get_elementid_value_func
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
@@ -797,8 +797,9 @@ def get_category(cat_name_or_builtin, doc=None):
             if cat.Name == cat_name_or_builtin:
                 return cat
     elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
+        get_elementid_value = get_elementid_value_func()
         for cat in all_cats:
-            if value_func(cat.Id) == int(cat_name_or_builtin):
+            if get_elementid_value(cat.Id) == int(cat_name_or_builtin):
                 return cat
     elif isinstance(cat_name_or_builtin, DB.Category):
         return cat_name_or_builtin
@@ -814,8 +815,9 @@ def get_builtincategory(cat_name_or_id, doc=None):
     elif isinstance(cat_name_or_id, DB.ElementId):
         cat_id = cat_name_or_id
     if cat_id:
+        get_elementid_value = get_elementid_value_func()
         for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-            if int(bicat) == value_func(cat_id):
+            if int(bicat) == get_elementid_value(cat_id):
                 return bicat
 
 
@@ -823,11 +825,11 @@ def get_subcategories(doc=None, purgable=False, filterfunc=None):
     doc = doc or DOCS.doc
     # collect custom categories
     subcategories = []
-    value_func = get_value_func()
+    get_elementid_value = get_elementid_value_func()
     for cat in doc.Settings.Categories:
         for subcat in cat.SubCategories:
             if purgable:
-                if value_func(subcat.Id) > 1:
+                if get_elementid_value(subcat.Id) > 1:
                     subcategories.append(subcat)
             else:
                 subcategories.append(subcat)
@@ -850,8 +852,9 @@ def get_builtinparameter(element, param_name, doc=None):
     eparam = element.LookupParameter(param_name)
     if eparam:
         eparam_def_id = eparam.Definition.Id
+        get_elementid_value = get_elementid_value_func()
         for biparam in DB.BuiltInParameter.GetValues(DB.BuiltInParameter):
-            if int(biparam) == value_func(eparam_def_id):
+            if int(biparam) == get_elementid_value(eparam_def_id):
                 return biparam
     else:
         raise PyRevitException('Parameter not found: {}'.format(param_name))
@@ -1579,7 +1582,6 @@ def get_geometry(element, include_invisible=False, compute_references=False):
     geom_opts.IncludeNonVisibleObjects = include_invisible
     geom_opts.ComputeReferences = compute_references
     geom_objs = []
-    value_func = get_value_func()
     try:
         for gobj in element.Geometry[geom_opts]:
             if isinstance(gobj, DB.GeometryInstance):
@@ -1589,5 +1591,6 @@ def get_geometry(element, include_invisible=False, compute_references=False):
                 geom_objs.append(gobj)
         return geom_objs
     except TypeError:
-        mlogger.debug("element %s has no geometry", value_func(element.Id))
+        get_elementid_value = get_elementid_value_func()
+        mlogger.debug("element %s has no geometry", get_elementid_value(element.Id))
         return

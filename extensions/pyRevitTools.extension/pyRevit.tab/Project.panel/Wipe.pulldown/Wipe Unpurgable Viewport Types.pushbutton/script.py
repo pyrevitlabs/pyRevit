@@ -4,7 +4,7 @@ from pyrevit import framework
 from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit import script
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 logger = script.get_logger()
 
@@ -17,11 +17,11 @@ class ViewPortType:
         return revit.query.get_name(self._rvt_type)
 
     def __repr__(self):
-        value_func = get_value_func()
+        get_elementid_value = get_elementid_value_func()
         return '<{} Name:{} Id:{}>'\
                .format(self.__class__.__name__,
                        revit.query.get_name(self._rvt_type),
-                       value_func(self._rvt_type.Id))
+                       get_elementid_value(self._rvt_type.Id))
 
     def __lt__(self, other):
         return str(self) < str(other)

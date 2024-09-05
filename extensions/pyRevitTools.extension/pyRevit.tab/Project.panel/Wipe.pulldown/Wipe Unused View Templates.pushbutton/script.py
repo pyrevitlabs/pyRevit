@@ -1,6 +1,6 @@
 from pyrevit import forms
 from pyrevit import revit, DB
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 class ViewTemplateToPurge(forms.TemplateListItem):
@@ -21,14 +21,14 @@ views = []
 
 for v in viewlist:
     if v.IsTemplate and 'master' not in revit.query.get_name(v).lower():
-        value_func = get_value_func()
-        vtemp.add(value_func(v.Id))
+        get_elementid_value = get_elementid_value_func()
+        vtemp.add(get_elementid_value(v.Id))
     else:
         views.append(v)
 
 for v in views:
-    value_func = get_value_func()
-    vtid = value_func(v.ViewTemplateId)
+    get_elementid_value = get_elementid_value_func()
+    vtid = get_elementid_value(v.ViewTemplateId)
     if vtid > 0:
         usedvtemp.add(vtid)
 

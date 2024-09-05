@@ -5,7 +5,7 @@ from pyrevit import DB
 from pyrevit.compat import Iterable
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 __all__ = ('serialize', 'deserialize')
@@ -40,8 +40,8 @@ class NoneSerializer(Serializable):
 class ElementId(Serializable):
     api_types = DB.ElementId
     def __init__(self, element_id):
-        value_func = get_value_func()
-        self.integer_value = value_func(element_id)
+        get_elementid_value = get_elementid_value_func()
+        self.integer_value = get_elementid_value(element_id)
 
     def deserialize(self):
         return DB.ElementId(self.integer_value)
