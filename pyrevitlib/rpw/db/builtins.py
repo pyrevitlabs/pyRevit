@@ -156,6 +156,7 @@ class _BiCategory(BaseObjectWrapper):
         Returns:
             ``DB.BuiltInCategory`` member
         """
+        get_elementid_value = get_elementid_value_func()
         cat_id_value = get_elementid_value(category_id)
         if cat_id_value < -1 and Enum.IsDefined(DB.BuiltInCategory, cat_id_value):
             return Enum.ToObject(DB.BuiltInCategory, cat_id_value)
