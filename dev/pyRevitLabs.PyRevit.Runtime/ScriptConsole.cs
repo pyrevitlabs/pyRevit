@@ -850,7 +850,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             try
             {
-                using (File.CreateText(saveDlg.FileName).Write(GetFullHtml())) { }
+                using (StreamWriter writer = File.CreateText(saveDlg.FileName))
+                {
+                    writer.Write(GetFullHtml());
+                }
             }
             catch (Exception ex)
             {
