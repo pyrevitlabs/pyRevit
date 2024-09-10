@@ -184,6 +184,8 @@ class ProjectParameter(BaseWrapper):
         if HOST_APP.is_exactly(2021):
             # Revit >2021 does not have the UnitType property
             self.unit_type = self.param_def.GetSpecTypeId()
+            self.param_type = self.param_def.ParameterType
+            self.param_group = self.param_def.ParameterGroup
         elif HOST_APP.is_newer_than(2022, or_equal=True):
             # GetSpecTypeId() Removed in Revit 2022
             self.unit_type = self.param_def.GetDataType()
