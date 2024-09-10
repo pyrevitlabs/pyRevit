@@ -834,35 +834,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return MakeButtonPath("M19.92,12.08L12,20L4.08,12.08L5.5,10.67L11,16.17V2H13V16.17L18.5,10.66L19.92,12.08M12,20H2V22H22V20H12Z");
         }
 
-        private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
-            var saveDlg = new System.Windows.Forms.SaveFileDialog() 
+        private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e)
+        {
+            var saveDlg = new System.Windows.Forms.SaveFileDialog()
             {
                 Title = "Save Output to:",
-                Filter = "HTML|*.html"
+                Filter = "HTML Files|*.html",
                 DefaultExt = "html",
                 AddExtension = true,
                 RestoreDirectory = true
             };
-            if (saveDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(saveDlg.FileName))
+            if (saveDlg.ShowDialog() != System.Windows.Forms.DialogResult.OK || string.IsNullOrWhiteSpace(saveDlg.FileName))
             {
-                try
-                {
-                    using (var f = File.CreateText(saveDlg.FileName))
-                    {
-                        f.Write(GetFullHtml());
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Use WPF MessageBox instead of System.Windows.Forms.MessageBox
-                    System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                return;
             }
-            else
+            try
             {
-                System.Windows.MessageBox.Show("File saving was canceled or an invalid file name was provided.", "Save Canceled", MessageBoxButton.OK, MessageBoxImage.Information);
+                using (File.CreateText(saveDlg.FileName).Write(GetFullHtml())) { }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void PinButton_Click(object sender, RoutedEventArgs e) {
             var button = e.Source as Button;
@@ -924,23 +919,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         {
             try
             {
-                var filePath = SaveContentsToTemp();
-        
-                // Adjust for proper URI format
-                var uri = new Uri(filePath).AbsoluteUri;
-
-                // Use ProcessStartInfo to set UseShellExecute to true
+                var uri = new Uri(SaveContentsToTemp()).AbsoluteUri;
                 var processInfo = new ProcessStartInfo()
                 {
                     FileName = uri,
-                    UseShellExecute = true // Required in .NET Core to launch external processes
+                    UseShellExecute = true
                 };
-
                 Process.Start(processInfo);
             }
             catch (Exception ex)
             {
-                // Handle any exceptions and show an error message
                 System.Windows.MessageBox.Show($"Error opening file: {ex.Message}", "Open Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
