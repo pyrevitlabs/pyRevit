@@ -835,14 +835,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
-            var saveDlg = new System.Windows.Forms.SaveFileDialog() {
+            var saveDlg = new System.Windows.Forms.SaveFileDialog() 
+            {
                 Title = "Save Output to:",
                 Filter = "HTML|*.html"
+                DefaultExt = "html",
+                AddExtension = true,
+                RestoreDirectory = true
             };
-            saveDlg.ShowDialog();
-            var f = File.CreateText(saveDlg.FileName);
-            f.Write(GetFullHtml());
-            f.Close();
+            if (saveDlg.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(saveDlg.FileName))
+            {
+                try
+                {
+                    using (var f = File.CreateText(saveDlg.FileName))
+                    {
+                        f.Write(GetFullHtml());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Use WPF MessageBox instead of System.Windows.Forms.MessageBox
+                    System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("File saving was canceled or an invalid file name was provided.", "Save Canceled", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void PinButton_Click(object sender, RoutedEventArgs e) {
@@ -901,8 +920,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return tempHtml;
         }
 
-        private void OpenButton_Click(object sender, RoutedEventArgs e) {
-            Process.Start(string.Format("file:///{0}", SaveContentsToTemp()));
+        private void OpenButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var filePath = SaveContentsToTemp();
+        
+                // Adjust for proper URI format
+                var uri = new Uri(filePath).AbsoluteUri;
+
+                // Use ProcessStartInfo to set UseShellExecute to true
+                var processInfo = new ProcessStartInfo()
+                {
+                    FileName = uri,
+                    UseShellExecute = true // Required in .NET Core to launch external processes
+                };
+
+                Process.Start(processInfo);
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions and show an error message
+                System.Windows.MessageBox.Show($"Error opening file: {ex.Message}", "Open Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void PrintButton_Click(object sender, RoutedEventArgs e) {
