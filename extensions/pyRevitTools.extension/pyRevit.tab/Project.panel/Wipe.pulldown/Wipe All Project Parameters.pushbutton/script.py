@@ -24,16 +24,18 @@ while it.MoveNext():
         BIND = 'Unknown'
 
     name = p.Name
-    if HOST_APP.is_newer_than('2022'):
-        ut = str(p.GetDataType().TypeId)
-        tp = str(p.GetDataType().TypeId.split('.')[-3])
-    elif HOST_APP.is_exactly('2022'):
+    if HOST_APP.is_exactly('2022'):
         ut = str(p.GetSpecTypeId().TypeId)
         tp = str(p.ParameterType)
+        pg = str(p.ParameterGroup)
+    elif HOST_APP.is_newer_than('2022'):
+        ut = str(p.GetDataType().TypeId)
+        tp = str(p.GetDataType().TypeId.split('.')[-3])
+        pg = str(p.GetGroupTypeId().TypeId)
     else:
         ut = str(p.UnitType)
         tp = str(p.ParameterType)
-    pg = str(p.ParameterGroup)
+        pg = str(p.ParameterGroup)
 
     print('\n')
     print('-' * 100)
