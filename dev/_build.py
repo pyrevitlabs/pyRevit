@@ -33,13 +33,3 @@ def build_binaries(_: Dict[str, str]):
     labs.build_runtime(_)
     telem.build_telem(_)
     autoc.build_autocmp(_)
-
-    file_list = os.listdir(configs.BINPATH_NETCORE)
-    for file in file_list:
-        if file.endswith(".dll")\
-                or file.endswith(".png")\
-                or file.endswith(".json"):
-            print(op.join(configs.BINPATH_NETCORE, file))
-            print(op.join(configs.ENGINES2PATH_NETCORE, file))
-            shutil.copyfile(op.join(configs.BINPATH_NETCORE, file),
-                            op.join(configs.ENGINES2PATH_NETCORE, file))
