@@ -25,8 +25,12 @@
     </ItemGroup>
 
     <Target Name="DeployDependencies" AfterTargets="AfterBuild">
-        <ItemGroup>
+        <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
             <LibGit2SharpNative Include="$(OutDir)\lib\win32\x64\*.dll"/>
+        </ItemGroup>
+
+        <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">
+            <LibGit2SharpNative Include="$(OutDir)\runtimes\win-x64\native\*.dll"/>
         </ItemGroup>
 
         <Copy SourceFiles="$(OutDir)\DotNetVersionFinder.dll" DestinationFolder="$(PyRevitBinDir)"/>
