@@ -49,7 +49,6 @@ namespace PyRevitLoader
                 }
                 catch
                 {
-                    ////
                 }
             }
         }

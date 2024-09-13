@@ -56,7 +56,7 @@ namespace pyRevitLabs.PyRevit {
 
         public override string ToString() {
             var folder = IsNetCore ? PyRevitConsts.NetCoreFolder : PyRevitConsts.NetFxFolder;
-            return $"{Id} ({folder}) | Kernel: {KernelName} | Version: {Version} | Runtime: {Runtime} | Path: \"{AssemblyPath}\" | Desc: \"{Description}\"";
+            return $"{Id} ({folder}) | Kernel: {KernelName} | Version: {Version.Version} | Runtime: {Runtime} | Path: \"{AssemblyPath}\" | Desc: \"{Description}\"";
         }
 
         public string Id { get; private set; }

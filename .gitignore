@@ -60,3 +60,5 @@ dist/
 .idea
 site/
 *.pdb
+*.deps.json
+bin/**/*.xml

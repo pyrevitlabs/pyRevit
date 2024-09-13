@@ -105,7 +105,7 @@ if not EXEC_PARAMS.doc_mode:
                 INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
             )
             + EXEC_PARAMS.engine_ver
-            + str(CPYTHON_ENGINE.Version)
+            + str(CPYTHON_ENGINE.Version) if CPYTHON_ENGINE else "0"
             )[:HASH_CUTOFF_LENGTH]
     RUNTIME_ASSM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
