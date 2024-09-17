@@ -1907,6 +1907,18 @@
         "target": "x64",
         "notes": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_1_html"
     },
+	{
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_2_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "24.2.2",
+        "version": "24.2.20.41",
+        "build": "20240814_1400",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_2_html"
+    },
     {
         "meta": {
             "schema": "1.0",
