@@ -48,7 +48,6 @@ namespace pyRevitLabs.PyRevit
         {
             var _clonePath = FindValidClonePathAbove(clonePath) ?? throw new PyRevitException(
                     $"Path does not point to a valid clone \"{clonePath}\"");
-            logger.Debug("Valid clone found at: {0}", _clonePath);
             ClonePath = _clonePath.NormalizeAsPath();
 
             if (name == null)
@@ -230,12 +229,11 @@ namespace pyRevitLabs.PyRevit
             logger.Debug("Checking clone validity by directory structure...");
             var pyrevitDir = GetPyRevitPath(normClonePath);
             logger.Debug("Checking pyRevit path \"{0}\"", pyrevitDir);
-            Console.WriteLine("Checking pyRevit path \"{0}\"", pyrevitDir);
             if (!CommonUtils.VerifyPath(pyrevitDir))
             {
                 throw new pyRevitInvalidPyRevitCloneException(normClonePath);
             }
-
+            logger.Debug("Clone directory structure is valid.");
             // if is a repo, and repo is NOT valid, throw an exception
             logger.Debug("Checking clone validity by git repo...");
             if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath))
