@@ -688,48 +688,43 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         try:
             return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
         except PyRevitException as ex:
-            mlogger.error('Error getting current attachment. | %s',
-                          ex)
+            mlogger.error('Error getting current attachment. | %s', ex)
 
     def get_active_cpython_engine(self):
         """Return active cpython engine."""
-        engines = []
-        # try ot find attachment and get engines from the clone
+        # try to find attachment and get engines from the clone
         attachment = self.get_current_attachment()
         if attachment and attachment.Clone:
-            engines = attachment.Clone.GetEngines()
-        # if can not find attachment, instantiate a temp clone
+            clone = attachment.Clone
         else:
+            # if can not find attachment, instantiate a temp clone
             try:
                 clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
-                engines = clone.GetEngines()
             except Exception as cEx:
                 mlogger.debug('Can not create clone from path: %s', str(cEx))
-
+                clone = None
         # find cpython engines
-        cpy_engines_dict = {
-            x.Version: x for x in engines
-            if 'cpython' in x.KernelName.lower()
-            }
+        engines = clone.GetCPythonEngines() if clone else []
+        cpy_engines_dict = {x.Version: x for x in engines}
         mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
 
-        if cpy_engines_dict:
-            # grab cpython engine configured to be used by user
-            try:
-                cpyengine_ver = int(self.cpython_engine_version)
-            except Exception:
-                cpyengine_ver = 000
+        if not cpy_engines_dict:
+            mlogger.error(
+                'Can not determine cpython engines for current attachment: %s',
+                attachment
+            )
+            return None
+        # grab cpython engine configured to be used by user
+        try:
+            cpyengine_ver = int(self.cpython_engine_version)
+        except (ValueError, TypeError):
+            cpyengine_ver = 000
 
-            try:
-                return cpy_engines_dict[cpyengine_ver]
-            except KeyError:
-                # return the latest cpython engine
-                return max(
-                    cpy_engines_dict.values(), key=lambda x: x.Version.Version
-                )
-        else:
-            mlogger.error('Can not determine cpython engines for '
-                          'current attachment: %s', attachment)
+        try:
+            return cpy_engines_dict[cpyengine_ver]
+        except KeyError:
+            # return the latest cpython engine
+            return max(cpy_engines_dict.values(), key=lambda x: x.Version.Version)
 
     def set_active_cpython_engine(self, pyrevit_engine):
         """Set the active CPython engine.

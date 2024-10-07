@@ -5,9 +5,9 @@ parameters to zero or null."""
 from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit import forms
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
-value_func = get_value_func()
+get_elementid_value = get_elementid_value_func()
 
 output = script.get_output()
 logger = script.get_logger()
@@ -51,7 +51,7 @@ if __name__ == '__main__':
                 logger.debug('%s, %s', param.Id, param.Definition)
                 output.update_progress(idx + 1, max_progress)
                 # if builtin, reset values and skip delete
-                if value_func(param.Id) < 0:
+                if get_elementid_value(param.Id) < 0:
                     message = \
                         'Can not delete builtin "%s"' % param.Definition.Name
                     logger.warning(reset_param(param, message))

@@ -10,39 +10,51 @@ using Autodesk.Revit.Attributes;
  * methods manually loads the IronPython assemblies before calling into the 
  * ScriptExecutor that has IronPython references
  */
-namespace PyRevitLoader {
+namespace PyRevitLoader
+{
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
-    class PyRevitLoaderApplication : IExternalApplication {
+    class PyRevitLoaderApplication : IExternalApplication
+    {
         public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
 
         // Hook into Revit to allow starting a command.
-        Result IExternalApplication.OnStartup(UIControlledApplication application) {
-            try {
-                // load all engine assemblies
-                // this is to ensure pyRevit is loaded on its own assemblies
-                foreach (var engineDll in Directory.GetFiles(LoaderPath, "*.dll"))
-                {
-                    try
-                    {
-                        Assembly.LoadFrom(engineDll);
-                    }
-                    catch
-                    {
-                        ////
-                    }
-                }
-                    
-                
+        Result IExternalApplication.OnStartup(UIControlledApplication application)
+        {
+            LoadAssembliesInFolder(LoaderPath);
+            // We need to also looad dlls from two folders up
+            var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
+            LoadAssembliesInFolder(commonFolder);
+
+            try
+            {
                 return ExecuteStartupScript(application);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 TaskDialog.Show("Error Loading Startup Script", ex.ToString());
                 return Result.Failed;
             }
         }
 
-        private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication) {
+        private static void LoadAssembliesInFolder(string folder)
+        {
+            // load all engine assemblies
+            // this is to ensure pyRevit is loaded on its own assemblies
+            foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
+            {
+                try
+                {
+                    Assembly.LoadFrom(engineDll);
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
+        {
             // we need a UIApplication object to assign as `__revit__` in python...
             var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
             var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
@@ -52,10 +64,12 @@ namespace PyRevitLoader {
             // execute StartupScript
             Result result = Result.Succeeded;
             var startupScript = GetStartupScriptPath();
-            if (startupScript != null) {
+            if (startupScript != null)
+            {
                 var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
                 result = executor.ExecuteScript(startupScript);
-                if (result == Result.Failed) {
+                if (result == Result.Failed)
+                {
                     TaskDialog.Show("Error Loading pyRevit", executor.Message);
                 }
             }
@@ -63,13 +77,15 @@ namespace PyRevitLoader {
             return result;
         }
 
-        private static string GetStartupScriptPath() {
+        private static string GetStartupScriptPath()
+        {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dllDir = Path.GetDirectoryName(loaderDir);
             return Path.Combine(dllDir, string.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
         }
 
-        Result IExternalApplication.OnShutdown(UIControlledApplication application) {
+        Result IExternalApplication.OnShutdown(UIControlledApplication application)
+        {
             // FIXME: deallocate the python shell...
             return Result.Succeeded;
         }

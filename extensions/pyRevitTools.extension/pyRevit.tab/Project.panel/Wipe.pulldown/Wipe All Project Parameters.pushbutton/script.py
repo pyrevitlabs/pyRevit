@@ -2,7 +2,7 @@ __doc__ = 'This tool tries to remove all cutom project parameters in the file bu
 
 from pyrevit import HOST_APP
 from pyrevit import DB, revit
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 doc = revit.doc
 
@@ -45,7 +45,7 @@ while it.MoveNext():
 
     for cat in b.Categories:
         try:
-            value_func = get_value_func()
+            get_elementid_value = get_elementid_value_func()
             elements = DB.FilteredElementCollector(doc).OfCategoryId(
                 cat.Id).WhereElementIsNotElementType()
             if BIND == 'Type' and p.Visible:
@@ -54,13 +54,13 @@ while it.MoveNext():
                 print('Searching through {0} ElementTypes of Category {1}'.format(
                     len(list(elements)), cat.Name))
                 for elType in elementTypes:
-                    paramidlist.add(value_func(elType.LookupParameter(
+                    paramidlist.add(get_elementid_value(elType.LookupParameter(
                         p.Name).Id))
             elif p.Visible:
                 print('Searching through {0} Elements of Category {1}'.format(
                     len(list(elements)), cat.Name))
                 for el in elements:
-                    paramidlist.add(value_func(el.LookupParameter(p.Name).Id))
+                    paramidlist.add(get_elementid_value(el.LookupParameter(p.Name).Id))
         except Exception as e:
             print('---ERROR---\n', p.Name, cat.Name, cat.Id, e)
             continue

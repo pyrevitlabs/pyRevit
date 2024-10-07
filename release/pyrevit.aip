@@ -65,8 +65,6 @@
     <ROW Directory="BetterCollector.pushbutton_Dir" Directory_Parent="Session5.pulldown_Dir" DefaultDir="BETTER~1.PUS|Better Collector.pushbutton"/>
     <ROW Directory="Blog.pushbutton_1_Dir" Directory_Parent="prlinks.stack_Dir" DefaultDir="BLOG~1.PUS|Blog.pushbutton"/>
     <ROW Directory="Brazil_Dir" Directory_Parent="zoneinfo_Dir" DefaultDir="Brazil"/>
-    <ROW Directory="CPY378_Dir" Directory_Parent="engines_Dir" DefaultDir="CPY378"/>
-    <ROW Directory="CPY385_Dir" Directory_Parent="engines_Dir" DefaultDir="CPY385"/>
     <ROW Directory="CalculateAverageArea.pushbutt_1_Dir" Directory_Parent="Analyse.pulldown_1_Dir" DefaultDir="CALCUL~1.PUS|Calculate Average Area.pushbutton"/>
     <ROW Directory="Canada_Dir" Directory_Parent="zoneinfo_Dir" DefaultDir="Canada"/>
     <ROW Directory="ChangeElementTypeSafely.pushbut_Dir" Directory_Parent="Edit.pulldown_Dir" DefaultDir="CHANGE~1.PUS|Change Element Type Safely.pushbutton"/>
@@ -147,7 +145,7 @@
     <ROW Directory="GetParkingCountInCurrentView._1_Dir" Directory_Parent="Analyse.pulldown_1_Dir" DefaultDir="GETPAR~1.PUS|Get Parking Count In Current View.pushbutton"/>
     <ROW Directory="GetRVTInfo.pushbutton_1_Dir" Directory_Parent="ptools2.stack_Dir" DefaultDir="GETRVT~1.PUS|Get RVT Info.pushbutton"/>
     <ROW Directory="Groups.pulldown_Dir" Directory_Parent="edit3.stack_Dir" DefaultDir="GROUPS~1.PUL|Groups.pulldown"/>
-    <ROW Directory="IPY2711PR_Dir" Directory_Parent="engines_Dir" DefaultDir="IPY271~1|IPY2711PR"/>
+    <ROW Directory="IPY2712PR_Dir" Directory_Parent="engines_Dir" DefaultDir="IPY271~1|IPY2712PR"/>
     <ROW Directory="IPY340_Dir" Directory_Parent="engines_Dir" DefaultDir="IPY340"/>
     <ROW Directory="Icons8.urlbutton_Dir" Directory_Parent="links.stack_Dir" DefaultDir="ICONS8~1.URL|Icons8.urlbutton"/>
     <ROW Directory="ImportFamilyConfig.pushbutton_1_Dir" Directory_Parent="Family.pulldown_1_Dir" DefaultDir="IMPORT~1.PUS|Import Family Config.pushbutton"/>
@@ -491,7 +489,6 @@
     <ROW Component="Ifc.NET.resources.dll_1" ComponentId="{A9405413-7C70-4EEC-87FF-1962E9720479}" Directory_="bin_Dir" Attributes="0" KeyPath="Ifc.NET.resources.dll_1"/>
     <ROW Component="Indianapolis" ComponentId="{5FCB56C5-974A-4227-B9B3-7334672CC5FC}" Directory_="Indiana_Dir" Attributes="0" KeyPath="Indianapolis" Type="0"/>
     <ROW Component="IxMilia.Dxf.dll_1" ComponentId="{8DA12418-9F3A-4955-8850-3B77496063A2}" Directory_="bin_Dir" Attributes="0" KeyPath="IxMilia.Dxf.dll_1"/>
-    <ROW Component="LICENSE.txt" ComponentId="{E6FEB236-DEC3-41C4-BBF0-84C7E846057A}" Directory_="CPY378_Dir" Attributes="0" KeyPath="LICENSE.txt_1" Type="0"/>
     <ROW Component="LibGit2Sharp.dll" ComponentId="{D04BEBDE-24EC-4195-896F-F4ECBAA05176}" Directory_="bin_Dir" Attributes="0" KeyPath="LibGit2Sharp.dll"/>
     <ROW Component="LibGit2Sharp.dll.config" ComponentId="{49A7D8A8-5D1D-4279-8E04-39B6B91FC5C9}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevit.ico" Type="0"/>
     <ROW Component="LinesPerViewCounter_script.py_1" ComponentId="{4D1C64A6-9F30-4C9E-B916-F3222D96C47B}" Directory_="LinesPerViewCounter.pushbutto_1_Dir" Attributes="0" KeyPath="LinesPerViewCounter_script.py_1" Type="0"/>
@@ -506,7 +503,7 @@
     <ROW Component="Microsoft.CodeAnalysis.dll" ComponentId="{E4A5FC09-A74D-4A06-9AE2-8614D51FBAE8}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.CodeAnalysis.dll"/>
     <ROW Component="Microsoft.WindowsAPICodePack.Shell.dll" ComponentId="{DC1EE605-498A-41E4-B4D7-62D1D257B6CA}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.WindowsAPICodePack.Shell.dll"/>
     <ROW Component="Microsoft.WindowsAPICodePack.dll" ComponentId="{EA7BDEE6-D069-4B2A-88C6-B0937E792A62}" Directory_="bin_Dir" Attributes="0" KeyPath="Microsoft.WindowsAPICodePack.dll"/>
-    <ROW Component="Mono.Posix.dll" ComponentId="{24BB71CD-B769-4480-B8A0-90B47E6BED96}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="Mono.Posix.dll"/>
+    <ROW Component="Mono.Posix.dll" ComponentId="{24BB71CD-B769-4480-B8A0-90B47E6BED96}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="Mono.Posix.dll"/>
     <ROW Component="Nett.dll" ComponentId="{997AAC0C-D2F6-4508-8BF5-364DAD5607D1}" Directory_="bin_Dir" Attributes="0" KeyPath="Nett.dll"/>
     <ROW Component="OpenMcdf.dll" ComponentId="{54325791-3BE4-4F6E-9633-98DAD732310E}" Directory_="bin_Dir" Attributes="0" KeyPath="OpenMcdf.dll"/>
     <ROW Component="ProductInformation" ComponentId="{23703FE9-535E-4128-81CE-D1375CCC4B97}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
@@ -811,11 +808,6 @@
     <ROW Component="icon.png_99" ComponentId="{DC9386E5-F384-49F7-9926-FAFC259D9CFF}" Directory_="BatchImportPATFiles.pushbutton_Dir" Attributes="0" KeyPath="icon.png_108" Type="0"/>
     <ROW Component="iter_selection.py_1" ComponentId="{8FBEE713-D6A5-445B-BAD3-18DFD80542CB}" Directory_="lib_4_Dir" Attributes="0" KeyPath="iter_selection.py_1" Type="0"/>
     <ROW Component="labels.py" ComponentId="{EC51BF34-98D0-4487-9631-1A18517D4057}" Directory_="webencodings_Dir" Attributes="0" KeyPath="labels.py" Type="0"/>
-    <ROW Component="libcrypto1_1.dll_2" ComponentId="{29DF70FF-D01A-45D9-9FF0-7EAE7D40FC8B}" Directory_="CPY378_Dir" Attributes="256" KeyPath="libcrypto1_1.dll_2"/>
-    <ROW Component="libcrypto1_1.dll_3" ComponentId="{33A28584-17E6-4787-BB44-E95DE46EF4AD}" Directory_="CPY385_Dir" Attributes="256" KeyPath="libcrypto1_1.dll_3"/>
-    <ROW Component="libffi7.dll_1" ComponentId="{037DE5A2-A424-4D6C-801B-F40F1B1D3798}" Directory_="CPY385_Dir" Attributes="256" KeyPath="libffi7.dll_1"/>
-    <ROW Component="libssl1_1.dll_2" ComponentId="{CD3BB8E8-9BA1-4AC0-8C10-B6C48165541D}" Directory_="CPY378_Dir" Attributes="256" KeyPath="libssl1_1.dll_2"/>
-    <ROW Component="libssl1_1.dll_3" ComponentId="{776F55FE-E253-4F8F-A426-5C9CAB41821E}" Directory_="CPY385_Dir" Attributes="256" KeyPath="libssl1_1.dll_3"/>
     <ROW Component="linkmaker.py" ComponentId="{EAB1CD31-97D3-419F-9B87-0ECE112C98B5}" Directory_="output_Dir" Attributes="0" KeyPath="linkmaker.py" Type="0"/>
     <ROW Component="make3dview_command.py" ComponentId="{447109C5-FCDA-4EC7-AD7A-70E9BD833DC5}" Directory_="commands_Dir" Attributes="0" KeyPath="make3dview_command.py_1" Type="0"/>
     <ROW Component="makefile.py" ComponentId="{DE4FAF1E-59D7-4364-91B5-9AAD76C9D052}" Directory_="backports_Dir" Attributes="0" KeyPath="makefile.py" Type="0"/>
@@ -835,27 +827,24 @@
     <ROW Component="pyRevitLabs.CommonWPF.dll" ComponentId="{489EF002-2526-41D4-A844-DD09FBE50B98}" Directory_="bin_Dir" Attributes="256" KeyPath="pyRevitLabs.CommonWPF.dll"/>
     <ROW Component="pyRevitLabs.DeffrelDB.dll" ComponentId="{D83B70F8-D5DB-45A6-9372-AFE97E081FDB}" Directory_="bin_Dir" Attributes="256" KeyPath="pyRevitLabs.DeffrelDB.dll"/>
     <ROW Component="pyRevitLabs.Emojis.dll" ComponentId="{C594084B-EB10-4DD3-9EA5-F7EEDAE10862}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.Emojis.dll"/>
-    <ROW Component="pyRevitLabs.IronPython.Modules.dll" ComponentId="{E16E502C-26FC-4059-90E9-58A592781525}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.Modules.dll"/>
-    <ROW Component="pyRevitLabs.IronPython.SQLite.dll" ComponentId="{AC2DB4C7-8F6F-4E81-A7AD-5918BB7B293D}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.SQLite.dll"/>
-    <ROW Component="pyRevitLabs.IronPython.Wpf.dll" ComponentId="{1DAACA94-CBCA-44C8-949D-0A8533C2C23B}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.Wpf.dll"/>
-    <ROW Component="pyRevitLabs.IronPython.dll" ComponentId="{124C1FD8-F3D6-43E2-ADB8-71A332AA6E55}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.dll"/>
+    <ROW Component="pyRevitLabs.IronPython.Modules.dll" ComponentId="{E16E502C-26FC-4059-90E9-58A592781525}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.Modules.dll"/>
+    <ROW Component="pyRevitLabs.IronPython.SQLite.dll" ComponentId="{AC2DB4C7-8F6F-4E81-A7AD-5918BB7B293D}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.SQLite.dll"/>
+    <ROW Component="pyRevitLabs.IronPython.Wpf.dll" ComponentId="{1DAACA94-CBCA-44C8-949D-0A8533C2C23B}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.Wpf.dll"/>
+    <ROW Component="pyRevitLabs.IronPython.dll" ComponentId="{124C1FD8-F3D6-43E2-ADB8-71A332AA6E55}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLabs.IronPython.dll"/>
     <ROW Component="pyRevitLabs.Json.dll" ComponentId="{15AA3FAF-56D7-4113-90ED-B2A6217D4115}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.Json.dll"/>
     <ROW Component="pyRevitLabs.Language.dll" ComponentId="{FF7D0A17-00DC-4854-8F17-113E681D31B1}" Directory_="bin_Dir" Attributes="256" KeyPath="pyRevitLabs.Language.dll"/>
     <ROW Component="pyRevitLabs.MahAppsMetro.dll" ComponentId="{AEC09C9D-173E-487C-96A7-B23B381A7622}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.MahAppsMetro.dll"/>
-    <ROW Component="pyRevitLabs.Microsoft.Dynamic.dll" ComponentId="{9EF4F260-3C72-4930-A886-7F52B7E61D66}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLabs.Microsoft.Dynamic.dll"/>
-    <ROW Component="pyRevitLabs.Microsoft.Scripting.Metadata.dll" ComponentId="{1C6C62E6-4827-49A1-ADBE-DAB770D8F7C5}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLabs.Microsoft.Scripting.Metadata.dll"/>
-    <ROW Component="pyRevitLabs.Microsoft.Scripting.dll" ComponentId="{07B52C08-22CA-4B8C-A254-093DE9F36652}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLabs.Microsoft.Scripting.dll"/>
+    <ROW Component="pyRevitLabs.Microsoft.Dynamic.dll" ComponentId="{9EF4F260-3C72-4930-A886-7F52B7E61D66}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLabs.Microsoft.Dynamic.dll"/>
+    <ROW Component="pyRevitLabs.Microsoft.Scripting.Metadata.dll" ComponentId="{1C6C62E6-4827-49A1-ADBE-DAB770D8F7C5}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLabs.Microsoft.Scripting.Metadata.dll"/>
+    <ROW Component="pyRevitLabs.Microsoft.Scripting.dll" ComponentId="{07B52C08-22CA-4B8C-A254-093DE9F36652}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLabs.Microsoft.Scripting.dll"/>
     <ROW Component="pyRevitLabs.NLog.dll" ComponentId="{E1320BB7-8401-4A3F-BDED-6D65789AFDFD}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.NLog.dll"/>
     <ROW Component="pyRevitLabs.PyRevit.dll" ComponentId="{1774987F-D6C0-49CC-8A61-04786C9804A1}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.PyRevit.dll"/>
-    <ROW Component="pyRevitLabs.PythonNet.dll" ComponentId="{410576B9-CD41-4F84-904A-1970601F6C3F}" Directory_="CPY378_Dir" Attributes="0" KeyPath="pyRevitLabs.PythonNet.dll"/>
-    <ROW Component="pyRevitLabs.PythonNet.dll_1" ComponentId="{E2BD1E75-6FED-4699-9FE6-D3CC17BCF5B3}" Directory_="CPY385_Dir" Attributes="0" KeyPath="pyRevitLabs.PythonNet.dll_1"/>
     <ROW Component="pyRevitLabs.TargetApps.AutoCAD.dll" ComponentId="{A26AE395-29FE-4A28-8C4F-33CF376A52C1}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.TargetApps.AutoCAD.dll"/>
     <ROW Component="pyRevitLabs.TargetApps.Navisworks.dll" ComponentId="{CFC05BC5-CBED-49ED-B010-5530D5E4F61F}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.TargetApps.Navisworks.dll"/>
     <ROW Component="pyRevitLabs.TargetApps.Revit.dll" ComponentId="{8E1FE5D8-DA3F-4675-ACA4-1CD614EE8A24}" Directory_="bin_Dir" Attributes="256" KeyPath="pyRevitLabs.TargetApps.Revit.dll"/>
-    <ROW Component="pyRevitLoader.dll_3" ComponentId="{8D3C5EB1-1C0B-4C6A-A296-274718297CD9}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitLoader.dll_3"/>
+    <ROW Component="pyRevitLoader.dll_3" ComponentId="{8D3C5EB1-1C0B-4C6A-A296-274718297CD9}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLoader.dll_3"/>
     <ROW Component="pyRevitLoader.py" ComponentId="{72FB3D5F-50E5-4169-B1F3-CA244D27D1E3}" Directory_="engines_Dir" Attributes="0" KeyPath="pyRevitLoader.py" Type="0"/>
-    <ROW Component="pyRevitRunner.dll_6" ComponentId="{11CBAC73-50B5-4AB3-9B65-6610F29B2ECD}" Directory_="IPY2711PR_Dir" Attributes="0" KeyPath="pyRevitRunner.dll_6"/>
-    <ROW Component="pyexpat.pyd" ComponentId="{5C7CE81A-56DB-440B-8381-A9000BAAB5CC}" Directory_="CPY385_Dir" Attributes="256" KeyPath="pyexpat.pyd_1" Type="0"/>
+    <ROW Component="pyRevitRunner.dll_6" ComponentId="{11CBAC73-50B5-4AB3-9B65-6610F29B2ECD}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitRunner.dll_6"/>
     <ROW Component="pyrevit.admin" ComponentId="{0BD2A618-34EC-40B8-87EE-5E9F1B5B8A83}" Directory_="bin_Dir" Attributes="0" KeyPath="pyrevit.admin"/>
     <ROW Component="pyrevit.exe" ComponentId="{91082B17-558B-4738-9AE2-D93D18653BEE}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevit.exe"/>
     <ROW Component="pyrevit.user" ComponentId="{B280C6CC-4F48-48A4-AFA4-5076690A1463}" Directory_="bin_Dir" Attributes="0" KeyPath="pyrevit.user"/>
@@ -866,15 +855,7 @@
     <ROW Component="pyrevitstubsbuilder.exe" ComponentId="{52379BF5-41B2-4570-A034-2AF417600F73}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevitstubsbuilder.exe"/>
     <ROW Component="pyrevittelemetryserver.exe" ComponentId="{B6854845-1733-4046-B422-3AC3D25C2146}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevittelemetryserver.exe"/>
     <ROW Component="pyrevittoast.exe" ComponentId="{EF1D7E18-9E01-4F5C-A727-04BCFFA31AD6}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevittoast.exe"/>
-    <ROW Component="python.exe_2" ComponentId="{C1B91F2F-6071-425A-A502-9A253282A4CA}" Directory_="CPY378_Dir" Attributes="256" KeyPath="python.exe_2"/>
-    <ROW Component="python.exe_3" ComponentId="{EE14EC02-D969-408B-88A8-C7660C1A54E3}" Directory_="CPY385_Dir" Attributes="256" KeyPath="python.exe_3"/>
-    <ROW Component="python3.dll" ComponentId="{56D7EAC8-B515-468D-96A5-C07061797441}" Directory_="CPY378_Dir" Attributes="256" KeyPath="python3.dll"/>
-    <ROW Component="python3.dll_1" ComponentId="{559174FE-578A-40A8-A1BA-8E508A718448}" Directory_="CPY385_Dir" Attributes="256" KeyPath="python3.dll_1"/>
-    <ROW Component="python37.dll" ComponentId="{84D8C994-DB44-485F-BB73-BA192DB42D5D}" Directory_="CPY378_Dir" Attributes="256" KeyPath="python37.dll"/>
-    <ROW Component="python38.dll_1" ComponentId="{76373E86-8594-4B80-976D-AC0F33FD80B6}" Directory_="CPY385_Dir" Attributes="256" KeyPath="python38.dll_1"/>
     <ROW Component="python3_compat.py" ComponentId="{4039D4D2-4195-402A-B9B4-0EF16145B52C}" Directory_="munch_Dir" Attributes="0" KeyPath="python3_compat.py" Type="0"/>
-    <ROW Component="pythonw.exe_2" ComponentId="{55BEE0EC-601C-4E2A-B5CD-839E3C2ED34D}" Directory_="CPY378_Dir" Attributes="256" KeyPath="pythonw.exe_2"/>
-    <ROW Component="pythonw.exe_3" ComponentId="{0DB07366-7207-46D9-982B-5168AF78B4DE}" Directory_="CPY385_Dir" Attributes="256" KeyPath="pythonw.exe_3"/>
     <ROW Component="rhino.py" ComponentId="{BB1B2103-A003-451C-9316-99FC383BB318}" Directory_="extras_Dir" Attributes="0" KeyPath="rhino.py" Type="0"/>
     <ROW Component="rhino3dmio_native.dll_1" ComponentId="{F25FC4A2-4390-4E6C-BEC6-B9F047247866}" Directory_="bin_Dir" Attributes="256" KeyPath="rhino3dmio_native.dll_1"/>
     <ROW Component="script.py" ComponentId="{7621F547-DAFE-4D70-993B-82D099C702A1}" Directory_="CalculateAverageArea.pushbutt_1_Dir" Attributes="0" KeyPath="script.py_79" Type="0"/>
@@ -917,14 +898,9 @@
     <ROW Component="script.py_98" ComponentId="{54400C53-85F9-472A-9CAB-2ABB541901C6}" Directory_="ViewOrderingTool.pushbutton_Dir" Attributes="0" KeyPath="script.py_308" Type="0"/>
     <ROW Component="serverinfo.py" ComponentId="{16E33565-0108-49CC-9C6B-E43CA2EC546E}" Directory_="server_Dir" Attributes="0" KeyPath="serverinfo.py" Type="0"/>
     <ROW Component="sorteddict.py" ComponentId="{25B8B5D5-C429-49A0-8B25-D4142A67C2B8}" Directory_="sortedcontainers_Dir" Attributes="0" KeyPath="sorteddict.py" Type="0"/>
-    <ROW Component="sqlite3.dll" ComponentId="{D7655B7A-E5FB-4E53-96FD-C55246F916C1}" Directory_="CPY378_Dir" Attributes="256" KeyPath="sqlite3.dll"/>
-    <ROW Component="sqlite3.dll_1" ComponentId="{6132D5BB-6B9B-4793-8206-601BFF398CF8}" Directory_="CPY385_Dir" Attributes="256" KeyPath="sqlite3.dll_1"/>
     <ROW Component="startup.py" ComponentId="{E9458A1C-FDAB-4EA6-AC71-E5FA3E845E28}" Directory_="pyRevitCore.extension_Dir" Attributes="0" KeyPath="startup.py" Type="0"/>
     <ROW Component="test_cookiejar.py" ComponentId="{6FFC332D-C10B-4289-AD65-834C8872E199}" Directory_="tests_7_Dir" Attributes="0" KeyPath="test_cookiejar.py" Type="0"/>
     <ROW Component="test_ddl.py" ComponentId="{5C7539C3-4275-4804-803B-670C2059CC14}" Directory_="suite_Dir" Attributes="0" KeyPath="test_ddl.py" Type="0"/>
-    <ROW Component="vcruntime140.dll" ComponentId="{9EF730AA-E60F-4A50-BEE5-EF2FE53C197E}" Directory_="CPY378_Dir" Attributes="256" KeyPath="vcruntime140.dll"/>
-    <ROW Component="vcruntime140.dll_1" ComponentId="{9E4EAC86-E829-4678-8554-C58D9E6ADFF1}" Directory_="CPY385_Dir" Attributes="256" KeyPath="vcruntime140.dll_1"/>
-    <ROW Component="vcruntime140_1.dll_1" ComponentId="{4AA70A54-2984-4057-9CB3-9F5B14756047}" Directory_="CPY385_Dir" Attributes="256" KeyPath="vcruntime140_1.dll_1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
     <ROW Feature="AsAdmin" Title="AsAdmin" Description="This component is only installed when installer is executed as admin" Display="0" Level="4" Directory_="APPDIR" Attributes="8"/>
@@ -3004,78 +2980,16 @@
     <ROW File="icon.png_28" Component_="bundle.yaml_9" FileName="icon.png" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\List TitleBlocks on Sheets.pushbutton\icon.png" SelfReg="false"/>
     <ROW File="script.py_23" Component_="bundle.yaml_9" FileName="script.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\List TitleBlocks on Sheets.pushbutton\script.py" SelfReg="false"/>
     <ROW File="isolate_config.py" Component_="icon.png_153" FileName="ISOLAT~1.PY|isolate_config.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Selection.panel\select.stack\Isolate.pushbutton\isolate_config.py" SelfReg="false"/>
-    <ROW File="libcrypto1_1.dll_2" Component_="libcrypto1_1.dll_2" FileName="LIBCRY~1.DLL|libcrypto-1_1.dll" Attributes="0" SourcePath="..\bin\engines\CPY378\libcrypto-1_1.dll" SelfReg="false"/>
-    <ROW File="libssl1_1.dll_2" Component_="libssl1_1.dll_2" FileName="LIBSSL~1.DLL|libssl-1_1.dll" Attributes="0" SourcePath="..\bin\engines\CPY378\libssl-1_1.dll" SelfReg="false"/>
-    <ROW File="LICENSE.txt_1" Component_="LICENSE.txt" FileName="LICENSE.txt" Attributes="0" SourcePath="..\bin\engines\CPY378\LICENSE.txt" SelfReg="false"/>
-    <ROW File="pyexpat.pyd" Component_="LICENSE.txt" FileName="pyexpat.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\pyexpat.pyd" SelfReg="false"/>
-    <ROW File="pyRevitLabs.PythonNet.dll" Component_="pyRevitLabs.PythonNet.dll" FileName="PYREVI~1.DLL|pyRevitLabs.PythonNet.dll" Attributes="0" SourcePath="..\bin\engines\CPY378\pyRevitLabs.PythonNet.dll" SelfReg="false"/>
-    <ROW File="python.exe_2" Component_="python.exe_2" FileName="python.exe" Attributes="0" SourcePath="..\bin\engines\CPY378\python.exe" SelfReg="false"/>
-    <ROW File="python3.dll" Component_="python3.dll" FileName="python3.dll" Attributes="0" SourcePath="..\bin\engines\CPY378\python3.dll" SelfReg="false"/>
-    <ROW File="python37.dll" Component_="python37.dll" FileName="python37.dll" Attributes="0" SourcePath="..\bin\engines\CPY378\python37.dll" SelfReg="false"/>
-    <ROW File="python37.zip" Component_="LICENSE.txt" FileName="python37.zip" Attributes="0" SourcePath="..\bin\engines\CPY378\python37.zip" SelfReg="false"/>
-    <ROW File="python37._pth_1" Component_="LICENSE.txt" FileName="PYTHON~1._PT|python37._pth" Attributes="0" SourcePath="..\bin\engines\CPY378\python37._pth" SelfReg="false"/>
-    <ROW File="pythonw.exe_2" Component_="pythonw.exe_2" FileName="pythonw.exe" Attributes="0" SourcePath="..\bin\engines\CPY378\pythonw.exe" SelfReg="false"/>
-    <ROW File="select.pyd" Component_="LICENSE.txt" FileName="select.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\select.pyd" SelfReg="false"/>
-    <ROW File="sqlite3.dll" Component_="sqlite3.dll" FileName="sqlite3.dll" Attributes="0" SourcePath="..\bin\engines\CPY378\sqlite3.dll" SelfReg="false"/>
-    <ROW File="unicodedata.pyd" Component_="LICENSE.txt" FileName="UNICOD~1.PYD|unicodedata.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\unicodedata.pyd" SelfReg="false"/>
-    <ROW File="vcruntime140.dll" Component_="vcruntime140.dll" FileName="VCRUNT~1.DLL|vcruntime140.dll" Attributes="0" SourcePath="..\bin\engines\CPY378\vcruntime140.dll" SelfReg="false"/>
-    <ROW File="winsound.pyd" Component_="LICENSE.txt" FileName="winsound.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\winsound.pyd" SelfReg="false"/>
-    <ROW File="_asyncio.pyd" Component_="LICENSE.txt" FileName="_asyncio.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_asyncio.pyd" SelfReg="false"/>
-    <ROW File="_bz2.pyd" Component_="LICENSE.txt" FileName="_bz2.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_bz2.pyd" SelfReg="false"/>
-    <ROW File="_ctypes.pyd" Component_="LICENSE.txt" FileName="_ctypes.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_ctypes.pyd" SelfReg="false"/>
-    <ROW File="_decimal.pyd" Component_="LICENSE.txt" FileName="_decimal.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_decimal.pyd" SelfReg="false"/>
-    <ROW File="_elementtree.pyd" Component_="LICENSE.txt" FileName="_ELEME~1.PYD|_elementtree.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_elementtree.pyd" SelfReg="false"/>
-    <ROW File="_hashlib.pyd" Component_="LICENSE.txt" FileName="_hashlib.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_hashlib.pyd" SelfReg="false"/>
-    <ROW File="_lzma.pyd" Component_="LICENSE.txt" FileName="_lzma.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_lzma.pyd" SelfReg="false"/>
-    <ROW File="_msi.pyd" Component_="LICENSE.txt" FileName="_msi.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_msi.pyd" SelfReg="false"/>
-    <ROW File="_multiprocessing.pyd" Component_="LICENSE.txt" FileName="_MULTI~1.PYD|_multiprocessing.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_multiprocessing.pyd" SelfReg="false"/>
-    <ROW File="_overlapped.pyd" Component_="LICENSE.txt" FileName="_OVERL~1.PYD|_overlapped.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_overlapped.pyd" SelfReg="false"/>
-    <ROW File="_queue.pyd" Component_="LICENSE.txt" FileName="_queue.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_queue.pyd" SelfReg="false"/>
-    <ROW File="_socket.pyd" Component_="LICENSE.txt" FileName="_socket.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_socket.pyd" SelfReg="false"/>
-    <ROW File="_sqlite3.pyd" Component_="LICENSE.txt" FileName="_sqlite3.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_sqlite3.pyd" SelfReg="false"/>
-    <ROW File="_ssl.pyd" Component_="LICENSE.txt" FileName="_ssl.pyd" Attributes="0" SourcePath="..\bin\engines\CPY378\_ssl.pyd" SelfReg="false"/>
-    <ROW File="libcrypto1_1.dll_3" Component_="libcrypto1_1.dll_3" FileName="LIBCRY~1.DLL|libcrypto-1_1.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\libcrypto-1_1.dll" SelfReg="false"/>
-    <ROW File="libffi7.dll_1" Component_="libffi7.dll_1" FileName="libffi-7.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\libffi-7.dll" SelfReg="false"/>
-    <ROW File="libssl1_1.dll_3" Component_="libssl1_1.dll_3" FileName="LIBSSL~1.DLL|libssl-1_1.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\libssl-1_1.dll" SelfReg="false"/>
-    <ROW File="pyexpat.pyd_1" Component_="pyexpat.pyd" FileName="pyexpat.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\pyexpat.pyd" SelfReg="false"/>
-    <ROW File="pyRevitLabs.PythonNet.dll_1" Component_="pyRevitLabs.PythonNet.dll_1" FileName="PYREVI~1.DLL|pyRevitLabs.PythonNet.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\pyRevitLabs.PythonNet.dll" SelfReg="false"/>
-    <ROW File="python.cat_1" Component_="pyexpat.pyd" FileName="python.cat" Attributes="0" SourcePath="..\bin\engines\CPY385\python.cat" SelfReg="false"/>
-    <ROW File="python.exe_3" Component_="python.exe_3" FileName="python.exe" Attributes="0" SourcePath="..\bin\engines\CPY385\python.exe" SelfReg="false"/>
-    <ROW File="python3.dll_1" Component_="python3.dll_1" FileName="python3.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\python3.dll" SelfReg="false"/>
-    <ROW File="python38.dll_1" Component_="python38.dll_1" FileName="python38.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\python38.dll" SelfReg="false"/>
-    <ROW File="python38.zip_1" Component_="pyexpat.pyd" FileName="python38.zip" Attributes="0" SourcePath="..\bin\engines\CPY385\python38.zip" SelfReg="false"/>
-    <ROW File="python38._pth_1" Component_="pyexpat.pyd" FileName="PYTHON~1._PT|python38._pth" Attributes="0" SourcePath="..\bin\engines\CPY385\python38._pth" SelfReg="false"/>
-    <ROW File="pythonw.exe_3" Component_="pythonw.exe_3" FileName="pythonw.exe" Attributes="0" SourcePath="..\bin\engines\CPY385\pythonw.exe" SelfReg="false"/>
-    <ROW File="select.pyd_1" Component_="pyexpat.pyd" FileName="select.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\select.pyd" SelfReg="false"/>
-    <ROW File="sqlite3.dll_1" Component_="sqlite3.dll_1" FileName="sqlite3.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\sqlite3.dll" SelfReg="false"/>
-    <ROW File="unicodedata.pyd_1" Component_="pyexpat.pyd" FileName="UNICOD~1.PYD|unicodedata.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\unicodedata.pyd" SelfReg="false"/>
-    <ROW File="vcruntime140.dll_1" Component_="vcruntime140.dll_1" FileName="VCRUNT~1.DLL|vcruntime140.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\vcruntime140.dll" SelfReg="false"/>
-    <ROW File="vcruntime140_1.dll_1" Component_="vcruntime140_1.dll_1" FileName="VCRUNT~2.DLL|vcruntime140_1.dll" Attributes="0" SourcePath="..\bin\engines\CPY385\vcruntime140_1.dll" SelfReg="false"/>
-    <ROW File="winsound.pyd_1" Component_="pyexpat.pyd" FileName="winsound.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\winsound.pyd" SelfReg="false"/>
-    <ROW File="_asyncio.pyd_1" Component_="pyexpat.pyd" FileName="_asyncio.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_asyncio.pyd" SelfReg="false"/>
-    <ROW File="_bz2.pyd_1" Component_="pyexpat.pyd" FileName="_bz2.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_bz2.pyd" SelfReg="false"/>
-    <ROW File="_ctypes.pyd_1" Component_="pyexpat.pyd" FileName="_ctypes.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_ctypes.pyd" SelfReg="false"/>
-    <ROW File="_decimal.pyd_1" Component_="pyexpat.pyd" FileName="_decimal.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_decimal.pyd" SelfReg="false"/>
-    <ROW File="_elementtree.pyd_1" Component_="pyexpat.pyd" FileName="_ELEME~1.PYD|_elementtree.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_elementtree.pyd" SelfReg="false"/>
-    <ROW File="_hashlib.pyd_1" Component_="pyexpat.pyd" FileName="_hashlib.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_hashlib.pyd" SelfReg="false"/>
-    <ROW File="_lzma.pyd_1" Component_="pyexpat.pyd" FileName="_lzma.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_lzma.pyd" SelfReg="false"/>
-    <ROW File="_msi.pyd_1" Component_="pyexpat.pyd" FileName="_msi.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_msi.pyd" SelfReg="false"/>
-    <ROW File="_multiprocessing.pyd_1" Component_="pyexpat.pyd" FileName="_MULTI~1.PYD|_multiprocessing.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_multiprocessing.pyd" SelfReg="false"/>
-    <ROW File="_overlapped.pyd_1" Component_="pyexpat.pyd" FileName="_OVERL~1.PYD|_overlapped.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_overlapped.pyd" SelfReg="false"/>
-    <ROW File="_queue.pyd_3" Component_="pyexpat.pyd" FileName="_queue.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_queue.pyd" SelfReg="false"/>
-    <ROW File="_socket.pyd_1" Component_="pyexpat.pyd" FileName="_socket.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_socket.pyd" SelfReg="false"/>
-    <ROW File="_sqlite3.pyd_1" Component_="pyexpat.pyd" FileName="_sqlite3.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_sqlite3.pyd" SelfReg="false"/>
-    <ROW File="_ssl.pyd_1" Component_="pyexpat.pyd" FileName="_ssl.pyd" Attributes="0" SourcePath="..\bin\engines\CPY385\_ssl.pyd" SelfReg="false"/>
-    <ROW File="Mono.Posix.dll" Component_="Mono.Posix.dll" FileName="MONOPO~1.DLL|Mono.Posix.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\Mono.Posix.dll" SelfReg="false"/>
-    <ROW File="pyRevitLabs.IronPython.dll" Component_="pyRevitLabs.IronPython.dll" FileName="PYREVI~1.DLL|pyRevitLabs.IronPython.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.dll" SelfReg="false"/>
-    <ROW File="pyRevitLabs.IronPython.Modules.dll" Component_="pyRevitLabs.IronPython.Modules.dll" FileName="PYREVI~2.DLL|pyRevitLabs.IronPython.Modules.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.Modules.dll" SelfReg="false"/>
-    <ROW File="pyRevitLabs.IronPython.SQLite.dll" Component_="pyRevitLabs.IronPython.SQLite.dll" FileName="PYREVI~3.DLL|pyRevitLabs.IronPython.SQLite.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.SQLite.dll" SelfReg="false"/>
-    <ROW File="pyRevitLabs.IronPython.Wpf.dll" Component_="pyRevitLabs.IronPython.Wpf.dll" FileName="PYREVI~4.DLL|pyRevitLabs.IronPython.Wpf.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll" SelfReg="false"/>
-    <ROW File="pyRevitLabs.Microsoft.Dynamic.dll" Component_="pyRevitLabs.Microsoft.Dynamic.dll" FileName="PYREVI~5.DLL|pyRevitLabs.Microsoft.Dynamic.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll" SelfReg="false"/>
-    <ROW File="pyRevitLabs.Microsoft.Scripting.dll" Component_="pyRevitLabs.Microsoft.Scripting.dll" FileName="PYREVI~6.DLL|pyRevitLabs.Microsoft.Scripting.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll" SelfReg="false"/>
-    <ROW File="pyRevitLabs.Microsoft.Scripting.Metadata.dll" Component_="pyRevitLabs.Microsoft.Scripting.Metadata.dll" FileName="PYREVI~7.DLL|pyRevitLabs.Microsoft.Scripting.Metadata.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLabs.Microsoft.Scripting.Metadata.dll" SelfReg="false"/>
-    <ROW File="pyRevitLoader.dll_3" Component_="pyRevitLoader.dll_3" FileName="PYREVI~8.DLL|pyRevitLoader.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitLoader.dll" SelfReg="false"/>
-    <ROW File="pyRevitRunner.dll_6" Component_="pyRevitRunner.dll_6" FileName="PYREVI~9.DLL|pyRevitRunner.dll" Attributes="0" SourcePath="..\bin\engines\IPY2711PR\pyRevitRunner.dll" SelfReg="false"/>
+    <ROW File="Mono.Posix.dll" Component_="Mono.Posix.dll" FileName="MONOPO~1.DLL|Mono.Posix.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\Mono.Posix.dll" SelfReg="false"/>
+    <ROW File="pyRevitLabs.IronPython.dll" Component_="pyRevitLabs.IronPython.dll" FileName="PYREVI~1.DLL|pyRevitLabs.IronPython.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLabs.IronPython.dll" SelfReg="false"/>
+    <ROW File="pyRevitLabs.IronPython.Modules.dll" Component_="pyRevitLabs.IronPython.Modules.dll" FileName="PYREVI~2.DLL|pyRevitLabs.IronPython.Modules.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLabs.IronPython.Modules.dll" SelfReg="false"/>
+    <ROW File="pyRevitLabs.IronPython.SQLite.dll" Component_="pyRevitLabs.IronPython.SQLite.dll" FileName="PYREVI~3.DLL|pyRevitLabs.IronPython.SQLite.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLabs.IronPython.SQLite.dll" SelfReg="false"/>
+    <ROW File="pyRevitLabs.IronPython.Wpf.dll" Component_="pyRevitLabs.IronPython.Wpf.dll" FileName="PYREVI~4.DLL|pyRevitLabs.IronPython.Wpf.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLabs.IronPython.Wpf.dll" SelfReg="false"/>
+    <ROW File="pyRevitLabs.Microsoft.Dynamic.dll" Component_="pyRevitLabs.Microsoft.Dynamic.dll" FileName="PYREVI~5.DLL|pyRevitLabs.Microsoft.Dynamic.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLabs.Microsoft.Dynamic.dll" SelfReg="false"/>
+    <ROW File="pyRevitLabs.Microsoft.Scripting.dll" Component_="pyRevitLabs.Microsoft.Scripting.dll" FileName="PYREVI~6.DLL|pyRevitLabs.Microsoft.Scripting.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLabs.Microsoft.Scripting.dll" SelfReg="false"/>
+    <ROW File="pyRevitLabs.Microsoft.Scripting.Metadata.dll" Component_="pyRevitLabs.Microsoft.Scripting.Metadata.dll" FileName="PYREVI~7.DLL|pyRevitLabs.Microsoft.Scripting.Metadata.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLabs.Microsoft.Scripting.Metadata.dll" SelfReg="false"/>
+    <ROW File="pyRevitLoader.dll_3" Component_="pyRevitLoader.dll_3" FileName="PYREVI~8.DLL|pyRevitLoader.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitLoader.dll" SelfReg="false"/>
+    <ROW File="pyRevitRunner.dll_6" Component_="pyRevitRunner.dll_6" FileName="PYREVI~9.DLL|pyRevitRunner.dll" Attributes="0" SourcePath="..\bin\engines\IPY2712PR\pyRevitRunner.dll" SelfReg="false"/>
     <ROW File="modelchecker_check.py" Component_="modelchecker_check.py" FileName="MODELC~1.PY|modelchecker_check.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\checks\modelchecker_check.py" SelfReg="false"/>
     <ROW File="make3dview_command.py_1" Component_="make3dview_command.py" FileName="MAKE3D~1.PY|make3dview_command.py" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\commands\make3dview_command.py" SelfReg="false"/>
     <ROW File="bundle.yaml_95" Component_="bundle.yaml_10" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Project.panel\Preflight Checks.pushbutton\bundle.yaml" SelfReg="false"/>

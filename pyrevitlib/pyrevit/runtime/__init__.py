@@ -105,7 +105,7 @@ if not EXEC_PARAMS.doc_mode:
                 INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
             )
             + EXEC_PARAMS.engine_ver
-            + str(CPYTHON_ENGINE.Version)
+            + str(CPYTHON_ENGINE.Version) if CPYTHON_ENGINE else "0"
             )[:HASH_CUTOFF_LENGTH]
     RUNTIME_ASSM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
@@ -239,13 +239,13 @@ def get_references():
     Returns:
         (list): referenced assemblies
     """
-    # 'IronRuby', 'IronRuby.Libraries',
     ref_list = [
         # system stuff
         'System', 'System.Core', 'System.Runtime', 'System.Linq', 'System.Collections',
+        'System.Collections.Immutable', 'System.Console',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
         'System.Drawing', 'System.Drawing.Common', 'System.Windows.Forms',
-        'System.ComponentModel.Primitives',
+        'System.ComponentModel.Primitives', 'System.ComponentModel.TypeConverter',
         'PresentationCore', 'PresentationFramework',
         'WindowsBase', 'WindowsFormsIntegration',
         # legacy csharp/vb.net compiler
@@ -268,13 +268,14 @@ def get_references():
         'pyRevitLabs.TargetApps.Revit',
         'pyRevitLabs.PyRevit',
         'pyRevitLabs.PyRevit.Runtime.Shared',
-        ]
+    ]
 
     # another revit api
     if HOST_APP.is_newer_than(2018):
         ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
-    return [_get_reference_file(ref_name) for ref_name in ref_list]
+    refs = (_get_reference_file(ref_name) for ref_name in ref_list)
+    return [r for r in refs if r]
 
 
 def _generate_runtime_asm():

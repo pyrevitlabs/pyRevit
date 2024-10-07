@@ -5,7 +5,7 @@ import os
 import os.path as op
 import re
 
-from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit import HOST_APP, EXEC_PARAMS, IS_DOTNET_CORE
 from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
@@ -96,6 +96,7 @@ class SettingsWindow(forms.WPFWindow):
             '2022': self.revit2022_cb,
             '2023': self.revit2023_cb,
             '2024': self.revit2024_cb,
+            '2025': self.revit2025_cb,
             }
 
         self.set_image_source(self.lognone, 'lognone.png')
@@ -143,44 +144,63 @@ class SettingsWindow(forms.WPFWindow):
         self.loadbetatools_cb.IsChecked = user_config.load_beta
 
     def _setup_engines(self):
+        """Sets up the list of available engines."""
         attachment = user_config.get_current_attachment()
-        if attachment and attachment.Clone:
-            engine_cfgs = \
-                [PyRevitEngineConfig(x) for x in attachment.Clone.GetEngines()]
-            engine_cfgs = \
-                sorted(engine_cfgs,
-                       key=lambda x: x.engine.Version, reverse=True)
-
-            # add engines to ui
-            self.availableEngines.ItemsSource = \
-                [x for x in engine_cfgs if x.engine.Runtime]
-            self.cpythonEngines.ItemsSource = \
-                [x for x in engine_cfgs if not x.engine.Runtime]
-
-            # now select the current runtime engine
-            for engine_cfg in self.availableEngines.ItemsSource:
-                if engine_cfg.engine.Version == int(EXEC_PARAMS.engine_ver):
-                    self.availableEngines.SelectedItem = engine_cfg
-                    break
-
-            # if addin-file is not writable, lock changing of the engine
-            if attachment.IsReadOnly():
-                self.availableEngines.IsEnabled = False
-
-            # now select the current runtime engine
-            self.active_cpyengine = user_config.get_active_cpython_engine()
-            if self.active_cpyengine:
-                for engine_cfg in self.cpythonEngines.ItemsSource:
-                    if engine_cfg.engine.Version == \
-                            self.active_cpyengine.Version:
-                        self.cpythonEngines.SelectedItem = engine_cfg
-                        break
-            else:
-                logger.debug('Failed getting active cpython engine.')
-                self.cpythonEngines.IsEnabled = False
-        else:
+        if not attachment or not attachment.Clone:
             logger.debug('Error determining current attached clone.')
             self.disable_element(self.availableEngines)
+            return
+
+        self._setup_runtime_engines(attachment)
+        self._setup_cpython_engines(attachment)
+
+    def _setup_runtime_engines(self, attachment):
+        """Sets up the list of available runtime engines."""
+        engine_cfgs = [
+            PyRevitEngineConfig(x) 
+            for x in attachment.Clone.GetEngines(IS_DOTNET_CORE)
+            if x.Runtime
+        ]
+        engine_cfgs = sorted(
+            engine_cfgs, key=lambda x: x.engine.Version, reverse=True
+        )
+
+        # add engines to ui
+        self.availableEngines.ItemsSource = engine_cfgs
+
+        # now select the current runtime engine
+        self.availableEngines.SelectedItem = next(
+            (
+                cfg for cfg in engine_cfgs 
+                if cfg.engine.Version == int(EXEC_PARAMS.engine_ver)
+            ),
+            None
+        )
+
+        # if addin-file is not writable, lock changing of the engine
+        if attachment.IsReadOnly():
+            self.availableEngines.IsEnabled = False
+    
+    def _setup_cpython_engines(self, attachment):
+        """Sets up the list of available cpython engines."""
+        cengine_cfgs = [
+            PyRevitEngineConfig(x) for x in attachment.Clone.GetCPythonEngines()
+        ]
+        cengine_cfgs = sorted(
+            cengine_cfgs, key=lambda x: x.engine.Version, reverse=True
+        )
+        self.cpythonEngines.ItemsSource = cengine_cfgs
+
+        # now select the current cpython engine
+        self.active_cpyengine = user_config.get_active_cpython_engine()
+        if not self.active_cpyengine:
+            logger.debug('Failed getting active cpython engine.')
+            self.cpythonEngines.IsEnabled = False
+            return
+        self.cpythonEngines.SelectedItem = next(
+            cfg for cfg in cengine_cfgs
+            if cfg.engine.Version == self.active_cpyengine.Version
+        )
 
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list"""

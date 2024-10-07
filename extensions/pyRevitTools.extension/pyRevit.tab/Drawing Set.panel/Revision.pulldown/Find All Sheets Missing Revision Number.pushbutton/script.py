@@ -1,7 +1,7 @@
 from pyrevit import revit, DB
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
-value_func = get_value_func()
+get_elementid_value = get_elementid_value_func()
 
 # Collecting all revisions
 revclouds = DB.FilteredElementCollector(revit.doc)\
@@ -17,12 +17,12 @@ shts = DB.FilteredElementCollector(revit.doc)\
 sheets = sorted(shts, key=lambda x: x.SheetNumber)
 
 # make a dictionary of all viewports on each sheet
-sheetvpdict = {value_func(sh.Id): [revit.doc.GetElement(x).ViewId
+sheetvpdict = {get_elementid_value(sh.Id): [revit.doc.GetElement(x).ViewId
                                     for x in sh.GetAllViewports()]
                for sh in sheets}
 
 # make a dictionary of all revisions and the associated sheets
-sheetrevs = {value_func(sh.Id): [] for sh in sheets}
+sheetrevs = {get_elementid_value(sh.Id): [] for sh in sheets}
 
 atleastonecrazysheetwasfound = False
 
@@ -30,7 +30,7 @@ print('SEARCHING...\n')
 
 for revcloud in revclouds:
     # get revision info
-    revid = value_func(revcloud.RevisionId)
+    revid = get_elementid_value(revcloud.RevisionId)
 
     # get parent view
     parentvpid = revcloud.OwnerViewId
@@ -50,7 +50,7 @@ for revcloud in revclouds:
 for sheetid, revids in sheetrevs.items():
     missedrevids = []
     sheet = revit.doc.GetElement(DB.ElementId(sheetid))
-    listedrevids = [value_func(x) for x in sheet.GetAllRevisionIds()]
+    listedrevids = [get_elementid_value(x) for x in sheet.GetAllRevisionIds()]
     for revid in revids:
         if revid not in listedrevids:
             missedrevids.append(revid)
