@@ -1158,17 +1158,23 @@ def checkModel(doc, output):
         .WhereElementIsNotElementType()
         .ToElements()
     )
-    worksetTable = doc.GetWorksetTable()
-    for element in elcollector:
-        worksetId = element.WorksetId
-        worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
-        if worksetKind == "UserWorkset":
-            worksetName = worksetTable.GetWorkset(worksetId).Name
-            if element.Name not in ('DefaultLocation', '', None) or element.Category.Name not in ('', None):
-                # Removes the location objects from the list as well as empty elements or proxies
-                if worksetName not in worksetNames:
-                    worksetNames.append(worksetName)
-                graphWorksetsData.append(worksetName)
+    if doc.IsWorkshared:
+        worksetTable = doc.GetWorksetTable()
+        for element in elcollector:
+            worksetId = element.WorksetId
+            worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
+            if worksetKind == "UserWorkset":
+                worksetName = worksetTable.GetWorkset(worksetId).Name
+                if hasattr(element, "Name") and hasattr(element, "Category") and hasattr(element.Category, "Name"):
+                    if element.Name not in ('DefaultLocation', '', None) or element.Category.Name not in ('', None):
+                        # Removes the location objects from the list as well as empty elements or proxies
+                        if worksetName not in worksetNames:
+                            worksetNames.append(worksetName)
+                        graphWorksetsData.append(worksetName)
+                else:
+                    if "Unassigned" not in worksetNames:
+                        worksetNames.append("Unassigned")
+                    graphWorksetsData.append("Unassigned")
     # print worksetNames
     # sorting results in chart legend
     worksetNames.sort()
