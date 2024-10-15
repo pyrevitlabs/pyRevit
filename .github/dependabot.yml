@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       # Check for npm updates on Sundays
       day: "sunday"
     # Raise pull requests for version updates
@@ -14,4 +14,11 @@ updates:
     directory: "/"
     target-branch: "develop"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    # Set update schedule for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every week
+      interval: "monthly"
+    target-branch: "develop"

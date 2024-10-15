@@ -18,7 +18,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // first argument is expected to be a hyperlink
                 if (runtime.ScriptRuntimeConfigs.Arguments.Count == 1) {
                     string hyperLink = runtime.ScriptRuntimeConfigs.Arguments.First();
-                    System.Diagnostics.Process.Start(hyperLink);
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(hyperLink){
+                        UseShellExecute = true
+                        });
                     return ScriptExecutorResultCodes.Succeeded;
                 }
                 else {

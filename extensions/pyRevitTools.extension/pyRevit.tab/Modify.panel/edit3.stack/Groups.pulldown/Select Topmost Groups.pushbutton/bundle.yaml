@@ -2,6 +2,7 @@ title:
   ru: Выбрать самую верхнюю группу
   fr_fr: Sélectionner les groupes supérieurs
   en_us: Select topmost groups
+  de_de: Oberste übergeordnete Gruppe auswählen
 tooltip:
   ru: >-
     Выделяет экземпляры групп, которые содержат выделенные элементы.
@@ -23,4 +24,11 @@ tooltip:
     Shift+Click:
 
     Include not-grouped elements
+  de_de: >-
+    Wählt Gruppeninstanzen aus, die die ausgewähltne Elemente enthalten
+    Schließt standardmäßig nicht gruppierte Elemente von der Auswahl aus
+  
+    Shift+Click:
+
+    Nicht gruppierte Elemente einbeziehen
 context: Selection

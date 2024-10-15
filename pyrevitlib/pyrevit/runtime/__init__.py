@@ -11,7 +11,7 @@ from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
 from pyrevit.compat import safe_strtype
-from pyrevit import RUNTIME_DIR
+from pyrevit import BIN_DIR, RUNTIME_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import logger
@@ -92,12 +92,6 @@ SOURCE_FILE_FILTER = r'(\.cs)'
 if not EXEC_PARAMS.doc_mode:
     # get and load the active Cpython engine
     CPYTHON_ENGINE = user_config.get_active_cpython_engine()
-    if CPYTHON_ENGINE:
-        CPYTHON_ENGINE_ASSM = CPYTHON_ENGINE.AssemblyPath
-        mlogger.debug('Loading cpython engine: %s', CPYTHON_ENGINE_ASSM)
-        assmutils.load_asm_file(CPYTHON_ENGINE_ASSM)
-    else:
-        raise PyRevitException('Can not find cpython engines.')
 
     # create a hash for the loader assembly
     # this hash is calculated based on:
@@ -115,9 +109,10 @@ if not EXEC_PARAMS.doc_mode:
             )[:HASH_CUTOFF_LENGTH]
     RUNTIME_ASSM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
+
     RUNTIME_ASSM_FILE = \
-        appdata.get_data_file(RUNTIME_ASSM_FILE_ID,
-                              framework.ASSEMBLY_FILE_TYPE)
+        op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(HOST_APP.version))
+
     # taking the name of the generated data file and use it as assembly name
     RUNTIME_ASSM_NAME = op.splitext(op.basename(RUNTIME_ASSM_FILE))[0]
     mlogger.debug('Interface types assembly file is: %s', RUNTIME_ASSM_NAME)
@@ -247,9 +242,10 @@ def get_references():
     # 'IronRuby', 'IronRuby.Libraries',
     ref_list = [
         # system stuff
-        'System', 'System.Core',
+        'System', 'System.Core', 'System.Runtime', 'System.Linq', 'System.Collections',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
-        'System.Drawing', 'System.Windows.Forms',
+        'System.Drawing', 'System.Drawing.Common', 'System.Windows.Forms',
+        'System.ComponentModel.Primitives',
         'PresentationCore', 'PresentationFramework',
         'WindowsBase', 'WindowsFormsIntegration',
         # legacy csharp/vb.net compiler
@@ -278,41 +274,14 @@ def get_references():
     if HOST_APP.is_newer_than(2018):
         ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
-    refs = [_get_reference_file(ref_name) for ref_name in ref_list]
-
-    # add cpython engine assembly
-    refs.append(CPYTHON_ENGINE_ASSM)
-
-    return refs
+    return [_get_reference_file(ref_name) for ref_name in ref_list]
 
 
 def _generate_runtime_asm():
     source_list = list(_get_source_files())
-    # now try to compile
+    # now try to load compiled runtime assembly
     try:
-        mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
-        res, msgs = labs.Common.CodeCompiler.CompileCSharp(
-            sourceFiles=Array[str](source_list),
-            outputPath=RUNTIME_ASSM_FILE,
-            references=Array[str](
-                get_references()
-            ),
-            defines=Array[str]([
-                "REVIT{}".format(HOST_APP.version),
-                "REVIT{}".format(HOST_APP.subversion.replace('.', '_'))
-            ]),
-            debug=False
-        )
-        # log results
-        logfile = RUNTIME_ASSM_FILE.replace('.dll', '.log')
-        with open(logfile, 'w') as lf:
-            lf.write('\n'.join(msgs))
-        # load compiled dll if successful
-        if res:
-            return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
-        # otherwise raise hell
-        else:
-            raise PyRevitException('\n'.join(msgs))
+        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',

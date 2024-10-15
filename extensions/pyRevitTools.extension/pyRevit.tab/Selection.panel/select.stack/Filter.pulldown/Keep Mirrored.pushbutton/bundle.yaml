@@ -2,6 +2,7 @@ title:
   ru: Удержать отзеркаленные
   fr_fr: Conserve symétrisés
   en_us: Keep Mirrored
+  de_de: Nur gespiegelte Elemente in aktueller Auswahl belassen
 tooltip:
   ru: >-
     Удерживает только отзеркаленные элементы в текущем выделении.
@@ -21,4 +22,14 @@ tooltip:
     Shift-Click:
 
     Keep only not-Mirrored
+  de_de: >-
+    Die aktuelle Elementauswahl wird so vermindert, 
+    dass nur gespiegelte Elemente in der Auswahl verbleiben. 
+    Die Elemente werden also nicht gelöscht, 
+    sondern nur aus der aktuellen Auswahl entfernt.
+    
+    Shift-Click:
+
+    Die aktuelle Elementauswahl wird so vermindert, 
+    dass nur NICHT-gespiegelte Elemente in der Auswahl verbleiben. 
 context: selection

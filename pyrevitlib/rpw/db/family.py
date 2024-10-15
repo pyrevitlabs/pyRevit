@@ -29,6 +29,7 @@ from rpw.utils.logger import logger, deprecate_warning
 from rpw.utils.mixins import CategoryMixin
 from rpw.db.builtins import BicEnum
 from rpw.db.category import Category
+from pyrevit.compat import get_value_func
 
 
 class FamilyInstance(Element, CategoryMixin):
@@ -93,10 +94,7 @@ class FamilyInstance(Element, CategoryMixin):
         Returns:
             (bool): True if element is inside an AssemblyInstance
         """
-        if self._revit_object.AssemblyInstanceId.IntegerValue == -1:
-            return False
-        else:
-            return True
+        return self._revit_object.AssemblyInstanceId != DB.ElementId.InvalidElementId
 
     @property
     def get_assembly(self, wrapped=True):

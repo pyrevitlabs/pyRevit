@@ -2,9 +2,11 @@ title:
   ru: Перенумеровать
   fr_fr: Renuméroter
   en_us: Renumber
+  de_de: Umummerieren
 tooltip:
   ru: Перенумеровать пронумерованные элементы в порядке выделения.
   fr_fr: Renuméroter les éléments dans l'ordre de sélection
   en_us: ReNumber numbered elements in order of selection
+  de_de: Elemente werden mit der Reihenfolge der Auswahl neu nummeriert
 author: '{{author}}'
 

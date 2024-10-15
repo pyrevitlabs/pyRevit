@@ -7,8 +7,13 @@ title:
     Tag
   
     Selected
+  de_de: >-
+    Ausgewählte
+  
+    taggen
 tooltip:
   ru: Применяет марку к выделенным элементам.
-  en_us: Apply tag to selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
+  en_us: Apply tag to selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  de_de: Tags auf ausgewählte Elemente anwenden. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'

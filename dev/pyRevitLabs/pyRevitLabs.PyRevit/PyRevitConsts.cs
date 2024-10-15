@@ -15,11 +15,11 @@ namespace pyRevitLabs.PyRevit {
         public const string DefaultCloneRemoteName = PyRevitLabsConsts.DefaultRemoteName;
         public static string DefaultCopyInstallName = string.Format("{0}Copy", PyRevitLabsConsts.ProductName);
 
-        public static string ExtensionsDefinitionFileUri = string.Format(@"https://github.com/eirannejad/pyRevit/raw/{0}/extensions/{1}", PyRevitLabsConsts.TragetBranch, ExtensionsDefFileName);
+        public static string ExtensionsDefinitionFileUri = string.Format(@"https://github.com/pyrevitlabs/pyRevit/raw/{0}/extensions/{1}", PyRevitLabsConsts.TargetBranch, ExtensionsDefFileName);
 
         // cli
-        public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/docs/cli.md";
-        public const string CLIHelpUrlDev = @"https://github.com/eirannejad/pyRevit/blob/develop/docs/cli.md";
+        public const string CLIHelpUrl = @"https://github.com/pyrevitlabs/pyRevit/blob/cli-v{0}/docs/cli.md";
+        public const string CLIHelpUrlDev = @"https://github.com/pyrevitlabs/pyRevit/blob/develop/docs/cli.md";
 
         // api
         public const string ReleasePrefix = "v";
@@ -28,6 +28,7 @@ namespace pyRevitLabs.PyRevit {
         // directories and files
         public const string BinDirName = "bin";
         public const string BinEnginesDirName = "engines";
+        public const string BinCEnginesDirName = "cengines";
         public const string DevDirName = "dev";
         public const string DocsDirName = "docs";
         public const string ExtensionsDirName = "extensions";
@@ -41,6 +42,9 @@ namespace pyRevitLabs.PyRevit {
         public const string ReleaseDirName = "release";
         public const string SitePackagesDirName = "site-packages";
         public const string PyRevitfileFilename = "PyRevitfile";
+        
+        public const string NetFxFolder = "netfx";
+        public const string NetCoreFolder = "netcore";
 
         // clones
         public const string DeployFromImageConfigsFilename = ".pyrevitargs";

@@ -8,6 +8,7 @@ from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.compat import get_value_func
 
 
 output = script.get_output()
@@ -50,7 +51,7 @@ selected_switch = \
     forms.CommandSwitchWindow.show(sorted(switches),
                                    message='List elements of type:')
 
-
+output.freeze()
 if selected_switch == 'Graphic Styles':
     cl = DB.FilteredElementCollector(revit.doc)
     gstyles = [i for i in cl.OfClass(DB.GraphicsStyle).ToElements()]
@@ -219,11 +220,12 @@ elif selected_switch == 'Levels':
                  .OfCategory(DB.BuiltInCategory.OST_Levels)\
                  .WhereElementIsNotElementType()
 
+    value_func = get_value_func()
     for i in levelslist:
         print('Level ID:\t{1}\t'
               'ELEVATION:{2}\t\t'
               'Name:\t{0}'.format(i.Name,
-                                  i.Id.IntegerValue,
+                                  value_func(i.Id),
                                   i.Elevation))
 
 elif selected_switch == 'Scope Boxes':
@@ -488,3 +490,4 @@ elif selected_switch == 'Builtin Categories with No DB.Category':
         dbcat = revit.query.get_category(bic)
         if not dbcat:
             print(bic)
+output.unfreeze()

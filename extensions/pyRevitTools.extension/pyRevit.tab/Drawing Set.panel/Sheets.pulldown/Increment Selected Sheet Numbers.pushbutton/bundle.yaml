@@ -2,6 +2,7 @@ title:
   ru: Увеличить номер выделенного листа
   fr_fr: Incrémenter les Numéros des Feuilles Sélectionnées
   en_us: Increment Selected Sheet Numbers
+  de_de: Erhöhe die ausgewählten Plannummern
 tooltip:
   ru: >-
     Увеличивает номер листа на один. Изменение листа будет выведено, 
@@ -13,3 +14,6 @@ tooltip:
   en_us: >-
     Increases the sheet number of the selected sheets by one. The sheet name
     change will be printed if logging is set to Verbose in pyRevit settings
+  de_de: >-
+    Erhöht die Plannummer des ausgewählten Plans um eins. Die Änderung des Plannamens
+    wird gedruckt, wenn die Protokollierung in den pyRevit-Einstellungen auf Verbose eingestellt ist.

@@ -2,10 +2,17 @@ title:
   ru: Изменить размеры
   fr_fr: Remplacement des valeurs des dimensions
   en_us: Override dimensions
+  de_de: Bemaßungen überschreiben
 tooltip:
   ru: Предоставляет возможности для обновления значений на выделенных размерах.
   fr_fr: Donne des options pour le remplacement des valeurs des dimensions sélectionnées
   en_us: Provides options for overriding values on selected dimensions
+  de_de: >-
+    Damit der Befehl angewendet kann, muss zunächst eine Bemaßungskette ausgewählt werden. 
+    Mit diesem Befehl können Werte von den ausgewählten Bemaßungen überschrieben werden. 
+    Es stehen zahlreiche Optionen zur Auswahl, aber die Optionen beziehen sich aktuell häufig
+    auf die Englische Sprache!
+    
 context: OST_Dimensions
 author: >-
   {{author}}

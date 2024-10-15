@@ -2,6 +2,7 @@ title:
   ru: Откройте выделенные видовые экраны
   fr_fr: Ouvrir les Vues Sélectionnées
   en_us: Open Selected Viewports
+  de_de: Öffne Ansicht des ausgewählten Ansichtsfensters
 tooltip:
   ru: >-
     Открывает вид, связанный с выбранным видовым экраном.
@@ -15,3 +16,7 @@ tooltip:
     Opens the view associated to the selected viewport. You can assign a
     shortcut to this tool and this is a quick way top open the views when
     working on sheets
+  de_de: >-
+    Öffnet die Ansicht des aktuell ausgewählten Ansichtsfensters auf einem Plan. 
+    Es ist empfehlenswert für dieses Skript ein Tastaturkürzel zu vergeben, um 
+    schnell zu Ansichten zu wechseln, wenn man auf einem Plan ist.  

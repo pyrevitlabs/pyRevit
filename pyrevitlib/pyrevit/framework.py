@@ -8,11 +8,27 @@ Examples:
 
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
-from pyrevit.compat import PY3, PY2
+from pyrevit.compat import PY3, PY2, is_netcore
 
 import clr
 import System
 
+
+# netcore init
+if is_netcore():
+    clr.AddReference('System.Runtime')
+    clr.AddReference('System.Text.RegularExpressions')
+    clr.AddReference('System.Diagnostics.Process')
+    clr.AddReference('System.IO.FileSystem.DriveInfo')
+    clr.AddReference('System.Net.WebClient')
+    clr.AddReference('System.Net.Requests')
+    clr.AddReference('System.Net.WebProxy')
+    clr.AddReference('System.Runtime.Serialization.Formatters')
+    clr.AddReference('System.Reflection.Emit')
+    clr.AddReference('Lokad.ILPack')
+    clr.AddReference('System.ComponentModel')
+    clr.AddReference('System.ObjectModel')
+    clr.AddReference('System.Diagnostics.FileVersionInfo')
 
 clr.AddReference('System.Core')
 clr.AddReference('System.Management')

@@ -17,6 +17,12 @@ tooltip:
     Shift+Click
 
     Reset window configurations and open.
+  de_de: |-
+    Bauelementschlüssel vom Projekt verwalten.
+
+    Shift+Click
+
+    Fenster Konfiguration zurücksetzen und öffnen.
 title:
   ru: |-
     Править КП
@@ -26,5 +32,8 @@ title:
   en_us: |-
     Manage
     Keynotes
+  de_de: |-
+    Bauelementschlüssel
+    verwalten
 min_revit_version: 2014
 author: '{{author}}'

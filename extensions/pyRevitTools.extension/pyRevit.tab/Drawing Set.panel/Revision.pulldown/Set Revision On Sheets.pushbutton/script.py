@@ -3,9 +3,13 @@
 from pyrevit import revit, DB
 from pyrevit import forms
 
+# define a filterfunc to filter out issued revisions
+def filterfunc(rev):
+    return rev.Issued == False
 
 revisions = forms.select_revisions(button_name='Select Revision',
-                                   multiple=True)
+                                   multiple=True,
+                                   filterfunc=filterfunc)
 
 if revisions:
     sheets = forms.select_sheets(button_name='Set Revision',

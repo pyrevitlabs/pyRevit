@@ -5,7 +5,8 @@ title:
     Créer une nomenclature à partir d'un CSV
   en_us: |-
     Create schedule from CSV
-
+  de_de: |-
+    Erstelle Bauteilschlüsselliste mit einer CSV
   
 tooltip:
   ru: |-
@@ -59,4 +60,21 @@ tooltip:
         B,Value21,Value22
 
         C,Value32,Value32
+  de_de: |-
+      Importiere eine existierende CSV Datei als Schlüsselliste
 
+
+        - Die erste CSV Reihe muss die Feldnamen enthalten
+
+        - Das erste CSV Feld muss "Schlüsselname" sein
+
+
+        CSV Example:
+
+        Schlüsselname,Parameter1 Name,Parameter2 Name
+
+        A,Wert11,Wert12
+
+        B,Wert21,Wert22
+
+        C,Wert32,Wert32

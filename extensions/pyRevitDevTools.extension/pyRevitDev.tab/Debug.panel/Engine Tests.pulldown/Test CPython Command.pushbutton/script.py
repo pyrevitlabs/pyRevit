@@ -45,7 +45,7 @@ print('__eventargs__ = %s' % __eventargs__)
 
 print('\n## Module Tests:')
 import os
-pythonpath=os.environ['PYTHONPATH']
+pythonpath=os.environ.get('PYTHONPATH')
 # this fails on cpy 3.7 (= was added on 3.8)
 print(f'{pythonpath=}')
 
@@ -88,8 +88,10 @@ cl = DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)\
        .ToElements()
 
 print('\n## list of DB.Walls:')
+from pyrevit.compat import get_value_func
+value_func = get_value_func()
 for wall in cl:
-    print(f'{wall} id:{wall.Id.IntegerValue}')
+    print(f'{wall} id:{value_func(wall.Id)}')
 
 # test unicode
 print("""

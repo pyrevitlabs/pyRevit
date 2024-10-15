@@ -2,6 +2,7 @@ title:
   ru: ПОчистить
   fr_fr: MEffacer
   en_us: MClear
+  de_de: Auswahl im Speicher löschen
 tooltip:
   ru: >-
     Очищает память проекта.
@@ -15,3 +16,9 @@ tooltip:
     Clears selection from memory
     
     Works like the MC button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  de_de: >-
+    Löscht die Auswahl im Speicher
+    Funktioniert wie die MC Taste auf dem Taschenrechner. 
+    Dies ist ein Projekt-abhängiger Speicher. 
+    Jedes Projekt hat seinen eigenen Auswahlspeicher, 
+    der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.

@@ -9,6 +9,9 @@ title:
   en_us: |-
     Make
     Pattern
+  de_de: |-
+    Füllmuster
+    erstellen
 tooltip:
   ru: >-
     Начертите свой узор штриховки в узлах использующих линию детализации, кривые, окружности
@@ -59,4 +62,18 @@ tooltip:
 
     TRICK: You can convert existing pattern types by selecting a filled region
     only and create the opposite pattern type (selected drafting filled region
-    and create model pattern)
+  de_de: >-
+    Zeichnen Sie Ihre Musterkachel in einer Detailansicht mit Detaillinien, Kurven, Kreisen
+    oder Ellipsen oder sogar mit gefüllten Bereichen
+
+    Wählen Sie die Linien und -kurven aus und führen Sie dieses Werkzeug aus. Geben Sie dem Füllmuster einen
+    Namen und klicken Sie auf „Muster erstellen“ (Create Pattern). Das Werkzeug fordert Sie auf, die Begrenzungspunkte
+    (äußerste Ecken) des Musters auszuwählen. Das Werkzeug verarbeitet die eingegebenen Linien, wandelt
+    die Kurven und Splines in kleineren gerade Linien um und findet die beste Anordnung um das 
+    gewünschte Muster zu erzeugen. Es liest auch die Muster von den verwendeten gefüllten Bereichen
+    aus und integriert dessen Linien in das neue Füllmuster.
+
+    TIPP: Sie können vorhandene Füllmuster exportieren, wenn keine Linien ausgewählt sind.
+
+    TRICK: Sie können vorhandene Füllmustertypen (Modell / Zeichenmuster) umwandeln, indem Sie einen gefüllten Bereich auswählen
+    und den entsprechenden anderen Füllmustertyp damit erstellen.

@@ -4,6 +4,7 @@ import datetime
 
 from pyrevit import coreutils
 from pyrevit import revit, DB
+from pyrevit.compat import get_value_func
 
 from pyrevit.preflight import PreflightTestCase
 
@@ -257,6 +258,7 @@ def checkModel(doc, output):
     projectNumber = project_info_collector.Number
     projectName = project_info_collector.Name
     projectClient = project_info_collector.ClientName
+    value_func = get_value_func()
     if len(name) == 0:
         # name = "Not saved file"
         printedName = "Not saved file"
@@ -434,7 +436,7 @@ def checkModel(doc, output):
             # to support french files
             or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
-                if schedule.OwnerViewId.IntegerValue != -1:
+                if value_func(schedule.OwnerViewId) != -1:
                     # print schedName
                     # print schedule.Id
                     schedulesOnSheet.append(schedName)
@@ -446,7 +448,7 @@ def checkModel(doc, output):
             # to support french files
             or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
-                if schedule.OwnerViewId.IntegerValue != -1:
+                if value_func(schedule.OwnerViewId) != -1:
                     # print schedName
                     # print schedule.Id
                     schedulesOnSheet.append(schedName)
@@ -926,7 +928,7 @@ def checkModel(doc, output):
     for element in elements:
         try:
             category = element.Category.Name
-            categoryId = element.Category.Id.IntegerValue
+            categoryId = value_func(element.Category.Id)
             # filtering out DWGs and DXFs, categories from banlist
             # filtering out categories in catBanlist
             # DB.BuiltInCategory Ids are negative integers
@@ -1208,8 +1210,7 @@ def checkModel(doc, output):
             chartWorksets.set_height(160)
         else:
             chartWorksets.set_height(200)
-
-        chartWorksets.draw()
+            chartWorksets.draw()
 
 class ModelChecker(PreflightTestCase):
     """

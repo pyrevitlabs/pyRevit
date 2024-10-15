@@ -5,10 +5,18 @@ title:
     Dupliquer les vues sélectionnées
   en_us: |-
     Duplicate Selected Views
+  de_de: |-
+    Dupliziere ausgewählte Ansichten
 tooltip:
   ru: Пакетно копирует выделенные виды с/без детализации.
   fr_fr: |-
     Dupliquer les vues sélectionnées avec ou sans détails
   en_us: |-
     Batch duplicates the selected views with or without detailing
-
+  de_de: |-
+    Man wählt bereits im Projektbrowser die gewünschten Ansichten aus
+    oder es erscheint ein Auswahldialog, in dem man die gewünschten
+    Ansichten auswählen kann. Die gewählten Ansichten können entweder
+    "Mit Detaillierung", "Ohne Detaillierung" oder als "Abhängige Ansicht"
+    dupliziert werden. Hinweis: Nicht alle Ansichten können als "Abhängige
+    Ansicht dupliziert werden" (z.B. 3D Ansichten). 

@@ -2,6 +2,7 @@ title:
   ru: Синхро-ть виды
   fr_fr: Synchro Vues
   en_us: Sync Views
+  de_de: Ansichten synchr.
 tooltip:
   ru: >-
     Синхронизирует виды. Это означает, при панорамировании и масштабировании,
@@ -21,3 +22,9 @@ tooltip:
     in the same zoomed area so you can keep working in the same
     area without the need to zoom and pan again.
     This tool works best when the views are maximized
+  de_de: >-
+    Halten Sie die Ansichten synchronisiert. Das bedeutet, dass Sie beim Schwenken und Zoomen und
+    zwischen der Grundriss- und der Deckenansicht wechseln, hält dieses Werkzeug die Ansichten
+    in der gleichen Zoomstufe, so dass Sie im selben Bereich weiterarbeiten Bereich arbeiten können, 
+    ohne dass Sie erneut zoomen und schwenken müssen. Dieses Werkzeug funktioniert am besten, 
+    wenn die Ansichten maximiert sind.

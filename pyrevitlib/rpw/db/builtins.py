@@ -18,6 +18,7 @@ from rpw import revit, DB
 from rpw.base import BaseObject, BaseObjectWrapper
 from rpw.utils.dotnet import Enum
 from rpw.exceptions import RpwCoerceError
+from pyrevit.compat import get_value_func
 
 
 class _BiParameter(BaseObjectWrapper):
@@ -155,9 +156,9 @@ class _BiCategory(BaseObjectWrapper):
         Returns:
             ``DB.BuiltInCategory`` member
         """
-        bic = Enum.ToObject(DB.BuiltInCategory, category_id.IntegerValue)
-        if DB.ElementId(bic).IntegerValue < -1:
-            return bic
+        cat_id_value = value_func(category_id)
+        if cat_id_value < -1 and Enum.IsDefined(DB.BuiltInCategory, cat_id_value):
+            return Enum.ToObject(DB.BuiltInCategory, cat_id_value)
         else:
             # If you pass a regular element to category_id, it converts it to BIC.
             # It should fail, because result is not a valid Category Enum

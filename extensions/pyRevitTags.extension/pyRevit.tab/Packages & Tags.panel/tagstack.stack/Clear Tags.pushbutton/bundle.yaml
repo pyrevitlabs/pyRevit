@@ -1,7 +1,9 @@
 title:
   ru: Очистить марки
   en_us: Clear Tags
+  de_de: Tags löschen
 tooltip:
   ru: Очищает информацию о марках выделенных элементов.
-  en_us: Clear tag information from selected elements - you need to create a 'doctag' and apply it to the document categories before using the tag tools
+  en_us: Clear tag information from selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  de_de: Tag Informationen von aktuell ausgewählten Elementen löschen. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 author: '{{author}}'

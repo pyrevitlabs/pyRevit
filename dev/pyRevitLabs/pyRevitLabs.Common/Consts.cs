@@ -31,12 +31,12 @@ namespace pyRevitLabs.Common {
         public const string DefaultRemoteName = "origin";
         public const string OriginalRepoDefaultBranch = "master";
 
-        public const string TragetBranch = OriginalRepoDefaultBranch;
-        //public const string TragetBranch = @"develop/newexec";
+        public const string TargetBranch = OriginalRepoDefaultBranch;
+        //public const string TargetBranch = @"develop/newexec";
 
         // consts for the official pyRevit repo
         public const string OriginalRepoName = ProductName;
-        public static string OriginalRepoId = string.Format(@"eirannejad/{0}", ProductName);
+        public static string OriginalRepoId = string.Format(@"pyrevitlabs/{0}", ProductName);
         public static string OriginalRepoBasePath = string.Format(@"https://github.com/{0}", OriginalRepoId);
         public static string OriginalRepoGitPath = OriginalRepoBasePath + DefaultGitDirName;
 

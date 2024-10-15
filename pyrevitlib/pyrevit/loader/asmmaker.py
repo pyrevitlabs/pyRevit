@@ -3,6 +3,7 @@ import os.path as op
 from collections import namedtuple
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
+from pyrevit.compat import is_netcore
 from pyrevit import framework
 from pyrevit.framework import AppDomain, Version
 from pyrevit.framework import AssemblyName, AssemblyBuilderAccess
@@ -17,6 +18,7 @@ from pyrevit.runtime import BASE_TYPES_DIR_HASH
 from pyrevit.runtime import typemaker
 from pyrevit.userconfig import user_config
 
+from System.Reflection.Emit import AssemblyBuilder
 
 # Generic named tuple for passing assembly information to other modules
 ExtensionAssemblyInfo = namedtuple('ExtensionAssemblyInfo',
@@ -94,15 +96,23 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     mlogger.debug('Generated assembly file name for this package: %s',
                   ext_asm_full_file_name)
 
-    # get assembly builder
-    asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(
-        win_asm_name,
-        AssemblyBuilderAccess.RunAndSave,
-        op.dirname(ext_asm_file_path))
+    if is_netcore():
+        asm_builder = AssemblyBuilder.DefineDynamicAssembly(
+            win_asm_name,
+            AssemblyBuilderAccess.Run)
 
-    # get module builder
-    module_builder = asm_builder.DefineDynamicModule(ext_asm_file_name,
-                                                     ext_asm_full_file_name)
+        # get module builder
+        module_builder = asm_builder.DefineDynamicModule(ext_asm_file_name)
+    else:
+        # get assembly builder
+        asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(
+            win_asm_name,
+            AssemblyBuilderAccess.RunAndSave,
+            op.dirname(ext_asm_file_path))
+
+        # get module builder
+        module_builder = asm_builder.DefineDynamicModule(ext_asm_file_name,
+                                                         ext_asm_full_file_name)
 
     # create command classes
     for cmd_component in extension.get_all_commands():
@@ -110,8 +120,14 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
         mlogger.debug('Creating types for command: %s', cmd_component)
         typemaker.make_bundle_types(extension, cmd_component, module_builder)
 
-    # save final assembly
-    asm_builder.Save(ext_asm_full_file_name)
+    if is_netcore():
+        from Lokad.ILPack import AssemblyGenerator
+        generator = AssemblyGenerator()
+        generator.GenerateAssembly(asm_builder, ext_asm_file_path)
+    else:
+        # save final assembly
+        asm_builder.Save(ext_asm_full_file_name)
+
     assmutils.load_asm_file(ext_asm_file_path)
 
     mlogger.debug('Executer assembly saved.')

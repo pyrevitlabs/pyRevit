@@ -1,6 +1,8 @@
 title:
   en_us: english title
   fr_fr: french title
+  es_es: spanish title
 tooltip:
   fr_fr: "Contrôle qualité, utilisez shift click pour configurer les tests"
   en_us: Quality control use shift+click to configure the tests
+  es_es: "Control de calidad, usa shift+click para configurar las pruebas"

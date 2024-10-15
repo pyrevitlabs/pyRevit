@@ -34,7 +34,9 @@ from pyrevit import coreutils
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
+from pyrevit.compat import get_value_func
 
+value_func = get_value_func()
 
 logger = script.get_logger()
 config = script.get_config()
@@ -488,7 +490,7 @@ class ScheduleSheetList(object):
 
     def _get_schedule_text_data(self, view_shedule):
         schedule_data_file = \
-            script.get_instance_data_file(str(view_shedule.Id.IntegerValue))
+            script.get_instance_data_file(str(value_func(view_shedule.Id)))
         vseop = DB.ViewScheduleExportOptions()
         vseop.TextQualifier = coreutils.get_enum_none(DB.ExportTextQualifier)
         view_shedule.Export(op.dirname(schedule_data_file),
@@ -1127,7 +1129,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             sheet = self.selected_doc.GetElement(tblock.OwnerViewId)
             # build a unique id for this tblock
             tblock_tform = tblock.GetTotalTransform()
-            tblock_tid = tblock.GetTypeId().IntegerValue
+            tblock_tid = value_func(tblock.GetTypeId())
             tblock_tid = tblock_tid * 100 \
                          + tblock_tform.BasisX.X * 10 \
                          + tblock_tform.BasisX.Y
