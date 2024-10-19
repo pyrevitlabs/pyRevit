@@ -23,7 +23,6 @@ import re
 import clr  # pylint: disable=E0401
 
 import System
-import System.Runtime.InteropServices as SRI
 
 from pyrevit import compat
 
@@ -57,13 +56,8 @@ try:
 except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
-# Determine dotnet runtime
-DOTNET_RUNTIME_ID = "netfx"
-if System.Environment.Version.Major >= 5 or \
-        (".NET Core" in SRI.RuntimeInformation.FrameworkDescription):
-    DOTNET_RUNTIME_ID = "netcore"
-
-IS_DOTNET_CORE = DOTNET_RUNTIME_ID == "netcore"
+# try get net folder
+DOTNET_RUNTIME_ID = "netcore" if compat.NETCORE else "netfx"
 
 # BIN directory
 ROOT_BIN_DIR = op.join(HOME_DIR, 'bin')

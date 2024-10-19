@@ -8,14 +8,13 @@ Examples:
 
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
-from pyrevit.compat import PY3, PY2, is_netcore
+from pyrevit.compat import IRONPY, NETCORE, PY2
 
 import clr
 import System
 
-
 # netcore init
-if is_netcore():
+if NETCORE:
     clr.AddReference('System.Runtime')
     clr.AddReference('System.Text.RegularExpressions')
     clr.AddReference('System.Diagnostics.Process')
@@ -38,10 +37,6 @@ clr.AddReference('PresentationCore')
 clr.AddReference('PresentationFramework')
 clr.AddReference('System.Xml.Linq')
 clr.AddReference('WindowsBase')
-
-# add linq extensions?
-if PY2:
-    clr.ImportExtensions(System.Linq)
 
 from System import AppDomain, Version
 from System import Type
@@ -105,24 +100,18 @@ ASSEMBLY_FILE_EXT = '.dll'
 
 ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
 ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
-if PY3:
-    clr.AddReference(ipy_dllpath)
-else:
+if IRONPY:
     clr.AddReferenceToFileAndPath(ipy_dllpath)
+else:
+    clr.AddReference(ipy_assmname)
 
 import IronPython
 
 # WPF
 wpf = None
-wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
-wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
-try:
-    clr.AddReference(wpf_assmname)
-    if PY3:
-        wpf = IronPython.Modules.Wpf
-    else:
-        import wpf
-except Exception:
+if IRONPY:
+    wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+    wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
     clr.AddReferenceToFileAndPath(wpf_dllpath)
     import wpf
 
@@ -131,15 +120,12 @@ except Exception:
 sqlite3 = None
 sqlite3_assmname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
 sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_assmname + ASSEMBLY_FILE_EXT)
-try:
-    clr.AddReference(sqlite3_assmname)
-    if PY3:
-        sqlite3 = IronPython.SQLite
-    else:
-        import sqlite3
-except Exception:
+if IRONPY:
     clr.AddReferenceToFileAndPath(sqlite3_dllpath)
-    import sqlite3
+else:
+    clr.AddReference(sqlite3_dllpath)
+import sqlite3
+
 
 
 CPDialogs = None

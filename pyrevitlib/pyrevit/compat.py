@@ -8,11 +8,15 @@ Examples:
 """
 
 import sys
+import System
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-IRONPY2712 = sys.version_info[:3] == (2, 7, 12)
-IRONPY340 = sys.version_info[:3] == (3, 4, 0)
+IRONPY = '.net' in sys.version.lower()
+IRONPY2 = PY2 and IRONPY
+IRONPY3 = PY3 and IRONPY
+NETCORE = System.Environment.Version.Major >= 8  # Revit 2025 onwards
+NETFRAMEWORK = not NETCORE # Revit 2024 and earlier
 NO_REVIT = -1
 REVIT_NETCORE_VERSION = 2025
 
@@ -52,10 +56,6 @@ def _get_revit_version():
         return int(__revit__.ControlledApplication.VersionNumber)
 
 
-def is_netcore():
-    """Returns True if the current Revit version uses .NET Core (from 2025 onward)."""
-    return _get_revit_version() >= REVIT_NETCORE_VERSION
-
 #pylint: disable=C0103
 safe_strtype = str
 if PY2:
@@ -64,27 +64,27 @@ if PY2:
 
 
 def get_elementid_value_func():
-        """Returns the ElementId value extraction function based on the Revit version.
-        
-        Follows API changes in Revit 2024.
+    """Returns the ElementId value extraction function based on the Revit version.
+    
+    Follows API changes in Revit 2024.
 
-        Returns:
-            function: A function returns the value of an ElementId.
-    
-        Examples:
-            ```python
-            get_elementid_value = get_elementid_value_func()
-            sheet_revids = {get_elementid_value(x) for x in self.revit_sheet.GetAllRevisionIds()}
-            add_sheet_revids = {get_elementid_value(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
-            ```
-        """
-        def get_value_post2024(item):
-            return item.Value
-    
-        def get_value_pre2024(item):
-            return item.IntegerValue
-    
-        return get_value_post2024 if _get_revit_version() > 2023 else get_value_pre2024
+    Returns:
+        function: A function returns the value of an ElementId.
+
+    Examples:
+        ```python
+        get_elementid_value = get_elementid_value_func()
+        sheet_revids = {get_elementid_value(x) for x in self.revit_sheet.GetAllRevisionIds()}
+        add_sheet_revids = {get_elementid_value(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
+        ```
+    """
+    def get_value_post2024(item):
+        return item.Value
+
+    def get_value_pre2024(item):
+        return item.IntegerValue
+
+    return get_value_post2024 if _get_revit_version() > 2023 else get_value_pre2024
 
 
 def urlopen(url):
