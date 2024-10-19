@@ -66,7 +66,8 @@ if System.Environment.Version.Major >= 5 or \
 IS_DOTNET_CORE = DOTNET_RUNTIME_ID == "netcore"
 
 # BIN directory
-BIN_DIR = op.join(HOME_DIR, 'bin', DOTNET_RUNTIME_ID)
+ROOT_BIN_DIR = op.join(HOME_DIR, 'bin')
+BIN_DIR = op.join(ROOT_BIN_DIR, DOTNET_RUNTIME_ID)
 
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
