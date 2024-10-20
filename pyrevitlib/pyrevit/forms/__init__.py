@@ -20,10 +20,10 @@ import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DOCS, BIN_DIR
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
-from pyrevit.compat import PY3, IRONPY340
+from pyrevit.compat import IRONPY
 from pyrevit.compat import safe_strtype, get_elementid_value_func
 
-if PY3 and not IRONPY340:
+if not IRONPY:
     raise PyRevitCPythonNotSupported('pyrevit.forms')
 
 from pyrevit import coreutils

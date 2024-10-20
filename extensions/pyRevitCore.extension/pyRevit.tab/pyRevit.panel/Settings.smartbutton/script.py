@@ -5,7 +5,8 @@ import os
 import os.path as op
 import re
 
-from pyrevit import HOST_APP, EXEC_PARAMS, IS_DOTNET_CORE
+from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit.compat import NETCORE
 from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
@@ -158,7 +159,7 @@ class SettingsWindow(forms.WPFWindow):
         """Sets up the list of available runtime engines."""
         engine_cfgs = [
             PyRevitEngineConfig(x) 
-            for x in attachment.Clone.GetEngines(IS_DOTNET_CORE)
+            for x in attachment.Clone.GetEngines(NETCORE)
             if x.Runtime
         ]
         engine_cfgs = sorted(
