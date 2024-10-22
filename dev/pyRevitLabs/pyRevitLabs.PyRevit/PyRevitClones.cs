@@ -189,7 +189,7 @@ namespace pyRevitLabs.PyRevit {
                                           string destPath = null,
                                           GitInstallerCredentials credentials = null) {
             string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoGitPath;
-            string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TragetBranch;
+            string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
 
             // determine destination path if not provided
@@ -239,7 +239,7 @@ namespace pyRevitLabs.PyRevit {
                     }
 
                     // cleanup completed, now baloon up the exception
-                    throw ex;
+                    throw;
                 }
             }
             else
@@ -252,7 +252,7 @@ namespace pyRevitLabs.PyRevit {
                                            string branchName = null,
                                            string imagePath = null,
                                            string destPath = null) {
-            string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TragetBranch;
+            string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
             string imageSource = imagePath != null ? imagePath : GithubAPI.GetBranchArchiveUrl(PyRevitLabsConsts.OriginalRepoId, repoBranch);
             string imageFilePath = null;
 
@@ -373,7 +373,7 @@ namespace pyRevitLabs.PyRevit {
                         }
 
                         // cleanup completed, now baloon up the exception
-                        throw ex;
+                        throw;
                     }
 
                     // register the clone
@@ -411,7 +411,7 @@ namespace pyRevitLabs.PyRevit {
                 }
 
                 // cleanup completed, now baloon up the exception
-                throw ex;
+                throw;
             }
         }
 

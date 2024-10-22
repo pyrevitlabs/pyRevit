@@ -208,7 +208,7 @@ def _header(text: str, level: int = 2):
 
 def _find_latest_tag():
     # get the latest tag
-    latest_tag = utils.system(
+    latest_tag, _ = utils.system(
         [
             "git",
             "for-each-ref",
@@ -223,7 +223,7 @@ def _find_latest_tag():
 
 def _find_previous_tag():
     # get the latest tag
-    last_three_tags = utils.system(
+    last_three_tags, _ = utils.system(
         [
             "git",
             "for-each-ref",
@@ -243,7 +243,7 @@ def _find_previous_tag():
 
 
 def _collect_changes(tag: str, fetch_info: bool = True):
-    gitlog_report = utils.system(
+    gitlog_report, _ = utils.system(
         ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag}..HEAD"]
     )
     return _find_changes(gitlog_report, fetch_info=fetch_info)

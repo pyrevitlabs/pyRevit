@@ -10,12 +10,15 @@ from pyrevit.framework import List
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.compat import get_elementid_value_func
 
 
 NO_COLOR_COLOR = '#000000'
 
 
 logger = script.get_logger()
+
+get_elementid_value = get_elementid_value_func()
 
 
 class StyleOption(object):
@@ -39,7 +42,7 @@ class StyleOption(object):
 
     @property
     def builtin(self):
-        return self.category.Id.IntegerValue < 0
+        return get_elementid_value(self.category.Id) < 0
 
     @property
     def category(self):
@@ -245,7 +248,7 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                     try:
                         revit.doc.Delete(line_cat.Id)
                     except Exception as ex:
-                        if line_cat.Id.IntegerValue < 0:
+                        if get_elementid_value(line_cat.Id) < 0:
                             logger.error(
                                 'Can not remove builtin line style \"%s\"',
                                 line_cat.Name

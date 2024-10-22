@@ -10,6 +10,7 @@ import pickle
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.compat import get_elementid_value_func
 
 
 logger = script.get_logger()
@@ -95,7 +96,8 @@ def get_source_properties(src_element):
             elif tparam.StorageType == DB.StorageType.Double:
                 value = tparam.AsDouble()
             elif tparam.StorageType == DB.StorageType.ElementId:
-                value = tparam.AsElementId().IntegerValue
+                get_elementid_value = get_elementid_value_func()
+                value = get_elementid_value(tparam.AsElementId())
             else:
                 value = tparam.AsString()
 

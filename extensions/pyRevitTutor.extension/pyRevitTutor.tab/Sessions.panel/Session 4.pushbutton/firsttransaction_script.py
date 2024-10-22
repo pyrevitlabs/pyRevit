@@ -2,10 +2,10 @@
 
 __title__ = 'First\nTransactions'
 
-
+from pyrevit import HOST_APP
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Transaction, TransactionGroup, BuiltInParameter
 
-doc = __revit__.ActiveUIDocument.Document
+doc = HOST_APP.doc
 
 sheets_collector = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Sheets) \
                                                 .WhereElementIsNotElementType() \

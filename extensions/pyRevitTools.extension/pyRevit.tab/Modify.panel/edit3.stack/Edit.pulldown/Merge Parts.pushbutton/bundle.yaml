@@ -2,9 +2,11 @@ title:
   ru: Объединить части
   fr_fr: Assembler les parts
   en_us: Merge parts
+  de_de: Teile vereinigen
 tooltip:
   ru: Объединяет выделенные части в один элемент.
   fr_fr: Assembler les parts sélectionnées dans un élément
   en_us: Merge selected parts into one element
+  de_de: Die ausgewählten Teile werden in ein Element vereinigt
 author: '{{author}}'
 context: selection

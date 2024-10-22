@@ -2,6 +2,7 @@ __doc__ = 'This tool tries to remove all cutom project parameters in the file bu
 
 from pyrevit import HOST_APP
 from pyrevit import DB, revit
+from pyrevit.compat import get_elementid_value_func
 
 doc = revit.doc
 
@@ -23,16 +24,18 @@ while it.MoveNext():
         BIND = 'Unknown'
 
     name = p.Name
-    if HOST_APP.is_newer_than('2022'):
-        ut = str(p.GetDataType().TypeId)
-        tp = str(p.GetDataType().TypeId.split('.')[-3])
-    elif HOST_APP.is_exactly('2022'):
+    if HOST_APP.is_exactly('2022'):
         ut = str(p.GetSpecTypeId().TypeId)
         tp = str(p.ParameterType)
+        pg = str(p.ParameterGroup)
+    elif HOST_APP.is_newer_than('2022'):
+        ut = str(p.GetDataType().TypeId)
+        tp = str(p.GetDataType().TypeId.split('.')[-3])
+        pg = str(p.GetGroupTypeId().TypeId)
     else:
         ut = str(p.UnitType)
         tp = str(p.ParameterType)
-    pg = str(p.ParameterGroup)
+        pg = str(p.ParameterGroup)
 
     print('\n')
     print('-' * 100)
@@ -42,6 +45,7 @@ while it.MoveNext():
 
     for cat in b.Categories:
         try:
+            get_elementid_value = get_elementid_value_func()
             elements = DB.FilteredElementCollector(doc).OfCategoryId(
                 cat.Id).WhereElementIsNotElementType()
             if BIND == 'Type' and p.Visible:
@@ -50,13 +54,13 @@ while it.MoveNext():
                 print('Searching through {0} ElementTypes of Category {1}'.format(
                     len(list(elements)), cat.Name))
                 for elType in elementTypes:
-                    paramidlist.add(elType.LookupParameter(
-                        p.Name).Id.IntegerValue)
+                    paramidlist.add(get_elementid_value(elType.LookupParameter(
+                        p.Name).Id))
             elif p.Visible:
                 print('Searching through {0} Elements of Category {1}'.format(
                     len(list(elements)), cat.Name))
                 for el in elements:
-                    paramidlist.add(el.LookupParameter(p.Name).Id.IntegerValue)
+                    paramidlist.add(get_elementid_value(el.LookupParameter(p.Name).Id))
         except Exception as e:
             print('---ERROR---\n', p.Name, cat.Name, cat.Id, e)
             continue

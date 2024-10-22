@@ -12,6 +12,6 @@
   <ItemGroup>
     <Reference Include="..\..\..\..\..\..\..\dev\libs\Revit\2013\RevitAPI.dll" Private="False"/>
     <Reference Include="..\..\..\..\..\..\..\dev\libs\Revit\2013\RevitAPIUI.dll" Private="False"/>
-    <Reference Include="..\..\..\..\..\..\..\bin\pyRevitLabs.PyRevit.Runtime.Shared.dll" Private="False"/>
+    <Reference Include="..\..\..\..\..\..\..\bin\netfx\pyRevitLabs.PyRevit.Runtime.Shared.dll" Private="False"/>
   </ItemGroup>
 </Project>

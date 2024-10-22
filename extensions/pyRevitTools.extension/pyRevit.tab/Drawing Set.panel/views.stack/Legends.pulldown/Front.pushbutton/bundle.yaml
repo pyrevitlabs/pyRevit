@@ -2,9 +2,17 @@ title:
   fr_fr: Orienter le composant de légende sur la vue Avant
   en_us: Set Legend Component to Front orientation
   ru: Установить вид спереди компоненту легенды
+  de_de: Legendenbauteile auf Ansichtsrichtung "Vorne" umstellen
 tooltip: 
   fr_fr: Vue Avant du composant de légende !!! Tous les composants de la légende ne supportent pas n'importe quel type d'orientation de vue !!!
   en_us: Legend Component Front view !!! Not all legend components support any type of view orientation !!!
   ru: Компонент легенды вид спереди !!! Не все компоненты легенды поддерживают все типы ориентации вида !!!
+  de_de: >-
+    Im Register Beschriften > Befehlsgruppe Detail > Legendendenbauteil können 
+    in einer Legende Legendenbauteile von Familien platziert werden. Je nachdem 
+    ob die auf der Legende platzierten Legendenbauteile eine Ansichtsrichtung "Vorne" unterstützen 
+    oder nicht, kann dieses Skript angewendet werden. Die ausgewählten Legendenbauteile 
+    werden in auf die Ansichtsrichtung "Vorne" umgestellt. Nicht alle Legendenbauteile
+    unterstützen jede Art von Ansichtsrichtung !!!
 author: Jean-Marc Couffin
 context: selection

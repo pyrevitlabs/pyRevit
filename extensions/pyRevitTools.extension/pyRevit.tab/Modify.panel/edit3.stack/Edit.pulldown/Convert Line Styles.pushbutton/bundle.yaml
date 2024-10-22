@@ -2,6 +2,7 @@ title:
   ru: Конвертировать стили линий
   fr_fr: Changer les styles de lignes
   en_us: Convert line styles
+  de_de: Linienstile konvertieren
 tooltip:
   ru: >-
     Данный инструмент конвертирует стили линий. Запустите инструмент,
@@ -23,3 +24,19 @@ tooltip:
     The script will correct the line styles in the model
     HOWEVER the lines that are part of a group will not be affected
     Also see the "Shake Filled Regions" tool
+  de_de: >-
+    Beim Ausführen dieses Werkzeugs öffnet sich ein Dialogfenster mit zwei
+    Spalten, die jeweils die im aktiven Projekt verfügbaren Linienstile anzeigen. 
+    Auf der Linken Seite sind die Linienstile die in einen Linienstil auf der rechten
+    Seite umgewandelt werden. Durch markieren von Zeilen auf beiden Seiten, können mit 
+    einem Klick auf den Button Convert Selected Styles Konvertierungspärchen gebildet werden, die
+    darunter angezeigt werden. Die Hierarchisch untergeordneten Linienstile werden in den
+    übergeordnete Linienstil umgewandelt. Linien, die sich in Gruppen befinden, können 
+    mit diesem Skript nicht umgewandelt werden (API Limitation)
+    Im unteren Teil stehen diverse Konvrtierungsoptionen zur Auswahl: 
+    1) Detail Linien konvertieren 
+    2) Modelllinien konvertieren
+    3) Linien in gefüllten Bereichen konvertieren (Gefüllte Bereiche müssen mit dem 
+    pyRevit Werkzeug "Gefüllte Bereiche regenerieren" aktualisiert werden)
+    4) Achtung: Gruppierte Linien werden nicht unterstützt!
+    5) Linienstil(e) nach dem Konvertieren löschen
