@@ -10,8 +10,7 @@ from pyrevit import framework
 from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
-from pyrevit import compat
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import safe_strtype, NETCORE
 from pyrevit import BIN_DIR, RUNTIME_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
@@ -271,7 +270,7 @@ def get_references():
     ]
 
     # netcore depends
-    if compat.NETCORE:
+    if NETCORE:
         ref_list.extend(['System.Drawing.Common',
                          'System.Diagnostics.Process',
                          'System.Diagnostics.FileVersionInfo',
