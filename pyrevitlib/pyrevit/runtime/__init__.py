@@ -10,7 +10,7 @@ from pyrevit import framework
 from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import safe_strtype, NETCORE
 from pyrevit import BIN_DIR, RUNTIME_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
@@ -19,7 +19,6 @@ from pyrevit.coreutils import appdata
 from pyrevit.loader import HASH_CUTOFF_LENGTH
 from pyrevit.userconfig import user_config
 import pyrevit.extensions as exts
-
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = logger.get_logger(__name__)
@@ -244,7 +243,7 @@ def get_references():
         'System', 'System.Core', 'System.Runtime', 'System.Linq', 'System.Collections',
         'System.Collections.Immutable', 'System.Console',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
-        'System.Drawing', 'System.Drawing.Common', 'System.Windows.Forms',
+        'System.Drawing', 'System.Windows.Forms',
         'System.ComponentModel.Primitives', 'System.ComponentModel.TypeConverter',
         'PresentationCore', 'PresentationFramework',
         'WindowsBase', 'WindowsFormsIntegration',
@@ -269,6 +268,13 @@ def get_references():
         'pyRevitLabs.PyRevit',
         'pyRevitLabs.PyRevit.Runtime.Shared',
     ]
+
+    # netcore depends
+    if NETCORE:
+        ref_list.extend(['System.Drawing.Common',
+                         'System.Diagnostics.Process',
+                         'System.Diagnostics.FileVersionInfo',
+                         'System.Text.RegularExpressions'])
 
     # another revit api
     if HOST_APP.is_newer_than(2018):
