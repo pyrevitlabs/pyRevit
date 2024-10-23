@@ -21,6 +21,7 @@ import codecs
 import math
 import socket
 from collections import defaultdict
+import requests
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
@@ -566,14 +567,9 @@ def can_access_url(url_to_open, timeout=1000):
         (bool): true if accessible
     """
     try:
-        client = framework.WebRequest.Create(url_to_open)
-        client.Method = "HEAD"
-        client.Timeout = timeout
-        client.Proxy = framework.WebProxy.GetDefaultProxy()
-        response = client.GetResponse()
-        response.GetResponseStream()
-        return True
-    except Exception:
+        response = requests.get(url_to_open, timeout=timeout)
+        return response.status_code == 200
+    except requests.RequestException:
         return False
 
 
