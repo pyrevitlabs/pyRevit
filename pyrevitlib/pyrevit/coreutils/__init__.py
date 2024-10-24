@@ -25,7 +25,7 @@ from collections import defaultdict
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import compat
-from pyrevit.compat import PY3, PY2
+from pyrevit.compat import PY3, PY2, NETCORE
 from pyrevit.compat import safe_strtype
 from pyrevit.compat import winreg as wr
 from pyrevit import framework
@@ -557,24 +557,37 @@ def escape_for_html(input_string):
 
 def can_access_url(url_to_open, timeout=1000):
     """Check if url is accessible within timeout.
-
+    
     Args:
         url_to_open (str): url to check access for
         timeout (int): timeout in milliseconds
-
+    
     Returns:
         (bool): true if accessible
     """
-    try:
-        client = framework.WebRequest.Create(url_to_open)
-        client.Method = "HEAD"
-        client.Timeout = timeout
-        client.Proxy = framework.WebProxy.GetDefaultProxy()
-        response = client.GetResponse()
-        response.GetResponseStream()
-        return True
-    except Exception:
-        return False
+    if NETCORE:
+        try:
+            client = framework.WebClient()
+            client.Proxy = framework.WebRequest.GetSystemWebProxy()
+            # WebClient doesn't have a direct timeout property, so using DownloadData for the check
+            client.DownloadData(url_to_open)  # Will raise an exception if URL is not accessible
+            return True
+        except Exception as e:
+            print("Other Exception occurred: {0}".format(e))
+            return False
+    else:
+        # Original .NET Framework implementation
+        try:
+            client = framework.WebRequest.Create(url_to_open)
+            client.Method = "HEAD"
+            client.Timeout = timeout
+            client.Proxy = framework.WebProxy.GetDefaultProxy()
+            response = client.GetResponse()
+            response.GetResponseStream()
+            return True
+        except Exception as e:
+            print("Error accessing URL in .NET Framework: {0}".format(e))
+            return False
 
 
 def read_url(url_to_open):
