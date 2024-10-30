@@ -17,7 +17,7 @@ import os
 import json
 
 def load_wall_list():
-    json_file_path = r"C:\Users\andre\Documents\checks\wall_list.json"
+    json_file_path = select_file("JSON Files (*.json)|*.json")
     with open(json_file_path, "r") as f:
         data = json.load(f)
     return data["allowed_wall_types"]
