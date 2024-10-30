@@ -15,6 +15,7 @@ from pyrevit.preflight import PreflightTestCase
 # Load wall list from JSON file
 import os
 import json
+from rpw.ui.forms import select_file
 
 def load_wall_list():
     json_file_path = select_file("JSON Files (*.json)|*.json")
