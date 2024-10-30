@@ -18,9 +18,20 @@ import json
 from rpw.ui.forms import select_file
 
 def load_wall_list():
-    json_file_path = select_file("JSON Files (*.json)|*.json")
+    # Set default directory
+    default_dir = r"C:\Users\andre\Documents\checks\wall_list.json"
+
+    # Open the file dialog with the default path
+    json_file_path = select_file("JSON Files (*.json)|*.json", default_dir)
+
+    # Check if a file was selected
+    if not json_file_path:
+        raise FileNotFoundError("No JSON file selected.")
+
+    # Load JSON data
     with open(json_file_path, "r") as f:
         data = json.load(f)
+
     return data["allowed_wall_types"]
 
 
