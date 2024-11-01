@@ -113,6 +113,7 @@ def convert_values(value, document=doc):
                     .DisplayUnits)
 
     ui_values = DB.UnitUtils.ConvertFromInternalUnits(value, ui_units)
+    ui_values = round(ui_values, 3)
     return ui_values
 
 
