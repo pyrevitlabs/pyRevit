@@ -2,6 +2,7 @@
 
 # Import Reference Modules
 from pyrevit import script, revit, DB, DOCS
+from pyrevit.forms import alert
 from pyrevit.preflight import PreflightTestCase
 
 from System.Windows import Window # Used for cancel button
@@ -27,8 +28,7 @@ def collect_cadinstances(active_view_only):
     if len(cadinstances) >0:
         return cadinstances, len(cadinstances)
     else:
-        print("No CAD instances found in the {}.".format("active view" if active_view_only else "model"))
-        script.exit()
+        alert("No CAD instances found in the {}.".format("active view" if active_view_only else "model"), exitscript=True)
 
 # Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
 class ButtonClass(Window): # to handle button event (https://stackoverflow.com/questions/54756424/using-the-on-click-option-for-a-revit-rpw-flexform-button)
