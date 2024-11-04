@@ -12,14 +12,13 @@ from pyrevit.coreutils import Timer # Used for timing the check
 from datetime import timedelta # Used for timing the check
 
 doc = DOCS.doc
-ac_view = __revit__.ActiveUIDocument.ActiveView # Get the active view
+ac_view = doc.ActiveView
 
 
 # Definitions
 
 def collect_cadinstances(active_view_only):
     """     Collect ImportInstance class from whole model or from just active view  """
-    #cadinstances = DB.FilteredElementCollector(doc).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
     if active_view_only:
         cadinstances = DB.FilteredElementCollector(doc, ac_view.Id).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
     else:
@@ -111,7 +110,7 @@ def checkModel(doc, output):
     output.set_title("CAD audit of model '{}'".format(doc.Title))
     output.set_width (1700)
     
-    coll_mode = get_user_input()["active_view"] # user choice of collection mode
+    coll_mode = get_user_input()["active_view"]
     
     table_data = [] # store array for table formatted output
     row_head = ["No", "Select/Zoom", "DWG instance", "Loaded status", "Workplane or single view", "Duplicate", "Workset", "Creator user", "Location site name"] # output table first and last row
