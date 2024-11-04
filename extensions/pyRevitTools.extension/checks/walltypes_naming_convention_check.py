@@ -19,7 +19,7 @@ from rpw.ui.forms import select_file
 
 def load_wall_list():
     # Set default directory
-    default_dir = r"C:\Users\andre\Documents\checks\wall_list.json"
+    default_dir = r"%appdata%\pyRevit-Master\extensions\pyRevitTools.extension\checks\walltypes_list.json"
 
     # Open the file dialog with the default path
     json_file_path = select_file("JSON Files (*.json)|*.json", default_dir)
