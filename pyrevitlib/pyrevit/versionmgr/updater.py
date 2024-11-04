@@ -11,6 +11,8 @@ from pyrevit.versionmgr import upgrade
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 
+from System.Net.NetworkInformation import Ping, IPStatus
+
 #pylint: disable=C0103,W0703
 logger = get_logger(__name__)
 
@@ -28,14 +30,13 @@ COREUPDATE_MESSAGE = '<div class="coreupdatewarn">' \
                      '</div>'
 
 
-def _check_connection():
-    logger.info('Checking internet connection...')
-    successful_url = coreutils.check_internet_connection()
-    if successful_url:
-        logger.debug('Url access successful: %s', successful_url)
-        return True
-    else:
+def _check_connection(ip_address="8.8.8.8"):
+    ping_sender = Ping()
+    try:
+        reply = ping_sender.Send(ip_address)
+    except Exception:
         return False
+    return reply.Status == IPStatus.Success
 
 
 def _get_extension_credentials(repo_info):
