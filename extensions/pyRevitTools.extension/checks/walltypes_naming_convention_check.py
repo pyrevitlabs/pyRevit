@@ -6,6 +6,7 @@ from collections import Counter
 
 # Revit-specific imports
 from pyrevit import coreutils, revit, script, DOCS
+from pyrevit.forms import pick_file
 from Autodesk.Revit.DB import BuiltInCategory, FilteredElementCollector
 
 # Set up preflight for model check
@@ -14,14 +15,13 @@ from pyrevit.preflight import PreflightTestCase
 # Load wall list from JSON file
 import os
 import json
-from rpw.ui.forms import select_file
 
 def load_wall_list():
     # Set default directory
-    default_dir = r"%appdata%\pyRevit-Master\extensions\pyRevitTools.extension\checks\walltypes_list.json"
+    default_dir = os.path.dirname(__file__)
 
     # Open the file dialog with the default path
-    json_file_path = select_file("JSON Files (*.json)|*.json", default_dir)
+    json_file_path = pick_file(file_ext="json", init_dir=default_dir)
 
     # Check if a file was selected
     if not json_file_path:
