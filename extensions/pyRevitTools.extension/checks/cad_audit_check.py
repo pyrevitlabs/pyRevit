@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Import Reference Modules
 from pyrevit import script, revit, DB, DOCS
 from pyrevit.forms import alert
 from pyrevit.preflight import PreflightTestCase
@@ -15,8 +14,6 @@ from datetime import timedelta # Used for timing the check
 doc = DOCS.doc
 ac_view = doc.ActiveView
 
-
-# Definitions
 
 def collect_cadinstances(active_view_only):
     """     Collect ImportInstance class from whole model or from just active view  """
@@ -186,14 +183,6 @@ class ModelChecker(PreflightTestCase):
     name = "CAD Audit"
     author = "Kevin Salmon"
 
-    def setUp(self, doc, output):
-        pass
 
     def startTest(self, doc, output):
         checkModel(doc, output)
-
-    def tearDown(self, doc, output):
-        pass
-
-    def doCleanups(self, doc, output):
-        pass

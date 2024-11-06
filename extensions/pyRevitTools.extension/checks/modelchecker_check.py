@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import datetime
 
 from pyrevit import coreutils
@@ -1240,8 +1239,6 @@ class ModelChecker(PreflightTestCase):
     name = "Model Checker"
     author = "David Vadkerti, Jean-Marc Couffin"
 
-    def setUp(self, doc, output):
-        pass
 
     def startTest(self, doc, output):
         timer = coreutils.Timer()
@@ -1250,9 +1247,3 @@ class ModelChecker(PreflightTestCase):
         endtime_hms = str(datetime.timedelta(seconds=endtime))
         endtime_hms_claim = "Transaction took " + endtime_hms
         print(endtime_hms_claim)
-
-    def tearDown(self, doc, output):
-        pass
-
-    def doCleanups(self, doc, output):
-        pass

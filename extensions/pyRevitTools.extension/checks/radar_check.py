@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# ______________________________________________________________________Imports
-# General Imports
 import math
 # pyRevit
 from pyrevit import revit, DB, DOCS, HOST_APP
 from pyrevit import script
 from pyrevit.preflight import PreflightTestCase
 
-# ______________________________________________________________Global Variables
+
 doc = DOCS.doc  # Current Document
 INTERNAL_ORIGIN = (0, 0, 0)
 EXTENT_DISTANCE = 52800  # Linear Feet
@@ -18,89 +16,89 @@ WARN_STRG = '### :warning: ............'
 CRITERIA_STRG = '10 Mi (16KM) away from the Internal Origin.'
 
 # ___________________________________________________3D to Bounding Box Analysis
-class Get3DViewBoundingBox():
-    def get_tempbbox(self, toggle_cads, toggle_rvts, toggle_ifcs, toggle_all):
-        bad_cads = []
-        bad_rvts = []
-        bad_elements = []
-        # Create a 3D view
-        with revit.DryTransaction("Create 3D View"):
-            view_3D_types = (DB.FilteredElementCollector(doc)
-                            .OfClass(DB.ViewFamilyType)
-                            .WhereElementIsElementType()
-                            .ToElements())
-            three_d_view_type = ([v for v in view_3D_types 
-                if v.ViewFamily == DB.ViewFamily.ThreeDimensional][0])
-            view = DB.View3D.CreateIsometric(doc, three_d_view_type.Id)
-            worksets = (DB.FilteredWorksetCollector(doc).
-                        OfKind(DB.WorksetKind.UserWorkset).
-                        ToWorksets())
-            for ws in worksets:
-                view.SetWorksetVisibility(ws.Id, DB.WorksetVisibility.Visible)
-            view.IsSectionBoxActive = True
-            bb = view.GetSectionBox()
-            if toggle_cads:
-                cads = (DB.FilteredElementCollector(doc).
-                        OfClass(DB.ImportInstance).
-                        ToElements())
-                if len(cads) == 0:
-                    print("No CAD Links in the model")
-                else:
-                    for cad in cads:
-                        cadbox = cad.get_BoundingBox(None)
-                        cadmin = (cadbox.Min.X, cadbox.Min.Y, cadbox.Min.Z)
-                        cadmax = (cadbox.Max.X, cadbox.Max.Y, cadbox.Max.Z)
-                        if (calculate_distance(
-                            cadmin, INTERNAL_ORIGIN) > EXTENT_DISTANCE or
-                            calculate_distance(cadmax, INTERNAL_ORIGIN) >
-                             EXTENT_DISTANCE):
-                            bad_cads.append(cad)
-            if toggle_rvts:
-                rvtlinks = (DB.FilteredElementCollector(doc).
-                                OfClass(DB.RevitLinkInstance).
-                                ToElements())
-                if len(rvtlinks) == 0:
-                    print("No RVT Links in the model")
-                else:
-                    for rvt in rvtlinks:
-                        rvtbox = rvt.get_BoundingBox(view)
-                        rvtmin = (rvtbox.Min.X, rvtbox.Min.Y, rvtbox.Min.Z)
-                        rvtmax = (rvtbox.Max.X, rvtbox.Max.Y, rvtbox.Max.Z)
-                        if (calculate_distance
-                        (rvtmin, INTERNAL_ORIGIN) > EXTENT_DISTANCE or
-                         calculate_distance
-                        (rvtmax, INTERNAL_ORIGIN) > EXTENT_DISTANCE):
-                            bad_rvts.append(rvt)
-            if toggle_ifcs:
-                pass
-            revit_link_types = (DB.FilteredElementCollector(doc).
-                                OfClass(DB.RevitLinkType).
-                                ToElements())
-            cads = (DB.FilteredElementCollector(doc).OfClass(DB.ImportInstance).
+
+def get_tempbbox(toggle_cads, toggle_rvts, toggle_ifcs, toggle_all):
+    bad_cads = []
+    bad_rvts = []
+    bad_elements = []
+    # Create a 3D view
+    with revit.DryTransaction("Create 3D View"):
+        view_3D_types = (DB.FilteredElementCollector(doc)
+                        .OfClass(DB.ViewFamilyType)
+                        .WhereElementIsElementType()
+                        .ToElements())
+        three_d_view_type = ([v for v in view_3D_types 
+            if v.ViewFamily == DB.ViewFamily.ThreeDimensional][0])
+        view = DB.View3D.CreateIsometric(doc, three_d_view_type.Id)
+        worksets = (DB.FilteredWorksetCollector(doc).
+                    OfKind(DB.WorksetKind.UserWorkset).
+                    ToWorksets())
+        for ws in worksets:
+            view.SetWorksetVisibility(ws.Id, DB.WorksetVisibility.Visible)
+        view.IsSectionBoxActive = True
+        bb = view.GetSectionBox()
+        if toggle_cads:
+            cads = (DB.FilteredElementCollector(doc).
+                    OfClass(DB.ImportInstance).
                     ToElements())
-            if len(revit_link_types) > 0:
-                (view.HideElements(DB.FilteredElementCollector(doc).
-                    OfClass(DB.RevitLinkType).
-                    ToElementIds()))
-            if len(cads) > 0:
-                (view.HideElements(DB.FilteredElementCollector(doc).
-                OfClass(DB.ImportInstance).
-                ToElementIds()))
-            view.IsSectionBoxActive = False
-            view.IsSectionBoxActive = True
-            bbh = view.GetSectionBox()
-            if toggle_all:
-                elements = (DB.FilteredElementCollector(doc, view.Id).
-                            WhereElementIsNotElementType().
+            if len(cads) == 0:
+                print("No CAD Links in the model")
+            else:
+                for cad in cads:
+                    cadbox = cad.get_BoundingBox(None)
+                    cadmin = (cadbox.Min.X, cadbox.Min.Y, cadbox.Min.Z)
+                    cadmax = (cadbox.Max.X, cadbox.Max.Y, cadbox.Max.Z)
+                    if (calculate_distance(
+                        cadmin, INTERNAL_ORIGIN) > EXTENT_DISTANCE or
+                        calculate_distance(cadmax, INTERNAL_ORIGIN) >
+                         EXTENT_DISTANCE):
+                        bad_cads.append(cad)
+        if toggle_rvts:
+            rvtlinks = (DB.FilteredElementCollector(doc).
+                            OfClass(DB.RevitLinkInstance).
                             ToElements())
-                for element in elements:
-                    if (element.get_BoundingBox(view) is not None and 
-                    hasattr(element, 'Name') and hasattr(element, 'Category')):
-                       bbox = element.get_BoundingBox(view)
-                       if check_bounding_box(
-                                bbox, INTERNAL_ORIGIN, EXTENT_DISTANCE) == 0:
-                            bad_elements.append(element)
-        return bb, bad_cads, bad_rvts, bbh, bad_elements
+            if len(rvtlinks) == 0:
+                print("No RVT Links in the model")
+            else:
+                for rvt in rvtlinks:
+                    rvtbox = rvt.get_BoundingBox(view)
+                    rvtmin = (rvtbox.Min.X, rvtbox.Min.Y, rvtbox.Min.Z)
+                    rvtmax = (rvtbox.Max.X, rvtbox.Max.Y, rvtbox.Max.Z)
+                    if (calculate_distance
+                    (rvtmin, INTERNAL_ORIGIN) > EXTENT_DISTANCE or
+                     calculate_distance
+                    (rvtmax, INTERNAL_ORIGIN) > EXTENT_DISTANCE):
+                        bad_rvts.append(rvt)
+        if toggle_ifcs:
+            pass
+        revit_link_types = (DB.FilteredElementCollector(doc).
+                            OfClass(DB.RevitLinkType).
+                            ToElements())
+        cads = (DB.FilteredElementCollector(doc).OfClass(DB.ImportInstance).
+                ToElements())
+        if len(revit_link_types) > 0:
+            (view.HideElements(DB.FilteredElementCollector(doc).
+                OfClass(DB.RevitLinkType).
+                ToElementIds()))
+        if len(cads) > 0:
+            (view.HideElements(DB.FilteredElementCollector(doc).
+            OfClass(DB.ImportInstance).
+            ToElementIds()))
+        view.IsSectionBoxActive = False
+        view.IsSectionBoxActive = True
+        bbh = view.GetSectionBox()
+        if toggle_all:
+            elements = (DB.FilteredElementCollector(doc, view.Id).
+                        WhereElementIsNotElementType().
+                        ToElements())
+            for element in elements:
+                if (element.get_BoundingBox(view) is not None and 
+                hasattr(element, 'Name') and hasattr(element, 'Category')):
+                   bbox = element.get_BoundingBox(view)
+                   if check_bounding_box(
+                            bbox, INTERNAL_ORIGIN, EXTENT_DISTANCE) == 0:
+                        bad_elements.append(element)
+    return bb, bad_cads, bad_rvts, bbh, bad_elements
 
 
 # ___________________________________________________________ Convert values
@@ -198,7 +196,7 @@ def get_project_base_and_survey_pts(document=doc):
                                 survey_point.X,
                                 survey_point.Y,
                                 survey_point.Z)
-    return base_point_coordinates, survey_point_coordinates, INTERNAL_ORIGIN
+    return base_point_coordinates, survey_point_coordinates
 
 
 # _______________________________________________________________Get Model Units
@@ -217,7 +215,7 @@ def get_design_options_elements(document=doc):
 
     for do in design_options:
         option_set_param = DB.BuiltInParameter.OPTION_SET_ID
-        option_set_id = do.get_Parameter(option_set_param).AsElementId()
+        option_set_id = document.get_Parameter(option_set_param).AsElementId()
         design_option_sets.append(option_set_id)
         design_option_filter = DB.ElementDesignOptionFilter(do.Id)
         x = (DB.FilteredElementCollector(document).
@@ -231,7 +229,7 @@ def get_design_options_elements(document=doc):
 # ________________________________________________________________ MAIN FUNCTION
 # ______________________________________________________________________________
 def check_model_extents(document=doc):
-    unit_system = get_model_units_type(document=doc)
+    unit_system = get_model_units_type(document)
     # _______________________________________________________________HTML Styles
     output = script.get_output()
     output.add_style('cover {color:black; font-size:24pt; font-weight:bold;}')
@@ -245,7 +243,7 @@ def check_model_extents(document=doc):
     output.print_md('# Checking model placement and coordinates')
     print(divider)
     # _____________________________Check the distances of base and survey points
-    baspt, survpt, INTERNAL_ORIGIN = get_project_base_and_survey_pts(document)
+    baspt, survpt = get_project_base_and_survey_pts(document)
     basptdistance = abs(calculate_distance(baspt, INTERNAL_ORIGIN))
     surveydistance = abs(calculate_distance(survpt, INTERNAL_ORIGIN))
 
@@ -264,13 +262,14 @@ def check_model_extents(document=doc):
     surveyptangle = calculate_angle(survpt, INTERNAL_ORIGIN)
     truenorthangle = calculate_angle(baspt, survpt)
     # _______________________________Print the Project Coordinates and Distances
+    baspt_z = str(convert_values(baspt[2], doc))
     tbdata = [['Internal Origin Coordinates', 
         str(INTERNAL_ORIGIN[0]),str(INTERNAL_ORIGIN[1]),str(INTERNAL_ORIGIN[2]),
         ' ', ' '],
         ['Project Base Point Coordinates to Internal Origin', 
             str(convert_values(baspt[0],doc)),
             str(convert_values(baspt[1],doc)),
-            str(convert_values(baspt[2], doc)), 
+            baspt_z, 
             str(convert_units(basptdistance, document)), baseptangle],
         ['Survey Point Coordinates to Internal Origin', 
             str(convert_values(survpt[0], doc)),
@@ -294,7 +293,7 @@ def check_model_extents(document=doc):
                 baspt, survpt), document)),
                     ' '],
         ['Project Elevation', 
-            ' ', ' ', str(convert_values(baspt[2], doc)),
+            ' ', ' ', baspt_z,
             str(convert_units((survpt[2] - baspt[2]), document))]]
     # Print Table
     output.print_table(table_data=tbdata, 
@@ -310,8 +309,7 @@ def check_model_extents(document=doc):
     # _______________________________________Get the bounding box of the 3D view
     print("")
     output.print_md('# Checking the extents of the 3D view bounding box')
-    bbox_instance = Get3DViewBoundingBox()
-    bbox = bbox_instance.get_tempbbox(0,0,0,0)[0]
+    bbox = get_tempbbox(0,0,0,0)[0]
     min = (bbox.Min.X, bbox.Min.Y, bbox.Min.Z)
     max = (bbox.Max.X, bbox.Max.Y, bbox.Max.Z)
     print("")
@@ -371,7 +369,7 @@ def check_model_extents(document=doc):
                             "   " +
                             str(x.Name) +
                             " - Is part of " +
-                            str(doc.GetElement(setid).Name) +
+                            str(document.GetElement(setid).Name) +
                             " - " +
                             str(x.DesignOption.Name)
                             )
@@ -392,7 +390,7 @@ def check_model_extents(document=doc):
     print(divider)
     output.print_md('# Checking the extents of the CAD and RVT links')
     print(divider)
-    bboxLink = bbox_instance.get_tempbbox(1, 1, 1, 0)
+    bboxLink = get_tempbbox(1, 1, 1, 0)
     badcads = bboxLink[1]
     badrvts = bboxLink[2]
     cleanbbox = bboxLink[3]
@@ -433,7 +431,7 @@ def check_model_extents(document=doc):
     output.print_md('# Please be patient.')
     # __________________________Check Bounding Box of Every Element in the Model
     print(divider)
-    getbadelements = bbox_instance.get_tempbbox(0,0,0,1)
+    getbadelements = get_tempbbox(0,0,0,1)
     badelements = getbadelements[4]
     counter = 0
     limit = 10
@@ -482,14 +480,5 @@ class ModelChecker(PreflightTestCase):
     name = "10 Mile Radar"
     author = "Tay Othman"
 
-    def setUp(self, doc, output):
-        pass
-
     def startTest(self, doc, output):
         check_model_extents(doc)
-
-    def tearDown(self, doc, output):
-        pass
-
-    def doCleanups(self, doc, output):
-        pass

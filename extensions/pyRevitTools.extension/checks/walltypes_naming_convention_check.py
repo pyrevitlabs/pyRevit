@@ -1,12 +1,11 @@
 # -*- coding: UTF-8 -*-
-# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 
 import datetime
 import json
 from collections import Counter
 
 # Revit-specific imports
-from pyrevit import coreutils, revit, script
+from pyrevit import coreutils, revit, script, DOCS
 from Autodesk.Revit.DB import BuiltInCategory, FilteredElementCollector
 
 # Set up preflight for model check
@@ -92,9 +91,6 @@ class ModelChecker(PreflightTestCase):
     name = "Naming Convention"
     author = "Andreas Draxl"
 
-    def setUp(self, doc, output):
-        pass
-
     def startTest(self, doc, output):
         timer = coreutils.Timer()
         check_model(doc, output)
@@ -102,14 +98,9 @@ class ModelChecker(PreflightTestCase):
         endtime_hms = str(datetime.timedelta(seconds=endtime))
         print("Transaction took {}".format(endtime_hms))
 
-    def tearDown(self, doc, output):
-        pass
-
-    def doCleanups(self, doc, output):
-        pass
 
 # Initialize variables
-doc = __revit__.ActiveUIDocument.Document
+doc = DOCS.doc
 output = script.get_output()
 
 # Start model checker
