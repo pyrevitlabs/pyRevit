@@ -21,9 +21,9 @@ def collect_cadinstances(active_view_only):
         cadinstances = DB.FilteredElementCollector(doc, ac_view.Id).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
     else:
         cadinstances = DB.FilteredElementCollector(doc).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
-    
-    if len(cadinstances) >0:
-        return cadinstances, len(cadinstances)
+    cadinstances_len = len(cadinstances)
+    if cadinstances_len >0:
+        return cadinstances, cadinstances_len
     else:
         alert("No CAD instances found in the {}.".format("active view" if active_view_only else "model"), exitscript=True)
 
@@ -100,8 +100,9 @@ def get_load_stat(cad, is_link):
 
     return status
 
-timer = Timer()
+
 def checkModel(doc, output):
+    timer = Timer()
     output = script.get_output()
     output.close_others()
     output.set_title("CAD audit of model '{}'".format(doc.Title))
