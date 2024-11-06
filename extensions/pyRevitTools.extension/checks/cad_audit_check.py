@@ -21,9 +21,8 @@ def collect_cadinstances(active_view_only):
         cadinstances = DB.FilteredElementCollector(doc, ac_view.Id).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
     else:
         cadinstances = DB.FilteredElementCollector(doc).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
-    cadinstances_len = len(cadinstances)
-    if cadinstances_len >0:
-        return cadinstances, cadinstances_len
+    if cadinstances:
+        return cadinstances
     else:
         alert("No CAD instances found in the {}.".format("active view" if active_view_only else "model"), exitscript=True)
 
@@ -112,14 +111,15 @@ def checkModel(doc, output):
     
     table_data = [] # store array for table formatted output
     row_head = ["No", "Select/Zoom", "DWG instance", "Loaded status", "Workplane or single view", "Duplicate", "Workset", "Creator user", "Location site name"] # output table first and last row
-    
-    for inc, cad in enumerate(collect_cadinstances(coll_mode)[0]):
+    cad_instances = collect_cadinstances(coll_mode)
+    for cad in cad_instances:
+        count = 0
         cad_id = cad.Id
         cad_is_link = cad.IsLinked
         cad_name = cad.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
 
         table_row = []
-        table_row.append(inc+1)
+        table_row.append(count+1)
         table_row.append(output.linkify(cad_id, title="{}".format("Select")))
         table_row.append(cad_name)
         table_row.append(get_load_stat(cad, cad_is_link)) # loaded status
@@ -147,7 +147,7 @@ def checkModel(doc, output):
     
     # Summary output section:
     link_to_view = output.linkify(ac_view.Id, title="Show the view")
-    print("{} CAD instances found.".format(collect_cadinstances(coll_mode)[1]))
+    print("{} CAD instances found.".format(len(cad_instances))
     if coll_mode: # if active view only
         summary_msg = "the active view ('{}') {}".format(ac_view.Name, link_to_view)
     else:
