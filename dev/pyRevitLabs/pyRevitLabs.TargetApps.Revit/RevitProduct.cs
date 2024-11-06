@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -238,13 +238,16 @@ namespace pyRevitLabs.TargetApps.Revit {
             var uninstallKey =
                 Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
             // loop thru subkeys and find matching
-            foreach (var key in uninstallKey.GetSubKeyNames()) {
+            foreach (var key in uninstallKey.GetSubKeyNames())
+            {
                 var subkey = uninstallKey.OpenSubKey(key);
                 var appName = subkey.GetValue("DisplayName") as string;
                 logger.Debug("Analysing registered app: {0} @ {1}", appName, subkey.Name);
-                if (appName != null && revitFinder.IsMatch(appName)) {
+                if (appName != null && revitFinder.IsMatch(appName))
+                {
                     logger.Debug("App is a Revit product: {0}", appName);
-                    try {
+                    try
+                    {
                         // collect info from reg key
                         var regName = subkey.GetValue("DisplayName") as string;
                         var regVersion = subkey.GetValue("DisplayVersion") as string;
@@ -252,75 +255,86 @@ namespace pyRevitLabs.TargetApps.Revit {
                         int regLangCode = (int)subkey.GetValue("Language");
                         // try to find binary location
                         var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath)?.NormalizeAsPath();
-                        logger.Debug("Version from registery key: \"{0}\"", regVersion);
-                        logger.Debug("Install path from registery key: \"{0}\"", regInstallPath);
-                        logger.Debug("Binary path from registery key: \"{0}\"", binaryFilePath ?? "");
-                        logger.Debug("Language code from registery key: \"{0}\"", regLangCode);
+                        logger.Debug("Version from registry key: \"{0}\"", regVersion);
+                        logger.Debug("Install path from registry key: \"{0}\"", regInstallPath);
+                        logger.Debug("Binary path from registry key: \"{0}\"", binaryFilePath ?? "");
+                        logger.Debug("Language code from registry key: \"{0}\"", regLangCode);
 
-                        // attempt at finding revit product
-                        RevitProduct revitProduct = null;
-                        logger.Debug("Looking up Revit Product in database...");
-                        revitProduct = LookupRevitProduct(regVersion);
-                        // if could not determine product by version
-                        if (revitProduct is null) {
-                            logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
-                            // try to get product key from binary version
-                            if (binaryFilePath != null) {
-                                try {
-                                    var prodInfo = RevitProductData.GetBinaryProductInfo(binaryFilePath);
-                                    logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryFilePath);
-                                    revitProduct = LookupRevitProduct(prodInfo.build);
-                                    if (revitProduct is null) {
-                                        // revit info might not be available specially if it is new
-                                        // lets build a RevitProduct with whatever info we could collect
-                                        revitProduct = new RevitProduct(prodInfo);
-                                    }
-                                }
-                                catch {
-                                    logger.Debug("Failed reading product info from binary at \"{0}\"", binaryFilePath);
-                                }
-                            }
-                        }
-
-                        if (revitProduct != null) {
-                            logger.Debug("Revit Product is : {0}", revitProduct);
-                            // grab the registery name if it doesn't have a name
-                            if (revitProduct.Name is null || revitProduct.Name == string.Empty)
-                                revitProduct.Name = regName;
-
-                            // build from a registry version if it doesn't already have one
-                            if (revitProduct.Version is null && (regVersion != null && regVersion != string.Empty)) {
-                                try {
-                                    revitProduct.Version = new Version(regVersion);
-                                } catch {}
-                            }
-                                
-                            // update install path from registry if it can't find one
-                            if (regInstallPath != null && regInstallPath != string.Empty) {
-                                if (CommonUtils.VerifyFile(binaryFilePath))
-                                    revitProduct.InstallLocation = regInstallPath;
-                            }
-
-                            // this can only come from registrys
-                            revitProduct.LanguageCode = regLangCode;
-
-                            // add to list now, only if install location is verified
-                            string pLocation = revitProduct.InstallLocation;
-                            if (pLocation != null && pLocation != string.Empty)
-                                installedRevits.Add(revitProduct);
-                        }
-                        else {
+                        var revitProduct = FindRevitProduct(regVersion, binaryFilePath);
+                        if (revitProduct is null)
+                        {
                             logger.Debug("Can not determine Revit product.");
+                            continue;
                         }
+                        logger.Debug("Revit Product is : {0}", revitProduct);
+                        // grab the registry name if it doesn't have a name
+                        if (revitProduct.Name is null || revitProduct.Name == string.Empty)
+                            revitProduct.Name = regName;
+
+                        // build from a registry version if it doesn't already have one
+                        if (revitProduct.Version is null && (regVersion != null && regVersion != string.Empty))
+                        {
+                            try
+                            {
+                                revitProduct.Version = new Version(regVersion);
+                            }
+                            catch { }
+                        }
+
+                        // update install path from registry if it can't find one
+                        if (regInstallPath != null && regInstallPath != string.Empty)
+                        {
+                            if (CommonUtils.VerifyFile(binaryFilePath))
+                                revitProduct.InstallLocation = regInstallPath;
+                        }
+
+                        // this can only come from registrys
+                        revitProduct.LanguageCode = regLangCode;
+
+                        // add to list now, only if install location is verified
+                        string pLocation = revitProduct.InstallLocation;
+                        if (pLocation != null && pLocation != string.Empty)
+                            installedRevits.Add(revitProduct);
                     }
-                    catch (Exception rpEx) {
-                        logger.Error("Error determining installed Revit Product from: {0} | {1} | {2}",
-                                     appName, rpEx.Message, rpEx.InnerException.Message);
+                    catch (Exception rpEx)
+                    {
+                        var innerMessage = rpEx.InnerException is null ? "" : $" | {rpEx.InnerException.Message}";
+                        logger.Error("Error determining installed Revit Product from: {0} | {1}{2}",
+                                     appName, rpEx.Message, innerMessage);
                     }
                 }
             }
 
             return installedRevits.ToList();
+        }
+
+        private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath)
+        {
+            logger.Debug("Looking up Revit Product in database...");
+            var revitProduct = LookupRevitProduct(regVersion);
+            if (revitProduct != null)
+            { 
+                return revitProduct; 
+            }
+
+            logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
+            // try to get product key from binary version
+            if (binaryFilePath == null)
+            {
+                return null;
+            }
+            try
+            {
+                var prodInfo = RevitProductData.GetBinaryProductInfo(binaryFilePath);
+                logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryFilePath);
+                revitProduct = LookupRevitProduct(prodInfo.build);
+                return revitProduct is null ? new RevitProduct(prodInfo) : revitProduct;
+            }
+            catch
+            {
+                logger.Debug("Failed reading product info from binary at \"{0}\"", binaryFilePath);
+            }
+            return null;
         }
 
         public static List<RevitProduct> ListSupportedProducts() {

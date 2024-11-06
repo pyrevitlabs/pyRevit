@@ -22,6 +22,8 @@ import re
 
 import clr  # pylint: disable=E0401
 
+import System
+
 from pyrevit import compat
 
 PYREVIT_ADDON_NAME = 'pyRevit'
@@ -54,12 +56,12 @@ try:
 except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
-
 # try get net folder
-net_folder = "netcore" if compat.is_netcore() else "netfx"
+DOTNET_RUNTIME_ID = "netcore" if compat.NETCORE else "netfx"
 
 # BIN directory
-BIN_DIR = op.join(HOME_DIR, 'bin', net_folder)
+ROOT_BIN_DIR = op.join(HOME_DIR, 'bin')
+BIN_DIR = op.join(ROOT_BIN_DIR, DOTNET_RUNTIME_ID)
 
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')

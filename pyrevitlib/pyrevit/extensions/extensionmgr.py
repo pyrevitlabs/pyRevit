@@ -34,9 +34,7 @@ if not EXEC_PARAMS.doc_mode:
             get_cached_extension, update_cache
 
 #pylint: disable=C0413
-from pyrevit.extensions.parser import parse_dir_for_ext_type,\
-    get_parsed_extension, parse_comp_dir
-from pyrevit.extensions.genericcomps import GenericUICommand
+from pyrevit.extensions.parser import parse_dir_for_ext_type, get_parsed_extension
 from pyrevit.extensions.components import Extension, LibraryExtension
 
 import pyrevit.extensions.extpackages as extpkgs
@@ -106,22 +104,6 @@ def _parse_or_cache(ext_info):
                      ui_extension.name)
 
     return ui_extension
-
-
-def get_command_from_path(comp_path):
-    """Returns a pyRevit command object from the given bundle directory.
-
-    Args:
-        comp_path (str): Full directory address of the command bundle
-
-    Returns:
-        (genericcomps.GenericUICommand): A subclass of pyRevit command object.
-    """
-    cmds = parse_comp_dir(comp_path, GenericUICommand)
-    if cmds:
-        return cmds[0]
-
-    return None
 
 
 def get_thirdparty_extension_data():

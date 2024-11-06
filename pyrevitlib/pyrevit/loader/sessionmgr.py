@@ -57,6 +57,7 @@ def _clear_running_engines():
         runtime_types.ScriptEngineManager.ClearEngines(
             excludeEngine=EXEC_PARAMS.engine_id
             )
+        return True
     except AttributeError:
         return False
 

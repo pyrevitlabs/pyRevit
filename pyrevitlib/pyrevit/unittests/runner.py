@@ -232,3 +232,19 @@ def run_module_tests(test_module):
     OutputWriter()\
         .write(RESULT_TEST_SUITE_START.format(suite=test_module.__name__))
     return test_runner.run(test_suite)
+
+
+def run_test_case(test_case):
+    """Runs the unit test of the given TestCase class.
+
+    Args:
+        test_case (type[TestCase]): TestCase class with tests
+
+    Returns:
+        (PyRevitTestResult): tests results.
+    """
+    test_runner = PyRevitTestRunner()
+    suite = TestLoader().loadTestsFromTestCase(test_case)
+    OutputWriter()\
+        .write(RESULT_TEST_SUITE_START.format(suite=suite.__class__.__name__))
+    return test_runner.run(suite)

@@ -14,7 +14,7 @@ import tempfile
 from pyrevit import revit, DB, script, HOST_APP
 from pyrevit.revit.db.create import FamilyLoaderOptionsHandler
 from pyrevit.revit.db.transaction import Transaction
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 __context__ = "doc-project"
 
@@ -162,8 +162,8 @@ def test_family_api():
     family_element = family_doc.LoadFamily(revit.doc, FamilyLoaderOptionsHandler())
     LOG.info("Loaded test family into current document.")
     family_doc.Close()
-    value_func = get_value_func()
-    assert _family_type_count(value_func(family_element.Id)) == 1
+    get_elementid_value = get_elementid_value_func()
+    assert _family_type_count(get_elementid_value(family_element.Id)) == 1
     LOG.info("Checked that only the base type is in the test family.")
     family_doc = revit.doc.EditFamily(family_element)
     _add_types(family_doc)
@@ -177,16 +177,14 @@ def test_family_api():
     family_element = family_doc.LoadFamily(revit.doc, FamilyLoaderOptionsHandler())
     family_doc.Close()
     LOG.info("Reloaded test family into current file.")
-    value_func = get_value_func()
-    assert _family_type_count(value_func(family_element.Id)) == type_count
+    assert _family_type_count(get_elementid_value(family_element.Id)) == type_count
     LOG.info(
         "Checked that {0} type{1} are in the test family, as expected.".format(
             type_count,
             "" if type_count == 1 else "s",
         )
     )
-    value_func = get_value_func()
-    _check_type_parameter_values(value_func(family_element.Id))
+    _check_type_parameter_values(get_elementid_value(family_element.Id))
     LOG.info("Checked that the parameter values are correct in the test family.")
     _purge_family()
     LOG.info("Test completed.")

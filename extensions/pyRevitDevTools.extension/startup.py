@@ -23,7 +23,7 @@ from pyrevit import HOST_APP, framework
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import routes
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 # add your module paths to the sys.path here
@@ -77,8 +77,8 @@ def get_doors(uiapp):
     doors = revit.query.get_elements_by_categories(
         [DB.BuiltInCategory.OST_Doors]
         )
-    value_func = get_value_func()
-    doors_data = [value_func(x.Id) for x in doors]
+    get_elementid_value = get_elementid_value_func()
+    doors_data = [get_elementid_value(x.Id) for x in doors]
     return routes.make_response(
         data=doors_data,
         headers={"pyRevit": "v4.6.7"}

@@ -5,9 +5,9 @@ Select group members instead of parent group elements.
 """
 #pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
-value_func = get_value_func()
+get_elementid_value = get_elementid_value_func()
 
 # get view elements
 viewelements = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
@@ -16,11 +16,11 @@ viewelements = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
 # remove anything that is a direct DB.Element obj
 # these are the weird internal objects that Revit uses like a camera obj
 view_element_ids = \
-    {value_func(x.Id) for x in viewelements if x.GetType() is not DB.Element}
+    {get_elementid_value(x.Id) for x in viewelements if x.GetType() is not DB.Element}
 
 # get current selection
 selection = revit.get_selection()
-selected_element_ids = {value_func(x.Id) for x in selection}
+selected_element_ids = {get_elementid_value(x.Id) for x in selection}
 
 # find elements that are not selected
 invert_ids = view_element_ids.difference(selected_element_ids)
@@ -32,7 +32,7 @@ filtered_invert_ids = invert_ids.copy()
 if not __shiftclick__: #pylint: disable=undefined-variable
     # collect ids of elements inside a group
     grouped_element_ids = \
-        [value_func(x.Id) for x in viewelements
+        [get_elementid_value(x.Id) for x in viewelements
          if x.GetType() is not DB.Element
          and x.GroupId != DB.ElementId.InvalidElementId]
 

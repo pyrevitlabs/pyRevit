@@ -1,13 +1,13 @@
 from pyrevit import revit, DB, UI
 from pyrevit import script
 from pyrevit import forms
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 logger = script.get_logger()
 
 selection = revit.get_selection()
 
-value_func = get_value_func()
+get_elementid_value = get_elementid_value_func()
 
 linkedModelName = ''
 
@@ -27,7 +27,7 @@ if len(selection) > 0:
                     newWs = DB.Workset.Create(revit.doc, linkedModelName)
                     worksetParam = \
                         el.Parameter[DB.BuiltInParameter.ELEM_PARTITION_PARAM]
-                    worksetParam.Set(value_func(newWs.Id))
+                    worksetParam.Set(get_elementid_value(newWs.Id))
                 except Exception as e:
                     print('Workset: {} already exists\nError: {}'.format(linkedModelName,e))
 else:

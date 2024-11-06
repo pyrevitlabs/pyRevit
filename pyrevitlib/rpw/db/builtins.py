@@ -18,7 +18,7 @@ from rpw import revit, DB
 from rpw.base import BaseObject, BaseObjectWrapper
 from rpw.utils.dotnet import Enum
 from rpw.exceptions import RpwCoerceError
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 class _BiParameter(BaseObjectWrapper):
@@ -156,7 +156,8 @@ class _BiCategory(BaseObjectWrapper):
         Returns:
             ``DB.BuiltInCategory`` member
         """
-        cat_id_value = value_func(category_id)
+        get_elementid_value = get_elementid_value_func()
+        cat_id_value = get_elementid_value(category_id)
         if cat_id_value < -1 and Enum.IsDefined(DB.BuiltInCategory, cat_id_value):
             return Enum.ToObject(DB.BuiltInCategory, cat_id_value)
         else:

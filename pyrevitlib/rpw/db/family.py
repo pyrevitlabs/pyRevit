@@ -29,7 +29,6 @@ from rpw.utils.logger import logger, deprecate_warning
 from rpw.utils.mixins import CategoryMixin
 from rpw.db.builtins import BicEnum
 from rpw.db.category import Category
-from pyrevit.compat import get_value_func
 
 
 class FamilyInstance(Element, CategoryMixin):

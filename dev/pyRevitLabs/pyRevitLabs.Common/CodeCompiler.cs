@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
@@ -152,7 +153,10 @@ namespace pyRevitLabs.Common {
             refs.Add(typeof(object).Assembly.Location);
             foreach (var refFile in references)
                 refs.Add(refFile);
-
+#if NET8_0_OR_GREATER
+            refs.Add(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "mscorlib.dll"));
+            refs.Add(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "netstandard.dll"));
+# endif
             messages = new List<string>();
             messages.Add($"Define: {string.Join(";", defines)}");
             var mdataRefs = new List<MetadataReference>();
@@ -345,6 +349,6 @@ namespace pyRevitLabs.Common {
                 options: compileOpts
                 );
         }
+        #endregion
     }
-    #endregion
 }

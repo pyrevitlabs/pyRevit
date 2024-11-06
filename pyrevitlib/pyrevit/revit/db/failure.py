@@ -3,7 +3,7 @@ from pyrevit import HOST_APP, DB
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -87,7 +87,7 @@ class FailureSwallower(DB.IFailuresPreprocessor):
 
         # go through failures and attempt resolution
         action_taken = False
-        value_func = get_value_func()
+        get_elementid_value = get_elementid_value_func()
         for failure in failures:
 
             failure_id = failure.GetFailureDefinitionId()
@@ -101,7 +101,7 @@ class FailureSwallower(DB.IFailuresPreprocessor):
             mlogger.debug('\tseverity: %s', failure_severity)
             mlogger.debug('\tdescription: %s', failure_desc)
             mlogger.debug('\telements: %s',
-                          [value_func(x)
+                          [get_elementid_value(x)
                            for x in failure.GetFailingElementIds()])
             mlogger.debug('\thas resolutions: %s', failure_has_res)
 

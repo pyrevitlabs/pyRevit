@@ -3,7 +3,7 @@ import re
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import reverse_dict, get_str_hash
 from pyrevit import DB
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 
 logger = get_logger(__name__)
@@ -79,8 +79,8 @@ def element_hash(rvt_element, include_type=False, diff_results=None):
 
 
 def element_hash_dict(element_list, include_type=False, diff_results=None):
-    value_func = get_value_func()
-    return {value_func(el.Id): element_hash(el, include_type, diff_results)
+    get_elementid_value = get_elementid_value_func()
+    return {get_elementid_value(el.Id): element_hash(el, include_type, diff_results)
             for el in element_list}
 
 

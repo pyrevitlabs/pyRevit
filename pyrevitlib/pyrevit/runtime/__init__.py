@@ -10,7 +10,7 @@ from pyrevit import framework
 from pyrevit.framework import List, Array
 from pyrevit import api
 from pyrevit import labs
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import safe_strtype, NETCORE
 from pyrevit import BIN_DIR, RUNTIME_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils import assmutils
@@ -19,7 +19,6 @@ from pyrevit.coreutils import appdata
 from pyrevit.loader import HASH_CUTOFF_LENGTH
 from pyrevit.userconfig import user_config
 import pyrevit.extensions as exts
-
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = logger.get_logger(__name__)
@@ -105,7 +104,7 @@ if not EXEC_PARAMS.doc_mode:
                 INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
             )
             + EXEC_PARAMS.engine_ver
-            + str(CPYTHON_ENGINE.Version)
+            + str(CPYTHON_ENGINE.Version) if CPYTHON_ENGINE else "0"
             )[:HASH_CUTOFF_LENGTH]
     RUNTIME_ASSM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
@@ -239,13 +238,13 @@ def get_references():
     Returns:
         (list): referenced assemblies
     """
-    # 'IronRuby', 'IronRuby.Libraries',
     ref_list = [
         # system stuff
         'System', 'System.Core', 'System.Runtime', 'System.Linq', 'System.Collections',
+        'System.Collections.Immutable', 'System.Console',
         'System.Xaml', 'System.Web', 'System.Xml', 'System.Numerics',
-        'System.Drawing', 'System.Drawing.Common', 'System.Windows.Forms',
-        'System.ComponentModel.Primitives',
+        'System.Drawing', 'System.Windows.Forms',
+        'System.ComponentModel.Primitives', 'System.ComponentModel.TypeConverter',
         'PresentationCore', 'PresentationFramework',
         'WindowsBase', 'WindowsFormsIntegration',
         # legacy csharp/vb.net compiler
@@ -268,13 +267,21 @@ def get_references():
         'pyRevitLabs.TargetApps.Revit',
         'pyRevitLabs.PyRevit',
         'pyRevitLabs.PyRevit.Runtime.Shared',
-        ]
+    ]
+
+    # netcore depends
+    if NETCORE:
+        ref_list.extend(['System.Drawing.Common',
+                         'System.Diagnostics.Process',
+                         'System.Diagnostics.FileVersionInfo',
+                         'System.Text.RegularExpressions'])
 
     # another revit api
     if HOST_APP.is_newer_than(2018):
         ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
-    return [_get_reference_file(ref_name) for ref_name in ref_list]
+    refs = (_get_reference_file(ref_name) for ref_name in ref_list)
+    return [r for r in refs if r]
 
 
 def _generate_runtime_asm():

@@ -1,12 +1,12 @@
 from pyrevit import revit, DB, script, forms
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 output = script.get_output()
 output.close_others()
 
 doc = revit.doc
 
-value_func = get_value_func()
+get_elementid_value = get_elementid_value_func()
 
 legends = [
     x for x in DB.FilteredElementCollector(doc)
@@ -15,7 +15,7 @@ legends = [
     .ToElements()
     if x.ViewType == DB.ViewType.Legend]
 
-legends_ids = [value_func(x.Id) for x in legends]
+legends_ids = [get_elementid_value(x.Id) for x in legends]
 
 sheets = (
     DB.FilteredElementCollector(doc)
@@ -29,7 +29,7 @@ results = []
 for sheet in sheets:
     vps = sheet.GetAllPlacedViews()
     for vp in vps:
-        if value_func(vp) in legends_ids:
+        if get_elementid_value(vp) in legends_ids:
             results.append((output.linkify(doc.GetElement(vp).Id), doc.GetElement(
                 vp).Name, output.linkify(sheet.Id), sheet.SheetNumber, sheet.Name))
 

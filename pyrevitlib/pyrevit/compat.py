@@ -8,11 +8,17 @@ Examples:
 """
 
 import sys
+import System
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-IRONPY2712 = sys.version_info[:3] == (2, 7, 12)
-IRONPY340 = sys.version_info[:3] == (3, 4, 0)
+IRONPY = '.net' in sys.version.lower()
+IRONPY2 = PY2 and IRONPY
+IRONPY3 = PY3 and IRONPY
+NETCORE = System.Environment.Version.Major >= 8  # Revit 2025 onwards
+NETFRAMEWORK = not NETCORE # Revit 2024 and earlier
+NO_REVIT = -1
+REVIT_NETCORE_VERSION = 2025
 
 #pylint: disable=import-error,unused-import
 if PY3:
@@ -33,22 +39,21 @@ elif PY3:
     from urllib.parse import urlparse
 
 
-def is_netcore():
-    """Returns True if the current Revit version uses .NET Core (from 2025 onward)."""
+def _get_revit_version():
+    """Returns the current Revit version as an integer."""
     if __revit__ is None:
-        return False
-    netcore_version = 2025
+        return NO_REVIT
     try:
         # UIApplication
-        return int(__revit__.Application.VersionNumber) >= netcore_version
+        return int(__revit__.Application.VersionNumber)
     except AttributeError:
         pass
     try:
         # Application, (ControlledApplication)
-        return int(__revit__.VersionNumber) >= netcore_version
+        return int(__revit__.VersionNumber)
     except AttributeError:
-        # UIControlledApplication
-        return int(__revit__.ControlledApplication.VersionNumber) >= netcore_version
+        # ControlledApplication
+        return int(__revit__.ControlledApplication.VersionNumber)
 
 
 #pylint: disable=C0103
@@ -58,33 +63,28 @@ if PY2:
     safe_strtype = lambda x: unicode(x)  #pylint: disable=E0602,unnecessary-lambda
 
 
-def get_value_func():
-        """Determines and returns the appropriate value extraction function based on the host application's version. Follows API changes in Revit 2024.
+def get_elementid_value_func():
+    """Returns the ElementId value extraction function based on the Revit version.
+    
+    Follows API changes in Revit 2024.
 
-        Returns:
-            function: A function that takes an item as an argument and returns its value. 
-                      If the host application version is newer than 2023, it returns the `get_value_post2024` function, 
-                      which extracts the `Value` attribute from the item. 
-                      Otherwise, it returns the `get_value_pre2024` function, which extracts the `IntegerValue` attribute from the item.
-    
-        Functions:
-            get_value_post2024(item): Extracts the `Value` attribute from the given item.
-            get_value_pre2024(item): Extracts the `IntegerValue` attribute from the given item.
-        
-        Examples:
-            ```python
-            value_func = get_value_func()
-            sheet_revids = {value_func(x) for x in self.revit_sheet.GetAllRevisionIds()}
-            add_sheet_revids = {value_func(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
-            ```
-        """
-        def get_value_post2024(item):
-            return item.Value
-    
-        def get_value_pre2024(item):
-            return item.IntegerValue
-    
-        return get_value_post2024 if __revit__.Application.is_newer_than(2023) else get_value_pre2024
+    Returns:
+        function: A function returns the value of an ElementId.
+
+    Examples:
+        ```python
+        get_elementid_value = get_elementid_value_func()
+        sheet_revids = {get_elementid_value(x) for x in self.revit_sheet.GetAllRevisionIds()}
+        add_sheet_revids = {get_elementid_value(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
+        ```
+    """
+    def get_value_post2024(item):
+        return item.Value
+
+    def get_value_pre2024(item):
+        return item.IntegerValue
+
+    return get_value_post2024 if _get_revit_version() > 2023 else get_value_pre2024
 
 
 def urlopen(url):

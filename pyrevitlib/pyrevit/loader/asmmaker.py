@@ -3,7 +3,7 @@ import os.path as op
 from collections import namedtuple
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
-from pyrevit.compat import is_netcore
+from pyrevit.compat import NETCORE
 from pyrevit import framework
 from pyrevit.framework import AppDomain, Version
 from pyrevit.framework import AssemblyName, AssemblyBuilderAccess
@@ -96,7 +96,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     mlogger.debug('Generated assembly file name for this package: %s',
                   ext_asm_full_file_name)
 
-    if is_netcore():
+    if NETCORE:
         asm_builder = AssemblyBuilder.DefineDynamicAssembly(
             win_asm_name,
             AssemblyBuilderAccess.Run)
@@ -120,7 +120,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
         mlogger.debug('Creating types for command: %s', cmd_component)
         typemaker.make_bundle_types(extension, cmd_component, module_builder)
 
-    if is_netcore():
+    if NETCORE:
         from Lokad.ILPack import AssemblyGenerator
         generator = AssemblyGenerator()
         generator.GenerateAssembly(asm_builder, ext_asm_file_path)

@@ -20,11 +20,6 @@ namespace HelloWorld {
             logger.Debug("Logger works...");
             Console.WriteLine(execParams.ScriptPath);
 
-            Debugger.Break();
-            int m = 12;
-            Console.WriteLine(m);
-            Debugger.Break();
-
             TaskDialog.Show(execParams.CommandName, "Hello World from C#!");
 
             // test access to bundle path

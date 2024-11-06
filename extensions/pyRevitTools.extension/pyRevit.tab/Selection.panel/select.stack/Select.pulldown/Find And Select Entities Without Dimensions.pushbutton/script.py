@@ -2,7 +2,7 @@
 #pylint: disable=import-error,invalid-name
 from pyrevit import revit, DB, HOST_APP
 from pyrevit import forms
-from pyrevit.compat import get_value_func
+from pyrevit.compat import get_elementid_value_func
 
 categories = {
     'Rooms': DB.BuiltInCategory.OST_Rooms,
@@ -19,7 +19,7 @@ categories = {
     'Columns': DB.BuiltInCategory.OST_StructuralColumns,
     }
 
-value_func = get_value_func()
+get_elementid_value = get_elementid_value_func()
 
 # make sure active view is not a sheet
 if isinstance(revit.active_view, DB.ViewSheet):
@@ -37,7 +37,7 @@ if selected_switch:
     all_elements = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
                      .OfCategory(target)\
                      .WhereElementIsNotElementType()
-    all_ids = set(value_func(x.Id) for x in all_elements)
+    all_ids = set(get_elementid_value(x.Id) for x in all_elements)
 
     all_dims = \
         DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
@@ -50,7 +50,7 @@ if selected_switch:
             if HOST_APP.is_newer_than(2023):
                 dimmed_ids.add(ref.ElementId.Value)
             else:
-                dimmed_ids.add(value_func(ref.ElementId))
+                dimmed_ids.add(get_elementid_value(ref.ElementId))
 
     # find non dimmed
     not_dimmed_ids = all_ids.difference(dimmed_ids)
