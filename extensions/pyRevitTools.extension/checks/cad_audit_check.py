@@ -21,8 +21,7 @@ def collect_cadinstances(active_view_only):
     cadinstances = collector.OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
     if cadinstances:
         return cadinstances
-    else:
-        alert("No CAD instances found in the {}.".format("active view" if active_view_only else "model"), exitscript=True)
+
 
 # Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
 def cancel_clicked(sender, e):
