@@ -41,7 +41,7 @@ def get_tempbbox(toggle_cads, toggle_rvts, toggle_ifcs, toggle_all):
             cads = (DB.FilteredElementCollector(doc).
                     OfClass(DB.ImportInstance).
                     ToElements())
-            if len(cads) == 0:
+            if not cads:
                 print("No CAD Links in the model")
             else:
                 for cad in cads:
@@ -111,8 +111,7 @@ def convert_values(value, document=doc):
                     .DisplayUnits)
 
     ui_values = DB.UnitUtils.ConvertFromInternalUnits(value, ui_units)
-    ui_values = round(ui_values, 3)
-    return ui_values
+    return round(ui_values, 3)
 
 
 # ___________________________________________________________ Convert Units
@@ -136,9 +135,7 @@ def calculate_distance(point1, point2):
     x1, y1, z1 = point1
     x2, y2, z2 = point2
     # Calculate the distance using the Euclidean distance formula
-    distance =( #rounded to the nearest inch
-        math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2))
-    return distance
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
 
 
 # ________________________________________________ Calculate Horizontal Distance
@@ -147,10 +144,9 @@ def calculate_horizontal_distance(point1, point2):
     x1, y1, z1 = point1
     x2, y2, z2 = point2
     # Calculate the distance using the Euclidean distance formula
-    distance = (
-        math.sqrt((x2 - x1)**2 + (y2 - y1)**2))
     delta_x = (x2 - x1)
     delta_y = (y2 - y1)
+    distance = math.sqrt(delta_x**2 + delta_y**2)
     return distance, delta_x, delta_y
 
 
@@ -160,16 +156,13 @@ def calculate_angle(point1, point2):
     x1, y1, z1 = point1
     x2, y2, z2 = point2
     # Calculate the angle using the arctangent function
-    angle = round(math.degrees(math.atan2(y2 - y1, x2 - x1)), 2)
-    return angle
+    return round(math.degrees(math.atan2(y2 - y1, x2 - x1)), 2)
 
 
 # _____________________________________________________________ Get Bounding Box
 def get_bounding_box(view):
     bb = view.CropBox
-    min = bb.Min
-    max = bb.Max
-    return min, max
+    return bb.Min, bb.Max
 
 
 # _________________________________________________________ Analyze Bounding Box
@@ -201,8 +194,7 @@ def get_project_base_and_survey_pts(document=doc):
 
 # _______________________________________________________________Get Model Units
 def get_model_units_type(document=doc):
-    unitsystem = document.DisplayUnitSystem
-    return unitsystem
+    return document.DisplayUnitSystem
 
 
 # _________________________________________________ Get Design Options & Objects
@@ -244,10 +236,10 @@ def check_model_extents(document=doc):
     print(divider)
     # _____________________________Check the distances of base and survey points
     baspt, survpt = get_project_base_and_survey_pts(document)
-    basptdistance = abs(calculate_distance(baspt, INTERNAL_ORIGIN))
+    basptdistance = calculate_distance(baspt, INTERNAL_ORIGIN)
     surveydistance = abs(calculate_distance(survpt, INTERNAL_ORIGIN))
 
-    if basptdistance > EXTENT_DISTANCE:
+    if abs(basptdistance) > EXTENT_DISTANCE:
         output.print_md(BAD_STRG + 
         'Base Point is more than ' + CRITERIA_STRG)
     if surveydistance > EXTENT_DISTANCE:
@@ -256,7 +248,6 @@ def check_model_extents(document=doc):
     else:
         output.print_md(GOOD_STRG + 
         'Survey Point is less than ' + CRITERIA_STRG)
-    basptdistance = calculate_distance(baspt, INTERNAL_ORIGIN)
     # ____________________________________Calculate the angle between the points
     baseptangle = calculate_angle(baspt, INTERNAL_ORIGIN)
     surveyptangle = calculate_angle(survpt, INTERNAL_ORIGIN)
