@@ -50,7 +50,7 @@ def grids_scoped(document=doc):
     return scoped_grids
 
 
-def checkModel(doc, output):
+def check_model(doc, output):
     output = script.get_output()
     output.close_others()
     output.print_md("# Grids Data Lister")
