@@ -61,12 +61,14 @@ def get_cad_site(cad_inst):
 
 def get_user_input():
     """ create RPW input FlexForm for user choice of collection mode (coll_mode) whole model or just active view """
-    flexform_comp = [Label("Audit CAD instances:")]
-    flexform_comp.append(RadioButton("model", "in this project", True, GroupName="grp")) # GroupName implemented in class through kwargs
-    flexform_comp.append(RadioButton("active_view", "in only the active view", False, GroupName="grp"))
-    flexform_comp.append(Separator())
-    flexform_comp.append(Button("CANCEL", on_click=ButtonClass.cancel_clicked))
-    flexform_comp.append(Button("OK"))
+    flexform_comp = [
+        Label("Audit CAD instances:"),
+        RadioButton("model", "in this project", True, GroupName="grp"), # GroupName implemented in class through kwargs
+        RadioButton("active_view", "in only the active view", False, GroupName="grp"),
+        Separator(),
+        Button("CANCEL", on_click=ButtonClass.cancel_clicked),
+        Button("OK"),
+    ]
 
     user_input = FlexForm("Audit of CAD instances in the current project", flexform_comp, Width=500, Height=200) # returns a FlexForm object
     user_input.show()
