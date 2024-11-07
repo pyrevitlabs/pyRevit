@@ -1181,10 +1181,7 @@ def checkModel(doc, output):
     # sorting results in chart legend
     worksetNames.sort()
 
-    worksetsSet = []
-    for i in worksetNames:
-        count = graphWorksetsData.count(i)
-        worksetsSet.append(count)
+    worksetsSet = [graphWorksetsData.count(i) for i in worksetNames]
     worksetNames = [x.encode("utf8") for x in worksetNames]
 
     # Worksets OUTPUT print chart only when file is workshared
