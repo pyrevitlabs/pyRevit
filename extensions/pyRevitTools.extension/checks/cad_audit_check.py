@@ -25,12 +25,10 @@ def collect_cadinstances(active_view_only):
         alert("No CAD instances found in the {}.".format("active view" if active_view_only else "model"), exitscript=True)
 
 # Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
-class ButtonClass(Window): # to handle button event (https://stackoverflow.com/questions/54756424/using-the-on-click-option-for-a-revit-rpw-flexform-button)
-    @staticmethod
-    def cancel_clicked(sender, e):
-        window = Window.GetWindow(sender)
-        window.close()
-        script.exit()
+def cancel_clicked(sender, e):
+    window = Window.GetWindow(sender)
+    window.close()
+    script.exit()
 
 # Add radio button functionality to RPW Flexforms
 class RadioButton(RpwControlMixin, Controls.RadioButton):
