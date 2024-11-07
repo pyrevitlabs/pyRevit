@@ -31,10 +31,7 @@ def grids_types(document=doc):
 
 def grids_pinned(document=doc):
     grids = grids_collector(document)
-    pinned_grids = []
-    for grid in grids:
-        pinned_grids.append(grid.Pinned)
-    return pinned_grids
+    return [grid.Pinned for grid in grids]
 
 
 def grids_scoped(document=doc):

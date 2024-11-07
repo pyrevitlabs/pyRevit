@@ -29,9 +29,7 @@ def load_wall_list():
 
     # Load JSON data
     with open(json_file_path, "r") as f:
-        data = json.load(f)
-
-    return data["allowed_wall_types"]
+        return json.load(f)
 
 
 # Define function to display text in red
@@ -48,24 +46,19 @@ def check_model(doc, output):
 
     # Get all wall elements and their names
     walls = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).WhereElementIsNotElementType().ToElements()
-    wall_names = [wall.Name for wall in walls]
-
     # Count occurrences of each wall name
-    wall_list_counts = Counter(wall_names)
+    wall_counts = Counter((wall.Name for wall in walls))
 
     # Load wall list from JSON
     wall_list = load_wall_list()
 
     # Initialize results dictionary for found and wrong wall types
-    wall_comparison_result = {
-        "found": {wall_type: count for wall_type, count in wall_list_counts.items() if wall_type in wall_list},
-        "wrong": [wall_type for wall_type in wall_list_counts if wall_type not in wall_list]
-    }
+    wrong_wall_names = set(wall_counts) - allowed_wall_names
 
     # Prepare data for output table
     data = [
-        (wall_type, count, "Wrong Name" if wall_type in wall_comparison_result["wrong"] else "")
-        for wall_type, count in wall_list_counts.items()
+        (wall_type, count, "Wrong Name" if wall_type in wrong_wall_names else "")
+        for wall_type, count in wall_counts.items()
     ]
 
     # Print table and highlight incorrect wall names
@@ -76,9 +69,9 @@ def check_model(doc, output):
         formats=['', '{}', '']
     )
 
-    if wall_comparison_result["wrong"]:
+    if wrong_wall_names:
         output.print_md('## Incorrectly Named Wall Types Found:')
-        for wrong in wall_comparison_result["wrong"]:
+        for wrong in wrong_wall_names:
             print_red(output, wrong)
 
 

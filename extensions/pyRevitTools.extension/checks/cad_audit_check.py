@@ -82,20 +82,18 @@ def get_load_stat(cad, is_link):
     """ Loaded status from the import instance's CADLinkType """
     cad_type = doc.GetElement(cad.GetTypeId()) # Retreive the type from the instance
     
-    if is_link:
-        exfs = cad_type.GetExternalFileReference()
-        status = exfs.GetLinkedFileStatus().ToString()
-        if status == "NotFound":
-            status = ":cross_mark: NotFound"
-        elif status == "Unloaded":
-            status = ":heavy_multiplication_x: Unloaded"        
-    else:
-        status = ":warning: IMPORTED" # Not an external reference
-
-    return status
+    if not is_link:
+        return ":warning: IMPORTED" # Not an external reference
+    exfs = cad_type.GetExternalFileReference()
+    status = exfs.GetLinkedFileStatus().ToString()
+    if status == "NotFound":
+        return ":cross_mark: NotFound"
+    if status == "Unloaded":
+        return ":heavy_multiplication_x: Unloaded"
+    raise ValueError("Unexpected status {}".format(status))
 
 
-def checkModel(doc, output):
+def check_model(doc, output):
     timer = Timer()
     output = script.get_output()
     output.close_others()
@@ -107,17 +105,17 @@ def checkModel(doc, output):
     table_data = [] # store array for table formatted output
     row_head = ["No", "Select/Zoom", "DWG instance", "Loaded status", "Workplane or single view", "Duplicate", "Workset", "Creator user", "Location site name"] # output table first and last row
     cad_instances = collect_cadinstances(coll_mode)
-    for cad in cad_instances:
-        count = 0
+    for count, cad in enumerate(cad_instances, start=1):
         cad_id = cad.Id
         cad_is_link = cad.IsLinked
         cad_name = cad.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
 
-        table_row = []
-        table_row.append(count+1)
-        table_row.append(output.linkify(cad_id, title="{}".format("Select")))
-        table_row.append(cad_name)
-        table_row.append(get_load_stat(cad, cad_is_link)) # loaded status
+        table_row = [
+            count,
+            output.linkify(cad_id, title="Select"),
+            cad_name,
+            get_load_stat(cad, cad.IsLinked), # loaded status
+        ]
 
         # if the instance has an owner view, it was placed on the active view only (bad, so give warning and show the view name)
         # if the instance has no owner view, it should have a level or workplane (good)
@@ -181,4 +179,4 @@ class ModelChecker(PreflightTestCase):
 
 
     def startTest(self, doc, output):
-        checkModel(doc, output)
+        check_model(doc, output)
