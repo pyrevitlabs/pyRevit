@@ -1185,7 +1185,7 @@ def checkModel(doc, output):
     worksetNames = [x.encode("utf8") for x in worksetNames]
 
     # Worksets OUTPUT print chart only when file is workshared
-    if len(worksetNames) > 0:
+    if worksetNames:
         chartWorksets = output.make_doughnut_chart()
         chartWorksets.options.title = {
             "display": True,
