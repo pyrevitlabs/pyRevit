@@ -73,7 +73,7 @@ def get_user_input():
     user_input = FlexForm("Audit of CAD instances in the current project", flexform_comp, Width=500, Height=200) # returns a FlexForm object
     user_input.show()
     user_input_dict = user_input.values # This is a dictionary
-    if not bool(user_input_dict): # check if dict not empty (a bool of non-empty dict is True)
+    if not user_input_dict:
         script.exit()
 
     return user_input_dict
