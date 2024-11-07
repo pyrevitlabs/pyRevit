@@ -16,7 +16,7 @@ from pyrevit.preflight import PreflightTestCase
 import os
 import json
 
-def load_wall_list():
+def pick_json():
     # Set default directory
     default_dir = os.path.dirname(__file__)
 
