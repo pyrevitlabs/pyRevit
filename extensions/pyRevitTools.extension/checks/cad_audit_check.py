@@ -17,10 +17,8 @@ ac_view = doc.ActiveView
 
 def collect_cadinstances(active_view_only):
     """     Collect ImportInstance class from whole model or from just active view  """
-    if active_view_only:
-        cadinstances = DB.FilteredElementCollector(doc, ac_view.Id).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
-    else:
-        cadinstances = DB.FilteredElementCollector(doc).OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
+    collector = DB.FilteredElementCollector(doc, ac_view.Id) if active_view_only else DB.FilteredElementCollector(doc)
+    cadinstances = collector.OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
     if cadinstances:
         return cadinstances
     else:
