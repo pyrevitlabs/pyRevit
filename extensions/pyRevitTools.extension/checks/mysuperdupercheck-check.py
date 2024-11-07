@@ -6,8 +6,7 @@ doc = DOCS.doc
 
 
 def grids_collector(document):
-    grids = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Grids).WhereElementIsNotElementType()
-    return grids
+    return DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Grids).WhereElementIsNotElementType()
 
 
 def grids_count(document=doc):
