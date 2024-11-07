@@ -11,8 +11,7 @@ def grids_collector(document):
 
 def grids_count(document=doc):
     grids = grids_collector(document)
-    count = grids.GetElementCount()
-    return count
+    return grids.GetElementCount()
 
 
 def grids_names(document=doc):
