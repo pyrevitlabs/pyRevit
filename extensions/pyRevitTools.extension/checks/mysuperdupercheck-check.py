@@ -77,4 +77,4 @@ class ModelChecker(PreflightTestCase):
     author = "Jean-Marc Couffin"
 
     def startTest(self, doc, output):
-        checkModel(doc, output)
+        check_model(doc, output)
