@@ -18,10 +18,7 @@ def grids_count(document=doc):
 
 def grids_names(document=doc):
     grids = grids_collector(document)
-    grids_names = []
-    for grid in grids:
-        grids_names.append(grid.Name)
-    return grids_names
+    return [grid.Name for grid in grids]
 
 
 def grids_types(document=doc):
