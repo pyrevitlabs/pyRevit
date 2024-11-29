@@ -3,7 +3,7 @@ import clr
 clr.AddReference('ProtoGeometry')
 from Autodesk.DesignScript.Geometry import *
 from re import split
-import math
+from math import fabs
 from random import randint
 import os.path
 import inspect
@@ -394,7 +394,7 @@ class createFilters(IExternalEventHandler):
                                     minimo = min(item.values_double)
                                     maximo = max(item.values_double)
                                     avg_values = (maximo+minimo)/2
-                                    equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, avg_values, math.fabs(avg_values-minimo)+0.001)
+                                    equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, avg_values, fabs(avg_values-minimo)+0.001)
                             elif param_storage_type == StorageType.ElementId:
                                 if item._value =="None":
                                     prevalue = ElementId.InvalidElementId
