@@ -65,12 +65,12 @@ class subscribeView(IExternalEventHandler):
                     if wndw:
                         if not new_doc.Equals(doc):
                             wndw.Close()
-                #Update categories in dropdown
+                # Update categories in dropdown
                 new_view = getActiveView(e.Document)
                 if new_view != 0:
-                    #Unsubcribe
+                    # Unsubcribe
                     wndw._listBox2.SelectedIndexChanged -= wndw.lstselectedIndexChanged
-                    #Update categories for new view
+                    # Update categories for new view
                     wndw.crt_view = new_view
                     categ_inf_used_up = getCategoriesAndParametersInUsed(cat_excluded, wndw.crt_view)
                     wndw._tableData = DataTable("Data")
@@ -81,7 +81,7 @@ class subscribeView(IExternalEventHandler):
                     [wndw._tableData.Rows.Add(key_, value_ ) for key_, value_ in zip(names, categ_inf_used_up)]
                     wndw._categories.DataSource = wndw._tableData 
                     wndw._categories.DisplayMember = "Key"
-                    #Vaciar range of values
+                    # Empty range of values
                     wndw._tableData3 = DataTable("Data")
                     wndw._tableData3.Columns.Add("Key", System.String)
                     wndw._tableData3.Columns.Add("Value", System.Object)
@@ -111,7 +111,7 @@ class applyColors(IExternalEventHandler):
                 sel_cat = wndw._categories.SelectedItem['Value']
                 get_elementid_value = get_elementid_value_func()
                 if get_elementid_value(sel_cat._cat.Id) in (int(BuiltInCategory.OST_Rooms), int(BuiltInCategory.OST_MEPSpaces), int(BuiltInCategory.OST_Areas)):
-                    #In case of rooms, spaces and areas. Check Color scheme is applied and if not
+                    # In case of rooms, spaces and areas. Check Color scheme is applied and if not
                     if version > 2021:
                         if str(wndw.crt_view.GetColorFillSchemeId(sel_cat._cat.Id)) == "-1":
                             fColorScheme = FilteredElementCollector(new_doc).OfClass(ColorFillScheme).ToElements()
@@ -161,7 +161,7 @@ class resetColors(IExternalEventHandler):
                 t = Transaction(new_doc, "Reset colors in elements")
                 t.Start()
                 try:
-                    #Get and ResetView Filters
+                    # Get and ResetView Filters
                     sel_cat = wndw._categories.SelectedItem['Value']
                     sel_par = wndw._listBox1.SelectedItem['Value']
                     filter_name = sel_cat._name + "/"
@@ -177,7 +177,7 @@ class resetColors(IExternalEventHandler):
                                     pass
                 except Exception as e:
                     pass
-                #Reset visibility
+                # Reset visibility
                 for id in collector:
                     view.SetElementOverrides(id, ogs)
                 t.Commit()
@@ -195,7 +195,7 @@ class createLegend(IExternalEventHandler):
         try:
             new_doc = uiapp.ActiveUIDocument.Document
             rvt_ver = int(uiapp.Application.VersionNumber)
-            #Get legend view
+            # Get legend view
             collector = FilteredElementCollector(new_doc).OfClass(Autodesk.Revit.DB.View).ToElements()
             legends=[]
             for vw in collector:
@@ -203,7 +203,7 @@ class createLegend(IExternalEventHandler):
                     legends.Add(vw)
                     break
             if len(legends)>0:
-                #Duplicate existing legend
+                # Duplicate existing legend
                 t = Transaction(new_doc, "Create Legend")
                 t.Start()
                 trans = SubTransaction(new_doc)
@@ -232,7 +232,7 @@ class createLegend(IExternalEventHandler):
                             break
                 get_elementid_value = get_elementid_value_func()
                 if get_elementid_value(ele_id_type) == 0:
-                     #Get any text in model
+                     # Get any text in model
                     all_text_notes = FilteredElementCollector(new_doc).OfClass(TextNoteType).ToElements()
                     for ele in all_text_notes:
                         ele_id_type = ele.Id
@@ -241,7 +241,7 @@ class createLegend(IExternalEventHandler):
                 sel_par = wndw._listBox1.SelectedItem['Value']
                 list_max_X = []
                 list_y = []
-                #FilledRegionType
+                # FilledRegionType
                 filled_type=[]
                 all_types = FilteredElementCollector(new_doc).OfClass(FilledRegionType).ToElements()
                 for ty in all_types:
@@ -251,10 +251,10 @@ class createLegend(IExternalEventHandler):
                             if ty.ForegroundPatternColor.IsValid:
                                 filled_type.Add(ty)
                                 break
-                #Create Type if none is fill
+                # Create Type if none is fill
                 if len(filled_type) == 0 and len(all_types) > 0:
                     it = 1
-                    #Duplicate existing fillregiontype
+                    # Duplicate existing fillregiontype
                     while True:
                         try:
                             new_type = all_types[0].Duplicate("Fill Region " + str(it))
@@ -263,7 +263,7 @@ class createLegend(IExternalEventHandler):
                             it +=1
                             if it == 100:
                                 break
-                    #Create pattern
+                    # Create pattern
                     it = 1
                     while True:
                         try:
@@ -274,10 +274,10 @@ class createLegend(IExternalEventHandler):
                             it +=1
                             if it == 100:
                                 break
-                    #Assign to type
+                    # Assign to type
                     new_type.ForegroundPatternId = new_elePat.Id
                     filled_type.Add(new_type)
-                #Create Text
+                # Create Text
                 for vw_item in wndw._listBox2.Items:
                     punto = XYZ(0,0,0)
                     index = wndw._listBox2.Items.IndexOf(vw_item)
@@ -295,7 +295,7 @@ class createLegend(IExternalEventHandler):
                     height = prev_bbox.Max.Y - prev_bbox.Min.Y
                 ini_x = max(list_max_X)
                 ogs = OverrideGraphicSettings()
-                #Create filled color region
+                # Create filled color region
                 for indx in range(len(list_y)):
                     coord_y = list_y[indx]
                     item = wndw._listBox2.Items[indx]['Value']
@@ -315,7 +315,7 @@ class createLegend(IExternalEventHandler):
                     curveLoops.Append(line30)
                     list_curveLoops.Add(curveLoops)
                     reg = FilledRegion.Create(new_doc, filled_type[0].Id, newLegend.Id, list_curveLoops)
-                    #Assign color filled region
+                    # Assign color filled region
                     color = Autodesk.Revit.DB.Color(item._n1, item._n2, item._n3)
                     ogs.SetProjectionLineColor(color)
                     ogs.SetSurfaceForegroundPatternColor(color);
@@ -347,7 +347,7 @@ class createFilters(IExternalEventHandler):
                 for filt_Id in view.GetFilters():
                     filter_ele = new_doc.GetElement(filt_Id)
                     dict_filters.Add(filter_ele.Name, filt_Id)
-                #Get rules apply in document
+                # Get rules apply in document
                 dict_rules = {}
                 iterator = FilteredElementCollector(new_doc).OfClass(Autodesk.Revit.DB.ParameterFilterElement).GetElementIterator()
                 while iterator.MoveNext():
@@ -373,7 +373,7 @@ class createFilters(IExternalEventHandler):
                         ogs.SetCutForegroundPatternColor(color)
                         ogs.SetSurfaceForegroundPatternId(sf)
                         ogs.SetCutForegroundPatternId(sf)
-                        #Get filters apply to view
+                        # Get filters apply to view
                         filter_name = sel_cat._name + "/" + sel_par._name + " - " + item._value
                         filter_name = filter_name.strip("{}[]:\|?/<>*")
                         if dict_filters.ContainsKey(filter_name) or dict_rules.ContainsKey(filter_name):
@@ -381,7 +381,7 @@ class createFilters(IExternalEventHandler):
                                 view.AddFilter(dict_rules[filter_name])
                                 view.SetFilterOverrides(dict_rules[filter_name], ogs)
                             else:
-                                #Reassign filter
+                                # Reassign filter
                                 view.SetFilterOverrides(dict_filters[filter_name], ogs)
                         else:
                             # Create filter
@@ -561,7 +561,7 @@ def getRangeOfValues(category, param, new_view):
             break
     collector = FilteredElementCollector(doc, new_view.Id).OfCategory(bic).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements()
     list_values=[]
-    #Iterar todos los elementos y conseguir valores unicos
+    # Iterar todos los elementos y conseguir valores unicos
     for ele in collector:
         ele_par = ele
         if param._type == 1:
@@ -588,7 +588,7 @@ def getRangeOfValues(category, param, new_view):
     copy = [x for x in list_values if x._value == "None"]
     if len(copy) > 0:
         list_values.Remove(copy[0])
-    #Ordenar
+    # Order
     list_values = sorted(list_values, key=lambda x: x._value, reverse=False)
     if len(list_values) > 1:
         try:
@@ -605,7 +605,7 @@ def getRangeOfValues(category, param, new_view):
     return list_values
 
 def getCategoriesAndParametersInUsed(cat_exc, acti_view):
-    #Get All elements and filter unneeded
+    # Get All elements and filter unneeded
     collector = FilteredElementCollector(doc, acti_view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements()
     list_cat = []
     for ele in collector:
@@ -615,19 +615,19 @@ def getCategoriesAndParametersInUsed(cat_exc, acti_view):
             if not current_int_cat_id in cat_exc and current_int_cat_id < -1:
                 if not any(x._intId == current_int_cat_id for x in list_cat):
                     list_parameters=[]
-                    #Instance parameters
+                    # Instance parameters
                     for par in ele.Parameters:
                         if par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM and par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM_MT:
                             list_parameters.Add(para_info(0, par))
                     typ = ele.Document.GetElement(ele.GetTypeId())
-                    #Type parameters
+                    # Type parameters
                     if typ != None:
                         for par in typ.Parameters:
                             if par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM and par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM_MT:
                                 list_parameters.Add(para_info(1, par))
-                    #Sort and add
+                    # Sort and add
                     list_parameters = sorted(list_parameters, key=lambda x: x._name.upper(), reverse=False)
-                    #list_parameters.sort(key=lambda x: x._name.upper(), reverse=False)
+                    # list_parameters.sort(key=lambda x: x._name.upper(), reverse=False)
                     list_cat.Add(categ_info(ele.Category,list_parameters))
     list_cat = sorted(list_cat, key=lambda x: x._name, reverse=False)
     return list_cat
@@ -681,18 +681,14 @@ class Form_cats(Form):
         self._spr_top.Name = "spr_top"
         self._spr_top.Size = System.Drawing.Size(2000, 2)
         self._spr_top.BackColor = Color.FromArgb(82, 53, 239)
-        # 
         # TextBlock2
-        # 
         self._txtBlock2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._txtBlock2.Location = System.Drawing.Point(12, 2)
         self._txtBlock2.Name = "txtBlock2"
         self._txtBlock2.Size = System.Drawing.Size(120, 25)
         self._txtBlock2.Text = "Category:"
         self.toolTip1.SetToolTip(self._txtBlock2, "Select a category to start coloring.")
-        # 
         # comboBox1 Cat
-        # 
         self._categories.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right
         self._categories.Location = System.Drawing.Point(12, 27)
         self._categories.Name = "dropDown"
@@ -703,18 +699,14 @@ class Form_cats(Form):
         self._categories.DropDownStyle = ComboBoxStyle.DropDownList
         self._categories.SelectedIndexChanged += self.UpdateFilter
         self.toolTip1.SetToolTip(self._categories, "Select a category to start coloring.")
-        # 
         # TextBlock3
-        # 
         self._txtBlock3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._txtBlock3.Location = System.Drawing.Point(12, 57)
         self._txtBlock3.Name = "txtBlock3"
         self._txtBlock3.Size = System.Drawing.Size(120, 20)
         self._txtBlock3.Text = "Parameters:"
         self.toolTip1.SetToolTip(self._txtBlock3, "Select a parameter to color elements based on its value.")
-        # 
         # checkedListBox1
-        # 
         self._listBox1.Anchor = System.Windows.Forms.AnchorStyles.Top |  System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right
         self._listBox1.FormattingEnabled = True
         self._listBox1.CheckOnClick = True
@@ -725,18 +717,14 @@ class Form_cats(Form):
         self._listBox1.Size = System.Drawing.Size(310, 158)
         self._listBox1.ItemCheck += self.checkItem
         self.toolTip1.SetToolTip(self._listBox1, "Select a parameter to color elements based on its value.")
-        # 
         # TextBlock4
-        # 
         self._txtBlock4.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._txtBlock4.Location = System.Drawing.Point(12, 238)
         self._txtBlock4.Name = "txtBlock4"
         self._txtBlock4.Size = System.Drawing.Size(120, 23)
         self._txtBlock4.Text = "Values:"
         self.toolTip1.SetToolTip(self._txtBlock4, "Reassign colors by clicking on their value.")
-        # 
         # TextBlock5
-        # 
         self._txtBlock5.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left
         self._txtBlock5.Location = System.Drawing.Point(12, 585)
         self._txtBlock5.Name = "txtBlock5"
@@ -745,9 +733,7 @@ class Form_cats(Form):
         self._txtBlock5.ForeColor = Color.Red
         self._txtBlock5.Font = Font("Arial", 8, FontStyle.Underline)
         self._txtBlock5.Visible = False
-        # 
         # checkedListBox2
-        # 
         self._listBox2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right
         self._listBox2.FormattingEnabled = True
         self._listBox2.HorizontalScrollbar = True
@@ -761,9 +747,7 @@ class Form_cats(Form):
         self._listBox2.ItemHeight = int(g.MeasureString("Sample", self.new_fnt).Height)
         self._listBox2.Size = System.Drawing.Size(310, 280)
         self.toolTip1.SetToolTip(self._listBox2, "Reassign colors by clicking on their value.")
-        # 
         # button1
-        # 
         self._button1.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right
         self._button1.Location = System.Drawing.Point(222, 632)
         self._button1.Name = "button1"
@@ -772,9 +756,8 @@ class Form_cats(Form):
         self._button1.UseVisualStyleBackColor = True
         self._button1.Click += self.Button1Click
         self.toolTip1.SetToolTip(self._button1, "Apply the colors from each value in your Revit view.")
-        # 
         # button2
-        # 
+
         self._button2.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left
         self._button2.Location = System.Drawing.Point(12, 632)
         self._button2.Name = "button2"
@@ -783,9 +766,7 @@ class Form_cats(Form):
         self._button2.UseVisualStyleBackColor = True
         self._button2.Click += self.Button2Click
         self.toolTip1.SetToolTip(self._button2, "Reset the colors in your Revit view to its initial stage.")
-        # 
         # button3
-        # 
         self._button3.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right
         self._button3.Location = System.Drawing.Point(167, 538)
         self._button3.Name = "button3"
@@ -794,9 +775,7 @@ class Form_cats(Form):
         self._button3.UseVisualStyleBackColor = True
         self._button3.Click += self.Button3Click
         self.toolTip1.SetToolTip(self._button3, "Reassign new random colors to all values.")
-        # 
         # button4
-        # 
         self._button4.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left
         self._button4.Location = System.Drawing.Point(11, 538)
         self._button4.Name = "button4"
@@ -805,11 +784,8 @@ class Form_cats(Form):
         self._button4.UseVisualStyleBackColor = True
         self._button4.Click += self.Button4Click
         self.toolTip1.SetToolTip(self._button4, "Based on the color of the first and last value,\nreassign gradients colors to all values.")
-        # 
         # button5
-        # 
         self._button5.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left
-        #self._button5.Location = System.Drawing.Point(167, 243)
         self._button5.Location = System.Drawing.Point(11, 593)
         self._button5.Name = "button5"
         self._button5.Size = System.Drawing.Size(156, 25)
@@ -817,11 +793,8 @@ class Form_cats(Form):
         self._button5.UseVisualStyleBackColor = True
         self._button5.Click += self.Button5Click
         self.toolTip1.SetToolTip(self._button5, "Create a new legend view for all the values and their colors.")
-        # 
         # button6
-        # 
         self._button6.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right
-        #self._button5.Location = System.Drawing.Point(167, 243)
         self._button6.Location = System.Drawing.Point(167, 593)
         self._button6.Name = "button6"
         self._button6.Size = System.Drawing.Size(156, 25)
@@ -838,9 +811,7 @@ class Form_cats(Form):
         self._button7.UseVisualStyleBackColor = True
         self._button7.Click += self.SaveLoadColorScheme
         self.toolTip1.SetToolTip(self._button7, "Save the current color scheme or load an existing one.")
-        # 
         # Form24
-        # 
         self.TopMost = True
         self.ShowInTaskbar = False
         self.ClientSize = System.Drawing.Size(334, 672)
@@ -880,7 +851,7 @@ class Form_cats(Form):
         self.reset_ev.Raise()
     
     def Button3Click(self, sender, e):
-        #Reassign Random colors
+        # Reassign Random colors
         try:
             checkindex = self._listBox1.CheckedIndices 
             for indx in checkindex:
@@ -957,7 +928,7 @@ class Form_cats(Form):
         self.uns_event.Raise()
     
     def lstselectedIndexChanged(self, sender, e):
-        #Ask colour
+        # Ask colour
         if sender.SelectedIndex != -1:
             clr_dlg = ColorDialog()
             clr_dlg.AllowFullOpen = True
@@ -990,7 +961,7 @@ class Form_cats(Form):
             pass
                 
     def checkItem(self, sender, e):
-        #Only one element can be selected
+        # Only one element can be selected
         for indx in range(self._listBox1.Items.Count):
             if indx != e.Index:
                 self._listBox1.SetItemChecked(indx, False)
@@ -1021,7 +992,7 @@ class Form_cats(Form):
                 self._listBox2.SelectedIndexChanged += self.lstselectedIndexChanged
         
     def UpdateFilter(self, sender, e):
-        #Update param listbox
+        # Update param listbox
         sel_cat = sender.SelectedItem['Value']
         self._tableData2 = DataTable("Data")
         self._tableData2.Columns.Add("Key", System.String)
@@ -1057,26 +1028,20 @@ class Form_SaveLoadScheme(Form):
         self.toolTip1 = System.Windows.Forms.ToolTip()
         self._spr_top = System.Windows.Forms.Label()
         self.SuspendLayout()
-        # 
         # Separator Top
-        # 
         self._spr_top.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right
         self._spr_top.Location = System.Drawing.Point(0, 0)
         self._spr_top.Name = "spr_top"
         self._spr_top.Size = System.Drawing.Size(500, 2)
         self._spr_top.BackColor = Color.FromArgb(82, 53, 239)
-        # 
         # If loading
-        # 
         self._txt_ifloading.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._txt_ifloading.Location = System.Drawing.Point(12, 10)
         self._txt_ifloading.Text = "If Loading a Color Scheme:"
         self._txt_ifloading.Name = "_radio_byValue"
         self._txt_ifloading.Size = System.Drawing.Size(239, 23)
         self.toolTip1.SetToolTip(self._txt_ifloading, "Only if loading.")
-        # 
         # Radio by value
-        # 
         self._radio_byValue.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._radio_byValue.Location = System.Drawing.Point(19, 35)
         self._radio_byValue.Text = "Load by Parameter Value."
@@ -1084,18 +1049,14 @@ class Form_SaveLoadScheme(Form):
         self._radio_byValue.Size = System.Drawing.Size(230, 25)
         self._radio_byValue.Checked = True
         self.toolTip1.SetToolTip(self._radio_byValue, "Only if loading. This will load the color scheme based on the Value the item had when saving.")
-        # 
         # Radio by Pos
-        # 
         self._radio_byPos.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._radio_byPos.Location = System.Drawing.Point(250, 35)
         self._radio_byPos.Text = "Load by Position in Window."
         self._radio_byPos.Name = "_radio_byValue"
         self._radio_byPos.Size = System.Drawing.Size(239, 25)
         self.toolTip1.SetToolTip(self._radio_byPos, "Only if loading. This will load the color scheme based on the Position the item had when saving.")
-        # 
-        # Button Save.
-        # 
+        # Button Save
         self._btn_save.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right
         self._btn_save.Location = System.Drawing.Point(13, 70)
         self._btn_save.Name = "btn_cancel"
@@ -1103,9 +1064,7 @@ class Form_SaveLoadScheme(Form):
         self._btn_save.Text = "Save Color Scheme"
         self._btn_save.Cursor = Cursors.Hand
         self._btn_save.Click += self.SpecifyPathSave
-        # 
-        # Button Load.
-        # 
+        # Button Load
         self._btn_load.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right
         self._btn_load.Location = System.Drawing.Point(253, 70)
         self._btn_load.Name = "btn_cancel"
@@ -1113,9 +1072,7 @@ class Form_SaveLoadScheme(Form):
         self._btn_load.Text = "Load Color Scheme"
         self._btn_load.Cursor = Cursors.Hand
         self._btn_load.Click += self.SpecifyPathLoad
-        # 
         # Add Controls and Window configuration.
-        # 
         self.Controls.Add(self._txt_ifloading)
         self.Controls.Add(self._radio_byValue)
         self.Controls.Add(self._radio_byPos)
@@ -1137,7 +1094,7 @@ class Form_SaveLoadScheme(Form):
         self.ResumeLayout(False)
         
     def SpecifyPathSave(self, sender, e):	
-        #Prompt save file dialog and its configuration.
+        # Prompt save file dialog and its configuration.
         with SaveFileDialog() as saveFileDialog:
             saveFileDialog.Title = "Specify Path to Save Color Scheme"
             saveFileDialog.Filter = "Color Scheme (*.cschn)|*.cschn"
@@ -1152,23 +1109,23 @@ class Form_SaveLoadScheme(Form):
                 wndw.Show()
                 self.Close()
             elif saveFileDialog.ShowDialog() == DialogResult.OK:
-                #Main path for new file
+                # Main path for new file
                 self.SavePathToFile(saveFileDialog.FileName)
                 self.Close()
                 
     def SavePathToFile(self, new_path):
         try:
-            #Save location selected in save file dialog.
+            # Save location selected in save file dialog.
             with open(new_path, "w") as file:
                 for item in wndw._listBox2.Items:
                     color_inst  = item['Value']._colour
                     file.write(item['Key'] + "::R" + str(color_inst.R) + "G" + str(color_inst.G) + "B" + str(color_inst.B) + "\n")
         except Exception as ex:
-            #If file is being used or blocked by OS/program.
+            # If file is being used or blocked by OS/program.
             Autodesk.Revit.UI.TaskDialog.Show("Error Saving Scheme", str(ex))
             
     def SpecifyPathLoad(self, sender, e):	
-        #Prompt save file dialog and its configuration.
+        # Prompt save file dialog and its configuration.
         with OpenFileDialog() as openFileDialog:
             openFileDialog.Title = "Specify Path to Load Color Scheme"
             openFileDialog.Filter = "Color Scheme (*.cschn)|*.cschn"
@@ -1181,13 +1138,13 @@ class Form_SaveLoadScheme(Form):
                 wndw.Show()
                 self.Close()
             elif openFileDialog.ShowDialog() == DialogResult.OK:
-                #Main path for new file
+                # Main path for new file
                 self.LoadPathFromFile(openFileDialog.FileName)
                 self.Close()
             
     def LoadPathFromFile(self, path):
         if isfile(path):
-            #Load last location selected in save file dialog.
+            # Load last location selected in save file dialog.
             try:
                 with open(path, "r") as file:
                     all_lines = file.readlines()
@@ -1224,7 +1181,7 @@ class Form_SaveLoadScheme(Form):
                                 break
                     wndw._listBox2.Refresh()
             except Exception as ex:
-                #If file is being used or blocked by OS/program.
+                # If file is being used or blocked by OS/program.
                 Autodesk.Revit.UI.TaskDialog.Show("Error Loading Scheme", str(ex))
                 
 def getIndexUnits(str_value):
@@ -1240,11 +1197,11 @@ uiapp = HOST_APP.uiapp
 
 sel_View = getActiveView(doc)
 if sel_View !=0:
-    #Categories to exclude
+    # Categories to exclude
     cat_excluded = [int(BuiltInCategory.OST_RoomSeparationLines), int(BuiltInCategory.OST_Cameras), int(BuiltInCategory.OST_CurtainGrids), int(BuiltInCategory.OST_Elev), int(BuiltInCategory.OST_Grids), int(BuiltInCategory.OST_IOSModelGroups), int(BuiltInCategory.OST_Views), int(BuiltInCategory.OST_SitePropertyLineSegment), int(BuiltInCategory.OST_SectionBox), int(BuiltInCategory.OST_ShaftOpening), int(BuiltInCategory.OST_BeamAnalytical), int(BuiltInCategory.OST_StructuralFramingOpening), int(BuiltInCategory.OST_MEPSpaceSeparationLines), int(BuiltInCategory.OST_DuctSystem), int(BuiltInCategory.OST_Lines), int(BuiltInCategory.OST_PipingSystem), int(BuiltInCategory.OST_Matchline), int(BuiltInCategory.OST_CenterLines), int(BuiltInCategory.OST_CurtainGridsRoof), int(BuiltInCategory.OST_SWallRectOpening), -2000278, -1]
-    #Get categories in used
+    # Get categories in used
     categ_inf_used = getCategoriesAndParametersInUsed(cat_excluded, sel_View)
-    #Window
+    # Window
     event_handler = applyColors()
     ext_event = ExternalEvent.Create(event_handler)
     
