@@ -4,8 +4,7 @@ from re import split
 from math import fabs
 from random import randint
 from os.path import exists, isfile
-import inspect
-import unicodedata 
+from unicodedata import normalize, category
 
 from System.Collections.Generic import *
 
@@ -100,7 +99,7 @@ class applyColors(UI.IExternalEventHandler):
                         # In case of rooms, spaces and areas. Check Color scheme is applied and if not
                         if version > 2021:
                             if str(wndw.crt_view.GetColorFillSchemeId(sel_cat._cat.Id)) == "-1":
-                                fColorScheme = DB.FilteredElementCollector(new_doc).OfClass((DB.BuiltInCategoryFillScheme).ToElements()
+                                fColorScheme = DB.FilteredElementCollector(new_doc).OfClass(DB.BuiltInCategoryFillScheme).ToElements()
                                 if len(fColorScheme) > 0:
                                     for sch in fColorScheme:
                                         if sch.CategoryId == sel_cat._cat.Id:
@@ -115,7 +114,7 @@ class applyColors(UI.IExternalEventHandler):
                     for indx in range(wndw._listBox2.Items.Count):
                         ogs = DB.OverrideGraphicSettings().Dispose()
                         ogs = DB.OverrideGraphicSettings()
-                        color = (DB.BuiltInCategory(wndw._listBox2.Items[indx]['Value']._n1, wndw._listBox2.Items[indx]['Value']._n2, wndw._listBox2.Items[indx]['Value']._n3)
+                        color = DB.Color(wndw._listBox2.Items[indx]['Value']._n1, wndw._listBox2.Items[indx]['Value']._n2, wndw._listBox2.Items[indx]['Value']._n3)
                         ogs.SetProjectionLineColor(color)
                         ogs.SetSurfaceForegroundPatternColor(color)
                         ogs.SetCutForegroundPatternColor(color)
@@ -250,8 +249,8 @@ class createLegend(UI.UI.IExternalEventHandler):
                     it = 1
                     while True:
                         try:
-                            new_pattern = FillPattern("Fill Pattern " + str(it), FillPatternTarget.Drafting, FillPatternHostOrientation.ToView, float(0), float(0.00001))
-                            new_elePat = FillPatternElement.Create(new_doc, new_pattern)
+                            new_pattern = DB.FillPattern("Fill Pattern " + str(it), DB.FillPatternTarget.Drafting, DB.FillPatternHostOrientation.ToView, float(0), float(0.00001))
+                            new_elePat = DB.FillPatternElement.Create(new_doc, new_pattern)
                             break
                         except:
                             it +=1
@@ -268,7 +267,7 @@ class createLegend(UI.UI.IExternalEventHandler):
                         punto = XYZ(0,fin_coord_y,0)
                     item = vw_item['Value']
                     text_line = sel_cat._name + "/" + sel_par._name + " - " + item._value
-                    new_text = TextNote.Create(new_doc, newLegend.Id, punto, text_line, ele_id_type)
+                    new_text = DB.TextNote.Create(new_doc, newLegend.Id, punto, text_line, ele_id_type)
                     new_doc.Regenerate()
                     prev_bbox = new_text.get_BoundingBox(newLegend)
                     offset = (prev_bbox.Max.Y - prev_bbox.Min.Y)*0.25
@@ -277,33 +276,33 @@ class createLegend(UI.UI.IExternalEventHandler):
                     list_y.Add(fin_coord_y + offset)
                     height = prev_bbox.Max.Y - prev_bbox.Min.Y
                 ini_x = max(list_max_X)
-                ogs = OverrideGraphicSettings()
+                ogs = DB.OverrideGraphicSettings()
                 # Create filled color region
                 for indx in range(len(list_y)):
                     coord_y = list_y[indx]
                     item = wndw._listBox2.Items[indx]['Value']
-                    point0 = XYZ(ini_x, coord_y, 0)
-                    point1 = XYZ(ini_x, coord_y + height, 0)
-                    point2 = XYZ(ini_x *1.5, coord_y + height, 0)
-                    point3 = XYZ(ini_x *1.5, coord_y, 0)
-                    line01 = Line.CreateBound(point0,point1)
-                    line12= Line.CreateBound(point1,point2)
-                    line23 = Line.CreateBound(point2,point3)
-                    line30 = Line.CreateBound(point3,point0)
-                    list_curveLoops = List[CurveLoop]()
-                    curveLoops = CurveLoop()
+                    point0 = DB.XYZ(ini_x, coord_y, 0)
+                    point1 = DB.XYZ(ini_x, coord_y + height, 0)
+                    point2 = DB.XYZ(ini_x *1.5, coord_y + height, 0)
+                    point3 = DB.XYZ(ini_x *1.5, coord_y, 0)
+                    line01 = DB.Line.CreateBound(point0,point1)
+                    line12= DB.Line.CreateBound(point1,point2)
+                    line23 = DB.Line.CreateBound(point2,point3)
+                    line30 = DB.Line.CreateBound(point3,point0)
+                    list_curveLoops = List[DB.CurveLoop]()
+                    curveLoops = DB.CurveLoop()
                     curveLoops.Append(line01)
                     curveLoops.Append(line12)
                     curveLoops.Append(line23)
                     curveLoops.Append(line30)
                     list_curveLoops.Add(curveLoops)
-                    reg = FilledRegion.Create(new_doc, filled_type[0].Id, newLegend.Id, list_curveLoops)
+                    reg = DB.FilledRegion.Create(new_doc, filled_type[0].Id, newLegend.Id, list_curveLoops)
                     # Assign color filled region
-                    color = (DB.BuiltInCategory(item._n1, item._n2, item._n3)
+                    color = DB.Color(item._n1, item._n2, item._n3)
                     ogs.SetProjectionLineColor(color)
-                    ogs.SetSurfaceForegroundPatternColor(color);
-                    ogs.SetCutForegroundPatternColor(color);
-                    ogs.SetProjectionLinePatternId(ElementId(-1));
+                    ogs.SetSurfaceForegroundPatternColor(color)
+                    ogs.SetCutForegroundPatternColor(color)
+                    ogs.SetProjectionLinePatternId(DB.ElementId(-1))
                     newLegend.SetElementOverrides(reg.Id, ogs)
                 t.Commit()
             else:
@@ -350,7 +349,7 @@ class createFilters(UI.IExternalEventHandler):
                         # Assign color filled region
                         ogs = DB.OverrideGraphicSettings().Dispose()
                         ogs = DB.OverrideGraphicSettings()
-                        color = (DB.BuiltInCategory(item._n1, item._n2, item._n3)
+                        color = DB.Color(item._n1, item._n2, item._n3)
                         ogs.SetSurfaceForegroundPatternColor(color)
                         ogs.SetCutForegroundPatternColor(color)
                         ogs.SetSurfaceForegroundPatternId(sf)
