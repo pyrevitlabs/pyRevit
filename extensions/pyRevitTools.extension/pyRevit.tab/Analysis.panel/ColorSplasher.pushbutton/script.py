@@ -3,7 +3,7 @@ import clr
 from re import split
 from math import fabs
 from random import randint
-import os.path
+from os.path import exists, isfile
 import inspect
 import unicodedata 
 
