@@ -2,7 +2,7 @@ import sys
 import clr
 clr.AddReference('ProtoGeometry')
 from Autodesk.DesignScript.Geometry import *
-import re
+from re import split
 import math
 from random import randint
 import os.path
@@ -1197,7 +1197,7 @@ class Form_SaveLoadScheme(Form):
                         for line in all_lines:
                             line_val = line.strip().split("::R")
                             par_val = line_val[0]
-                            rgb_result = re.split(r'[RGB]', line_val[1])
+                            rgb_result = split(r'[RGB]', line_val[1])
                             for item in wndw._tableData3.Rows:
                                 if item['Key'] == par_val:
                                     r = int(rgb_result[0])
@@ -1213,7 +1213,7 @@ class Form_SaveLoadScheme(Form):
                             if ind < len(wndw._tableData3.Rows):
                                 line_val = line.strip().split("::R")
                                 par_val = line_val[0]
-                                rgb_result = re.split(r'[RGB]', line_val[1])
+                                rgb_result = split(r'[RGB]', line_val[1])
                                 item = wndw._tableData3.Rows[ind]
                                 r = int(rgb_result[0])
                                 g = int(rgb_result[1])
