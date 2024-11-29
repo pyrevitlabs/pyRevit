@@ -1130,7 +1130,7 @@ class Form_SaveLoadScheme(Form):
         self.FormBorderStyle = FormBorderStyle.FixedSingle
         self.CenterToScreen() 
         iconFilename = 'C:\\NONICAPRO\\OtherFiles\\System\\Nonicafavicon.ICO'
-        if not os.path.exists(iconFilename):
+        if not exists(iconFilename):
             iconFilename = 'C:\\NONICA\\OtherFiles\\System\\Nonicafavicon.ICO'
         icon = Icon(iconFilename)
         self.Icon = icon
@@ -1186,7 +1186,7 @@ class Form_SaveLoadScheme(Form):
                 self.Close()
             
     def LoadPathFromFile(self, path):
-        if os.path.isfile(path):
+        if isfile(path):
             #Load last location selected in save file dialog.
             try:
                 with open(path, "r") as file:
