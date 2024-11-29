@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import clr
 from re import split
@@ -171,7 +173,7 @@ class resetColors(UI.IExternalEventHandler):
         return "Reset colors in elements"
 
 
-class createLegend(UI.UI.IExternalEventHandler):
+class createLegend(UI.IExternalEventHandler):
     def __init__(self):
         pass
         
@@ -376,19 +378,19 @@ class createFilters(UI.IExternalEventHandler):
                                     maximo = max(item.values_double)
                                     avg_values = (maximo+minimo)/2
                                     equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, avg_values, fabs(avg_values-minimo)+0.001)
-                            elif param_storage_type == StorageType.ElementId:
+                            elif param_storage_type == DB.StorageType.ElementId:
                                 if item._value == "None":
                                     prevalue = DB.ElementId.InvalidElementId
                                 else:
                                     prevalue = item._par.AsElementId()
                                 equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
-                            elif param_storage_type == StorageType.Integer:
+                            elif param_storage_type == DB.StorageType.Integer:
                                 if item._value == "None":
                                     prevalue = 0
                                 else:
                                     prevalue = item._par.AsInteger()
                                 equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
-                            elif param_storage_type == StorageType.String:
+                            elif param_storage_type == DB.StorageType.String:
                                 if item._value == "None":
                                     prevalue = ""
                                 else:
@@ -529,7 +531,7 @@ def getValuePar(para):
 
 
 def strip_accents(text):
-    return ''.join(char for char in unicodedata.normalize('NFKD', text) if unicodedata.category(char) != 'Mn')
+    return ''.join(char for char in normalize('NFKD', text) if category(char) != 'Mn')
 
 
 def randomColor():
@@ -1195,19 +1197,19 @@ if sel_View !=0:
     categ_inf_used = getCategoriesAndParametersInUsed(cat_excluded, sel_View)
     # Window
     event_handler = applyColors()
-    ext_event = DB.ExternalEvent.Create(event_handler)
+    ext_event = UI.ExternalEvent.Create(event_handler)
     
     event_handler_uns = subscribeView()
-    ext_event_uns = DB.ExternalEvent.Create(event_handler_uns)
+    ext_event_uns = UI.ExternalEvent.Create(event_handler_uns)
     
     event_handler_filters = createFilters()
-    ext_event_filters = DB.ExternalEvent.Create(event_handler_filters)
+    ext_event_filters = UI.ExternalEvent.Create(event_handler_filters)
     
     event_handler_reset = resetColors()
-    ext_event_reset = DB.ExternalEvent.Create(event_handler_reset)
+    ext_event_reset = UI.ExternalEvent.Create(event_handler_reset)
     
     event_handler_Legend = createLegend()
-    ext_event_legend = DB.ExternalEvent.Create(event_handler_Legend)
+    ext_event_legend = UI.ExternalEvent.Create(event_handler_Legend)
     
     wndw = Form_cats(categ_inf_used, ext_event, ext_event_uns, sel_View, ext_event_reset, ext_event_legend, ext_event_filters)
     wndw._categories.SelectedIndex = -1
