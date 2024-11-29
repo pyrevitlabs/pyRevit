@@ -7,20 +7,7 @@ from os.path import exists, isfile
 import inspect
 import unicodedata 
 
-clr.AddReference("RevitServices")
-import RevitServices
-from RevitServices.Persistence import DocumentManager
-from RevitServices.Transactions import TransactionManager
 from System.Collections.Generic import *
-
-clr.AddReference("RevitAPIUI")
-import Autodesk 
-from Autodesk.Revit.UI import TaskDialog, IExternalEventHandler, ExternalEvent
-
-clr.AddReference('RevitAPI')
-import Autodesk
-from Autodesk.Revit.DB import *
-from Autodesk.Revit.DB import BuiltInCategory
 
 clr.AddReference('System.Drawing')
 clr.AddReference('System.Windows.Forms')
@@ -37,11 +24,11 @@ clr.AddReference('System.Data')
 from System.Data import *
 from System.Collections.Generic import *
 
-from pyrevit import HOST_APP, revit
+from pyrevit import HOST_APP, revit, DB, UI
 from pyrevit.compat import get_elementid_value_func
 
 
-class subscribeView(IExternalEventHandler):
+class subscribeView(UI.IExternalEventHandler):
     def __init__(self):
         self.registered = 1
 
@@ -91,7 +78,7 @@ class subscribeView(IExternalEventHandler):
     def GetName(self):
         return "Subscribe View Changed Event"
 
-class applyColors(IExternalEventHandler):
+class applyColors(UI.IExternalEventHandler):
     def __init__(self):
         pass
         
@@ -101,52 +88,50 @@ class applyColors(IExternalEventHandler):
             view = getActiveView(new_doc)
             if view != 0:
                 solidFillId = None
-                fElementCollector = FilteredElementCollector(new_doc).OfClass(FillPatternElement)
+                fElementCollector = DB.FilteredElementCollector(new_doc).OfClass(DB.FillPatternElement)
                 for pat in fElementCollector:
                     if pat.GetFillPattern().IsSolidFill:
                         solidFillId = pat.Id
                         break
-                t = Transaction(new_doc, "Apply colors to elements")
-                t.Start()
-                sel_cat = wndw._categories.SelectedItem['Value']
-                get_elementid_value = get_elementid_value_func()
-                if get_elementid_value(sel_cat._cat.Id) in (int(BuiltInCategory.OST_Rooms), int(BuiltInCategory.OST_MEPSpaces), int(BuiltInCategory.OST_Areas)):
-                    # In case of rooms, spaces and areas. Check Color scheme is applied and if not
-                    if version > 2021:
-                        if str(wndw.crt_view.GetColorFillSchemeId(sel_cat._cat.Id)) == "-1":
-                            fColorScheme = FilteredElementCollector(new_doc).OfClass(ColorFillScheme).ToElements()
-                            if len(fColorScheme) > 0:
-                                for sch in fColorScheme:
-                                    if sch.CategoryId == sel_cat._cat.Id:
-                                        if len(sch.GetEntries()) > 0:
-                                            wndw.crt_view.SetColorFillSchemeId(sel_cat._cat.Id, sch.Id)
-                                            break
+                with revit.Transaction(new_doc, "Apply colors to elements"):
+                    sel_cat = wndw._categories.SelectedItem['Value']
+                    get_elementid_value = get_elementid_value_func()
+                    if get_elementid_value(sel_cat._cat.Id) in (int(DB.BuiltInCategory.OST_Rooms), int(DB.BuiltInCategory.OST_MEPSpaces), int(DB.BuiltInCategory.OST_Areas)):
+                        # In case of rooms, spaces and areas. Check Color scheme is applied and if not
+                        if version > 2021:
+                            if str(wndw.crt_view.GetColorFillSchemeId(sel_cat._cat.Id)) == "-1":
+                                fColorScheme = DB.FilteredElementCollector(new_doc).OfClass((DB.BuiltInCategoryFillScheme).ToElements()
+                                if len(fColorScheme) > 0:
+                                    for sch in fColorScheme:
+                                        if sch.CategoryId == sel_cat._cat.Id:
+                                            if len(sch.GetEntries()) > 0:
+                                                wndw.crt_view.SetColorFillSchemeId(sel_cat._cat.Id, sch.Id)
+                                                break
+                        else:
+                            wndw._txtBlock5.Visible = True
                     else:
-                        wndw._txtBlock5.Visible = True
-                else:
-                    wndw._txtBlock5.Visible = False
-                    
-                for indx in range(wndw._listBox2.Items.Count):
-                    ogs = OverrideGraphicSettings().Dispose()
-                    ogs = OverrideGraphicSettings()
-                    color = Autodesk.Revit.DB.Color(wndw._listBox2.Items[indx]['Value']._n1, wndw._listBox2.Items[indx]['Value']._n2, wndw._listBox2.Items[indx]['Value']._n3)
-                    ogs.SetProjectionLineColor(color)
-                    ogs.SetSurfaceForegroundPatternColor(color)
-                    ogs.SetCutForegroundPatternColor(color)
-                    if solidFillId != None:
-                        ogs.SetSurfaceForegroundPatternId(solidFillId)
-                        ogs.SetCutForegroundPatternId(solidFillId)
-                    ogs.SetProjectionLinePatternId(ElementId(-1))
-                    for id in wndw._listBox2.Items[indx]['Value']._eleId:
-                        view.SetElementOverrides(id, ogs)
-                t.Commit()
+                        wndw._txtBlock5.Visible = False
+
+                    for indx in range(wndw._listBox2.Items.Count):
+                        ogs = DB.OverrideGraphicSettings().Dispose()
+                        ogs = DB.OverrideGraphicSettings()
+                        color = (DB.BuiltInCategory(wndw._listBox2.Items[indx]['Value']._n1, wndw._listBox2.Items[indx]['Value']._n2, wndw._listBox2.Items[indx]['Value']._n3)
+                        ogs.SetProjectionLineColor(color)
+                        ogs.SetSurfaceForegroundPatternColor(color)
+                        ogs.SetCutForegroundPatternColor(color)
+                        if solidFillId != None:
+                            ogs.SetSurfaceForegroundPatternId(solidFillId)
+                            ogs.SetCutForegroundPatternId(solidFillId)
+                        ogs.SetProjectionLinePatternId(DB.ElementId(-1))
+                        for id in wndw._listBox2.Items[indx]['Value']._eleId:
+                            view.SetElementOverrides(id, ogs)
         except Exception as e:
             pass
             
     def GetName(self):
         return "Set colors to elements"
         
-class resetColors(IExternalEventHandler):
+class resetColors(UI.IExternalEventHandler):
     def __init__(self):
         pass
         
@@ -155,39 +140,37 @@ class resetColors(IExternalEventHandler):
             new_doc = uiapp.ActiveUIDocument.Document
             view = getActiveView(new_doc)
             if view != 0:
-                ogs = OverrideGraphicSettings().Dispose()
-                ogs = OverrideGraphicSettings()
-                collector = FilteredElementCollector(new_doc, view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElementIds()
-                t = Transaction(new_doc, "Reset colors in elements")
-                t.Start()
-                try:
-                    # Get and ResetView Filters
-                    sel_cat = wndw._categories.SelectedItem['Value']
-                    sel_par = wndw._listBox1.SelectedItem['Value']
-                    filter_name = sel_cat._name + "/"
-                    filters = view.GetFilters()
-                    if len(filters) != 0:
-                        for filt_id in filters:
-                            filt_ele = new_doc.GetElement(filt_id)
-                            if filt_ele.Name.StartsWith(filter_name):
-                                view.RemoveFilter(filt_id)
-                                try:
-                                    new_doc.Delete(filt_id)
-                                except:
-                                    pass
-                except Exception as e:
-                    pass
-                # Reset visibility
-                for id in collector:
-                    view.SetElementOverrides(id, ogs)
-                t.Commit()
+                ogs = DB.OverrideGraphicSettings().Dispose()
+                ogs = DB.OverrideGraphicSettings()
+                collector = DB.FilteredElementCollector(new_doc, view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElementIds()
+                with revit.Transaction(new_doc, "Reset colors in elements"):
+                    try:
+                        # Get and ResetView Filters
+                        sel_cat = wndw._categories.SelectedItem['Value']
+                        sel_par = wndw._listBox1.SelectedItem['Value']
+                        filter_name = sel_cat._name + "/"
+                        filters = view.GetFilters()
+                        if len(filters) != 0:
+                            for filt_id in filters:
+                                filt_ele = new_doc.GetElement(filt_id)
+                                if filt_ele.Name.StartsWith(filter_name):
+                                    view.RemoveFilter(filt_id)
+                                    try:
+                                        new_doc.Delete(filt_id)
+                                    except:
+                                        pass
+                    except Exception as e:
+                        pass
+                    # Reset visibility
+                    for id in collector:
+                        view.SetElementOverrides(id, ogs)
         except Exception as e:
             pass
             
     def GetName(self):
         return "Reset colors in elements"
 
-class createLegend(IExternalEventHandler):
+class createLegend(UI.UI.IExternalEventHandler):
     def __init__(self):
         pass
         
@@ -196,21 +179,21 @@ class createLegend(IExternalEventHandler):
             new_doc = uiapp.ActiveUIDocument.Document
             rvt_ver = int(uiapp.Application.VersionNumber)
             # Get legend view
-            collector = FilteredElementCollector(new_doc).OfClass(Autodesk.Revit.DB.View).ToElements()
+            collector = DB.FilteredElementCollector(new_doc).OfClass(DB.View).ToElements()
             legends=[]
             for vw in collector:
-                if vw.ViewType == ViewType.Legend:
+                if vw.ViewType == DB.ViewType.Legend:
                     legends.Add(vw)
                     break
-            if len(legends)>0:
+            if len(legends) > 0:
                 # Duplicate existing legend
-                t = Transaction(new_doc, "Create Legend")
+                t = DB.Transaction(new_doc, "Create Legend")
                 t.Start()
-                trans = SubTransaction(new_doc)
+                trans = DB.SubTransaction(new_doc)
                 trans.Start()
-                new_id_legend = legends[0].Duplicate(ViewDuplicateOption.Duplicate)
+                new_id_legend = legends[0].Duplicate(DB.ViewDuplicateOption.Duplicate)
                 newLegend = new_doc.GetElement(new_id_legend)
-                i=1
+                i = 1
                 while True:
                     try:
                         if rvt_ver < 2025:
@@ -219,21 +202,21 @@ class createLegend(IExternalEventHandler):
                             newLegend.Name = "Color Legend " + str(i)
                         break
                     except:
-                        i+=1
+                        i += 1
                         if i == 1000:
                             break
                 trans.Commit()
-                old_all_ele = FilteredElementCollector(new_doc, legends[0].Id).ToElements()
-                ele_id_type = ElementId(0)
+                old_all_ele = DB.FilteredElementCollector(new_doc, legends[0].Id).ToElements()
+                ele_id_type = DB.ElementId(0)
                 for ele in old_all_ele:
                     if ele.Id != newLegend.Id and ele.Category != None:
-                        if isinstance(ele, TextNote):
+                        if isinstance(ele, DB.TextNote):
                             ele_id_type = ele.GetTypeId()
                             break
                 get_elementid_value = get_elementid_value_func()
                 if get_elementid_value(ele_id_type) == 0:
-                     # Get any text in model
-                    all_text_notes = FilteredElementCollector(new_doc).OfClass(TextNoteType).ToElements()
+                    # Get any text in model
+                    all_text_notes = DB.FilteredElementCollector(new_doc).OfClass(DB.TextNoteType).ToElements()
                     for ele in all_text_notes:
                         ele_id_type = ele.Id
                         break
@@ -243,7 +226,7 @@ class createLegend(IExternalEventHandler):
                 list_y = []
                 # FilledRegionType
                 filled_type=[]
-                all_types = FilteredElementCollector(new_doc).OfClass(FilledRegionType).ToElements()
+                all_types = DB.FilteredElementCollector(new_doc).OfClass(DB.FilledRegionType).ToElements()
                 for ty in all_types:
                     pattern = new_doc.GetElement(ty.ForegroundPatternId)
                     if pattern != None:
@@ -316,7 +299,7 @@ class createLegend(IExternalEventHandler):
                     list_curveLoops.Add(curveLoops)
                     reg = FilledRegion.Create(new_doc, filled_type[0].Id, newLegend.Id, list_curveLoops)
                     # Assign color filled region
-                    color = Autodesk.Revit.DB.Color(item._n1, item._n2, item._n3)
+                    color = (DB.BuiltInCategory(item._n1, item._n2, item._n3)
                     ogs.SetProjectionLineColor(color)
                     ogs.SetSurfaceForegroundPatternColor(color);
                     ogs.SetCutForegroundPatternColor(color);
@@ -324,7 +307,7 @@ class createLegend(IExternalEventHandler):
                     newLegend.SetElementOverrides(reg.Id, ogs)
                 t.Commit()
             else:
-                task2 = Autodesk.Revit.UI.TaskDialog("Color Elements by Parameter")
+                task2 = UI.TaskDialog("Color Elements by Parameter")
                 task2.MainInstruction = "In order to create a new legend, you need to have at least one. Please, create a legend view."
                 wndw.TopMost = False
                 task2.Show()
@@ -334,7 +317,7 @@ class createLegend(IExternalEventHandler):
     def GetName(self):
         return "Create Legend"
 
-class createFilters(IExternalEventHandler):
+class createFilters(UI.IExternalEventHandler):
     def __init__(self):
         pass
         
@@ -349,26 +332,25 @@ class createFilters(IExternalEventHandler):
                     dict_filters.Add(filter_ele.Name, filt_Id)
                 # Get rules apply in document
                 dict_rules = {}
-                iterator = FilteredElementCollector(new_doc).OfClass(Autodesk.Revit.DB.ParameterFilterElement).GetElementIterator()
+                iterator = DB.FilteredElementCollector(new_doc).OfClass(DB.ParameterFilterElement).GetElementIterator()
                 while iterator.MoveNext():
                     ele = iterator.Current
                     dict_rules.Add(ele.Name, ele.Id)
-                with Transaction(new_doc, "Create View Filters") as t:
-                    t.Start()
+                with revit.Transaction(new_doc, "Create View Filters"):
                     sel_cat = wndw._categories.SelectedItem['Value']
                     sel_par = wndw._listBox1.SelectedItem['Value']
                     parameter_id = sel_par._rl_par.Id
                     param_storage_type = sel_par._rl_par.StorageType
-                    categories = List[ElementId]()
+                    categories = List[DB.ElementId]()
                     categories.Add(sel_cat._cat.Id)
                     sf = self.solid_fill_pattern_id(new_doc)
                     items_listbox = wndw._listBox2.Items
                     for i, element in enumerate(items_listbox):
                         item = wndw._listBox2.Items[i]['Value']
                         # Assign color filled region
-                        ogs = OverrideGraphicSettings().Dispose()
-                        ogs = OverrideGraphicSettings()
-                        color = Autodesk.Revit.DB.Color(item._n1, item._n2, item._n3)
+                        ogs = DB.OverrideGraphicSettings().Dispose()
+                        ogs = DB.OverrideGraphicSettings()
+                        color = (DB.BuiltInCategory(item._n1, item._n2, item._n3)
                         ogs.SetSurfaceForegroundPatternColor(color)
                         ogs.SetCutForegroundPatternColor(color)
                         ogs.SetSurfaceForegroundPatternId(sf)
@@ -385,57 +367,56 @@ class createFilters(IExternalEventHandler):
                                 view.SetFilterOverrides(dict_filters[filter_name], ogs)
                         else:
                             # Create filter
-                            if param_storage_type == StorageType.Double:
-                                if item._value =="None" or len(item.values_double) == 0:
-                                    equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, "" , 0.001)
+                            if param_storage_type == DB.StorageType.Double:
+                                if item._value == "None" or len(item.values_double) == 0:
+                                    equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, "" , 0.001)
                                 else:
                                     minimo = min(item.values_double)
                                     maximo = max(item.values_double)
                                     avg_values = (maximo+minimo)/2
-                                    equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, avg_values, fabs(avg_values-minimo)+0.001)
+                                    equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, avg_values, fabs(avg_values-minimo)+0.001)
                             elif param_storage_type == StorageType.ElementId:
                                 if item._value =="None":
-                                    prevalue = ElementId.InvalidElementId
+                                    prevalue = DB.ElementId.InvalidElementId
                                 else:
                                     prevalue = item._par.AsElementId()
-                                equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
+                                equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
                             elif param_storage_type == StorageType.Integer:
                                 if item._value =="None":
                                     prevalue = 0
                                 else:
                                     prevalue = item._par.AsInteger()
-                                equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
+                                equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
                             elif param_storage_type == StorageType.String:
                                 if item._value == "None":
                                     prevalue = ""
                                 else:
                                     prevalue = item._value
                                 if version > 2023:
-                                    equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
+                                    equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
                                 else:
-                                    equals_rule = ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue, True)
+                                    equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue, True)
                             else:
-                                task2 = Autodesk.Revit.UI.TaskDialog("Color Elements by Parameter")
+                                task2 = UI.TaskDialog("Color Elements by Parameter")
                                 task2.MainInstruction = "Creation of filters for this type of parameter is not supported."
                                 wndw.TopMost = False
                                 task2.Show()
                                 wndw.TopMost = True
                                 break
                             try:
-                                elem_filter = ElementParameterFilter(equals_rule)
-                                fltr = Autodesk.Revit.DB.ParameterFilterElement.Create(new_doc, filter_name, categories, elem_filter)
+                                elem_filter = DB.ElementParameterFilter(equals_rule)
+                                fltr = DB.ParameterFilterElement.Create(new_doc, filter_name, categories, elem_filter)
                                 view.AddFilter(fltr.Id)
                                 view.SetFilterOverrides(fltr.Id, ogs)
                             except Exception as e:
-                                task2 = Autodesk.Revit.UI.TaskDialog("Color Elements by Parameter")
+                                task2 = UI.TaskDialog("Color Elements by Parameter")
                                 task2.MainInstruction = "View filters were not created. The selected parameter is not exposed by Revit and rules cannot be created."
                                 wndw.TopMost = False
                                 task2.Show()
                                 wndw.TopMost = True
                                 break
-                    t.Commit()
         except Exception as e:
-            task2 = Autodesk.Revit.UI.TaskDialog("Color Elements by Parameter")
+            task2 = UI.TaskDialog("Color Elements by Parameter")
             task2.MainInstruction = "Error in Filter Creation:\n" + str(e) + '\nError on line {}'.format(sys.exc_info()[-1].tb_lineno)
             wndw.TopMost = False
             task2.Show()
@@ -443,7 +424,7 @@ class createFilters(IExternalEventHandler):
 
     def solid_fill_pattern_id(self, new_doc):
         solid_fill_id = None
-        fillpatterns = FilteredElementCollector(new_doc).OfClass(FillPatternElement)
+        fillpatterns = DB.FilteredElementCollector(new_doc).OfClass(DB.FillPatternElement)
         for pat in fillpatterns:
             if pat.GetFillPattern().IsSolidFill:
                 solid_fill_id = pat.Id
@@ -459,16 +440,16 @@ class values_info():
         self._par = para
         self._value = val
         self._name = strip_accents(para.Definition.Name)
-        self._eleId = List[ElementId]()
+        self._eleId = List[DB.ElementId]()
         self._eleId.Add(id)
         self._n1 = n1
         self._n2 = n2
         self._n3 = n3
         self._colour = Color.FromArgb(self._n1, self._n2, self._n3)
         self.values_double = []
-        if para.StorageType == StorageType.Double:
+        if para.StorageType == DB.StorageType.Double:
             self.values_double.Add(para.AsDouble())
-        elif para.StorageType == StorageType.ElementId:
+        elif para.StorageType == DB.StorageType.ElementId:
             self.values_double.Add(para.AsElementId())
 
 class para_info():
@@ -488,10 +469,10 @@ class categ_info():
 
 def getActiveView(ac_doc):
     sel_View = ac_doc.ActiveView
-    if sel_View.ViewType == ViewType.ProjectBrowser or sel_View.ViewType == ViewType.SystemBrowser:
+    if sel_View.ViewType == DB.ViewType.ProjectBrowser or sel_View.ViewType == DB.ViewType.SystemBrowser:
         sel_View = ac_doc.GetElement(uidoc.GetOpenUIViews()[0].ViewId)
     if not sel_View.CanUseTemporaryVisibilityModes():
-        task2 = Autodesk.Revit.UI.TaskDialog("Color Elements by Parameter")
+        task2 = UI.TaskDialog("Color Elements by Parameter")
         task2.MainInstruction = "Visibility settings cannot be modified in " + str(sel_View.ViewType) + " views. Please, change your current view."
         try:
             wndw.TopMost = False
@@ -509,20 +490,20 @@ def getActiveView(ac_doc):
 def getValuePar(para):
     value = ""
     if para.HasValue:
-        if para.StorageType == StorageType.Double:
+        if para.StorageType == DB.StorageType.Double:
             value = para.AsValueString()
-        elif para.StorageType == StorageType.ElementId:
+        elif para.StorageType == DB.StorageType.ElementId:
             id_val = para.AsElementId()
             get_elementid_value = get_elementid_value_func()
             if get_elementid_value(id_val) >= 0:
-                value = Element.Name.__get__(doc.GetElement(id_val))
+                value = DB.Element.Name.__get__(doc.GetElement(id_val))
             else:
                 value ="None"
-        elif para.StorageType == StorageType.Integer:
+        elif para.StorageType == DB.StorageType.Integer:
             if version > 2021:
                 type = para.Definition.GetDataType()
-                if SpecTypeId.Boolean.YesNo == type:
-                    if para.AsInteger()==1:
+                if DB.SpecTypeId.Boolean.YesNo == type:
+                    if para.AsInteger() == 1:
                         value = "True"
                     else:
                         value = "False"
@@ -530,14 +511,14 @@ def getValuePar(para):
                     value = para.AsValueString()
             else:
                 type = para.Definition.ParameterType
-                if ParameterType.YesNo == type:
-                    if para.AsInteger()==1:
+                if DB.ParameterType.YesNo == type: # FIXME forgetypeId ?
+                    if para.AsInteger() == 1:
                         value = "True"
                     else:
                         value = "False"
                 else:
                     value = para.AsValueString()
-        elif para.StorageType == StorageType.String:
+        elif para.StorageType == DB.StorageType.String:
             value = para.AsString()
         else:
             value = "None"
@@ -545,8 +526,10 @@ def getValuePar(para):
         value = "None"
     return value
 
+
 def strip_accents(text):
     return ''.join(char for char in unicodedata.normalize('NFKD', text) if unicodedata.category(char) != 'Mn')
+
 
 def randomColor():
     r = randint(0, 230)
@@ -554,13 +537,14 @@ def randomColor():
     b = randint(0, 230)
     return r,g,b
 
+
 def getRangeOfValues(category, param, new_view):
-    for sample_bic in System.Enum.GetValues(BuiltInCategory):
+    for sample_bic in System.Enum.GetValues(DB.BuiltInCategory):
         if category._intId == int(sample_bic):
             bic = sample_bic
             break
-    collector = FilteredElementCollector(doc, new_view.Id).OfCategory(bic).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements()
-    list_values=[]
+    collector = DB.FilteredElementCollector(doc, new_view.Id).OfCategory(bic).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements()
+    list_values = []
     # Iterar todos los elementos y conseguir valores unicos
     for ele in collector:
         ele_par = ele
@@ -574,11 +558,11 @@ def getRangeOfValues(category, param, new_view):
                 match = [x for x in list_values if x._value == valor]
                 if len(match) > 0:
                     match[0]._eleId.Add(ele.Id)
-                    if pr.StorageType == StorageType.Double:
+                    if pr.StorageType == DB.StorageType.Double:
                         match[0].values_double.Add(pr.AsDouble())
                 else:
                     while True:
-                        r,g,b=randomColor()
+                        r, g, b = randomColor()
                         match = [x for x in list_values if x._n1 == r and x._n2 == g and x._n3 == b]
                         if len(match) == 0:
                             val = values_info(pr, valor, ele.Id, r, g, b)
@@ -596,7 +580,7 @@ def getRangeOfValues(category, param, new_view):
             indx_del = getIndexUnits(first_value)
             if indx_del ==0:
                 list_values = sorted(list_values, key=lambda x: float(x._value))
-            elif indx_del < len(first_value) and indx_del !=-1:
+            elif indx_del < len(first_value) and indx_del != -1:
                 list_values = sorted(list_values, key=lambda x: float(x._value[:-indx_del]))
         except Exception as e:
             pass
@@ -604,31 +588,31 @@ def getRangeOfValues(category, param, new_view):
         list_values.Add(copy[0])
     return list_values
 
+
 def getCategoriesAndParametersInUsed(cat_exc, acti_view):
     # Get All elements and filter unneeded
-    collector = FilteredElementCollector(doc, acti_view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements()
+    collector = DB.FilteredElementCollector(doc, acti_view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements()
     list_cat = []
     for ele in collector:
-        if ele.Category != None:
+        if ele.Category is not None:
             get_elementid_value = get_elementid_value_func()
             current_int_cat_id = get_elementid_value(ele.Category.Id)
-            if not current_int_cat_id in cat_exc and current_int_cat_id < -1:
+            if current_int_cat_id not in cat_exc and current_int_cat_id < -1:
                 if not any(x._intId == current_int_cat_id for x in list_cat):
-                    list_parameters=[]
+                    list_parameters = []
                     # Instance parameters
                     for par in ele.Parameters:
-                        if par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM and par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM_MT:
+                        if par.Definition.BuiltInParameter != DB.BuiltInParameter.ELEM_CATEGORY_PARAM and par.Definition.BuiltInParameter != DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT:
                             list_parameters.Add(para_info(0, par))
                     typ = ele.Document.GetElement(ele.GetTypeId())
                     # Type parameters
                     if typ != None:
                         for par in typ.Parameters:
-                            if par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM and par.Definition.BuiltInParameter != BuiltInParameter.ELEM_CATEGORY_PARAM_MT:
+                            if par.Definition.BuiltInParameter != DB.BuiltInParameter.ELEM_CATEGORY_PARAM and par.Definition.BuiltInParameter != DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT:
                                 list_parameters.Add(para_info(1, par))
                     # Sort and add
                     list_parameters = sorted(list_parameters, key=lambda x: x._name.upper(), reverse=False)
-                    # list_parameters.sort(key=lambda x: x._name.upper(), reverse=False)
-                    list_cat.Add(categ_info(ele.Category,list_parameters))
+                    list_cat.Add(categ_info(ele.Category, list_parameters))
     list_cat = sorted(list_cat, key=lambda x: x._name, reverse=False)
     return list_cat
 
@@ -653,7 +637,7 @@ class Form_cats(Form):
         self._tableData.Columns.Add("Value", System.Object)
         names = [x._name for x in self.categs]
         self._tableData.Rows.Add("Select a Category Here!", 0 )
-        [self._tableData.Rows.Add(key_, value_ ) for key_, value_ in zip(names, self.categs)]
+        [self._tableData.Rows.Add(key_, value_) for key_, value_ in zip(names, self.categs)]
         self.out = []
         self.InitializeComponent()
     
@@ -673,7 +657,7 @@ class Form_cats(Form):
         self._txtBlock3 = System.Windows.Forms.Label()
         self._txtBlock4 = System.Windows.Forms.Label()
         self._txtBlock5 = System.Windows.Forms.Label()
-        self.toolTip1 =  System.Windows.Forms.ToolTip()
+        self.toolTip1 = System.Windows.Forms.ToolTip()
         self.SuspendLayout()
         # Separator Top
         self._spr_top.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right
@@ -859,7 +843,8 @@ class Form_cats(Form):
                 self._listBox1.SetItemChecked(indx, True)
         except:
             pass
-    
+
+
     def Button4Click(self, sender, e):
         self._listBox2.SelectedIndexChanged -= self.lstselectedIndexChanged
         try:
@@ -888,18 +873,22 @@ class Form_cats(Form):
             pass
         self._listBox2.SelectedIndexChanged += self.lstselectedIndexChanged
 
+
     def Button5Click(self, sender, e):
         if self._listBox2.Items.Count > 0:
             self.legend_ev.Raise()
+
 
     def Button6Click(self, sender, e):
         if self._listBox2.Items.Count > 0:
             self.reset_ev.Raise()
             self.filter_ev.Raise()
 
+
     def SaveLoadColorScheme(self, sender, e):
         saveform = Form_SaveLoadScheme()
         saveform.Show()
+
 
     def getGradientColors(self, startColor, endColor, steps):
         aStep = float((endColor.A - startColor.A) / steps)
@@ -908,27 +897,28 @@ class Form_cats(Form):
         bStep = float((endColor.B - startColor.B) / steps)
         colorList=[]
         for index in range(steps):
-            a = startColor.A + int(aStep * index)-1;
-            r = startColor.R + int(rStep * index)-1;
-            g = startColor.G + int(gStep * index)-1;
-            b = startColor.B + int(bStep * index)-1;
+            a = startColor.A + int(aStep * index) - 1
+            r = startColor.R + int(rStep * index) - 1
+            g = startColor.G + int(gStep * index) - 1
+            b = startColor.B + int(bStep * index) - 1
             if a < 0:
-                a=0
+                a = 0
             if r < 0:
-                r=0
+                r = 0
             if g < 0:
-                g=0
+                g = 0
             if b < 0:
-                b=0
-            colorList.Add([a,r,g,b])
+                b = 0
+            colorList.Add([a, r, g, b])
         return colorList
-    
+
+
     def closingEvent(self, sender, e):
         self.IsOpen = 0
         self.uns_event.Raise()
-    
+
+
     def lstselectedIndexChanged(self, sender, e):
-        # Ask colour
         if sender.SelectedIndex != -1:
             clr_dlg = ColorDialog()
             clr_dlg.AllowFullOpen = True
@@ -938,7 +928,8 @@ class Form_cats(Form):
                 sender.SelectedItem['Value']._n3 = clr_dlg.Color.B
                 sender.SelectedItem['Value']._colour = Color.FromArgb(clr_dlg.Color.R, clr_dlg.Color.G, clr_dlg.Color.B)
             self._listBox2.SelectedIndex = -1
-        
+
+
     def ColourItem(self, sender, e):
         try:
             cnt = e.Index
@@ -985,7 +976,7 @@ class Form_cats(Form):
                 if len(vl_par) != 0:
                     width = [int(g.MeasureString(x,self._listBox2.Font).Width) for x in vl_par]
                     self._listBox2.HorizontalExtent = max(width) + 50;
-                [self._tableData3.Rows.Add(key_, value_ ) for key_, value_ in zip(vl_par, rng_val)]
+                [self._tableData3.Rows.Add(key_, value_) for key_, value_ in zip(vl_par, rng_val)]
                 self._listBox2.DataSource = self._tableData3
                 self._listBox2.DisplayMember = "Key"
                 self._listBox2.SelectedIndex = -1
@@ -1002,7 +993,7 @@ class Form_cats(Form):
         self._tableData3.Columns.Add("Value", System.Object)
         if sel_cat != 0 and sender.SelectedIndex != 0:
             names_par = [x._name for x in sel_cat._par]
-            [self._tableData2.Rows.Add(key_, value_ ) for key_, value_ in zip(names_par, sel_cat._par)]
+            [self._tableData2.Rows.Add(key_, value_) for key_, value_ in zip(names_par, sel_cat._par)]
             self._listBox1.DataSource = self._tableData2
             self._listBox1.DisplayMember = "Key"
             for indx in range(self._listBox1.Items.Count):
@@ -1105,7 +1096,7 @@ class Form_SaveLoadScheme(Form):
             if len(wndw._listBox2.Items) == 0:
                 wndw.Hide()
                 self.Hide()
-                Autodesk.Revit.UI.TaskDialog.Show("No Colors Detected", "The list of values in the main window is empty. Please, select a category and parameter to add items with colors.")
+                UI.TaskDialog.Show("No Colors Detected", "The list of values in the main window is empty. Please, select a category and parameter to add items with colors.")
                 wndw.Show()
                 self.Close()
             elif saveFileDialog.ShowDialog() == DialogResult.OK:
@@ -1122,7 +1113,7 @@ class Form_SaveLoadScheme(Form):
                     file.write(item['Key'] + "::R" + str(color_inst.R) + "G" + str(color_inst.G) + "B" + str(color_inst.B) + "\n")
         except Exception as ex:
             # If file is being used or blocked by OS/program.
-            Autodesk.Revit.UI.TaskDialog.Show("Error Saving Scheme", str(ex))
+            UI.TaskDialog.Show("Error Saving Scheme", str(ex))
             
     def SpecifyPathLoad(self, sender, e):	
         # Prompt save file dialog and its configuration.
@@ -1134,7 +1125,7 @@ class Form_SaveLoadScheme(Form):
             if len(wndw._listBox2.Items) == 0:
                 wndw.Hide()
                 self.Hide()
-                Autodesk.Revit.UI.TaskDialog.Show("No Values Detected", "The list of values in the main window is empty. Please, select a category and parameter to add items to apply colors.")
+                UI.TaskDialog.Show("No Values Detected", "The list of values in the main window is empty. Please, select a category and parameter to add items to apply colors.")
                 wndw.Show()
                 self.Close()
             elif openFileDialog.ShowDialog() == DialogResult.OK:
@@ -1182,7 +1173,7 @@ class Form_SaveLoadScheme(Form):
                     wndw._listBox2.Refresh()
             except Exception as ex:
                 # If file is being used or blocked by OS/program.
-                Autodesk.Revit.UI.TaskDialog.Show("Error Loading Scheme", str(ex))
+                UI.TaskDialog.Show("Error Loading Scheme", str(ex))
                 
 def getIndexUnits(str_value):
     for let in str_value[::-1]:
@@ -1198,24 +1189,24 @@ uiapp = HOST_APP.uiapp
 sel_View = getActiveView(doc)
 if sel_View !=0:
     # Categories to exclude
-    cat_excluded = [int(BuiltInCategory.OST_RoomSeparationLines), int(BuiltInCategory.OST_Cameras), int(BuiltInCategory.OST_CurtainGrids), int(BuiltInCategory.OST_Elev), int(BuiltInCategory.OST_Grids), int(BuiltInCategory.OST_IOSModelGroups), int(BuiltInCategory.OST_Views), int(BuiltInCategory.OST_SitePropertyLineSegment), int(BuiltInCategory.OST_SectionBox), int(BuiltInCategory.OST_ShaftOpening), int(BuiltInCategory.OST_BeamAnalytical), int(BuiltInCategory.OST_StructuralFramingOpening), int(BuiltInCategory.OST_MEPSpaceSeparationLines), int(BuiltInCategory.OST_DuctSystem), int(BuiltInCategory.OST_Lines), int(BuiltInCategory.OST_PipingSystem), int(BuiltInCategory.OST_Matchline), int(BuiltInCategory.OST_CenterLines), int(BuiltInCategory.OST_CurtainGridsRoof), int(BuiltInCategory.OST_SWallRectOpening), -2000278, -1]
+    cat_excluded = [int(DB.BuiltInCategory.OST_RoomSeparationLines), int(DB.BuiltInCategory.OST_Cameras), int(DB.BuiltInCategory.OST_CurtainGrids), int(DB.BuiltInCategory.OST_Elev), int(DB.BuiltInCategory.OST_Grids), int(DB.BuiltInCategory.OST_IOSModelGroups), int(DB.BuiltInCategory.OST_Views), int(DB.BuiltInCategory.OST_SitePropertyLineSegment), int(DB.BuiltInCategory.OST_SectionBox), int(DB.BuiltInCategory.OST_ShaftOpening), int(DB.BuiltInCategory.OST_BeamAnalytical), int(DB.BuiltInCategory.OST_StructuralFramingOpening), int(DB.BuiltInCategory.OST_MEPSpaceSeparationLines), int(DB.BuiltInCategory.OST_DuctSystem), int(DB.BuiltInCategory.OST_Lines), int(DB.BuiltInCategory.OST_PipingSystem), int(DB.BuiltInCategory.OST_Matchline), int(DB.BuiltInCategory.OST_CenterLines), int(DB.BuiltInCategory.OST_CurtainGridsRoof), int(DB.BuiltInCategory.OST_SWallRectOpening), -2000278, -1]
     # Get categories in used
     categ_inf_used = getCategoriesAndParametersInUsed(cat_excluded, sel_View)
     # Window
     event_handler = applyColors()
-    ext_event = ExternalEvent.Create(event_handler)
+    ext_event = DB.ExternalEvent.Create(event_handler)
     
     event_handler_uns = subscribeView()
-    ext_event_uns = ExternalEvent.Create(event_handler_uns)
+    ext_event_uns = DB.ExternalEvent.Create(event_handler_uns)
     
     event_handler_filters = createFilters()
-    ext_event_filters = ExternalEvent.Create(event_handler_filters)
+    ext_event_filters = DB.ExternalEvent.Create(event_handler_filters)
     
     event_handler_reset = resetColors()
-    ext_event_reset = ExternalEvent.Create(event_handler_reset)
+    ext_event_reset = DB.ExternalEvent.Create(event_handler_reset)
     
     event_handler_Legend = createLegend()
-    ext_event_legend = ExternalEvent.Create(event_handler_Legend)
+    ext_event_legend = DB.ExternalEvent.Create(event_handler_Legend)
     
     wndw = Form_cats(categ_inf_used, ext_event, ext_event_uns, sel_View, ext_event_reset, ext_event_legend, ext_event_filters)
     wndw._categories.SelectedIndex = -1
