@@ -1,7 +1,5 @@
 import sys
 import clr
-clr.AddReference('ProtoGeometry')
-from Autodesk.DesignScript.Geometry import *
 from re import split
 from math import fabs
 from random import randint
