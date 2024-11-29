@@ -21,7 +21,6 @@ import System
 from System import Array, Environment, String
 clr.AddReference('System.Data')
 from System.Data import *
-from System.Collections.Generic import *
 
 from pyrevit import HOST_APP, revit, DB, UI
 from pyrevit.compat import get_elementid_value_func
@@ -118,7 +117,7 @@ class applyColors(UI.IExternalEventHandler):
                         ogs.SetProjectionLineColor(color)
                         ogs.SetSurfaceForegroundPatternColor(color)
                         ogs.SetCutForegroundPatternColor(color)
-                        if solidFillId != None:
+                        if solidFillId is not None:
                             ogs.SetSurfaceForegroundPatternId(solidFillId)
                             ogs.SetCutForegroundPatternId(solidFillId)
                         ogs.SetProjectionLinePatternId(DB.ElementId(-1))
@@ -129,7 +128,8 @@ class applyColors(UI.IExternalEventHandler):
             
     def GetName(self):
         return "Set colors to elements"
-        
+
+
 class resetColors(UI.IExternalEventHandler):
     def __init__(self):
         pass
@@ -169,6 +169,7 @@ class resetColors(UI.IExternalEventHandler):
     def GetName(self):
         return "Reset colors in elements"
 
+
 class createLegend(UI.UI.IExternalEventHandler):
     def __init__(self):
         pass
@@ -179,7 +180,7 @@ class createLegend(UI.UI.IExternalEventHandler):
             rvt_ver = int(uiapp.Application.VersionNumber)
             # Get legend view
             collector = DB.FilteredElementCollector(new_doc).OfClass(DB.View).ToElements()
-            legends=[]
+            legends = []
             for vw in collector:
                 if vw.ViewType == DB.ViewType.Legend:
                     legends.Add(vw)
@@ -208,7 +209,7 @@ class createLegend(UI.UI.IExternalEventHandler):
                 old_all_ele = DB.FilteredElementCollector(new_doc, legends[0].Id).ToElements()
                 ele_id_type = DB.ElementId(0)
                 for ele in old_all_ele:
-                    if ele.Id != newLegend.Id and ele.Category != None:
+                    if ele.Id != newLegend.Id and ele.Category is not None:
                         if isinstance(ele, DB.TextNote):
                             ele_id_type = ele.GetTypeId()
                             break
@@ -228,7 +229,7 @@ class createLegend(UI.UI.IExternalEventHandler):
                 all_types = DB.FilteredElementCollector(new_doc).OfClass(DB.FilledRegionType).ToElements()
                 for ty in all_types:
                     pattern = new_doc.GetElement(ty.ForegroundPatternId)
-                    if pattern != None:
+                    if pattern is not None:
                         if pattern.GetFillPattern().IsSolidFill:
                             if ty.ForegroundPatternColor.IsValid:
                                 filled_type.Add(ty)
@@ -242,7 +243,7 @@ class createLegend(UI.UI.IExternalEventHandler):
                             new_type = all_types[0].Duplicate("Fill Region " + str(it))
                             break
                         except:
-                            it +=1
+                            it += 1
                             if it == 100:
                                 break
                     # Create pattern
@@ -605,7 +606,7 @@ def getCategoriesAndParametersInUsed(cat_exc, acti_view):
                             list_parameters.Add(para_info(0, par))
                     typ = ele.Document.GetElement(ele.GetTypeId())
                     # Type parameters
-                    if typ != None:
+                    if typ is not None:
                         for par in typ.Parameters:
                             if par.Definition.BuiltInParameter != DB.BuiltInParameter.ELEM_CATEGORY_PARAM and par.Definition.BuiltInParameter != DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT:
                                 list_parameters.Add(para_info(1, par))
@@ -961,7 +962,7 @@ class Form_cats(Form):
             pass
         sel_cat = self._categories.SelectedItem['Value']
         sel_param = sender.Items[e.Index]['Value']
-        if sel_cat != None and sel_cat != 0:
+        if sel_cat is not None and sel_cat != 0:
             self._tableData3 = DataTable("Data")
             self._tableData3.Columns.Add("Key", System.String)
             self._tableData3.Columns.Add("Value", System.Object)
