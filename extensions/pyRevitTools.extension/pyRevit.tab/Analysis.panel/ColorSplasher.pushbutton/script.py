@@ -23,6 +23,7 @@ clr.AddReference('System.Data')
 from System.Data import *
 
 from pyrevit import HOST_APP, revit, DB, UI
+from pyrevit.framework import List
 from pyrevit.compat import get_elementid_value_func
 
 
@@ -254,7 +255,7 @@ class createLegend(UI.UI.IExternalEventHandler):
                             new_elePat = DB.FillPatternElement.Create(new_doc, new_pattern)
                             break
                         except:
-                            it +=1
+                            it += 1
                             if it == 100:
                                 break
                     # Assign to type
@@ -262,10 +263,10 @@ class createLegend(UI.UI.IExternalEventHandler):
                     filled_type.Add(new_type)
                 # Create Text
                 for vw_item in wndw._listBox2.Items:
-                    punto = XYZ(0,0,0)
+                    punto = DB.XYZ(0, 0,  0)
                     index = wndw._listBox2.Items.IndexOf(vw_item)
-                    if index !=0:
-                        punto = XYZ(0,fin_coord_y,0)
+                    if index != 0:
+                        punto = DB.XYZ(0, fin_coord_y, 0)
                     item = vw_item['Value']
                     text_line = sel_cat._name + "/" + sel_par._name + " - " + item._value
                     new_text = DB.TextNote.Create(new_doc, newLegend.Id, punto, text_line, ele_id_type)
@@ -284,12 +285,12 @@ class createLegend(UI.UI.IExternalEventHandler):
                     item = wndw._listBox2.Items[indx]['Value']
                     point0 = DB.XYZ(ini_x, coord_y, 0)
                     point1 = DB.XYZ(ini_x, coord_y + height, 0)
-                    point2 = DB.XYZ(ini_x *1.5, coord_y + height, 0)
-                    point3 = DB.XYZ(ini_x *1.5, coord_y, 0)
-                    line01 = DB.Line.CreateBound(point0,point1)
-                    line12= DB.Line.CreateBound(point1,point2)
-                    line23 = DB.Line.CreateBound(point2,point3)
-                    line30 = DB.Line.CreateBound(point3,point0)
+                    point2 = DB.XYZ(ini_x * 1.5, coord_y + height, 0)
+                    point3 = DB.XYZ(ini_x * 1.5, coord_y, 0)
+                    line01 = DB.Line.CreateBound(point0, point1)
+                    line12 = DB.Line.CreateBound(point1, point2)
+                    line23 = DB.Line.CreateBound(point2, point3)
+                    line30 = DB.Line.CreateBound(point3, point0)
                     list_curveLoops = List[DB.CurveLoop]()
                     curveLoops = DB.CurveLoop()
                     curveLoops.Append(line01)
@@ -376,13 +377,13 @@ class createFilters(UI.IExternalEventHandler):
                                     avg_values = (maximo+minimo)/2
                                     equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, avg_values, fabs(avg_values-minimo)+0.001)
                             elif param_storage_type == StorageType.ElementId:
-                                if item._value =="None":
+                                if item._value == "None":
                                     prevalue = DB.ElementId.InvalidElementId
                                 else:
                                     prevalue = item._par.AsElementId()
                                 equals_rule = DB.ParameterFilterRuleFactory.CreateEqualsRule(parameter_id, prevalue)
                             elif param_storage_type == StorageType.Integer:
-                                if item._value =="None":
+                                if item._value == "None":
                                     prevalue = 0
                                 else:
                                     prevalue = item._par.AsInteger()
@@ -445,7 +446,7 @@ class values_info():
         self._n1 = n1
         self._n2 = n2
         self._n3 = n3
-        self._colour = Color.FromArgb(self._n1, self._n2, self._n3)
+        self._colour = System.Drawing.Color.FromArgb(self._n1, self._n2, self._n3)
         self.values_double = []
         if para.StorageType == DB.StorageType.Double:
             self.values_double.Add(para.AsDouble())
@@ -664,7 +665,7 @@ class Form_cats(Form):
         self._spr_top.Location = System.Drawing.Point(0, 0)
         self._spr_top.Name = "spr_top"
         self._spr_top.Size = System.Drawing.Size(2000, 2)
-        self._spr_top.BackColor = Color.FromArgb(82, 53, 239)
+        self._spr_top.BackColor = System.Drawing.Color.FromArgb(82, 53, 239)
         # TextBlock2
         self._txtBlock2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._txtBlock2.Location = System.Drawing.Point(12, 2)
@@ -714,7 +715,7 @@ class Form_cats(Form):
         self._txtBlock5.Name = "txtBlock5"
         self._txtBlock5.Size = System.Drawing.Size(310, 27)
         self._txtBlock5.Text = "*Spaces may require a color scheme in the view."
-        self._txtBlock5.ForeColor = Color.Red
+        self._txtBlock5.ForeColor = System.Drawing.Color.Red
         self._txtBlock5.Font = Font("Arial", 8, FontStyle.Underline)
         self._txtBlock5.Visible = False
         # checkedListBox2
@@ -859,7 +860,7 @@ class Form_cats(Form):
                     item._n1 = abs(list_colors[indx][1])
                     item._n2 = abs(list_colors[indx][2])
                     item._n3 = abs(list_colors[indx][3])
-                    item._colour = Color.FromArgb(item._n1, item._n2, item._n3)
+                    item._colour = System.Drawing.Color.FromArgb(item._n1, item._n2, item._n3)
                     list_values.Add(item)
                 self._tableData3 = DataTable("Data")
                 self._tableData3.Columns.Add("Key", System.String)
@@ -926,7 +927,7 @@ class Form_cats(Form):
                 sender.SelectedItem['Value']._n1 = clr_dlg.Color.R
                 sender.SelectedItem['Value']._n2 = clr_dlg.Color.G
                 sender.SelectedItem['Value']._n3 = clr_dlg.Color.B
-                sender.SelectedItem['Value']._colour = Color.FromArgb(clr_dlg.Color.R, clr_dlg.Color.G, clr_dlg.Color.B)
+                sender.SelectedItem['Value']._colour = System.Drawing.Color.FromArgb(clr_dlg.Color.R, clr_dlg.Color.G, clr_dlg.Color.B)
             self._listBox2.SelectedIndex = -1
 
 
@@ -936,11 +937,11 @@ class Form_cats(Form):
             g = e.Graphics
             textDevice = sender.Items[e.Index]['Key']
             color = sender.Items[e.Index]['Value']._colour
-            if cnt == self._listBox2.SelectedIndex or color == Color.FromArgb(Color.White.R, Color.White.G, Color.White.B):
-                color = Color.White
-                font_color = Color.Black
+            if cnt == self._listBox2.SelectedIndex or color == System.Drawing.Color.FromArgb(System.Drawing.Color.White.R, System.Drawing.Color.White.G, System.Drawing.Color.White.B):
+                color = System.Drawing.Color.White
+                font_color = System.Drawing.Color.Black
             else:
-                font_color = Color.White
+                font_color = System.Drawing.Color.White
             wdth = g.MeasureString(textDevice, self.new_fnt).Width + 30
             if self._listBox2.Width < wdth and self._listBox2.HorizontalExtent < wdth:
                 self._listBox2.HorizontalExtent = wdth
@@ -1024,7 +1025,7 @@ class Form_SaveLoadScheme(Form):
         self._spr_top.Location = System.Drawing.Point(0, 0)
         self._spr_top.Name = "spr_top"
         self._spr_top.Size = System.Drawing.Size(500, 2)
-        self._spr_top.BackColor = Color.FromArgb(82, 53, 239)
+        self._spr_top.BackColor = System.Drawing.Color.FromArgb(82, 53, 239)
         # If loading
         self._txt_ifloading.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left
         self._txt_ifloading.Location = System.Drawing.Point(12, 10)
@@ -1152,7 +1153,7 @@ class Form_SaveLoadScheme(Form):
                                     item['Value']._n1 = r
                                     item['Value']._n2 = g
                                     item['Value']._n3 = b
-                                    item['Value']._colour = Color.FromArgb(r,g,b)
+                                    item['Value']._colour = System.Drawing.Color.FromArgb(r,g,b)
                                     break
                     else:
                         for ind, line in enumerate(all_lines):
@@ -1167,7 +1168,7 @@ class Form_SaveLoadScheme(Form):
                                 item['Value']._n1 = r
                                 item['Value']._n2 = g
                                 item['Value']._n3 = b
-                                item['Value']._colour = Color.FromArgb(r,g,b)
+                                item['Value']._colour = System.Drawing.Color.FromArgb(r,g,b)
                             else:
                                 break
                     wndw._listBox2.Refresh()
