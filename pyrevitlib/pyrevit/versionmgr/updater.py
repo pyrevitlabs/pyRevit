@@ -11,7 +11,7 @@ from pyrevit.versionmgr import upgrade
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 
-from System.Net.NetworkInformation import Ping, IPStatus
+import socket
 
 #pylint: disable=C0103,W0703
 logger = get_logger(__name__)
@@ -30,13 +30,15 @@ COREUPDATE_MESSAGE = '<div class="coreupdatewarn">' \
                      '</div>'
 
 
-def _check_connection(ip_address="8.8.8.8"):
-    ping_sender = Ping()
+def _check_connection(host="8.8.8.8", port=53, timeout=3):
     try:
-        reply = ping_sender.Send(ip_address)
-    except Exception:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        logger.debug('Internet access detected.')
+        return True
+    except socket.error as ex:
+        logger.debug('No internet access detected. %s', ex)
         return False
-    return reply.Status == IPStatus.Success
 
 
 def _get_extension_credentials(repo_info):
