@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import datetime
 
 from pyrevit import coreutils
@@ -1177,40 +1176,37 @@ def checkModel(doc, output):
                     if "Unassigned" not in worksetNames:
                         worksetNames.append("Unassigned")
                     graphWorksetsData.append("Unassigned")
-    
-        # sorting results in chart legend
-        worksetNames.sort()
 
-        worksetsSet = []
-        for i in worksetNames:
-            count = graphWorksetsData.count(i)
-            worksetsSet.append(count)
-        worksetNames = [x.encode("utf8") for x in worksetNames]
+    # print worksetNames
+    # sorting results in chart legend
+    worksetNames.sort()
 
-        # Worksets OUTPUT print chart only when file is workshared
-        if len(worksetNames) > 0:
-            chartWorksets = output.make_doughnut_chart()
-            chartWorksets.options.title = {
-                "display": True,
-                "text": "Element Count by Workset",
-                "fontSize": 25,
-                "fontColor": "#000",
-                "fontStyle": "bold",
-            }
-            chartWorksets.data.labels = worksetNames
-            set_a = chartWorksets.data.new_dataset("Not Standard")
-            set_a.data = worksetsSet
+    worksetsSet = [graphWorksetsData.count(i) for i in worksetNames]
+    worksetNames = [x.encode("utf8") for x in worksetNames]
 
-            set_a.backgroundColor = COLORS
+    # Worksets OUTPUT print chart only when file is workshared
+    if worksetNames:
+        chartWorksets = output.make_doughnut_chart()
+        chartWorksets.options.title = {
+            "display": True,
+            "text": "Element Count by Workset",
+            "fontSize": 25,
+            "fontColor": "#000",
+            "fontStyle": "bold",
+        }
+        chartWorksets.data.labels = worksetNames
+        set_a = chartWorksets.data.new_dataset("Not Standard")
+        set_a.data = worksetsSet
 
-            worksetsCount = len(worksetNames)
-            if worksetsCount < 15:
-                chartWorksets.set_height(100)
-            elif worksetsCount < 30:
-                chartWorksets.set_height(160)
-            else:
-                chartWorksets.set_height(200)
+        set_a.backgroundColor = COLORS
 
+        worksetsCount = len(worksetNames)
+        if worksetsCount < 15:
+            chartWorksets.set_height(100)
+        elif worksetsCount < 30:
+            chartWorksets.set_height(160)
+        else:
+            chartWorksets.set_height(200)
             chartWorksets.draw()
 
 class ModelChecker(PreflightTestCase):
@@ -1241,8 +1237,6 @@ class ModelChecker(PreflightTestCase):
     name = "Model Checker"
     author = "David Vadkerti, Jean-Marc Couffin"
 
-    def setUp(self, doc, output):
-        pass
 
     def startTest(self, doc, output):
         timer = coreutils.Timer()
@@ -1251,9 +1245,3 @@ class ModelChecker(PreflightTestCase):
         endtime_hms = str(datetime.timedelta(seconds=endtime))
         endtime_hms_claim = "Transaction took " + endtime_hms
         print(endtime_hms_claim)
-
-    def tearDown(self, doc, output):
-        pass
-
-    def doCleanups(self, doc, output):
-        pass

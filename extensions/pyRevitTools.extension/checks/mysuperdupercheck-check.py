@@ -6,22 +6,17 @@ doc = DOCS.doc
 
 
 def grids_collector(document):
-    grids = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Grids).WhereElementIsNotElementType()
-    return grids
+    return DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Grids).WhereElementIsNotElementType()
 
 
 def grids_count(document=doc):
     grids = grids_collector(document)
-    count = grids.GetElementCount()
-    return count
+    return grids.GetElementCount()
 
 
 def grids_names(document=doc):
     grids = grids_collector(document)
-    grids_names = []
-    for grid in grids:
-        grids_names.append(grid.Name)
-    return grids_names
+    return [grid.Name for grid in grids]
 
 
 def grids_types(document=doc):
@@ -36,10 +31,7 @@ def grids_types(document=doc):
 
 def grids_pinned(document=doc):
     grids = grids_collector(document)
-    pinned_grids = []
-    for grid in grids:
-        pinned_grids.append(grid.Pinned)
-    return pinned_grids
+    return [grid.Pinned for grid in grids]
 
 
 def grids_scoped(document=doc):
@@ -55,7 +47,7 @@ def grids_scoped(document=doc):
     return scoped_grids
 
 
-def checkModel(doc, output):
+def check_model(doc, output):
     output = script.get_output()
     output.close_others()
     output.print_md("# Grids Data Lister")
@@ -81,6 +73,5 @@ class ModelChecker(PreflightTestCase):
     name = "Grids Data Lister"
     author = "Jean-Marc Couffin"
 
-
     def startTest(self, doc, output):
-        checkModel(doc, output)
+        check_model(doc, output)

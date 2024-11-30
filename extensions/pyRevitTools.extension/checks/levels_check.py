@@ -89,15 +89,6 @@ class ModelChecker(PreflightTestCase):
     name = "Levels Data Lister"
     author = "Jean-Marc Couffin"
 
-    def setUp(self, doc, output):
-        pass
 
     def startTest(self, doc, output):
         checkModel(doc, output)
-
-
-    def tearDown(self, doc, output):
-        pass
-
-    def doCleanups(self, doc, output):
-        pass
