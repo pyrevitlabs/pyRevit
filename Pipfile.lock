@@ -435,12 +435,12 @@
         },
         "mkdocstrings": {
             "hashes": [
-                "sha256:1248f3228464f3b8d1a15bd91249ce1701fe3104ac517a5f167a0e01ca850ba5",
-                "sha256:34a8b50f1e6cfd29546c6c09fbe02154adfb0b361bb758834bf56aa284ba876e"
+                "sha256:16adca6d6b0a1f9e0c07ff0b02ced8e16f228a9d65a37c063ec4c14d7b76a657",
+                "sha256:6ceaa7ea830770959b55a16203ac63da24badd71325b96af950e59fd37366332"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==0.26.2"
+            "version": "==0.27.0"
         },
         "mkdocstrings-python": {
             "hashes": [
