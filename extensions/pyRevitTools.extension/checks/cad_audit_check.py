@@ -56,7 +56,7 @@ class RadioButton(RpwControlMixin, Controls.RadioButton):
 def get_cad_site(cad_inst):
     """ A CAD's location site cannot be got from the Shared Site parameter 
         cad_inst.Name returns the site name with a 'location' prefix (language-specific, eg 'emplacement' in French)"""
-    return = cad_inst.Name.replace("location", "-")
+    return cad_inst.Name.replace("location", "-")
 
 
 def get_user_input():
@@ -140,7 +140,7 @@ def check_model(doc, output):
     
     # Summary output section:
     link_to_view = output.linkify(ac_view.Id, title="Show the view")
-    print("{} CAD instances found.".format(len(cad_instances))
+    print("{} CAD instances found.".format(len(cad_instances)))
     if coll_mode: # if active view only
         summary_msg = "the active view ('{}') {}".format(ac_view.Name, link_to_view)
     else:
