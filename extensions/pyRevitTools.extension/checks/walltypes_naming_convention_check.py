@@ -50,7 +50,7 @@ def check_model(doc, output):
     wall_counts = Counter((wall.Name for wall in walls))
 
     # Load wall list from JSON
-    allowed_wall_names = set(pick_json()["allowed_wall_types"])`"
+    allowed_wall_names = set(pick_json()["allowed_wall_types"])
 
     # Initialize results dictionary for found and wrong wall types
     wrong_wall_names = set(wall_counts) - allowed_wall_names
