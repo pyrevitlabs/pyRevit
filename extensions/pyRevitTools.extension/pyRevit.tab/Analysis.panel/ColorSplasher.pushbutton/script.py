@@ -155,27 +155,27 @@ class applyColors(IExternalEventHandler):
     def GetName(self):
         return "Set colors to elements"
         
-class resetColors(IExternalEventHandler):
+class ResetColors(UI.IExternalEventHandler):
     def __init__(self):
         pass
-        
+
     def Execute(self, uiapp):
         try:
-            new_doc = uiapp.ActiveUIDocument.Document
-            view = getActiveView(new_doc)
-            if view != 0:
-                ogs = OverrideGraphicSettings().Dispose()
-                ogs = OverrideGraphicSettings()
-                collector = FilteredElementCollector(new_doc, view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElementIds()
-                t = Transaction(new_doc, "Reset colors in elements")
-                t.Start()
-                try:
-                    #Get and ResetView Filters
+            new_doc = revit.DOCS.doc
+            view = get_active_view(new_doc)
+            
+            if view == 0:
+                return
+                
+            # First remove any existing filters
+            filters = view.GetFilters()
+            if filters and len(filters) > 0:
+                # Only remove filters for current category/parameter if selected
+                if hasattr(wndw, '_categories') and wndw._categories.SelectedIndex > 0:
                     sel_cat = wndw._categories.SelectedItem['Value']
-                    sel_par = wndw._listBox1.SelectedItem['Value']
                     filter_name = sel_cat._name + "/"
-                    filters = view.GetFilters()
-                    if len(filters) != 0:
+                    
+                    with revit.Transaction(doc=new_doc, name="Remove View Filters"):
                         for filt_id in filters:
                             filt_ele = new_doc.GetElement(filt_id)
                             if filt_ele.Name.StartsWith(filter_name):
@@ -184,15 +184,33 @@ class resetColors(IExternalEventHandler):
                                     new_doc.Delete(filt_id)
                                 except:
                                     pass
-                except Exception as e:
-                    pass
-                #Reset visibility
-                for id in collector:
-                    view.SetElementOverrides(id, ogs)
-                t.Commit()
-        except Exception as e:
-            pass
             
+            # Then reset element overrides
+            with revit.Transaction(doc=new_doc, name="Reset Element Colors"):
+                # Create empty override settings
+                ogs = DB.OverrideGraphicSettings()
+                
+                # Get all visible elements in view
+                collector = (DB.FilteredElementCollector(new_doc, view.Id)
+                           .WhereElementIsNotElementType()
+                           .WhereElementIsViewIndependent()
+                           .ToElements())
+                
+                # Reset overrides for elements
+                for element in collector:
+                    if element.Category is not None:
+                        # If category selected, only reset those elements
+                        if hasattr(wndw, '_categories') and wndw._categories.SelectedIndex > 0:
+                            sel_cat = wndw._categories.SelectedItem['Value']
+                            if element.Category.Id.IntegerValue == sel_cat._cat.Id.IntegerValue:
+                                view.SetElementOverrides(element.Id, ogs)
+                        else:
+                            # Reset all elements if no category selected
+                            view.SetElementOverrides(element.Id, ogs)
+
+        except Exception as ex:
+            print("Error resetting colors: {}".format(ex))
+
     def GetName(self):
         return "Reset colors in elements"
 
