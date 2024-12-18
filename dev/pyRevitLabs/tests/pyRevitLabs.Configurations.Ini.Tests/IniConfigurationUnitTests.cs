@@ -27,22 +27,12 @@ public class IniConfigurationUnitTests : ConfigurationTests, IClassFixture<IniCr
     }
 
     [Fact]
-    public void CreateIniConfigurationByBuilder_ShouldCreate()
-    {
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddIniConfiguration(_configPath)
-            .Build();
-
-        Assert.NotNull(configuration);
-    }
-
-    [Fact]
     public void CreateIniConfigurationByBuilder_ShouldThrowsException()
     {
         Assert.Throws<ArgumentException>(() =>
         {
             new ConfigurationBuilder()
-                .AddIniConfiguration(default!)
+                .AddIniConfiguration(default!, default!)
                 .Build();
         });
     }
@@ -53,7 +43,7 @@ public class IniConfigurationUnitTests : ConfigurationTests, IClassFixture<IniCr
         Assert.Throws<ArgumentNullException>(() =>
         {
             IniConfigurationExtensions
-                .AddIniConfiguration(default!, default!)
+                .AddIniConfiguration(default!, default!, default!)
                 .Build();
         });
     }

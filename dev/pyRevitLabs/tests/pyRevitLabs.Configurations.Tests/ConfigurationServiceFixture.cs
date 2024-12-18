@@ -7,10 +7,12 @@ namespace pyRevitLabs.Configurations.Tests
     {
         public ConfigurationServiceFixture()
         {
-            Configuration = new ConfigurationService(new List<IConfiguration>() {new TestRunConfiguration()});
+            Configuration = new ConfigurationService(
+                new Dictionary<string, IConfiguration>()
+                    {{"default", new TestRunConfiguration()}});
         }
 
-        public IConfiguration Configuration { get; }
+        public ConfigurationService Configuration { get; }
 
         public void Dispose() { }
 

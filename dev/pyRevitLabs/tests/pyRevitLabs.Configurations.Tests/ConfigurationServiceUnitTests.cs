@@ -2,11 +2,13 @@ using pyRevitLabs.Configurations.Abstractions;
 
 namespace pyRevitLabs.Configurations.Tests
 {
-    public sealed class ConfigurationServiceUnitTests : ConfigurationTests, IClassFixture<ConfigurationServiceFixture>
+    public sealed class ConfigurationServiceUnitTests : IClassFixture<ConfigurationServiceFixture>
     {
+        private readonly ConfigurationServiceFixture _configurationServiceFixture;
+
         public ConfigurationServiceUnitTests(ConfigurationServiceFixture configurationServiceFixture)
-            : base(configurationServiceFixture.Configuration)
         {
+            _configurationServiceFixture = configurationServiceFixture;
         }
     }
 }

@@ -4,18 +4,21 @@ namespace pyRevitLabs.Configurations;
 
 public sealed class ConfigurationBuilder
 {
-    private readonly List<IConfiguration> _configurations = [];
-    
-    public ConfigurationBuilder AddConfigurationSource(IConfiguration configuration)
+    private readonly Dictionary<string, IConfiguration> _configurations = [];
+
+    public ConfigurationBuilder AddConfigurationSource(string configurationName, IConfiguration configuration)
     {
-        if (configuration == null) 
+        if (configuration == null)
             throw new ArgumentNullException(nameof(configuration));
-        
-        _configurations.Add(configuration);
+
+        if (string.IsNullOrWhiteSpace(configurationName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(configurationName));
+
+        _configurations.Add(configurationName, configuration);
         return this;
     }
 
-    public IConfiguration Build()
+    public ConfigurationService Build()
     {
         return ConfigurationService.Create(_configurations);
     }

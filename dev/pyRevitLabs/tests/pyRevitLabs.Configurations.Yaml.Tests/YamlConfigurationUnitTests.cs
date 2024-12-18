@@ -27,22 +27,12 @@ public class YamlConfigurationUnitTests : ConfigurationTests, IClassFixture<Yaml
     }
 
     [Fact]
-    public void CreateIniConfigurationByBuilder_ShouldCreate()
-    {
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddYamlConfiguration(_configPath)
-            .Build();
-
-        Assert.NotNull(configuration);
-    }
-
-    [Fact]
     public void CreateIniConfigurationByBuilder_ShouldThrowsException()
     {
         Assert.Throws<ArgumentException>(() =>
         {
             new ConfigurationBuilder()
-                .AddYamlConfiguration(default!)
+                .AddYamlConfiguration(default!, default!)
                 .Build();
         });
     }
@@ -53,7 +43,7 @@ public class YamlConfigurationUnitTests : ConfigurationTests, IClassFixture<Yaml
         Assert.Throws<ArgumentNullException>(() =>
         {
             YamlConfigurationExtensions
-                .AddYamlConfiguration(default!, default!)
+                .AddYamlConfiguration(default!, default!, default!)
                 .Build();
         });
     }

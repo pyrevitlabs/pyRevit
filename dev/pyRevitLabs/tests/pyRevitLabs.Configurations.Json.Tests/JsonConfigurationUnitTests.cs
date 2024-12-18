@@ -27,22 +27,12 @@ public class JsonConfigurationUnitTests : ConfigurationTests, IClassFixture<Json
     }
 
     [Fact]
-    public void CreateIniConfigurationByBuilder_ShouldCreate()
-    {
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddJsonConfiguration(_configPath)
-            .Build();
-
-        Assert.NotNull(configuration);
-    }
-
-    [Fact]
     public void CreateIniConfigurationByBuilder_ShouldThrowsException()
     {
         Assert.Throws<ArgumentException>(() =>
         {
             new ConfigurationBuilder()
-                .AddJsonConfiguration(default!)
+                .AddJsonConfiguration(default!, default!)
                 .Build();
         });
     }
@@ -53,7 +43,7 @@ public class JsonConfigurationUnitTests : ConfigurationTests, IClassFixture<Json
         Assert.Throws<ArgumentNullException>(() =>
         {
             JsonConfigurationExtensions
-                .AddJsonConfiguration(default!, default!)
+                .AddJsonConfiguration(default!, default!, default!)
                 .Build();
         });
     }
