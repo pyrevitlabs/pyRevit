@@ -51,6 +51,24 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.UnitTests", "py
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.Shared", "pyRevitLabs.PyRevit.Runtime.Shared\pyRevitLabs.PyRevit.Runtime.Shared.csproj", "{B239FF1F-F32A-4828-87B8-E5DAC6809567}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{DE5976E3-62D9-4D0E-AC25-37EC56205E91}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Ini.Tests", "tests\pyRevitLabs.Configurations.Ini.Tests\pyRevitLabs.Configurations.Ini.Tests.csproj", "{314579D4-4AA8-4E67-B56B-D69BC26DD50F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Json.Tests", "tests\pyRevitLabs.Configurations.Json.Tests\pyRevitLabs.Configurations.Json.Tests.csproj", "{3DC4256D-2003-4905-A3E9-6E03B28476EF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Tests", "tests\pyRevitLabs.Configurations.Tests\pyRevitLabs.Configurations.Tests.csproj", "{CE552C0D-86B3-47E9-8A6F-8835A60A15B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Yaml.Tests", "tests\pyRevitLabs.Configurations.Yaml.Tests\pyRevitLabs.Configurations.Yaml.Tests.csproj", "{A9FA927C-8D54-4ED1-B1F7-D736A9089445}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations", "pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj", "{088A33E4-CB8B-4C39-A307-A73E3C93D673}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Ini", "pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj", "{EB427B0D-FCFD-423D-B95E-CAD0E6BA8532}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Json", "pyRevitLabs.Configurations.Json\pyRevitLabs.Configurations.Json.csproj", "{BA542A4C-B24B-4794-8D90-936D89B72F31}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Yaml", "pyRevitLabs.Configurations.Yaml\pyRevitLabs.Configurations.Yaml.csproj", "{E6B0F5EC-1E4E-4BB0-8D9E-640BC3B39A57}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -113,11 +131,49 @@ Global
 		{B239FF1F-F32A-4828-87B8-E5DAC6809567}.Debug|x64.Build.0 = Debug|x64
 		{B239FF1F-F32A-4828-87B8-E5DAC6809567}.Release|x64.ActiveCfg = Release|x64
 		{B239FF1F-F32A-4828-87B8-E5DAC6809567}.Release|x64.Build.0 = Release|x64
+		{314579D4-4AA8-4E67-B56B-D69BC26DD50F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{314579D4-4AA8-4E67-B56B-D69BC26DD50F}.Debug|x64.Build.0 = Debug|Any CPU
+		{314579D4-4AA8-4E67-B56B-D69BC26DD50F}.Release|x64.ActiveCfg = Release|Any CPU
+		{314579D4-4AA8-4E67-B56B-D69BC26DD50F}.Release|x64.Build.0 = Release|Any CPU
+		{3DC4256D-2003-4905-A3E9-6E03B28476EF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3DC4256D-2003-4905-A3E9-6E03B28476EF}.Debug|x64.Build.0 = Debug|Any CPU
+		{3DC4256D-2003-4905-A3E9-6E03B28476EF}.Release|x64.ActiveCfg = Release|Any CPU
+		{3DC4256D-2003-4905-A3E9-6E03B28476EF}.Release|x64.Build.0 = Release|Any CPU
+		{CE552C0D-86B3-47E9-8A6F-8835A60A15B7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CE552C0D-86B3-47E9-8A6F-8835A60A15B7}.Debug|x64.Build.0 = Debug|Any CPU
+		{CE552C0D-86B3-47E9-8A6F-8835A60A15B7}.Release|x64.ActiveCfg = Release|Any CPU
+		{CE552C0D-86B3-47E9-8A6F-8835A60A15B7}.Release|x64.Build.0 = Release|Any CPU
+		{A9FA927C-8D54-4ED1-B1F7-D736A9089445}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A9FA927C-8D54-4ED1-B1F7-D736A9089445}.Debug|x64.Build.0 = Debug|Any CPU
+		{A9FA927C-8D54-4ED1-B1F7-D736A9089445}.Release|x64.ActiveCfg = Release|Any CPU
+		{A9FA927C-8D54-4ED1-B1F7-D736A9089445}.Release|x64.Build.0 = Release|Any CPU
+		{088A33E4-CB8B-4C39-A307-A73E3C93D673}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{088A33E4-CB8B-4C39-A307-A73E3C93D673}.Debug|x64.Build.0 = Debug|Any CPU
+		{088A33E4-CB8B-4C39-A307-A73E3C93D673}.Release|x64.ActiveCfg = Release|Any CPU
+		{088A33E4-CB8B-4C39-A307-A73E3C93D673}.Release|x64.Build.0 = Release|Any CPU
+		{EB427B0D-FCFD-423D-B95E-CAD0E6BA8532}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EB427B0D-FCFD-423D-B95E-CAD0E6BA8532}.Debug|x64.Build.0 = Debug|Any CPU
+		{EB427B0D-FCFD-423D-B95E-CAD0E6BA8532}.Release|x64.ActiveCfg = Release|Any CPU
+		{EB427B0D-FCFD-423D-B95E-CAD0E6BA8532}.Release|x64.Build.0 = Release|Any CPU
+		{BA542A4C-B24B-4794-8D90-936D89B72F31}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BA542A4C-B24B-4794-8D90-936D89B72F31}.Debug|x64.Build.0 = Debug|Any CPU
+		{BA542A4C-B24B-4794-8D90-936D89B72F31}.Release|x64.ActiveCfg = Release|Any CPU
+		{BA542A4C-B24B-4794-8D90-936D89B72F31}.Release|x64.Build.0 = Release|Any CPU
+		{E6B0F5EC-1E4E-4BB0-8D9E-640BC3B39A57}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E6B0F5EC-1E4E-4BB0-8D9E-640BC3B39A57}.Debug|x64.Build.0 = Debug|Any CPU
+		{E6B0F5EC-1E4E-4BB0-8D9E-640BC3B39A57}.Release|x64.ActiveCfg = Release|Any CPU
+		{E6B0F5EC-1E4E-4BB0-8D9E-640BC3B39A57}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {29169547-9C0C-4620-A37C-77CB6B30F4F0}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{314579D4-4AA8-4E67-B56B-D69BC26DD50F} = {DE5976E3-62D9-4D0E-AC25-37EC56205E91}
+		{3DC4256D-2003-4905-A3E9-6E03B28476EF} = {DE5976E3-62D9-4D0E-AC25-37EC56205E91}
+		{CE552C0D-86B3-47E9-8A6F-8835A60A15B7} = {DE5976E3-62D9-4D0E-AC25-37EC56205E91}
+		{A9FA927C-8D54-4ED1-B1F7-D736A9089445} = {DE5976E3-62D9-4D0E-AC25-37EC56205E91}
 	EndGlobalSection
 EndGlobal
