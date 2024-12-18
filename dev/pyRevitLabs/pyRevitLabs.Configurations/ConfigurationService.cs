@@ -3,11 +3,12 @@ using pyRevitLabs.Configurations.Exceptions;
 
 namespace pyRevitLabs.Configurations;
 
-public sealed class ConfigurationService(IDictionary<string, IConfiguration> configurations)
+public sealed class ConfigurationService(IDictionary<string, IConfiguration> configurations) :  IConfigurationService
 {
-    public IDictionary<string, IConfiguration> Configurations { get; } = configurations;
-
-    public static ConfigurationService Create(IDictionary<string, IConfiguration> configurations)
+    public IEnumerable<string> ConfigurationNames => Configurations.Keys;
+    public IDictionary<string, IConfiguration> Configurations => configurations;
+    
+    public static IConfigurationService Create(IDictionary<string, IConfiguration> configurations)
     {
         return new ConfigurationService(configurations);
     }

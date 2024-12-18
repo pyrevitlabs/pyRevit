@@ -18,7 +18,7 @@ public sealed class ConfigurationBuilder
         return this;
     }
 
-    public ConfigurationService Build()
+    public IConfigurationService Build()
     {
         return ConfigurationService.Create(_configurations);
     }
