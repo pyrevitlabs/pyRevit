@@ -1,22 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
+﻿using System.IO;
 using System.Text.RegularExpressions;
-using System.Security.Principal;
-using System.Text;
-
 using pyRevitLabs.Common;
-using pyRevitLabs.Common.Extensions;
-
-using MadMilkman.Ini;
-using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.PyRevit {
     public static class PyRevitCaches {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         // pyrevit cache folder 
         // @reviewed
