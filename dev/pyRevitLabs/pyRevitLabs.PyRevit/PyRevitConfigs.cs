@@ -4,30 +4,13 @@ using System.Security.Principal;
 using System.Security.AccessControl;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations;
+using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Ini.Extensions;
 using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.PyRevit
 {
-    public class PyRevitConfigValueNotSet : PyRevitException
-    {
-        public PyRevitConfigValueNotSet(string sectionName, string keyName)
-        {
-            ConfigSection = sectionName;
-            ConfigKey = keyName;
-        }
-
-        public string ConfigSection { get; set; }
-        public string ConfigKey { get; set; }
-
-        public override string Message
-        {
-            get
-            {
-                return String.Format("Config value not set \"{0}:{1}\"", ConfigSection, ConfigKey);
-            }
-        }
-    }
-
     public enum PyRevitLogLevels
     {
         Quiet,
@@ -37,43 +20,47 @@ namespace pyRevitLabs.PyRevit
 
     public static class PyRevitConfigs
     {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        // get config file
+        /// <summary>
+        /// Returns config file.
+        /// </summary>
+        /// <returns>Returns admin config if admin config exists and user config not found.</returns>
         public static PyRevitConfig GetConfigFile()
         {
             // make sure the file exists and if not create an empty one
             string userConfig = PyRevitConsts.ConfigFilePath;
             string adminConfig = PyRevitConsts.AdminConfigFilePath;
 
-            if (!CommonUtils.VerifyFile(userConfig))
+            if (!File.Exists(userConfig)
+                && File.Exists(adminConfig))
             {
-                if (CommonUtils.VerifyFile(adminConfig))
-                {
-                    if (new FileInfo(adminConfig).IsReadOnly)
-                        return new PyRevitConfig(adminConfig, adminMode: true);
-                    else
-                        SetupConfig(adminConfig);
-                }
-                else
-                    SetupConfig();
+                _logger.Info("Creating admin config {@ConfigPath}", adminConfig);
+                return CreateConfiguration(adminConfig);
             }
 
-            return new PyRevitConfig(userConfig);
+            _logger.Info("Creating user config {@ConfigPath}", userConfig);
+            return CreateConfiguration(userConfig);
         }
 
-        // deletes config file
+        /// <summary>
+        /// Removes user config file.
+        /// </summary>
+        /// <exception cref="PyRevitException"></exception>
         public static void DeleteConfig()
         {
-            if (File.Exists(PyRevitConsts.ConfigFilePath))
-                try
-                {
-                    File.Delete(PyRevitConsts.ConfigFilePath);
-                }
-                catch (Exception ex)
-                {
-                    throw new PyRevitException(string.Format("Failed deleting config file \"{0}\" | {1}", PyRevitConsts.ConfigFilePath, ex.Message));
-                }
+            if (!File.Exists(PyRevitConsts.ConfigFilePath)) return;
+
+            _logger.Info("Deleting config {@ConfigPath}", PyRevitConsts.ConfigFilePath);
+            
+            try
+            {
+                File.Delete(PyRevitConsts.ConfigFilePath);
+            }
+            catch (Exception ex)
+            {
+                throw new PyRevitException($"Failed deleting config file \"{PyRevitConsts.ConfigFilePath}\"", ex);
+            }
         }
 
         // copy config file into all users directory as seed config file
@@ -82,37 +69,33 @@ namespace pyRevitLabs.PyRevit
             string sourceFile = PyRevitConsts.ConfigFilePath;
             string targetFile = PyRevitConsts.AdminConfigFilePath;
 
-            logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
+            _logger.Debug("Seeding config file \"{@SourceFile}\" to \"{@TargetFile}\"", sourceFile, targetFile);
+
+            if (!File.Exists(sourceFile)) return;
 
             try
             {
-                if (File.Exists(sourceFile))
-                {
-                    File.Copy(sourceFile, targetFile, true);
+                File.Copy(sourceFile, targetFile, true);
 
-                    if (lockSeedConfig)
+                if (lockSeedConfig)
+                {
+                    try
+                    {
+                        File.SetAttributes(targetFile, FileAttributes.ReadOnly);
+                    }
+                    catch (InvalidOperationException ex)
                     {
                         var currentUser = WindowsIdentity.GetCurrent();
-                        try
-                        {
-                            File.SetAttributes(targetFile, FileAttributes.ReadOnly);
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            logger.Error(
-                                string.Format(
-                                    "You cannot assign ownership to user \"{0}\"." +
-                                    "Either you don't have TakeOwnership permissions, " +
-                                    "or it is not your user account. | {1}", currentUser.Name, ex.Message
-                                    )
-                            );
-                        }
+                        _logger.Error(ex,
+                            $"You cannot assign ownership to user \"{currentUser.Name}\"."
+                            + "Either you don't have TakeOwnership permissions, "
+                            + $"or it is not your user account.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                throw new PyRevitException(string.Format("Failed seeding config file. | {0}", ex.Message));
+                throw new PyRevitException("Failed seeding config file.", ex);
             }
         }
 
@@ -123,23 +106,32 @@ namespace pyRevitLabs.PyRevit
             string sourceFile = templateConfigFilePath;
             string targetFile = PyRevitConsts.ConfigFilePath;
 
-            if (sourceFile is string)
+            if (string.IsNullOrEmpty(sourceFile))
             {
-                logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
-
-                try
-                {
-                    File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
-                }
-                catch (Exception ex)
-                {
-                    throw new PyRevitException(
-                        $"Failed configuring config file from template at {sourceFile} | {ex.Message}"
-                    );
-                }
-            }
-            else
                 CommonUtils.EnsureFile(targetFile);
+                return;
+            }
+
+
+            _logger.Debug("Seeding config file \"{@SourceFile}\" to \"{@SargetFile}\"", sourceFile, targetFile);
+
+            try
+            {
+                File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
+            }
+            catch (Exception ex)
+            {
+                throw new PyRevitException($"Failed configuring config file from template at {sourceFile}", ex);
+            }
+        }
+
+        private static PyRevitConfig CreateConfiguration(string configPath)
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddIniConfiguration(configPath)
+                .Build();
+
+            return new PyRevitConfig(configuration);
         }
 
         // specific configuration public access  ======================================================================
@@ -154,7 +146,7 @@ namespace pyRevitLabs.PyRevit
         public static void SetUTCStamps(bool state)
         {
             var cfg = GetConfigFile();
-            logger.Debug("Setting telemetry utc timestamps...");
+            _logger.Debug("Setting telemetry utc timestamps...");
             cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey, state);
         }
 
@@ -243,7 +235,7 @@ namespace pyRevitLabs.PyRevit
         public static void EnableTelemetry(string telemetryFileDir = null, string telemetryServerUrl = null)
         {
             var cfg = GetConfigFile();
-            logger.Debug(string.Format("Enabling telemetry... path: \"{0}\" server: {1}",
+            _logger.Debug(string.Format("Enabling telemetry... path: \"{0}\" server: {1}",
                                        telemetryFileDir, telemetryServerUrl));
             SetTelemetryStatus(true);
 
@@ -259,7 +251,7 @@ namespace pyRevitLabs.PyRevit
                     if (CommonUtils.VerifyPath(telemetryFileDir))
                         cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryFileDirKey, telemetryFileDir);
                     else
-                        logger.Debug("Invalid log path \"{0}\"", telemetryFileDir);
+                        _logger.Debug("Invalid log path \"{0}\"", telemetryFileDir);
                 }
             }
 
@@ -283,7 +275,7 @@ namespace pyRevitLabs.PyRevit
         public static void DisableTelemetry()
         {
             var cfg = GetConfigFile();
-            logger.Debug("Disabling telemetry...");
+            _logger.Debug("Disabling telemetry...");
             cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, false);
         }
 
@@ -310,7 +302,7 @@ namespace pyRevitLabs.PyRevit
         public static void EnableAppTelemetry(string apptelemetryServerUrl = null)
         {
             var cfg = GetConfigFile();
-            logger.Debug(string.Format("Enabling app telemetry... server: {0}", apptelemetryServerUrl));
+            _logger.Debug(string.Format("Enabling app telemetry... server: {0}", apptelemetryServerUrl));
             SetAppTelemetryStatus(true);
 
             if (apptelemetryServerUrl != null)
@@ -320,7 +312,7 @@ namespace pyRevitLabs.PyRevit
         public static void DisableAppTelemetry()
         {
             var cfg = GetConfigFile();
-            logger.Debug("Disabling app telemetry...");
+            _logger.Debug("Disabling app telemetry...");
             cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, false);
         }
 
@@ -333,7 +325,7 @@ namespace pyRevitLabs.PyRevit
         public static void SetAppTelemetryFlags(string flags)
         {
             var cfg = GetConfigFile();
-            logger.Debug("Setting app telemetry flags...");
+            _logger.Debug("Setting app telemetry flags...");
             if (flags != null)
                 cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryEventFlagsKey, flags);
         }
