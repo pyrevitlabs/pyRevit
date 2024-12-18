@@ -27,7 +27,7 @@ namespace pyRevitLabs.PyRevit
         public string GetValue(string sectionName, string keyName)
         {
             _logger.Debug("Try getting config value \"{@SectionName}:{@KeyName}\"", sectionName, keyName);
-            return _configuration.GetValue<string>(sectionName, keyName);
+            return _configuration.GetValueOrDefault<string>(sectionName, keyName);
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace pyRevitLabs.PyRevit
         public List<string> GetListValue(string sectionName, string keyName)
         {
             _logger.Debug("Try getting config as list value \"{SectionName}:{KeyName}\"", sectionName, keyName);
-            return _configuration.GetValue<List<string>>(sectionName, keyName);
+            return _configuration.GetValueOrDefault(sectionName, keyName, new List<string>());
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace pyRevitLabs.PyRevit
         public Dictionary<string, string> GetDictValue(string sectionName, string keyName)
         {
             _logger.Debug("Try getting config as dict value \"{SectionName}:{KeyName}\"", sectionName, keyName);
-            return _configuration.GetValue<Dictionary<string, string>>(sectionName, keyName);
+            return _configuration.GetValueOrDefault(sectionName, keyName, new Dictionary<string, string>());
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace pyRevitLabs.PyRevit
         /// <param name="value"></param>
         public void SetValue(string sectionName, string keyName, IEnumerable<string> value)
         {
-            _configuration.SetValue(sectionName, keyName, value.ToList());
+            _configuration.SetValue(sectionName, keyName, value.ToArray());
         }
 
         /// <summary>
