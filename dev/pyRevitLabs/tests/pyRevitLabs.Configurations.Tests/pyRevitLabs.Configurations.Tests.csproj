@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
+      <ProjectReference Include="..\..\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
     </ItemGroup>
 
 </Project>

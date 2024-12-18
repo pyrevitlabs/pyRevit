@@ -21,8 +21,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" />
-      <ProjectReference Include="..\..\src\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
+      <ProjectReference Include="..\..\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" />
+      <ProjectReference Include="..\..\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
       <ProjectReference Include="..\pyRevitLabs.Configurations.Tests\pyRevitLabs.Configurations.Tests.csproj" />
     </ItemGroup>
 
