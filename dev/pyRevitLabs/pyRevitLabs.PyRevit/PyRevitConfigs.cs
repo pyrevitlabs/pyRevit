@@ -6,6 +6,7 @@ using System.Security.AccessControl;
 using pyRevitLabs.Common;
 using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.Configurations.Ini.Extensions;
 using pyRevitLabs.NLog;
 
@@ -26,7 +27,7 @@ namespace pyRevitLabs.PyRevit
         /// Returns config file.
         /// </summary>
         /// <returns>Returns admin config if admin config exists and user config not found.</returns>
-        public static PyRevitConfig GetConfigFile()
+        public static PyRevitConfig GetConfigFile(string overrideName = default)
         {
             // make sure the file exists and if not create an empty one
             string userConfig = PyRevitConsts.ConfigFilePath;
@@ -36,11 +37,11 @@ namespace pyRevitLabs.PyRevit
                 && File.Exists(adminConfig))
             {
                 _logger.Info("Creating admin config {@ConfigPath}", adminConfig);
-                return CreateConfiguration(adminConfig);
+                return CreateConfiguration(adminConfig, true, overrideName);
             }
 
             _logger.Info("Creating user config {@ConfigPath}", userConfig);
-            return CreateConfiguration(userConfig);
+            return CreateConfiguration(userConfig, false, overrideName);
         }
 
         /// <summary>
@@ -125,12 +126,21 @@ namespace pyRevitLabs.PyRevit
             }
         }
 
-        private static PyRevitConfig CreateConfiguration(string configPath)
+        private static PyRevitConfig CreateConfiguration(
+            string configPath,
+            bool readOnly = false,
+            string overrideName = default)
         {
-            var configuration = new ConfigurationBuilder()
-                .AddIniConfiguration(configPath)
-                .Build();
+            var builder = new ConfigurationBuilder()
+                .AddIniConfiguration(configPath, readOnly);
 
+            if (string.IsNullOrEmpty(overrideName))
+            {
+                builder.AddIniConfiguration(Path.ChangeExtension(configPath,
+                    $"{overrideName}.{IniConfiguration.DefaultFileExtension}"));
+            }
+
+            var configuration = builder.Build();
             return new PyRevitConfig(configuration);
         }
 

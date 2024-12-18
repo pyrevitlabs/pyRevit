@@ -10,7 +10,8 @@ namespace pyRevitLabs.Configurations.Json;
 
 public sealed class JsonConfiguration : ConfigurationBase
 {
-    public static readonly Encoding DefaultJsonFileEncoding = Encoding.UTF8;
+    public static readonly string DefaultFileExtension = ".json";
+    public static readonly Encoding DefaultFileEncoding = Encoding.UTF8;
 
     private readonly JObject _jsonObject;
 
@@ -24,7 +25,7 @@ public sealed class JsonConfiguration : ConfigurationBase
     {
         _jsonObject = !File.Exists(configurationPath)
             ? new JObject()
-            : JObject.Parse(File.ReadAllText(_configurationPath, DefaultJsonFileEncoding));
+            : JObject.Parse(File.ReadAllText(_configurationPath, DefaultFileEncoding));
     }
 
     /// <summary>
@@ -46,7 +47,7 @@ public sealed class JsonConfiguration : ConfigurationBase
     {
         string jsonString = JsonConvert.SerializeObject(_jsonObject,
             new JsonSerializerSettings() {Formatting = Formatting.Indented});
-        File.WriteAllText(_configurationPath, jsonString, DefaultJsonFileEncoding);
+        File.WriteAllText(_configurationPath, jsonString, DefaultFileEncoding);
     }
 
     protected override bool HasSectionImpl(string sectionName)

@@ -9,7 +9,8 @@ namespace pyRevitLabs.Configurations.Ini;
 
 public sealed class IniConfiguration : ConfigurationBase
 {
-    public static readonly Encoding DefaultIniFileEncoding = new UTF8Encoding(false);
+    public static readonly string DefaultFileExtension = ".ini";
+    public static readonly Encoding DefaultFileEncoding = new UTF8Encoding(false);
 
     private readonly IniData _iniFile;
     private readonly FileIniDataParser _parser;
@@ -25,7 +26,7 @@ public sealed class IniConfiguration : ConfigurationBase
         _parser = new FileIniDataParser();
         _iniFile = !File.Exists(configurationPath)
             ? new IniData()
-            : _parser.ReadFile(_configurationPath, DefaultIniFileEncoding);
+            : _parser.ReadFile(_configurationPath, DefaultFileEncoding);
     }
 
     /// <summary>
@@ -46,7 +47,7 @@ public sealed class IniConfiguration : ConfigurationBase
     /// <inheritdoc />
     protected override void SaveConfigurationImpl()
     {
-        _parser.WriteFile(_configurationPath, _iniFile, DefaultIniFileEncoding);
+        _parser.WriteFile(_configurationPath, _iniFile, DefaultFileEncoding);
     }
 
     /// <inheritdoc />

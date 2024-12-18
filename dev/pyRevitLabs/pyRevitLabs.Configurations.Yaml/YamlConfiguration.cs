@@ -11,7 +11,8 @@ namespace pyRevitLabs.Configurations.Yaml;
 
 public sealed class YamlConfiguration : ConfigurationBase
 {
-    public static readonly Encoding DefaultYamlFileEncoding = Encoding.UTF8;
+    public static readonly string DefaultFileExtension = ".yml";
+    public static readonly Encoding DefaultFileEncoding = Encoding.UTF8;
 
     private readonly YamlStream _yamlStream;
     private readonly YamlMappingNode _rootNode;
@@ -27,7 +28,7 @@ public sealed class YamlConfiguration : ConfigurationBase
         _yamlStream = [];
         if (File.Exists(configurationPath))
         {
-            _yamlStream.Load(new StringReader(File.ReadAllText(_configurationPath, DefaultYamlFileEncoding)));
+            _yamlStream.Load(new StringReader(File.ReadAllText(_configurationPath, DefaultFileEncoding)));
         }
 
         if (_yamlStream.Documents.Count == 0)
@@ -57,7 +58,7 @@ public sealed class YamlConfiguration : ConfigurationBase
     {
         ISerializer serializer = CreateSerializer();
         string yamlString = serializer.Serialize(_yamlStream);
-        File.WriteAllText(_configurationPath, yamlString, DefaultYamlFileEncoding);
+        File.WriteAllText(_configurationPath, yamlString, DefaultFileEncoding);
     }
 
     protected override bool HasSectionImpl(string sectionName)
