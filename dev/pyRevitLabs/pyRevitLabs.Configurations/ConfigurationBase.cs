@@ -8,6 +8,7 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
     protected readonly string _configurationPath = configurationPath;
     
     public bool ReadOnly { get; } = readOnly;
+    public string ConfigurationPath => _configurationPath;
 
     public void SaveConfiguration()
     {
@@ -17,6 +18,14 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         }
         
         SaveConfigurationImpl();
+    }
+    
+    public void SaveConfiguration(string configurationPath)
+    {
+        if (configurationPath == null) 
+            throw new ArgumentNullException(nameof(configurationPath));
+        
+        SaveConfigurationImpl(configurationPath);
     }
 
     /// <inheritdoc />
@@ -111,6 +120,8 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
     }
 
     protected abstract void SaveConfigurationImpl();
+    protected abstract void SaveConfigurationImpl(string configurationPath);
+    
     protected abstract bool HasSectionImpl(string sectionName);
     protected abstract bool HasSectionKeyImpl(string sectionName, string keyName);
 

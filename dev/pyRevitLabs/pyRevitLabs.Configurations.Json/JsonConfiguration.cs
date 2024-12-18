@@ -43,11 +43,18 @@ public sealed class JsonConfiguration : ConfigurationBase
         return new JsonConfiguration(configurationPath, readOnly);
     }
 
+    /// <inheritdoc />
     protected override void SaveConfigurationImpl()
+    {
+        SaveConfigurationImpl(_configurationPath);
+    }
+
+    /// <inheritdoc />
+    protected override void SaveConfigurationImpl(string configurationPath)
     {
         string jsonString = JsonConvert.SerializeObject(_jsonObject,
             new JsonSerializerSettings() {Formatting = Formatting.Indented});
-        File.WriteAllText(_configurationPath, jsonString, DefaultFileEncoding);
+        File.WriteAllText(configurationPath, jsonString, DefaultFileEncoding);
     }
 
     protected override bool HasSectionImpl(string sectionName)

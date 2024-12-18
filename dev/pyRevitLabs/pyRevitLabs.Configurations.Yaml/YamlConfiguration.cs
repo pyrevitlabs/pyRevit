@@ -54,11 +54,18 @@ public sealed class YamlConfiguration : ConfigurationBase
         return new YamlConfiguration(configurationPath, readOnly);
     }
 
+    /// <inheritdoc />
     protected override void SaveConfigurationImpl()
+    {
+        SaveConfigurationImpl(_configurationPath);
+    }
+
+    /// <inheritdoc />
+    protected override void SaveConfigurationImpl(string configurationPath)
     {
         ISerializer serializer = CreateSerializer();
         string yamlString = serializer.Serialize(_yamlStream);
-        File.WriteAllText(_configurationPath, yamlString, DefaultFileEncoding);
+        File.WriteAllText(configurationPath, yamlString, DefaultFileEncoding);
     }
 
     protected override bool HasSectionImpl(string sectionName)

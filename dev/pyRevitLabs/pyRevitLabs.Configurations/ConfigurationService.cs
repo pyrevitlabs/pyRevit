@@ -6,12 +6,16 @@ namespace pyRevitLabs.Configurations;
 public sealed class ConfigurationService(List<IConfiguration> configurations) : IConfiguration
 {
     public List<IConfiguration> Configurations { get; } = configurations;
-    public IEnumerable<IConfiguration> ReverseConfigurations => ((IEnumerable<IConfiguration>)Configurations).Reverse();
+
+    public IEnumerable<IConfiguration> ReverseConfigurations =>
+        ((IEnumerable<IConfiguration>) Configurations).Reverse();
 
     public static IConfiguration Create(List<IConfiguration> configurations)
     {
         return new ConfigurationService(configurations);
     }
+
+    public string ConfigurationPath => Configurations[0].ConfigurationPath;
 
     public bool HasSection(string sectionName)
     {
@@ -91,5 +95,21 @@ public sealed class ConfigurationService(List<IConfiguration> configurations) : 
         }
 
         Configurations[0].SetValue(sectionName, keyName, value);
+    }
+
+    public void SaveConfiguration()
+    {
+        foreach (IConfiguration configuration in Configurations)
+        {
+            configuration.SaveConfiguration();
+        }
+    }
+
+    public void SaveConfiguration(string configurationPath)
+    {
+        foreach (IConfiguration configuration in Configurations)
+        {
+            configuration.SaveConfiguration(configurationPath);
+        }
     }
 }

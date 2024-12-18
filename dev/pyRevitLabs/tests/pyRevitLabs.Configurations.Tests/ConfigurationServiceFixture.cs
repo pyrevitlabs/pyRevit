@@ -16,6 +16,8 @@ namespace pyRevitLabs.Configurations.Tests
 
         private class TestRunConfiguration : IConfiguration
         {
+            public string ConfigurationPath { get; }
+
             public bool HasSection(string sectionName)
             {
                 throw new NotImplementedException();
@@ -42,6 +44,16 @@ namespace pyRevitLabs.Configurations.Tests
             }
 
             public void SetValue<T>(string sectionName, string keyName, T? value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void SaveConfiguration()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void SaveConfiguration(string configurationPath)
             {
                 throw new NotImplementedException();
             }

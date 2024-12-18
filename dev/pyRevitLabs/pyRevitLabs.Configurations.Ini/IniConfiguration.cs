@@ -47,7 +47,13 @@ public sealed class IniConfiguration : ConfigurationBase
     /// <inheritdoc />
     protected override void SaveConfigurationImpl()
     {
-        _parser.WriteFile(_configurationPath, _iniFile, DefaultFileEncoding);
+        SaveConfigurationImpl(_configurationPath);
+    }
+    
+    /// <inheritdoc />
+    protected override void SaveConfigurationImpl(string configurationPath)
+    {
+        _parser.WriteFile(configurationPath, _iniFile, DefaultFileEncoding);
     }
 
     /// <inheritdoc />
