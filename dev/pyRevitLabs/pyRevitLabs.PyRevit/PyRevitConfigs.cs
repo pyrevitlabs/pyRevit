@@ -90,7 +90,7 @@ namespace pyRevitLabs.PyRevit
                         _logger.Error(ex,
                             $"You cannot assign ownership to user \"{currentUser.Name}\"."
                             + "Either you don't have TakeOwnership permissions, "
-                            + $"or it is not your user account.");
+                            + "or it is not your user account.");
                     }
                 }
             }
@@ -132,12 +132,13 @@ namespace pyRevitLabs.PyRevit
             string overrideName = default)
         {
             var builder = new ConfigurationBuilder()
-                .AddIniConfiguration(configPath, readOnly);
+                .AddIniConfiguration(configPath, "default", readOnly);
 
             if (string.IsNullOrEmpty(overrideName))
             {
-                builder.AddIniConfiguration(Path.ChangeExtension(configPath,
-                    $"{overrideName}.{IniConfiguration.DefaultFileExtension}"));
+                builder.AddIniConfiguration(
+                    Path.ChangeExtension(configPath,
+                        $"{overrideName}.{IniConfiguration.DefaultFileExtension}"), overrideName!);
             }
 
             var configuration = builder.Build();

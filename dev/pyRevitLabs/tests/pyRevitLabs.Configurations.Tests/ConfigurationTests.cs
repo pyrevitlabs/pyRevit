@@ -44,7 +44,7 @@ public abstract class ConfigurationTests
     }
 
     [Fact]
-    public void NewCreateValue_ShouldReturnsSameValue()
+    public void NewCreateValue_ShouldReturnSameValue()
     {
         _configuration.SetValue("new", "create", "value");
 
@@ -54,7 +54,7 @@ public abstract class ConfigurationTests
     }
 
     [Fact]
-    public void GetValueOrDefault_ShouldReturnsSameValue()
+    public void GetValueOrDefault_ShouldReturnSameValue()
     {
         _configuration.SetValue("create", "default", "value");
 
@@ -64,7 +64,7 @@ public abstract class ConfigurationTests
     }
 
     [Fact]
-    public void GetValueOrDefault_ShouldReturnsDefaultValue()
+    public void GetValueOrDefault_ShouldReturnDefaultValue()
     {
         string? value = _configuration.GetValueOrDefault<string>("not_exits", "key", "defaultValue");
 
@@ -72,7 +72,7 @@ public abstract class ConfigurationTests
     }
 
     [Fact]
-    public void RemoveExitsValue_ShouldReturnsTrue()
+    public void RemoveExitsValue_ShouldReturnTrue()
     {
         _configuration.SetValue("remove", "default", "value");
 

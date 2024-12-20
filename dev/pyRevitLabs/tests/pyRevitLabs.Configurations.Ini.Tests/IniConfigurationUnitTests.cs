@@ -21,13 +21,13 @@ public class IniConfigurationUnitTests : ConfigurationTests, IClassFixture<IniCr
     }
 
     [Fact]
-    public void CreateIniConfiguration_ShouldThrowsException()
+    public void CreateIniConfiguration_ShouldThrowException()
     {
         Assert.Throws<ArgumentNullException>(() => IniConfiguration.Create(default!));
     }
 
     [Fact]
-    public void CreateIniConfigurationByBuilder_ShouldThrowsException()
+    public void CreateIniConfigurationByBuilder_ShouldThrowException()
     {
         Assert.Throws<ArgumentException>(() =>
         {
@@ -38,7 +38,7 @@ public class IniConfigurationUnitTests : ConfigurationTests, IClassFixture<IniCr
     }
 
     [Fact]
-    public void CreateIniConfigurationByNullBuilder_ShouldThrowsException()
+    public void CreateIniConfigurationByNullBuilder_ShouldThrowException()
     {
         Assert.Throws<ArgumentNullException>(() =>
         {
