@@ -2,11 +2,12 @@
 
 internal record TelemetrySection
 {
-    public bool UtcTimeStamps { get; set; }
-    public bool Status { get; set; }
-    public string? FileDir { get; set; }
-    public string? ServerUrl { get; set; }
-    public bool IncludeHooks { get; set; }
+    public bool TelemetryStatus { get; set; }
+    
+    public bool TelemetryUseUtcTimeStamps { get; set; }
+    public string? TelemetryFileDir { get; set; }
+    public string? TelemetryServerUrl { get; set; }
+    public bool TelemetryIncludeHooks { get; set; }
 
     public bool AppTelemetryStatus { get; set; }
     public string? AppTelemetryServerUrl { get; set; }
