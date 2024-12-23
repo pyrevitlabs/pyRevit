@@ -6,5 +6,11 @@
         <Nullable>enable</Nullable>
         <LangVersion>12</LangVersion>
     </PropertyGroup>
+
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+            <_Parameter1>pyRevitLabs.Configurations.Tests</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
     
 </Project>

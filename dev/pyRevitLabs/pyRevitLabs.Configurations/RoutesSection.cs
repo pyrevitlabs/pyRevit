@@ -1,6 +1,6 @@
 ﻿namespace pyRevitLabs.Configurations;
 
-internal sealed record RoutesSection
+public sealed record RoutesSection
 {
     public bool Status { get; set; }
     

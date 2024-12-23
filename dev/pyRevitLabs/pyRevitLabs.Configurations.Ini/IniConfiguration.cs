@@ -76,13 +76,6 @@ public sealed class IniConfiguration : ConfigurationBase
     }
 
     /// <inheritdoc />
-    protected override T GetValueImpl<T>(string sectionName, string keyName)
-    {
-        return JsonConvert.DeserializeObject<T>(_iniFile[sectionName][keyName])
-               ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
-    }
-
-    /// <inheritdoc />
     protected override void SetValueImpl<T>(string sectionName, string keyName, T value)
     {
         if (!HasSection(sectionName))
@@ -96,5 +89,12 @@ public sealed class IniConfiguration : ConfigurationBase
         }
 
         _iniFile[sectionName][keyName] = JsonConvert.SerializeObject(value);
+    }
+    
+    /// <inheritdoc />
+    protected override object GetValueImpl(Type typeObject, string sectionName, string keyName)
+    {
+        return JsonConvert.DeserializeObject(_iniFile[sectionName][keyName], typeObject)
+               ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
     }
 }

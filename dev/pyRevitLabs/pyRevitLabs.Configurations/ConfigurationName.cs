@@ -1,8 +1,7 @@
 ﻿namespace pyRevitLabs.Configurations;
 
-public sealed record ConfigurationName
+internal sealed record ConfigurationName
 {
-
-    public required int Index { get; init;  }
-    public required string Name { get; init; }
+    public int Index { get; set;  }
+    public string? Name { get; set; }
 }

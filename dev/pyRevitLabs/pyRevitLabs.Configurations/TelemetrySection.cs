@@ -1,6 +1,6 @@
 ﻿namespace pyRevitLabs.Configurations;
 
-internal record TelemetrySection
+public record TelemetrySection
 {
     public bool TelemetryStatus { get; set; }
     

@@ -68,12 +68,14 @@ public sealed class YamlConfiguration : ConfigurationBase
         File.WriteAllText(configurationPath, yamlString, DefaultFileEncoding);
     }
 
+    /// <inheritdoc />
     protected override bool HasSectionImpl(string sectionName)
     {
         return _rootNode.Children.ContainsKey(sectionName)
                && _rootNode.Children[sectionName].NodeType == YamlNodeType.Mapping;
     }
 
+    /// <inheritdoc />
     protected override bool HasSectionKeyImpl(string sectionName, string keyName)
     {
         if (!HasSection(sectionName))
@@ -91,18 +93,14 @@ public sealed class YamlConfiguration : ConfigurationBase
         return yamlNodeType is YamlNodeType.Scalar or YamlNodeType.Sequence or YamlNodeType.Mapping;
     }
 
+    /// <inheritdoc />
     protected override bool RemoveValueImpl(string sectionName, string keyName)
     {
         YamlMappingNode yamlNode = (YamlMappingNode)_rootNode[sectionName];
         return yamlNode.Children.Remove(keyName);
     }
 
-    protected override T GetValueImpl<T>(string sectionName, string keyName)
-    {
-        YamlNode yamlNode = _rootNode[sectionName][keyName];
-        return CreateDeserializer().Deserialize<T>(yamlNode.ToString());
-    }
-
+    /// <inheritdoc />
     protected override void SetValueImpl<T>(string sectionName, string keyName, T value)
     {
         if (_yamlStream.Documents.Count == 0)
@@ -147,5 +145,12 @@ public sealed class YamlConfiguration : ConfigurationBase
         return new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
+    }
+    
+    protected override object GetValueImpl(Type typeObject, string sectionName, string keyName)
+    {
+        YamlNode yamlNode = _rootNode[sectionName][keyName];
+        return CreateDeserializer().Deserialize(yamlNode.ToString(), typeObject)
+               ?? throw new ConfigurationException($"Cannot deserialize value with {sectionName} and {keyName}.");
     }
 }

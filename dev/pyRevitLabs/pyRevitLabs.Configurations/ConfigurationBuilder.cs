@@ -1,10 +1,12 @@
+using System.Collections.Specialized;
 using pyRevitLabs.Configurations.Abstractions;
 
 namespace pyRevitLabs.Configurations;
 
 public sealed class ConfigurationBuilder
 {
-    private readonly Dictionary<ConfigurationName, IConfiguration> _configurations = [];
+    private readonly List<ConfigurationName> _names = [];
+    private readonly Dictionary<string, IConfiguration> _configurations = [];
 
     public ConfigurationBuilder AddConfigurationSource(string configurationName, IConfiguration configuration)
     {
@@ -14,14 +16,14 @@ public sealed class ConfigurationBuilder
         if (string.IsNullOrWhiteSpace(configurationName))
             throw new ArgumentException("Value cannot be null or empty.", nameof(configurationName));
 
-        _configurations.Add(
-            new ConfigurationName {Index = _configurations.Count, Name = configurationName}, configuration);
-
+        _names.Add(new ConfigurationName() {Index = _configurations.Count, Name = configurationName});
+        _configurations.Add(configurationName, configuration);
+        
         return this;
     }
 
     public IConfigurationService Build()
     {
-        return ConfigurationService.Create(_configurations);
+        return ConfigurationService.Create(_names, _configurations);
     }
 }

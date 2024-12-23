@@ -8,6 +8,7 @@ namespace pyRevitLabs.Configurations.Tests
         public ConfigurationServiceFixture()
         {
             Configuration = new ConfigurationService(
+                new List<ConfigurationName>(),
                 new Dictionary<string, IConfiguration>()
                     {{"default", new TestRunConfiguration()}});
         }
@@ -36,6 +37,16 @@ namespace pyRevitLabs.Configurations.Tests
             }
 
             public T? GetValueOrDefault<T>(string sectionName, string keyName, T? defaultValue = default)
+            {
+                throw new NotImplementedException();
+            }
+
+            public object GetValue(Type typeObject, string sectionName, string keyName)
+            {
+                throw new NotImplementedException();
+            }
+
+            public object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default)
             {
                 throw new NotImplementedException();
             }

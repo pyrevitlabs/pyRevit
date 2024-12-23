@@ -9,6 +9,9 @@ public interface IConfiguration
 
     T GetValue<T>(string sectionName, string keyName);
     T? GetValueOrDefault<T>(string sectionName, string keyName, T? defaultValue = default);
+    
+    internal object GetValue(Type typeObject, string sectionName, string keyName);
+    internal object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default);
 
     bool RemoveValue(string sectionName, string keyName);
     void SetValue<T>(string sectionName, string keyName, T? value);

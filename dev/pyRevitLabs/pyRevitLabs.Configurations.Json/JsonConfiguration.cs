@@ -57,11 +57,13 @@ public sealed class JsonConfiguration : ConfigurationBase
         File.WriteAllText(configurationPath, jsonString, DefaultFileEncoding);
     }
 
+    /// <inheritdoc />
     protected override bool HasSectionImpl(string sectionName)
     {
         return _jsonObject.ContainsKey(sectionName);
     }
 
+    /// <inheritdoc />
     protected override bool HasSectionKeyImpl(string sectionName, string keyName)
     {
         JObject? sectionObject = _jsonObject[sectionName] as JObject;
@@ -74,15 +76,7 @@ public sealed class JsonConfiguration : ConfigurationBase
         return true;
     }
 
-    protected override T GetValueImpl<T>(string sectionName, string keyName)
-    {
-        JToken? token = _jsonObject[sectionName]?[keyName];
-        return token is null
-            ? throw new ConfigurationException($"Section {sectionName} or keyName {keyName} not found.")
-            : token.ToObject<T>()
-              ?? throw new ConfigurationException($"Cannot deserialize value with {sectionName} and {keyName}.");
-    }
-
+    /// <inheritdoc />
     protected override void SetValueImpl<T>(string sectionName, string keyName, T value)
     {
         if (!HasSection(sectionName))
@@ -107,5 +101,15 @@ public sealed class JsonConfiguration : ConfigurationBase
         }
         
         _jsonObject[sectionName]![keyName] = JToken.FromObject(value!);
+    }
+    
+    /// <inheritdoc />
+    protected override object GetValueImpl(Type typeObject, string sectionName, string keyName)
+    {
+        JToken? token = _jsonObject[sectionName]?[keyName];
+        return token is null
+            ? throw new ConfigurationException($"Section {sectionName} or keyName {keyName} not found.")
+            : token.ToObject(typeObject)
+              ?? throw new ConfigurationException($"Cannot deserialize value with {sectionName} and {keyName}.");
     }
 }

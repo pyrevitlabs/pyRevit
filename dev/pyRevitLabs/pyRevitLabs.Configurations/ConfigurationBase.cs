@@ -46,6 +46,11 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         return HasSectionKeyImpl(sectionName, keyName);
     }
 
+    public object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default)
+    {
+        throw new NotImplementedException();
+    }
+
     /// <inheritdoc />
     public bool RemoveValue(string sectionName, string keyName)
     {
@@ -82,7 +87,7 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         if (!HasSectionKey(sectionName, keyName))
             throw new ConfigurationSectionKeyNotFoundException(sectionName, keyName);
 
-        return GetValueImpl<T>(sectionName, keyName);
+        return (T) GetValueImpl(typeof(T), sectionName, keyName);
     }
 
     /// <inheritdoc />
@@ -100,7 +105,12 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         if (!HasSectionKey(sectionName, keyName))
             return defaultValue;
 
-        return GetValueImpl<T>(sectionName, keyName);
+        return (T) GetValueImpl(typeof(T), sectionName, keyName);
+    }
+
+    public object GetValue(Type typeObject, string sectionName, string keyName)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />
@@ -126,7 +136,7 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
     protected abstract bool HasSectionKeyImpl(string sectionName, string keyName);
 
     protected abstract bool RemoveValueImpl(string sectionName, string keyName);
-
-    protected abstract T GetValueImpl<T>(string sectionName, string keyName);
+    
     protected abstract void SetValueImpl<T>(string sectionName, string keyName, T value);
+    protected abstract object GetValueImpl(Type typeObject, string sectionName, string keyName);
 }

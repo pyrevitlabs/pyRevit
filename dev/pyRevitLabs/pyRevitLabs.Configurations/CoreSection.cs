@@ -7,7 +7,7 @@ public enum LogLevels
     Debug
 }
 
-internal sealed record CoreSection
+public sealed record CoreSection
 {
     public bool BinCache { get; set; }
 
