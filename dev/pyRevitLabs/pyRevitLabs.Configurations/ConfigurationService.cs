@@ -115,8 +115,8 @@ public sealed class ConfigurationService : IConfigurationService
     {
         string sectionName =
             GetCustomAttribute<SectionNameAttribute>(configurationType)?.SectionName ?? configurationType.Name;
-
-        foreach (var propertyInfo in configurationType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        
+        foreach (var propertyInfo in GetProperties(configurationType))
         {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
             object? keyValue = propertyInfo.GetValue(sectionValue);
@@ -132,7 +132,7 @@ public sealed class ConfigurationService : IConfigurationService
 
         var sectionConfiguration = Activator.CreateInstance(configurationType);
 
-        foreach (var propertyInfo in configurationType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var propertyInfo in GetProperties(configurationType))
         {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
 
@@ -151,6 +151,13 @@ public sealed class ConfigurationService : IConfigurationService
         return configurations
             .Select(item=> item.GetValueOrDefault(propertyInfo.PropertyType, sectionName, keyName))
             .FirstOrDefault(item => item != default);
+    }
+    
+    private static IEnumerable<PropertyInfo> GetProperties(Type configurationType)
+    {
+        var flags = BindingFlags.Instance | BindingFlags.Public;
+        return configurationType.GetProperties(flags)
+            .Where(item => item.CanWrite && item.CanRead);
     }
 
     private static T? GetCustomAttribute<T>(MemberInfo memberInfo) where T : Attribute
