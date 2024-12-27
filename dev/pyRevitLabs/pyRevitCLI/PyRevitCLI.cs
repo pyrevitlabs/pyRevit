@@ -6,11 +6,13 @@ using System.Reflection;
 using DocoptNet;
 using pyRevitCLI.Properties;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.PyRevit;
 using Console = Colorful.Console;
+using Environment = System.Environment;
 
 
 // NOTE:
@@ -440,12 +442,15 @@ namespace pyRevitCLI
                 }
 
                 else if (any("enable", "disable"))
+                {
+                    string revitVersion = TryGetValue("<revit_year>") ?? ConfigurationService.DefaultConfigurationName;
                     PyRevitCLIExtensionCmds.ToggleExtension(
+                        revitVersion: revitVersion,
                         enable: arguments["enable"].IsTrue,
                         cloneName: TryGetValue("<clone_name>"),
                         extName: TryGetValue("<extension_name>")
-                    );
-
+                    ); 
+                }
                 else if (all("sources")) {
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
@@ -599,7 +604,7 @@ namespace pyRevitCLI
             }
 
             else if (all("configs")) {
-                string revitVersion = TryGetValue("<revit_year>");
+                string revitVersion = TryGetValue("<revit_year>") ?? ConfigurationService.DefaultConfigurationName;
                 
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);

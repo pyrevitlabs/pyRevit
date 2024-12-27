@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.Configurations;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
@@ -98,29 +100,26 @@ namespace pyRevitLabs.PyRevit {
 
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
-            var clonesList = cfg.GetDictValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsInstalledClonesKey);
-
-            if (clonesList != null) {
-                // verify all registered clones, protect against tampering
-                foreach (var cloneKeyValue in clonesList) {
-                    var clonePath = cloneKeyValue.Value.NormalizeAsPath();
-                    if (CommonUtils.VerifyPath(clonePath)) {
-                        try {
-                            var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
-                            if (clone.IsValid && !validatedClones.Contains(clone)) {
-                                logger.Debug("Verified clone \"{0}={1}\"", clone.Name, clone.ClonePath);
-                                validatedClones.Add(clone);
-                            }
-                        }
-                        catch {
-                            logger.Debug("Error occured when processing registered clone \"{0}\" at \"{1}\"", cloneKeyValue.Key, clonePath);
+            
+            // verify all registered clones, protect against tampering
+            foreach (var cloneKeyValue in cfg.Environment.Clones) {
+                var clonePath = cloneKeyValue.Value.NormalizeAsPath();
+                if (CommonUtils.VerifyPath(clonePath)) {
+                    try {
+                        var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
+                        if (clone.IsValid && !validatedClones.Contains(clone)) {
+                            logger.Debug("Verified clone \"{@CloneName}={@ClonePath}\"", clone.Name, clone.ClonePath);
+                            validatedClones.Add(clone);
                         }
                     }
+                    catch {
+                        logger.Debug("Error occured when processing registered clone \"{@CloneName}\" at \"{@ClonePath}\"", cloneKeyValue.Key, clonePath);
+                    }
                 }
-
-                // rewrite the verified clones list back to config file
-                SaveRegisteredClones(validatedClones);
             }
+
+            // rewrite the verified clones list back to config file
+            SaveRegisteredClones(validatedClones);
 
             return validatedClones;
         }
@@ -551,12 +550,10 @@ namespace pyRevitLabs.PyRevit {
         // updates the config value for registered clones
         public static void SaveRegisteredClones(IEnumerable<PyRevitClone> clonesList) {
             var cfg = PyRevitConfigs.GetConfigFile();
-            var newValueDic = new Dictionary<string, string>();
-            foreach (var clone in clonesList)
-                newValueDic[clone.Name] = clone.ClonePath;
-
-            cfg.SetValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsInstalledClonesKey, newValueDic);
+            cfg.SaveSection(
+                ConfigurationService.DefaultConfigurationName,
+                new EnvironmentSection()
+                    {Clones = clonesList.ToDictionary(item => item.Name, item => item.ClonePath)});
         }
-
     }
 }

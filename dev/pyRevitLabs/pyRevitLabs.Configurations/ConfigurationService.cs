@@ -41,12 +41,14 @@ public sealed class ConfigurationService : IConfigurationService
     public CoreSection Core { get; private set; } = new();
     public RoutesSection Routes { get; private set; } = new();
     public TelemetrySection Telemetry { get; private set; } = new();
+    public EnvironmentSection Environment { get; private set; } = new();
     
     private void LoadConfigurations()
     {
         Core = GetSection<CoreSection>();
         Routes = GetSection<RoutesSection>();
         Telemetry = GetSection<TelemetrySection>();
+        Environment = GetSection<EnvironmentSection>();
     }
 
     public T GetSection<T>()
