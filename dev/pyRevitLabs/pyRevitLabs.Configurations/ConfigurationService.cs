@@ -20,6 +20,9 @@ public sealed class ConfigurationService : IConfigurationService
     {
         _names = names;
         _configurations = configurations;
+
+        // TODO: Change behavior
+        LoadConfigurations();
     }
 
     internal static IConfigurationService Create(
@@ -39,11 +42,17 @@ public sealed class ConfigurationService : IConfigurationService
     public RoutesSection? Routes { get; private set; }
     public TelemetrySection? Telemetry { get; private set; }
     
-    public void LoadConfigurations()
+    private void LoadConfigurations()
     {
         Core = GetSection<CoreSection>();
         Routes = GetSection<RoutesSection>();
         Telemetry = GetSection<TelemetrySection>();
+    }
+
+    public T GetSection<T>()
+    {
+        Type configurationType = typeof(T);
+        return (T) CreateSection(configurationType, Configurations.ToArray());
     }
 
     public void SaveSection<T>(string configurationName, T sectionValue)
@@ -73,12 +82,6 @@ public sealed class ConfigurationService : IConfigurationService
             if (keyValue is not null)
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
-    }
-
-    internal T GetSection<T>()
-    {
-        Type configurationType = typeof(T);
-        return (T) CreateSection(configurationType, Configurations.ToArray());
     }
 
     private static object CreateSection(Type configurationType, params IConfiguration[] configurations)
