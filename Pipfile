@@ -6,7 +6,6 @@ verify_ssl = true
 [dev-packages]
 mypy = "*"
 pylint = "==3.3.1"
-black = "*"
 
 [packages]
 docopt = "*"
@@ -18,6 +17,7 @@ setuptools = "==75.6.0"
 mkdocs = "*"
 mkdocstrings = "*"
 mkdocstrings-python = "*"
+colorama = "*"
 mkdocs-gen-files = "*"
 mkdocs-literate-nav = "*"
 mkdocs-exclude = "*"
