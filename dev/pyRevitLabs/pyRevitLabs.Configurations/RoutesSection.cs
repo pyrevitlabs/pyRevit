@@ -6,14 +6,14 @@ namespace pyRevitLabs.Configurations;
 public sealed record RoutesSection
 {
     [KeyName("enabled")]
-    public bool Status { get; set; }
+    public bool? Status { get; set; }
     
     [KeyName("host")]
     public string? Host { get; set; }
     
     [KeyName("port")]
-    public int Port { get; set; } = 48884;
+    public int? Port { get; set; } = 48884;
     
     [KeyName("core_api")]
-    public bool LoadCoreApi { get; set; }
+    public bool? LoadCoreApi { get; set; }
 }

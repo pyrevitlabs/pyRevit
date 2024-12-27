@@ -108,9 +108,10 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         return (T) GetValueImpl(typeof(T), sectionName, keyName);
     }
 
+    /// <inheritdoc />
     public object GetValue(Type typeObject, string sectionName, string keyName)
     {
-        throw new NotImplementedException();
+        return GetValueImpl(typeObject, sectionName, keyName);
     }
 
     /// <inheritdoc />
