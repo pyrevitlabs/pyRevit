@@ -12,7 +12,7 @@ public sealed class ConfigurationService : IConfigurationService
     private readonly List<ConfigurationName> _names;
     private readonly IDictionary<string, IConfiguration> _configurations;
 
-    public static readonly string DefaultConfigurationName = "Default";
+    public const string DefaultConfigurationName = "Default";
 
     internal ConfigurationService(
         List<ConfigurationName> names,
@@ -38,9 +38,9 @@ public sealed class ConfigurationService : IConfigurationService
         .Select(item => _configurations[item.Name!])
         .ToArray();
 
-    public CoreSection? Core { get; private set; }
-    public RoutesSection? Routes { get; private set; }
-    public TelemetrySection? Telemetry { get; private set; }
+    public CoreSection Core { get; private set; } = new();
+    public RoutesSection Routes { get; private set; } = new();
+    public TelemetrySection Telemetry { get; private set; } = new();
     
     private void LoadConfigurations()
     {
@@ -68,6 +68,47 @@ public sealed class ConfigurationService : IConfigurationService
         
         Type configurationType = typeof(T);
         SaveSection(configurationType, sectionValue, configuration);
+    }
+
+    public void SetSectionKeyValue<T>(string configurationName, string sectionName, string keyName, T keyValue)
+    {
+        if (keyValue == null)
+            throw new ArgumentNullException(nameof(keyValue));
+        
+        if (string.IsNullOrEmpty(configurationName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(configurationName));
+        
+        if (string.IsNullOrEmpty(sectionName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(sectionName));
+       
+        if (string.IsNullOrEmpty(keyName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(keyName));
+        
+        if (!_configurations.TryGetValue(configurationName, out IConfiguration? configuration))
+            throw new ArgumentException($"Configuration with name {configurationName} not found");
+        
+        configuration.SetValue(sectionName, keyName, keyValue);
+    }
+
+    public T? GetSectionKeyValueOrDefault<T>(
+        string configurationName,
+        string sectionName,
+        string keyName,
+        T? defaultValue = default)
+    {
+        if (string.IsNullOrEmpty(configurationName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(configurationName));
+
+        if (string.IsNullOrEmpty(sectionName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(sectionName));
+
+        if (string.IsNullOrEmpty(keyName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(keyName));
+
+        if (!_configurations.TryGetValue(configurationName, out IConfiguration? configuration))
+            throw new ArgumentException($"Configuration with name {configurationName} not found");
+
+        return configuration.GetValue<T>(sectionName, keyName);
     }
 
     private static void SaveSection(Type configurationType, object? sectionValue, IConfiguration configuration)

@@ -27,7 +27,8 @@ namespace pyRevitLabs.PyRevit
         /// Returns config file.
         /// </summary>
         /// <returns>Returns admin config if admin config exists and user config not found.</returns>
-        public static PyRevitConfig GetConfigFile(string overrideName = default)
+        public static IConfigurationService GetConfigFile(
+            string overrideName = ConfigurationService.DefaultConfigurationName)
         {
             // make sure the file exists and if not create an empty one
             string userConfig = PyRevitConsts.ConfigFilePath;
@@ -36,11 +37,11 @@ namespace pyRevitLabs.PyRevit
             if (!File.Exists(userConfig)
                 && File.Exists(adminConfig))
             {
-                _logger.Info("Creating admin config {@ConfigPath}", adminConfig);
+                _logger.Info("Creating admin config {@ConfigPath}...", adminConfig);
                 return CreateConfiguration(adminConfig, true, overrideName);
             }
 
-            _logger.Info("Creating user config {@ConfigPath}", userConfig);
+            _logger.Info("Creating user config {@ConfigPath}...", userConfig);
             return CreateConfiguration(userConfig, false, overrideName);
         }
 
@@ -52,8 +53,8 @@ namespace pyRevitLabs.PyRevit
         {
             if (!File.Exists(PyRevitConsts.ConfigFilePath)) return;
 
-            _logger.Info("Deleting config {@ConfigPath}", PyRevitConsts.ConfigFilePath);
-            
+            _logger.Info("Deleting config {@ConfigPath}...", PyRevitConsts.ConfigFilePath);
+
             try
             {
                 File.Delete(PyRevitConsts.ConfigFilePath);
@@ -122,14 +123,14 @@ namespace pyRevitLabs.PyRevit
             }
             catch (Exception ex)
             {
-                throw new PyRevitException($"Failed configuring config file from template at {sourceFile}", ex);
+                throw new PyRevitException($"Failed configuring config file from template at {sourceFile}...", ex);
             }
         }
 
-        private static PyRevitConfig CreateConfiguration(
+        private static IConfigurationService CreateConfiguration(
             string configPath,
             bool readOnly = false,
-            string overrideName = default)
+            string overrideName = ConfigurationService.DefaultConfigurationName)
         {
             var builder = new ConfigurationBuilder()
                 .AddIniConfiguration(configPath, "default", readOnly);
@@ -138,477 +139,523 @@ namespace pyRevitLabs.PyRevit
             {
                 builder.AddIniConfiguration(
                     Path.ChangeExtension(configPath,
-                        $"{overrideName}.{IniConfiguration.DefaultFileExtension}"), overrideName!);
+                        $"{overrideName}.{IniConfiguration.DefaultFileExtension}"), overrideName);
             }
 
-            var configuration = builder.Build();
-            return new PyRevitConfig(configuration);
+            return builder.Build();
         }
 
         // specific configuration public access  ======================================================================
         // general telemetry
         public static bool GetUTCStamps()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryUTCTimestampsDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry?.TelemetryUseUtcTimeStamps ?? false;
         }
 
-        public static void SetUTCStamps(bool state)
+        public static void SetUTCStamps(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            _logger.Debug("Setting telemetry utc timestamps...");
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey, state);
+            _logger.Debug("Setting telemetry utc timestamps to {@TelemetryStatus}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryStatus = state});
         }
 
         // routes
         public static bool GetRoutesServerStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.Status ?? false;
         }
 
-        public static void SetRoutesServerStatus(bool state)
+        public static void SetRoutesServerStatus(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey, state);
+            _logger.Debug("Setting routes server status to {@Status}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new RoutesSection() {Status = state});
         }
 
-        public static void EnableRoutesServer() => SetRoutesServerStatus(true);
+        public static void EnableRoutesServer(string revitVersion = ConfigurationService.DefaultConfigurationName)
+            => SetRoutesServerStatus(true, revitVersion);
 
-        public static void DisableRoutesServer() => SetRoutesServerStatus(false);
+        public static void DisableRoutesServer(string revitVersion = ConfigurationService.DefaultConfigurationName)
+            => SetRoutesServerStatus(false, revitVersion);
 
         public static string GetRoutesServerHost()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey);
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.Host;
         }
 
-        public static void SetRoutesServerHost(string host)
+        public static void SetRoutesServerHost(string host,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey, host);
+            _logger.Debug("Setting routes server host to {@Host}...", host);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new RoutesSection() {Host = host});
         }
 
         public static int GetRoutesServerPort()
         {
-            var cfg = GetConfigFile();
-            var port = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey);
-            return port != null ? int.Parse(port) : PyRevitConsts.ConfigsRoutesPortDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.Port ?? 48884;
         }
 
-        public static void SetRoutesServerPort(int port)
+        public static void SetRoutesServerPort(int port,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey, port);
+            _logger.Debug("Setting routes server port to {@Port}...", port);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new RoutesSection() {Port = port});
         }
 
         public static bool GetRoutesLoadCoreAPIStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.LoadCoreApi ?? false;
         }
 
-        public static void SetRoutesLoadCoreAPIStatus(bool state)
+        public static void SetRoutesLoadCoreAPIStatus(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey, state);
+            _logger.Debug("Setting routes load core API status to {@LoadCoreApi}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new RoutesSection() {LoadCoreApi = state});
         }
 
         // telemetry
         public static bool GetTelemetryStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryStatusDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry?.TelemetryStatus ?? false;
         }
 
-        public static void SetTelemetryStatus(bool state)
+        public static void SetTelemetryStatus(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, state);
+            _logger.Debug("Setting telemetry status to {@TelemetryStatus}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryStatus = state});
         }
 
         public static string GetTelemetryFilePath()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryFileDirKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.TelemetryFileDir;
         }
 
         public static string GetTelemetryServerUrl()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryServerUrlKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.TelemetryServerUrl;
         }
 
-        public static void EnableTelemetry(string telemetryFileDir = null, string telemetryServerUrl = null)
+        public static void EnableTelemetry(string telemetryFileDir = null,
+            string telemetryServerUrl = null,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            _logger.Debug(string.Format("Enabling telemetry... path: \"{0}\" server: {1}",
-                                       telemetryFileDir, telemetryServerUrl));
-            SetTelemetryStatus(true);
+            _logger.Debug("Enabling telemetry...");
 
-            if (telemetryFileDir != null)
+            if (!Directory.Exists(telemetryFileDir))
             {
-                if (telemetryFileDir == string.Empty)
-                {
-                    // set empty value
-                    cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryFileDirKey, telemetryFileDir);
-                }
-                else
-                {
-                    if (CommonUtils.VerifyPath(telemetryFileDir))
-                        cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryFileDirKey, telemetryFileDir);
-                    else
-                        _logger.Debug("Invalid log path \"{0}\"", telemetryFileDir);
-                }
+                _logger.Warn("Directory \"{@TelemetryFileDir}\" does not exist", telemetryFileDir);
+                telemetryFileDir = default;
             }
 
-            if (telemetryServerUrl != null)
-                cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryServerUrlKey, telemetryServerUrl);
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion,
+                new TelemetrySection()
+                {
+                    TelemetryStatus = true,
+                    TelemetryFileDir = telemetryFileDir,
+                    TelemetryServerUrl = telemetryServerUrl
+                });
         }
 
         public static bool GetTelemetryIncludeHooks()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryIncludeHooksKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryIncludeHooksDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.TelemetryIncludeHooks ?? false;
         }
 
-        public static void SetTelemetryIncludeHooks(bool state)
+        public static void SetTelemetryIncludeHooks(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryIncludeHooksKey, state);
+            _logger.Debug("Setting telemetry include hooks to {@TelemetryIncludeHooks}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryIncludeHooks = state});
         }
 
-        public static void DisableTelemetry()
+        public static void DisableTelemetry(string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
             _logger.Debug("Disabling telemetry...");
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, false);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryStatus = false});
         }
 
         // app telemetry
         public static bool GetAppTelemetryStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAppTelemetryStatusDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.AppTelemetryStatus ?? false;
         }
 
-        public static void SetAppTelemetryStatus(bool state)
+        public static void SetAppTelemetryStatus(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, state);
+            _logger.Debug("Setting app telemetry status to {@AppTelemetryStatus}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new TelemetrySection() {AppTelemetryStatus = state});
         }
 
         public static string GetAppTelemetryServerUrl()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryServerUrlKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.AppTelemetryServerUrl;
         }
 
-        public static void EnableAppTelemetry(string apptelemetryServerUrl = null)
+        public static void EnableAppTelemetry(string apptelemetryServerUrl = null,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            _logger.Debug(string.Format("Enabling app telemetry... server: {0}", apptelemetryServerUrl));
-            SetAppTelemetryStatus(true);
+            _logger.Debug("Enabling app telemetry...");
 
-            if (apptelemetryServerUrl != null)
-                cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryServerUrlKey, apptelemetryServerUrl);
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new TelemetrySection() {AppTelemetryServerUrl = apptelemetryServerUrl});
         }
 
-        public static void DisableAppTelemetry()
+        public static void DisableAppTelemetry(string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
             _logger.Debug("Disabling app telemetry...");
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, false);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new TelemetrySection() {AppTelemetryStatus = false});
         }
 
         public static string GetAppTelemetryFlags()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryEventFlagsKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.AppTelemetryEventFlags?.ToString("X") ?? string.Empty;
         }
 
-        public static void SetAppTelemetryFlags(string flags)
+        public static void SetAppTelemetryFlags(string flags,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            _logger.Debug("Setting app telemetry flags...");
-            if (flags != null)
-                cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryEventFlagsKey, flags);
+            _logger.Debug("Setting app telemetry flags to {@AppTelemetryEventFlags}...", flags);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion,
+                new TelemetrySection()
+                    {AppTelemetryEventFlags = int.Parse(flags, System.Globalization.NumberStyles.HexNumber)});
         }
 
         // caching
         public static bool GetBinaryCaches()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsBinaryCacheKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsBinaryCacheDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.BinCache ?? false;
         }
 
-        public static void SetBinaryCaches(bool state)
+        public static void SetBinaryCaches(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsBinaryCacheKey, state);
+            _logger.Debug("Setting binary caches {@BinCache}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {BinCache = state});
         }
 
         // update checking config
         public static bool GetCheckUpdates()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCheckUpdatesKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsCheckUpdatesDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.CheckUpdates ?? false;
         }
 
-        public static void SetCheckUpdates(bool state)
+        public static void SetCheckUpdates(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCheckUpdatesKey, state);
+            _logger.Debug("Setting check updates to {@CheckUpdates}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {CheckUpdates = state});
         }
 
         // auto update config
         public static bool GetAutoUpdate()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAutoUpdateKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAutoUpdateDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.AutoUpdate ?? false;
         }
 
-        public static void SetAutoUpdate(bool state)
+        public static void SetAutoUpdate(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAutoUpdateKey, state);
+            _logger.Debug("Setting auto update to {@AutoUpdate}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {AutoUpdate = state});
         }
 
         // rocket mode config
         public static bool GetRocketMode()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRocketModeKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRocketModeDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.RocketMode ?? false;
         }
 
-        public static void SetRocketMode(bool state)
+        public static void SetRocketMode(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRocketModeKey, state);
+            _logger.Debug("Setting rocket mode to {@RocketMode}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {RocketMode = state});
         }
 
         // logging level config
         public static PyRevitLogLevels GetLoggingLevel()
         {
-            var cfg = GetConfigFile();
-            var verboseCfg = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey);
-            bool verbose = verboseCfg != null ? bool.Parse(verboseCfg) : PyRevitConsts.ConfigsVerboseDefault;
+            IConfigurationService cfg = GetConfigFile();
 
-            var debugCfg = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey);
-            bool debug = debugCfg != null ? bool.Parse(debugCfg) : PyRevitConsts.ConfigsDebugDefault;
-
-            if (verbose && !debug)
+            if (cfg.Core.Verbose == true
+                && cfg.Core.Debug != true)
                 return PyRevitLogLevels.Verbose;
-            else if (debug)
+            else if (cfg.Core.Debug == true)
                 return PyRevitLogLevels.Debug;
 
             return PyRevitLogLevels.Quiet;
         }
 
-        public static void SetLoggingLevel(PyRevitLogLevels level)
+        public static void SetLoggingLevel(PyRevitLogLevels level,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
+            _logger.Debug("Setting logging level to {@LogLevel}...", level);
+
+            IConfigurationService cfg = GetConfigFile();
             if (level == PyRevitLogLevels.Quiet)
             {
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey, false);
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey, false);
+                cfg.SaveSection(revitVersion, new CoreSection() {Debug = false, Verbose = false});
             }
-
-            if (level == PyRevitLogLevels.Verbose)
+            else if (level == PyRevitLogLevels.Verbose)
             {
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey, true);
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey, false);
+                cfg.SaveSection(revitVersion, new CoreSection() {Debug = false, Verbose = true});
             }
-
-            if (level == PyRevitLogLevels.Debug)
+            else if (level == PyRevitLogLevels.Debug)
             {
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey, true);
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey, true);
+                cfg.SaveSection(revitVersion, new CoreSection() {Debug = true, Verbose = false});
             }
         }
 
         // file logging config
         public static bool GetFileLogging()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsFileLoggingKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsFileLoggingDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.FileLogging ?? false;
         }
 
-        public static void SetFileLogging(bool state)
+        public static void SetFileLogging(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsFileLoggingKey, state);
+            _logger.Debug("Setting file logging to {@FileLogging}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {FileLogging = state});
         }
 
         // misc startup
         public static int GetStartupLogTimeout()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsStartupLogTimeoutKey);
-            return timeout != null ? int.Parse(timeout) : PyRevitConsts.ConfigsStartupLogTimeoutDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.StartupLogTimeout ?? 0;
         }
 
-        public static void SetStartupLogTimeout(int timeout)
+        public static void SetStartupLogTimeout(int timeout,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsStartupLogTimeoutKey, timeout);
+            _logger.Debug("Setting startup log timeout to {@StartupLogTimeout}...", timeout);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {StartupLogTimeout = timeout});
         }
 
         public static string GetRequiredHostBuild()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRequiredHostBuildKey);
-            return timeout != null ? timeout : string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.RequiredHostBuild ?? string.Empty;
         }
 
-        public static void SetRequiredHostBuild(string buildnumber)
+        public static void SetRequiredHostBuild(string buildnumber,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRequiredHostBuildKey, buildnumber);
+            _logger.Debug("Setting required host build to {@RequiredHostBuild}...", buildnumber);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {RequiredHostBuild = buildnumber});
         }
 
-        public static int GetMinHostDriveFreeSpace()
+        public static long GetMinHostDriveFreeSpace()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsMinDriveSpaceKey);
-            return timeout != null ? int.Parse(timeout) : 0;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.MinHostDriveFreeSpace ?? 0;
         }
 
-        public static void SetMinHostDriveFreeSpace(int freespace)
+        public static void SetMinHostDriveFreeSpace(long freespace,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsMinDriveSpaceKey, freespace);
+            _logger.Debug("Setting min host drive free space to {@MinHostDriveFreeSpace}...", freespace);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {MinHostDriveFreeSpace = freespace});
         }
 
         // load beta config
         public static bool GetLoadBetaTools()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLoadBetaKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsLoadBetaDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.LoadBeta ?? false;
         }
 
-        public static void SetLoadBetaTools(bool state)
+        public static void SetLoadBetaTools(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLoadBetaKey, state);
+            _logger.Debug("Setting load beta tools to {@LoadBeta}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {LoadBeta = state});
         }
 
         // cpythonengine
         public static int GetCpythonEngineVersion()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCPythonEngineKey);
-            return timeout != null ? int.Parse(timeout) : PyRevitConsts.ConfigsCPythonEngineDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.CpythonEngineVersion ?? 0;
         }
 
-        public static void SetCpythonEngineVersion(int version)
+        public static void SetCpythonEngineVersion(int version,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCPythonEngineKey, version);
+            _logger.Debug("Setting cpyhon engine version to {@CpythonEngineVersion}...", version);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {CpythonEngineVersion = version});
         }
 
         // ux ui
         public static string GetUserLocale()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLocaleKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserLocale ?? "en_us";
         }
 
-        public static void SetUserLocale(string localCode)
+        public static void SetUserLocale(string localCode,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLocaleKey, localCode);
+            _logger.Debug("Setting user locale to {@LocalCode}...", localCode);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {UserLocale = localCode});
         }
 
         public static string GetOutputStyleSheet()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsOutputStyleSheet) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.OutputStyleSheet ?? string.Empty;
         }
 
-        public static void SetOutputStyleSheet(string outputCSSFilePath)
+        public static void SetOutputStyleSheet(string outputCssFilePath,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            if (File.Exists(outputCSSFilePath))
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsOutputStyleSheet, outputCSSFilePath);
+            _logger.Debug("Setting output style sheet to {@OutputCssFilePath}...", outputCssFilePath);
+
+            IConfigurationService cfg = GetConfigFile();
+            if (File.Exists(outputCssFilePath))
+                cfg.SaveSection(revitVersion, new CoreSection() {OutputStyleSheet = outputCssFilePath});
         }
 
         // user access to tools
         public static bool GetUserCanUpdate()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanUpdateKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsUserCanUpdateDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserCanUpdate ?? false;
         }
 
         public static bool GetUserCanExtend()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanExtendKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsUserCanExtendDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserCanExtend ?? false;
         }
 
         public static bool GetUserCanConfig()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanConfigKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsUserCanConfigDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserCanConfig ?? false;
         }
 
-        public static void SetUserCanUpdate(bool state)
+        public static void SetUserCanUpdate(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanUpdateKey, state);
+            _logger.Debug("Setting user can install to {@UserCanUpdate}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {UserCanUpdate = state});
         }
 
-        public static void SetUserCanExtend(bool state)
+        public static void SetUserCanExtend(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanExtendKey, state);
+            _logger.Debug("Setting user can install to {@UserCanExtend}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {UserCanExtend = state});
         }
 
-        public static void SetUserCanConfig(bool state)
+        public static void SetUserCanConfig(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanConfigKey, state);
+            _logger.Debug("Setting user can install to {@UserCanConfig}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {UserCanConfig = state});
         }
 
         public static bool GetColorizeDocs()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsColorizeDocsDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.ColorizeDocs ?? false;
         }
 
-        public static void SetColorizeDocs(bool state)
+        public static void SetColorizeDocs(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey, state);
+            _logger.Debug("Setting colorize docs to {@ColorizeDocs}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {ColorizeDocs = state});
         }
 
         public static bool GetAppendTooltipEx()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAppendTooltipExDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.TooltipDebugInfo ?? false;
         }
 
-        public static void SetAppendTooltipEx(bool state)
+        public static void SetAppendTooltipEx(bool state,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey, state);
+            _logger.Debug("Setting tooltip debug info to {@TooltipDebugInfo}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(revitVersion, new CoreSection() {TooltipDebugInfo = state});
         }
     }
 }

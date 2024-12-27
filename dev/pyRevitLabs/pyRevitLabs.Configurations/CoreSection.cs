@@ -39,9 +39,12 @@ public sealed record CoreSection
     
     [KeyName("user_locale")]
     public string? UserLocale { get; set; } = "en_us";
-
-    [KeyName("log_level")]
-    public LogLevels? LogLevel { get; set; }
+    
+    [KeyName("debug")]
+    public bool? Debug { get; set; }
+    
+    [KeyName("verbose")]
+    public bool? Verbose { get; set; }
     
     [KeyName("filelogging")]
     public bool? FileLogging { get; set; }
@@ -53,7 +56,7 @@ public sealed record CoreSection
     public int? CpythonEngineVersion { get; set; }
     
     [KeyName("requiredhostbuild")]
-    public bool? RequiredHostBuild { get; set; }
+    public string? RequiredHostBuild { get; set; }
     
     [KeyName("minhostdrivefreespace")]
     public long? MinHostDriveFreeSpace { get; set; }
@@ -65,5 +68,5 @@ public sealed record CoreSection
     public bool? TooltipDebugInfo { get; set; }
     
     [KeyName("outputstylesheet")]
-    public string? OutputStylesheet { get; set; }
+    public string? OutputStyleSheet { get; set; }
 }
