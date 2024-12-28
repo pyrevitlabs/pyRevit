@@ -40,17 +40,13 @@ import os.path as op
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
-from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
 from pyrevit.compat import winreg as wr
 
 from pyrevit.labs import PyRevit
 from pyrevit.labs import ConfigurationService
 
 from pyrevit import coreutils
-from pyrevit.coreutils import appdata
-from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
-from pyrevit.versionmgr import upgrade
 
 
 DEFAULT_CSV_SEPARATOR = ','
