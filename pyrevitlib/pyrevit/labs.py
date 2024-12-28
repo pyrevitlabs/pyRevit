@@ -38,6 +38,10 @@ clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 clr.AddReference('pyRevitLabs.PyRevit')
 clr.AddReference('PythonStubsBuilder')
+
+# configurations
+clr.AddReference('pyRevitLabs.Configurations')
+
 import Nett
 import MadMilkman.Ini
 import OpenMcdf
@@ -52,6 +56,7 @@ from pyRevitLabs import Language
 from pyRevitLabs import DeffrelDB
 from pyRevitLabs import TargetApps
 from pyRevitLabs import PyRevit
+from pyRevitLabs import Configurations
 from PythonStubs import PythonStubsBuilder
 
 from pyrevit import coreutils
