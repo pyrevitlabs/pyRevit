@@ -27,8 +27,7 @@ namespace pyRevitLabs.PyRevit
         /// Returns config file.
         /// </summary>
         /// <returns>Returns admin config if admin config exists and user config not found.</returns>
-        public static IConfigurationService GetConfigFile(
-            string overrideName = ConfigurationService.DefaultConfigurationName)
+        public static IConfigurationService GetConfigFile(string overrideName = default)
         {
             // make sure the file exists and if not create an empty one
             string userConfig = PyRevitConsts.ConfigFilePath;
@@ -127,15 +126,13 @@ namespace pyRevitLabs.PyRevit
             }
         }
 
-        private static IConfigurationService CreateConfiguration(
-            string configPath,
-            bool readOnly = false,
-            string overrideName = ConfigurationService.DefaultConfigurationName)
+        private static IConfigurationService CreateConfiguration(string configPath, bool readOnly, string overrideName)
         {
             var builder = new ConfigurationBuilder()
-                .AddIniConfiguration(configPath, "default", readOnly);
+                .AddIniConfiguration(configPath, ConfigurationService.DefaultConfigurationName, readOnly);
 
-            if (string.IsNullOrEmpty(overrideName))
+            if (!string.IsNullOrEmpty(overrideName)
+                && overrideName?.Equals(ConfigurationService.DefaultConfigurationName) != true)
             {
                 builder.AddIniConfiguration(
                     Path.ChangeExtension(configPath,
