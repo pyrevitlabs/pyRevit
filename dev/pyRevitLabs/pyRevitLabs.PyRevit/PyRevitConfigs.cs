@@ -168,7 +168,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting telemetry utc timestamps to {@TelemetryStatus}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryStatus = state});
         }
 
@@ -184,7 +184,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting routes server status to {@Status}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new RoutesSection() {Status = state});
         }
 
@@ -205,7 +205,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting routes server host to {@Host}...", host);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new RoutesSection() {Host = host});
         }
 
@@ -220,7 +220,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting routes server port to {@Port}...", port);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new RoutesSection() {Port = port});
         }
 
@@ -235,7 +235,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting routes load core API status to {@LoadCoreApi}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new RoutesSection() {LoadCoreApi = state});
         }
 
@@ -251,7 +251,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting telemetry status to {@TelemetryStatus}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryStatus = state});
         }
 
@@ -279,7 +279,7 @@ namespace pyRevitLabs.PyRevit
                 telemetryFileDir = default;
             }
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion,
                 new TelemetrySection()
                 {
@@ -300,7 +300,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting telemetry include hooks to {@TelemetryIncludeHooks}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryIncludeHooks = state});
         }
 
@@ -308,7 +308,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Disabling telemetry...");
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryStatus = false});
         }
 
@@ -324,7 +324,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting app telemetry status to {@AppTelemetryStatus}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new TelemetrySection() {AppTelemetryStatus = state});
         }
 
@@ -339,7 +339,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Enabling app telemetry...");
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new TelemetrySection() {AppTelemetryServerUrl = apptelemetryServerUrl});
         }
 
@@ -347,7 +347,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Disabling app telemetry...");
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new TelemetrySection() {AppTelemetryStatus = false});
         }
 
@@ -362,7 +362,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting app telemetry flags to {@AppTelemetryEventFlags}...", flags);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion,
                 new TelemetrySection()
                     {AppTelemetryEventFlags = int.Parse(flags, System.Globalization.NumberStyles.HexNumber)});
@@ -380,7 +380,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting binary caches {@BinCache}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {BinCache = state});
         }
 
@@ -396,7 +396,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting check updates to {@CheckUpdates}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {CheckUpdates = state});
         }
 
@@ -412,7 +412,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting auto update to {@AutoUpdate}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {AutoUpdate = state});
         }
 
@@ -428,7 +428,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting rocket mode to {@RocketMode}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {RocketMode = state});
         }
 
@@ -451,7 +451,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting logging level to {@LogLevel}...", level);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             if (level == PyRevitLogLevels.Quiet)
             {
                 cfg.SaveSection(revitVersion, new CoreSection() {Debug = false, Verbose = false});
@@ -478,7 +478,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting file logging to {@FileLogging}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {FileLogging = state});
         }
 
@@ -494,7 +494,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting startup log timeout to {@StartupLogTimeout}...", timeout);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {StartupLogTimeout = timeout});
         }
 
@@ -509,7 +509,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting required host build to {@RequiredHostBuild}...", buildnumber);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {RequiredHostBuild = buildnumber});
         }
 
@@ -524,7 +524,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting min host drive free space to {@MinHostDriveFreeSpace}...", freespace);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {MinHostDriveFreeSpace = freespace});
         }
 
@@ -540,7 +540,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting load beta tools to {@LoadBeta}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {LoadBeta = state});
         }
 
@@ -556,7 +556,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting cpyhon engine version to {@CpythonEngineVersion}...", version);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {CpythonEngineVersion = version});
         }
 
@@ -572,7 +572,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting user locale to {@LocalCode}...", localCode);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {UserLocale = localCode});
         }
 
@@ -587,7 +587,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting output style sheet to {@OutputCssFilePath}...", outputCssFilePath);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             if (File.Exists(outputCssFilePath))
                 cfg.SaveSection(revitVersion, new CoreSection() {OutputStyleSheet = outputCssFilePath});
         }
@@ -616,7 +616,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting user can install to {@UserCanUpdate}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {UserCanUpdate = state});
         }
 
@@ -625,7 +625,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting user can install to {@UserCanExtend}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {UserCanExtend = state});
         }
 
@@ -634,7 +634,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting user can install to {@UserCanConfig}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {UserCanConfig = state});
         }
 
@@ -649,7 +649,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting colorize docs to {@ColorizeDocs}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {ColorizeDocs = state});
         }
 
@@ -664,7 +664,7 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Setting tooltip debug info to {@TooltipDebugInfo}...", state);
 
-            IConfigurationService cfg = GetConfigFile();
+            IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion, new CoreSection() {TooltipDebugInfo = state});
         }
     }
