@@ -149,7 +149,7 @@ namespace pyRevitLabs.PyRevit
             {
                 builder.AddIniConfiguration(
                     Path.ChangeExtension(configPath,
-                        $"{overrideName}.{IniConfiguration.DefaultFileExtension}"), overrideName, readOnly);
+                        $"{overrideName}{IniConfiguration.DefaultFileExtension}"), overrideName, readOnly);
             }
 
             return builder.Build();
