@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Base module for pushing toast messages on Win 10.
 
 This module is a port of `https://github.com/kolide/toast`
@@ -10,7 +11,6 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from pyrevit import ROOT_BIN_DIR
 from pyrevit.coreutils.logger import get_logger
 
-
 SCRIPT_TEMPLATE = """
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
@@ -19,93 +19,62 @@ SCRIPT_TEMPLATE = """
 $APP_ID = "{app_id}"
 
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml('{xml_content}')
+$xml.LoadXml("{xml_content}")
 
 $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($APP_ID).Show($toast)
 """
 
-# Mapping for audio friendly names to ms-winsoundevent strings
-AUDIO_MAPPING = {
-    "default": "ms-winsoundevent:Notification.Default",
-    "im": "ms-winsoundevent:Notification.IM",
-    "mail": "ms-winsoundevent:Notification.Mail",
-    "reminder": "ms-winsoundevent:Notification.Reminder",
-    "sms": "ms-winsoundevent:Notification.SMS",
-    "silent": "silent",
-    "looping_alarm": "ms-winsoundevent:Notification.Looping.Alarm",
-    "looping_call": "ms-winsoundevent:Notification.Looping.Call"
-}
 
-
-def send_toast(
+def toast(
     message,
     title="pyRevit",
     appid="pyRevit",
     icon=None,
     click=None,
     actions=None,
-    audio="default",
-    duration="short",
-    activation_type="protocol",
-    loop=False,
 ):
-    """Send toast notificaton.
+    """Show a toast notificaton.
 
     Args:
         message (str): notification message
-        title (str): notification title
-        appid (str): application unique id
-        icon (str): notification icon
-        click (str): click action
-        actions (dict[str, str]): list of actions
-        audio (str): notification audio to play
-        duration (str): notification duration
-        activation_type (str): notification activation type
-        loop (bool): notification loop
+        title (str): notification title. Defaults to "pyRevit".
+        appid (str): application unique id. Defaults to "pyRevit".
+        icon (str): notification icon. Defaults to pyRevit icon.
+        click (str): optional click action.
+        actions (dict[str, str]): optional dictionary of button names and actions.
+
+    Examples:
+        ```python
+        toast(
+            "🚀 PyRevit Rocks!",
+            click="https://www.pyrevitlabs.io",
+            actions={
+                "Donate": "https://opencollective.com/pyrevitlabs/donate", 
+                "Docs": "https://docs.pyrevitlabs.io/"
+            }
+        )
+        ```
     """
     mlogger = get_logger(__name__)
     icon = icon or os.path.join(ROOT_BIN_DIR, 'pyRevit.ico')
     xml_content = _build_toast_xml(
-        title, message, icon, activation_type, click, actions, audio, loop, duration
+        title, message, icon=icon, click=click, actions=actions
     )
     script = SCRIPT_TEMPLATE.format(app_id=appid, xml_content=xml_content)
     mlogger.debug("sending toast with script %s...", script)
     try:
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        subprocess.check_output(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script]
         )
-        if result.returncode != 0:
-            mlogger.error("Error sending notification: %s", result.stderr)
-        else:
-            mlogger.debug("toast sent.")
+        mlogger.debug("toast sent.")
     except subprocess.CalledProcessError as e:
-        mlogger.error("Error sending notification: %s" % str(e))
-    except subprocess.TimeoutExpired:
-        mlogger.error("Notification script timed out.")
+        mlogger.error("Error sending notification: %s" % str(e.output))
 
 
-def _build_toast_xml(
-    title,
-    message,
-    icon=None,
-    activation_type="protocol", 
-    activation_arguments=None,
-    actions=None,
-    audio="default", 
-    loop=False,
-    duration="short"
-):
-    if duration not in {"short", "long"}:
-        raise ValueError("Invalid duration: must be 'short' or 'long'")
-    audio = AUDIO_MAPPING.get(audio.lower(), AUDIO_MAPPING["default"])
-    toast = Element("toast", {
-        "activationType": activation_type,
-        "launch": activation_arguments or "",
-        "duration": duration
-    })
+def _build_toast_xml(title, message, icon=None, click=None, actions=None):
+    toast_props = {"activationType": "protocol", "launch": click or ""}
+    toast = Element("toast", toast_props)
     visual = SubElement(toast, "visual")
     binding = SubElement(visual, "binding", {"template": "ToastGeneric"})
     if icon:
@@ -114,17 +83,13 @@ def _build_toast_xml(
         SubElement(binding, "text").text = title
     if message:
         SubElement(binding, "text").text = message
-    audio_element = (
-        {"silent": "true"} if audio == "silent"
-        else {"src": audio, "loop": "true" if loop else "false"}
-    )
-    SubElement(toast, "audio", audio_element)
+    SubElement(toast, "audio")
     if actions:
         actions_element = SubElement(toast, "actions")
-        for action in actions:
+        for content, arguments in actions.items():
             SubElement(actions_element, "action", {
-                "activationType": action.get("type", ""),
-                "content": action.get("label", ""),
-                "arguments": action.get("arguments", "")
+                "activationType": "protocol",
+                "content": content,
+                "arguments": arguments
             })
-    return tostring(toast, encoding="unicode")
+    return tostring(toast, encoding="UTF-8").replace("\"", "`\"")

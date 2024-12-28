@@ -42,7 +42,7 @@ from pyrevit.framework import Uri, UriKind, ResourceDictionary
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
-from pyrevit.forms import toaster
+from pyrevit.forms.toaster import toast
 from pyrevit import versionmgr
 from pyrevit.userconfig import user_config
 
@@ -3332,39 +3332,6 @@ def check_graphicalview(view, exitscript=False):
             )
         return False
     return True
-
-
-def toast(message, title='pyRevit', appid='pyRevit',
-          icon=None, click=None, actions=None):
-    """Show a Windows 10 notification.
-
-    Args:
-        message (str): notification message
-        title (str): notification title
-        appid (str): app name (will show under message)
-        icon (str): file path to icon .ico file (defaults to pyRevit icon)
-        click (str): click action commands string
-        actions (dict): dictionary of button names and action strings
-
-    Examples:
-        ```python
-        script.toast("Hello World!",
-                     title="My Script",
-                     appid="MyAPP",
-                     click="https://pyrevitlabs.github.io/pyRevit/",
-                     actions={
-                         "Open Google":"https://google.com",
-                         "Open Toast64":"https://github.com/go-toast/toast"
-                         })
-        ```
-    """
-    toaster.send_toast(
-        message,
-        title=title,
-        appid=appid,
-        icon=icon,
-        click=click,
-        actions=actions)
 
 
 def ask_for_string(default=None, prompt=None, title=None, **kwargs):
