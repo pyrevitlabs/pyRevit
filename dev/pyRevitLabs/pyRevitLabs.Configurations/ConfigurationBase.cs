@@ -46,11 +46,6 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         return HasSectionKeyImpl(sectionName, keyName);
     }
 
-    public object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default)
-    {
-        throw new NotImplementedException();
-    }
-
     /// <inheritdoc />
     public bool RemoveValue(string sectionName, string keyName)
     {
@@ -107,10 +102,39 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
 
         return (T) GetValueImpl(typeof(T), sectionName, keyName);
     }
+    
+    public object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default)
+    {
+        if (string.IsNullOrWhiteSpace(sectionName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(sectionName));
+
+        if (string.IsNullOrWhiteSpace(keyName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(keyName));
+
+        if (!HasSection(sectionName))
+            return defaultValue;
+
+        if (!HasSectionKey(sectionName, keyName))
+            return defaultValue;
+
+        return GetValueImpl(typeObject, sectionName, keyName);
+    }
 
     /// <inheritdoc />
     public object GetValue(Type typeObject, string sectionName, string keyName)
     {
+        if (string.IsNullOrWhiteSpace(sectionName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(sectionName));
+
+        if (string.IsNullOrWhiteSpace(keyName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(keyName));
+
+        if (!HasSection(sectionName))
+            throw new ConfigurationSectionNotFoundException(sectionName);
+
+        if (!HasSectionKey(sectionName, keyName))
+            throw new ConfigurationSectionKeyNotFoundException(sectionName, keyName);
+        
         return GetValueImpl(typeObject, sectionName, keyName);
     }
 
