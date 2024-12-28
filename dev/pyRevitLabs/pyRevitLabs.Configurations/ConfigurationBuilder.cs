@@ -5,8 +5,14 @@ namespace pyRevitLabs.Configurations;
 
 public sealed class ConfigurationBuilder
 {
+    private readonly bool _readOnly;
     private readonly List<ConfigurationName> _names = [];
     private readonly Dictionary<string, IConfiguration> _configurations = [];
+
+    public ConfigurationBuilder(bool readOnly)
+    {
+        _readOnly = readOnly;
+    }
 
     public ConfigurationBuilder AddConfigurationSource(string configurationName, IConfiguration configuration)
     {
@@ -24,6 +30,6 @@ public sealed class ConfigurationBuilder
 
     public IConfigurationService Build()
     {
-        return ConfigurationService.Create(_names, _configurations);
+        return ConfigurationService.Create(_readOnly, _names, _configurations);
     }
 }

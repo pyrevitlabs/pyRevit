@@ -7,8 +7,7 @@ namespace pyRevitLabs.Configurations.Tests
     {
         public ConfigurationServiceFixture()
         {
-            Configuration = new ConfigurationService(
-                new List<ConfigurationName>(),
+            Configuration = new ConfigurationService(false, new List<ConfigurationName>(),
                 new Dictionary<string, IConfiguration>()
                     {{"default", new TestRunConfiguration()}});
         }

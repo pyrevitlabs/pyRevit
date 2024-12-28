@@ -141,7 +141,7 @@ namespace pyRevitLabs.PyRevit
 
         private static IConfigurationService CreateConfiguration(string configPath, bool readOnly, string overrideName)
         {
-            var builder = new ConfigurationBuilder()
+            var builder = new ConfigurationBuilder(readOnly)
                 .AddIniConfiguration(configPath, ConfigurationService.DefaultConfigurationName, readOnly);
 
             if (!string.IsNullOrEmpty(overrideName)
@@ -149,7 +149,7 @@ namespace pyRevitLabs.PyRevit
             {
                 builder.AddIniConfiguration(
                     Path.ChangeExtension(configPath,
-                        $"{overrideName}.{IniConfiguration.DefaultFileExtension}"), overrideName);
+                        $"{overrideName}.{IniConfiguration.DefaultFileExtension}"), overrideName, readOnly);
             }
 
             return builder.Build();

@@ -14,23 +14,26 @@ public sealed class ConfigurationService : IConfigurationService
 
     public const string DefaultConfigurationName = "Default";
 
-    internal ConfigurationService(
+    internal ConfigurationService(bool readOnly,
         List<ConfigurationName> names,
         IDictionary<string, IConfiguration> configurations)
     {
         _names = names;
         _configurations = configurations;
+        
+        ReadOnly = readOnly;
 
         // TODO: Change behavior
         LoadConfigurations();
     }
 
-    internal static IConfigurationService Create(
-        List<ConfigurationName> names,
+    internal static IConfigurationService Create(bool readOnly, List<ConfigurationName> names,
         IDictionary<string, IConfiguration> configurations)
     {
-        return new ConfigurationService(names, configurations);
+        return new ConfigurationService(readOnly, names, configurations);
     }
+    
+    public bool ReadOnly { get; }
 
     public IEnumerable<string> ConfigurationNames => _configurations.Keys;
 

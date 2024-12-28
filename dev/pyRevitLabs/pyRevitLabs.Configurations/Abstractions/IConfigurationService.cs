@@ -2,6 +2,8 @@
 
 public interface IConfigurationService
 {
+    bool ReadOnly { get; }
+    
     CoreSection Core { get; }
     RoutesSection Routes { get; }
     TelemetrySection Telemetry { get; }
