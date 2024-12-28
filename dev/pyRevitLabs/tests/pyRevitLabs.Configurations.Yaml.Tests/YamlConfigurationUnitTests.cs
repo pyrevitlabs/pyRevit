@@ -31,7 +31,7 @@ public class YamlConfigurationUnitTests : ConfigurationTests, IClassFixture<Yaml
     {
         Assert.Throws<ArgumentException>(() =>
         {
-            new ConfigurationBuilder()
+            new ConfigurationBuilder(false)
                 .AddYamlConfiguration(default!, default!)
                 .Build();
         });

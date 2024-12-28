@@ -31,7 +31,7 @@ public class IniConfigurationUnitTests : ConfigurationTests, IClassFixture<IniCr
     {
         Assert.Throws<ArgumentException>(() =>
         {
-            new ConfigurationBuilder()
+            new ConfigurationBuilder(false)
                 .AddIniConfiguration(default!, default!)
                 .Build();
         });

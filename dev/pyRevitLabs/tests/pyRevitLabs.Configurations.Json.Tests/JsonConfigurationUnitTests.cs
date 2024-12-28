@@ -31,7 +31,7 @@ public class JsonConfigurationUnitTests : ConfigurationTests, IClassFixture<Json
     {
         Assert.Throws<ArgumentException>(() =>
         {
-            new ConfigurationBuilder()
+            new ConfigurationBuilder(false)
                 .AddJsonConfiguration(default!, default!)
                 .Build();
         });
