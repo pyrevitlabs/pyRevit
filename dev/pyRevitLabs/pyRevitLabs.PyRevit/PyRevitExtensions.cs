@@ -338,11 +338,8 @@ namespace pyRevitLabs.PyRevit {
                 }
 
                 // rewrite verified list
-                cfg.SetSectionKeyValue(
-                    ConfigurationService.DefaultConfigurationName, 
-                    PyRevitConsts.ConfigsCoreSection, 
-                    PyRevitConsts.ConfigsUserExtensionsKey, 
-                    validatedPaths);
+                cfg.SaveSection(
+                    ConfigurationService.DefaultConfigurationName, new CoreSection() {UserExtensions = validatedPaths});
             }
             return validatedPaths;
         }
@@ -356,11 +353,8 @@ namespace pyRevitLabs.PyRevit {
                 _logger.Debug("Adding extension search path \"{@ExtensionSource}\"", searchPath);
                 var searchPaths = GetRegisteredExtensionSearchPaths();
                 searchPaths.Add(searchPath.NormalizeAsPath());
-                cfg.SetSectionKeyValue(
-                    ConfigurationService.DefaultConfigurationName,
-                    PyRevitConsts.ConfigsCoreSection,
-                    PyRevitConsts.ConfigsUserExtensionsKey,
-                    searchPaths);
+                cfg.SaveSection(
+                    ConfigurationService.DefaultConfigurationName, new CoreSection() {UserExtensions = searchPaths});
             }
             else
                 throw new pyRevitResourceMissingException(searchPath);

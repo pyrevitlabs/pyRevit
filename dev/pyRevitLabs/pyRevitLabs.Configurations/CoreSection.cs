@@ -69,4 +69,7 @@ public sealed record CoreSection
     
     [KeyName("outputstylesheet")]
     public string? OutputStyleSheet { get; set; }
+    
+    [KeyName("userextensions")]
+    public List<string> UserExtensions { get; set; } = new();
 }
