@@ -115,7 +115,7 @@ namespace pyRevitLabs.PyRevit
             }
 
 
-            _logger.Debug("Seeding config file \"{@SourceFile}\" to \"{@SargetFile}\"", sourceFile, targetFile);
+            _logger.Debug("Seeding config file \"{@SourceFile}\" to \"{@TargetFile}\"", sourceFile, targetFile);
 
             try
             {
