@@ -6,7 +6,6 @@ This module is a port of `https://github.com/kolide/toast`
 
 import os.path
 import subprocess
-from xml.etree.ElementTree import Element, SubElement, tostring
 
 from pyrevit import ROOT_BIN_DIR
 from pyrevit.coreutils.logger import get_logger
@@ -18,12 +17,31 @@ SCRIPT_TEMPLATE = """
 
 $APP_ID = "{app_id}"
 
+$template = @"
+<toast activationType="protocol" {launch}>
+    <visual>
+        <binding template="ToastGeneric">
+            {image}
+            {title}
+            {message}
+        </binding>
+    </visual>
+    {actions}
+</toast>
+"@
+
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml("{xml_content}")
+$xml.LoadXml($template)
 
 $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($APP_ID).Show($toast)
 """
+
+LAUNCH_TEMPLATE = "launch=\"{}\""
+TEXT_TEMPLATE = "<text><![CDATA[{}]]></text>"
+IMAGE_TEMPLATE = "<image placement=\"appLogoOverride\" src=\"{}\"/>"
+ACTION_ITEM_TEMPLATE = "<action activationType=\"protocol\" content=\"{}\" arguments=\"{}\" />"
+ACTIONS_TEMPLATE = "<actions>{}</actions>"
 
 
 def toast(
@@ -58,38 +76,30 @@ def toast(
     """
     mlogger = get_logger(__name__)
     icon = icon or os.path.join(ROOT_BIN_DIR, 'pyRevit.ico')
-    xml_content = _build_toast_xml(
-        title, message, icon=icon, click=click, actions=actions
+    if not actions:
+        actions_content = ""
+    else:
+        actions_items = (
+            ACTION_ITEM_TEMPLATE.format(content, arguments)
+            for content, arguments in actions.items()
+        )
+        actions_content = ACTIONS_TEMPLATE.format("".join(actions_items))
+    script = SCRIPT_TEMPLATE.format(
+        app_id=appid,
+        launch=LAUNCH_TEMPLATE.format(click) if click else "",
+        title=TEXT_TEMPLATE.format(title) if title else "",
+        message=TEXT_TEMPLATE.format(message) if message else "",
+        image=IMAGE_TEMPLATE.format(icon) if icon else "",
+        actions=actions_content,
     )
-    script = SCRIPT_TEMPLATE.format(app_id=appid, xml_content=xml_content)
+
+    CREATE_NO_WINDOW = 0x08000000
     mlogger.debug("sending toast with script %s...", script)
     try:
         subprocess.check_output(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script]
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            creationflags=CREATE_NO_WINDOW,
         )
         mlogger.debug("toast sent.")
     except subprocess.CalledProcessError as e:
         mlogger.error("Error sending notification: %s" % str(e.output))
-
-
-def _build_toast_xml(title, message, icon=None, click=None, actions=None):
-    toast_props = {"activationType": "protocol", "launch": click or ""}
-    toast = Element("toast", toast_props)
-    visual = SubElement(toast, "visual")
-    binding = SubElement(visual, "binding", {"template": "ToastGeneric"})
-    if icon:
-        SubElement(binding, "image", {"placement": "appLogoOverride", "src": icon})
-    if title:
-        SubElement(binding, "text").text = title
-    if message:
-        SubElement(binding, "text").text = message
-    SubElement(toast, "audio")
-    if actions:
-        actions_element = SubElement(toast, "actions")
-        for content, arguments in actions.items():
-            SubElement(actions_element, "action", {
-                "activationType": "protocol",
-                "content": content,
-                "arguments": arguments
-            })
-    return tostring(toast, encoding="UTF-8").replace("\"", "`\"")
