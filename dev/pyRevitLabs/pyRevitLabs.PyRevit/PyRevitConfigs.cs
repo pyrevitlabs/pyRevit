@@ -26,21 +26,34 @@ namespace pyRevitLabs.PyRevit
         /// <summary>
         /// Returns config file.
         /// </summary>
-        /// <returns>Returns admin config if admin config exists and user config not found.</returns>
+        /// <returns>Returns admin config if admin config exists and readonly and user config not found.</returns>
+        /// <remarks>
+        /// Seeds admin config file when user config not found and admin config not readonly.
+        /// </remarks>
         public static IConfigurationService GetConfigFile(string overrideName = default)
         {
-            // make sure the file exists and if not create an empty one
             string userConfig = PyRevitConsts.ConfigFilePath;
             string adminConfig = PyRevitConsts.AdminConfigFilePath;
 
+            // create admin config
             if (!File.Exists(userConfig)
-                && File.Exists(adminConfig))
+                && File.Exists(adminConfig)
+                && new FileInfo(adminConfig).IsReadOnly)
             {
-                _logger.Info("Creating admin config {@ConfigPath}...", adminConfig);
+                _logger.Debug("Creating admin config service {@ConfigPath}...", adminConfig);
                 return CreateConfiguration(adminConfig, true, overrideName);
             }
 
-            _logger.Info("Creating user config {@ConfigPath}...", userConfig);
+            // copy admin config to user config
+            // first run when user config not created
+            if (!File.Exists(userConfig)
+                && !new FileInfo(adminConfig).IsReadOnly)
+            {
+                _logger.Debug("Copy admin config file...");
+                SetupConfig(adminConfig);
+            }
+
+            _logger.Debug("Creating user config service {@ConfigPath}...", userConfig);
             return CreateConfiguration(userConfig, false, overrideName);
         }
 
