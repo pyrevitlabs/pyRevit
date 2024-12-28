@@ -57,7 +57,7 @@ public sealed class ConfigurationService : IConfigurationService
     public T GetSection<T>()
     {
         Type configurationType = typeof(T);
-        return (T) CreateSection(configurationType, Configurations.ToArray());
+        return (T) CreateSection(configurationType, Configurations.Reverse().ToArray());
     }
 
     public void SaveSection<T>(string configurationName, T sectionValue)
