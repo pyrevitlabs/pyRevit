@@ -1,15 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=import-error
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-module-docstring
-# pylint: disable=wrong-import-position
-# pylint: disable=broad-except
-# pylint: disable=line-too-long
-# pylint: disable=protected-access
-# pylint: disable=unused-argument
-# pylint: disable=attribute-defined-outside-init
-# pyright: reportMissingImports=false
 import sys
 from re import split
 from math import fabs
@@ -28,10 +17,8 @@ import clr
 clr.AddReference('System.Data')
 from System.Data import DataTable
 
-
 # Categories to exclude
 CAT_EXCLUDED = (int(DB.BuiltInCategory.OST_RoomSeparationLines), int(DB.BuiltInCategory.OST_Cameras), int(DB.BuiltInCategory.OST_CurtainGrids), int(DB.BuiltInCategory.OST_Elev), int(DB.BuiltInCategory.OST_Grids), int(DB.BuiltInCategory.OST_IOSModelGroups), int(DB.BuiltInCategory.OST_Views), int(DB.BuiltInCategory.OST_SitePropertyLineSegment), int(DB.BuiltInCategory.OST_SectionBox), int(DB.BuiltInCategory.OST_ShaftOpening), int(DB.BuiltInCategory.OST_BeamAnalytical), int(DB.BuiltInCategory.OST_StructuralFramingOpening), int(DB.BuiltInCategory.OST_MEPSpaceSeparationLines), int(DB.BuiltInCategory.OST_DuctSystem), int(DB.BuiltInCategory.OST_Lines), int(DB.BuiltInCategory.OST_PipingSystem), int(DB.BuiltInCategory.OST_Matchline), int(DB.BuiltInCategory.OST_CenterLines), int(DB.BuiltInCategory.OST_CurtainGridsRoof), int(DB.BuiltInCategory.OST_SWallRectOpening), -2000278, -1)
-
 
 class SubscribeView(UI.IExternalEventHandler):
     def __init__(self):
