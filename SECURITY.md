@@ -2,7 +2,6 @@
 
 > Note that the most up to date code is located in the develop branch. Every 6 months to 12 months, the develop branch is merged to the master branch and new releases are integrated.
 
-
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public pyRevit GitHub issues, discussions, or pull requests.**

@@ -11,7 +11,7 @@ if family_mgr.CurrentType:
     if current_idx >= len(family_types):
         current_idx = 0
 
-    with revit.Transaction('Cycle Famiy Type'):
+    with revit.Transaction('Cycle Family Type'):
         for ftype in family_mgr.Types:
             if ftype.Name == family_types[current_idx]:
                 family_mgr.CurrentType = ftype
