@@ -20,6 +20,7 @@ from System.Data import DataTable
 # Categories to exclude
 CAT_EXCLUDED = (int(DB.BuiltInCategory.OST_RoomSeparationLines), int(DB.BuiltInCategory.OST_Cameras), int(DB.BuiltInCategory.OST_CurtainGrids), int(DB.BuiltInCategory.OST_Elev), int(DB.BuiltInCategory.OST_Grids), int(DB.BuiltInCategory.OST_IOSModelGroups), int(DB.BuiltInCategory.OST_Views), int(DB.BuiltInCategory.OST_SitePropertyLineSegment), int(DB.BuiltInCategory.OST_SectionBox), int(DB.BuiltInCategory.OST_ShaftOpening), int(DB.BuiltInCategory.OST_BeamAnalytical), int(DB.BuiltInCategory.OST_StructuralFramingOpening), int(DB.BuiltInCategory.OST_MEPSpaceSeparationLines), int(DB.BuiltInCategory.OST_DuctSystem), int(DB.BuiltInCategory.OST_Lines), int(DB.BuiltInCategory.OST_PipingSystem), int(DB.BuiltInCategory.OST_Matchline), int(DB.BuiltInCategory.OST_CenterLines), int(DB.BuiltInCategory.OST_CurtainGridsRoof), int(DB.BuiltInCategory.OST_SWallRectOpening), -2000278, -1)
 
+
 class SubscribeView(UI.IExternalEventHandler):
     def __init__(self):
         self.registered = 1
@@ -130,30 +131,31 @@ class ResetColors(UI.IExternalEventHandler):
         try:
             new_doc = revit.DOCS.doc
             view = get_active_view(new_doc)
-            if view != 0:
-                ogs = DB.OverrideGraphicSettings().Dispose()
-                ogs = DB.OverrideGraphicSettings()
-                collector = DB.FilteredElementCollector(new_doc, view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElementIds()
-                with revit.Transaction("Reset colors in elements"):
-                    try:
-                        # Get and ResetView Filters
-                        sel_cat = wndw._categories.SelectedItem['Value']
-                        sel_par = wndw._list_box1.SelectedItem['Value']
-                        filter_name = sel_cat.name + "/"
-                        filters = view.GetFilters()
-                        for filt_id in filters:
-                            filt_ele = new_doc.GetElement(filt_id)
-                            if filt_ele.Name.StartsWith(filter_name):
-                                view.RemoveFilter(filt_id)
-                                try:
-                                    new_doc.Delete(filt_id)
-                                except Exception:
-                                    external_event_trace()
-                    except Exception:
-                        external_event_trace()
-                    # Reset visibility
-                    for i in collector:
-                        view.SetElementOverrides(i, ogs)
+            if view == 0:
+                return
+            ogs = DB.OverrideGraphicSettings().Dispose()
+            ogs = DB.OverrideGraphicSettings()
+            collector = DB.FilteredElementCollector(new_doc, view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElementIds()
+            with revit.Transaction("Reset colors in elements"):
+                try:
+                    # Get and ResetView Filters
+                    sel_cat = wndw._categories.SelectedItem['Value']
+                    sel_par = wndw._list_box1.SelectedItem['Value']
+                    filter_name = sel_cat.name + "/"
+                    filters = view.GetFilters()
+                    for filt_id in filters:
+                        filt_ele = new_doc.GetElement(filt_id)
+                        if filt_ele.Name.StartsWith(filter_name):
+                            view.RemoveFilter(filt_id)
+                            try:
+                                new_doc.Delete(filt_id)
+                            except Exception:
+                                external_event_trace()
+                except Exception:
+                    external_event_trace()
+                # Reset visibility
+                for i in collector:
+                    view.SetElementOverrides(i, ogs)
         except Exception:
             external_event_trace()
 
