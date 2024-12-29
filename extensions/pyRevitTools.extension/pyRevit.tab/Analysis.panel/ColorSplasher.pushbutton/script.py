@@ -174,8 +174,7 @@ class CreateLegend(UI.IExternalEventHandler):
             collector = DB.FilteredElementCollector(new_doc).OfClass(DB.View).ToElements()
             legends = []
             for vw in collector:
-                if vw.ViewType 
-                DB.ViewType.Legend:
+                if vw.ViewType == DB.ViewType.Legend:
                     legends.append(vw)
                     break
             if len(legends) < 0:
