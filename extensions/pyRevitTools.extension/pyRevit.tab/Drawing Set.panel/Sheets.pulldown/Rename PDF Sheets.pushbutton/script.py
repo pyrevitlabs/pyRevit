@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import os.path as op
 from pathlib import Path
 import re
@@ -21,7 +22,7 @@ else:
     basefolder = forms.pick_folder()
 
 if not basefolder:
-    forms.alert("No Folder Selected.", exitscript=True)
+    sys.exit()
 
 prefix_stripper = re.compile(r"^.*?Sheet\s*-\s*")   #"Sheet -", with space management
 capitalizer = re.compile(r"-(?!.*-)\s*(.*)")        #Capitalized after the last hyphen
@@ -52,6 +53,6 @@ for pdf_file in pdf_files:
         continue
 
 if err_count != 0:
-    print("\n{0} PDF files found\n{1} Files with 'SHEET - '\n{2} Files rename\n{3} Erreur".format(pdf_count, sheet_count, rename_count, err_count))
+    print("\n{0} PDF files found\n{1} Files with 'SHEET - '\n{2} Files renamed\n{3} Errors".format(pdf_count, sheet_count, rename_count, err_count))
     
-forms.alert("{0} PDF Files found\n{1} Files with 'SHEET - '\n{2} Files rename".format(pdf_count, sheet_count, rename_count))
+forms.alert("{0} PDF Files found\n{1} Files with 'SHEET - '\n{2} Files renamed".format(pdf_count, sheet_count, rename_count))
