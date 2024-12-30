@@ -27,14 +27,15 @@ import re
 prefix_stripper = re.compile(r"^.*?Sheet\s*-\s*")   #"Sheet -", with space management
 capitalizer = re.compile(r"-(?!.*-)\s*(.*)")        #Capitalized after the last hyphen
 normalizer = re.compile("\s*-\s*")                  #Normalize all other hyphens surrounded by spaces
-pdf_count, sheet_count, rename_count, err_count = 0, 0, 0, 0
+sheet_count, rename_count, err_count = 0, 0, 0, 0
 
 # Ask for sub folder treatment and difine a research patern
 dir_pattern = "**/" if forms.alert("Do you want to include subfolders?", yes=True, no=True) else ""
 
 #Search all .pdf file
-for pdf_file in Path(basefolder).glob("{}*.pdf".format(dir_pattern)):
-    pdf_count += 1
+pdf_files = Path(basefolder).glob("{}*.pdf".format(dir_pattern))
+pdf_count = len(pdf_files)
+for pdf_file in pdf_files:
     # do nothing if not a 'Sheet - ' pdf (test with the regex prefixe stripper use for renaminf file)
     if not prefix_stripper.search(pdf_file.stem):
         continue
