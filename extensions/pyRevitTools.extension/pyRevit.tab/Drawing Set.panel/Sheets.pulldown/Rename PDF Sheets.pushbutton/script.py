@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os.path as op
 from pathlib import Path
+import re
 
 from pyrevit import forms
 
@@ -23,7 +24,6 @@ if not basefolder:
     forms.alert("No Folder Selected.", exitscript=True)
 
 # Continue Script if basefolder
-import re
 prefix_stripper = re.compile(r"^.*?Sheet\s*-\s*")   #"Sheet -", with space management
 capitalizer = re.compile(r"-(?!.*-)\s*(.*)")        #Capitalized after the last hyphen
 normalizer = re.compile("\s*-\s*")                  #Normalize all other hyphens surrounded by spaces
@@ -47,9 +47,9 @@ for pdf_file in pdf_files:
     try :
         pdf_file.rename(pdf_file.with_name("{}.pdf".format(new_pdf)))
         rename_count += 1
-    except Exception as e:
+    except OSError as e:
         err_count += 1
-        print("File NOT RENAME : {}".format(pdf_file))
+        print("File NOT RENAMED : {}".format(pdf_file))
         print(" -> File already exist : {}".format(pdf_file.with_name("{}.pdf".format(new_pdf))))
         continue
 
