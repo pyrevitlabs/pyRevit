@@ -1,4 +1,15 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=missing-module-docstring
+# pylint: disable=wrong-import-position
+# pylint: disable=broad-except
+# pylint: disable=line-too-long
+# pylint: disable=protected-access
+# pylint: disable=unused-argument
+# pylint: disable=attribute-defined-outside-init
+# pyright: reportMissingImports=false
 import sys
 from re import split
 from math import fabs
@@ -13,12 +24,16 @@ from pyrevit.framework import System
 from pyrevit import HOST_APP, revit, DB, UI
 from pyrevit.framework import List
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.script import get_logger
 import clr
 clr.AddReference('System.Data')
 from System.Data import DataTable
 
+
 # Categories to exclude
 CAT_EXCLUDED = (int(DB.BuiltInCategory.OST_RoomSeparationLines), int(DB.BuiltInCategory.OST_Cameras), int(DB.BuiltInCategory.OST_CurtainGrids), int(DB.BuiltInCategory.OST_Elev), int(DB.BuiltInCategory.OST_Grids), int(DB.BuiltInCategory.OST_IOSModelGroups), int(DB.BuiltInCategory.OST_Views), int(DB.BuiltInCategory.OST_SitePropertyLineSegment), int(DB.BuiltInCategory.OST_SectionBox), int(DB.BuiltInCategory.OST_ShaftOpening), int(DB.BuiltInCategory.OST_BeamAnalytical), int(DB.BuiltInCategory.OST_StructuralFramingOpening), int(DB.BuiltInCategory.OST_MEPSpaceSeparationLines), int(DB.BuiltInCategory.OST_DuctSystem), int(DB.BuiltInCategory.OST_Lines), int(DB.BuiltInCategory.OST_PipingSystem), int(DB.BuiltInCategory.OST_Matchline), int(DB.BuiltInCategory.OST_CenterLines), int(DB.BuiltInCategory.OST_CurtainGridsRoof), int(DB.BuiltInCategory.OST_SWallRectOpening), -2000278, -1)
+
+logger = get_logger() # get logger and trigger debug mode using CTRL+click
 
 
 class SubscribeView(UI.IExternalEventHandler):
@@ -104,7 +119,6 @@ class ApplyColors(UI.IExternalEventHandler):
                     wndw._txt_block5.Visible = False
 
                 for indx in range(wndw.list_box2.Items.Count):
-                    ogs = DB.OverrideGraphicSettings().Dispose()
                     ogs = DB.OverrideGraphicSettings()
                     color = DB.Color(wndw.list_box2.Items[indx]['Value'].n1, wndw.list_box2.Items[indx]['Value'].n2, wndw.list_box2.Items[indx]['Value'].n3)
                     ogs.SetProjectionLineColor(color)
@@ -133,14 +147,19 @@ class ResetColors(UI.IExternalEventHandler):
             view = get_active_view(new_doc)
             if view == 0:
                 return
-            ogs = DB.OverrideGraphicSettings().Dispose()
             ogs = DB.OverrideGraphicSettings()
             collector = DB.FilteredElementCollector(new_doc, view.Id).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElementIds()
+            sel_cat = wndw._categories.SelectedItem['Value']
+            if sel_cat == 0:
+                task_no_cat = UI.TaskDialog("Color Elements by Parameter")
+                task_no_cat.MainInstruction = "Please, select a category to reset the colors."
+                wndw.TopMost = False
+                task_no_cat.Show()
+                wndw.TopMost = True
+                return
             with revit.Transaction("Reset colors in elements"):
                 try:
                     # Get and ResetView Filters
-                    sel_cat = wndw._categories.SelectedItem['Value']
-                    sel_par = wndw._list_box1.SelectedItem['Value']
                     filter_name = sel_cat.name + "/"
                     filters = view.GetFilters()
                     for filt_id in filters:
@@ -197,7 +216,7 @@ class CreateLegend(UI.IExternalEventHandler):
                     new_legend.Name = "Color Splasher - " + sel_cat.name + " - " + sel_par.name
                     renamed = True
                 except Exception:
-                    # external_event_trace()
+                    external_event_trace()
                     renamed = False
                 if not renamed:
                     for i in range(1000):
@@ -205,8 +224,7 @@ class CreateLegend(UI.IExternalEventHandler):
                             new_legend.Name = "Color Splasher - " + sel_cat.name + " - " + sel_par.name + " - " + str(i)
                             break
                         except Exception:
-                            # external_event_trace()
-                            pass
+                            external_event_trace()
                 trans.Commit()
                 old_all_ele = DB.FilteredElementCollector(new_doc, legends[0].Id).ToElements()
                 ele_id_type = DB.ElementId(0)
@@ -239,8 +257,7 @@ class CreateLegend(UI.IExternalEventHandler):
                             new_type = filled_region_types[0].Duplicate("Fill Region " + str(idx))
                             break
                         except Exception:
-                            # external_event_trace()
-                            pass
+                            external_event_trace()
                     # Create pattern
                     for idx in range(100):
                         try:
@@ -248,8 +265,7 @@ class CreateLegend(UI.IExternalEventHandler):
                             new_ele_pat = DB.FillPatternElement.Create(new_doc, new_pattern)
                             break
                         except Exception:
-                            # external_event_trace()
-                            pass
+                            external_event_trace()
                     # Assign to type
                     new_type.ForegroundPatternId = new_ele_pat.Id
                     filled_type = new_type
@@ -337,7 +353,6 @@ class CreateFilters(UI.IExternalEventHandler):
                     for i, element in enumerate(items_listbox):
                         item = wndw.list_box2.Items[i]['Value']
                         # Assign color filled region
-                        ogs = DB.OverrideGraphicSettings().Dispose()
                         ogs = DB.OverrideGraphicSettings()
                         color = DB.Color(item.n1, item.n2, item.n3)
                         ogs.SetSurfaceForegroundPatternColor(color)
@@ -460,8 +475,6 @@ class FormCats(Forms.Form):
         self.uns_event = uns_ev
         self.uns_event.Raise()
         self.categs = categories
-        list_par = []
-        list_values = []
         self.width_par = 1
         self.table_data = DataTable("Data")
         self.table_data.Columns.Add("Key", System.String)
@@ -966,7 +979,7 @@ class FormSaveLoadScheme(Forms.Form):
                 self.Close()
 
     def load_path_from_file(self, path):
-        if not(isfile(path)):
+        if not isfile(path):
             UI.TaskDialog.Show("Error Loading Scheme", "The file does not exist.")
         else:
             # Load last location selected in save file dialog.
@@ -1085,51 +1098,53 @@ def get_range_values(category, param, new_view):
         if category.int_id == int(sample_bic):
             bic = sample_bic
             break
-    collector = DB.FilteredElementCollector(doc, new_view.Id).OfCategory(bic).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements()
+    collector = (DB.FilteredElementCollector(doc, new_view.Id).OfCategory(bic).WhereElementIsNotElementType().WhereElementIsViewIndependent().ToElements())
     list_values = []
+    used_colors = {(x.n1, x.n2, x.n3) for x in list_values}
     for ele in collector:
-        ele_par = ele
-        if param.param_type == 1:
-            ele_par = doc.GetElement(ele.GetTypeId())
+        ele_par = ele if param.param_type != 1 else doc.GetElement(ele.GetTypeId())
         for pr in ele_par.Parameters:
             if pr.Definition.Name == param.par.Name:
-                value = get_parameter_value(pr)
-                if value == "" or value is None:
-                    value = "None"
+                value = get_parameter_value(pr) or "None"
                 match = [x for x in list_values if x.value == value]
-                if len(match) > 0:
+                if match:
                     match[0].ele_id.Add(ele.Id)
                     if pr.StorageType == DB.StorageType.Double:
                         match[0].values_double.Add(pr.AsDouble())
                 else:
                     while True:
                         r, g, b = random_color()
-                        if not any (x.n1 == r and x.n2 == g and x.n3 == b for x in list_values):
+                        if (r, g, b) not in used_colors:
+                            used_colors.add((r, g, b))
                             val = ValuesInfo(pr, value, ele.Id, r, g, b)
                             list_values.append(val)
                             break
                 break
-    copy = [x for x in list_values if x.value == "None"]
-    if len(copy) > 0:
-        list_values.remove(copy[0])
-
+    none_values = [x for x in list_values if x.value == "None"]
+    list_values = [x for x in list_values if x.value != "None"]
     list_values = sorted(list_values, key=lambda x: x.value, reverse=False)
     if len(list_values) > 1:
         try:
             first_value = list_values[0].value
             indx_del = get_index_units(first_value)
             if indx_del == 0:
-                list_values = sorted(list_values, key=lambda x: float(x.value))
-            elif indx_del < len(first_value) and indx_del != -1:
-                try:
-                    list_values = sorted(list_values, key=lambda x: float(x.value[:-indx_del]))
-                except ValueError:
-                    pass
+                list_values = sorted(list_values, key=lambda x: safe_float(x.value))
+            elif 0 < indx_del < len(first_value):
+                list_values = sorted(list_values, key=lambda x: safe_float(x.value[:-indx_del]))
+        except ValueError as ve:
+            print("ValueError during sorting: {}".format(ve))
         except Exception:
             external_event_trace()
-    if len(copy) > 0 and len(copy[0].ele_id) > 0:
-        list_values.Add(copy[0])
+    if none_values and any(len(x.ele_id) > 0 for x in none_values):
+        list_values.extend(none_values)
     return list_values
+
+
+def safe_float(value):
+    try:
+        return float(value)
+    except ValueError:
+        return float('inf')  # Place non-numeric values at the end
 
 
 def get_used_categories_parameters(cat_exc, acti_view):
@@ -1174,11 +1189,11 @@ def solid_fill_pattern_id():
 
 def external_event_trace():
     exc_type, exc_value, exc_traceback = sys.exc_info()
-    print("Exception type:", exc_type)
-    print("Exception value:", exc_value)
-    print("Traceback details:")
+    logger.debug("Exception type: %s",exc_type)
+    logger.debug("Exception value: %s",exc_value)
+    logger.debug("Traceback details:")
     for tb in extract_tb(exc_traceback):
-        print("File: {}, Line: {}, Function: {}, Code: {}".format(tb[0], tb[1], tb[2], tb[3]))
+        logger.debug("File: %s, Line: %s, Function: %s, Code: %s",tb[0], tb[1], tb[2], tb[3])
 
 
 def get_index_units(str_value):
