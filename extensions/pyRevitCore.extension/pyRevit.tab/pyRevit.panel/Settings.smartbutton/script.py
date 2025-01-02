@@ -67,6 +67,15 @@ class PyRevitEngineConfig(object):
                                     self.engine.Description)
 
 
+class RevitVersionCB:
+    """Represents a Revit version Checkbox for binding with XAML."""
+    def __init__(self, version, is_checked=False, is_enabled=True):
+        self.Content = "AL _ Revit {}".format(version)  # Display name in the UI
+        self.Version = version       # YEAR version (e.g., '2024')
+        self.IsChecked = is_checked  # Whether the checkbox is checked
+        self.IsEnabled = is_enabled  # Whether the checkbox is enabled
+        
+
 class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs"""
 
@@ -86,19 +95,16 @@ class SettingsWindow(forms.WPFWindow):
         self._setup_env_vars_list()
 
         # check boxes for each version of Revit
-        # this could be automated but it pushes me to verify and test
-        # before actually adding a new Revit version to the list
-        self._addinfiles_cboxes = {
-            '2017': self.revit2017_cb,
-            '2018': self.revit2018_cb,
-            '2019': self.revit2019_cb,
-            '2020': self.revit2020_cb,
-            '2021': self.revit2021_cb,
-            '2022': self.revit2022_cb,
-            '2023': self.revit2023_cb,
-            '2024': self.revit2024_cb,
-            '2025': self.revit2025_cb,
-            }
+        # Dynamically define Revit versions
+        self.available_revit_versions = ['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017']
+        self.SupportedRevitVersions_CB = [RevitVersionCB(rvt_ver,is_checked=False, is_enabled=True) for rvt_ver in self.available_revit_versions]
+
+        #create the dict for further processing
+        #(maybe some easier or clearer code by modifying these func _setup_addinfiles and update_addinfiles ?)
+        self._addinfiles_cboxes = {ver_cb.Version : ver_cb for ver_cb in self.SupportedRevitVersions_CB}
+
+        # Bind the SupportedVersions to the XAML's DataContext
+        self.DataContext = self
 
         self.set_image_source(self.lognone, 'lognone.png')
         self.set_image_source(self.logverbose, 'logverbose.png')
