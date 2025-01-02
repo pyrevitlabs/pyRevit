@@ -27,7 +27,7 @@ if not basefolder:
 prefix_stripper = re.compile(r"^.*?Sheet\s*-\s*")   #"Sheet -", with space management
 capitalizer = re.compile(r"-(?!.*-)\s*(.*)")        #Capitalized after the last hyphen
 normalizer = re.compile("\s*-\s*")                  #Normalize all other hyphens surrounded by spaces
-sheet_count, rename_count, err_count = 0, 0, 0, 0
+sheet_count, rename_count, err_count = 0, 0, 0
 
 # Ask for sub folder treatment and define a search pattern
 dir_pattern = "**/" if forms.alert("Do you want to include subfolders?", yes=True, no=True) else ""
