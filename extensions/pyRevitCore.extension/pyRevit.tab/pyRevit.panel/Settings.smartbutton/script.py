@@ -100,7 +100,8 @@ class SettingsWindow(forms.WPFWindow):
         self.SupportedRevitVersions_CB = [RevitVersionCB(rvt_ver,is_checked=False, is_enabled=True) for rvt_ver in self.available_revit_versions]
 
         #create the dict for further processing
-        #(maybe some easier or clearer code by modifying these func _setup_addinfiles and update_addinfiles ?)
+        #(maybe some easier or clearer code by modifying these func _setup_addinfiles and update_addinfiles ?
+        #and use the SupportedRevitVersions_CB object list directly in both functions.)
         self._addinfiles_cboxes = {ver_cb.Version : ver_cb for ver_cb in self.SupportedRevitVersions_CB}
 
         # Bind the SupportedVersions to the XAML's DataContext
