@@ -24,14 +24,14 @@ class Transaction():
     Automatically rolls back if exception is raised.
 
     ```python
-        with Transaction('Move Wall'):
-            wall.DoSomething()
+    with Transaction('Move Wall'):
+        wall.DoSomething()
 
-        with Transaction('Move Wall', doc, clear_after_rollback=False, show_error_dialog=False, swallow_errors=False, log_errors=True, nested=False)) as action:
-            wall.DoSomething()
-            assert action.status == ActionStatus.Started  # True
-            assert action.status == ActionStatus.Committed    # True
-        ```
+    with Transaction('Move Wall', doc, clear_after_rollback=False, show_error_dialog=False, swallow_errors=False, log_errors=True, nested=False)) as action:
+        wall.DoSomething()
+        assert action.status == ActionStatus.Started  # True
+        assert action.status == ActionStatus.Committed    # True
+    ```
     """
     def __init__(self, name=None,
                  doc=None,
