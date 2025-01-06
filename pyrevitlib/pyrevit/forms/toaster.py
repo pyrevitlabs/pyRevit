@@ -5,10 +5,12 @@ This module is a port of `https://github.com/kolide/toast`
 """
 
 import os.path
-import subprocess
 
 from pyrevit import ROOT_BIN_DIR
 from pyrevit.coreutils.logger import get_logger
+
+from pyrevit.coreutils import win_subprocess 
+import subprocess
 
 SCRIPT_TEMPLATE = """
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
