@@ -1,0 +1,1011 @@
+# -*- coding: UTF-8 -*-
+# flake8: noqa
+# pylint: disable=line-too-long
+""" Preflight query functions. """
+
+from System.Collections.Generic import HashSet
+from pyrevit import DB, script, forms
+from pyrevit.revit.db.query import get_name
+from pyrevit.framework import get_type
+
+
+config = script.get_config()
+if config is None:
+    forms.alert("No config file found. Exiting...", exitscript=True)
+
+
+def doc_name(document):
+    """
+    Return the full name of the given document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        str: The full name of the given document.
+    """
+    if not hasattr(document, "PathName"):
+        return "Document Unloaded"
+    else:
+        name = document.PathName
+        return name
+
+
+def clean_name(document):
+    """
+    Return the name of the given document without the file path or file
+    extension.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        str: The name of the given document without the file path or file
+        extension.
+    """
+    document_name = doc_name(document)
+    # If the document hasn't been saved, then print "File Not Saved"
+    if len(document_name) == 0:
+        printed_name = "File Not Saved"
+    # If the document is a BIM 360 document, then print the file name without
+    # the file extension
+    elif document_name.startswith('BIM 360://'):
+        printed_name = document_name.split('/')[-1]
+        printed_name = printed_name.split('.')[0]
+    # If the document is a local document, then print the file name without
+    # the file path or file extension
+    else:
+        printed_name = document_name.split('\\')[-1]
+    return printed_name
+
+
+def project_informations(document):
+    """
+    Returns the project name, number and client
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        tuple: The project name, number and client.
+    """
+    if document is None:
+        return '-', '-', '-'
+    project_info_collector = document.ProjectInformation
+    project_number = project_info_collector.Number
+    project_name = project_info_collector.Name
+    project_client = project_info_collector.ClientName
+    return project_name, project_number, project_client
+
+
+def phases(document):
+    """
+    Returns a comma-separated list of the names of the phases in a project.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        str: A comma-separated list of the names of the phases in a project.
+    """
+
+    if not hasattr(document, "Phases"):
+        return '-'
+    phases_collection = document.Phases
+    phase_names = []
+    for phase in phases_collection:
+        phase_names.append(phase.Name)
+    project_phases = (", ").join(phase_names)
+    return project_phases
+
+
+def worksets(document):
+    """
+    Returns a string with the names of all user worksets in a document
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        str: A string with the names of all user worksets in a document.
+    """
+
+    if not hasattr(document, "IsWorkshared"):
+        return '-'
+    elif not document.IsWorkshared:
+        return 'Not Workshared'
+    workset_collector = DB.FilteredWorksetCollector(document)
+    worksets_collection = workset_collector.OfKind(DB.WorksetKind.UserWorkset).ToWorksets()
+    worksets_names = ", ".join(w.Name for w in worksets_collection)
+    return worksets_names
+
+
+def warnings(document):
+    """
+    Returns the number of warnings in the document
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        tuple (int, list, list):
+        Number of warnings for document,
+        all the warnings in the document,
+        and a list of GUIDs for all the warnings in the document.
+    """
+    all_warnings = document.GetWarnings()
+    if all_warnings is None:
+        return 0, [], []
+    warnings_guid = [
+        warning.GetFailureDefinitionId().Guid for warning in all_warnings]
+    return len(all_warnings), all_warnings, warnings_guid
+
+
+def critical_warnings(warnings_guid, critical_warnings_template):
+    """
+    Returns the number of critical warnings from a list of warnings GUIDs against a list of critical warnings GUIDs.
+
+    Parameters:
+    warnings_guid (list): A list of warning GUIDs.
+
+    Returns:
+    int: The number of critical warnings in the list.
+    """
+    return sum(1 for warning_guid in warnings_guid if str(warning_guid) in critical_warnings_template)
+
+
+def rvt_links(document):
+    """
+    Returns a list of all rvt_links instances in a document
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        list: A list of Revit link instances.
+    """
+    return (DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_RvtLinks).WhereElementIsNotElementType())
+
+
+def rvtlinks_types(document, rvt_links_instances):
+    """
+    Returns a list of all the Revit links types in the document.
+
+    Args:
+        document (Document): A Revit document.
+        rvt_links_instances (list): A list of Revit link instances.
+
+    Returns:
+        list: A list of Revit link types.
+    """
+    return [document.GetElement(rvtlink.GetTypeId()) for rvtlink in rvt_links_instances]
+
+
+def rvtlinks_elements(document):
+    """
+    Returns a list of all the Revit links elements in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        list: A list of Revit link types, Revit link elements, the number of Revit links, Revit link status, and Revit link documents.
+    """
+    rvtlinks_instances = rvt_links(document)
+    rvtlinks_types_items = rvtlinks_types(document, rvtlinks_instances)
+    revitlinks_elements = list(rvtlinks_instances.ToElements())
+    rvtlinks_count = rvtlinks_instances.GetElementCount()
+    type_status = [rvtlinktype.GetLinkedFileStatus() for rvtlinktype in rvtlinks_types_items]
+    rvtlink_docs = [rvtlinks_instance.GetLinkDocument() for rvtlinks_instance in rvtlinks_instances]
+    return rvtlinks_types_items, revitlinks_elements, rvtlinks_count, type_status, rvtlink_docs
+
+
+def rvt_links_docs(document):
+    """
+    Returns a list of all the Revit links documents in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        list: A list of Revit link documents.
+    """
+    link_instances = DB.FilteredElementCollector(document).OfClass(DB.RevitLinkInstance)
+    return [i.GetLinkDocument() for i in link_instances]
+
+
+def rvt_links_name(revitlinks_elements):
+    """
+    Returns a list of all the Revit links names in the document.
+
+    Args:
+        revitlinks_elements (list): A list of Revit link elements.
+
+    Returns:
+        list: A list of Revit document names and Revit link instances names.
+    """
+    rvt_links_docs_name = [get_name(rvtlinks_element).split(' : ')[0].split('.rvt')[0] for rvtlinks_element in revitlinks_elements]
+    rvt_links_instances_name = [get_name(revitlinks_element).split(' : ')[1] for revitlinks_element in revitlinks_elements]
+    return rvt_links_docs_name, rvt_links_instances_name
+
+
+def rvt_links_unpinned_count(revitlinks_elements):
+    """
+    Returns the number of unpinned Revit links in the document.
+
+    Args:
+        rvtlinks_elements (list): A list of Revit link elements.
+
+    Returns:
+        int: The number of unpinned Revit links in the document.
+    """
+
+    return sum(1 for rvt_link in revitlinks_elements if hasattr(rvt_link, "Pinned") and not rvt_link.Pinned)
+
+
+def rvt_links_unpinned_str(revitlinks_elements):
+    """
+    Returns a list of all the Revit links unpinned status in the document.
+
+    Args:
+        revitlinks_elements (list): A list of Revit link elements.
+
+    Returns:
+        list: A list of Revit link unpinned status.
+    """
+    return ['-' if not hasattr(rvt_link, "Pinned") else 'Unpinned' if not rvt_link.Pinned else 'Pinned' for rvt_link in revitlinks_elements]
+
+
+def analytical_model_activated_count(document):
+    """
+    Returns the number of activated analytical models in the document.
+
+    Args: 
+    document (Document): A Revit document.
+
+    Returns: 
+    int: The number of elements with the analytical model activated in the document.
+    """
+    param = DB.BuiltInParameter.STRUCTURAL_ANALYTICAL_MODEL
+    analytical_elements = DB.FilteredElementCollector(document).WhereElementIsNotElementType().ToElements()
+    count = 0
+    for element in analytical_elements:
+        if element.get_Parameter(param):
+            if element.get_Parameter(param).AsInteger() == 1:
+                count += 1
+    return count
+
+
+def rooms(document):
+    """
+    Returns a list of all the rooms in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        list: A list of rooms, the number of rooms, and the number of unplaced rooms.
+    """
+    rooms_collector = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Rooms).WhereElementIsNotElementType()
+    rooms_count = rooms_collector.GetElementCount()
+    rooms_elements = rooms_collector.ToElements()
+    if rooms_elements is None:
+        return 0, 0
+    unplaced_rooms_count = sum(1 for room in rooms_elements if room.Location is None)
+    return rooms_count, unplaced_rooms_count
+
+
+def sheets(document):
+    """
+    Returns a list of all the sheets in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        list: A list of sheets and the number of sheets.
+    """
+
+    sheets_collector = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Sheets).WhereElementIsNotElementType()
+    sheets_count = sheets_collector.GetElementCount()
+    sheets_elements = sheets_collector.ToElements()
+    return sheets_count, sheets_elements
+
+
+def views_bucket(document):
+    """
+    Returns a list of all the views in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        list: A list of views and the number of views.
+    """
+
+    views_collector = DB.FilteredElementCollector(document).OfCategory(
+        DB.BuiltInCategory.OST_Views).WhereElementIsNotElementType()
+    views = views_collector.ToElements()
+    views_count = views_collector.GetElementCount()
+    return views_count, views
+
+
+def views_not_sheeted(sheets_set=None, views_count=0):
+    """
+    Returns the number of views not on a sheet.
+
+    Args:
+        sheets_set (list): A list of sheets.
+        views_count (int): The number of views in the document.
+
+    Returns:
+        int: The number of views not on a sheet.
+    """
+    # FIXME: Numbers need to be checked
+    views_on_sheet = []
+    if sheets_set is None:
+        return views_count
+    for sheet in sheets_set:
+        try:
+            for view in sheet.GetAllPlacedViews():
+                if view not in views_on_sheet:
+                    views_on_sheet.append(view)
+        except AttributeError:
+            pass
+    views_not_on_sheets = views_count - len(views_on_sheet)
+    return views_not_on_sheets
+
+
+def schedules(document):
+    """
+    Returns a list of all schedule views in the given document.
+
+    Args:
+        document (DB.Document): The document to search for schedule views in.
+
+    Returns:
+        List[DB.ViewSchedule]: A list of all schedule views in the document.
+    """
+    schedule_views = DB.FilteredElementCollector(document)\
+        .OfCategory(DB.BuiltInCategory.OST_Schedules)\
+        .WhereElementIsNotElementType()\
+        .ToElements()
+    schedule_views = [v for v in schedule_views if v.IsTemplate is not True]
+    return schedule_views
+
+
+def sheeted_view_ids(document, sheets_set):
+    """
+    Returns a list of all view IDs associated with the given set of sheets.
+
+    Args:
+    - sheets_set: A set of sheets
+
+    Returns:
+    - A list of view IDs associated with the given set of sheets.
+    """
+    all_sheeted_view_ids = []
+    for sht in sheets_set:
+        try:
+            vp_ids = [document.GetElement(
+                x).ViewId for x in sht.GetAllViewports()]
+            all_sheeted_view_ids.extend(vp_ids)
+        except AttributeError:
+            pass
+    all_sheeted_view_ids = list(set(all_sheeted_view_ids))
+    return all_sheeted_view_ids
+
+
+def schedules_instances_on_sheet(document):
+    """
+    Returns all the sheeted schedules in the given document.
+
+    Args:
+        document (DB.Document): The document to search for sheeted schedules. Defaults to the current document.
+
+    Returns:
+        list: A list of all the sheeted schedules in the document.
+    """
+    all_sheeted_schedules = DB.FilteredElementCollector(document)\
+        .OfClass(DB.ScheduleSheetInstance)\
+        .ToElements()
+    return all_sheeted_schedules
+
+
+def unsheeted_schedules_count(document):
+    """
+    Returns the count of schedules that are not placed on any sheet in the given document.
+
+    Args:
+    - document: The Revit document to search for unsheeted schedules.
+
+    Returns:
+    - The count of schedules that are not placed on any sheet in the given document.
+    """
+    schedule_views = schedules(document)
+    return sum(1 for v in schedule_views if v.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced)
+
+
+def copied_views(views_set):
+    """
+    Returns the number of views in the given set that have "Copy" or "Copie" in their name.
+
+    Args:
+    views_set (set): A set of views to check for copied views. Defaults to None.
+
+    Returns:
+    int: The number of views in the set that have "Copy" or "Copie" in their name.
+    """
+    copied_views_count = 0
+    for view in views_set:
+        view_name = get_name(view)
+        try:
+            if "Copy" in view_name or "Copie" in view_name:
+                copied_views_count += 1
+        except AttributeError:
+            pass
+    return copied_views_count
+
+
+def view_templates(document):
+    """
+    Returns a list of view templates in the given document and the count of view templates.
+
+    Args:
+        document (DB.Document, optional): The document to search for view templates. Defaults to doc.
+
+    Returns:
+        tuple: A tuple containing:
+            - list: A list of view templates in the document.
+            - int: The count of view templates in the document.
+    """
+    view_templates_collector = [
+        v for v in DB.FilteredElementCollector(document)
+        .OfClass(DB.View)
+        .WhereElementIsNotElementType()
+        .ToElements() if v.IsTemplate
+    ]
+    view_templates_count = len(view_templates_collector)
+    return view_templates_collector, view_templates_count
+
+
+def unused_view_templates(views_list):
+    """
+    Returns the count of unused view templates in the given list of views.
+    
+    Args:
+        views (list): A list of views to check for unused view templates.
+        
+    Returns:
+        int: The count of unused view templates.
+    """
+    if views_list is None:
+        return 0
+    applied_templates = [v.ViewTemplateId for v in views_list]
+    view_templates_list = [v for v in views_list if v.IsTemplate]
+    unused_view_templates = []
+    for v in view_templates_list:
+        if v.Id not in applied_templates:
+            unused_view_templates.append(v.Name)
+    unused_view_templates_count = len(unused_view_templates)
+    return unused_view_templates_count
+
+
+def filters(document, view_list):
+    """
+    This function takes in a Revit document and a list of views, and returns the count of all parameter filters in the document
+    and the count of unused parameter filters in the views.
+
+    Args:
+    - document (DB.Document): The Revit document to search for parameter filters. Defaults to the active document.
+    - views (list of DB.View): The list of views to check for unused parameter filters.
+
+    Returns:
+    - tuple: A tuple containing two integers:
+        - all_filters_count: The count of all parameter filters in the document.
+        - unused_view_filters_count: The count of unused parameter filters in the views.
+    """
+    filters_collection = DB.FilteredElementCollector(document).OfClass(DB.ParameterFilterElement).ToElements()
+    used_filters_set = set()
+    all_filters = set()
+    if filters_collection is None:
+        return 0, 0
+    for flt in filters_collection:
+        all_filters.add(flt.Id.IntegerValue)
+    total_filters_count = len(all_filters)
+    for v in view_list:
+        if v.AreGraphicsOverridesAllowed():
+            view_filters = v.GetFilters()
+            for filter_id in view_filters:
+                used_filters_set.add(filter_id.IntegerValue)
+    unused_view_filters_count = 0
+    unused_view_filters_count = len(all_filters - used_filters_set)
+    return total_filters_count, unused_view_filters_count
+
+
+def materials(document):
+    """
+    Returns the number of materials in the given document.
+
+    Args:
+        document (DB.Document): The document to count materials in. Defaults to the active document.
+
+    Returns:
+        int: The number of materials in the document.
+    """
+    materials_count = (
+        DB.FilteredElementCollector(document)
+        .OfCategory(DB.BuiltInCategory.OST_Materials)
+        .GetElementCount()
+    )
+    return materials_count
+
+
+def line_patterns(document):
+    """
+    Returns the number of line patterns in the given document.
+
+    Args:
+        document (DB.Document): The document to search for line patterns in.
+            Defaults to the active document.
+
+    Returns:
+        int: The number of line patterns in the document.
+    """
+    line_patterns_count = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.LinePatternElement).
+        GetElementCount()
+    )
+    return line_patterns_count
+
+
+def dwgs(document):
+    """
+    Returns the total number of DWG files in the document and the number of linked DWG files.
+
+    Args:
+        document (DB.Document, optional): The Revit document to search for DWG files. Defaults to the active document.
+
+    Returns:
+        tuple: A tuple containing two integers. The first integer is the total number of DWG files in the document. The second integer is the number of linked DWG files.
+    """
+    dwg_collector = DB.FilteredElementCollector(document).OfClass(
+        DB.ImportInstance).WhereElementIsNotElementType()
+    dwgs_collection = dwg_collector.ToElements()
+    dwg_files_count = dwg_collector.GetElementCount()
+    dwg_imported = 0
+    dwg_not_in_current_view = 0
+    if dwgs_collection is None:
+        return dwg_files_count, 0
+    for dwg in dwgs_collection:
+        if not dwg.IsLinked:
+            dwg_imported += 1
+        if not dwg.ViewSpecific:
+            dwg_not_in_current_view += 1
+    count_of_linked_dwg_files = dwg_files_count - dwg_imported
+    return dwg_files_count, count_of_linked_dwg_files
+
+
+def families(document):
+    """
+    This function collects all the families in the given document and returns the count of three types of families:
+    - In-place families
+    - Non-parametric families
+    - Total families
+
+    Args:
+    - document: The Revit document to search for families in. Defaults to the active document.
+
+    Returns:
+    - Tuple[int, int, int]: A tuple of three integers representing the count of each type of family.
+    """
+    families_collection = DB.FilteredElementCollector(document).OfClass(DB.Family)
+    in_place_family_count = 0
+    not_paramteric_families_count = 0
+    if families_collection is None:
+        return in_place_family_count, not_paramteric_families_count, 0
+    count = families_collection.GetElementCount()
+    for family in families_collection:
+        if family.IsInPlace:
+            in_place_family_count += 1
+        if not family.IsParametric:
+            not_paramteric_families_count += 1
+    return in_place_family_count, not_paramteric_families_count, count
+
+
+def subcategories_imports(document):
+    """
+    Returns the number of subcategories in the Import category of the given document.
+
+    Args:
+        document (DB.Document): The document to check. Defaults to the active document.
+
+    Returns:
+        int: The number of subcategories in the Import category.
+    """
+    import_cat = document.Settings.Categories.get_Item(
+        DB.BuiltInCategory.OST_ImportObjectStyles)
+    count = len([c.Id for c in import_cat.SubCategories])
+    return count
+
+
+def generic_models(document):
+    """
+    Returns the count of generic model types in the given document.
+
+    Args:
+        document (DB.Document): The document to search for generic model types. Defaults to the active document.
+
+    Returns:
+        int: The count of generic model types in the document.
+    """
+    count = (
+        DB.FilteredElementCollector(document)
+        .OfCategory(DB.BuiltInCategory.OST_GenericModel)
+        .WhereElementIsElementType()
+        .GetElementCount()
+    )
+    return count
+
+
+def details_components(document):
+    """
+    Returns the count of detail components in the given document.
+
+    Args:
+    - document: The document to search for detail components. Defaults to the active document.
+
+    Returns:
+    - int: The count of detail components in the document.
+    """
+    count = (
+        DB.FilteredElementCollector(document)
+        .OfCategory(DB.BuiltInCategory.OST_DetailComponents)
+        .WhereElementIsNotElementType()
+        .GetElementCount()
+    )
+    return count
+
+
+def text_notes_types(document):
+    """
+    Returns the total number of text note types and the number of text note types with a non-default width factor in the given document.
+
+    Args:
+        document (DB.Document, optional): The document to search for text note types. Defaults to the active document.
+
+    Returns:
+        Tuple[int, int]: A tuple containing the total number of text note types and the number of text note types with a non-default width factor.
+    """
+    text_note_type_collector = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.TextNoteType)
+    )
+    text_not_types = text_note_type_collector.ToElements()
+    total_text_note_types = text_note_type_collector.GetElementCount()
+    wf_count = 0
+    text_opaque_background = 0
+    if text_not_types is None:
+        return total_text_note_types, wf_count, text_opaque_background
+    for textnote in text_not_types:
+        widthFactor = textnote.get_Parameter(DB.BuiltInParameter.TEXT_WIDTH_SCALE).AsDouble()
+        text_bg = textnote.get_Parameter(DB.BuiltInParameter.TEXT_BACKGROUND).AsInteger()
+        if widthFactor != 1:
+            wf_count += 1
+        if text_bg == 0:
+            text_opaque_background += 1
+    return total_text_note_types, wf_count, text_opaque_background
+
+
+def text_notes_instances(document):
+    """
+    Returns the count of all text notes in the given document and the count of text notes that have all caps formatting.
+
+    Args:
+        document (DB.Document): The document to search for text notes. Defaults to the active document.
+
+    Returns:
+        Tuple[int, int]: A tuple containing the count of all text notes and the count of text notes with all caps formatting.
+    """
+    text_notes = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.TextNote)
+    )
+    text_notes_elements = text_notes.ToElements()
+    count = text_notes.GetElementCount()
+    caps_count = 0
+    if text_notes_elements is None:
+        return count, caps_count
+    for text_note in text_notes_elements:
+        caps_status = text_note.GetFormattedText().GetAllCapsStatus()
+        if str(caps_status) != "None":
+            caps_count += 1
+    return count, caps_count
+
+
+def detail_groups(document):
+    """
+    Returns the number of detail groups and detail group types in the given document.
+
+    Args:
+        document (DB.Document): The document to search for detail groups. Defaults to the active document.
+
+    Returns:
+        Tuple[int, int]: A tuple containing the number of detail groups and detail group types, respectively.
+    """
+    count = 0
+    for i in DB.FilteredElementCollector(document).OfClass(DB.Group).OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups).ToElements():
+        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.__get__(i):
+            count += 1
+    types_count = 0
+    for i in DB.FilteredElementCollector(document).OfClass(DB.GroupType).OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups).ToElements():
+        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.__get__(i):
+            types_count += 1
+    return count, types_count
+
+
+def groups(document):
+    """
+    Returns the number of model group instances and model group types in the given document.
+
+    Args:
+        document (DB.Document): The document to search for model groups. Defaults to the current document.
+
+    Returns:
+        Tuple[int, int]: A tuple containing the number of model group instances and the number of model group types.
+    """
+    model_group_count = 0
+    for i in DB.FilteredElementCollector(document).OfClass(DB.Group).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).ToElements():
+        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.__get__(i):
+            model_group_count += 1
+    model_group_type_count = 0
+    for i in DB.FilteredElementCollector(document).OfClass(DB.GroupType).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).ToElements():
+        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.__get__(i):
+            model_group_type_count += 1
+    return model_group_count, model_group_type_count
+
+
+def reference_planes(document):
+    """
+    Returns the count of all reference planes and the count of unnamed reference planes in the given document.
+
+    Args:
+        document (DB.Document): The document to search for reference planes. Defaults to the active document.
+
+    Returns:
+        Tuple[int, int]: A tuple containing the count of all reference planes and the count of unnamed reference planes.
+    """
+    ref_planes = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.ReferencePlane)
+    )
+    ref_planes_instances = ref_planes.ToElements()
+    ref_planes_count = ref_planes.GetElementCount()
+    unnamed_ref_planes_count = 0
+    for ref_plane in ref_planes_instances:
+        # for french compatibility
+        if (ref_plane.Name == "Reference Plane" or ref_plane.Name == "Plan de référence"):
+            unnamed_ref_planes_count += 1
+    return ref_planes_count, unnamed_ref_planes_count
+
+
+def elements_count(document):
+    """
+    Returns the number of non-element type elements in the given document.
+
+    Args:
+    - document (DB.Document): The document to count elements in. Defaults to the current document.
+
+    Returns:
+    - int: The number of non-element type elements in the document.
+    """
+    count = (
+        DB.FilteredElementCollector(document)
+        .WhereElementIsNotElementType()
+        .GetElementCount()
+    )
+    return count
+
+
+def detail_lines(document):
+    """
+    Returns the number of detail lines in the given document.
+
+    Args:
+        document (DB.Document): The document to search for detail lines in.
+
+    Returns:
+        int: The number of detail lines in the document.
+    """
+    all_lines = DB.FilteredElementCollector(document)\
+        .OfCategory(DB.BuiltInCategory.OST_Lines)\
+        .WhereElementIsNotElementType()\
+        .ToElements()
+    count = 0
+    if all_lines is None:
+        return count
+    for line in all_lines:
+        if line.CurveElementType.ToString() == "DetailCurve":
+            count += 1
+    return count
+
+
+def count_dimension_types(document):
+    """
+    Returns the count of dimension types in the given document.
+
+    Args:
+        document (DB.Document): The document to search for dimension types in.
+
+    Returns:
+        int: The count of dimension types in the document.
+    """
+    dimension_types = set(DB.FilteredElementCollector(
+        document).OfClass(DB.DimensionType).ToElements())
+    dimension_types_count = 0
+    if dimension_types is None:
+        return dimension_types_count
+    for dt in dimension_types:
+        try:
+            if dt.LookupParameter('Nom du type'):
+                dimension_types_count += 1
+            elif dt.LookupParameter('Type name'):
+                dimension_types_count += 1
+        except AttributeError:
+            pass
+    return dimension_types_count
+
+
+def count_dimensions(document):
+    """
+    Returns the count of dimensions in the given document.
+
+    Args:
+        document (DB.Document): The document to search for dimensions in.
+
+    Returns:
+        int: The count of dimensions in the document.
+    """
+    dimension_instances = DB.FilteredElementCollector(document).OfCategory(
+        DB.BuiltInCategory.OST_Dimensions).WhereElementIsNotElementType().ToElements()
+    dim_count = 0
+    if dimension_instances is None:
+        return dim_count
+    for d in dimension_instances:
+        if d.OwnerViewId and d.ViewSpecific and d.View:
+            dim_count += 1
+    return dim_count
+
+
+def count_dimension_overrides(document):
+    """
+    Returns the count of dimension overrides in the given document.
+
+    Args:
+        document (DB.Document): The document to search for dimension overrides in.
+
+    Returns:
+        int: The count of dimension overrides in the document.
+    """
+    dimension_instances = DB.FilteredElementCollector(document).OfCategory(
+        DB.BuiltInCategory.OST_Dimensions).WhereElementIsNotElementType().ToElements()
+    dim_overrides_count = 0
+    if dimension_instances is None:
+        return dim_overrides_count
+    for d in dimension_instances:
+        if d.OwnerViewId and d.ViewSpecific and d.View:
+            if d.ValueOverride != None:
+                dim_overrides_count += 1
+            if d.Segments:
+                for seg in d.Segments:
+                    if seg.ValueOverride:
+                        dim_overrides_count += 1
+    return dim_overrides_count
+
+
+def revisions_clouds(document):
+    """
+    Returns the number of revision clouds in the given document.
+
+    Args:
+        document (DB.Document): The document to search for revision clouds in. Defaults to the active document.
+
+    Returns:
+        int: The number of revision clouds in the document.
+    """
+    count = DB.FilteredElementCollector(document)\
+        .OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\
+        .WhereElementIsNotElementType().GetElementCount()
+    return count
+
+
+def get_purgeable_count(document):
+    """
+    Returns the count of purgeable elements in the given document.
+
+    Args:
+    document (DB.Document): The document to check for purgeable elements. Defaults to the current document.
+
+    Returns:
+    int: The count of purgeable elements in the document.
+    """
+    if not hasattr(document, 'GetUnusedElements'):
+        return 0
+    purgeable_elements_count = len(
+        document.GetUnusedElements(HashSet[DB.ElementId]()))
+    return purgeable_elements_count
+
+
+def card_start_style(limit, value, alt):
+    """
+    Generates an HTML div element with a specific background color based on the ratio of value to limit.
+    Args:
+        limit (float): The limit value used to calculate the ratio.
+        value (float): The current value to be compared against the limit.
+        alt (str): The alt text for the div element.
+    Returns:
+        str: An HTML div element as a string with inline styles and the specified background color.
+    The background color is determined by the following rules:
+        - 'Grey' if value is 0 or if an exception occurs during ratio calculation.
+        - 'Green' if 0 <= ratio < 0.5.
+        - 'Orange' if 0.5 <= ratio <= 1.
+        - 'Red' if ratio > 1.
+    """
+
+    try:
+        ratio = float(value)/float(limit)
+    except ZeroDivisionError:
+        ratio = 0
+    color = '#d0d3d4'
+    if value == 0:
+        color = '#d0d3d4'  # gray
+    else:
+        if 0.5 <= ratio <= 1:
+            color = '#FFDD94'  # orange
+        elif ratio > 1:
+            color = '#FA897B'  # red
+        elif 0 <= ratio < 0.5:
+            color = '#D0E6A5'  # green
+        elif value == 0:
+            color = '#d0d3d4'  # gray
+        else:
+            pass
+    try:
+        card_start = '<div style="display: inline-block; width: 100px; height: 40px; background: {}; font-family: sans-serif; font-size: 0.85rem; padding: 5px; text-align: center; border-radius: 8px; margin: 5px; box-shadow: 0 6px 6px 0 rgba(0, 0, 0, 0.2); vertical-align: top;" alt="{}">'.format(color, alt)
+    except Exception as e:
+        print(e)
+    return card_start
+
+
+def card_builder(limit, value, description):
+    """
+    Builds an HTML card with the given limit, value, and description.
+    Args:
+        limit (int): The limit value to be displayed in the card.
+        value (int or str): The main value to be displayed in the card.
+        description (str): A description to be displayed in the card.
+    Returns:
+        str: A string containing the HTML representation of the card.
+    """
+
+    alt = '{} {} (limit = {})'.format(str(value), str(description), str(limit))
+    card_end = '<b>' + str(value) + '</b><br /><a style="font-size: 0.70rem">' + description + '</a></div>'
+    card = card_start_style(limit, value, alt) + card_end
+    return card
+
+
+def create_frame(title, *cards):
+    """
+    Creates an HTML div frame containing multiple cards with a rounded border and a title on the top left corner.
+    Args:
+        title (str): The title to be displayed on the top left corner of the frame.
+        cards (str): Multiple strings representing HTML card elements.
+    Returns:
+        str: A string containing the HTML representation of the div frame.
+    """
+    frame_start = '<div style="display: inline-block; border: 1px solid #ccc; border-radius: 10px; padding: 5px; margin: 10px 5px 10px 5px; position: relative;">'
+    title_html = '<div style="position: absolute; top: -10px; left: 10px; background: white; padding: 0 5px; font-weight: bold;">{}</div>'.format(title)
+    cards_html = ''.join(cards)
+    frame_end = '</div>'
+    return frame_start + title_html + cards_html + frame_end
