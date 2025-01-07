@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
-using PyRevitLabs.PyRevit.Runtime;
+using pyRevitLabs.PyRevit.Runtime.Shared;
 using pyRevitLabs.NLog;
 
 namespace HelloWorld {
