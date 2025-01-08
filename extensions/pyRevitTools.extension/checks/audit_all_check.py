@@ -69,17 +69,13 @@ def check_model(doc, output):
     try:
         if doc.IsFamilyDocument:
             alert("This tool is for project files only. Exiting...", exitscript=True)
-        # Project infos
         project_name, project_number, project_client = project_informations(
             doc)
         project_phases = phases(doc)
         worksets_names = worksets(doc)
         doc_clean_name = clean_name(doc)
-        # Element Count
         element_count = elements_count(doc)
-        # Purgeable Elements
         purgeable_elements_count = get_purgeable_count(doc)
-        # Warnings
         all_warnings_count, _, warnings_guid = warnings(doc)
         critical_warnings_count = critical_warnings(warnings_guid, CRITICAL_WARNINGS)
         if all_warnings_count > 0:
@@ -87,57 +83,31 @@ def check_model(doc, output):
                 show_balloon(header='Warnings', text='The file {} contains {} warnings'.format(doc_clean_name, all_warnings_count), is_favourite=True, is_new=True)
             except Exception as e:
                 print(e)
-        # Analytical model
         activated_analytical_model_elements_count = analytical_model_activated_count(doc)
-        # Rooms
         doc_cached_issues = DOCS.doc
         rooms_count, unplaced_rooms_count = rooms(doc_cached_issues)
-        # sheets
         sheets_count, sheets_set = sheets(doc_cached_issues)
-        # views
         views_count, views = views_bucket(doc_cached_issues)
-        # views not on sheets
         views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
-        # Schedules
         schedules_not_sheeted_count = unsheeted_schedules_count(doc_cached_issues)
-        # copied views
         copied_views_count = copied_views(views)
-        # View Templates section
-        _, view_templates_count = view_templates(doc)
-        # Unused view templates section
+        view_templates_count = view_templates(doc)
         unused_view_templates_count = unused_view_templates(views)
-        # view filters
         all_filters_count, unused_view_filters_count = filters(doc, views)
-        # materials
         materials_count = materials(doc)
-        # line patterns
         line_patterns_count = line_patterns(doc)
-        # DWGs
         dwgs_count, linked_dwg_count = dwgs(doc)
-        # families
         inplace_family_count, not_parametric_families_count, family_count = families(doc)
-        # Imports in Families
         imports_subcats_count = subcategories_imports(doc)
-        # Generic Models
         generic_models_types_count = generic_models(doc)
-        # Detail Components
         detail_components_count = details_components(doc)
-        # Text Notes
-        # Text notes width factor != 1
         text_notes_types_count, text_notes_types_wf_count, text_bg_count = text_notes_types(doc)
-        # Text notes with allCaps applied in Revit
         text_notes_count, text_notes_caps_count = text_notes_instances(doc)
-        # detail groups
         detail_groups_count, detail_groups_types_count = detail_groups(doc)
-        # model groups
         model_group_count, model_group_type_count = groups(doc)
-        # reference plane without name
         reference_planes_count, unnamed_ref_planes_count = reference_planes(doc)
-        # Detail Lines
         detail_lines_count = detail_lines(doc)
-        # Dimensions
         dim_types_count, dim_count, dim_overrides_count = count_dimension_types(doc), count_dimensions(doc), count_dimension_overrides(doc)
-        # Revision clouds
         revision_clouds_count = revisions_clouds(doc)
 
         # output section
@@ -205,7 +175,7 @@ def check_model(doc, output):
 
         graphical2d_elements_frame = create_frame(
             "Graphical 2D Elements",
-            card_builder(5000, detail_lines_count, ' Detail Lines'),  card_builder(30, line_patterns_count, ' Line Patterns'),  card_builder(30, text_notes_types_count, ' Text Notes Types'),  card_builder(1, text_bg_count, ' Text Notes w/ White Background'),  card_builder(0, text_notes_types_wf_count, ' Text Notes wfactor!=1'), card_builder(2000, text_notes_count, ' Text Notes'), card_builder(100, text_notes_caps_count, ' Text Notes allCaps'), card_builder(5, dim_types_count, ' Dimension Types'), card_builder(5000, dim_count, ' Dimensions'), card_builder(0, dim_overrides_count, ' Dimension Overrides'), card_builder(100, revision_clouds_count, ' Revision Clouds')
+            card_builder(5000, detail_lines_count, ' Detail Lines'),  card_builder(30, line_patterns_count, ' Line Patterns'),  card_builder(30, text_notes_types_count, ' Text Notes Types'),  card_builder(1, text_bg_count, ' Text Notes w/ White Background'),  card_builder(0, text_notes_types_wf_count, ' Text Notes Width Factor !=1'), card_builder(2000, text_notes_count, ' Text Notes'), card_builder(100, text_notes_caps_count, ' Text Notes allCaps'), card_builder(5, dim_types_count, ' Dimension Types'), card_builder(5000, dim_count, ' Dimensions'), card_builder(0, dim_overrides_count, ' Dimension Overrides'), card_builder(100, revision_clouds_count, ' Revision Clouds')
             )
 
         groups_summary_frame = create_frame(
@@ -234,11 +204,10 @@ def check_model(doc, output):
 
         output.print_html(html_content + '</div>')
 
-        # concatenate data for csv export
+        # csv export
         data = [user, date, doc_clean_name, revit_version_build, project_name, project_number, project_client, project_phases, worksets_names, element_count, purgeable_elements_count, all_warnings_count, critical_warnings_count, rvtlinks_count, activated_analytical_model_elements_count, rooms_count, unplaced_rooms_count, sheets_count, views_count, views_not_on_sheets, schedules_not_sheeted_count, copied_views_count, view_templates_count, unused_view_templates_count, all_filters_count, unused_view_filters_count, materials_count, line_patterns_count, dwgs_count, linked_dwg_count, inplace_family_count, not_parametric_families_count, family_count, imports_subcats_count, generic_models_types_count, detail_components_count, text_notes_types_count, text_bg_count, text_notes_types_wf_count, text_notes_count, text_notes_caps_count, detail_groups_count, detail_groups_types_count, model_group_count, model_group_type_count, reference_planes_count, unnamed_ref_planes_count, detail_lines_count, dim_types_count, dim_count, dim_overrides_count, revision_clouds_count]
         data_str = [str(i) for i in data]
 
-        # create new csv file at export_file_path
         export_to_csv(doc_clean_name, data, data_str)
 
         # RVTLinks
@@ -262,7 +231,6 @@ def export_to_csv(doc_clean_name, data, data_str):
             flag = any(row[1] == date and row[2] == doc_clean_name for row in r)
         if not flag:
             with open(EXPORT_FILE_PATH, mode='ab') as csv_file:
-                    # print('writing')
                 w = writer(csv_file, lineterminator='\n')
                 w.writerow(data)
 
@@ -276,68 +244,36 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         if rvtlink is None:
             continue
         output.print_md(link_name)
-        # Cards
-        html_content = body_css
-        # Element Count
         element_count = elements_count(rvtlink)
-        # Purgeable Elements
         purgeable_elements_count = get_purgeable_count(rvtlink)
-        # Warnings
         all_warnings_count, _, warnings_guid = warnings(rvtlink)
         critical_warnings_count = critical_warnings(warnings_guid,CRITICAL_WARNINGS)
-        # Links
         rvtlinks_elements_items, rvtlinks_count, type_status, rvtlinks_docs = rvtlinks_elements(rvtlink)
         rvtlinks_unpinned = rvt_links_unpinned_count(rvtlinks_elements_items)
-        # Analytical model section
         activated_analytical_model_elements_count = (analytical_model_activated_count(rvtlink))
-        # Rooms
         rooms_count, unplaced_rooms_count = rooms(rvtlink)
-        # Sheets
         sheets_count, sheets_set = sheets(rvtlink)
-        # Views
         views_count, views = views_bucket(rvtlink)
-        # views not on sheets
         views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
-        # Schedules
         schedules_not_sheeted_count = unsheeted_schedules_count(rvtlink)
-        # copied views
         copied_views_count = copied_views(views)
-        # View Templates section
-        _, view_templates_count = view_templates(rvtlink)
-        # Unused view templates section
+        view_templates_count = view_templates(rvtlink)
         unused_view_templates_count = unused_view_templates(views)
-        # filters
         all_filters_count, unused_view_filters_count = filters(rvtlink, views)
-        # materials
         materials_count = materials(rvtlink)
-        # line patterns
         line_patterns_count = line_patterns(rvtlink)
-        # dwgs
         dwgs_count, linked_dwg_count = dwgs(rvtlink)
-        # families
         inplace_family_count, not_parametric_families_count, family_count = families(rvtlink)
-        # Imports in Families
         imports_subcats_count = subcategories_imports(rvtlink)
-        # Generic Models
         generic_models_types_count = generic_models(rvtlink)
-        # Detail Components
         detail_components_count = details_components(rvtlink)
-        # Text Notes
-        # Text notes width factor != 1
         text_notes_types_count, text_notes_types_wf_count, text_bg_count = text_notes_types(rvtlink)
-        # Text notes with allCaps applied in Revit
         text_notes_count, text_notes_caps_count = text_notes_instances(rvtlink)
-        # detail groups
         detail_groups_count, detail_groups_types_count = detail_groups(rvtlink)
-        # model groups
         model_group_count, model_group_type_count = groups(rvtlink)
-        # reference plane without name
         reference_planes_count, unnamed_ref_planes_count = reference_planes(rvtlink)
-        # detail lines
         detail_lines_count = detail_lines(rvtlink)
-        # Dimensions
         dim_types_count, dim_count, dim_overrides_count = count_dimension_types(rvtlink), count_dimensions(rvtlink), count_dimension_overrides(rvtlink)
-        # Revision clouds
         revision_clouds_count = revisions_clouds(rvtlink)
         links_data = ''
         if rvtlinks_count != 0:
@@ -366,7 +302,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
                     )
         graphical2d_elements_frame = create_frame(
                     "Graphical 2D Elements",
-                    card_builder(5000, detail_lines_count, ' Detail Lines'),  card_builder(30, line_patterns_count, ' Line Patterns'),  card_builder(30, text_notes_types_count, ' Text Notes Types'),  card_builder(1, text_bg_count, ' Text Notes w/ White Background'),  card_builder(0, text_notes_types_wf_count, ' Text Notes wfactor!=1'), card_builder(2000, text_notes_count, ' Text Notes'), card_builder(100, text_notes_caps_count, ' Text Notes allCaps'), card_builder(5, dim_types_count, ' Dimension Types'), card_builder(5000, dim_count, ' Dimensions'), card_builder(0, dim_overrides_count, ' Dimension Overrides'), card_builder(100, revision_clouds_count, ' Revision Clouds')
+                    card_builder(5000, detail_lines_count, ' Detail Lines'),  card_builder(30, line_patterns_count, ' Line Patterns'),  card_builder(30, text_notes_types_count, ' Text Notes Types'),  card_builder(1, text_bg_count, ' Text Notes w/ White Background'),  card_builder(0, text_notes_types_wf_count, ' Text Notes Width Factor !=1'), card_builder(2000, text_notes_count, ' Text Notes'), card_builder(100, text_notes_caps_count, ' Text Notes allCaps'), card_builder(5, dim_types_count, ' Dimension Types'), card_builder(5000, dim_count, ' Dimensions'), card_builder(0, dim_overrides_count, ' Dimension Overrides'), card_builder(100, revision_clouds_count, ' Revision Clouds')
                     )
         groups_summary_frame = create_frame(
                     "Groups",
@@ -376,7 +312,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
                     "Reference Planes",
                     card_builder(100, reference_planes_count, ' Ref Planes'), card_builder(10, unnamed_ref_planes_count, ' Ref Planes no_name')
                     )
-        html_content += \
+        html_content = body_css + \
                     critical_elements_frame + \
                     rooms_frame + \
                     sheets_views_graphics_frame + \
@@ -389,7 +325,6 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
                         'Materials',
                         card_builder(100, materials_count, ' Materials')
                         )
-
         output.print_html(html_content + '</div>')
 
 
@@ -448,12 +383,14 @@ class ModelChecker(PreflightTestCase):
     name = "Audit All (Including Links)"
     author = "Jean-Marc Couffin"
 
+    def setUp(self, doc, output):
+        self.timer = Timer()
 
     def startTest(self, doc, output):
         check_model(doc, output)
 
     def tearDown(self, doc, output):
-        endtime = timer.get_time()
+        endtime = self.timer.get_time()
         endtime_hms = str(timedelta(seconds=endtime))
         endtime_hms_claim = " \n\nCheck duration " + endtime_hms[0:7]  # Remove seconds decimals from string
         output.print_md(endtime_hms_claim)
