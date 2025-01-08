@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
-# flake8: noqa
-# pylint: disable=line-too-long
+
 """ Preflight query functions. """
 
 from System.Collections.Generic import HashSet
@@ -25,7 +24,7 @@ def doc_name(document):
         str: The full name of the given document.
     """
     if not hasattr(document, "PathName"):
-        return "Document Unloaded"
+        return ":warning: Unloaded Link"
     else:
         name = document.PathName
         return name
@@ -88,7 +87,6 @@ def phases(document):
     Returns:
         str: A comma-separated list of the names of the phases in a project.
     """
-
     if not hasattr(document, "Phases"):
         return '-'
     phases_collection = document.Phases
@@ -218,16 +216,16 @@ def rvt_links_docs(document):
 
 def rvt_links_name(revitlinks_elements):
     """
-    Returns a list of all the Revit links names in the document.
+    Returns two lists of all the Revit links names in the document.
 
     Args:
         revitlinks_elements (list): A list of Revit link elements.
 
     Returns:
-        list: A list of Revit document names and Revit link instances names.
+        tuple: Two lists of Revit document names and Revit link instances names.
     """
     rvt_links_docs_name = [get_name(rvtlinks_element).split(' : ')[0].split('.rvt')[0] for rvtlinks_element in revitlinks_elements]
-    rvt_links_instances_name = [get_name(revitlinks_element).split(' : ')[1] for revitlinks_element in revitlinks_elements]
+    rvt_links_instances_name = [get_name(rvtlinks_element).split(' : ')[1] for rvtlinks_element in revitlinks_elements]
     return rvt_links_docs_name, rvt_links_instances_name
 
 
@@ -255,6 +253,7 @@ def rvt_links_unpinned_str(revitlinks_elements):
         list: A list of Revit link unpinned status.
     """
     return ['-' if not hasattr(rvt_link, "Pinned") else 'Unpinned' if not rvt_link.Pinned else 'Pinned' for rvt_link in revitlinks_elements]
+
 
 
 def analytical_model_activated_count(document):
