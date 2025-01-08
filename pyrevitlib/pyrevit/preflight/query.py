@@ -288,7 +288,7 @@ def rooms(document):
         document (Document): A Revit document.
 
     Returns:
-        list: A list of rooms, the number of rooms, and the number of unplaced rooms.
+        list: A list of rooms, the number of rooms, and the number of unplaced rooms, and the number of unbounded rooms.
     """
     rooms_collector = (
         DB.FilteredElementCollector(document)
@@ -298,9 +298,10 @@ def rooms(document):
     rooms_count = rooms_collector.GetElementCount()
     rooms_elements = rooms_collector.ToElements()
     if rooms_elements is None:
-        return 0, 0
+        return 0, 0, 0
+    unbounded_rooms = sum(1 for room in rooms_elements if room.Area == 0)
     unplaced_rooms_count = sum(1 for room in rooms_elements if room.Location is None)
-    return rooms_count, unplaced_rooms_count
+    return rooms_count, unplaced_rooms_count, unbounded_rooms
 
 
 def sheets(document):
@@ -420,17 +421,18 @@ def schedules_instances_on_sheet(document):
     return DB.FilteredElementCollector(document).OfClass(DB.ScheduleSheetInstance).ToElements()
 
 
-def unsheeted_schedules_count(document):
+def schedules_count(document):
     """
-    Returns the count of schedules that are not placed on any sheet in the given document.
-
+    Counts the total number of schedules in the given document and the number of schedules that are not placed on a sheet.
     Args:
-    - document: The Revit document to search for unsheeted schedules.
-
+        document (DB.Document): The Revit document to query for schedules.
     Returns:
-    - The count of schedules that are not placed on any sheet in the given document.
+        tuple: A tuple containing two integers:
+            - The total number of schedules in the document.
+            - The number of schedules that are not placed on a sheet.
     """
-    return sum(1 for v in schedules(document) if v.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced)
+    schedules_elements = schedules(document)
+    return len(schedules_elements), sum(1 for v in schedules_elements if v.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced)
 
 
 def copied_views(views_set):
