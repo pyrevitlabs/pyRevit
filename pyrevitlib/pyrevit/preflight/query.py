@@ -462,9 +462,7 @@ def view_templates(document):
         document (DB.Document, optional): The document to search for view templates. Defaults to doc.
 
     Returns:
-        tuple: A tuple containing:
-            - list: A list of view templates in the document.
-            - int: The count of view templates in the document.
+        - int: The count of view templates in the document.
     """
     view_templates_collector = [
         v for v in DB.FilteredElementCollector(document)
@@ -473,8 +471,8 @@ def view_templates(document):
                     .ToElements()
                     if v.IsTemplate
         ]
-    view_templates_count = len(view_templates_collector)
-    return view_templates_collector, view_templates_count
+    
+    return len(view_templates_collector)
 
 
 def unused_view_templates(views_list):
