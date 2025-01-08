@@ -192,7 +192,7 @@ def rvtlinks_elements(document):
         document (Document): A Revit document.
 
     Returns:
-        list: A list of Revit link types, Revit link elements, the number of Revit links, Revit link status, and Revit link documents.
+        list: Revit link elements, the number of Revit links, Revit link status, and Revit link documents.
     """
     rvtlinks_instances = rvt_links(document)
     rvtlinks_types_items = rvtlinks_types(document, rvtlinks_instances)
@@ -200,7 +200,7 @@ def rvtlinks_elements(document):
     rvtlinks_count = rvtlinks_instances.GetElementCount()
     type_status = [rvtlinktype.GetLinkedFileStatus() for rvtlinktype in rvtlinks_types_items]
     rvtlink_docs = [rvtlinks_instance.GetLinkDocument() for rvtlinks_instance in rvtlinks_instances]
-    return rvtlinks_types_items, revitlinks_elements, rvtlinks_count, type_status, rvtlink_docs
+    return revitlinks_elements, rvtlinks_count, type_status, rvtlink_docs
 
 
 def rvt_links_docs(document):
