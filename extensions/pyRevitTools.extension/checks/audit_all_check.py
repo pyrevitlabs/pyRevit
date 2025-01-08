@@ -18,7 +18,7 @@ from pyrevit.preflight.query import (
     critical_warnings, rvtlinks_elements, rvt_links_name,
     rvt_links_unpinned_count, rvt_links_unpinned_str,
     analytical_model_activated_count, rooms, sheets,
-    views_not_sheeted, views_bucket, unsheeted_schedules_count,
+    views_not_sheeted, views_bucket, schedules_count,
     copied_views, view_templates, unused_view_templates, filters, materials,
     line_patterns, dwgs, families, subcategories_imports, generic_models,
     details_components, text_notes_types, text_notes_instances, detail_groups,
@@ -47,7 +47,7 @@ COLUMNS = ["user", "date", "doc_clean_name", "revit_version_build",
            "critical_warnings_count", "rvtlinks_count",
            "activated_analytical_model_elements_count", "rooms_count",
            "unplaced_rooms_count", "unbounded_rooms", "sheets_count", "views_count",
-           "views_not_on_sheets", "schedules_not_sheeted_count",
+           "views_not_on_sheets", "schedules","schedules_not_sheeted_count",
            "copied_views_count", "view_templates_count",
            "unused_view_templates_count", "all_filters_count",
            "unused_view_filters_count", "materials_count",
@@ -106,7 +106,7 @@ def check_model(doc, output):
         sheets_count, sheets_set = sheets(doc_cached_issues)
         views_count, views = views_bucket(doc_cached_issues)
         views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
-        schedules_not_sheeted_count = unsheeted_schedules_count(doc_cached_issues)
+        schedule_count, schedules_not_sheeted_count = schedules_count(doc_cached_issues)
         copied_views_count = copied_views(views)
         view_templates_count = view_templates(doc)
         unused_view_templates_count = unused_view_templates(views)
@@ -130,7 +130,7 @@ def check_model(doc, output):
         # output section
         output.close_others()
         output.set_height(900)
-        output.set_width(1200)
+        output.set_width(1400)
 
         # RVT file dashboard section
         body_css = '<style>.grid-container { display: grid; justify-content: center; align-items: center; }</style><div class="grid-container">'
@@ -177,7 +177,7 @@ def check_model(doc, output):
 
         sheets_views_graphics_frame = create_frame(
             "Sheets, Views, Graphics", 
-            card_builder(500, sheets_count, ' Sheets'), card_builder(1500, views_count, ' Views'),card_builder(300, views_not_on_sheets, ' Views not on Sheets'), card_builder(5, schedules_not_sheeted_count, ' Schedules not on sheet'), card_builder(0, copied_views_count, ' Copied Views'), card_builder(100, view_templates_count, ' View Templates'), card_builder(0, unused_view_templates_count, ' Unused VT'), card_builder(0, all_filters_count, ' Filters'), card_builder(0, unused_view_filters_count, ' Unused Filters')
+            card_builder(500, sheets_count, ' Sheets'), card_builder(1500, views_count, ' Views'),card_builder(300, views_not_on_sheets, ' Views not on Sheets'), card_builder(20, schedule_count, ' Schedules'), card_builder(5, schedules_not_sheeted_count, ' Schedules not on sheet'), card_builder(0, copied_views_count, ' Copied Views'), card_builder(100, view_templates_count, ' View Templates'), card_builder(0, unused_view_templates_count, ' Unused VT'), card_builder(0, all_filters_count, ' Filters'), card_builder(0, unused_view_filters_count, ' Unused Filters')
             )
 
         cad_files_frame = create_frame(
@@ -222,7 +222,7 @@ def check_model(doc, output):
         output.print_html(html_content + '</div>')
 
         # csv export
-        data = [user, date, doc_clean_name, revit_version_build, project_name, project_number, project_client, project_phases, worksets_names, element_count, purgeable_elements_count, all_warnings_count, critical_warnings_count, rvtlinks_count, activated_analytical_model_elements_count, rooms_count, unplaced_rooms_count,unbounded_rooms, sheets_count, views_count, views_not_on_sheets, schedules_not_sheeted_count, copied_views_count, view_templates_count, unused_view_templates_count, all_filters_count, unused_view_filters_count, materials_count, line_patterns_count, dwgs_count, linked_dwg_count, inplace_family_count, not_parametric_families_count, family_count, imports_subcats_count, generic_models_types_count, detail_components_count, text_notes_types_count, text_bg_count, text_notes_types_wf_count, text_notes_count, text_notes_caps_count, detail_groups_count, detail_groups_types_count, model_group_count, model_group_type_count, reference_planes_count, unnamed_ref_planes_count, detail_lines_count, dim_types_count, dim_count, dim_overrides_count, revision_clouds_count]
+        data = [user, date, doc_clean_name, revit_version_build, project_name, project_number, project_client, project_phases, worksets_names, element_count, purgeable_elements_count, all_warnings_count, critical_warnings_count, rvtlinks_count, activated_analytical_model_elements_count, rooms_count, unplaced_rooms_count,unbounded_rooms, sheets_count, views_count, views_not_on_sheets, schedule_count, schedules_not_sheeted_count, copied_views_count, view_templates_count, unused_view_templates_count, all_filters_count, unused_view_filters_count, materials_count, line_patterns_count, dwgs_count, linked_dwg_count, inplace_family_count, not_parametric_families_count, family_count, imports_subcats_count, generic_models_types_count, detail_components_count, text_notes_types_count, text_bg_count, text_notes_types_wf_count, text_notes_count, text_notes_caps_count, detail_groups_count, detail_groups_types_count, model_group_count, model_group_type_count, reference_planes_count, unnamed_ref_planes_count, detail_lines_count, dim_types_count, dim_count, dim_overrides_count, revision_clouds_count]
         data_str = [str(i) for i in data]
 
         export_to_csv(doc_clean_name, data, data_str, output)
@@ -257,7 +257,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         sheets_count, sheets_set = sheets(rvtlink)
         views_count, views = views_bucket(rvtlink)
         views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
-        schedules_not_sheeted_count = unsheeted_schedules_count(rvtlink)
+        schedule_count, schedules_not_sheeted_count = schedules_count(rvtlink)
         copied_views_count = copied_views(views)
         view_templates_count = view_templates(rvtlink)
         unused_view_templates_count = unused_view_templates(views)
@@ -292,7 +292,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
                     )
         sheets_views_graphics_frame = create_frame(
                     "Sheets, Views, Graphics",
-                    card_builder(500, sheets_count, ' Sheets'), card_builder(1500, views_count, ' Views'), card_builder(300, views_not_on_sheets, ' Views not on Sheets'), card_builder(5, schedules_not_sheeted_count, ' Schedules not on sheet'), card_builder(0, copied_views_count, ' Copied Views'), card_builder(100, view_templates_count, ' View Templates'), card_builder(0, unused_view_templates_count, ' Unused VT'), card_builder(0, all_filters_count, ' Filters'), card_builder(0, unused_view_filters_count, ' Unused Filters')
+                    card_builder(500, sheets_count, ' Sheets'), card_builder(1500, views_count, ' Views'), card_builder(300, views_not_on_sheets, ' Views not on Sheets'), card_builder(20, schedule_count, ' Schedules'), card_builder(5, schedules_not_sheeted_count, ' Schedules not on sheet'), card_builder(0, copied_views_count, ' Copied Views'), card_builder(100, view_templates_count, ' View Templates'), card_builder(0, unused_view_templates_count, ' Unused VT'), card_builder(0, all_filters_count, ' Filters'), card_builder(0, unused_view_filters_count, ' Unused Filters')
                     )
         cad_files_frame = create_frame(
                     "CAD Files",
