@@ -10,7 +10,7 @@ from os.path import isfile
 from datetime import datetime, timedelta
 from pyrevit.coreutils import Timer
 from pyrevit import HOST_APP, DOCS
-from pyrevit import script
+from pyrevit.script import get_config
 from pyrevit.forms import alert, show_balloon
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.preflight.query import (
@@ -33,7 +33,7 @@ date = datetime.today().strftime("%d-%m-%Y")
 revit_version_build = HOST_APP.build
 DATASET_PREFIX = ", ".join([user, date, revit_version_build])
 
-config = script.get_config()
+config = get_config()
 if config is None:
     alert("No configuration setn run the Preflight Checks clicking on the tool while maintaining ALT key to configurate. Exiting...", exitscript=True)
 
