@@ -399,8 +399,6 @@ def check_model(doc, output):
                             )
 
                     output.print_html(html_content + '</div>')
-                else:
-                    pass
         output.self_destruct(180)
     except Exception as e:
         print(format_exc())
