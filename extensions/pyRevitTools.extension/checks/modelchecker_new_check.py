@@ -1,7 +1,5 @@
 # -*- coding: UTF-8 -*-
-# flake8: noqa
-# pylint: disable=line-too-long
-# pylint: disable=import-error
+
 __cleanengine__ = True
 __fullframeengine__ = True
 __persistentengine__ = True
