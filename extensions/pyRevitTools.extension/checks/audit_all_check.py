@@ -345,6 +345,7 @@ class ModelChecker(PreflightTestCase):
     - activated analytical model elements count
     - rooms count
     - unplaced rooms count
+    - unbounded rooms count
     - sheets count
     - views count
     - views not on sheets
