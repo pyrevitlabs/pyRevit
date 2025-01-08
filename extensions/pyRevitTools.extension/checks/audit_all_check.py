@@ -46,7 +46,7 @@ COLUMNS = ["user", "date", "doc_clean_name", "revit_version_build",
            "purgeable_elements_count", "all_warnings_count",
            "critical_warnings_count", "rvtlinks_count",
            "activated_analytical_model_elements_count", "rooms_count",
-           "unplaced_rooms_count", "sheets_count", "views_count",
+           "unplaced_rooms_count", "unbounded_rooms", "sheets_count", "views_count",
            "views_not_on_sheets", "schedules_not_sheeted_count",
            "copied_views_count", "view_templates_count",
            "unused_view_templates_count", "all_filters_count",
@@ -63,6 +63,23 @@ COLUMNS = ["user", "date", "doc_clean_name", "revit_version_build",
            "detail_lines_count", "dim_types_count", "dim_count",
            "dim_overrides_count", "revision_clouds_count"
            ]
+
+
+def export_to_csv(doc_clean_name, data, data_str, output):
+    if not isfile(EXPORT_FILE_PATH):
+        with open(EXPORT_FILE_PATH, mode='wb') as csv_file:
+            w = writer(csv_file, lineterminator='\n')
+            w.writerow(COLUMNS)
+            w.writerow(data_str)
+    else:
+        with open(EXPORT_FILE_PATH, mode='rb') as csv_file:
+            r = reader(csv_file, delimiter=',')
+            flag = any(row[1] == date and row[2] == doc_clean_name for row in r)
+        if not flag:
+            with open(EXPORT_FILE_PATH, mode='ab') as csv_file:
+                w = writer(csv_file, lineterminator='\n')
+                w.writerow(data)
+        output.self_destruct(30)
 
 
 def check_model(doc, output):
@@ -85,7 +102,7 @@ def check_model(doc, output):
                 print(e)
         activated_analytical_model_elements_count = analytical_model_activated_count(doc)
         doc_cached_issues = DOCS.doc
-        rooms_count, unplaced_rooms_count = rooms(doc_cached_issues)
+        rooms_count, unplaced_rooms_count, unbounded_rooms = rooms(doc_cached_issues)
         sheets_count, sheets_set = sheets(doc_cached_issues)
         views_count, views = views_bucket(doc_cached_issues)
         views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
@@ -155,7 +172,7 @@ def check_model(doc, output):
 
         rooms_frame = create_frame(
             "Rooms", 
-            card_builder(1000, rooms_count, ' Rooms'), card_builder(0, unplaced_rooms_count, ' Unplaced Rooms')
+            card_builder(1000, rooms_count, ' Rooms'), card_builder(0, unplaced_rooms_count, ' Unplaced Rooms'), card_builder(0, unbounded_rooms, ' Unbounded Rooms')
             )
 
         sheets_views_graphics_frame = create_frame(
@@ -205,10 +222,10 @@ def check_model(doc, output):
         output.print_html(html_content + '</div>')
 
         # csv export
-        data = [user, date, doc_clean_name, revit_version_build, project_name, project_number, project_client, project_phases, worksets_names, element_count, purgeable_elements_count, all_warnings_count, critical_warnings_count, rvtlinks_count, activated_analytical_model_elements_count, rooms_count, unplaced_rooms_count, sheets_count, views_count, views_not_on_sheets, schedules_not_sheeted_count, copied_views_count, view_templates_count, unused_view_templates_count, all_filters_count, unused_view_filters_count, materials_count, line_patterns_count, dwgs_count, linked_dwg_count, inplace_family_count, not_parametric_families_count, family_count, imports_subcats_count, generic_models_types_count, detail_components_count, text_notes_types_count, text_bg_count, text_notes_types_wf_count, text_notes_count, text_notes_caps_count, detail_groups_count, detail_groups_types_count, model_group_count, model_group_type_count, reference_planes_count, unnamed_ref_planes_count, detail_lines_count, dim_types_count, dim_count, dim_overrides_count, revision_clouds_count]
+        data = [user, date, doc_clean_name, revit_version_build, project_name, project_number, project_client, project_phases, worksets_names, element_count, purgeable_elements_count, all_warnings_count, critical_warnings_count, rvtlinks_count, activated_analytical_model_elements_count, rooms_count, unplaced_rooms_count,unbounded_rooms, sheets_count, views_count, views_not_on_sheets, schedules_not_sheeted_count, copied_views_count, view_templates_count, unused_view_templates_count, all_filters_count, unused_view_filters_count, materials_count, line_patterns_count, dwgs_count, linked_dwg_count, inplace_family_count, not_parametric_families_count, family_count, imports_subcats_count, generic_models_types_count, detail_components_count, text_notes_types_count, text_bg_count, text_notes_types_wf_count, text_notes_count, text_notes_caps_count, detail_groups_count, detail_groups_types_count, model_group_count, model_group_type_count, reference_planes_count, unnamed_ref_planes_count, detail_lines_count, dim_types_count, dim_count, dim_overrides_count, revision_clouds_count]
         data_str = [str(i) for i in data]
 
-        export_to_csv(doc_clean_name, data, data_str)
+        export_to_csv(doc_clean_name, data, data_str, output)
 
         # RVTLinks
         if rvtlinks_elements_items:
@@ -217,22 +234,7 @@ def check_model(doc, output):
     except Exception as e:
         print(format_exc())
         print(e)
-        output.self_destruct(30)
 
-def export_to_csv(doc_clean_name, data, data_str):
-    if not isfile(EXPORT_FILE_PATH):
-        with open(EXPORT_FILE_PATH, mode='wb') as csv_file:
-            w = writer(csv_file, lineterminator='\n')
-            w.writerow(COLUMNS)
-            w.writerow(data_str)
-    else:
-        with open(EXPORT_FILE_PATH, mode='rb') as csv_file:
-            r = reader(csv_file, delimiter=',')
-            flag = any(row[1] == date and row[2] == doc_clean_name for row in r)
-        if not flag:
-            with open(EXPORT_FILE_PATH, mode='ab') as csv_file:
-                w = writer(csv_file, lineterminator='\n')
-                w.writerow(data)
 
 def generate_rvt_links_report(output, rvtlinks_docs, body_css):
     output.print_md('# RVTLinks')
@@ -251,7 +253,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         rvtlinks_elements_items, rvtlinks_count, type_status, rvtlinks_docs = rvtlinks_elements(rvtlink)
         rvtlinks_unpinned = rvt_links_unpinned_count(rvtlinks_elements_items)
         activated_analytical_model_elements_count = (analytical_model_activated_count(rvtlink))
-        rooms_count, unplaced_rooms_count = rooms(rvtlink)
+        rooms_count, unplaced_rooms_count, unbounded_rooms = rooms(rvtlink)
         sheets_count, sheets_set = sheets(rvtlink)
         views_count, views = views_bucket(rvtlink)
         views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
@@ -286,7 +288,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
                         )
         rooms_frame = create_frame(
                     "Rooms",
-                    card_builder(1000, rooms_count, ' Rooms'), card_builder(0, unplaced_rooms_count, ' Unplaced Rooms')
+                    card_builder(1000, rooms_count, ' Rooms'), card_builder(0, unplaced_rooms_count, ' Unplaced Rooms'), card_builder(0, unbounded_rooms, ' Unbounded Rooms')
                     )
         sheets_views_graphics_frame = create_frame(
                     "Sheets, Views, Graphics",
@@ -327,9 +329,6 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
                         )
         output.print_html(html_content + '</div>')
 
-
-
-timer = Timer()
 
 class ModelChecker(PreflightTestCase):
     """
