@@ -89,7 +89,7 @@ def check_model(doc, output):
                 print(e)
         # Links
         rvtlinks_elements_items, rvtlinks_count, type_status, rvtlinks_docs = rvtlinks_elements(doc)
-        if rvtlinks_count != 0:
+        if rvtlinks_elements_items:
             projects_names, projects_numbers, projects_clients, projects_phases, projects_worksets, link_status = [], [], [], [], [], []
             for doc, status in zip(rvtlinks_docs, type_status):
                 project_name, project_number, project_client = project_informations(
