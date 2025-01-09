@@ -27,7 +27,7 @@ with open(critical_warnings_filepath, 'r') as f:
 
 export_file_path = pick_folder(title="Where to save the data that will be collected?")
 if export_file_path is None:
-    alert("No file selected. Exiting...", exitscript=True)
+    script.exit()
 config.set_option(op_name='export_file_path', value=join(export_file_path, 'projects_data.csv'))
 
 script.save_config()
