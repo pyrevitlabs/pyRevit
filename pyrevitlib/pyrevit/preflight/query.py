@@ -165,7 +165,7 @@ def rvt_links(document):
     Returns:
         list: A list of Revit link instances.
     """
-    return (DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_RvtLinks).WhereElementIsNotElementType())
+    return DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_RvtLinks).WhereElementIsNotElementType()
 
 
 def rvtlinks_types(document, rvt_links_instances):
