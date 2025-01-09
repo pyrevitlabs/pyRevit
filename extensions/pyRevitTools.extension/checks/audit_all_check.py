@@ -278,7 +278,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         dim_types_count, dim_count, dim_overrides_count = count_dimension_types(rvtlink), count_dimensions(rvtlink), count_dimension_overrides(rvtlink)
         revision_clouds_count = revisions_clouds(rvtlink)
         links_data = ''
-        if rvtlinks_count != 0:
+        if rvtlinks_elements_items:
             links_data = (
                 card_builder(50, rvtlinks_count, ' Links') + 
                 card_builder(0, rvtlinks_unpinned, ' Links not pinned')
