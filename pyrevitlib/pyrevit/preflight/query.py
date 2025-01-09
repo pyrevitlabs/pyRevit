@@ -117,8 +117,7 @@ def worksets(document):
         .OfKind(DB.WorksetKind.UserWorkset)
         .ToWorksets()
         )
-    worksets_names = ", ".join(w.Name for w in worksets_collection)
-    return worksets_names
+    return ", ".join(w.Name for w in worksets_collection)
 
 
 def warnings(document):
