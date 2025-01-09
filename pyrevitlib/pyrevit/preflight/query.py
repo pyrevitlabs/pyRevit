@@ -110,7 +110,7 @@ def worksets(document):
 
     if not hasattr(document, "IsWorkshared"):
         return '-'
-    elif not document.IsWorkshared:
+    if not document.IsWorkshared:
         return 'Not Workshared'
     worksets_collection = (
         DB.FilteredWorksetCollector(document)
