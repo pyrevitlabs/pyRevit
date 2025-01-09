@@ -279,9 +279,10 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         revision_clouds_count = revisions_clouds(rvtlink)
         links_data = ''
         if rvtlinks_count != 0:
-            links_data += card_builder(50, rvtlinks_count, ' Links') + \
-                        card_builder(0, rvtlinks_unpinned,
-                                     ' Links not pinned')
+            links_data = (
+                card_builder(50, rvtlinks_count, ' Links') + 
+                card_builder(0, rvtlinks_unpinned, ' Links not pinned')
+            )
         critical_elements_frame = create_frame(
                         "Critical Elements", 
                         card_builder(100000, element_count, ' Elements'), card_builder(1000, purgeable_elements_count, ' Purgeable (2024+)'), card_builder(100, all_warnings_count, ' Warnings'), card_builder(5, critical_warnings_count, ' Critical Warnings'), card_builder(0, activated_analytical_model_elements_count, ' Analytical Model ON'), links_data
