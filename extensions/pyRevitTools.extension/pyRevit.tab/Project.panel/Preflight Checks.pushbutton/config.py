@@ -17,7 +17,7 @@ critical_warnings_filepath = pick_file(init_dir=current_folder,
                                              multi_file=False, 
                                              title="Select the CSV file containing the critical warnings GUIDs")
 if critical_warnings_filepath is None:
-    alert("No CSV file selected. Exiting...", exitscript=True)
+    script.exit()
 
 with open(critical_warnings_filepath, 'r') as f:
     critical_warnings = []
