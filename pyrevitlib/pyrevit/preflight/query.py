@@ -89,12 +89,7 @@ def phases(document):
     """
     if not hasattr(document, "Phases"):
         return '-'
-    phases_collection = document.Phases
-    phase_names = []
-    for phase in phases_collection:
-        phase_names.append(phase.Name)
-    project_phases = (", ").join(phase_names)
-    return project_phases
+    return ", ".join(phase.Name for phase in document.Phases)
 
 
 def worksets(document):
