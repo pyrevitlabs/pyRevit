@@ -96,7 +96,7 @@ class SettingsWindow(forms.WPFWindow):
 
         # check boxes for each version of Revit
         # Dynamically define Revit versions
-        self.available_revit_versions = ['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017']
+        self.available_revit_versions = ['2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017']
         self.SupportedRevitVersions_CB = [RevitVersionCB(rvt_ver,is_checked=False, is_enabled=True) for rvt_ver in self.available_revit_versions]
 
         #create the dict for further processing
