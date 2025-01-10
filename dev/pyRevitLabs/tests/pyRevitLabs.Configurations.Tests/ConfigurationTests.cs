@@ -76,7 +76,7 @@ public abstract class ConfigurationTests
     {
         _configuration.SetValue("remove", "default", "value");
 
-        bool result = _configuration.RemoveValue("remove", "default");
+        bool result = _configuration.RemoveOption("remove", "default");
 
         Assert.True(result);
     }
@@ -84,7 +84,7 @@ public abstract class ConfigurationTests
     [Fact]
     public void RemoveNotExitsValue_ShouldReturnFalse()
     {
-        bool result = _configuration.RemoveValue("remove", "not-exits");
+        bool result = _configuration.RemoveOption("remove", "not-exits");
 
         Assert.False(result);
     }

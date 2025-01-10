@@ -70,7 +70,13 @@ public sealed class IniConfiguration : ConfigurationBase
     }
 
     /// <inheritdoc />
-    protected override bool RemoveValueImpl(string sectionName, string keyName)
+    protected override bool RemoveSectionImpl(string sectionName)
+    {
+        return _iniFile.Sections.RemoveSection(sectionName);
+    }
+
+    /// <inheritdoc />
+    protected override bool RemoveOptionImpl(string sectionName, string keyName)
     {
         return _iniFile[sectionName].RemoveKey(keyName);
     }

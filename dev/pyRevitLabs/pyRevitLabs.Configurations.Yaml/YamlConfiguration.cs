@@ -94,7 +94,13 @@ public sealed class YamlConfiguration : ConfigurationBase
     }
 
     /// <inheritdoc />
-    protected override bool RemoveValueImpl(string sectionName, string keyName)
+    protected override bool RemoveSectionImpl(string sectionName)
+    {
+        return _rootNode.Children.Remove(sectionName);
+    }
+
+    /// <inheritdoc />
+    protected override bool RemoveOptionImpl(string sectionName, string keyName)
     {
         YamlMappingNode yamlNode = (YamlMappingNode)_rootNode[sectionName];
         return yamlNode.Children.Remove(keyName);
@@ -127,7 +133,7 @@ public sealed class YamlConfiguration : ConfigurationBase
             sectionNode.Add(keyName, YamlMappingNode.FromObject(value!));
         }
 
-        RemoveValue(sectionName, keyName);
+        RemoveOption(sectionName, keyName);
 
         YamlMappingNode sectionNode1 = (YamlMappingNode)_rootNode[sectionName];
         sectionNode1.Add(keyName, YamlMappingNode.FromObject(value!));

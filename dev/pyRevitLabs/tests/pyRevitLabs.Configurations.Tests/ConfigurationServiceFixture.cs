@@ -50,7 +50,12 @@ namespace pyRevitLabs.Configurations.Tests
                 throw new NotImplementedException();
             }
 
-            public bool RemoveValue(string sectionName, string keyName)
+            public bool RemoveSection(string sectionName)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool RemoveOption(string sectionName, string keyName)
             {
                 throw new NotImplementedException();
             }

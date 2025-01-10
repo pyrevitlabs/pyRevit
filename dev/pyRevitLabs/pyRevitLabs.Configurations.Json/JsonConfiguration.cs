@@ -69,8 +69,13 @@ public sealed class JsonConfiguration : ConfigurationBase
         JObject? sectionObject = _jsonObject[sectionName] as JObject;
         return sectionObject?.ContainsKey(keyName) == true;
     }
+    
+    protected override bool RemoveSectionImpl(string sectionName)
+    {
+        return _jsonObject.Remove(sectionName);
+    }
 
-    protected override bool RemoveValueImpl(string sectionName, string keyName)
+    protected override bool RemoveOptionImpl(string sectionName, string keyName)
     {
         _jsonObject[sectionName]![keyName] = null;
         return true;

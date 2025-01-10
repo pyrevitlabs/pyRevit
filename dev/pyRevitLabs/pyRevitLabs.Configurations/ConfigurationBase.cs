@@ -46,8 +46,24 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         return HasSectionKeyImpl(sectionName, keyName);
     }
 
+    public bool RemoveSection(string sectionName)
+    {
+        if (string.IsNullOrWhiteSpace(sectionName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(sectionName));
+
+
+        bool result = HasSection(sectionName)
+                      && RemoveSectionImpl(sectionName);
+        if (result)
+        {
+            SaveConfiguration();
+        }
+
+        return result;
+    }
+
     /// <inheritdoc />
-    public bool RemoveValue(string sectionName, string keyName)
+    public bool RemoveOption(string sectionName, string keyName)
     {
         if (string.IsNullOrWhiteSpace(sectionName))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(sectionName));
@@ -57,7 +73,7 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
 
         bool result = HasSection(sectionName)
                       && HasSectionKey(sectionName, keyName)
-                      && RemoveValueImpl(sectionName, keyName);
+                      && RemoveOptionImpl(sectionName, keyName);
 
         if (result)
         {
@@ -160,7 +176,8 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
     protected abstract bool HasSectionImpl(string sectionName);
     protected abstract bool HasSectionKeyImpl(string sectionName, string keyName);
 
-    protected abstract bool RemoveValueImpl(string sectionName, string keyName);
+    protected abstract bool RemoveSectionImpl(string sectionName);
+    protected abstract bool RemoveOptionImpl(string sectionName, string keyName);
     
     protected abstract void SetValueImpl<T>(string sectionName, string keyName, T value);
     protected abstract object GetValueImpl(Type typeObject, string sectionName, string keyName);

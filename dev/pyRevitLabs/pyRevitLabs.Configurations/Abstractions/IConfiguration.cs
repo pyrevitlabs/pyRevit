@@ -13,7 +13,9 @@ public interface IConfiguration
     internal object GetValue(Type typeObject, string sectionName, string keyName);
     internal object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default);
 
-    bool RemoveValue(string sectionName, string keyName);
+    bool RemoveSection(string sectionName);
+    bool RemoveOption(string sectionName, string keyName);
+    
     void SetValue<T>(string sectionName, string keyName, T? value);
 
     void SaveConfiguration();
