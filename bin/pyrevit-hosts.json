@@ -1865,7 +1865,7 @@
             "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_1_html"
         },
         "product": "Autodesk Revit",
-        "release": "24.1",
+        "release": "2024.1",
         "version": "24.1.0.66",
         "build": "20230701_1515",
         "target": "x64",
@@ -1877,7 +1877,7 @@
             "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_1_1_html"
         },
         "product": "Autodesk Revit",
-        "release": "24.1.1",
+        "release": "2024.1.1",
         "version": "24.1.10.25",
         "build": "20230830_0315",
         "target": "x64",
@@ -1889,7 +1889,7 @@
             "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_html"
         },
         "product": "Autodesk Revit",
-        "release": "24.2",
+        "release": "2024.2",
         "version": "24.2.0.63",
         "build": "20231029_1515",
         "target": "x64",
@@ -1901,7 +1901,7 @@
             "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_1_html"
         },
         "product": "Autodesk Revit",
-        "release": "24.2.1",
+        "release": "2024.2.1",
         "version": "24.2.10.64",
         "build": "20240408_1515",
         "target": "x64",
@@ -1913,11 +1913,35 @@
             "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_2_html"
         },
         "product": "Autodesk Revit",
-        "release": "24.2.2",
+        "release": "2024.2.2",
         "version": "24.2.20.41",
         "build": "20240814_1400",
         "target": "x64",
         "notes": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_2_2_html"
+    },
+	{
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_3_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2024.3",
+        "version": "24.3.0.13",
+        "build": "20240912_1515",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_3_html"
+    },
+	{
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_3_1_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2024.3.1",
+        "version": "24.3.10.22",
+        "build": "20241105_1515",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2024/ENU/?guid=RevitReleaseNotes_2024updates_2024_3_1_html"
     },
     {
         "meta": {
@@ -1954,5 +1978,29 @@
         "build": "20240715_1515",
         "target": "x64",
         "notes": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_2_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_3_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2025.3",
+        "version": "25.3.0.46",
+        "build": "20241004_1515",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_3_html"
+    },
+    {
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_4_html"
+        },
+        "product": "Autodesk Revit",
+        "release": "2025.4",
+        "version": "25.4.0.32",
+        "build": "20241202_1040",
+        "target": "x64",
+        "notes": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_4_html"
     }
 ]
