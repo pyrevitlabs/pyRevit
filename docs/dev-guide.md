@@ -110,7 +110,7 @@ git submodule update --init --recursive
 
 !!! note
 
-    you may have to repeat the `git sumbodule update` command when you switch to another existing branch, or when new commits in the develop branch update the dependencies.
+    you may have to repeat the `git submodule update` command when you switch to another existing branch, or when new commits in the develop branch update the dependencies.
 
 ## Initialize the pipenv environment
 
