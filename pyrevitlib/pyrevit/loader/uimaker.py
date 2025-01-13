@@ -7,8 +7,7 @@ from pyrevit.coreutils import assmutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import applocales
 
-if not EXEC_PARAMS.doc_mode:
-    from pyrevit.coreutils import ribbon
+from pyrevit.coreutils import ribbon
 
 #pylint: disable=W0703,C0302,C0103,C0413
 import pyrevit.extensions as exts
@@ -683,8 +682,7 @@ def _recursively_produce_ui_items(ui_maker_params):
     return cmp_count
 
 
-if not EXEC_PARAMS.doc_mode:
-    current_ui = ribbon.get_current_ui()
+current_ui = ribbon.get_current_ui()
 
 
 def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):

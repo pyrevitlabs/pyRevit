@@ -67,11 +67,10 @@ logging.addLevelName(SUCCESS_LOG_LEVEL, "SUCCESS")
 # must be the same in this file and pyrevit/loader/runtime/envdict.cs
 # this is because the csharp code hasn't been compiled when the
 # logger module is imported in the other modules
-if not EXEC_PARAMS.doc_mode:
-    envvars.set_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR,
-                                DEFAULT_LOGGING_LEVEL)
-    envvars.set_pyrevit_env_var(envvars.FILELOGGING_ENVVAR,
-                                False)
+envvars.set_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR,
+                            DEFAULT_LOGGING_LEVEL)
+envvars.set_pyrevit_env_var(envvars.FILELOGGING_ENVVAR,
+                            False)
 
 
 # Creating default file log name and status
@@ -317,8 +316,7 @@ def get_file_hndlr():
 
 
 # setting up public logger. this will be imported in with other modules -------
-if not EXEC_PARAMS.doc_mode:
-    logging.setLoggerClass(LoggerWrapper)
+logging.setLoggerClass(LoggerWrapper)
 
 
 loggers = {}

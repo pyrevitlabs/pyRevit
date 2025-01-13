@@ -3,7 +3,7 @@ import logging
 import os.path as op
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
 #pylint: disable=superfluous-parens,useless-import-alias
-from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR, BIN_DIR
+from pyrevit import HOST_APP
 from pyrevit.framework import clr
 from pyrevit.compat import PY2
 
@@ -109,23 +109,22 @@ def extract_build_from_exe(proc_path):
 
 
 # activate binding resolver
-if not EXEC_PARAMS.doc_mode:
-    if HOST_APP.is_older_than(2019):
-        PyRevit.PyRevitBindings.ActivateResolver()
+if HOST_APP.is_older_than(2019):
+    PyRevit.PyRevitBindings.ActivateResolver()
 
-    # configure NLog
-    #pylint: disable=W0201
-    if PY2:
-        config = NLog.Config.LoggingConfiguration()
-        target = PyRevitOutputTarget()
-        target.Name = __name__
-        target.Layout = "${level:uppercase=true} [${logger}] ${message}"
-        config.AddTarget(__name__, target)
-        config.AddRuleForAllLevels(target)
-        NLog.LogManager.Configuration = config
+# configure NLog
+#pylint: disable=W0201
+if PY2:
+    config = NLog.Config.LoggingConfiguration()
+    target = PyRevitOutputTarget()
+    target.Name = __name__
+    target.Layout = "${level:uppercase=true} [${logger}] ${message}"
+    config.AddTarget(__name__, target)
+    config.AddRuleForAllLevels(target)
+    NLog.LogManager.Configuration = config
 
-        for rule in NLog.LogManager.Configuration.LoggingRules:
-            rule.EnableLoggingForLevel(NLog.LogLevel.Info)
-            rule.EnableLoggingForLevel(NLog.LogLevel.Debug)
+    for rule in NLog.LogManager.Configuration.LoggingRules:
+        rule.EnableLoggingForLevel(NLog.LogLevel.Info)
+        rule.EnableLoggingForLevel(NLog.LogLevel.Debug)
 
-        nlog_mlogger = NLog.LogManager.GetLogger(__name__)
+    nlog_mlogger = NLog.LogManager.GetLogger(__name__)
