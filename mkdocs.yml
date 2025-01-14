@@ -36,7 +36,7 @@ theme:
         name: Switch to light mode
 
 extra_css:
-  - docs/styles.css
+  - styles.css
 
 watch:
   - pyrevitlib/pyrevit
