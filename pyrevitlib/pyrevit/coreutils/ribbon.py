@@ -30,7 +30,7 @@ DEFAULT_DPI = 96
 
 DEFAULT_TOOLTIP_IMAGE_FORMAT = '.png'
 DEFAULT_TOOLTIP_VIDEO_FORMAT = '.swf'
-if not EXEC_PARAMS.doc_mode and HOST_APP.is_newer_than(2019, or_equal=True):
+if HOST_APP.is_newer_than(2019, or_equal=True):
     DEFAULT_TOOLTIP_VIDEO_FORMAT = '.mp4'
 
 

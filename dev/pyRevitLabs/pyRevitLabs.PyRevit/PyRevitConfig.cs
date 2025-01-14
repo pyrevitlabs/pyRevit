@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -31,7 +32,9 @@ namespace pyRevitLabs.PyRevit {
                 cfgOps.Encoding = CommonUtils.GetUTF8NoBOMEncoding();
                 _config = new IniFile(cfgOps);
 
-                _config.Load(cfgFilePath);
+                using (var cfgStream = File.Open(cfgFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    _config.Load(cfgStream);
+                }
                 _adminMode = adminMode;
             }
             else
