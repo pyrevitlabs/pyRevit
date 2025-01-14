@@ -22,7 +22,7 @@ def create_bitmap(source, color, target):
 
     Args:
         source (PIL.Image): The source image to convert.
-        color (tuple): The RGB color tuple to use for the bitmap.
+        color (tuple): The RGB or RGBA color tuple to use for the bitmap.
         target (str): The path to the target file.
 
     Returns:
@@ -35,7 +35,7 @@ def create_bitmap(source, color, target):
             if len(pixel) < 4 or pixel[3] == 0:
                 output.putpixel((x, y), pixel)
             else:
-                output.putpixel((x, y), (pixel[3], color[0], color[1], color[2]))
+                output.putpixel((x, y), (color[0], color[1], color[2], pixel[3]))
     output.save(target)
 
 if __name__ == "__main__":

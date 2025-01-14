@@ -26,46 +26,42 @@ mlogger = logger.get_logger(__name__)
 
 # C:\Windows\Microsoft.NET\Framework\
 
-if not EXEC_PARAMS.doc_mode:
-    INTERFACE_TYPES_DIR = RUNTIME_DIR
+INTERFACE_TYPES_DIR = RUNTIME_DIR
 
-    DOTNET_DIR = op.join(os.getenv('windir'), 'Microsoft.NET', 'Framework')
-    DOTNET64_DIR = op.join(os.getenv('windir'), 'Microsoft.NET', 'Framework64')
+DOTNET_DIR = op.join(os.getenv('windir'), 'Microsoft.NET', 'Framework')
+DOTNET64_DIR = op.join(os.getenv('windir'), 'Microsoft.NET', 'Framework64')
 
-    DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
-                             'Reference Assemblies',
-                             'Microsoft', 'Framework', '.NETFramework')
+DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
+                            'Reference Assemblies',
+                            'Microsoft', 'Framework', '.NETFramework')
 
 
-    try:
-        # get sorted list of installed frawework paths
-        DOTNET_FRAMEWORK_DIRS = sorted(
-            [x for x in os.listdir(DOTNET_DIR)
-             if x.startswith('v4.') and 'X' not in x], reverse=True)
-    except Exception as fw_err:
-        DOTNET_FRAMEWORK_DIRS = []
-        mlogger.debug('Dotnet Frawework is not installed. | %s', fw_err)
+try:
+    # get sorted list of installed frawework paths
+    DOTNET_FRAMEWORK_DIRS = sorted(
+        [x for x in os.listdir(DOTNET_DIR)
+            if x.startswith('v4.') and 'X' not in x], reverse=True)
+except Exception as fw_err:
+    DOTNET_FRAMEWORK_DIRS = []
+    mlogger.debug('Dotnet Frawework is not installed. | %s', fw_err)
 
-    try:
-        # get sorted list of installed frawework paths
-        DOTNET64_FRAMEWORK_DIRS = sorted(
-            [x for x in os.listdir(DOTNET64_DIR)
-             if x.startswith('v4.') and 'X' not in x], reverse=True)
-    except Exception as fw_err:
-        DOTNET64_FRAMEWORK_DIRS = []
-        mlogger.debug('Dotnet64 Frawework is not installed. | %s', fw_err)
+try:
+    # get sorted list of installed frawework paths
+    DOTNET64_FRAMEWORK_DIRS = sorted(
+        [x for x in os.listdir(DOTNET64_DIR)
+            if x.startswith('v4.') and 'X' not in x], reverse=True)
+except Exception as fw_err:
+    DOTNET64_FRAMEWORK_DIRS = []
+    mlogger.debug('Dotnet64 Frawework is not installed. | %s', fw_err)
 
-    try:
-        # get sorted list of installed frawework sdk paths
-        DOTNET_TARGETPACK_DIRS = sorted(
-            [x for x in os.listdir(DOTNET_SDK_DIR)
-             if x.startswith('v4.') and 'X' not in x], reverse=True)
-    except Exception as dotnet_sdk_err:
-        DOTNET_TARGETPACK_DIRS = []
-        mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
-else:
-    DOTNET_DIR = DOTNET64_DIR = INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = \
-        DOTNET_FRAMEWORK_DIRS = DOTNET_TARGETPACK_DIRS = None
+try:
+    # get sorted list of installed frawework sdk paths
+    DOTNET_TARGETPACK_DIRS = sorted(
+        [x for x in os.listdir(DOTNET_SDK_DIR)
+            if x.startswith('v4.') and 'X' not in x], reverse=True)
+except Exception as dotnet_sdk_err:
+    DOTNET_TARGETPACK_DIRS = []
+    mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 
 
 # base classes for pyRevit commands --------------------------------------------
@@ -88,36 +84,32 @@ CMD_AVAIL_NAME_POSTFIX = '-avail'
 SOURCE_FILE_EXT = '.cs'
 SOURCE_FILE_FILTER = r'(\.cs)'
 
-if not EXEC_PARAMS.doc_mode:
-    # get and load the active Cpython engine
-    CPYTHON_ENGINE = user_config.get_active_cpython_engine()
+# get and load the active Cpython engine
+CPYTHON_ENGINE = user_config.get_active_cpython_engine()
 
-    # create a hash for the loader assembly
-    # this hash is calculated based on:
-    # - runtime csharp files
-    # - runtime engine version
-    # - cpython engine version
-    mlogger.debug('Building on IronPython engine: %s', EXEC_PARAMS.engine_ver)
-    BASE_TYPES_DIR_HASH = \
-        coreutils.get_str_hash(
-            coreutils.calculate_dir_hash(
-                INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
-            )
-            + EXEC_PARAMS.engine_ver
-            + str(CPYTHON_ENGINE.Version) if CPYTHON_ENGINE else "0"
-            )[:HASH_CUTOFF_LENGTH]
-    RUNTIME_ASSM_FILE_ID = '{}_{}'\
-        .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
+# create a hash for the loader assembly
+# this hash is calculated based on:
+# - runtime csharp files
+# - runtime engine version
+# - cpython engine version
+mlogger.debug('Building on IronPython engine: %s', EXEC_PARAMS.engine_ver)
+BASE_TYPES_DIR_HASH = \
+    coreutils.get_str_hash(
+        coreutils.calculate_dir_hash(
+            INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER
+        )
+        + EXEC_PARAMS.engine_ver
+        + str(CPYTHON_ENGINE.Version) if CPYTHON_ENGINE else "0"
+        )[:HASH_CUTOFF_LENGTH]
+RUNTIME_ASSM_FILE_ID = '{}_{}'\
+    .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
 
-    RUNTIME_ASSM_FILE = \
-        op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(HOST_APP.version))
+RUNTIME_ASSM_FILE = \
+    op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(HOST_APP.version))
 
-    # taking the name of the generated data file and use it as assembly name
-    RUNTIME_ASSM_NAME = op.splitext(op.basename(RUNTIME_ASSM_FILE))[0]
-    mlogger.debug('Interface types assembly file is: %s', RUNTIME_ASSM_NAME)
-else:
-    BASE_TYPES_DIR_HASH = RUNTIME_ASSM_FILE_ID = None
-    RUNTIME_ASSM_FILE = RUNTIME_ASSM_NAME = None
+# taking the name of the generated data file and use it as assembly name
+RUNTIME_ASSM_NAME = op.splitext(op.basename(RUNTIME_ASSM_FILE))[0]
+mlogger.debug('Interface types assembly file is: %s', RUNTIME_ASSM_NAME)
 
 
 def _get_source_files_in(source_files_path):
@@ -450,33 +442,28 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     return type_builder.CreateType()
 
 
-if not EXEC_PARAMS.doc_mode:
-    # compile or load the base types assembly
-    # see it the assembly is already loaded
-    RUNTIME_ASSM = None
-    assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME)
-    if assm_list:
-        RUNTIME_ASSM = assm_list[0]
-    else:
-        # else, let's generate the assembly and load it
-        RUNTIME_ASSM = _get_runtime_asm()
-
-    if RUNTIME_ASSM is None:
-        raise Exception("Error dynamically compiling pyRevit runtime")
-
-    CMD_EXECUTOR_TYPE = \
-        assmutils.find_type_by_name(RUNTIME_ASSM, CMD_EXECUTOR_TYPE_NAME)
-
-    CMD_AVAIL_TYPE_EXTENDED = \
-            assmutils.find_type_by_name(RUNTIME_ASSM,
-                                        CMD_AVAIL_TYPE_NAME_EXTENDED)
-    CMD_AVAIL_TYPE_SELECTION = \
-            assmutils.find_type_by_name(RUNTIME_ASSM,
-                                        CMD_AVAIL_TYPE_NAME_SELECTION)
-    CMD_AVAIL_TYPE_ZERODOC = \
-        assmutils.find_type_by_name(RUNTIME_ASSM,
-                                    CMD_AVAIL_TYPE_NAME_ZERODOC)
+# compile or load the base types assembly
+# see it the assembly is already loaded
+RUNTIME_ASSM = None
+assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME)
+if assm_list:
+    RUNTIME_ASSM = assm_list[0]
 else:
-    RUNTIME_ASSM = CMD_EXECUTOR_TYPE = None
-    CMD_AVAIL_TYPE_ZERODOC = \
-        CMD_AVAIL_TYPE_EXTENDED = CMD_AVAIL_TYPE_SELECTION = None
+    # else, let's generate the assembly and load it
+    RUNTIME_ASSM = _get_runtime_asm()
+
+if RUNTIME_ASSM is None:
+    raise Exception("Error dynamically compiling pyRevit runtime")
+
+CMD_EXECUTOR_TYPE = \
+    assmutils.find_type_by_name(RUNTIME_ASSM, CMD_EXECUTOR_TYPE_NAME)
+
+CMD_AVAIL_TYPE_EXTENDED = \
+        assmutils.find_type_by_name(RUNTIME_ASSM,
+                                    CMD_AVAIL_TYPE_NAME_EXTENDED)
+CMD_AVAIL_TYPE_SELECTION = \
+        assmutils.find_type_by_name(RUNTIME_ASSM,
+                                    CMD_AVAIL_TYPE_NAME_SELECTION)
+CMD_AVAIL_TYPE_ZERODOC = \
+    assmutils.find_type_by_name(RUNTIME_ASSM,
+                                CMD_AVAIL_TYPE_NAME_ZERODOC)

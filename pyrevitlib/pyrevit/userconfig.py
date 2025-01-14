@@ -800,71 +800,70 @@ LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''
 user_config = None
 
 # location for default pyRevit config files
-if not EXEC_PARAMS.doc_mode:
-    LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
-    ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
-    USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
+LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
+ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
+USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
 
-    # decide which config file to use
-    # check if a config file is inside the repo. for developers config override
-    if LOCAL_CONFIG_FILE:
-        CONFIG_TYPE = 'Local'
-        CONFIG_FILE = LOCAL_CONFIG_FILE
+# decide which config file to use
+# check if a config file is inside the repo. for developers config override
+if LOCAL_CONFIG_FILE:
+    CONFIG_TYPE = 'Local'
+    CONFIG_FILE = LOCAL_CONFIG_FILE
 
-    # check to see if there is any config file provided by admin
-    elif ADMIN_CONFIG_FILE \
-            and os.access(ADMIN_CONFIG_FILE, os.W_OK) \
-            and not USER_CONFIG_FILE:
-        # if yes, copy that and use as default
-        # if admin config file is writable it means it is provided
-        # to bootstrap the first pyRevit run
-        try:
-            CONFIG_TYPE = 'Seed'
-            # make a local copy if one does not exist
-            PyRevit.PyRevitConfigs.SetupConfig(ADMIN_CONFIG_FILE)
-            CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
-        except Exception as adminEx:
-            # if init operation failed, make a new config file
-            CONFIG_TYPE = 'New'
-            # setup config file name and path
-            CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
-                                                          file_ext='ini')
-            mlogger.warning(
-                'Failed to initialize config from seed file at %s\n'
-                'Using default config file',
-                ADMIN_CONFIG_FILE
-            )
-
-    # unless it's locked. then read that config file and set admin-mode
-    elif ADMIN_CONFIG_FILE \
-            and not os.access(ADMIN_CONFIG_FILE, os.W_OK):
-        CONFIG_TYPE = 'Admin'
-        CONFIG_FILE = ADMIN_CONFIG_FILE
-
-    # if a config file is available for user use that
-    elif USER_CONFIG_FILE:
-        CONFIG_TYPE = 'User'
-        CONFIG_FILE = USER_CONFIG_FILE
-
-    # if nothing can be found, make a new one
-    else:
+# check to see if there is any config file provided by admin
+elif ADMIN_CONFIG_FILE \
+        and os.access(ADMIN_CONFIG_FILE, os.W_OK) \
+        and not USER_CONFIG_FILE:
+    # if yes, copy that and use as default
+    # if admin config file is writable it means it is provided
+    # to bootstrap the first pyRevit run
+    try:
+        CONFIG_TYPE = 'Seed'
+        # make a local copy if one does not exist
+        PyRevit.PyRevitConfigs.SetupConfig(ADMIN_CONFIG_FILE)
+        CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
+    except Exception as adminEx:
+        # if init operation failed, make a new config file
         CONFIG_TYPE = 'New'
         # setup config file name and path
         CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
-                                                      file_ext='ini')
+                                                        file_ext='ini')
+        mlogger.warning(
+            'Failed to initialize config from seed file at %s\n'
+            'Using default config file',
+            ADMIN_CONFIG_FILE
+        )
 
-    mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
+# unless it's locked. then read that config file and set admin-mode
+elif ADMIN_CONFIG_FILE \
+        and not os.access(ADMIN_CONFIG_FILE, os.W_OK):
+    CONFIG_TYPE = 'Admin'
+    CONFIG_FILE = ADMIN_CONFIG_FILE
 
-    # read config, or setup default config file if not available
-    # this pushes reading settings at first import of this module.
-    try:
-        verify_configs(CONFIG_FILE)
-        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
-                                    config_type=CONFIG_TYPE)
-        upgrade.upgrade_user_config(user_config)
-        user_config.save_changes()
-    except Exception as cfg_err:
-        mlogger.debug('Can not read confing file at: %s | %s',
-                      CONFIG_FILE, cfg_err)
-        mlogger.debug('Using configs in memory...')
-        user_config = verify_configs()
+# if a config file is available for user use that
+elif USER_CONFIG_FILE:
+    CONFIG_TYPE = 'User'
+    CONFIG_FILE = USER_CONFIG_FILE
+
+# if nothing can be found, make a new one
+else:
+    CONFIG_TYPE = 'New'
+    # setup config file name and path
+    CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
+                                                    file_ext='ini')
+
+mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
+
+# read config, or setup default config file if not available
+# this pushes reading settings at first import of this module.
+try:
+    verify_configs(CONFIG_FILE)
+    user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
+                                config_type=CONFIG_TYPE)
+    upgrade.upgrade_user_config(user_config)
+    user_config.save_changes()
+except Exception as cfg_err:
+    mlogger.debug('Can not read confing file at: %s | %s',
+                    CONFIG_FILE, cfg_err)
+    mlogger.debug('Using configs in memory...')
+    user_config = verify_configs()
