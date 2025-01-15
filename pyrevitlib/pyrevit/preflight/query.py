@@ -5,24 +5,8 @@
 from System.Collections.Generic import HashSet
 from pyrevit import DB, script, forms
 from pyrevit.revit.db.query import get_name
+from pyrevit.revit.db import ProjectInfo
 from pyrevit.framework import get_type
-
-
-def doc_name(document):
-    """
-    Return the full name of the given document.
-
-    Args:
-        document (Document): A Revit document.
-
-    Returns:
-        str: The full name of the given document.
-    """
-    if not hasattr(document, "PathName"):
-        return ":warning: Unloaded Link"
-    else:
-        name = document.PathName
-        return name
 
 
 def clean_name(document):
@@ -37,7 +21,7 @@ def clean_name(document):
         str: The name of the given document without the file path or file
         extension.
     """
-    document_name = doc_name(document)
+    document_name = ProjectInfo(document).path
     # If the document hasn't been saved, then print "File Not Saved"
     if len(document_name) == 0:
         printed_name = "File Not Saved"
@@ -51,40 +35,6 @@ def clean_name(document):
     else:
         printed_name = document_name.split("\\")[-1]
     return printed_name
-
-
-def project_informations(document):
-    """
-    Returns the project name, number and client
-
-    Args:
-        document (Document): A Revit document.
-
-    Returns:
-        tuple: The project name, number and client.
-    """
-    if not document:
-        return "-", "-", "-"
-    project_info_collector = document.ProjectInformation
-    project_number = project_info_collector.Number
-    project_name = project_info_collector.Name
-    project_client = project_info_collector.ClientName
-    return project_name, project_number, project_client
-
-
-def phases(document):
-    """
-    Returns a comma-separated list of the names of the phases in a project.
-
-    Args:
-        document (Document): A Revit document.
-
-    Returns:
-        str: A comma-separated list of the names of the phases in a project.
-    """
-    if not hasattr(document, "Phases"):
-        return "-"
-    return ", ".join(phase.Name for phase in document.Phases)
 
 
 def worksets(document):

@@ -12,12 +12,12 @@ from pyrevit.coreutils import Timer
 from pyrevit import HOST_APP, DOCS
 from pyrevit.script import get_config
 from pyrevit.forms import alert, show_balloon
+from pyrevit.output.cards import card_builder, create_frame
+from pyrevit.revit.db import ProjectInfo
+from pyrevit.revit.db.query import get_phases_names
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.preflight.query import (
-    doc_name,
     clean_name,
-    project_informations,
-    phases,
     worksets,
     warnings,
     critical_warnings,
@@ -54,8 +54,6 @@ from pyrevit.preflight.query import (
     count_dimension_overrides,
     revisions_clouds,
     get_purgeable_count,
-    card_builder,
-    create_frame,
 )
 
 
@@ -153,8 +151,9 @@ def check_model(doc, output):
     try:
         if doc.IsFamilyDocument:
             alert("This tool is for project files only. Exiting...", exitscript=True)
-        project_name, project_number, project_client = project_informations(doc)
-        project_phases = phases(doc)
+        project_info = ProjectInfo(doc)
+        project_name, project_number, project_client = project_info.name, project_info.number, project_info.client_name
+        project_phases = get_phases_names(doc)
         worksets_names = worksets(doc)
         doc_clean_name = clean_name(doc)
         element_count = elements_count(doc)
@@ -257,15 +256,18 @@ def check_model(doc, output):
             link_data = []
             pinned = rvt_links_unpinned_str(rvtlinks_elements_items)
             for idx, link_doc in enumerate(rvtlinks_documents):
-                project_name, project_number, project_client = project_informations(
-                    link_doc
+                project_info_link = ProjectInfo(link_doc)
+                project_name, project_number, project_client = (
+                    project_info_link.name,
+                    project_info_link.number,
+                    project_info_link.client_name,
                 )
                 link_data.append(
                     [
                         project_name,
                         project_number,
                         project_client,
-                        phases(link_doc),
+                        get_phases_names(link_doc),
                         worksets(link_doc),
                         links_names[idx],
                         links_instances_names[idx],
@@ -463,13 +465,12 @@ def check_model(doc, output):
 def generate_rvt_links_report(output, rvtlinks_docs, body_css):
     output.print_md("# RVTLinks")
     for rvtlink in rvtlinks_docs:
-        link_name = doc_name(rvtlink)
         link_printed_name = clean_name(rvtlink)
         output.print_md("## " + link_printed_name)
         output.print_md("___")
         if rvtlink is None:
             continue
-        output.print_md(link_name)
+        output.print_md(link_printed_name)
         element_count = elements_count(rvtlink)
         purgeable_elements_count = get_purgeable_count(rvtlink)
         all_warnings_count, _, warnings_guid = warnings(rvtlink)

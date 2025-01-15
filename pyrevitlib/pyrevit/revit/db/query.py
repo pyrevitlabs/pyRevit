@@ -514,6 +514,21 @@ def get_project_info(doc=None):
     return db.ProjectInfo(doc or DOCS.doc)
 
 
+def get_phases_names(doc=None):
+    """
+    Returns a comma-separated list of the names of the phases in a project.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        str: A comma-separated list of the names of the phases in a project.
+    """
+    if not hasattr(doc, "Phases"):
+        return "-"
+    return ", ".join(phase.Name for phase in doc.Phases)
+
+
 def get_revisions(doc=None):
     return list(DB.FilteredElementCollector(doc or DOCS.doc)
                 .OfCategory(DB.BuiltInCategory.OST_Revisions)
