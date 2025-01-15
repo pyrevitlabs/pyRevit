@@ -96,10 +96,8 @@ def get_name(element, title_on_sheet=False):
 def get_type(element):
     """Get element type.
 
-
     Args:
         element (DB.Element): source element
-
 
     Returns:
         (DB.ElementType): type object of given element
@@ -1038,6 +1036,35 @@ def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     return sheets
 
 
+def get_document_clean_name(doc=None):
+    """
+    Return the name of the given document without the file path or file
+    extension.
+
+    Args:
+        doc (DB.Document, optional): The Revit document to retrieve links from. If None, the default document
+            (DOCS.doc) is used. Defaults to None.
+
+    Returns:
+        str: The name of the given document without the file path or file
+        extension.
+    """
+    document_name = db.ProjectInfo(doc or DOCS.doc).path
+    # If the document hasn't been saved, then print "File Not Saved"
+    if len(document_name) == 0:
+        printed_name = "File Not Saved"
+    # If the document is a BIM 360 document, then print the file name without
+    # the file extension
+    elif document_name.startswith("BIM 360://"):
+        printed_name = document_name.split("/")[-1]
+        printed_name = printed_name.split(".")[0]
+    # If the document is a local document, then print the file name without
+    # the file path or file extension
+    else:
+        printed_name = document_name.split("\\")[-1]
+    return printed_name
+
+
 def get_links(linktype=None, doc=None):
     """
     Retrieves external file references (links) from a Revit document.
@@ -1121,6 +1148,53 @@ def get_linked_model_doc(linked_model):
         for open_doc in DOCS.docs:
             if open_doc.Title == lmodel.name:
                 return open_doc
+
+
+def get_linked_model_types(doc=None, rvt_links_instances=None):
+    """
+    Retrieves the types of linked Revit models.
+    Args:
+        doc (Document): The Revit document. Defaults to None.
+        rvt_links_instances (list): A list of Revit link instances.
+    Returns:
+        list: A list of linked model types.
+    """
+    return [doc.GetElement(rvtlink.GetTypeId()) for rvtlink in rvt_links_instances]
+
+
+def get_linked_model_instances(doc=None):
+    """
+    Returns a list of all rvt_links instances in a document
+
+    Args:
+        doc (Document): A Revit document.
+
+    Returns:
+        list: A list of Revit link instances.
+    """
+    return (
+        DB.FilteredElementCollector(doc or DOCS.doc)
+        .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
+        .WhereElementIsNotElementType()
+    )
+
+
+def get_rvt_links_names(revitlinks_elements):
+    """
+    Returns two lists of all the Revit links names in the document.
+
+    Args:
+        revitlinks_elements (list): A list of Revit link elements.
+
+    Returns:
+        tuple: Two lists of Revit document names and Revit link instances names.
+    """
+    rvt_links_docs_name, rvt_links_instances_name = [], []
+    for rvtlinks_element in revitlinks_elements:
+        revit_link_name_parts = get_name(rvtlinks_element).split(" : ")
+        rvt_links_docs_name.append(revit_link_name_parts[0].split(".rvt")[0])
+        rvt_links_instances_name.append(revit_link_name_parts[1])
+    return rvt_links_docs_name, rvt_links_instances_name
 
 
 def find_first_legend(doc=None):
@@ -1414,6 +1488,24 @@ def get_schedules_on_sheet(viewsheet, doc=None):
         if x.OwnerViewId == viewsheet.Id
         and not doc.GetElement(x.ScheduleId).IsTitleblockRevisionSchedule
     ]
+
+
+def get_schedules_instances(doc=None):
+    """
+    Retrieves all schedule instances placed on sheets.
+    
+    Args:
+        doc (Document, optional): The Revit document to search within. If not provided, 
+                                  the default document (DOCS.doc) will be used.
+    
+    Returns:
+        List[ScheduleSheetInstance]: A list of ScheduleSheetInstance elements.
+    """
+    return (
+        DB.FilteredElementCollector(doc or DOCS.doc)
+        .OfClass(DB.ScheduleSheetInstance)
+        .ToElements()
+    )
 
 
 def is_sheet_empty(viewsheet):
@@ -3076,3 +3168,4 @@ def get_geometry(element, include_invisible=False, compute_references=False):
         get_elementid_value = get_elementid_value_func()
         mlogger.debug("element %s has no geometry", get_elementid_value(element.Id))
         return
+    

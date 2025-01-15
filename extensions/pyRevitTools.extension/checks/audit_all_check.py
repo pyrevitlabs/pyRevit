@@ -10,6 +10,7 @@ from os.path import isfile
 from datetime import datetime, timedelta
 from pyrevit.coreutils import Timer
 from pyrevit import HOST_APP, DOCS
+from pyrevit import DB
 from pyrevit.script import get_config
 from pyrevit.forms import alert, show_balloon
 from pyrevit.output.cards import card_builder, create_frame
@@ -19,43 +20,44 @@ from pyrevit.revit.db.query import (
     get_worksets_names,
     get_warnings_info,
     get_critical_warnings_number,
+    get_document_clean_name,
+    get_sheets,
+    get_all_views,
+    get_all_view_templates,
+    get_elements_by_categories,
+    get_families,
+    get_elements_by_class,
+    get_rvt_links_names,
+    get_all_linkeddocs,
+    get_linked_model_types,
+    get_linked_model_instances,
 )
 from pyrevit.preflight import PreflightTestCase
-from pyrevit.preflight.query import (
-    clean_name,
-    rvtlinks_elements,
-    rvt_links_name,
-    rvt_links_unpinned_count,
-    rvt_links_unpinned_str,
-    analytical_model_activated_count,
-    rooms,
-    sheets,
-    views_not_sheeted,
-    views_bucket,
-    schedules_count,
-    copied_views,
-    view_templates,
-    unused_view_templates,
-    filters,
-    materials,
-    line_patterns,
-    dwgs,
-    families,
-    subcategories_imports,
-    generic_models,
-    details_components,
-    text_notes_types,
-    text_notes_instances,
-    detail_groups,
-    groups,
-    reference_planes,
-    elements_count,
-    detail_lines,
+from pyrevit.revit.db.count import (
+    count_unpinned_revit_links,
+    count_rooms,
+    count_unplaced_views,
+    count_analytical_model_activated, 
+    count_schedules,
+    count_copied_views,
+    count_unused_view_templates,
+    count_filters,
+    count_dwg_files,
+    count_families_by_type,
+    count_import_subcategories,
+    count_detail_components,
+    count_textnote_types,
+    count_text_notes,
+    count_detail_groups,
+    count_model_groups,
+    count_reference_planes,
+    count_elements,
+    count_detail_lines,
     count_dimensions,
     count_dimension_types,
     count_dimension_overrides,
-    revisions_clouds,
-    get_purgeable_count,
+    count_revision_clouds,
+    count_purgeable_elements,
 )
 
 
@@ -67,7 +69,7 @@ DATASET_PREFIX = ", ".join([user, date, revit_version_build])
 config = get_config()
 if config is None:
     alert(
-        "No configuration setn run the Preflight Checks clicking on the tool while maintaining ALT key to configurate. Exiting...",
+        "No configuration set, run the Preflight Checks clicking on the tool while maintaining ALT key to configurate. Exiting...",
         exitscript=True,
     )
 
@@ -132,7 +134,62 @@ COLUMNS = [
 ]
 
 
+def get_rvtlinks_elements_data(document):
+    """
+    Returns a list of all the Revit links elements in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        list: Revit link elements, the number of Revit links, Revit link status, and Revit link documents.
+    """
+    rvtlinks_instances = get_linked_model_instances(document)
+    rvtlinks_types_items = get_linked_model_types(document, rvtlinks_instances)
+    revitlinks_elements = rvtlinks_instances.ToElements()
+    rvtlinks_count = len(revitlinks_elements)
+    linked_file_statuses = [
+        rvtlinktype.GetLinkedFileStatus() for rvtlinktype in rvtlinks_types_items
+    ]
+    rvtlink_docs = get_all_linkeddocs(document)
+    return revitlinks_elements, rvtlinks_count, linked_file_statuses, rvtlink_docs
+
+
+def get_revit_link_pinning_status(revitlinks_elements):
+    """
+    Returns a list of all the Revit links unpinned status in the document.
+
+    Args:
+        revitlinks_elements (list): A list of Revit link elements.
+
+    Returns:
+        list: A list of Revit link unpinned status.
+    """
+    return [
+        (
+            "-"
+            if not hasattr(rvt_link, "Pinned")
+            else "Unpinned" if not rvt_link.Pinned else "Pinned"
+        )
+        for rvt_link in revitlinks_elements
+    ]
+
+
 def export_to_csv(doc_clean_name, data, data_str, output):
+    """
+    Exports data to a CSV file.
+    If the CSV file does not exist, it creates a new file and writes the header and the initial data.
+    If the CSV file exists, it checks if the data for the given date and document name already exists.
+    If the data does not exist, it appends the new data to the file.
+    Args:
+        doc_clean_name (str): The cleaned name of the document.
+        data (list): The data to be written to the CSV file.
+        data_str (list): The string representation of the data to be written as the header.
+        output (object): An object with a self_destruct method to be called after writing to the file.
+    Returns:
+        None
+    """
+
     if not isfile(EXPORT_FILE_PATH):
         with open(EXPORT_FILE_PATH, mode="wb") as csv_file:
             w = writer(csv_file, lineterminator="\n")
@@ -161,9 +218,9 @@ def check_model(doc, output):
         )
         project_phases = get_phases_names(doc)
         worksets_names = get_worksets_names(doc)
-        doc_clean_name = clean_name(doc)
-        element_count = elements_count(doc)
-        purgeable_elements_count = get_purgeable_count(doc)
+        doc_clean_name = get_document_clean_name(doc)
+        element_count = count_elements(doc)
+        purgeable_elements_count = count_purgeable_elements(doc)
         all_warnings_count, _, warnings_guid = get_warnings_info(doc)
         critical_warnings_count = get_critical_warnings_number(warnings_guid, CRITICAL_WARNINGS)
         if all_warnings_count > 0:
@@ -178,42 +235,44 @@ def check_model(doc, output):
                 )
             except Exception as e:
                 print(e)
-        activated_analytical_model_elements_count = analytical_model_activated_count(
+        activated_analytical_model_elements_count = count_analytical_model_activated(
             doc
         )
         doc_cached_issues = DOCS.doc
-        rooms_count, unplaced_rooms_count, unbounded_rooms = rooms(doc_cached_issues)
-        sheets_count, sheets_set = sheets(doc_cached_issues)
-        views_count, views = views_bucket(doc_cached_issues)
-        views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
-        schedule_count, schedules_not_sheeted_count = schedules_count(doc_cached_issues)
-        copied_views_count = copied_views(views)
-        view_templates_count = view_templates(doc)
-        unused_view_templates_count = unused_view_templates(views)
-        all_filters_count, unused_view_filters_count = filters(doc, views)
-        materials_count = materials(doc)
-        line_patterns_count = line_patterns(doc)
-        dwgs_count, linked_dwg_count = dwgs(doc)
-        inplace_family_count, not_parametric_families_count, family_count = families(
+        rooms_count, unplaced_rooms_count, unbounded_rooms = count_rooms(doc_cached_issues)
+        sheets_set = get_sheets(doc_cached_issues)
+        sheets_count = len(sheets_set)
+        views = get_all_views(doc_cached_issues)
+        views_count = len(views)
+        views_not_on_sheets = count_unplaced_views(sheets_set, views_count)
+        schedule_count, schedules_not_sheeted_count = count_schedules(doc_cached_issues)
+        copied_views_count = count_copied_views(views)
+        view_templates_count = len(get_all_view_templates(doc))
+        unused_view_templates_count = count_unused_view_templates(views)
+        all_filters_count, unused_view_filters_count = count_filters(doc, views)
+        materials_count = len(get_elements_by_categories(element_bicats=[DB.BuiltInCategory.OST_Materials],doc=doc))
+        line_patterns_count = len(get_elements_by_class(DB.LinePatternElement, doc=doc))
+        dwgs_count, linked_dwg_count = count_dwg_files(doc)
+        inplace_family_count, not_parametric_families_count, family_count = count_families_by_type(
             doc
         )
-        imports_subcats_count = subcategories_imports(doc)
-        generic_models_types_count = generic_models(doc)
-        detail_components_count = details_components(doc)
+        imports_subcats_count = count_import_subcategories(doc)
+        generic_models_types_count = len(get_families(doc))
+        detail_components_count = count_detail_components(doc)
         text_notes_types_count, text_notes_types_wf_count, text_bg_count = (
-            text_notes_types(doc)
+            count_textnote_types(doc)
         )
-        text_notes_count, text_notes_caps_count = text_notes_instances(doc)
-        detail_groups_count, detail_groups_types_count = detail_groups(doc)
-        model_group_count, model_group_type_count = groups(doc)
-        reference_planes_count, unnamed_ref_planes_count = reference_planes(doc)
-        detail_lines_count = detail_lines(doc)
+        text_notes_count, text_notes_caps_count = count_text_notes(doc)
+        detail_groups_count, detail_groups_types_count = count_detail_groups(doc)
+        model_group_count, model_group_type_count = count_model_groups(doc)
+        reference_planes_count, unnamed_ref_planes_count = count_reference_planes(doc)
+        detail_lines_count = count_detail_lines(doc)
         dim_types_count, dim_count, dim_overrides_count = (
             count_dimension_types(doc),
             count_dimensions(doc),
             count_dimension_overrides(doc),
         )
-        revision_clouds_count = revisions_clouds(doc)
+        revision_clouds_count = count_revision_clouds(doc)
 
         # output section
         output.close_others()
@@ -255,12 +314,12 @@ def check_model(doc, output):
         links_cards = ""
         # Links
         rvtlinks_elements_items, rvtlinks_count, rvtlinks_type_load_status, rvtlinks_documents = (
-            rvtlinks_elements(doc)
+            get_rvtlinks_elements_data(doc)
         )
-        links_names, links_instances_names = rvt_links_name(rvtlinks_elements_items)
+        links_names, links_instances_names = get_rvt_links_names(rvtlinks_elements_items)
         if rvtlinks_elements_items:
             link_data = []
-            pinned = rvt_links_unpinned_str(rvtlinks_elements_items)
+            pinned = get_revit_link_pinning_status(rvtlinks_elements_items)
             for idx, link_doc in enumerate(rvtlinks_documents):
                 project_info_link = ProjectInfo(link_doc)
                 project_name, project_number, project_client = (
@@ -294,7 +353,7 @@ def check_model(doc, output):
             ]
             output.print_md("# Linked Files Infos")
             output.print_table(link_data, columns=columns_headers)
-            rvtlinks_unpinned = rvt_links_unpinned_count(rvtlinks_elements_items)
+            rvtlinks_unpinned = count_unpinned_revit_links(rvtlinks_elements_items)
             links_cards = card_builder(50, rvtlinks_count, " Links") + card_builder(
                 0, rvtlinks_unpinned, " Links not pinned"
             )
@@ -471,55 +530,57 @@ def check_model(doc, output):
 def generate_rvt_links_report(output, rvtlinks_docs, body_css):
     output.print_md("# RVTLinks")
     for rvtlink in rvtlinks_docs:
-        link_printed_name = clean_name(rvtlink)
+        link_printed_name = get_document_clean_name(rvtlink)
         output.print_md("## " + link_printed_name)
         output.print_md("___")
         if rvtlink is None:
             continue
         output.print_md(link_printed_name)
-        element_count = elements_count(rvtlink)
-        purgeable_elements_count = get_purgeable_count(rvtlink)
+        element_count = count_elements(rvtlink)
+        purgeable_elements_count = count_purgeable_elements(rvtlink)
         all_warnings_count, _, warnings_guid = get_warnings_info(rvtlink)
         critical_warnings_count = get_critical_warnings_number(warnings_guid, CRITICAL_WARNINGS)
         rvtlinks_elements_items, rvtlinks_count, rvtlinks_type_load_status, rvtlinks_documents = (
-            rvtlinks_elements(rvtlink)
+            get_rvtlinks_elements_data(rvtlink)
         )
-        rvtlinks_unpinned = rvt_links_unpinned_count(rvtlinks_elements_items)
-        activated_analytical_model_elements_count = analytical_model_activated_count(
+        rvtlinks_unpinned = count_unpinned_revit_links(rvtlinks_elements_items)
+        activated_analytical_model_elements_count = count_analytical_model_activated(
             rvtlink
         )
-        rooms_count, unplaced_rooms_count, unbounded_rooms = rooms(rvtlink)
-        sheets_count, sheets_set = sheets(rvtlink)
-        views_count, views = views_bucket(rvtlink)
-        views_not_on_sheets = views_not_sheeted(sheets_set, views_count)
-        schedule_count, schedules_not_sheeted_count = schedules_count(rvtlink)
-        copied_views_count = copied_views(views)
-        view_templates_count = view_templates(rvtlink)
-        unused_view_templates_count = unused_view_templates(views)
-        all_filters_count, unused_view_filters_count = filters(rvtlink, views)
-        materials_count = materials(rvtlink)
-        line_patterns_count = line_patterns(rvtlink)
-        dwgs_count, linked_dwg_count = dwgs(rvtlink)
-        inplace_family_count, not_parametric_families_count, family_count = families(
+        rooms_count, unplaced_rooms_count, unbounded_rooms = count_rooms(rvtlink)
+        sheets_set = get_sheets(rvtlink)
+        sheets_count = len(sheets_set)
+        views = get_all_views(rvtlink)
+        views_count = len(views)
+        views_not_on_sheets = count_unplaced_views(sheets_set, views_count)
+        schedule_count, schedules_not_sheeted_count = count_schedules(rvtlink)
+        copied_views_count = count_copied_views(views)
+        view_templates_count = len(get_all_view_templates(rvtlink))
+        unused_view_templates_count = count_unused_view_templates(views)
+        all_filters_count, unused_view_filters_count = count_filters(rvtlink, views)
+        materials_count = len(get_elements_by_categories(element_bicats=[DB.BuiltInCategory.OST_Materials], doc=rvtlink))
+        line_patterns_count = len(get_elements_by_class(DB.LinePatternElement, doc=rvtlink))
+        dwgs_count, linked_dwg_count = count_dwg_files(rvtlink)
+        inplace_family_count, not_parametric_families_count, family_count = count_families_by_type(
             rvtlink
         )
-        imports_subcats_count = subcategories_imports(rvtlink)
-        generic_models_types_count = generic_models(rvtlink)
-        detail_components_count = details_components(rvtlink)
+        imports_subcats_count = count_import_subcategories(rvtlink)
+        generic_models_types_count = len(get_families(rvtlink))
+        detail_components_count = count_detail_components(rvtlink)
         text_notes_types_count, text_notes_types_wf_count, text_bg_count = (
-            text_notes_types(rvtlink)
+            count_textnote_types(rvtlink)
         )
-        text_notes_count, text_notes_caps_count = text_notes_instances(rvtlink)
-        detail_groups_count, detail_groups_types_count = detail_groups(rvtlink)
-        model_group_count, model_group_type_count = groups(rvtlink)
-        reference_planes_count, unnamed_ref_planes_count = reference_planes(rvtlink)
-        detail_lines_count = detail_lines(rvtlink)
+        text_notes_count, text_notes_caps_count = count_text_notes(rvtlink)
+        detail_groups_count, detail_groups_types_count = count_detail_groups(rvtlink)
+        model_group_count, model_group_type_count = count_model_groups(rvtlink)
+        reference_planes_count, unnamed_ref_planes_count = count_reference_planes(rvtlink)
+        detail_lines_count = count_detail_lines(rvtlink)
         dim_types_count, dim_count, dim_overrides_count = (
             count_dimension_types(rvtlink),
             count_dimensions(rvtlink),
             count_dimension_overrides(rvtlink),
         )
-        revision_clouds_count = revisions_clouds(rvtlink)
+        revision_clouds_count = count_revision_clouds(rvtlink)
         links_data = ""
         if rvtlinks_elements_items:
             links_data = card_builder(50, rvtlinks_count, " Links") + card_builder(
