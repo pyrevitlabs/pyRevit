@@ -14,13 +14,15 @@ from pyrevit.script import get_config
 from pyrevit.forms import alert, show_balloon
 from pyrevit.output.cards import card_builder, create_frame
 from pyrevit.revit.db import ProjectInfo
-from pyrevit.revit.db.query import get_phases_names
+from pyrevit.revit.db.query import (
+    get_phases_names,
+    get_worksets_names,
+    get_warnings_info,
+    get_critical_warnings_number,
+)
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.preflight.query import (
     clean_name,
-    worksets,
-    warnings,
-    critical_warnings,
     rvtlinks_elements,
     rvt_links_name,
     rvt_links_unpinned_count,
@@ -152,14 +154,18 @@ def check_model(doc, output):
         if doc.IsFamilyDocument:
             alert("This tool is for project files only. Exiting...", exitscript=True)
         project_info = ProjectInfo(doc)
-        project_name, project_number, project_client = project_info.name, project_info.number, project_info.client_name
+        project_name, project_number, project_client = (
+            project_info.name,
+            project_info.number,
+            project_info.client_name,
+        )
         project_phases = get_phases_names(doc)
-        worksets_names = worksets(doc)
+        worksets_names = get_worksets_names(doc)
         doc_clean_name = clean_name(doc)
         element_count = elements_count(doc)
         purgeable_elements_count = get_purgeable_count(doc)
-        all_warnings_count, _, warnings_guid = warnings(doc)
-        critical_warnings_count = critical_warnings(warnings_guid, CRITICAL_WARNINGS)
+        all_warnings_count, _, warnings_guid = get_warnings_info(doc)
+        critical_warnings_count = get_critical_warnings_number(warnings_guid, CRITICAL_WARNINGS)
         if all_warnings_count > 0:
             try:
                 show_balloon(
@@ -268,7 +274,7 @@ def check_model(doc, output):
                         project_number,
                         project_client,
                         get_phases_names(link_doc),
-                        worksets(link_doc),
+                        get_worksets_names(link_doc),
                         links_names[idx],
                         links_instances_names[idx],
                         type_status[idx],
@@ -473,8 +479,8 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         output.print_md(link_printed_name)
         element_count = elements_count(rvtlink)
         purgeable_elements_count = get_purgeable_count(rvtlink)
-        all_warnings_count, _, warnings_guid = warnings(rvtlink)
-        critical_warnings_count = critical_warnings(warnings_guid, CRITICAL_WARNINGS)
+        all_warnings_count, _, warnings_guid = get_warnings_info(rvtlink)
+        critical_warnings_count = get_critical_warnings_number(warnings_guid, CRITICAL_WARNINGS)
         rvtlinks_elements_items, rvtlinks_count, type_status, rvtlinks_documents = (
             rvtlinks_elements(rvtlink)
         )

@@ -37,66 +37,6 @@ def clean_name(document):
     return printed_name
 
 
-def worksets(document):
-    """
-    Returns a string with the names of all user worksets in a document
-
-    Args:
-        document (Document): A Revit document.
-
-    Returns:
-        str: A string with the names of all user worksets in a document.
-    """
-
-    if not hasattr(document, "IsWorkshared"):
-        return "-"
-    if not document.IsWorkshared:
-        return "Not Workshared"
-    worksets_collection = (
-        DB.FilteredWorksetCollector(document)
-        .OfKind(DB.WorksetKind.UserWorkset)
-        .ToWorksets()
-    )
-    return ", ".join(w.Name for w in worksets_collection)
-
-
-def warnings(document):
-    """
-    Returns the number of warnings in the document
-
-    Args:
-        document (Document): A Revit document.
-
-    Returns:
-        tuple (int, list, list):
-        Number of warnings for document,
-        all the warnings in the document,
-        and a list of GUIDs for all the warnings in the document.
-    """
-    all_warnings = document.GetWarnings()
-    if not all_warnings:
-        return 0, [], []
-    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in all_warnings]
-    return len(all_warnings), all_warnings, warnings_guid
-
-
-def critical_warnings(warnings_guid, critical_warnings_template):
-    """
-    Returns the number of critical warnings from a list of warnings GUIDs against a list of critical warnings GUIDs.
-
-    Parameters:
-    warnings_guid (list): A list of warning GUIDs.
-
-    Returns:
-    int: The number of critical warnings in the list.
-    """
-    return sum(
-        1
-        for warning_guid in warnings_guid
-        if str(warning_guid) in critical_warnings_template
-    )
-
-
 def rvt_links(document):
     """
     Returns a list of all rvt_links instances in a document

@@ -434,6 +434,67 @@ def model_has_workset(workset_name, partial=False, doc=None):
     return find_workset(workset_name, partial=partial, doc=doc)
 
 
+def get_worksets_names(doc=None):
+    """
+    Returns a string with the names of all user worksets in a document
+
+    Args:
+        document (Document): A Revit document. de
+
+    Returns:
+        str: A string with the names of all user worksets in a document.
+    """
+    doc = doc or DOCS.doc
+    if not hasattr(doc, "IsWorkshared"):
+        return "-"
+    if not doc.IsWorkshared:
+        return "Not Workshared"
+    worksets_collection = (
+        DB.FilteredWorksetCollector(doc)
+        .OfKind(DB.WorksetKind.UserWorkset)
+        .ToWorksets()
+    )
+    return ", ".join(w.Name for w in worksets_collection)
+
+
+def get_warnings_info(doc=None)
+    """
+    Returns the number of warnings in the document
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        tuple (int, list, list):
+        Number of warnings for document,
+        all the warnings in the document,
+        and a list of GUIDs for all the warnings in the document.
+    """
+    doc = doc or DOCS.doc
+    all_warnings = doc.GetWarnings()
+    if not all_warnings:
+        return 0, [], []
+    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in all_warnings]
+    return len(all_warnings), all_warnings, warnings_guid
+
+
+def get_critical_warnings_number(warnings_guid, critical_warnings_template):
+    """
+    Returns the number of critical warnings from a list of warnings GUIDs against a list of critical warnings GUIDs.
+
+    Parameters:
+    warnings_guid (list): A list of warning GUIDs.
+
+    Returns:
+    int: The number of critical warnings in the list.
+    """
+    return sum(
+        1
+        for warning_guid in warnings_guid
+        if str(warning_guid) in critical_warnings_template
+    )
+
+
 def get_sharedparam_definition_file():
     if HOST_APP.app.SharedParametersFilename:
         sparamf = HOST_APP.app.OpenSharedParameterFile()
