@@ -82,13 +82,13 @@ def rvtlinks_elements(document):
     rvtlinks_types_items = rvtlinks_types(document, rvtlinks_instances)
     revitlinks_elements = rvtlinks_instances.ToElements()
     rvtlinks_count = len(revitlinks_elements)
-    type_status = [
+    linked_file_statuses = [
         rvtlinktype.GetLinkedFileStatus() for rvtlinktype in rvtlinks_types_items
     ]
     rvtlink_docs = [
         rvtlinks_instance.GetLinkDocument() for rvtlinks_instance in rvtlinks_instances
     ]
-    return revitlinks_elements, rvtlinks_count, type_status, rvtlink_docs
+    return revitlinks_elements, rvtlinks_count, linked_file_statuses, rvtlink_docs
 
 
 def rvt_links_docs(document):

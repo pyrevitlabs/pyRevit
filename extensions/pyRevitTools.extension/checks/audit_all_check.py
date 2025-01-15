@@ -254,7 +254,7 @@ def check_model(doc, output):
         # Linked files infos
         links_cards = ""
         # Links
-        rvtlinks_elements_items, rvtlinks_count, type_status, rvtlinks_documents = (
+        rvtlinks_elements_items, rvtlinks_count, rvtlinks_type_load_status, rvtlinks_documents = (
             rvtlinks_elements(doc)
         )
         links_names, links_instances_names = rvt_links_name(rvtlinks_elements_items)
@@ -277,7 +277,7 @@ def check_model(doc, output):
                         get_worksets_names(link_doc),
                         links_names[idx],
                         links_instances_names[idx],
-                        type_status[idx],
+                        rvtlinks_type_load_status[idx],
                         pinned[idx],
                     ]
                 )
@@ -481,7 +481,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         purgeable_elements_count = get_purgeable_count(rvtlink)
         all_warnings_count, _, warnings_guid = get_warnings_info(rvtlink)
         critical_warnings_count = get_critical_warnings_number(warnings_guid, CRITICAL_WARNINGS)
-        rvtlinks_elements_items, rvtlinks_count, type_status, rvtlinks_documents = (
+        rvtlinks_elements_items, rvtlinks_count, rvtlinks_type_load_status, rvtlinks_documents = (
             rvtlinks_elements(rvtlink)
         )
         rvtlinks_unpinned = rvt_links_unpinned_count(rvtlinks_elements_items)
