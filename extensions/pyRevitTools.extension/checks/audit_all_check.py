@@ -37,7 +37,7 @@ from pyrevit.revit.db.count import (
     count_unpinned_revit_links,
     count_rooms,
     count_unplaced_views,
-    count_analytical_model_activated, 
+    count_analytical_model_activated,
     count_schedules,
     count_copied_views,
     count_unused_view_templates,
@@ -69,13 +69,20 @@ DATASET_PREFIX = ", ".join([user, date, revit_version_build])
 config = get_config()
 if config is None:
     alert(
-        "No configuration set, run the Preflight Checks clicking on the tool while maintaining ALT key to configurate. Exiting...",
+        "No configuration set, run the Preflight Checks clicking \
+        on the tool while maintaining ALT key to configurate. Exiting...",
         exitscript=True,
     )
 
 CURRENT_FOLDER = config.get_option("current_folder")
 CRITICAL_WARNINGS = config.get_option("critical_warnings")
 EXPORT_FILE_PATH = config.get_option("export_file_path")
+if EXPORT_FILE_PATH is None:
+    alert(
+        "No export file path set, run the Preflight Checks clicking \
+        on the tool while maintaining ALT key to configurate. Exiting...",
+        exitscript=True,
+    )
 COLUMNS = [
     "user",
     "date",
@@ -195,18 +202,35 @@ def export_to_csv(doc_clean_name, data, data_str, output):
             w = writer(csv_file, lineterminator="\n")
             w.writerow(COLUMNS)
             w.writerow(data_str)
-    else:
-        with open(EXPORT_FILE_PATH, mode="rb") as csv_file:
-            r = reader(csv_file, delimiter=",")
-            flag = any(row[1] == date and row[2] == doc_clean_name for row in r)
-        if not flag:
-            with open(EXPORT_FILE_PATH, mode="ab") as csv_file:
-                w = writer(csv_file, lineterminator="\n")
-                w.writerow(data)
-        output.self_destruct(30)
+    with open(EXPORT_FILE_PATH, mode="rb") as csv_file:
+        r = reader(csv_file, delimiter=",")
+        flag = any(row[1] == date and row[2] == doc_clean_name for row in r)
+    if not flag:
+        with open(EXPORT_FILE_PATH, mode="ab") as csv_file:
+            w = writer(csv_file, lineterminator="\n")
+            w.writerow(data)
+    output.self_destruct(30)
 
 
 def check_model(doc, output):
+    """
+    Perform a comprehensive audit of a Revit project file and generate a detailed report.
+    Parameters:
+    doc (Document): The Revit document to be audited.
+    output (Output): The output object to print and display the audit results.
+    The function performs the following tasks:
+    - Checks if the document is a project file.
+    - Gathers project information such as name, number, client, phases, and worksets.
+    - Counts various elements in the document including rooms, sheets, views, schedules, families, and more.
+    - Identifies and counts warnings, critical warnings, and purgeable elements.
+    - Generates a detailed HTML report with various sections including critical elements, rooms, sheets, views, CAD files, families, graphical 2D elements, groups, reference planes, and materials.
+    - Exports the audit data to a CSV file.
+    - Generates a report for linked Revit files if any are present.
+    - Displays a balloon notification if there are warnings in the document.
+    - Sets the output window dimensions and closes other output windows.
+    Raises:
+    Exception: If any error occurs during the audit process, it prints the stack trace and error message.
+    """
     try:
         if doc.IsFamilyDocument:
             alert("This tool is for project files only. Exiting...", exitscript=True)
@@ -530,12 +554,20 @@ def check_model(doc, output):
 def generate_rvt_links_report(output, rvtlinks_docs, body_css):
     output.print_md("# RVTLinks")
     for rvtlink in rvtlinks_docs:
-        link_printed_name = get_document_clean_name(rvtlink)
-        output.print_md("## " + link_printed_name)
+        doc_clean_name = get_document_clean_name(rvtlink)
+        output.print_md("## " + doc_clean_name)
         output.print_md("___")
         if rvtlink is None:
             continue
-        output.print_md(link_printed_name)
+        project_info = ProjectInfo(rvtlink)
+        project_name, project_number, project_client = (
+            project_info.name,
+            project_info.number,
+            project_info.client_name,
+        )
+        project_phases = get_phases_names(rvtlink)
+        worksets_names = get_worksets_names(rvtlink)
+        output.print_md(doc_clean_name)
         element_count = count_elements(rvtlink)
         purgeable_elements_count = count_purgeable_elements(rvtlink)
         all_warnings_count, _, warnings_guid = get_warnings_info(rvtlink)
@@ -673,6 +705,67 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
             )
         )
         output.print_html(html_content + "</div>")
+
+        # csv export
+        data = [
+            user,
+            date,
+            doc_clean_name,
+            revit_version_build,
+            project_name,
+            project_number,
+            project_client,
+            project_phases,
+            worksets_names,
+            element_count,
+            purgeable_elements_count,
+            all_warnings_count,
+            critical_warnings_count,
+            rvtlinks_count,
+            activated_analytical_model_elements_count,
+            rooms_count,
+            unplaced_rooms_count,
+            unbounded_rooms,
+            sheets_count,
+            views_count,
+            views_not_on_sheets,
+            schedule_count,
+            schedules_not_sheeted_count,
+            copied_views_count,
+            view_templates_count,
+            unused_view_templates_count,
+            all_filters_count,
+            unused_view_filters_count,
+            materials_count,
+            line_patterns_count,
+            dwgs_count,
+            linked_dwg_count,
+            inplace_family_count,
+            not_parametric_families_count,
+            family_count,
+            imports_subcats_count,
+            generic_models_types_count,
+            detail_components_count,
+            text_notes_types_count,
+            text_bg_count,
+            text_notes_types_wf_count,
+            text_notes_count,
+            text_notes_caps_count,
+            detail_groups_count,
+            detail_groups_types_count,
+            model_group_count,
+            model_group_type_count,
+            reference_planes_count,
+            unnamed_ref_planes_count,
+            detail_lines_count,
+            dim_types_count,
+            dim_count,
+            dim_overrides_count,
+            revision_clouds_count,
+        ]
+        data_str = [str(i) for i in data]
+
+        export_to_csv(doc_clean_name, data, data_str, output)
 
 
 class ModelChecker(PreflightTestCase):

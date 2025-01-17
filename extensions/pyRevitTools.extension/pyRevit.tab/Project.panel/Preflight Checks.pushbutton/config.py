@@ -27,11 +27,20 @@ with open(critical_warnings_filepath, "r") as f:
         critical_warnings.append(line[0])
     config.set_option(op_name="critical_warnings", value=critical_warnings)
 
-export_file_path = pick_folder(title="Where to save the data that will be collected?")
-if export_file_path is None:
+# ask if the user wants to export the data
+validation = alert(
+    "Would you like to export the data that will be collected?",
+    title="Export Data",
+    yes=True,
+    no=True,
+    ok=False,
+)
+if not validation:
+    config.set_option(op_name="export_file_path", value=None)
+    script.save_config()
     script.exit()
+export_file_path = pick_folder(title="Where to save the data that will be collected?")
 config.set_option(
     op_name="export_file_path", value=join(export_file_path, "projects_data.csv")
 )
-
 script.save_config()
