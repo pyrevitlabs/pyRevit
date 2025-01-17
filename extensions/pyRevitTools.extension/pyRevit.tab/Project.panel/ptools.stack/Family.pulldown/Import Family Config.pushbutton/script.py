@@ -159,17 +159,25 @@ def get_param_config(param_name, param_opts):
     Extract parameter configurations from given dict
     '''
     if HOST_APP.is_newer_than(2022):  # ParameterType deprecated in 2023
-        param_group = DB.ForgeTypeId(param_opts.get(
-            PARAM_SECTION_GROUP, DEFAULT_PARAM_GROUP))
-        param_famtype = None
-        param_type = DB.ForgeTypeId(
-            param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE))
-        if DB.Category.IsBuiltInCategory(DB.ForgeTypeId(param_opts.get(
-                        PARAM_SECTION_TYPE, DEFAULT_TYPE
-                        ))):
-            param_famtype = param_opts.get(PARAM_SECTION_CAT, None)
-            if param_famtype:
-                param_famtype = revit.query.get_category(param_famtype)
+        try:
+            # Try to create ForgeTypeId from the stored string
+            group_type_id = param_opts.get(PARAM_SECTION_GROUP, DEFAULT_PARAM_GROUP)
+            param_group = DB.ForgeTypeId(group_type_id)
+            
+            type_type_id = param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE)
+            param_type = DB.ForgeTypeId(type_type_id)
+            
+            param_famtype = None
+            # Check if this is a category parameter
+            if type_type_id and 'autodesk.revit.category' in type_type_id.lower():
+                param_famtype = param_opts.get(PARAM_SECTION_CAT, None)
+                if param_famtype:
+                    param_famtype = revit.query.get_category(param_famtype)
+        except Exception as ex:
+            logger.error('Error parsing ForgeTypeId: %s | Using defaults', ex)
+            param_group = DB.ForgeTypeId(DEFAULT_PARAM_GROUP)
+            param_type = DB.ForgeTypeId(DEFAULT_TYPE)
+            param_famtype = None
     else:
         # Extract parameter configurations from given dict
         param_group = coreutils.get_enum_value(
