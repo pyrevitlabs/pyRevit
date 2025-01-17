@@ -538,7 +538,7 @@ def check_model(doc, output):
             dim_overrides_count,
             revision_clouds_count,
         ]
-        data_str = [str(i) for i in data]
+        data_str = list(map(str, data))
 
         export_to_csv(doc_clean_name, data, data_str, output)
 
@@ -763,7 +763,7 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
             dim_overrides_count,
             revision_clouds_count,
         ]
-        data_str = [str(i) for i in data]
+        data_str = list(map(str, data))
 
         export_to_csv(doc_clean_name, data, data_str, output)
 
