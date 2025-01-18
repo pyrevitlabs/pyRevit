@@ -18,8 +18,8 @@ from pyrevit.revit.db import ProjectInfo
 from pyrevit.revit.db.query import (
     get_phases_names,
     get_worksets_names,
-    get_warnings_info,
-    get_critical_warnings_number,
+    get_warnings_count,
+    get_critical_warnings_count,
     get_document_clean_name,
     get_sheets,
     get_all_views,
@@ -36,21 +36,34 @@ from pyrevit.preflight import PreflightTestCase
 from pyrevit.revit.db.count import (
     count_unpinned_revit_links,
     count_rooms,
+    count_unplaced_rooms,
+    count_unbounded_rooms,
     count_unplaced_views,
     count_analytical_model_activated,
-    count_schedules,
+    count_total_schedules,
+    count_unplaced_schedules,
     count_copied_views,
     count_unused_view_templates,
     count_filters,
-    count_dwg_files,
-    count_families_by_type,
+    count_unused_filters_in_views,
+    count_total_dwg_files,
+    count_linked_dwg_files,
+    count_in_place_families,
+    count_non_parametric_families,
+    count_total_families,
     count_import_subcategories,
     count_detail_components,
-    count_textnote_types,
+    count_total_textnote_types,
+    count_textnote_types_with_changed_width_factor,
+    count_textnote_types_with_opaque_background,
     count_text_notes,
-    count_detail_groups,
-    count_model_groups,
+    count_text_notes_with_all_caps,
+    count_detail_groups_types,
+    count_detail_group_instances,
+    count_model_groups_types,
+    count_model_group_instances,
     count_reference_planes,
+    count_unnamed_reference_planes,
     count_elements,
     count_detail_lines,
     count_dimensions,
@@ -60,11 +73,6 @@ from pyrevit.revit.db.count import (
     count_purgeable_elements,
 )
 
-
-user = HOST_APP.username
-date = datetime.today().strftime("%d-%m-%Y")
-revit_version_build = HOST_APP.build
-DATASET_PREFIX = ", ".join([user, date, revit_version_build])
 
 config = get_config()
 if config is None:
@@ -83,62 +91,161 @@ if EXPORT_FILE_PATH is None:
         on the tool while maintaining ALT key to configurate. Exiting...",
         exitscript=True,
     )
-COLUMNS = [
-    "user",
-    "date",
-    "doc_clean_name",
-    "revit_version_build",
-    "project_name",
-    "project_number",
-    "project_client",
-    "project_phases",
-    "worksets_names",
-    "element_count",
-    "purgeable_elements_count",
-    "all_warnings_count",
-    "critical_warnings_count",
-    "rvtlinks_count",
-    "activated_analytical_model_elements_count",
-    "rooms_count",
-    "unplaced_rooms_count",
-    "unbounded_rooms",
-    "sheets_count",
-    "views_count",
-    "views_not_on_sheets",
-    "schedules",
-    "schedules_not_sheeted_count",
-    "copied_views_count",
-    "view_templates_count",
-    "unused_view_templates_count",
-    "all_filters_count",
-    "unused_view_filters_count",
-    "materials_count",
-    "line_patterns_count",
-    "dwgs_count",
-    "linked_dwg_count",
-    "inplace_family_count",
-    "not_parametric_families_count",
-    "family_count",
-    "imports_subcats_count",
-    "generic_models_types_count",
-    "detail_components_count",
-    "text_notes_types_count",
-    "text_bg_count",
-    "text_notes_types_wf_count",
-    "text_notes_count",
-    "text_notes_caps_count",
-    "detail_groups_count",
-    "detail_groups_types_count",
-    "model_group_count",
-    "model_group_type_count",
-    "reference_planes_count",
-    "unnamed_ref_planes_count",
-    "detail_lines_count",
-    "dim_types_count",
-    "dim_count",
-    "dim_overrides_count",
-    "revision_clouds_count",
-]
+
+
+class ReportData:
+    
+    COLUMNS = [
+        "user",
+        "date",
+        "doc_clean_name",
+        "revit_version_build",
+        "project_name",
+        "project_number",
+        "project_client",
+        "project_phases",
+        "worksets_names",
+        "element_count",
+        "purgeable_elements_count",
+        "all_warnings_count",
+        "critical_warnings_count",
+        "rvtlinks_count",
+        "activated_analytical_model_elements_count",
+        "rooms_count",
+        "unplaced_rooms_count",
+        "unbounded_rooms",
+        "sheets_count",
+        "views_count",
+        "views_not_on_sheets",
+        "schedules",
+        "schedules_not_sheeted_count",
+        "copied_views_count",
+        "view_templates_count",
+        "unused_view_templates_count",
+        "all_filters_count",
+        "unused_view_filters_count",
+        "materials_count",
+        "line_patterns_count",
+        "dwgs_count",
+        "linked_dwg_count",
+        "inplace_family_count",
+        "not_parametric_families_count",
+        "family_count",
+        "imports_subcats_count",
+        "generic_models_types_count",
+        "detail_components_count",
+        "text_notes_types_count",
+        "text_bg_count",
+        "text_notes_types_wf_count",
+        "text_notes_count",
+        "text_notes_caps_count",
+        "detail_groups_count",
+        "detail_groups_types_count",
+        "model_group_count",
+        "model_group_type_count",
+        "reference_planes_count",
+        "unnamed_ref_planes_count",
+        "detail_lines_count",
+        "dim_types_count",
+        "dim_count",
+        "dim_overrides_count",
+        "revision_clouds_count",
+    ]
+
+
+    def __init__(self, document=None):
+        """
+        Initialize the Class with the user, date, document name, and Revit version build.
+        """
+        self.user = HOST_APP.username
+        self.date = datetime.today().strftime("%d-%m-%Y")
+        self.doc_clean_name = get_document_clean_name(document)
+        self.revit_version_build = HOST_APP.build
+        project_info = ProjectInfo(document)
+        self.project_name=project_info.name
+        self.project_number=project_info.number
+        self.project_client=project_info.client_name
+        self.project_phases=get_phases_names(document)
+        self.worksets_names=get_worksets_names(document)
+        sheets_set = get_sheets(document)
+        views = get_all_views(document)
+        self.doc_clean_name=get_document_clean_name(document)
+        self.element_count=count_elements(document)
+        self.purgeable_elements_count=count_purgeable_elements(document)
+        self.all_warnings_count = get_warnings_count(document)
+        self.critical_warnings_count=get_critical_warnings_count(
+                document, CRITICAL_WARNINGS
+            )
+        self.activated_analytical_model_elements_count=count_analytical_model_activated(
+                document
+            )
+        self.rooms_count = count_rooms(document)
+        self.unplaced_rooms_count = count_unplaced_rooms(document)
+        self.unbounded_rooms = count_unbounded_rooms(document)
+        self.sheets_count = len(sheets_set)
+        self.views_count = len(views)
+        self.views_not_on_sheets = count_unplaced_views(sheets_set, self.views_count)
+        self.schedule_count = count_total_schedules(document)
+        self.schedules_not_sheeted_count = count_unplaced_schedules(document)
+        self.copied_views_count = count_copied_views(views)
+        self.view_templates_count = len(get_all_view_templates(document))
+        self.unused_view_templates_count = count_unused_view_templates(views)
+        self.all_filters_count = count_filters(document)
+        self.unused_view_filters_count = count_unused_filters_in_views(views)
+        self.materials_count = len(get_elements_by_categories([DB.BuiltInCategory.OST_Materials], doc=document))
+        self.line_patterns_count = len(get_elements_by_class(DB.LinePatternElement, doc=document))
+        self.dwgs_count = count_total_dwg_files(document)
+        self.linked_dwg_count = count_linked_dwg_files(document)
+        self.inplace_family_count = count_in_place_families(document)
+        self.not_parametric_families_count = count_non_parametric_families(document)
+        self.family_count = count_total_families(document)
+        self.imports_subcats_count = count_import_subcategories(document)
+        self.generic_models_types_count = len(get_families(document))
+        self.detail_components_count = count_detail_components(document)
+        self.text_notes_types_count = count_total_textnote_types(document)
+        self.text_notes_types_wf_count = count_textnote_types_with_changed_width_factor(document)
+        self.text_bg_count = count_textnote_types_with_opaque_background(document)
+        self.text_notes_count = count_text_notes(document)
+        self.text_notes_caps_count = count_text_notes_with_all_caps(document)
+        self.detail_groups_count = count_detail_groups_types(document)
+        self.detail_groups_types_count = count_detail_group_instances(document)
+        self.model_group_count = count_model_groups_types(document)
+        self.model_group_type_count = count_model_group_instances(document)
+        self.reference_planes_count = count_reference_planes(document)
+        self.unnamed_ref_planes_count = count_unnamed_reference_planes(document)
+        self.detail_lines_count = count_detail_lines(document)
+        self.dim_types_count = count_dimension_types(document)
+        self.dim_count = count_dimensions(document)
+        self.dim_overrides_count = count_dimension_overrides(document)
+        self.revision_clouds_count = count_revision_clouds(document)
+
+    def __str__(self):
+        return ','.join([str(getattr(self, col, '')) for col in self.COLUMNS])
+
+    def __repr__(self):
+        return self.__str__()
+
+    def export_to_csv(self, export_file_path=EXPORT_FILE_PATH, headers=None):
+        """
+        Export data to a CSV file. If the file does not exist, it will be created. If the file exists, the data will be appended based on the date and document name.
+        """
+        if headers is None:
+            headers = self.COLUMNS
+        if not isfile(export_file_path):
+            with open(export_file_path, mode="wb") as csv_file:
+                w = writer(csv_file, lineterminator="\n")
+                w.writerow(headers)
+                w.writerow(self.__str__())
+        else:
+            with open(export_file_path, mode="rb") as csv_file:
+                r = reader(csv_file, delimiter=",")
+                flag = any(
+                    row[1] == self.date and row[2] == self.doc_clean_name for row in r
+                )
+            if not flag:
+                with open(export_file_path, mode="ab") as csv_file:
+                    w = writer(csv_file, lineterminator="\n")
+                    w.writerow(self.__str__())
 
 
 def get_rvtlinks_elements_data(document):
@@ -182,37 +289,7 @@ def get_revit_link_pinning_status(revitlinks_elements):
     ]
 
 
-def export_to_csv(doc_clean_name, data, data_str, output):
-    """
-    Exports data to a CSV file.
-    If the CSV file does not exist, it creates a new file and writes the header and the initial data.
-    If the CSV file exists, it checks if the data for the given date and document name already exists.
-    If the data does not exist, it appends the new data to the file.
-    Args:
-        doc_clean_name (str): The cleaned name of the document.
-        data (list): The data to be written to the CSV file.
-        data_str (list): The string representation of the data to be written as the header.
-        output (object): An object with a self_destruct method to be called after writing to the file.
-    Returns:
-        None
-    """
-
-    if not isfile(EXPORT_FILE_PATH):
-        with open(EXPORT_FILE_PATH, mode="wb") as csv_file:
-            w = writer(csv_file, lineterminator="\n")
-            w.writerow(COLUMNS)
-            w.writerow(data_str)
-    with open(EXPORT_FILE_PATH, mode="rb") as csv_file:
-        r = reader(csv_file, delimiter=",")
-        flag = any(row[1] == date and row[2] == doc_clean_name for row in r)
-    if not flag:
-        with open(EXPORT_FILE_PATH, mode="ab") as csv_file:
-            w = writer(csv_file, lineterminator="\n")
-            w.writerow(data)
-    output.self_destruct(30)
-
-
-def check_model(doc, output):
+def audit_document(doc, output):
     """
     Perform a comprehensive audit of a Revit project file and generate a detailed report.
     Parameters:
@@ -234,69 +311,22 @@ def check_model(doc, output):
     try:
         if doc.IsFamilyDocument:
             alert("This tool is for project files only. Exiting...", exitscript=True)
-        project_info = ProjectInfo(doc)
-        project_name, project_number, project_client = (
-            project_info.name,
-            project_info.number,
-            project_info.client_name,
-        )
-        project_phases = get_phases_names(doc)
-        worksets_names = get_worksets_names(doc)
         doc_clean_name = get_document_clean_name(doc)
-        element_count = count_elements(doc)
-        purgeable_elements_count = count_purgeable_elements(doc)
-        all_warnings_count, _, warnings_guid = get_warnings_info(doc)
-        critical_warnings_count = get_critical_warnings_number(warnings_guid, CRITICAL_WARNINGS)
-        if all_warnings_count > 0:
+        warnings_count= get_warnings_count(doc),
+        if warnings_count > 0:
             try:
                 show_balloon(
                     header="Warnings",
                     text="The file {} contains {} warnings".format(
-                        doc_clean_name, all_warnings_count
+                        doc_clean_name, warnings_count
                     ),
                     is_favourite=True,
                     is_new=True,
                 )
             except Exception as e:
                 print(e)
-        activated_analytical_model_elements_count = count_analytical_model_activated(
-            doc
-        )
-        doc_cached_issues = DOCS.doc
-        rooms_count, unplaced_rooms_count, unbounded_rooms = count_rooms(doc_cached_issues)
-        sheets_set = get_sheets(doc_cached_issues)
-        sheets_count = len(sheets_set)
-        views = get_all_views(doc_cached_issues)
-        views_count = len(views)
-        views_not_on_sheets = count_unplaced_views(sheets_set, views_count)
-        schedule_count, schedules_not_sheeted_count = count_schedules(doc_cached_issues)
-        copied_views_count = count_copied_views(views)
-        view_templates_count = len(get_all_view_templates(doc))
-        unused_view_templates_count = count_unused_view_templates(views)
-        all_filters_count, unused_view_filters_count = count_filters(doc, views)
-        materials_count = len(get_elements_by_categories(element_bicats=[DB.BuiltInCategory.OST_Materials],doc=doc))
-        line_patterns_count = len(get_elements_by_class(DB.LinePatternElement, doc=doc))
-        dwgs_count, linked_dwg_count = count_dwg_files(doc)
-        inplace_family_count, not_parametric_families_count, family_count = count_families_by_type(
-            doc
-        )
-        imports_subcats_count = count_import_subcategories(doc)
-        generic_models_types_count = len(get_families(doc))
-        detail_components_count = count_detail_components(doc)
-        text_notes_types_count, text_notes_types_wf_count, text_bg_count = (
-            count_textnote_types(doc)
-        )
-        text_notes_count, text_notes_caps_count = count_text_notes(doc)
-        detail_groups_count, detail_groups_types_count = count_detail_groups(doc)
-        model_group_count, model_group_type_count = count_model_groups(doc)
-        reference_planes_count, unnamed_ref_planes_count = count_reference_planes(doc)
-        detail_lines_count = count_detail_lines(doc)
-        dim_types_count, dim_count, dim_overrides_count = (
-            count_dimension_types(doc),
-            count_dimensions(doc),
-            count_dimension_overrides(doc),
-        )
-        revision_clouds_count = count_revision_clouds(doc)
+        
+        current_doc_report = ReportData(doc)
 
         # output section
         output.close_others()
@@ -308,11 +338,11 @@ def check_model(doc, output):
 
         # Main file infos
         project_info = [
-            project_name,
-            project_number,
-            project_client,
-            project_phases,
-            worksets_names,
+            current_doc_report.project_name,
+            current_doc_report.project_number,
+            current_doc_report.project_client,
+            current_doc_report.project_phases,
+            current_doc_report.worksets_names,
             "N/A",
             "N/A",
             "N/A",
@@ -337,27 +367,27 @@ def check_model(doc, output):
         # Linked files infos
         links_cards = ""
         # Links
-        rvtlinks_elements_items, rvtlinks_count, rvtlinks_type_load_status, rvtlinks_documents = (
-            get_rvtlinks_elements_data(doc)
+        (
+            rvtlinks_elements_items,
+            rvtlinks_count,
+            rvtlinks_type_load_status,
+            rvtlinks_documents,
+        ) = get_rvtlinks_elements_data(doc)
+        links_names, links_instances_names = get_rvt_links_names(
+            rvtlinks_elements_items
         )
-        links_names, links_instances_names = get_rvt_links_names(rvtlinks_elements_items)
         if rvtlinks_elements_items:
             link_data = []
             pinned = get_revit_link_pinning_status(rvtlinks_elements_items)
             for idx, link_doc in enumerate(rvtlinks_documents):
-                project_info_link = ProjectInfo(link_doc)
-                project_name, project_number, project_client = (
-                    project_info_link.name,
-                    project_info_link.number,
-                    project_info_link.client_name,
-                )
+                link_document_data = ReportData(link_doc)
                 link_data.append(
                     [
-                        project_name,
-                        project_number,
-                        project_client,
-                        get_phases_names(link_doc),
-                        get_worksets_names(link_doc),
+                        link_document_data.project_name,
+                        link_document_data.project_number,
+                        link_document_data.project_client,
+                        link_document_data.project_phases,
+                        link_document_data.worksets_names,
                         links_names[idx],
                         links_instances_names[idx],
                         rvtlinks_type_load_status[idx],
@@ -386,82 +416,82 @@ def check_model(doc, output):
 
         critical_elements_frame = create_frame(
             "Critical Elements",
-            card_builder(100000, element_count, " Elements"),
-            card_builder(1000, purgeable_elements_count, " Purgeable (2024+)"),
-            card_builder(100, all_warnings_count, " Warnings"),
-            card_builder(5, critical_warnings_count, " Critical Warnings"),
+            card_builder(100000, current_doc_report.element_count, " Elements"),
+            card_builder(1000, current_doc_report.purgeable_elements_count, " Purgeable (2024+)"),
+            card_builder(100, current_doc_report.all_warnings_count, " Warnings"),
+            card_builder(5, current_doc_report.critical_warnings_count, " Critical Warnings"),
             card_builder(
-                0, activated_analytical_model_elements_count, " Analytical Model ON"
+                0, current_doc_report.activated_analytical_model_elements_count, " Analytical Model ON"
             ),
             links_cards,
         )
 
         rooms_frame = create_frame(
             "Rooms",
-            card_builder(1000, rooms_count, " Rooms"),
-            card_builder(0, unplaced_rooms_count, " Unplaced Rooms"),
-            card_builder(0, unbounded_rooms, " Unbounded Rooms"),
+            card_builder(1000, current_doc_report.rooms_count, " Rooms"),
+            card_builder(0, current_doc_report.unplaced_rooms_count, " Unplaced Rooms"),
+            card_builder(0, current_doc_report.unbounded_rooms, " Unbounded Rooms"),
         )
 
         sheets_views_graphics_frame = create_frame(
             "Sheets, Views, Graphics",
-            card_builder(500, sheets_count, " Sheets"),
-            card_builder(1500, views_count, " Views"),
-            card_builder(300, views_not_on_sheets, " Views not on Sheets"),
-            card_builder(20, schedule_count, " Schedules"),
-            card_builder(5, schedules_not_sheeted_count, " Schedules not on sheet"),
-            card_builder(0, copied_views_count, " Copied Views"),
-            card_builder(100, view_templates_count, " View Templates"),
-            card_builder(0, unused_view_templates_count, " Unused VT"),
-            card_builder(0, all_filters_count, " Filters"),
-            card_builder(0, unused_view_filters_count, " Unused Filters"),
+            card_builder(500, current_doc_report.sheets_count, " Sheets"),
+            card_builder(1500, current_doc_report.views_count, " Views"),
+            card_builder(300, current_doc_report.views_not_on_sheets, " Views not on Sheets"),
+            card_builder(20, current_doc_report.schedule_count, " Schedules"),
+            card_builder(5, current_doc_report.schedules_not_sheeted_count, " Schedules not on sheet"),
+            card_builder(0, current_doc_report.copied_views_count, " Copied Views"),
+            card_builder(100, current_doc_report.view_templates_count, " View Templates"),
+            card_builder(0, current_doc_report.unused_view_templates_count, " Unused VT"),
+            card_builder(0, current_doc_report.all_filters_count, " Filters"),
+            card_builder(0, current_doc_report.unused_view_filters_count, " Unused Filters"),
         )
 
         cad_files_frame = create_frame(
             "CAD Files",
-            card_builder(5, dwgs_count, " DWGs"),
-            card_builder(5, linked_dwg_count, " Linked DWGs"),
+            card_builder(5, current_doc_report.dwgs_count, " DWGs"),
+            card_builder(5, current_doc_report.linked_dwg_count, " Linked DWGs"),
         )
 
         families_frame = create_frame(
             "Families",
-            card_builder(500, family_count, " Families"),
-            card_builder(0, inplace_family_count, " In-Place Families"),
+            card_builder(500, current_doc_report.family_count, " Families"),
+            card_builder(0, current_doc_report.inplace_family_count, " In-Place Families"),
             card_builder(
-                100, not_parametric_families_count, " Non-Parametric Families"
+                100, current_doc_report.not_parametric_families_count, " Non-Parametric Families"
             ),
-            card_builder(0, imports_subcats_count, " Imports in Families"),
-            card_builder(50, generic_models_types_count, " Generic Models Types"),
-            card_builder(100, detail_components_count, " Detail Components"),
+            card_builder(0, current_doc_report.imports_subcats_count, " Imports in Families"),
+            card_builder(50, current_doc_report.generic_models_types_count, " Generic Models Types"),
+            card_builder(100, current_doc_report.detail_components_count, " Detail Components"),
         )
 
         graphical2d_elements_frame = create_frame(
             "Graphical 2D Elements",
-            card_builder(5000, detail_lines_count, " Detail Lines"),
-            card_builder(30, line_patterns_count, " Line Patterns"),
-            card_builder(30, text_notes_types_count, " Text Notes Types"),
-            card_builder(1, text_bg_count, " Text Notes w/ White Background"),
-            card_builder(0, text_notes_types_wf_count, " Text Notes Width Factor !=1"),
-            card_builder(2000, text_notes_count, " Text Notes"),
-            card_builder(100, text_notes_caps_count, " Text Notes allCaps"),
-            card_builder(5, dim_types_count, " Dimension Types"),
-            card_builder(5000, dim_count, " Dimensions"),
-            card_builder(0, dim_overrides_count, " Dimension Overrides"),
-            card_builder(100, revision_clouds_count, " Revision Clouds"),
+            card_builder(5000, current_doc_report.detail_lines_count, " Detail Lines"),
+            card_builder(30, current_doc_report.line_patterns_count, " Line Patterns"),
+            card_builder(30, current_doc_report.text_notes_types_count, " Text Notes Types"),
+            card_builder(1, current_doc_report.text_bg_count, " Text Notes w/ White Background"),
+            card_builder(0, current_doc_report.text_notes_types_wf_count, " Text Notes Width Factor !=1"),
+            card_builder(2000, current_doc_report.text_notes_count, " Text Notes"),
+            card_builder(100, current_doc_report.text_notes_caps_count, " Text Notes allCaps"),
+            card_builder(5, current_doc_report.dim_types_count, " Dimension Types"),
+            card_builder(5000, current_doc_report.dim_count, " Dimensions"),
+            card_builder(0, current_doc_report.dim_overrides_count, " Dimension Overrides"),
+            card_builder(100, current_doc_report.revision_clouds_count, " Revision Clouds"),
         )
 
         groups_summary_frame = create_frame(
             "Groups",
-            card_builder(10, model_group_count, " Model Groups"),
-            card_builder(5, model_group_type_count, " Model Group Types"),
-            card_builder(10, detail_groups_count, " Detail Groups"),
-            card_builder(20, detail_groups_types_count, " Detail Group Types"),
+            card_builder(10, current_doc_report.model_group_count, " Model Groups"),
+            card_builder(5, current_doc_report.model_group_type_count, " Model Group Types"),
+            card_builder(10, current_doc_report.detail_groups_count, " Detail Groups"),
+            card_builder(20, current_doc_report.detail_groups_types_count, " Detail Group Types"),
         )
 
         reference_planes_frame = create_frame(
             "Reference Planes",
-            card_builder(100, reference_planes_count, " Ref Planes"),
-            card_builder(10, unnamed_ref_planes_count, " Ref Planes no_name"),
+            card_builder(100, current_doc_report.reference_planes_count, " Ref Planes"),
+            card_builder(10, current_doc_report.unnamed_ref_planes_count, " Ref Planes no_name"),
         )
 
         html_content = (
@@ -475,72 +505,14 @@ def check_model(doc, output):
             + groups_summary_frame
             + reference_planes_frame
             + create_frame(
-                "Materials", card_builder(100, materials_count, " Materials")
+                "Materials", card_builder(100, current_doc_report.materials_count, " Materials")
             )
         )
 
         output.print_html(html_content + "</div>")
 
         # csv export
-        data = [
-            user,
-            date,
-            doc_clean_name,
-            revit_version_build,
-            project_name,
-            project_number,
-            project_client,
-            project_phases,
-            worksets_names,
-            element_count,
-            purgeable_elements_count,
-            all_warnings_count,
-            critical_warnings_count,
-            rvtlinks_count,
-            activated_analytical_model_elements_count,
-            rooms_count,
-            unplaced_rooms_count,
-            unbounded_rooms,
-            sheets_count,
-            views_count,
-            views_not_on_sheets,
-            schedule_count,
-            schedules_not_sheeted_count,
-            copied_views_count,
-            view_templates_count,
-            unused_view_templates_count,
-            all_filters_count,
-            unused_view_filters_count,
-            materials_count,
-            line_patterns_count,
-            dwgs_count,
-            linked_dwg_count,
-            inplace_family_count,
-            not_parametric_families_count,
-            family_count,
-            imports_subcats_count,
-            generic_models_types_count,
-            detail_components_count,
-            text_notes_types_count,
-            text_bg_count,
-            text_notes_types_wf_count,
-            text_notes_count,
-            text_notes_caps_count,
-            detail_groups_count,
-            detail_groups_types_count,
-            model_group_count,
-            model_group_type_count,
-            reference_planes_count,
-            unnamed_ref_planes_count,
-            detail_lines_count,
-            dim_types_count,
-            dim_count,
-            dim_overrides_count,
-            revision_clouds_count,
-        ]
-        data_str = list(map(str, data))
-
-        export_to_csv(doc_clean_name, data, data_str, output)
+        current_doc_report.export_to_csv()
 
         # RVTLinks
         if rvtlinks_elements_items:
@@ -559,60 +531,8 @@ def generate_rvt_links_report(output, rvtlinks_docs, body_css):
         output.print_md("___")
         if rvtlink is None:
             continue
-        project_info = ProjectInfo(rvtlink)
-        project_name, project_number, project_client = (
-            project_info.name,
-            project_info.number,
-            project_info.client_name,
-        )
-        project_phases = get_phases_names(rvtlink)
-        worksets_names = get_worksets_names(rvtlink)
-        output.print_md(doc_clean_name)
-        element_count = count_elements(rvtlink)
-        purgeable_elements_count = count_purgeable_elements(rvtlink)
-        all_warnings_count, _, warnings_guid = get_warnings_info(rvtlink)
-        critical_warnings_count = get_critical_warnings_number(warnings_guid, CRITICAL_WARNINGS)
-        rvtlinks_elements_items, rvtlinks_count, rvtlinks_type_load_status, rvtlinks_documents = (
-            get_rvtlinks_elements_data(rvtlink)
-        )
-        rvtlinks_unpinned = count_unpinned_revit_links(rvtlinks_elements_items)
-        activated_analytical_model_elements_count = count_analytical_model_activated(
-            rvtlink
-        )
-        rooms_count, unplaced_rooms_count, unbounded_rooms = count_rooms(rvtlink)
-        sheets_set = get_sheets(rvtlink)
-        sheets_count = len(sheets_set)
-        views = get_all_views(rvtlink)
-        views_count = len(views)
-        views_not_on_sheets = count_unplaced_views(sheets_set, views_count)
-        schedule_count, schedules_not_sheeted_count = count_schedules(rvtlink)
-        copied_views_count = count_copied_views(views)
-        view_templates_count = len(get_all_view_templates(rvtlink))
-        unused_view_templates_count = count_unused_view_templates(views)
-        all_filters_count, unused_view_filters_count = count_filters(rvtlink, views)
-        materials_count = len(get_elements_by_categories(element_bicats=[DB.BuiltInCategory.OST_Materials], doc=rvtlink))
-        line_patterns_count = len(get_elements_by_class(DB.LinePatternElement, doc=rvtlink))
-        dwgs_count, linked_dwg_count = count_dwg_files(rvtlink)
-        inplace_family_count, not_parametric_families_count, family_count = count_families_by_type(
-            rvtlink
-        )
-        imports_subcats_count = count_import_subcategories(rvtlink)
-        generic_models_types_count = len(get_families(rvtlink))
-        detail_components_count = count_detail_components(rvtlink)
-        text_notes_types_count, text_notes_types_wf_count, text_bg_count = (
-            count_textnote_types(rvtlink)
-        )
-        text_notes_count, text_notes_caps_count = count_text_notes(rvtlink)
-        detail_groups_count, detail_groups_types_count = count_detail_groups(rvtlink)
-        model_group_count, model_group_type_count = count_model_groups(rvtlink)
-        reference_planes_count, unnamed_ref_planes_count = count_reference_planes(rvtlink)
-        detail_lines_count = count_detail_lines(rvtlink)
-        dim_types_count, dim_count, dim_overrides_count = (
-            count_dimension_types(rvtlink),
-            count_dimensions(rvtlink),
-            count_dimension_overrides(rvtlink),
-        )
-        revision_clouds_count = count_revision_clouds(rvtlink)
+        link_document_data = ReportData(rvtlink)
+        output.print_md(link_document_data.doc_clean_name)
         links_data = ""
         if rvtlinks_elements_items:
             links_data = card_builder(50, rvtlinks_count, " Links") + card_builder(
@@ -826,7 +746,7 @@ class ModelChecker(PreflightTestCase):
         self.timer = Timer()
 
     def startTest(self, doc, output):
-        check_model(doc, output)
+        audit_document(doc, output)
 
     def tearDown(self, doc, output):
         endtime = self.timer.get_time()

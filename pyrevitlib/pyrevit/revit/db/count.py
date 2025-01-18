@@ -33,26 +33,47 @@ def count_unpinned_revit_links(revitlinks_elements):
 
 def count_rooms(document):
     """
-    Returns a list of all the rooms in the document.
+    Returns the number of rooms in the document.
 
     Args:
         document (Document): A Revit document.
 
     Returns:
-        list: A list of rooms, the number of rooms, and the number of unplaced rooms, and the number of unbounded rooms.
+        int: The number of rooms in the document.
     """
-    rooms = get_elements_by_categories(
-        [DB.BuiltInCategory.OST_Rooms], doc=document
-    )
-    rooms_count = len(rooms)
-    if not rooms:
-        return 0, 0, 0
-    unbounded_rooms = sum(1 for room in rooms if room.Area == 0)
-    unplaced_rooms_count = sum(1 for room in rooms if room.Location is None)
-    return rooms_count, unplaced_rooms_count, unbounded_rooms
+    rooms = get_elements_by_categories([DB.BuiltInCategory.OST_Rooms], doc=document)
+    return len(rooms)
 
 
-def count_unplaced_views(sheets_set=None, views_count=0):
+def count_unplaced_rooms(document):
+    """
+    Returns the number of unplaced rooms in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        int: The number of unplaced rooms in the document.
+    """
+    rooms = get_elements_by_categories([DB.BuiltInCategory.OST_Rooms], doc=document)
+    return sum(1 for room in rooms if room.Location is None)
+
+
+def count_unbounded_rooms(document):
+    """
+    Returns the number of unbounded rooms in the document.
+
+    Args:
+        document (Document): A Revit document.
+
+    Returns:
+        int: The number of unbounded rooms in the document.
+    """
+    rooms = get_elements_by_categories([DB.BuiltInCategory.OST_Rooms], doc=document)
+    return sum(1 for room in rooms if room.Area == 0)
+
+
+def count_unplaced_views(sheets_set=None, views_count=None):
     """
     Returns the number of views not on a sheet.
 
@@ -96,20 +117,32 @@ def count_analytical_model_activated(document):
     return DB.FilteredElementCollector(document).WherePasses(elem_param_filter).GetElementCount()
 
 
-def count_schedules(document):
+def count_total_schedules(document):
     """
-    Counts the total number of schedules in the given document and the number of schedules that are not placed on a sheet.
+    Counts the total number of schedules in the given document.
     
     Args:
         document (DB.Document): The Revit document to query for schedules.
     
     Returns:
-        tuple: A tuple containing two integers:
-            - The total number of schedules in the document.
-            - The number of schedules that are not placed on a sheet.
+        int: The total number of schedules in the document.
     """
     schedules_elements = get_all_schedules(document)
-    return len(schedules_elements), sum(
+    return len(schedules_elements)
+
+
+def count_unplaced_schedules(document):
+    """
+    Counts the number of schedules that are not placed on a sheet in the given document.
+    
+    Args:
+        document (DB.Document): The Revit document to query for schedules.
+    
+    Returns:
+        int: The number of schedules that are not placed on a sheet.
+    """
+    schedules_elements = get_all_schedules(document)
+    return sum(
         1
         for v in schedules_elements
         if v.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
@@ -160,90 +193,127 @@ def count_unused_view_templates(views_list):
     return unused_view_templates_count
 
 
-def count_filters(document, view_list):
+def count_filters(document):
     """
-    This function takes in a Revit document and a list of views, and returns the count of all parameter filters in the document
-    and the count of unused parameter filters in the views.
+    This function takes in a Revit document and returns the count of all parameter filters in the document.
 
     Args:
-    - document (DB.Document): The Revit document to search for parameter filters. Defaults to the active document.
+    - document (DB.Document): The Revit document to search for parameter filters.
+
+    Returns:
+    - int: The count of all parameter filters in the document.
+    """
+    filters_collection = get_elements_by_class(DB.ParameterFilterElement, doc=document)
+    if not filters_collection:
+        return 0
+    return len(filters_collection)
+
+
+def count_unused_filters_in_views(view_list):
+    """
+    This function takes in a list of views and returns the count of unused parameter filters in the views.
+
+    Args:
     - views (list of DB.View): The list of views to check for unused parameter filters.
 
     Returns:
-    - tuple: A tuple containing two integers:
-        - all_filters_count: The count of all parameter filters in the document.
-        - unused_view_filters_count: The count of unused parameter filters in the views.
+    - int: The count of unused parameter filters in the views.
     """
-    filters_collection = (
-        get_elements_by_class(DB.ParameterFilterElement, doc=document)
-    )
-    if not filters_collection:
-        return 0, 0
     used_filters_set = set()
     all_filters = set()
-    for flt in filters_collection:
-        all_filters.add(flt.Id.IntegerValue)
-    total_filters_count = len(all_filters)
     for v in view_list:
         if v.AreGraphicsOverridesAllowed():
             view_filters = v.GetFilters()
             for filter_id in view_filters:
                 used_filters_set.add(filter_id.IntegerValue)
-    unused_view_filters_count = 0
     unused_view_filters_count = len(all_filters - used_filters_set)
-    return total_filters_count, unused_view_filters_count
+    return unused_view_filters_count
 
 
-def count_dwg_files(document):
+def count_total_dwg_files(document):
     """
-    Returns the total number of DWG files in the document and the number of linked DWG files.
+    Returns the total number of DWG files in the document.
 
     Args:
-        document (DB.Document, optional): The Revit document to search for DWG files. Defaults to the active document.
+        document (DB.Document): The Revit document to search for DWG files.
 
     Returns:
-        tuple: A tuple containing two integers. The first integer is the total number of DWG files in the document. The second integer is the number of linked DWG files.
+        int: The total number of DWG files in the document.
     """
     dwg_collector = get_elements_by_class(DB.ImportInstance, doc=document)
     if not dwg_collector:
-        return 0, 0
-    dwg_files_count = len(dwg_collector)
+        return 0
+    return len(dwg_collector)
+
+
+def count_linked_dwg_files(document):
+    """
+    Returns the number of linked DWG files in the document.
+
+    Args:
+        document (DB.Document): The Revit document to search for linked DWG files.
+
+    Returns:
+        int: The number of linked DWG files in the document.
+    """
+    dwg_collector = get_elements_by_class(DB.ImportInstance, doc=document)
+    if not dwg_collector:
+        return 0
     dwg_imported = 0
-    dwg_not_in_current_view = 0
     for dwg in dwg_collector:
         if not dwg.IsLinked:
             dwg_imported += 1
-        if not dwg.ViewSpecific:
-            dwg_not_in_current_view += 1
-    count_of_linked_dwg_files = dwg_files_count - dwg_imported
-    return dwg_files_count, count_of_linked_dwg_files
+    return len(dwg_collector) - dwg_imported
 
 
-def count_families_by_type(document):
+def count_in_place_families(document):
     """
-    This function collects all the families in the given document and returns the count of three types of families:
-    - In-place families
-    - Non-parametric families
-    - Total families
+    This function collects all the in-place families in the given document and returns their count.
 
     Args:
-    - document: The Revit document to search for families in. Defaults to the active document.
+    - document: The Revit document to search for in-place families in.
 
     Returns:
-    - Tuple[int, int, int]: A tuple of three integers representing the count of each type of family.
+    - int: The count of in-place families.
     """
     families_collection = get_elements_by_class(DB.Family, doc=document)
     if not families_collection:
-        return 0, 0, 0
-    in_place_family_count = 0
-    not_parametric_families_count = 0
-    family_count = len(families_collection)
-    for family in families_collection:
-        if family.IsInPlace:
-            in_place_family_count += 1
-        if not family.IsParametric:
-            not_parametric_families_count += 1
-    return in_place_family_count, not_parametric_families_count, family_count
+        return 0
+    in_place_family_count = sum(1 for family in families_collection if family.IsInPlace)
+    return in_place_family_count
+
+
+def count_non_parametric_families(document):
+    """
+    This function collects all the non-parametric families in the given document and returns their count.
+
+    Args:
+    - document: The Revit document to search for non-parametric families in.
+
+    Returns:
+    - int: The count of non-parametric families.
+    """
+    families_collection = get_elements_by_class(DB.Family, doc=document)
+    if not families_collection:
+        return 0
+    not_parametric_families_count = sum(1 for family in families_collection if not family.IsParametric)
+    return not_parametric_families_count
+
+
+def count_total_families(document):
+    """
+    This function collects all the families in the given document and returns their total count.
+
+    Args:
+    - document: The Revit document to search for families in.
+
+    Returns:
+    - int: The total count of families.
+    """
+    families_collection = get_elements_by_class(DB.Family, doc=document)
+    if not families_collection:
+        return 0
+    return len(families_collection)
 
 
 def count_import_subcategories(document):
@@ -283,61 +353,103 @@ def count_detail_components(document):
     )
 
 
-def count_textnote_types(document):
+def count_total_textnote_types(document):
     """
-    Counts the total number of TextNoteType elements in the given Revit document,
-    as well as the number of TextNoteType elements with a changed width factor
-    and the number of TextNoteType elements with an opaque background.
+    Counts the total number of TextNoteType elements in the given Revit document.
     
     Args:
         document (DB.Document): The Revit document to search for TextNoteType elements.
     
     Returns:
-        tuple: A tuple containing three integers:
-            - total_text_note_types (int): The total number of TextNoteType elements.
-            - changed_width_factor (int): The number of TextNoteType elements with a width factor not equal to 1.
-            - text_opaque_background (int): The number of TextNoteType elements with an opaque background.
+        int: The total number of TextNoteType elements.
     """
     text_note_type_collector = get_types_by_class(DB.TextNoteType, doc=document)
     if not text_note_type_collector:
-        return 0, 0, 0
-    total_text_note_types = len(text_note_type_collector)
+        return 0
+    return len(text_note_type_collector)
+
+
+def count_textnote_types_with_changed_width_factor(document):
+    """
+    Counts the number of TextNoteType elements with a changed width factor in the given Revit document.
+    
+    Args:
+        document (DB.Document): The Revit document to search for TextNoteType elements.
+    
+    Returns:
+        int: The number of TextNoteType elements with a width factor not equal to 1.
+    """
+    text_note_type_collector = get_types_by_class(DB.TextNoteType, doc=document)
+    if not text_note_type_collector:
+        return 0
     changed_width_factor = 0
-    text_opaque_background = 0
     for textnote in text_note_type_collector:
         width_factor = textnote.get_Parameter(
             DB.BuiltInParameter.TEXT_WIDTH_SCALE
         ).AsDouble()
+        if width_factor != 1:
+            changed_width_factor += 1
+    return changed_width_factor
+
+
+def count_textnote_types_with_opaque_background(document):
+    """
+    Counts the number of TextNoteType elements with an opaque background in the given Revit document.
+    
+    Args:
+        document (DB.Document): The Revit document to search for TextNoteType elements.
+    
+    Returns:
+        int: The number of TextNoteType elements with an opaque background.
+    """
+    text_note_type_collector = get_types_by_class(DB.TextNoteType, doc=document)
+    if not text_note_type_collector:
+        return 0
+    text_opaque_background = 0
+    for textnote in text_note_type_collector:
         text_background = textnote.get_Parameter(
             DB.BuiltInParameter.TEXT_BACKGROUND
         ).AsInteger()
-        if width_factor != 1:
-            changed_width_factor += 1
         if text_background == 0:
             text_opaque_background += 1
-    return total_text_note_types, changed_width_factor, text_opaque_background
+    return text_opaque_background
 
 
 def count_text_notes(document):
     """
-    Returns the count of all text notes in the given document and the count of text notes that have all caps formatting.
+    Returns the count of all text notes in the given document.
 
     Args:
         document (DB.Document): The document to search for text notes. Defaults to the active document.
 
     Returns:
-        Tuple[int, int]: A tuple containing the count of all text notes and the count of text notes with all caps formatting.
+        int: The count of all text notes.
     """
     text_notes = get_elements_by_class(DB.TextNote, doc=document)
     if not text_notes:
-        return 0, 0
-    text_notes_count = len(text_notes)
+        return 0
+    return len(text_notes)
+
+
+def count_text_notes_with_all_caps(document):
+    """
+    Returns the count of text notes that have all caps formatting in the given document.
+
+    Args:
+        document (DB.Document): The document to search for text notes. Defaults to the active document.
+
+    Returns:
+        int: The count of text notes with all caps formatting.
+    """
+    text_notes = get_elements_by_class(DB.TextNote, doc=document)
+    if not text_notes:
+        return 0
     caps_count = 0
     for text_note in text_notes:
         caps_status = text_note.GetFormattedText().GetAllCapsStatus()
         if str(caps_status) != "None":
             caps_count += 1
-    return text_notes_count, caps_count
+    return caps_count
 
 
 def count_detail_groups(document):
@@ -373,7 +485,7 @@ def count_detail_groups(document):
     return detail_group_count, detail_group_type_count
 
 
-def count_model_groups(document):
+def count_model_groups_types(document):
     """
     Returns the number of model group instances and model group types in the given document.
 
@@ -408,24 +520,39 @@ def count_model_groups(document):
 
 def count_reference_planes(document):
     """
-    Returns the count of all reference planes and the count of unnamed reference planes in the given document.
+    Returns the count of all reference planes in the given document.
 
     Args:
         document (DB.Document): The document to search for reference planes. Defaults to the active document.
 
     Returns:
-        Tuple[int, int]: A tuple containing the count of all reference planes and the count of unnamed reference planes.
+        int: The count of all reference planes.
     """
     ref_planes = get_elements_by_class(DB.ReferencePlane, doc=document)
     if not ref_planes:
-        return 0, 0
-    ref_planes_count = len(ref_planes)
+        return 0
+    return len(ref_planes)
+
+
+def count_unnamed_reference_planes(document):
+    """
+    Returns the count of unnamed reference planes in the given document.
+
+    Args:
+        document (DB.Document): The document to search for reference planes. Defaults to the active document.
+
+    Returns:
+        int: The count of unnamed reference planes.
+    """
+    ref_planes = get_elements_by_class(DB.ReferencePlane, doc=document)
+    if not ref_planes:
+        return 0
     unnamed_ref_planes_count = 0
     for ref_plane in ref_planes:
         # FIXME French compatibility, make it universal
         if ref_plane.Name == "Reference Plane" or ref_plane.Name == "Plan de référence":
             unnamed_ref_planes_count += 1
-    return ref_planes_count, unnamed_ref_planes_count
+    return unnamed_ref_planes_count
 
 
 def count_elements(document):
@@ -572,3 +699,100 @@ def count_purgeable_elements(document):
     if not hasattr(document, "GetUnusedElements"):
         return 0
     return len(document.GetUnusedElements(HashSet[DB.ElementId]()))
+
+
+def count_detail_groups_types(document):
+    """
+    Counts the number of detail groups types in a given Revit document that are not part of any array.
+
+    Args:
+        document (DB.Document): The Revit document to search for detail groups types.
+
+    Returns:
+        int: The count of detail groups types that are not part of any array.
+    """
+    group_type = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups).WhereElementIsElementType()
+    array_list = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
+    group_types_from_array = []
+    for ar in array_list:
+        group_element = document.GetElement(ar.GroupId)
+        if ar is not None and group_element is not None:
+            groupe_type_id = group_element.GetTypeId()
+            group_types_from_array.append(groupe_type_id)
+    detail_group_count = 0
+    for gr in group_type:
+        if gr.Id not in group_types_from_array:
+            detail_group_count += 1
+    return detail_group_count
+
+
+def count_detail_group_instances(doc):
+    """
+    Counts the number of detail group instances in the given Revit document that are not part of any array.
+
+    Args:
+        doc (Document): The Revit document to search for detail group instances.
+
+    Returns:
+        int: The count of detail group instances that are not part of any array.
+    """
+    group = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups).WhereElementIsNotElementType()
+    array_list = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
+    group_from_array = []
+    for ar in array_list:
+        if ar is not None and doc.GetElement(ar.GroupId) is not None:
+            groupe_id = ar.GroupId
+            group_from_array.append(groupe_id)
+    detail_group_instance_count = 0
+    for gr in group:
+        if gr.Id not in group_from_array:
+            detail_group_instance_count += 1
+    return detail_group_instance_count
+
+
+def count_model_groups_types(doc):
+    """
+    Counts the number of model group types in the given Revit document that are not part of any array.
+    
+    Args:
+        doc: The Revit document to process.
+        
+    Returns:
+        int: The count of model group types not included in any array.
+    """    
+    group_type = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).WhereElementIsElementType()
+    array_list = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
+    group_types_from_array = []
+    for ar in array_list:
+        if ar is not None and doc.GetElement(ar.GroupId) is not None:
+            groupe_type_id = doc.GetElement(ar.GroupId).GetTypeId()
+            group_types_from_array.append(groupe_type_id)
+    model_group_types_count = 0
+    for gr in group_type:
+        if gr.Id not in group_types_from_array:
+            model_group_types_count += 1
+    return model_group_types_count
+
+
+def count_model_group_instances(doc):
+    """
+    Counts the number of model group instances in the given Revit document that are not part of any array.
+
+    Args:
+        doc: The Revit document to search for model group instances.
+    
+    Returns:
+        int: The count of model group instances not part of any array.
+    """
+    group = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).WhereElementIsNotElementType()
+    array_list = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
+    group_from_array = []
+    for ar in array_list:
+        if ar is not None and doc.GetElement(ar.GroupId) is not None:
+            groupe_id = ar.GroupId
+            group_from_array.append(groupe_id)
+    model_group_instance_count = 0
+    for gr in group:
+        if gr.Id not in group_from_array:
+            model_group_instance_count += 1
+    return model_group_instance_count

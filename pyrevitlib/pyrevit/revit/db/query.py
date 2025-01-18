@@ -728,42 +728,64 @@ def get_worksets_names(doc=None):
     return ", ".join(w.Name for w in worksets_collection)
 
 
-def get_warnings_info(doc=None):
+def get_warnings(doc=None):
     """
-
-    Returns the number of warnings in the document
-
+    Returns all the warnings in the document.
 
     Args:
-        document (Document): A Revit document.
-
+        doc (Document): A Revit document.
 
     Returns:
-        tuple (int, list, list):
-        Number of warnings for document,
-        all the warnings in the document,
-        and a list of GUIDs for all the warnings in the document.
+        list: All the warnings in the document.
     """
     doc = doc or DOCS.doc
-    all_warnings = doc.GetWarnings()
-    if not all_warnings:
-        return 0, [], []
-    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in all_warnings]
-    return len(all_warnings), all_warnings, warnings_guid
+    return doc.GetWarnings() if doc.GetWarnings() else []
 
 
-def get_critical_warnings_number(warnings_guid, critical_warnings_template):
+def get_warnings_count(doc=None):
     """
+    Returns the number of warnings in the document.
 
-    Returns the number of critical warnings from a list of warnings GUIDs against a list of critical warnings GUIDs.
-
-    Parameters:
-    warnings_guid (list): A list of warning GUIDs.
-
+    Args:
+        doc (Document): A Revit document.
 
     Returns:
-    int: The number of critical warnings in the list.
+        int: Number of warnings in the document.
     """
+    doc = doc or DOCS.doc
+    all_warnings = get_warnings(doc)
+    return len(all_warnings) if all_warnings else 0
+
+
+def get_warnings_guid(doc=None):
+    """
+    Returns a list of GUIDs for all the warnings in the document.
+
+    Args:
+        doc (Document): A Revit document.
+
+    Returns:
+        list: A list of GUIDs for all the warnings in the document.
+    """
+    doc = doc or DOCS.doc
+    all_warnings = get_warnings(doc)
+    return [warning.GetFailureDefinitionId().Guid for warning in all_warnings] if all_warnings else []
+
+
+def get_critical_warnings_count(doc=None, critical_warnings_template=None):
+    """
+    Counts the number of critical warnings in a Revit document.
+
+    Args:
+        doc (Document, optional): The Revit document to check for warnings. Defaults to None.
+        critical_warnings_template (list of str, optional): A list of warning GUIDs (as strings) 
+            that are considered critical. Defaults to None.
+    
+    Returns:
+        int: The count of critical warnings in the document.
+    """
+    doc = doc or DOCS.doc
+    warnings_guid = get_warnings_guid(doc)
     return sum(
         1
         for warning_guid in warnings_guid
