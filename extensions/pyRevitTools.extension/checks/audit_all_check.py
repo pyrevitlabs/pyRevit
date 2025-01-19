@@ -29,9 +29,7 @@ from pyrevit.revit.db.query import (
     get_elements_by_class,
     get_all_linkeddocs,
     get_linked_model_instances,
-    get_rvt_link_status,
     get_rvt_link_instance_name,
-    get_rvt_link_doc_name,
 )
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.revit.db.count import (
@@ -304,27 +302,25 @@ class ReportData:
         self.rvtlinks_count = len(get_all_linkeddocs(document))
         self.rvtlinks_elements_items = get_linked_model_instances(document).ToElements()
         self.rvtlinks_unpinned_count = count_unpinned_revit_links(self.rvtlinks_elements_items)
-        self.rvtlink_pinned_status = self.get_revit_link_pinning_status(document)
 
-
-    def __str__(self):
-        return ','.join([str(getattr(self, col, '')) for col in self.COLUMNS])
-
-    def __repr__(self):
-        return self.__str__()
-
-    def get_revit_link_pinning_status(self, document=None):
+    def to_list(self):
         """
-        Determines the pinning status of a Revit link.
-        
-        Args:
-            document (object, optional): The Revit document to check. Defaults to None.
+        Converts the attributes of the object to a list of formatted string values.
+        This method iterates over the columns defined in `self.COLUMNS` and retrieves
+        the corresponding attribute values of the object. If an attribute value is a list,
+        it formats the list as a comma-separated string enclosed in double quotes. Otherwise,
+        it converts the value to a string.
         
         Returns:
-            str: "Pinned" if the document is pinned, "Unpinned" if the document is not pinned,
-                 and "-" if the document does not have a 'Pinned' attribute.
+            list: A list of formatted string values corresponding to the object's attributes.
         """
-        return "-" if not hasattr(document, "Pinned") else "Unpinned" if not document.Pinned else "Pinned"
+
+        def format_value(value):
+            if isinstance(value, list):
+                return '"{}"'.format(', '.join(map(str, value)))
+            return str(value)
+        
+        return [format_value(getattr(self, col, '')) for col in self.COLUMNS]
     
     def export_to_csv(self, export_file_path=EXPORT_FILE_PATH, headers=None):
         """
@@ -338,7 +334,7 @@ class ReportData:
             with open(export_file_path, mode="wb") as csv_file:
                 w = writer(csv_file, lineterminator="\n")
                 w.writerow(headers)
-                w.writerow(self.__str__())
+                w.writerow(self.to_list())
         else:
             with open(export_file_path, mode="rb") as csv_file:
                 r = reader(csv_file, delimiter=",")
@@ -348,20 +344,20 @@ class ReportData:
             if not flag:
                 with open(export_file_path, mode="ab") as csv_file:
                     w = writer(csv_file, lineterminator="\n")
-                    w.writerow(self.__str__())
+                    w.writerow(self.to_list())
 
-
-def get_rvtlink_docs(document):
+def get_revit_link_pinning_status(rvtlink_instance=None):
     """
-    Returns a list of all the Revit link documents in the document.
+    Get the pinning status of a Revit link instance.
 
     Args:
-        document (Document): A Revit document.
+        rvtlink_instance (object, optional): The Revit link instance to check. Defaults to None.
 
     Returns:
-        list: Revit link documents.
+        str: "Pinned" if the instance is pinned, "Unpinned" if the instance is not pinned, 
+             and "-" if the instance does not have a "Pinned" attribute.
     """
-    return get_all_linkeddocs(document)
+    return "-" if not hasattr(rvtlink_instance, "Pinned") else "Unpinned" if not rvtlink_instance.Pinned else "Pinned"
 
 
 def audit_document(doc, output):
@@ -445,8 +441,8 @@ def audit_document(doc, output):
                         link_document_data.worksets_names,
                         link_document_data.doc_clean_name,
                         get_rvt_link_instance_name(rvt_link_instance),                       
-                        get_rvt_link_status(rvt_link_instance.GetLinkDocument()),
-                        link_document_data.rvtlink_pinned_status,
+                        str(doc.GetElement(rvt_link_instance.GetTypeId()).GetLinkedFileStatus()).split(".")[-1],
+                        "-" if not hasattr(rvt_link_instance, "Pinned") else "Unpinned" if not rvt_link_instance.Pinned else "Pinned",
                     ]
                 )
             output.print_md("# Linked Files Infos")
@@ -584,7 +580,6 @@ def generate_rvt_links_report(link_document_data, output):
     doc_clean_name = link_document_data.doc_clean_name
     output.print_md("## " + doc_clean_name)
     output.print_md("___")
-    output.print_md(link_document_data.doc_clean_name)
     links_data = ""
     if link_document_data.rvtlinks_elements_items:
         links_data = card_builder(50, link_document_data.rvtlinks_count, " Links") + card_builder(
