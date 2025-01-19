@@ -1201,22 +1201,46 @@ def get_linked_model_instances(doc=None):
     )
 
 
-def get_rvt_links_names(revitlinks_elements):
+def get_rvt_link_status(doc=None):
     """
-    Returns two lists of all the Revit links names in the document.
+    Retrieves the status of linked Revit models in the given document.
 
     Args:
-        revitlinks_elements (list): A list of Revit link elements.
+        doc (Document, optional): The Revit document to query. If None, the current document is used.
 
     Returns:
-        tuple: Two lists of Revit document names and Revit link instances names.
+        list: A list of statuses for each linked Revit model type.
     """
-    rvt_links_docs_name, rvt_links_instances_name = [], []
-    for rvtlinks_element in revitlinks_elements:
-        revit_link_name_parts = get_name(rvtlinks_element).split(" : ")
-        rvt_links_docs_name.append(revit_link_name_parts[0].split(".rvt")[0])
-        rvt_links_instances_name.append(revit_link_name_parts[1])
-    return rvt_links_docs_name, rvt_links_instances_name
+    doc = doc or DOCS.doc
+    rvtlinks_instances = get_linked_model_instances(doc)
+    rvtlinks_types = get_linked_model_types(doc, rvtlinks_instances)
+    return [rvtlinktype.GetLinkedFileStatus() for rvtlinktype in rvtlinks_types]
+
+
+def get_rvt_link_doc_name(rvtlink_instance=None):
+    """
+    Retrieves the name of the Revit link document from the given Revit link instance.
+    
+    Args:
+        rvtlink_instance: The Revit link instance from which to extract the document name.
+    
+    Returns:
+        str: The name of the Revit link document, without the file extension and any directory paths.
+    """
+    return get_name(rvtlink_instance).split(" \ ")[0].split(".rvt")[0]
+
+
+def get_rvt_link_instance_name(rvtlink_instance=None):
+    """
+    Retrieves the name of a Revit link instance.
+    
+    Args:
+        rvtlink_instance: The Revit link instance object. Default is None.
+    
+    Returns:
+        str: The name of the Revit link instance, extracted from the full name.
+    """
+    return get_name(rvtlink_instance).split(" : ")[1]
 
 
 def find_first_legend(doc=None):
