@@ -1,0 +1,12 @@
+title:
+  ru: Запросить поддержку
+  fr_fr: Demander de l'aide
+  en_us: Request Support
+  de_de: Unterstützung anfordern
+tooltip:
+  ru: Создайте электронное письмо для открытия заявки в службу поддержки, описывая проблему, с которой вы сталкиваетесь, и текущее состояние вашей BIM среды
+  fr_fr: Créez un email pour ouvrir un ticket de service, en détaillant le problème auquel vous êtes confronté et l'état actuel de votre environnement BIM
+  en_us: Create an email to open a Service Desk Ticket, detailing the issue you're facing and the current state of your BIM environment
+  de_de: Erstellen Sie eine E-Mail, um ein Service-Desk-Ticket zu eröffnen, und schildern Sie dabei das Problem, mit dem Sie konfrontiert sind, und den aktuellen Zustand Ihrer BIM-Umgebung
+author: Tay Othman,AIA
+context: zero-doc

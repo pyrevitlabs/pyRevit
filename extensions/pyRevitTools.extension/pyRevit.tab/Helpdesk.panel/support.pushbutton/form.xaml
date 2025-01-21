@@ -1,0 +1,35 @@
+<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:av="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="av" Title="Generate a Service Desk Ticket"
+        Height="440" Width="600" ResizeMode="NoResize" Topmost="True">
+    <StackPanel>
+        <Label Content="Email:" />
+        <TextBox x:Name="UI_txtEmail" Width="540" Height="20" HorizontalAlignment="Left" Margin="20,0,20,0" FontWeight="Bold" Text="{Binding TextProperty.DefaultMetadata.DefaultValue, ElementName=UI_txtEmail}"/>
+        <Label Content="Subject:" />
+        <TextBox x:Name="UI_txtSubject" Width="540" Height="20" HorizontalAlignment="Left" Margin="20,0,20,0" FontWeight="Bold" />
+
+        <Label Content="Request Ticket Description:" />
+        <TextBox x:Name="UI_txtDescription" Width="540" Height="160" HorizontalAlignment="Left" Margin="20,0,20,0" FontWeight="Bold" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+
+        <Label Content="Description Tags:" />
+
+        <ListBox x:Name="UI_Tags" Margin="20,1,44,0" AlternationCount="8" Grid.IsSharedSizeScope="True" SelectionMode="Multiple" SelectionChanged="UIe_tag_selection">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="4" Rows="2"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBoxItem x:Name="UI_Tag1" Content="Tag1"/>
+            <ListBoxItem x:Name="UI_Tag2" Content="Tag2"/>
+            <ListBoxItem x:Name="UI_Tag3" Content="Tag3"/>
+            <ListBoxItem x:Name="UI_Tag4" Content="Tag4"/>
+            <ListBoxItem x:Name="UI_Tag5" Content="Tag5"/>
+            <ListBoxItem x:Name="UI_Tag6" Content="Tag6"/>
+            <ListBoxItem x:Name="UI_Tag7" Content="Tag7"/>
+            <ListBoxItem x:Name="UI_Tag8" Content="Tag8"/>
+        </ListBox>
+
+        <Button Content="Generate Ticket Email" Click="UIe_btn_run" FontWeight="Bold" Margin="20,0,20,0" />
+    </StackPanel>
+</Window>

@@ -1,0 +1,41 @@
+<Window 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:av="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="av"
+        Title="Config Settings"
+        Height="280" Width="600" ResizeMode="NoResize" Topmost="True">
+    <StackPanel>
+        <Label Content="Choose Support Type" />
+        <StackPanel Orientation="Horizontal">
+            <RadioButton Name="UI_email_ok" Content="Email" Margin="25,0,0,0" GroupName="SupportType" IsChecked="True"/>
+            <TextBox Name="UI_def_eml" Width="200" Height="20" Margin="50,0,0,0" FontWeight="Bold" Text="{Binding TextProperty.DefaultMetadata.DefaultValue, ElementName=UI_txtEmail}" IsEnabled="{Binding IsChecked, ElementName=UI_email_ok}"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+            <RadioButton Name="UI_web" Content="Web Service" Margin="25,0,0,0" GroupName="SupportType"/>
+        </StackPanel>
+        <Label Content="Enter Subject Tags" FontWeight="Bold" Margin="0,20,0,0"/>
+        <Grid Margin="20,20,20,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Row="0" Grid.Column="0" Name="Tag1" Margin="5"/>
+            <TextBox Grid.Row="0" Grid.Column="1" Name="Tag2" Margin="5"/>
+            <TextBox Grid.Row="0" Grid.Column="2" Name="Tag3" Margin="5"/>
+            <TextBox Grid.Row="0" Grid.Column="3" Name="Tag4" Margin="5"/>
+            <TextBox Grid.Row="1" Grid.Column="0" Name="Tag5" Margin="5"/>
+            <TextBox Grid.Row="1" Grid.Column="1" Name="Tag6" Margin="5"/>
+            <TextBox Grid.Row="1" Grid.Column="2" Name="Tag7" Margin="5"/>
+            <TextBox Grid.Row="1" Grid.Column="3" Name="Tag8" Margin="5"/>
+        </Grid>
+        <Button Content="Save Config" Click="UIe_Save_Config" FontWeight="Bold" Margin="20,0,20,0" />
+    </StackPanel>
+</Window>
