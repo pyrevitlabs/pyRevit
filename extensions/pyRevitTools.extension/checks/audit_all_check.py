@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from pyrevit.coreutils import Timer
 from pyrevit import HOST_APP, DOCS
 from pyrevit import DB
-from pyrevit.script import get_config
+from pyrevit.script import get_config, get_logger
 from pyrevit.forms import alert, show_balloon
 from pyrevit.output.cards import card_builder, create_frame
 from pyrevit.revit.db import ProjectInfo
@@ -72,8 +72,9 @@ from pyrevit.revit.db.count import (
     count_purgeable_elements,
 )
 
-BODY_CSS = '<style>.grid-container { display: grid; justify-content: center; align-items: center; }</style><div class="grid-container">'
+logger = get_logger()
 
+BODY_CSS = '<style>.grid-container { display: grid; justify-content: center; align-items: center; }</style><div class="grid-container">'
 
 config = get_config()
 if config is None:
@@ -397,7 +398,7 @@ def audit_document(doc, output):
                     is_new=True,
                 )
             except Exception as e:
-                print(e)
+                logger.error("Failed to show balloon notification", exc_info=True)
 
         # output section
         output.close_others()
