@@ -443,7 +443,7 @@ def audit_document(doc, output):
                         link_document_data.doc_clean_name,
                         get_rvt_link_instance_name(rvt_link_instance),                       
                         str(doc.GetElement(rvt_link_instance.GetTypeId()).GetLinkedFileStatus()).split(".")[-1],
-                        "-" if not hasattr(rvt_link_instance, "Pinned") else "Unpinned" if not rvt_link_instance.Pinned else "Pinned",
+                        get_revit_link_pinning_status(rvt_link_instance)
                     ]
                 )
             output.print_md("# Linked Files Infos")
