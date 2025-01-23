@@ -30,7 +30,7 @@ def card_start_style(limit, value, alt):
             color = "#FFDD94"  # orange
         elif ratio > 1:
             color = "#FA897B"  # red
-        elif 0 <= ratio < 0.5:
+        elif 0 < ratio < 0.5:
             color = "#D0E6A5"  # green
         elif value == 0:
             color = "#d0d3d4"  # gray
