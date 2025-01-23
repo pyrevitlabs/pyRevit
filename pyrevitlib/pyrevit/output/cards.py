@@ -23,17 +23,13 @@ def card_start_style(limit, value, alt):
     except ZeroDivisionError:
         ratio = 0
     color = "#d0d3d4"
-    if value == 0:
-        color = "#d0d3d4"  # gray
-    else:
+    if value != 0:
         if 0.5 <= ratio <= 1:
             color = "#FFDD94"  # orange
         elif ratio > 1:
             color = "#FA897B"  # red
-        elif 0 < ratio < 0.5:
+        elif ratio < 0.5:
             color = "#D0E6A5"  # green
-        elif value == 0:
-            color = "#d0d3d4"  # gray
         else:
             pass
     try:
