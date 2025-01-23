@@ -1079,7 +1079,7 @@ def get_document_clean_name(doc=None):
         path = Path(document_name.split("://", 1)[1])
     else:
         path = Path(document_name)
-    return path.stem  # Returns name without extension
+    return path.stem
 
 
 def get_links(linktype=None, doc=None):
