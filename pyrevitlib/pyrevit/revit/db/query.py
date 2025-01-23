@@ -2,6 +2,7 @@
 """Helper functions to query info and elements from Revit."""
 # pylint: disable=W0703,C0103,too-many-lines
 from collections import namedtuple
+from pathlib import Path
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -1072,19 +1073,13 @@ def get_document_clean_name(doc=None):
         extension.
     """
     document_name = db.ProjectInfo(doc or DOCS.doc).path
-    # If the document hasn't been saved, then print "File Not Saved"
-    if len(document_name) == 0:
-        printed_name = "File Not Saved"
-    # If the document is a BIM 360 document, then print the file name without
-    # the file extension
-    elif document_name.startswith("BIM 360://"):
-        printed_name = document_name.split("/")[-1]
-        printed_name = printed_name.split(".")[0]
-    # If the document is a local document, then print the file name without
-    # the file path or file extension
+    if not document_name:
+        return "File Not Saved"
+    if document_name.startswith("BIM 360://"):
+        path = Path(document_name.split("://", 1)[1])
     else:
-        printed_name = document_name.split("\\")[-1]
-    return printed_name
+        path = Path(document_name)
+    return path.stem  # Returns name without extension
 
 
 def get_links(linktype=None, doc=None):
