@@ -89,6 +89,18 @@ namespace pyRevitCLI
 
         // cli entry point:
         static void Main(string[] args) {
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
+            {
+                if (args.Name.Contains("Newtonsoft.Json"))
+                {
+                    var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
+                    if (File.Exists(assemblyPath))
+                    {
+                        return Assembly.LoadFrom(assemblyPath);
+                    }
+                }
+                return null;
+            };
             // process arguments for logging level
             var argsList = new List<string>(args);
 
