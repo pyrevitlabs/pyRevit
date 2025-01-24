@@ -91,7 +91,7 @@ namespace pyRevitCLI
         static void Main(string[] args) {
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
             {
-                if (args.Name.Contains("Newtonsoft.Json"))
+                if (args.Name.StartsWith("Newtonsoft.Json,"))
                 {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
                     logger.Debug($"Looking for Newtonsoft.Json assembly at: {assemblyPath}");
