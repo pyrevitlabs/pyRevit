@@ -22,6 +22,7 @@ Install Visual Studio 2022 and select:
     - .NET Framework 4.7.2 Targeting Pack
     - .NET Framework 4.8 SDK
     - .NET Framework 4.8 Targeting Pack
+    - .NET 3.1 Runtime (MahApps.Metro)
     - NuGet package manager
     - MSBuild
 
