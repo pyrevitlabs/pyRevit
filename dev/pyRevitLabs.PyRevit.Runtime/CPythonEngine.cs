@@ -205,7 +205,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 var paths = pythonPath.Split(Path.PathSeparator);
                 foreach (var path in paths)
                 {
-                    sysPaths.Append(new PyString(path));
+                    if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path)) 
+                    {
+                        sysPaths.Append(new PyString(path)); 
+                    }
                 }
             }
 
