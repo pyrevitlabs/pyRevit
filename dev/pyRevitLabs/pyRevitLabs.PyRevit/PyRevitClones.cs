@@ -566,9 +566,8 @@ namespace pyRevitLabs.PyRevit {
 
         // updates the config value for registered clones
         public static void SaveRegisteredClones(IEnumerable<PyRevitClone> clonesList) {
-            var cfg = PyRevitConfigs.GetConfigFile();
             var newValueDic = clonesList.ToDictionary(x => x.Name, x => x.ClonePath);
-            cfg.SetValue(
+            PyRevitConfigs.GetConfigFile().SetValue(
                 PyRevitConsts.EnvConfigsSectionName,
                 PyRevitConsts.EnvConfigsInstalledClonesKey,
                 newValueDic);
