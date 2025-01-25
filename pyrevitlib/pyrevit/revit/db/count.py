@@ -447,7 +447,7 @@ def count_text_notes_with_all_caps(document):
     caps_count = 0
     for text_note in text_notes:
         caps_status = text_note.GetFormattedText().GetAllCapsStatus()
-        if str(caps_status) != "None":
+        if caps_status:
             caps_count += 1
     return caps_count
 
@@ -610,9 +610,7 @@ def count_dimension_types(document):
     dimension_types_count = 0
     for dt in dimension_types:
         try:
-            if dt.LookupParameter("Nom du type"):
-                dimension_types_count += 1
-            elif dt.LookupParameter("Type name"):
+            if dt.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM):
                 dimension_types_count += 1
         except AttributeError:
             pass
