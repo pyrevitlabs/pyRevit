@@ -306,20 +306,29 @@ class ReportData:
 
     def to_list(self):
         """
-        Converts the attributes of the object to a list of formatted string values.
-        This method iterates over the columns defined in `self.COLUMNS` and retrieves
-        the corresponding attribute values of the object. If an attribute value is a list,
-        it formats the list as a comma-separated string enclosed in double quotes. Otherwise,
-        it converts the value to a string.
-        
+        Converts the attributes of the instance to a list of formatted string values.
+        The method iterates over the columns defined in `self.COLUMNS` and retrieves
+        the corresponding attribute values from the instance. Each value is then
+        formatted and escaped for HTML.
         Returns:
-            list: A list of formatted string values corresponding to the object's attributes.
+            list: A list of formatted and HTML-escaped string values corresponding
+                  to the instance's attributes defined in `self.COLUMNS`.
         """
 
+        def html_escape(s):
+            escape_map = {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }
+            return ''.join(escape_map.get(c, c) for c in s)
+        
         def format_value(value):
             if isinstance(value, list):
-                return '"{}"'.format(', '.join(map(str, value)))
-            return str(value)
+                return '"{}"'.format(', '.join(html_escape(str(v)) for v in value))
+            return html_escape(str(value))
         
         return [format_value(getattr(self, col, '')) for col in self.COLUMNS]
     
