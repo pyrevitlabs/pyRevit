@@ -370,25 +370,105 @@ def get_revit_link_pinning_status(rvtlink_instance=None):
     return "-" if not hasattr(rvtlink_instance, "Pinned") else "Unpinned" if not rvtlink_instance.Pinned else "Pinned"
 
 
+def generate_html_content(data, links_cards=""):
+    """
+    Generates HTML content for audit reports using the provided data and optional links cards.
+    
+    Args:
+        data (ReportData): The data source for generating report metrics.
+        links_cards (str, optional): HTML content for linked elements. Defaults to an empty string.
+    
+    Returns:
+        str: Combined HTML content for the report.
+    """
+    critical_elements_frame = create_frame(
+        "Critical Elements",
+        card_builder(100000, data.element_count, " Elements"),
+        card_builder(1000, data.purgeable_elements_count, " Purgeable (2024+)"),
+        card_builder(100, data.all_warnings_count, " Warnings"),
+        card_builder(5, data.critical_warnings_count, " Critical Warnings"),
+        card_builder(0, data.activated_analytical_model_elements_count, " Analytical Model ON"),
+        links_cards,
+    )
+    rooms_frame = create_frame(
+        "Rooms",
+        card_builder(1000, data.rooms_count, " Rooms"),
+        card_builder(0, data.unplaced_rooms_count, " Unplaced Rooms"),
+        card_builder(0, data.unbounded_rooms, " Unbounded Rooms"),
+    )
+    sheets_views_graphics_frame = create_frame(
+        "Sheets, Views, Graphics",
+        card_builder(500, data.sheets_count, " Sheets"),
+        card_builder(1500, data.views_count, " Views"),
+        card_builder(300, data.views_not_on_sheets, " Views not on Sheets"),
+        card_builder(20, data.schedule_count, " Schedules"),
+        card_builder(5, data.schedules_not_sheeted_count, " Schedules not on sheet"),
+        card_builder(0, data.copied_views_count, " Copied Views"),
+        card_builder(100, data.view_templates_count, " View Templates"),
+        card_builder(0, data.unused_view_templates_count, " Unused VT"),
+        card_builder(0, data.all_filters_count, " Filters"),
+        card_builder(0, data.unused_view_filters_count, " Unused Filters"),
+    )
+    cad_files_frame = create_frame(
+        "CAD Files",
+        card_builder(5, data.dwgs_count, " DWGs"),
+        card_builder(5, data.linked_dwg_count, " Linked DWGs"),
+    )
+    families_frame = create_frame(
+        "Families",
+        card_builder(500, data.family_count, " Families"),
+        card_builder(0, data.inplace_family_count, " In-Place Families"),
+        card_builder(100, data.not_parametric_families_count, " Non-Parametric Families"),
+        card_builder(0, data.imports_subcats_count, " Imports in Families"),
+        card_builder(50, data.generic_models_types_count, " Generic Models Types"),
+        card_builder(100, data.detail_components_count, " Detail Components"),
+    )
+    graphical2d_elements_frame = create_frame(
+        "Graphical 2D Elements",
+        card_builder(5000, data.detail_lines_count, " Detail Lines"),
+        card_builder(30, data.line_patterns_count, " Line Patterns"),
+        card_builder(30, data.text_notes_types_count, " Text Notes Types"),
+        card_builder(1, data.text_bg_count, " Text Notes w/ White Background"),
+        card_builder(0, data.text_notes_types_wf_count, " Text Notes Width Factor !=1"),
+        card_builder(2000, data.text_notes_count, " Text Notes"),
+        card_builder(100, data.text_notes_caps_count, " Text Notes allCaps"),
+        card_builder(5, data.dim_types_count, " Dimension Types"),
+        card_builder(5000, data.dim_count, " Dimensions"),
+        card_builder(0, data.dim_overrides_count, " Dimension Overrides"),
+        card_builder(100, data.revision_clouds_count, " Revision Clouds"),
+    )
+    groups_summary_frame = create_frame(
+        "Groups",
+        card_builder(10, data.model_group_count, " Model Groups"),
+        card_builder(5, data.model_group_type_count, " Model Group Types"),
+        card_builder(10, data.detail_groups_count, " Detail Groups"),
+        card_builder(20, data.detail_groups_types_count, " Detail Group Types"),
+    )
+    reference_planes_frame = create_frame(
+        "Reference Planes",
+        card_builder(100, data.reference_planes_count, " Ref Planes"),
+        card_builder(10, data.unnamed_ref_planes_count, " Ref Planes no_name"),
+    )
+    materials_frame = create_frame(
+        "Materials", card_builder(100, data.materials_count, " Materials")
+    )
+    
+    html_content = (
+        BODY_CSS
+        + critical_elements_frame
+        + rooms_frame
+        + sheets_views_graphics_frame
+        + cad_files_frame
+        + families_frame
+        + graphical2d_elements_frame
+        + groups_summary_frame
+        + reference_planes_frame
+        + materials_frame
+    )
+    return html_content + "</div>"
+
+
 def audit_document(doc, output):
-    """
-    Perform a comprehensive audit of a Revit project file and generate a detailed report.
-    Parameters:
-    doc (Document): The Revit document to be audited.
-    output (Output): The output object to print and display the audit results.
-    The function performs the following tasks:
-    - Checks if the document is a project file.
-    - Gathers project information such as name, number, client, phases, and worksets.
-    - Counts various elements in the document including rooms, sheets, views, schedules, families, and more.
-    - Identifies and counts warnings, critical warnings, and purgeable elements.
-    - Generates a detailed HTML report with various sections including critical elements, rooms, sheets, views, CAD files, families, graphical 2D elements, groups, reference planes, and materials.
-    - Exports the audit data to a CSV file.
-    - Generates a report for linked Revit files if any are present.
-    - Displays a balloon notification if there are warnings in the document.
-    - Sets the output window dimensions and closes other output windows.
-    Raises:
-    Exception: If any error occurs during the audit process, it prints the stack trace and error message.
-    """
     try:
         if doc.IsFamilyDocument:
             alert("This tool is for project files only. Exiting...", exitscript=True)
@@ -409,12 +489,9 @@ def audit_document(doc, output):
             except Exception as e:
                 logger.error("Failed to show balloon notification", exc_info=True)
 
-        # output section
         output.close_others()
         output.set_height(900)
         output.set_width(1400)
-
-        # RVT file dashboard section
 
         # Main file infos
         project_info = [
@@ -429,10 +506,7 @@ def audit_document(doc, output):
             "N/A",
         ]
         output.print_md("# Main File Infos")
-        output.print_table(
-            [project_info],
-            columns=FILE_INFO_HEADERS,
-        )
+        output.print_table([project_info], columns=FILE_INFO_HEADERS)
 
         # Linked files infos
         links_cards = ""
@@ -462,108 +536,11 @@ def audit_document(doc, output):
             )
 
         output.print_md("# <p style='text-align: center;'>" + current_doc_report.doc_clean_name + "</p>")
+        html_content = generate_html_content(current_doc_report, links_cards)
+        output.print_html(html_content)
 
-        critical_elements_frame = create_frame(
-            "Critical Elements",
-            card_builder(100000, current_doc_report.element_count, " Elements"),
-            card_builder(1000, current_doc_report.purgeable_elements_count, " Purgeable (2024+)"),
-            card_builder(100, current_doc_report.all_warnings_count, " Warnings"),
-            card_builder(5, current_doc_report.critical_warnings_count, " Critical Warnings"),
-            card_builder(
-                0, current_doc_report.activated_analytical_model_elements_count, " Analytical Model ON"
-            ),
-            links_cards,
-        )
-
-        rooms_frame = create_frame(
-            "Rooms",
-            card_builder(1000, current_doc_report.rooms_count, " Rooms"),
-            card_builder(0, current_doc_report.unplaced_rooms_count, " Unplaced Rooms"),
-            card_builder(0, current_doc_report.unbounded_rooms, " Unbounded Rooms"),
-        )
-
-        sheets_views_graphics_frame = create_frame(
-            "Sheets, Views, Graphics",
-            card_builder(500, current_doc_report.sheets_count, " Sheets"),
-            card_builder(1500, current_doc_report.views_count, " Views"),
-            card_builder(300, current_doc_report.views_not_on_sheets, " Views not on Sheets"),
-            card_builder(20, current_doc_report.schedule_count, " Schedules"),
-            card_builder(5, current_doc_report.schedules_not_sheeted_count, " Schedules not on sheet"),
-            card_builder(0, current_doc_report.copied_views_count, " Copied Views"),
-            card_builder(100, current_doc_report.view_templates_count, " View Templates"),
-            card_builder(0, current_doc_report.unused_view_templates_count, " Unused VT"),
-            card_builder(0, current_doc_report.all_filters_count, " Filters"),
-            card_builder(0, current_doc_report.unused_view_filters_count, " Unused Filters"),
-        )
-
-        cad_files_frame = create_frame(
-            "CAD Files",
-            card_builder(5, current_doc_report.dwgs_count, " DWGs"),
-            card_builder(5, current_doc_report.linked_dwg_count, " Linked DWGs"),
-        )
-
-        families_frame = create_frame(
-            "Families",
-            card_builder(500, current_doc_report.family_count, " Families"),
-            card_builder(0, current_doc_report.inplace_family_count, " In-Place Families"),
-            card_builder(
-                100, current_doc_report.not_parametric_families_count, " Non-Parametric Families"
-            ),
-            card_builder(0, current_doc_report.imports_subcats_count, " Imports in Families"),
-            card_builder(50, current_doc_report.generic_models_types_count, " Generic Models Types"),
-            card_builder(100, current_doc_report.detail_components_count, " Detail Components"),
-        )
-
-        graphical2d_elements_frame = create_frame(
-            "Graphical 2D Elements",
-            card_builder(5000, current_doc_report.detail_lines_count, " Detail Lines"),
-            card_builder(30, current_doc_report.line_patterns_count, " Line Patterns"),
-            card_builder(30, current_doc_report.text_notes_types_count, " Text Notes Types"),
-            card_builder(1, current_doc_report.text_bg_count, " Text Notes w/ White Background"),
-            card_builder(0, current_doc_report.text_notes_types_wf_count, " Text Notes Width Factor !=1"),
-            card_builder(2000, current_doc_report.text_notes_count, " Text Notes"),
-            card_builder(100, current_doc_report.text_notes_caps_count, " Text Notes allCaps"),
-            card_builder(5, current_doc_report.dim_types_count, " Dimension Types"),
-            card_builder(5000, current_doc_report.dim_count, " Dimensions"),
-            card_builder(0, current_doc_report.dim_overrides_count, " Dimension Overrides"),
-            card_builder(100, current_doc_report.revision_clouds_count, " Revision Clouds"),
-        )
-
-        groups_summary_frame = create_frame(
-            "Groups",
-            card_builder(10, current_doc_report.model_group_count, " Model Groups"),
-            card_builder(5, current_doc_report.model_group_type_count, " Model Group Types"),
-            card_builder(10, current_doc_report.detail_groups_count, " Detail Groups"),
-            card_builder(20, current_doc_report.detail_groups_types_count, " Detail Group Types"),
-        )
-
-        reference_planes_frame = create_frame(
-            "Reference Planes",
-            card_builder(100, current_doc_report.reference_planes_count, " Ref Planes"),
-            card_builder(10, current_doc_report.unnamed_ref_planes_count, " Ref Planes no_name"),
-        )
-
-        html_content = (
-            BODY_CSS
-            + critical_elements_frame
-            + rooms_frame
-            + sheets_views_graphics_frame
-            + cad_files_frame
-            + families_frame
-            + graphical2d_elements_frame
-            + groups_summary_frame
-            + reference_planes_frame
-            + create_frame(
-                "Materials", card_builder(100, current_doc_report.materials_count, " Materials")
-            )
-        )
-
-        output.print_html(html_content + "</div>")
-
-        # csv export
         current_doc_report.export_to_csv()
 
-        # RVTLinks
         if current_doc_report.rvtlinks_elements_items:
             output.print_md("# RVTLinks")
             for idx, link_doc_data in enumerate(links_documents_data):
@@ -572,21 +549,7 @@ def audit_document(doc, output):
         print(format_exc())
         print(e)
 
-
 def generate_rvt_links_report(link_document_data, output):
-    """
-    Generates a detailed report of Revit link document data and outputs it in markdown and HTML format.
-    
-    Args:
-        link_document_data (LinkDocumentData): An object containing various metrics and data about the Revit link document.
-        output (Output): An object responsible for printing markdown and HTML content.
-    
-    The function creates multiple frames of information, each containing specific metrics about the Revit link document,
-    such as critical elements, rooms, sheets, views, CAD files, families, graphical 2D elements, groups, and reference planes.
-    
-    It then combines these frames into a single HTML content string and prints it using the output object.
-    Additionally, it exports the link document data to a CSV file.
-    """
     doc_clean_name = link_document_data.doc_clean_name
     output.print_md("## " + doc_clean_name)
     output.print_md("___")
@@ -595,96 +558,9 @@ def generate_rvt_links_report(link_document_data, output):
         links_data = card_builder(50, link_document_data.rvtlinks_count, " Links") + card_builder(
             0, link_document_data.rvtlinks_unpinned_count, " Links not pinned"
         )
-    critical_elements_frame = create_frame(
-        "Critical Elements",
-        card_builder(100000, link_document_data.element_count, " Elements"),
-        card_builder(1000, link_document_data.purgeable_elements_count, " Purgeable (2024+)"),
-        card_builder(100, link_document_data.all_warnings_count, " Warnings"),
-        card_builder(5, link_document_data.critical_warnings_count, " Critical Warnings"),
-        card_builder(
-            0, link_document_data.activated_analytical_model_elements_count, " Analytical Model ON"
-        ),
-        links_data,
-    )
-    rooms_frame = create_frame(
-        "Rooms",
-        card_builder(1000, link_document_data.rooms_count, " Rooms"),
-        card_builder(0, link_document_data.unplaced_rooms_count, " Unplaced Rooms"),
-        card_builder(0, link_document_data.unbounded_rooms, " Unbounded Rooms"),
-    )
-    sheets_views_graphics_frame = create_frame(
-        "Sheets, Views, Graphics",
-        card_builder(500, link_document_data.sheets_count, " Sheets"),
-        card_builder(1500, link_document_data.views_count, " Views"),
-        card_builder(300, link_document_data.views_not_on_sheets, " Views not on Sheets"),
-        card_builder(20, link_document_data.schedule_count, " Schedules"),
-        card_builder(5, link_document_data.schedules_not_sheeted_count, " Schedules not on sheet"),
-        card_builder(0, link_document_data.copied_views_count, " Copied Views"),
-        card_builder(100, link_document_data.view_templates_count, " View Templates"),
-        card_builder(0, link_document_data.unused_view_templates_count, " Unused VT"),
-        card_builder(0, link_document_data.all_filters_count, " Filters"),
-        card_builder(0, link_document_data.unused_view_filters_count, " Unused Filters"),
-    )
-    cad_files_frame = create_frame(
-        "CAD Files",
-        card_builder(5, link_document_data.dwgs_count, " DWGs"),
-        card_builder(5, link_document_data.linked_dwg_count, " Linked DWGs"),
-    )
-    families_frame = create_frame(
-        "Families",
-        card_builder(500, link_document_data.family_count, " Families"),
-        card_builder(0, link_document_data.inplace_family_count, " In-Place Families"),
-        card_builder(
-            100, link_document_data.not_parametric_families_count, " Non-Parametric Families"
-        ),
-        card_builder(0, link_document_data.imports_subcats_count, " Imports in Families"),
-        card_builder(50, link_document_data.generic_models_types_count, " Generic Models Types"),
-        card_builder(100, link_document_data.detail_components_count, " Detail Components"),
-    )
-    graphical2d_elements_frame = create_frame(
-        "Graphical 2D Elements",
-        card_builder(5000, link_document_data.detail_lines_count, " Detail Lines"),
-        card_builder(30, link_document_data.line_patterns_count, " Line Patterns"),
-        card_builder(30, link_document_data.text_notes_types_count, " Text Notes Types"),
-        card_builder(1, link_document_data.text_bg_count, " Text Notes w/ White Background"),
-        card_builder(0, link_document_data.text_notes_types_wf_count, " Text Notes Width Factor !=1"),
-        card_builder(2000, link_document_data.text_notes_count, " Text Notes"),
-        card_builder(100, link_document_data.text_notes_caps_count, " Text Notes allCaps"),
-        card_builder(5, link_document_data.dim_types_count, " Dimension Types"),
-        card_builder(5000, link_document_data.dim_count, " Dimensions"),
-        card_builder(0, link_document_data.dim_overrides_count, " Dimension Overrides"),
-        card_builder(100, link_document_data.revision_clouds_count, " Revision Clouds"),
-    )
-    groups_summary_frame = create_frame(
-        "Groups",
-        card_builder(10, link_document_data.model_group_count, " Model Groups"),
-        card_builder(5, link_document_data.model_group_type_count, " Model Group Types"),
-        card_builder(10, link_document_data.detail_groups_count, " Detail Groups"),
-        card_builder(20, link_document_data.detail_groups_types_count, " Detail Group Types"),
-    )
-    reference_planes_frame = create_frame(
-        "Reference Planes",
-        card_builder(100, link_document_data.reference_planes_count, " Ref Planes"),
-        card_builder(10, link_document_data.unnamed_ref_planes_count, " Ref Planes no_name"),
-    )
-    html_content = (
-        BODY_CSS
-        + critical_elements_frame
-        + rooms_frame
-        + sheets_views_graphics_frame
-        + cad_files_frame
-        + families_frame
-        + graphical2d_elements_frame
-        + groups_summary_frame
-        + reference_planes_frame
-        + create_frame(
-            "Materials", card_builder(100, link_document_data.materials_count, " Materials")
-        )
-    )
-    output.print_html(html_content + "</div>")
-    # csv export
+    html_content = generate_html_content(link_document_data, links_data)
+    output.print_html(html_content)
     link_document_data.export_to_csv()
-
 
 class ModelChecker(PreflightTestCase):
     """
