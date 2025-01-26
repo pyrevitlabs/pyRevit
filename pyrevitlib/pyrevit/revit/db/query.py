@@ -2,7 +2,7 @@
 """Helper functions to query info and elements from Revit."""
 # pylint: disable=W0703,C0103,too-many-lines
 from collections import namedtuple
-from os.path import join
+from os.path import join, basename, splitext
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -1079,7 +1079,7 @@ def get_document_clean_name(doc=None):
         path = join(document_name.split("://", 1)[1])
     else:
         path = join(document_name)
-    return path.stem
+    return splitext(basename(path))[0]
 
 
 def get_links(linktype=None, doc=None):
