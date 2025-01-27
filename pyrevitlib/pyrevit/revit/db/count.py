@@ -161,12 +161,13 @@ def count_copied_views(views_set):
     Returns:
     int: The number of views in the set that have "Copy" or "Copie" in their name.
     """
+    copied_view_names = ["Copy", "Copie"]
     copied_views_count = 0
     for view in views_set:
         view_name = get_name(view)
         try:
             # FIXME French compatibility, make it universal
-            if "Copy" in view_name or "Copie" in view_name:
+            if any(name in view_name for name in copied_view_names):
                 copied_views_count += 1
         except Exception as e:
             print(e)
@@ -484,9 +485,10 @@ def count_unnamed_reference_planes(document):
     if not ref_planes:
         return 0
     unnamed_ref_planes_count = 0
+    # Default reference plane label, not the most elegant solution
+    reference_plane_default_label = DB.LabelUtils.GetLabelFor(DB.BuiltInCategory.OST_CLines).replace("s", "")
     for ref_plane in ref_planes:
-        # FIXME French compatibility, make it universal
-        if ref_plane.Name == "Reference Plane" or ref_plane.Name == "Plan de référence":
+        if ref_plane.Name == reference_plane_default_label:
             unnamed_ref_planes_count += 1
     return unnamed_ref_planes_count
 
