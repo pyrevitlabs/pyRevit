@@ -3209,4 +3209,38 @@ def get_geometry(element, include_invisible=False, compute_references=False):
         get_elementid_value = get_elementid_value_func()
         mlogger.debug("element %s has no geometry", get_elementid_value(element.Id))
         return
-    
+
+
+def get_array_group_ids(doc=None):
+    """
+    Collects and returns the IDs of all array groups in the given document.
+
+    Args:
+        document (DB.Document): The Revit document to search for array groups.
+
+    Returns:
+        list: A list of element IDs representing the array groups.
+    """
+    array_list = DB.FilteredElementCollector(doc or DOCS.doc).OfCategory(
+        DB.BuiltInCategory.OST_IOSArrays
+    )
+    arrays_groups = []
+    for ar in array_list:
+        all_arrays_members = list(ar.GetOriginalMemberIds())
+        all_arrays_members.extend(list(ar.GetCopiedMemberIds()))
+        arrays_groups.append(all_arrays_members)
+    return [item for sublist in arrays_groups for item in sublist]
+
+
+def get_array_group_types(doc=None):
+    """
+    Retrieves the unique types of array groups in the given Revit document.
+
+    Args:
+        doc: The Revit document from which to collect array group types.
+
+    Returns:
+        A set of unique array group type IDs present in the document.
+    """
+    arrays_groups = get_array_group_ids(doc or DOCS.doc)
+    return {doc.GetElement(ar).GetTypeId() for ar in arrays_groups}

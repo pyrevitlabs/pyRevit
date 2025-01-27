@@ -281,14 +281,14 @@ class GroupInfo:
 
     def __init__(self, document):
         self.detail_groups_count = (
-            count_detail_groups_types(document) if document else 0
-        )
-        self.detail_groups_types_count = (
             count_detail_group_instances(document) if document else 0
         )
-        self.model_group_count = count_model_groups_types(document) if document else 0
+        self.detail_groups_types_count = (
+            count_detail_groups_types(document) if document else 0
+        )
+        self.model_group_count = count_model_group_instances(document) if document else 0
         self.model_group_type_count = (
-            count_model_group_instances(document) if document else 0
+            count_model_groups_types(document) if document else 0
         )
 
 
@@ -654,9 +654,9 @@ def generate_html_content(data, links_cards=""):
     )
     groups_summary_frame = create_frame(
         "Groups",
-        card_builder(10, data.group_info.model_group_count, " Model Groups"),
+        card_builder(10, data.group_info.model_group_count, " Model Group Instances"),
         card_builder(5, data.group_info.model_group_type_count, " Model Group Types"),
-        card_builder(10, data.group_info.detail_groups_count, " Detail Groups"),
+        card_builder(10, data.group_info.detail_groups_count, " Detail Group Instances"),
         card_builder(
             20, data.group_info.detail_groups_types_count, " Detail Group Types"
         ),

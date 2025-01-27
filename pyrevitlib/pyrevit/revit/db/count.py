@@ -11,6 +11,8 @@ from pyrevit.revit.db.query import (
     get_elements_by_class,
     get_types_by_class,
     get_all_schedules,
+    get_array_group_ids,
+    get_array_group_types,
 )
 
 
@@ -452,72 +454,6 @@ def count_text_notes_with_all_caps(document):
     return caps_count
 
 
-def count_detail_groups(document):
-    """
-    Returns the number of detail groups and detail group types in the given document.
-
-    Args:
-        document (DB.Document): The document to search for detail groups. Defaults to the active document.
-
-    Returns:
-        Tuple[int, int]: A tuple containing the number of detail groups and detail group types, respectively.
-    """
-    detail_group_count = 0
-    detail_groups_elements = (
-        DB.FilteredElementCollector(document)
-        .OfClass(DB.Group)
-        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
-        .ToElements()
-    )
-    for i in detail_groups_elements:
-        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.GetValue(i):
-            detail_group_count += 1
-    detail_group_type_count = 0
-    detail_group_types = (
-        DB.FilteredElementCollector(document)
-        .OfClass(DB.GroupType)
-        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
-        .ToElements()
-    )
-    for i in detail_group_types:
-        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.GetValue(i):
-            detail_group_type_count += 1
-    return detail_group_count, detail_group_type_count
-
-
-def count_model_groups_types(document):
-    """
-    Returns the number of model group instances and model group types in the given document.
-
-    Args:
-        document (DB.Document): The document to search for model groups. Defaults to the current document.
-
-    Returns:
-        Tuple[int, int]: A tuple containing the number of model group instances and the number of model group types.
-    """
-    model_group_count = 0
-    model_group_elements = (
-        DB.FilteredElementCollector(document)
-        .OfClass(DB.Group)
-        .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
-        .ToElements()
-    )
-    for i in model_group_elements:
-        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.GetValue(i):
-            model_group_count += 1
-    model_group_type_count = 0
-    model_group_types = (
-        DB.FilteredElementCollector(document)
-        .OfClass(DB.GroupType)
-        .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
-        .ToElements()
-    )
-    for i in model_group_types:
-        if any(["Groupe de réseaux", "Array group"]) not in DB.Element.Name.GetValue(i):
-            model_group_type_count += 1
-    return model_group_count, model_group_type_count
-
-
 def count_reference_planes(document):
     """
     Returns the count of all reference planes in the given document.
@@ -701,75 +637,73 @@ def count_purgeable_elements(document):
 
 def count_detail_groups_types(document):
     """
-    Counts the number of detail groups types in a given Revit document that are not part of any array.
+    Counts the number of detail group types in the given Revit document, excluding those that are part of array groups.
 
     Args:
-        document (DB.Document): The Revit document to search for detail groups types.
+        document (DB.Document): The Revit document to search for detail group types.
 
     Returns:
-        int: The count of detail groups types that are not part of any array.
+        int: The count of detail group types excluding array group types.
     """
-    group_type = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups).WhereElementIsElementType()
-    array_list = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
-    group_types_from_array = []
-    for ar in array_list:
-        group_element = document.GetElement(ar.GroupId)
-        if ar is not None and group_element is not None:
-            groupe_type_id = group_element.GetTypeId()
-            group_types_from_array.append(groupe_type_id)
-    detail_group_count = 0
-    for gr in group_type:
-        if gr.Id not in group_types_from_array:
-            detail_group_count += 1
-    return detail_group_count
+    detail_groups_types = (
+        DB.FilteredElementCollector(document)
+        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
+        .WhereElementIsElementType()
+    )
+    arrays_group_types = get_array_group_types(document)
+    detail_groups_types_count = detail_groups_types.GetElementCount()
+    for detail_groups_type in detail_groups_types:
+        if detail_groups_type.Id in arrays_group_types:
+            detail_groups_types_count -= 1
+    return detail_groups_types_count
 
 
 def count_detail_group_instances(doc):
     """
-    Counts the number of detail group instances in the given Revit document that are not part of any array.
+    Counts the number of detail group instances in the given Revit document.
+    This function collects all detail group instances in the document and then
+    adjusts the count by excluding any groups that are part of an array.
 
     Args:
-        doc (Document): The Revit document to search for detail group instances.
+        doc: The Revit document to search for detail group instances.
 
     Returns:
-        int: The count of detail group instances that are not part of any array.
+        int: The count of detail group instances not part of an array.
     """
-    group = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups).WhereElementIsNotElementType()
-    array_list = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
-    group_from_array = []
-    for ar in array_list:
-        if ar is not None and doc.GetElement(ar.GroupId) is not None:
-            groupe_id = ar.GroupId
-            group_from_array.append(groupe_id)
-    detail_group_instance_count = 0
-    for gr in group:
-        if gr.Id not in group_from_array:
-            detail_group_instance_count += 1
-    return detail_group_instance_count
+    detail_groups_instances = (
+        DB.FilteredElementCollector(doc)
+        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
+        .WhereElementIsNotElementType()
+    )
+    detail_groups_instances_count = detail_groups_instances.GetElementCount()
+    arrays_groups = get_array_group_ids(doc)
+    for group_in_array in arrays_groups:
+        if group_in_array not in detail_groups_instances.ToElementIds():
+            detail_groups_instances_count -= 1
+    return detail_groups_instances_count
 
 
 def count_model_groups_types(doc):
     """
-    Counts the number of model group types in the given Revit document that are not part of any array.
-    
+    Counts the number of model group types in the given Revit document, excluding array group types.
+
     Args:
         doc: The Revit document to process.
-        
+
     Returns:
-        int: The count of model group types not included in any array.
-    """    
-    group_type = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).WhereElementIsElementType()
-    array_list = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
-    group_types_from_array = []
-    for ar in array_list:
-        if ar is not None and doc.GetElement(ar.GroupId) is not None:
-            groupe_type_id = doc.GetElement(ar.GroupId).GetTypeId()
-            group_types_from_array.append(groupe_type_id)
-    model_group_types_count = 0
-    for gr in group_type:
-        if gr.Id not in group_types_from_array:
-            model_group_types_count += 1
-    return model_group_types_count
+        int: The count of model group types excluding array group types.
+    """
+    model_group_types = (
+        DB.FilteredElementCollector(doc)
+        .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
+        .WhereElementIsElementType()
+    )
+    arrays_group_types = get_array_group_types(doc)
+    model_groups_types_count = model_group_types.GetElementCount()
+    for model_groups_type in model_group_types:
+        if model_groups_type.Id in arrays_group_types:
+            model_groups_types_count -= 1
+    return model_groups_types_count
 
 
 def count_model_group_instances(doc):
@@ -778,19 +712,18 @@ def count_model_group_instances(doc):
 
     Args:
         doc: The Revit document to search for model group instances.
-    
+
     Returns:
         int: The count of model group instances not part of any array.
     """
-    group = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).WhereElementIsNotElementType()
-    array_list = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSArrays)
-    group_from_array = []
-    for ar in array_list:
-        if ar is not None and doc.GetElement(ar.GroupId) is not None:
-            groupe_id = ar.GroupId
-            group_from_array.append(groupe_id)
-    model_group_instance_count = 0
-    for gr in group:
-        if gr.Id not in group_from_array:
-            model_group_instance_count += 1
-    return model_group_instance_count
+    model_groups_instances = (
+        DB.FilteredElementCollector(doc)
+        .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
+        .WhereElementIsNotElementType()
+    )
+    arrays_groups = get_array_group_ids(doc)
+    model_groupes_instances_count = model_groups_instances.GetElementCount()
+    for group_in_array in arrays_groups:
+        if group_in_array not in model_groups_instances.ToElementIds():
+            model_groupes_instances_count -= 1
+    return model_groupes_instances_count
