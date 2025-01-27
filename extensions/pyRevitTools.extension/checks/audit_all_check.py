@@ -231,6 +231,7 @@ class LinksInfo:
         self.rvtlinks_count = len(get_all_linkeddocs(document)) if document else 0
         self.dwgs_count = count_total_dwg_files(document) if document else 0
         self.linked_dwg_count = count_linked_dwg_files(document) if document else 0
+        self.imported_dwg = self.dwgs_count - self.linked_dwg_count
         self.rvtlinks_unpinned_count = (
             count_unpinned_revit_links(rvtlinks_elements_items)
             if rvtlinks_elements_items
@@ -386,6 +387,7 @@ class ReportData:
             ("line_patterns_count", "materials_line_pattern_info.line_patterns_count"),
             ("dwgs_count", "links_info.dwgs_count"),
             ("linked_dwg_count", "links_info.linked_dwg_count"),
+            ("imported_dwg", "links_info.imported_dwg"),
             ("inplace_family_count", "family_info.inplace_family_count"),
             (
                 "not_parametric_families_count",
@@ -604,6 +606,7 @@ def generate_html_content(data, links_cards=""):
         "CAD Files",
         card_builder(5, data.links_info.dwgs_count, " DWGs"),
         card_builder(5, data.links_info.linked_dwg_count, " Linked DWGs"),
+        card_builder(1, data.links_info.imported_dwg, " Imported DWGs"),
     )
     families_frame = create_frame(
         "Families",
