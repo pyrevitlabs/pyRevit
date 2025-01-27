@@ -426,8 +426,8 @@ class SettingsWindow(forms.WPFWindow):
                     )
 
                 # now setup the attachments for other versions
-                for rvt_cb in self.supported_revit_versions_CB:
-                    if rvt_cb.IsEnabled:
+                for checkbox in self.supported_revit_versions_CB:
+                    if checkbox.IsEnabled:
                         if checkbox.IsChecked:
                             PyRevit.PyRevitAttachments.Attach(int(checkbox.Version),attachment.Clone,new_engine,False)
                         else:
