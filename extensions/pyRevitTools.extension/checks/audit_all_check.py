@@ -196,11 +196,11 @@ class ViewTemplateFilterInfo:
             len(get_all_view_templates(document)) if document else 0
         )
         self.unused_view_templates_count = (
-            count_unused_view_templates(views) if views else 0
+            count_unused_view_templates(views, document) if views else 0
         )
         self.all_filters_count = count_filters(document) if document else 0
         self.unused_view_filters_count = (
-            count_unused_filters_in_views(views) if views else 0
+            count_unused_filters_in_views(views, document) if views else 0
         )
 
 
@@ -591,7 +591,7 @@ def generate_html_content(data, links_cards=""):
             100, data.view_template_filter_info.view_templates_count, " View Templates"
         ),
         card_builder(
-            0, data.view_template_filter_info.unused_view_templates_count, " Unused VT"
+            0, data.view_template_filter_info.unused_view_templates_count, " Unused View Templates"
         ),
         card_builder(0, data.view_template_filter_info.all_filters_count, " Filters"),
         card_builder(

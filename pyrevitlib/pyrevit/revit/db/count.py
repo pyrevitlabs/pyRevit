@@ -4,6 +4,7 @@
 
 from System.Collections.Generic import HashSet
 from pyrevit import DB
+from pyrevit.compat import get_elementid_value_func
 from pyrevit.revit.db.query import get_name
 from pyrevit.revit.db import ProjectInfo
 from pyrevit.revit.db.query import (
@@ -13,6 +14,7 @@ from pyrevit.revit.db.query import (
     get_all_schedules,
     get_array_group_ids,
     get_array_group_types,
+    get_all_view_templates,
 )
 
 
@@ -174,7 +176,7 @@ def count_copied_views(views_set):
     return copied_views_count
 
 
-def count_unused_view_templates(views_list):
+def count_unused_view_templates(views_list, document):
     """
     Returns the count of unused view templates in the given list of views.
 
@@ -187,13 +189,12 @@ def count_unused_view_templates(views_list):
     if not views_list:
         return 0
     applied_templates = [v.ViewTemplateId for v in views_list]
-    view_templates_list = [v for v in views_list if v.IsTemplate]
+    view_templates_list = get_all_view_templates(doc=document)
     unused_view_templates = []
     for v in view_templates_list:
         if v.Id not in applied_templates:
-            unused_view_templates.append(v.Name)
-    unused_view_templates_count = len(unused_view_templates)
-    return unused_view_templates_count
+            unused_view_templates.append(v)
+    return len(unused_view_templates)
 
 
 def count_filters(document):
@@ -212,7 +213,7 @@ def count_filters(document):
     return len(filters_collection)
 
 
-def count_unused_filters_in_views(view_list):
+def count_unused_filters_in_views(view_list, document):
     """
     This function takes in a list of views and returns the count of unused parameter filters in the views.
 
@@ -222,13 +223,17 @@ def count_unused_filters_in_views(view_list):
     Returns:
     - int: The count of unused parameter filters in the views.
     """
+    filters = get_elements_by_class(DB.ParameterFilterElement, doc=document)
     used_filters_set = set()
     all_filters = set()
+    get_elementid_value = get_elementid_value_func()
+    for flt in filters:
+        all_filters.add(get_elementid_value(flt.Id))
     for v in view_list:
         if v.AreGraphicsOverridesAllowed():
             view_filters = v.GetFilters()
             for filter_id in view_filters:
-                used_filters_set.add(filter_id.IntegerValue)
+                used_filters_set.add(get_elementid_value(filter_id))
     unused_view_filters_count = len(all_filters - used_filters_set)
     return unused_view_filters_count
 
