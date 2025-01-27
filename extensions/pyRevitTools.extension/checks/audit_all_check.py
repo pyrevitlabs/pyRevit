@@ -177,6 +177,7 @@ class SheetViewInfo:
     def __init__(self, document, sheets_set, views):
         self.sheets_count = len(sheets_set) if sheets_set else 0
         self.views_count = len(views) if views else 0
+        self.views_floorplans_count = sum(1 for x in views if x.ViewType == DB.ViewType.FloorPlan) if views else 0
         self.views_not_on_sheets = (
             count_unplaced_views(sheets_set, self.views_count)
             if sheets_set and views
@@ -580,6 +581,7 @@ def generate_html_content(data, links_cards=""):
         "Sheets, Views, Graphics",
         card_builder(500, data.sheet_view_info.sheets_count, " Sheets"),
         card_builder(1500, data.sheet_view_info.views_count, " Views"),
+        card_builder(200, data.sheet_view_info.views_floorplans_count, " Floor Plans"),
         card_builder(
             300, data.sheet_view_info.views_not_on_sheets, " Views not on Sheets"
         ),
@@ -618,7 +620,7 @@ def generate_html_content(data, links_cards=""):
             data.family_info.not_parametric_families_count,
             " Non-Parametric Families",
         ),
-        card_builder(0, data.family_info.imports_subcats_count, " Imports in Families"),
+        card_builder(0, data.family_info.imports_subcats_count, " CAD Layers Imports in Families"),
         card_builder(
             50, data.family_info.generic_models_types_count, " Generic Models Types"
         ),
