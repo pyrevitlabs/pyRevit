@@ -119,16 +119,20 @@ def count_analytical_model_activated(document):
     evaluator = DB.FilterNumericEquals()
     rule = DB.FilterIntegerRule(provider, evaluator, 1)
     elem_param_filter = DB.ElementParameterFilter(rule)
-    return DB.FilteredElementCollector(document).WherePasses(elem_param_filter).GetElementCount()
+    return (
+        DB.FilteredElementCollector(document)
+        .WherePasses(elem_param_filter)
+        .GetElementCount()
+    )
 
 
 def count_total_schedules(document):
     """
     Counts the total number of schedules in the given document.
-    
+
     Args:
         document (DB.Document): The Revit document to query for schedules.
-    
+
     Returns:
         int: The total number of schedules in the document.
     """
@@ -139,10 +143,10 @@ def count_total_schedules(document):
 def count_unplaced_schedules(document):
     """
     Counts the number of schedules that are not placed on a sheet in the given document.
-    
+
     Args:
         document (DB.Document): The Revit document to query for schedules.
-    
+
     Returns:
         int: The number of schedules that are not placed on a sheet.
     """
@@ -286,8 +290,10 @@ def count_in_place_families(document):
     - int: The count of in-place families.
     """
     familyinstance_collector = get_elements_by_class(DB.FamilyInstance, doc=document)
-    in_place_family_count = sum(1 for x in familyinstance_collector
-    if x.Symbol and x.Symbol.Family and x.Symbol.Family.IsInPlace
+    in_place_family_count = sum(
+        1
+        for x in familyinstance_collector
+        if x.Symbol and x.Symbol.Family and x.Symbol.Family.IsInPlace
     )
     return in_place_family_count
 
@@ -305,8 +311,7 @@ def count_non_parametric_families(document):
     families_collection = get_families(document, only_editable=True)
     if not families_collection:
         return 0
-    not_parametric_families_count = sum(1 for family in families_collection if not family.IsParametric)
-    return not_parametric_families_count
+    return sum(1 for family in families_collection if not family.IsParametric)
 
 
 def count_total_families(document):
@@ -349,7 +354,6 @@ def count_generic_models_types(document):
     return generic_models_types
 
 
-
 def count_import_subcategories(document):
     """
     Returns the number of subcategories in the Import category of the given document.
@@ -390,10 +394,10 @@ def count_detail_components(document):
 def count_total_textnote_types(document):
     """
     Counts the total number of TextNoteType elements in the given Revit document.
-    
+
     Args:
         document (DB.Document): The Revit document to search for TextNoteType elements.
-    
+
     Returns:
         int: The total number of TextNoteType elements.
     """
@@ -406,10 +410,10 @@ def count_total_textnote_types(document):
 def count_textnote_types_with_changed_width_factor(document):
     """
     Counts the number of TextNoteType elements with a changed width factor in the given Revit document.
-    
+
     Args:
         document (DB.Document): The Revit document to search for TextNoteType elements.
-    
+
     Returns:
         int: The number of TextNoteType elements with a width factor not equal to 1.
     """
@@ -429,10 +433,10 @@ def count_textnote_types_with_changed_width_factor(document):
 def count_textnote_types_with_opaque_background(document):
     """
     Counts the number of TextNoteType elements with an opaque background in the given Revit document.
-    
+
     Args:
         document (DB.Document): The Revit document to search for TextNoteType elements.
-    
+
     Returns:
         int: The number of TextNoteType elements with an opaque background.
     """
@@ -517,7 +521,9 @@ def count_unnamed_reference_planes(document):
         return 0
     unnamed_ref_planes_count = 0
     # Default reference plane label, not the most elegant solution
-    reference_plane_default_label = DB.LabelUtils.GetLabelFor(DB.BuiltInCategory.OST_CLines).replace("s", "")
+    reference_plane_default_label = DB.LabelUtils.GetLabelFor(
+        DB.BuiltInCategory.OST_CLines
+    ).replace("s", "")
     for ref_plane in ref_planes:
         if ref_plane.Name == reference_plane_default_label:
             unnamed_ref_planes_count += 1
@@ -551,9 +557,7 @@ def count_detail_lines(document):
     Returns:
         int: The number of detail lines in the document.
     """
-    lines = get_elements_by_categories(
-        [DB.BuiltInCategory.OST_Lines], doc=document
-    )
+    lines = get_elements_by_categories([DB.BuiltInCategory.OST_Lines], doc=document)
     if not lines:
         return 0
     detail_line_count = 0
