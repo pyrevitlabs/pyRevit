@@ -69,7 +69,7 @@ class PyRevitEngineConfig(object):
 
 class RevitVersionCB:
     """Represents a Revit version Checkbox for binding with XAML."""
-    def __init__(self, version, is_checked=False, is_enabled=True):
+    def __init__(self, version, is_checked=False, is_enabled=False):
         self.Content = "Revit {}".format(version)  # Display name in the UI
         self.Version = version       # YEAR version (e.g., '2024')
         self.IsChecked = is_checked  # Whether the checkbox is checked
@@ -95,7 +95,7 @@ class SettingsWindow(forms.WPFWindow):
         self._setup_env_vars_list()
 
         # check boxes for each version of Revit
-        self.supported_revit_versions_CB = [RevitVersionCB(rvt_ver, is_checked=False, is_enabled=True) for rvt_ver in available_revit_versions]
+        self.supported_revit_versions_CB = [RevitVersionCB(rvt_ver, is_checked=False, is_enabled=False) for rvt_ver in available_revit_versions]
         # Bind the SupportedVersions to the XAML's DataContext
         self.DataContext = self
 
@@ -371,14 +371,6 @@ class SettingsWindow(forms.WPFWindow):
             event_checkbox.IsChecked = \
                 telemetry.get_apptelemetry_event_state(event_flags, event_type)
 
-    def _make_product_name(self, product, note):
-        return ' | {} | {}({}) {}'.format(
-            product.Name,
-            product.BuildNumber,
-            product.BuildTarget,
-            note
-            )
-
     def _setup_addinfiles(self):
         """Gets the installed Revit versions and sets up the ui"""
         installed_revits = \
@@ -388,27 +380,23 @@ class SettingsWindow(forms.WPFWindow):
             {str(x.Product.ProductYear):x
              for x in PyRevit.PyRevitAttachments.GetAttachments()}
 
-        for rvt_cb in self.supported_revit_versions_CB:
-            if rvt_cb.Version in attachments:
-                if rvt_cb.Version != HOST_APP.version:
-                    rvt_cb.Content = rvt_cb.Content + self._make_product_name(attachments[rvt_cb.Version].Product,'')
-                else:
-                    rvt_cb.Content = rvt_cb.Content + self._make_product_name(attachments[rvt_cb.Version].Product,self.get_locale_string("RevitAttachment.Current"))
-                rvt_cb.IsChecked = True
-                if attachments[rvt_cb.Version].AttachmentType == PyRevit.PyRevitAttachmentType.AllUsers:
-                    rvt_cb.IsEnabled = False
-                    rvt_cb.Content += self.get_locale_string("RevitAttachment.AllUsers")
-                else:
-                    rvt_cb.IsEnabled = True
-            else:
-                if rvt_cb.Version in installed_revits:
-                    rvt_cb.Content = rvt_cb.Content + self._make_product_name(installed_revits[rvt_cb.Version],self.get_locale_string("RevitAttachment.NotAttached"))
-                    rvt_cb.IsEnabled = True
-                    rvt_cb.IsChecked = False
-                else:
-                    rvt_cb.Content = self.get_locale_string("RevitAttachment.NotInstalled").format(rvt_cb.Version)
-                    rvt_cb.IsEnabled = False
-                    rvt_cb.IsChecked = False
+        for checkbox  in self.supported_revit_versions_CB:
+            #checkbox.IsEnabled and checkbox.IsChecked are False by default
+            if checkbox.Version not in installed_revits:
+                checkbox.Content += self.get_locale_string("RevitAttachment.NotInstalled") #Change in local string file to avoid passing the version! already in RevitVersionCB class
+                continue
+            product = installed_revits[checkbox.Version]
+            checkbox.Content += ' | {} | {}({}) '.format(product.Name,product.BuildNumber,product.BuildTarget)
+            checkbox.IsEnabled = True
+            if checkbox.Version not in attachments:
+                checkbox.Content += self.get_locale_string("RevitAttachment.NotAttached")
+                continue
+            checkbox.IsChecked = True
+            if checkbox.Version == HOST_APP.version:
+                checkbox.Content += self.get_locale_string("RevitAttachment.Current")
+            if attachments[checkbox.Version].AttachmentType == PyRevit.PyRevitAttachmentType.AllUsers:
+                checkbox.Content += self.get_locale_string("RevitAttachment.AllUsers")
+                checkbox.IsEnabled = False
 
     def is_same_version_as_running(self, version):
         return str(version) == EXEC_PARAMS.engine_ver
@@ -440,15 +428,10 @@ class SettingsWindow(forms.WPFWindow):
                 # now setup the attachments for other versions
                 for rvt_cb in self.supported_revit_versions_CB:
                     if rvt_cb.IsEnabled:
-                        if rvt_cb.IsChecked:
-                            PyRevit.PyRevitAttachments.Attach(
-                                int(rvt_cb.Version),
-                                attachment.Clone,
-                                new_engine,
-                                False
-                            )
+                        if checkbox.IsChecked:
+                            PyRevit.PyRevitAttachments.Attach(int(checkbox.Version),attachment.Clone,new_engine,False)
                         else:
-                            PyRevit.PyRevitAttachments.Detach(int(rvt_cb.Version))
+                            PyRevit.PyRevitAttachments.Detach(int(checkbox.Version))
         else:
             logger.error('Error determining current attached clone.')
 
