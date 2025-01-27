@@ -73,6 +73,7 @@ from pyrevit.revit.db.count import (
     count_dimension_overrides,
     count_revision_clouds,
     count_purgeable_elements,
+    count_generic_models_types,
 )
 
 logger = get_logger()
@@ -251,7 +252,7 @@ class FamilyInfo:
         self.imports_subcats_count = (
             count_import_subcategories(document) if document else 0
         )
-        self.generic_models_types_count = len(get_families(document)) if document else 0
+        self.generic_models_types_count = count_generic_models_types(document) if document else 0
         self.detail_components_count = (
             count_detail_components(document) if document else 0
         )

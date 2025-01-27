@@ -15,6 +15,7 @@ from pyrevit.revit.db.query import (
     get_array_group_ids,
     get_array_group_types,
     get_all_view_templates,
+    get_families,
 )
 
 
@@ -284,7 +285,7 @@ def count_in_place_families(document):
     Returns:
     - int: The count of in-place families.
     """
-    families_collection = get_elements_by_class(DB.Family, doc=document)
+    families_collection = get_families(document, only_editable=True)
     if not families_collection:
         return 0
     in_place_family_count = sum(1 for family in families_collection if family.IsInPlace)
@@ -301,7 +302,7 @@ def count_non_parametric_families(document):
     Returns:
     - int: The count of non-parametric families.
     """
-    families_collection = get_elements_by_class(DB.Family, doc=document)
+    families_collection = get_families(document, only_editable=True)
     if not families_collection:
         return 0
     not_parametric_families_count = sum(1 for family in families_collection if not family.IsParametric)
@@ -310,18 +311,43 @@ def count_non_parametric_families(document):
 
 def count_total_families(document):
     """
-    This function collects all the families in the given document and returns their total count.
+    Counts the total number of unique family names in the given Revit document.
 
     Args:
-    - document: The Revit document to search for families in.
+        document: The Revit document to count families from.
 
     Returns:
-    - int: The total count of families.
+        int: The total number of unique family names in the document.
     """
-    families_collection = get_elements_by_class(DB.Family, doc=document)
-    if not families_collection:
+    families_collection = get_families(document, only_editable=True)
+    unique_families = []
+    for fam in families_collection:
+        if fam.Name not in unique_families:
+            unique_families.append(fam.Name)
+    if not unique_families:
         return 0
-    return len(families_collection)
+    return len(unique_families)
+
+
+def count_generic_models_types(document):
+    """
+    Counts the number of generic model types in the given Revit document.
+
+    Args:
+        document: The Revit document to search within.
+
+    Returns:
+        int: The number of generic model types found in the document.
+        Minimum will always be 1, at least 1x 3D model text type always exists.
+    """
+    generic_models_types = (
+        DB.FilteredElementCollector(document)
+        .OfCategory(DB.BuiltInCategory.OST_GenericModel)
+        .WhereElementIsElementType()
+        .GetElementCount()
+    )
+    return generic_models_types
+
 
 
 def count_import_subcategories(document):
