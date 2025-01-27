@@ -285,10 +285,10 @@ def count_in_place_families(document):
     Returns:
     - int: The count of in-place families.
     """
-    families_collection = get_families(document, only_editable=True)
-    if not families_collection:
-        return 0
-    in_place_family_count = sum(1 for family in families_collection if family.IsInPlace)
+    familyinstance_collector = get_elements_by_class(DB.FamilyInstance, doc=document)
+    in_place_family_count = sum(1 for x in familyinstance_collector
+    if x.Symbol and x.Symbol.Family and x.Symbol.Family.IsInPlace
+    )
     return in_place_family_count
 
 
