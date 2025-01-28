@@ -36,45 +36,32 @@ def count_unpinned_revit_links(revitlinks_elements):
     )
 
 
-def count_rooms(document):
+def count_unplaced_rooms(rooms=None):
     """
-    Returns the number of rooms in the document.
+    Counts the number of unplaced rooms in a given list of rooms.
+    An unplaced room is defined as a room with no location (i.e., room.Location is None).
 
     Args:
-        document (Document): A Revit document.
+        rooms (list, optional): A list of room objects. Defaults to None.
 
     Returns:
-        int: The number of rooms in the document.
+        int: The number of unplaced rooms in the list.
     """
-    rooms = get_elements_by_categories([DB.BuiltInCategory.OST_Rooms], doc=document)
-    return len(rooms)
 
-
-def count_unplaced_rooms(document):
-    """
-    Returns the number of unplaced rooms in the document.
-
-    Args:
-        document (Document): A Revit document.
-
-    Returns:
-        int: The number of unplaced rooms in the document.
-    """
-    rooms = get_elements_by_categories([DB.BuiltInCategory.OST_Rooms], doc=document)
     return sum(1 for room in rooms if room.Location is None)
 
 
-def count_unbounded_rooms(document):
+def count_unbounded_rooms(rooms=None):
     """
-    Returns the number of unbounded rooms in the document.
+    Counts the number of unbounded rooms (rooms with an area of 0) in the given list of rooms.
 
     Args:
-        document (Document): A Revit document.
+        rooms (list, optional): A list of room objects. Each room object should have an 'Area' attribute.
 
     Returns:
-        int: The number of unbounded rooms in the document.
+        int: The number of unbounded rooms in the list.
     """
-    rooms = get_elements_by_categories([DB.BuiltInCategory.OST_Rooms], doc=document)
+
     return sum(1 for room in rooms if room.Area == 0)
 
 
@@ -126,21 +113,7 @@ def count_analytical_model_activated(document):
     )
 
 
-def count_total_schedules(document):
-    """
-    Counts the total number of schedules in the given document.
-
-    Args:
-        document (DB.Document): The Revit document to query for schedules.
-
-    Returns:
-        int: The total number of schedules in the document.
-    """
-    schedules_elements = get_all_schedules(document)
-    return len(schedules_elements)
-
-
-def count_unplaced_schedules(document):
+def count_unplaced_schedules(schedules=None):
     """
     Counts the number of schedules that are not placed on a sheet in the given document.
 
@@ -150,10 +123,9 @@ def count_unplaced_schedules(document):
     Returns:
         int: The number of schedules that are not placed on a sheet.
     """
-    schedules_elements = get_all_schedules(document)
     return sum(
         1
-        for v in schedules_elements
+        for v in schedules
         if v.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
     )
 
@@ -202,33 +174,18 @@ def count_unused_view_templates(views_list, document):
     return len(unused_view_templates)
 
 
-def count_filters(document):
+
+def count_unused_filters_in_views(view_list, filters):
     """
-    This function takes in a Revit document and returns the count of all parameter filters in the document.
+    Counts the number of unused filters in the given list of views.
 
     Args:
-    - document (DB.Document): The Revit document to search for parameter filters.
+        view_list (list): A list of Revit view objects to check for filter usage.
+        filters (list): A list of filter objects to check against the views.
 
-    Returns:
-    - int: The count of all parameter filters in the document.
+        Returns:
+        int: The number of filters that are not used in any of the provided views.
     """
-    filters_collection = get_elements_by_class(DB.ParameterFilterElement, doc=document)
-    if not filters_collection:
-        return 0
-    return len(filters_collection)
-
-
-def count_unused_filters_in_views(view_list, document):
-    """
-    This function takes in a list of views and returns the count of unused parameter filters in the views.
-
-    Args:
-    - views (list of DB.View): The list of views to check for unused parameter filters.
-
-    Returns:
-    - int: The count of unused parameter filters in the views.
-    """
-    filters = get_elements_by_class(DB.ParameterFilterElement, doc=document)
     used_filters_set = set()
     all_filters = set()
     get_elementid_value = get_elementid_value_func()
@@ -241,22 +198,6 @@ def count_unused_filters_in_views(view_list, document):
                 used_filters_set.add(get_elementid_value(filter_id))
     unused_view_filters_count = len(all_filters - used_filters_set)
     return unused_view_filters_count
-
-
-def count_total_dwg_files(document):
-    """
-    Returns the total number of DWG files in the document.
-
-    Args:
-        document (DB.Document): The Revit document to search for DWG files.
-
-    Returns:
-        int: The total number of DWG files in the document.
-    """
-    dwg_collector = get_elements_by_class(DB.ImportInstance, doc=document)
-    if not dwg_collector:
-        return 0
-    return len(dwg_collector)
 
 
 def count_linked_dwg_files(document):

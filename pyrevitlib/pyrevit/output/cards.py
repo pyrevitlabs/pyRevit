@@ -26,14 +26,12 @@ def card_start_style(limit, value, alt):
         ratio = 0
     color = "#d0d3d4"
     if value != 0:
-        if 0.5 <= ratio <= 1:
-            color = "#FFDD94"  # orange
-        elif ratio > 1:
-            color = "#FA897B"  # red
-        elif ratio < 0.5:
+        if ratio < 0.5:
             color = "#D0E6A5"  # green
+        elif ratio <= 1:
+            color = "#FFDD94"  # orange
         else:
-            pass
+            color = "#FA897B"  # red
     try:
         card_start = '<div style="display: inline-block; width: 100px; height: 40px; background: {}; font-family: sans-serif; font-size: 0.85rem; padding: 5px; text-align: center; border-radius: 8px; margin: 5px; box-shadow: 0 6px 6px 0 rgba(0, 0, 0, 0.2); vertical-align: top;" alt="{}">'.format(
             color, alt
@@ -57,23 +55,17 @@ def card_builder(limit, value, description):
     """
 
     alt = "{} {} (limit = {})".format(str(value), str(description), str(limit))
-    card_end = (
-        "<b>"
-        + str(value)
-        + '</b><br /><a style="font-size: 0.70rem">'
-        + description
-        + "</a></div>"
+    card_end = '<b>{}</b><br /><a style="font-size: 0.70rem">{}</a></div>'.format(
+        value, description
     )
-    card = card_start_style(limit, value, alt) + card_end
-    return card
+    return card_start_style(limit, value, alt) + card_end
 
 
 def create_frame(title, *cards):
     """
     Creates an HTML div frame containing multiple cards with a rounded border and a title on the top left corner.
 
-    Args:
-        title (str): The title to be displayed on the top left corner of the frame.
+    return card_start_style(limit, value, alt) + card_end
         cards (str): Multiple strings representing HTML card elements.
 
     Returns:

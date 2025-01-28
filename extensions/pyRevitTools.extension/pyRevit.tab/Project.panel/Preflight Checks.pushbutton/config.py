@@ -5,8 +5,6 @@ from pyrevit import script
 from pyrevit.forms import alert, pick_file, pick_folder
 from csv import reader
 
-script.get_output().close_others()
-
 config = script.get_config()
 
 current_folder = dirname(abspath(__file__))

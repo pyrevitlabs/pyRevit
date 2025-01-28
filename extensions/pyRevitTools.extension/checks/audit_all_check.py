@@ -18,63 +18,9 @@ from pyrevit.script import get_config, get_logger
 from pyrevit.forms import alert, show_balloon
 from pyrevit.output.cards import card_builder, create_frame
 from pyrevit.revit.db import ProjectInfo as RevitProjectInfo
-from pyrevit.revit.db.query import (
-    get_phases_names,
-    get_worksets_names,
-    get_warnings_count,
-    get_critical_warnings_count,
-    get_document_clean_name,
-    get_sheets,
-    get_all_views,
-    get_all_view_templates,
-    get_elements_by_categories,
-    get_families,
-    get_elements_by_class,
-    get_all_linkeddocs,
-    get_linked_model_instances,
-    get_rvt_link_instance_name,
-)
 from pyrevit.preflight import PreflightTestCase
-from pyrevit.revit.db.count import (
-    count_unpinned_revit_links,
-    count_rooms,
-    count_unplaced_rooms,
-    count_unbounded_rooms,
-    count_unplaced_views,
-    count_analytical_model_activated,
-    count_total_schedules,
-    count_unplaced_schedules,
-    count_copied_views,
-    count_unused_view_templates,
-    count_filters,
-    count_unused_filters_in_views,
-    count_total_dwg_files,
-    count_linked_dwg_files,
-    count_in_place_families,
-    count_non_parametric_families,
-    count_total_families,
-    count_import_subcategories,
-    count_detail_components,
-    count_total_textnote_types,
-    count_textnote_types_with_changed_width_factor,
-    count_textnote_types_with_opaque_background,
-    count_text_notes,
-    count_text_notes_with_all_caps,
-    count_detail_groups_types,
-    count_detail_group_instances,
-    count_model_groups_types,
-    count_model_group_instances,
-    count_reference_planes,
-    count_unnamed_reference_planes,
-    count_elements,
-    count_detail_lines,
-    count_dimensions,
-    count_dimension_types,
-    count_dimension_overrides,
-    count_revision_clouds,
-    count_purgeable_elements,
-    count_generic_models_types,
-)
+import pyrevit.revit.db.query as q
+import pyrevit.revit.db.count as cnt
 
 logger = get_logger()
 
@@ -123,7 +69,7 @@ class DocumentInfo:
     """Handles document-specific information."""
 
     def __init__(self, document):
-        self.clean_name = get_document_clean_name(document) if document else ""
+        self.clean_name = q.get_document_clean_name(document)
         self.revit_version_build = HOST_APP.build
 
 
@@ -131,24 +77,24 @@ class ProjectInfoData:
     """Encapsulates project metadata from Revit."""
 
     def __init__(self, document):
-        revit_project_info = RevitProjectInfo(document) if document else None
-        self.name = revit_project_info.name if revit_project_info else ""
-        self.number = revit_project_info.number if revit_project_info else ""
-        self.client = revit_project_info.client_name if revit_project_info else ""
-        self.phases = get_phases_names(document) if document else []
-        self.worksets_names = get_worksets_names(document) if document else []
+        revit_project_info = RevitProjectInfo(document)
+        self.name = revit_project_info.name
+        self.number = revit_project_info.number
+        self.client = revit_project_info.client_name
+        self.phases = q.get_phases_names(document)
+        self.worksets_names = q.get_worksets_names(document)
 
 
 class ElementCounts:
     """Manages element-related counts."""
 
     def __init__(self, document):
-        self.element_count = count_elements(document) if document else 0
+        self.element_count = cnt.count_elements(document)
         self.purgeable_elements_count = (
-            count_purgeable_elements(document) if document else 0
+            cnt.count_purgeable_elements(document)
         )
         self.activated_analytical_model_elements_count = (
-            count_analytical_model_activated(document) if document else 0
+            cnt.count_analytical_model_activated(document)
         )
 
 
@@ -156,9 +102,9 @@ class WarningsInfo:
     """Handles warning metrics."""
 
     def __init__(self, document):
-        self.all_warnings_count = get_warnings_count(document) if document else 0
+        self.all_warnings_count = q.get_warnings_count(document)
         self.critical_warnings_count = (
-            get_critical_warnings_count(document, CRITICAL_WARNINGS) if document else 0
+            q.get_critical_warnings_count(document, CRITICAL_WARNINGS)
         )
 
 
@@ -166,83 +112,80 @@ class RoomInfo:
     """Manages room-related data."""
 
     def __init__(self, document):
-        self.rooms_count = count_rooms(document) if document else 0
-        self.unplaced_rooms_count = count_unplaced_rooms(document) if document else 0
-        self.unbounded_rooms = count_unbounded_rooms(document) if document else 0
+        rooms = q.get_elements_by_categories(
+            [DB.BuiltInCategory.OST_Rooms], doc=document
+        )
+        self.rooms_count = len(rooms)
+        self.unplaced_rooms_count = cnt.count_unplaced_rooms(rooms)
+        self.unbounded_rooms = cnt.count_unbounded_rooms(rooms)
 
 
 class SheetViewInfo:
     """Handles sheets and views metrics."""
 
     def __init__(self, document, sheets_set, views):
-        self.sheets_count = len(sheets_set) if sheets_set else 0
-        self.views_count = len(views) if views else 0
+        self.sheets_count = len(sheets_set)
+        self.views_count = len(views)
         self.views_floorplans_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.FloorPlan) if views else 0
+            sum(1 for x in views if x.ViewType == DB.ViewType.FloorPlan)
         )
         self.views_ceilingplans_count = (
             sum(1 for x in views if x.ViewType == DB.ViewType.CeilingPlan)
-            if views
-            else 0
         )
         self.views_elevations_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Elevation) if views else 0
+            sum(1 for x in views if x.ViewType == DB.ViewType.Elevation)
         )
         self.views_sections_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Section) if views else 0
+            sum(1 for x in views if x.ViewType == DB.ViewType.Section)
         )
         self.views_threed_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.ThreeD) if views else 0
+            sum(1 for x in views if x.ViewType == DB.ViewType.ThreeD)
         )
         self.views_drawingsheet_count = (
             sum(1 for x in views if x.ViewType == DB.ViewType.DrawingSheet)
-            if views
-            else 0
         )
         self.views_legend_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Legend) if views else 0
+            sum(1 for x in views if x.ViewType == DB.ViewType.Legend)
         )
         self.views_drafting_view_count = (
             sum(1 for x in views if x.ViewType == DB.ViewType.DraftingView)
-            if views
-            else 0
         )
         self.views_area_plan_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.AreaPlan) if views else 0
+            sum(1 for x in views if x.ViewType == DB.ViewType.AreaPlan)
         )
         self.views_detail_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Detail) if views else 0
+            sum(1 for x in views if x.ViewType == DB.ViewType.Detail)
         )
         self.views_engineering_plan_count = (
             sum(1 for x in views if x.ViewType == DB.ViewType.EngineeringPlan)
-            if views
-            else 0
         )
         self.views_not_on_sheets = (
-            count_unplaced_views(sheets_set, self.views_count)
-            if sheets_set and views
-            else 0
+            cnt.count_unplaced_views(sheets_set, self.views_count)
         )
-        self.schedule_count = count_total_schedules(document) if document else 0
+        schedules = q.get_all_schedules(document)
+        self.schedule_count = len(schedules)
         self.schedules_not_sheeted_count = (
-            count_unplaced_schedules(document) if document else 0
+            cnt.count_unplaced_schedules(schedules)
         )
-        self.copied_views_count = count_copied_views(views) if views else 0
+        self.copied_views_count = cnt.count_copied_views(views)
 
 
 class ViewTemplateFilterInfo:
     """Manages view templates and filters."""
 
     def __init__(self, document, views):
+        filters = q.get_all_view_templates(document)
         self.view_templates_count = (
-            len(get_all_view_templates(document)) if document else 0
+            len(filters)
         )
         self.unused_view_templates_count = (
-            count_unused_view_templates(views, document) if views else 0
+            cnt.count_unused_view_templates(views, document)
         )
-        self.all_filters_count = count_filters(document) if document else 0
-        self.unused_view_filters_count = (
-            count_unused_filters_in_views(views, document) if views else 0
+        self.all_filters_count = len(q.get_elements_by_class(
+            DB.ParameterFilterElement, doc=document
+        ))
+        self.unused_view_filters_count = cnt.count_unused_filters_in_views(
+            views, filters
         )
 
 
@@ -252,17 +195,13 @@ class MaterialsLinePatternInfo:
     def __init__(self, document):
         self.materials_count = (
             len(
-                get_elements_by_categories(
+                q.get_elements_by_categories(
                     [DB.BuiltInCategory.OST_Materials], doc=document
                 )
             )
-            if document
-            else 0
         )
         self.line_patterns_count = (
-            len(get_elements_by_class(DB.LinePatternElement, doc=document))
-            if document
-            else 0
+            len(q.get_elements_by_class(DB.LinePatternElement, doc=document))
         )
 
 
@@ -270,14 +209,12 @@ class LinksInfo:
     """Manages linked files data."""
 
     def __init__(self, document, rvtlinks_elements_items):
-        self.rvtlinks_count = len(get_all_linkeddocs(document)) if document else 0
-        self.dwgs_count = count_total_dwg_files(document) if document else 0
-        self.linked_dwg_count = count_linked_dwg_files(document) if document else 0
+        self.rvtlinks_count = len(q.get_all_linkeddocs(document))
+        self.dwgs_count = len(q.get_elements_by_class(DB.ImportInstance, doc=document))
+        self.linked_dwg_count = cnt.count_linked_dwg_files(document)
         self.imported_dwg = self.dwgs_count - self.linked_dwg_count
         self.rvtlinks_unpinned_count = (
-            count_unpinned_revit_links(rvtlinks_elements_items)
-            if rvtlinks_elements_items
-            else 0
+            cnt.count_unpinned_revit_links(rvtlinks_elements_items)
         )
 
 
@@ -285,21 +222,21 @@ class FamilyInfo:
     """Handles family-related metrics."""
 
     def __init__(self, document):
-        self.inplace_family_count = count_in_place_families(document) if document else 0
+        self.inplace_family_count = cnt.count_in_place_families(document)
         self.not_parametric_families_count = (
-            count_non_parametric_families(document) if document else 0
+            cnt.count_non_parametric_families(document)
         )
-        self.family_count = count_total_families(document) if document else 0
+        self.family_count = cnt.count_total_families(document)
         self.imports_subcats_count = (
-            count_import_subcategories(document) if document else 0
+            cnt.count_import_subcategories(document)
         )
         self.generic_models_types_count = (
-            count_generic_models_types(document) if document else 0
+            cnt.count_generic_models_types(document)
         )
         self.detail_components_count = (
-            count_detail_components(document) if document else 0
+            cnt.count_detail_components(document)
         )
-        self.detail_lines_count = count_detail_lines(document) if document else 0
+        self.detail_lines_count = cnt.count_detail_lines(document)
 
 
 class TextNotesInfo:
@@ -307,17 +244,17 @@ class TextNotesInfo:
 
     def __init__(self, document):
         self.text_notes_types_count = (
-            count_total_textnote_types(document) if document else 0
+            cnt.count_total_textnote_types(document)
         )
         self.text_notes_types_wf_count = (
-            count_textnote_types_with_changed_width_factor(document) if document else 0
+            cnt.count_textnote_types_with_changed_width_factor(document)
         )
         self.text_bg_count = (
-            count_textnote_types_with_opaque_background(document) if document else 0
+            cnt.count_textnote_types_with_opaque_background(document)
         )
-        self.text_notes_count = count_text_notes(document) if document else 0
+        self.text_notes_count = cnt.count_text_notes(document)
         self.text_notes_caps_count = (
-            count_text_notes_with_all_caps(document) if document else 0
+            cnt.count_text_notes_with_all_caps(document)
         )
 
 
@@ -326,16 +263,16 @@ class GroupInfo:
 
     def __init__(self, document):
         self.detail_groups_count = (
-            count_detail_group_instances(document) if document else 0
+            cnt.count_detail_group_instances(document)
         )
         self.detail_groups_types_count = (
-            count_detail_groups_types(document) if document else 0
+            cnt.count_detail_groups_types(document)
         )
         self.model_group_count = (
-            count_model_group_instances(document) if document else 0
+            cnt.count_model_group_instances(document)
         )
         self.model_group_type_count = (
-            count_model_groups_types(document) if document else 0
+            cnt.count_model_groups_types(document)
         )
 
 
@@ -344,10 +281,10 @@ class ReferencePlaneInfo:
 
     def __init__(self, document):
         self.reference_planes_count = (
-            count_reference_planes(document) if document else 0
+            cnt.count_reference_planes(document)
         )
         self.unnamed_ref_planes_count = (
-            count_unnamed_reference_planes(document) if document else 0
+            cnt.count_unnamed_reference_planes(document)
         )
 
 
@@ -355,17 +292,17 @@ class DimensionsInfo:
     """Handles dimension-related data."""
 
     def __init__(self, document):
-        self.dim_types_count = count_dimension_types(document) if document else 0
-        self.dim_count = count_dimensions(document) if document else 0
+        self.dim_types_count = cnt.count_dimension_types(document)
+        self.dim_count = cnt.count_dimensions(document)
         self.dim_overrides_count = (
-            count_dimension_overrides(document) if document else 0
+            cnt.count_dimension_overrides(document)
         )
 
 class RevisionsInfo:
     """Manages revision clouds count."""
 
     def __init__(self, document):
-        self.revision_clouds_count = count_revision_clouds(document) if document else 0
+        self.revision_clouds_count = cnt.count_revision_clouds(document)
 
 
 class ReportData:
@@ -465,17 +402,15 @@ class ReportData:
     )
 
     def __init__(self, document=None):
-        sheets_set = get_sheets(document) if document else None
+        sheets_set = q.get_sheets(document)
         views = (
-            get_elements_by_categories([DB.BuiltInCategory.OST_Views], doc=document)
-            if document
-            else None
+            q.get_elements_by_categories([DB.BuiltInCategory.OST_Views], doc=document)
         )
         views_without_templates = (
-            [v for v in views if v.IsTemplate is False] if views else None
+            [v for v in views if v.IsTemplate is False]
         )
         self.rvtlinks_elements_items = (
-            get_linked_model_instances(document).ToElements() if document else None
+            q.get_linked_model_instances(document).ToElements()
         )
         # Initialize component classes
         self.metadata = Metadata()
@@ -796,24 +731,19 @@ def audit_document(doc, output):
     """
     try:
         if doc.IsFamilyDocument:
-            alert("This tool is for project files only. Exiting...", exitscript=True)
+            alert("This tool is for project files only. Exiting...")
+            return
         data = ReportData(doc)
         warnings_count = data.warnings_info.all_warnings_count
         if warnings_count > 0:
-            try:
-                show_balloon(
-                    header="Warnings",
-                    text="The file {} contains {} warnings".format(
-                        data.document_info.clean_name, warnings_count
-                    ),
-                    is_favourite=True,
-                    is_new=True,
-                )
-            except Exception as e:
-                logger.error(
-                    "Failed to show balloon notification, Exception: {}".format(e),
-                    exc_info=True,
-                )
+            show_balloon(
+                header="Warnings",
+                text="The file {} contains {} warnings".format(
+                    data.document_info.clean_name, warnings_count
+                ),
+                is_favourite=True,
+                is_new=True,
+            )
 
         output.close_others()
         output.set_height(900)
@@ -836,40 +766,36 @@ def audit_document(doc, output):
 
         # Linked files infos
         links_cards = ""
-        if data.links_info.rvtlinks_count > 0:
-            link_data = []
-            rvtlinks_instances = get_linked_model_instances(doc).ToElements()
-            rvtlinks_documents = (link.GetLinkDocument() for link in rvtlinks_instances)
-            links_documents_data = [
-                ReportData(link_doc) for link_doc in rvtlinks_documents
-            ]
-            for rvt_link_instance, link_document_data in zip(
-                rvtlinks_instances, links_documents_data
-            ):
-                link_data.append(
-                    [
-                        link_document_data.project_info.name,
-                        link_document_data.project_info.number,
-                        link_document_data.project_info.client,
-                        link_document_data.project_info.phases,
-                        link_document_data.project_info.worksets_names,
-                        link_document_data.document_info.clean_name,
-                        get_rvt_link_instance_name(rvt_link_instance),
-                        str(
-                            doc.GetElement(
-                                rvt_link_instance.GetTypeId()
-                            ).GetLinkedFileStatus()
-                        ).split(".")[-1],
-                        get_revit_link_pinning_status(rvt_link_instance),
-                    ]
-                )
-            output.print_md("# Linked Files Infos")
-            output.print_table(link_data, columns=FILE_INFO_HEADERS)
-            links_cards = card_builder(
-                50, data.links_info.rvtlinks_count, " Links"
-            ) + card_builder(
-                0, data.links_info.rvtlinks_unpinned_count, " Links not pinned"
+        link_data = []
+        links_documents_data = []
+        for rvt_link_instance in q.get_linked_model_instances(doc).ToElements():
+            link_doc = rvt_link_instance.GetLinkDocument()
+            link_document_data = ReportData(link_doc)
+            link_data.append(
+                [
+                    link_document_data.project_info.name,
+                    link_document_data.project_info.number,
+                    link_document_data.project_info.client,
+                    link_document_data.project_info.phases,
+                    link_document_data.project_info.worksets_names,
+                    link_document_data.document_info.clean_name,
+                    q.get_rvt_link_instance_name(rvt_link_instance),
+                    str(
+                        doc.GetElement(
+                            rvt_link_instance.GetTypeId()
+                        ).GetLinkedFileStatus()
+                    ).split(".")[-1],
+                    get_revit_link_pinning_status(rvt_link_instance),
+                ]
             )
+            links_documents_data.append(link_document_data)
+        output.print_md("# Linked Files Infos")
+        output.print_table(link_data, columns=FILE_INFO_HEADERS)
+        links_cards = card_builder(
+            50, data.links_info.rvtlinks_count, " Links"
+        ) + card_builder(
+            0, data.links_info.rvtlinks_unpinned_count, " Links not pinned"
+        )
 
         output.print_md(
             "# <p style='text-align: center;'>" + data.document_info.clean_name + "</p>"
