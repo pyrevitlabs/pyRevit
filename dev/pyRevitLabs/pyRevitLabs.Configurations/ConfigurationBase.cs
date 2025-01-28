@@ -46,6 +46,21 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         return HasSectionKeyImpl(sectionName, keyName);
     }
 
+    public IEnumerable<string> GetSectionNames()
+    {
+        return GetSectionNamesImpl();
+    }
+    
+    public IEnumerable<string> GetSectionOptionNames(string sectionName)
+    {
+        if (!HasSection(sectionName))
+        {
+            return Enumerable.Empty<string>();
+        }
+
+        return GetSectionOptionNamesImpl(sectionName);
+    }
+
     public bool RemoveSection(string sectionName)
     {
         if (string.IsNullOrWhiteSpace(sectionName))
@@ -175,6 +190,9 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
     
     protected abstract bool HasSectionImpl(string sectionName);
     protected abstract bool HasSectionKeyImpl(string sectionName, string keyName);
+    
+    protected abstract IEnumerable<string> GetSectionNamesImpl();
+    protected abstract IEnumerable<string> GetSectionOptionNamesImpl(string sectionName);
 
     protected abstract bool RemoveSectionImpl(string sectionName);
     protected abstract bool RemoveOptionImpl(string sectionName, string keyName);

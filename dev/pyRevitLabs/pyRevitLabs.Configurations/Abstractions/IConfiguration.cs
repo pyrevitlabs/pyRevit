@@ -6,6 +6,9 @@ public interface IConfiguration
     
     bool HasSection(string sectionName);
     bool HasSectionKey(string sectionName, string keyName);
+    
+    IEnumerable<string> GetSectionNames();
+    IEnumerable<string> GetSectionOptionNames(string sectionName);
 
     T GetValue<T>(string sectionName, string keyName);
     T? GetValueOrDefault<T>(string sectionName, string keyName, T? defaultValue = default);

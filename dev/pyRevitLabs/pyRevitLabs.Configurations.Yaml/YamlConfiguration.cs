@@ -1,4 +1,5 @@
 using System.Text;
+using System.Collections.Generic;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Exceptions;
 using System.Collections;
@@ -91,6 +92,17 @@ public sealed class YamlConfiguration : ConfigurationBase
 
         YamlNodeType? yamlNodeType = sectionNode.Children[keyName].NodeType;
         return yamlNodeType is YamlNodeType.Scalar or YamlNodeType.Sequence or YamlNodeType.Mapping;
+    }
+
+    protected override IEnumerable<string> GetSectionNamesImpl()
+    {
+        return _rootNode.Children.Select(item => item.Key.ToString());
+    }
+
+    protected override IEnumerable<string> GetSectionOptionNamesImpl(string sectionName)
+    {
+        YamlMappingNode? yamlNode = _rootNode.Children[sectionName] as YamlMappingNode;
+        return yamlNode?.Children.Select(item => item.Key.ToString()) ?? Enumerable.Empty<string>();
     }
 
     /// <inheritdoc />

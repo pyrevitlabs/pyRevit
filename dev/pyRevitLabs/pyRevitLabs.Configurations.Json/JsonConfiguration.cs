@@ -69,7 +69,18 @@ public sealed class JsonConfiguration : ConfigurationBase
         JObject? sectionObject = _jsonObject[sectionName] as JObject;
         return sectionObject?.ContainsKey(keyName) == true;
     }
-    
+
+    protected override IEnumerable<string> GetSectionNamesImpl()
+    {
+        return _jsonObject.Properties().Select(x => x.Name);
+    }
+
+    protected override IEnumerable<string> GetSectionOptionNamesImpl(string sectionName)
+    {
+        JObject? sectionObject = _jsonObject[sectionName] as JObject;
+        return sectionObject?.Properties().Select(x => x.Name) ?? Enumerable.Empty<string>();
+    }
+
     protected override bool RemoveSectionImpl(string sectionName)
     {
         return _jsonObject.Remove(sectionName);

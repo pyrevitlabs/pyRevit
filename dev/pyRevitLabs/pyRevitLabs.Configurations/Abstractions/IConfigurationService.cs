@@ -9,6 +9,8 @@ public interface IConfigurationService
     TelemetrySection Telemetry { get; }
     EnvironmentSection Environment { get; }
 
+    void ReloadLoadConfigurations();
+
     T GetSection<T>();
     void SaveSection<T>(string configurationName, T sectionValue);
 

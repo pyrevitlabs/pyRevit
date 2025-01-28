@@ -24,7 +24,7 @@ public sealed class ConfigurationService : IConfigurationService
         ReadOnly = readOnly;
 
         // TODO: Change behavior
-        LoadConfigurations();
+        ReloadLoadConfigurations();
     }
 
     internal static IConfigurationService Create(bool readOnly, List<ConfigurationName> names,
@@ -46,7 +46,7 @@ public sealed class ConfigurationService : IConfigurationService
     public TelemetrySection Telemetry { get; private set; } = new();
     public EnvironmentSection Environment { get; private set; } = new();
     
-    private void LoadConfigurations()
+    public void ReloadLoadConfigurations()
     {
         Core = GetSection<CoreSection>();
         Routes = GetSection<RoutesSection>();

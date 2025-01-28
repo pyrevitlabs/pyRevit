@@ -69,6 +69,16 @@ public sealed class IniConfiguration : ConfigurationBase
                && _iniFile.Sections[sectionName].ContainsKey(keyName);
     }
 
+    protected override IEnumerable<string> GetSectionNamesImpl()
+    {
+        return _iniFile.Sections.Select(item => item.SectionName);
+    }
+
+    protected override IEnumerable<string> GetSectionOptionNamesImpl(string sectionName)
+    {
+        return _iniFile.Sections[sectionName].Select(item => item.KeyName);
+    }
+
     /// <inheritdoc />
     protected override bool RemoveSectionImpl(string sectionName)
     {
