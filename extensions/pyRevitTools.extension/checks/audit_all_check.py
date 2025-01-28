@@ -89,10 +89,12 @@ class ElementCounts:
     """Manages element-related counts."""
 
     def __init__(self, document):
-        self.element_count = cnt.count_elements(document)
-        self.purgeable_elements_count = (
-            cnt.count_purgeable_elements(document)
+        self.element_count = (
+            DB.FilteredElementCollector(document)
+            .WhereElementIsNotElementType()
+            .GetElementCount()
         )
+        self.purgeable_elements_count = cnt.count_purgeable_elements(document)
         self.activated_analytical_model_elements_count = (
             cnt.count_analytical_model_activated(document)
         )
@@ -102,9 +104,10 @@ class WarningsInfo:
     """Handles warning metrics."""
 
     def __init__(self, document):
-        self.all_warnings_count = q.get_warnings_count(document)
-        self.critical_warnings_count = (
-            q.get_critical_warnings_count(document, CRITICAL_WARNINGS)
+        warnings = document.GetWarnings()
+        self.all_warnings_count = len(warnings)
+        self.critical_warnings_count = q.get_critical_warnings_count(
+            warnings, CRITICAL_WARNINGS
         )
 
 
@@ -126,47 +129,45 @@ class SheetViewInfo:
     def __init__(self, document, sheets_set, views):
         self.sheets_count = len(sheets_set)
         self.views_count = len(views)
-        self.views_floorplans_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.FloorPlan)
+        self.views_floorplans_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.FloorPlan
         )
-        self.views_ceilingplans_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.CeilingPlan)
+        self.views_ceilingplans_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.CeilingPlan
         )
-        self.views_elevations_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Elevation)
+        self.views_elevations_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.Elevation
         )
-        self.views_sections_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Section)
+        self.views_sections_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.Section
         )
-        self.views_threed_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.ThreeD)
+        self.views_threed_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.ThreeD
         )
-        self.views_drawingsheet_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.DrawingSheet)
+        self.views_drawingsheet_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.DrawingSheet
         )
-        self.views_legend_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Legend)
+        self.views_legend_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.Legend
         )
-        self.views_drafting_view_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.DraftingView)
+        self.views_drafting_view_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.DraftingView
         )
-        self.views_area_plan_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.AreaPlan)
+        self.views_area_plan_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.AreaPlan
         )
-        self.views_detail_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.Detail)
+        self.views_detail_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.Detail
         )
-        self.views_engineering_plan_count = (
-            sum(1 for x in views if x.ViewType == DB.ViewType.EngineeringPlan)
+        self.views_engineering_plan_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.EngineeringPlan
         )
-        self.views_not_on_sheets = (
-            cnt.count_unplaced_views(sheets_set, self.views_count)
+        self.views_not_on_sheets = cnt.count_unplaced_views(
+            sheets_set, self.views_count
         )
         schedules = q.get_all_schedules(document)
         self.schedule_count = len(schedules)
-        self.schedules_not_sheeted_count = (
-            cnt.count_unplaced_schedules(schedules)
-        )
+        self.schedules_not_sheeted_count = cnt.count_unplaced_schedules(schedules)
         self.copied_views_count = cnt.count_copied_views(views)
 
 
@@ -175,15 +176,13 @@ class ViewTemplateFilterInfo:
 
     def __init__(self, document, views):
         filters = q.get_all_view_templates(document)
-        self.view_templates_count = (
-            len(filters)
+        self.view_templates_count = len(filters)
+        self.unused_view_templates_count = cnt.count_unused_view_templates(
+            views, document
         )
-        self.unused_view_templates_count = (
-            cnt.count_unused_view_templates(views, document)
+        self.all_filters_count = len(
+            q.get_elements_by_class(DB.ParameterFilterElement, doc=document)
         )
-        self.all_filters_count = len(q.get_elements_by_class(
-            DB.ParameterFilterElement, doc=document
-        ))
         self.unused_view_filters_count = cnt.count_unused_filters_in_views(
             views, filters
         )
@@ -193,15 +192,13 @@ class MaterialsLinePatternInfo:
     """Handles materials and line patterns."""
 
     def __init__(self, document):
-        self.materials_count = (
-            len(
-                q.get_elements_by_categories(
-                    [DB.BuiltInCategory.OST_Materials], doc=document
-                )
+        self.materials_count = len(
+            q.get_elements_by_categories(
+                [DB.BuiltInCategory.OST_Materials], doc=document
             )
         )
-        self.line_patterns_count = (
-            len(q.get_elements_by_class(DB.LinePatternElement, doc=document))
+        self.line_patterns_count = len(
+            q.get_elements_by_class(DB.LinePatternElement, doc=document)
         )
 
 
@@ -213,8 +210,8 @@ class LinksInfo:
         self.dwgs_count = len(q.get_elements_by_class(DB.ImportInstance, doc=document))
         self.linked_dwg_count = cnt.count_linked_dwg_files(document)
         self.imported_dwg = self.dwgs_count - self.linked_dwg_count
-        self.rvtlinks_unpinned_count = (
-            cnt.count_unpinned_revit_links(rvtlinks_elements_items)
+        self.rvtlinks_unpinned_count = cnt.count_unpinned_revit_links(
+            rvtlinks_elements_items
         )
 
 
@@ -222,69 +219,78 @@ class FamilyInfo:
     """Handles family-related metrics."""
 
     def __init__(self, document):
-        self.inplace_family_count = cnt.count_in_place_families(document)
-        self.not_parametric_families_count = (
-            cnt.count_non_parametric_families(document)
-        )
         self.family_count = cnt.count_total_families(document)
-        self.imports_subcats_count = (
-            cnt.count_import_subcategories(document)
+        self.inplace_family_count = cnt.count_in_place_families(document)
+        self.not_parametric_families_count = sum(
+            1
+            for family in q.get_families(document, only_editable=True)
+            if not family.IsParametric
+        )
+        self.imports_subcats_count = len(
+            [
+                sb
+                for sb in document.Settings.Categories.get_Item(
+                    DB.BuiltInCategory.OST_ImportObjectStyles
+                ).SubCategories
+            ]
         )
         self.generic_models_types_count = (
-            cnt.count_generic_models_types(document)
+            DB.FilteredElementCollector(document)
+            .OfCategory(DB.BuiltInCategory.OST_GenericModel)
+            .WhereElementIsElementType()
+            .GetElementCount()
         )
-        self.detail_components_count = (
-            cnt.count_detail_components(document)
+        self.detail_components_count = len(
+            q.get_elements_by_categories(
+                [DB.BuiltInCategory.OST_DetailComponents], doc=document
+            )
         )
-        self.detail_lines_count = cnt.count_detail_lines(document)
+        self.detail_lines_count = sum(
+            1
+            for line in q.get_elements_by_categories(
+                [DB.BuiltInCategory.OST_Lines], doc=document
+            )
+            if line.CurveElementType is DB.CurveElementType.DetailCurve
+        )
 
 
 class TextNotesInfo:
     """Manages text note metrics."""
 
     def __init__(self, document):
-        self.text_notes_types_count = (
-            cnt.count_total_textnote_types(document)
-        )
+        text_notes = q.get_elements_by_class(DB.TextNote, doc=document)
+        text_notes_types = q.get_types_by_class(DB.TextNoteType, doc=document)
+        self.text_notes_count = len(text_notes)
+        self.text_notes_types_count = len(text_notes_types)
         self.text_notes_types_wf_count = (
-            cnt.count_textnote_types_with_changed_width_factor(document)
+            cnt.count_textnote_types_with_changed_width_factor(text_notes_types)
         )
-        self.text_bg_count = (
-            cnt.count_textnote_types_with_opaque_background(document)
-        )
-        self.text_notes_count = cnt.count_text_notes(document)
-        self.text_notes_caps_count = (
-            cnt.count_text_notes_with_all_caps(document)
-        )
+        self.text_bg_count = cnt.count_textnote_types_with_opaque_background(text_notes_types)
+        self.text_notes_caps_count = cnt.count_text_notes_with_all_caps(text_notes)
 
 
 class GroupInfo:
     """Handles group-related data."""
 
     def __init__(self, document):
-        self.detail_groups_count = (
-            cnt.count_detail_group_instances(document)
+        self.detail_groups_count = len(
+            q.get_elements_by_categories(
+                [DB.BuiltInCategory.OST_DetailComponents], doc=document
+            )
         )
-        self.detail_groups_types_count = (
-            cnt.count_detail_groups_types(document)
-        )
-        self.model_group_count = (
-            cnt.count_model_group_instances(document)
-        )
-        self.model_group_type_count = (
-            cnt.count_model_groups_types(document)
-        )
+        self.detail_groups_types_count = cnt.count_detail_groups_types(document)
+        self.model_group_count = cnt.count_model_group_instances(document)
+        self.model_group_type_count = cnt.count_model_groups_types(document)
 
 
 class ReferencePlaneInfo:
     """Manages reference plane metrics."""
 
     def __init__(self, document):
-        self.reference_planes_count = (
-            cnt.count_reference_planes(document)
-        )
-        self.unnamed_ref_planes_count = (
-            cnt.count_unnamed_reference_planes(document)
+        reference_planes = q.get_elements_by_class(DB.ReferencePlane, doc=document)
+        self.reference_planes_count = len(reference_planes)
+        self.unnamed_ref_planes_count = cnt.count_unnamed_reference_planes(
+            reference_planes
         )
 
 
@@ -292,11 +298,23 @@ class DimensionsInfo:
     """Handles dimension-related data."""
 
     def __init__(self, document):
-        self.dim_types_count = cnt.count_dimension_types(document)
-        self.dim_count = cnt.count_dimensions(document)
-        self.dim_overrides_count = (
-            cnt.count_dimension_overrides(document)
+        dimensions = [
+            d
+            for d in q.get_elements_by_categories(
+                [DB.BuiltInCategory.OST_Dimensions], doc=document
+            )
+            if d.OwnerViewId and d.ViewSpecific and d.View
+        ]
+        dimensions_types = (
+            DB.FilteredElementCollector(document)
+            .OfClass(DB.DimensionType)
+            .WhereElementIsElementType()
+            .ToElements()
         )
+        self.dim_types_count = len(dimensions_types)
+        self.dim_count = len(dimensions)
+        self.dim_overrides_count = cnt.count_dimension_overrides(dimensions)
+
 
 class RevisionsInfo:
     """Manages revision clouds count."""
@@ -403,15 +421,13 @@ class ReportData:
 
     def __init__(self, document=None):
         sheets_set = q.get_sheets(document)
-        views = (
-            q.get_elements_by_categories([DB.BuiltInCategory.OST_Views], doc=document)
+        views = q.get_elements_by_categories(
+            [DB.BuiltInCategory.OST_Views], doc=document
         )
-        views_without_templates = (
-            [v for v in views if v.IsTemplate is False]
-        )
-        self.rvtlinks_elements_items = (
-            q.get_linked_model_instances(document).ToElements()
-        )
+        views_without_templates = [v for v in views if v.IsTemplate is False]
+        self.rvtlinks_elements_items = q.get_linked_model_instances(
+            document
+        ).ToElements()
         # Initialize component classes
         self.metadata = Metadata()
         self.document_info = DocumentInfo(document)
@@ -642,9 +658,11 @@ def generate_html_content(data, links_cards=""):
         card_builder(
             30, data.text_notes_info.text_notes_types_count, " Text Notes Types"
         ),
-        card_builder(2000, data.text_notes_info.text_notes_count, " Text Notes Instances"),
         card_builder(
-            1, data.text_notes_info.text_bg_count, " Text Notes w/ White Background"
+            2000, data.text_notes_info.text_notes_count, " Text Notes Instances"
+        ),
+        card_builder(
+            1, data.text_notes_info.text_bg_count, " Text Notes Types Solid Background"
         ),
         card_builder(
             0,

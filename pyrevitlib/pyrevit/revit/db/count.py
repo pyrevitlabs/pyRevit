@@ -5,18 +5,7 @@
 from System.Collections.Generic import HashSet
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
-from pyrevit.revit.db.query import get_name
-from pyrevit.revit.db import ProjectInfo
-from pyrevit.revit.db.query import (
-    get_elements_by_categories,
-    get_elements_by_class,
-    get_types_by_class,
-    get_all_schedules,
-    get_array_group_ids,
-    get_array_group_types,
-    get_all_view_templates,
-    get_families,
-)
+import pyrevit.revit.db.query as q
 
 
 def count_unpinned_revit_links(revitlinks_elements):
@@ -36,7 +25,7 @@ def count_unpinned_revit_links(revitlinks_elements):
     )
 
 
-def count_unplaced_rooms(rooms=None):
+def count_unplaced_rooms(rooms):
     """
     Counts the number of unplaced rooms in a given list of rooms.
     An unplaced room is defined as a room with no location (i.e., room.Location is None).
@@ -47,11 +36,10 @@ def count_unplaced_rooms(rooms=None):
     Returns:
         int: The number of unplaced rooms in the list.
     """
-
     return sum(1 for room in rooms if room.Location is None)
 
 
-def count_unbounded_rooms(rooms=None):
+def count_unbounded_rooms(rooms):
     """
     Counts the number of unbounded rooms (rooms with an area of 0) in the given list of rooms.
 
@@ -61,7 +49,6 @@ def count_unbounded_rooms(rooms=None):
     Returns:
         int: The number of unbounded rooms in the list.
     """
-
     return sum(1 for room in rooms if room.Area == 0)
 
 
@@ -76,9 +63,8 @@ def count_unplaced_views(sheets_set=None, views_count=None):
     Returns:
         int: The number of views not on a sheet.
     """
-    # FIXME: Numbers need to be checked
     views_on_sheet = []
-    if not sheets_set:
+    if sheets_set is None or views_count is None:
         return views_count
     for sheet in sheets_set:
         try:
@@ -143,7 +129,7 @@ def count_copied_views(views_set):
     copied_view_names = ["Copy", "Copie"]
     copied_views_count = 0
     for view in views_set:
-        view_name = get_name(view)
+        view_name = q.get_name(view)
         try:
             # FIXME French compatibility, make it universal
             if any(name in view_name for name in copied_view_names):
@@ -163,16 +149,15 @@ def count_unused_view_templates(views_list, document):
     Returns:
         int: The count of unused view templates.
     """
-    if not views_list:
+    if views_list is None:
         return 0
     applied_templates = [v.ViewTemplateId for v in views_list]
-    view_templates_list = get_all_view_templates(doc=document)
+    view_templates_list = q.get_all_view_templates(doc=document)
     unused_view_templates = []
     for v in view_templates_list:
         if v.Id not in applied_templates:
             unused_view_templates.append(v)
     return len(unused_view_templates)
-
 
 
 def count_unused_filters_in_views(view_list, filters):
@@ -210,7 +195,7 @@ def count_linked_dwg_files(document):
     Returns:
         int: The number of linked DWG files in the document.
     """
-    dwg_collector = get_elements_by_class(DB.ImportInstance, doc=document)
+    dwg_collector = q.get_elements_by_class(DB.ImportInstance, doc=document)
     if not dwg_collector:
         return 0
     dwg_imported = 0
@@ -230,29 +215,13 @@ def count_in_place_families(document):
     Returns:
     - int: The count of in-place families.
     """
-    familyinstance_collector = get_elements_by_class(DB.FamilyInstance, doc=document)
+    familyinstance_collector = q.get_elements_by_class(DB.FamilyInstance, doc=document)
     in_place_family_count = sum(
         1
         for x in familyinstance_collector
         if x.Symbol and x.Symbol.Family and x.Symbol.Family.IsInPlace
     )
     return in_place_family_count
-
-
-def count_non_parametric_families(document):
-    """
-    This function collects all the non-parametric families in the given document and returns their count.
-
-    Args:
-    - document: The Revit document to search for non-parametric families in.
-
-    Returns:
-    - int: The count of non-parametric families.
-    """
-    families_collection = get_families(document, only_editable=True)
-    if not families_collection:
-        return 0
-    return sum(1 for family in families_collection if not family.IsParametric)
 
 
 def count_total_families(document):
@@ -265,7 +234,7 @@ def count_total_families(document):
     Returns:
         int: The total number of unique family names in the document.
     """
-    families_collection = get_families(document, only_editable=True)
+    families_collection = q.get_families(document, only_editable=True)
     unique_families = []
     for fam in families_collection:
         if fam.Name not in unique_families:
@@ -275,94 +244,20 @@ def count_total_families(document):
     return len(unique_families)
 
 
-def count_generic_models_types(document):
+def count_textnote_types_with_changed_width_factor(text_notes_types):
     """
-    Counts the number of generic model types in the given Revit document.
+    Counts the number of text note types that have a width factor different from the default value of 1.
 
     Args:
-        document: The Revit document to search within.
+        text_notes_types (list): A list of text note types to check.
 
     Returns:
-        int: The number of generic model types found in the document.
-        Minimum will always be 1, at least 1x 3D model text type always exists.
+        int: The number of text note types with a changed width factor.
     """
-    generic_models_types = (
-        DB.FilteredElementCollector(document)
-        .OfCategory(DB.BuiltInCategory.OST_GenericModel)
-        .WhereElementIsElementType()
-        .GetElementCount()
-    )
-    return generic_models_types
-
-
-def count_import_subcategories(document):
-    """
-    Returns the number of subcategories in the Import category of the given document.
-
-    Args:
-        document (DB.Document): The document to check. Defaults to the active document.
-
-    Returns:
-        int: The number of subcategories in the Import category.
-    """
-    return len(
-        [
-            c.Id
-            for c in document.Settings.Categories.get_Item(
-                DB.BuiltInCategory.OST_ImportObjectStyles
-            ).SubCategories
-        ]
-    )
-
-
-def count_detail_components(document):
-    """
-    Returns the count of detail components in the given document.
-
-    Args:
-    - document: The document to search for detail components. Defaults to the active document.
-
-    Returns:
-    - int: The count of detail components in the document.
-    """
-    return len(
-        get_elements_by_categories(
-            [DB.BuiltInCategory.OST_DetailComponents], doc=document
-        )
-    )
-
-
-def count_total_textnote_types(document):
-    """
-    Counts the total number of TextNoteType elements in the given Revit document.
-
-    Args:
-        document (DB.Document): The Revit document to search for TextNoteType elements.
-
-    Returns:
-        int: The total number of TextNoteType elements.
-    """
-    text_note_type_collector = get_types_by_class(DB.TextNoteType, doc=document)
-    if not text_note_type_collector:
-        return 0
-    return len(text_note_type_collector)
-
-
-def count_textnote_types_with_changed_width_factor(document):
-    """
-    Counts the number of TextNoteType elements with a changed width factor in the given Revit document.
-
-    Args:
-        document (DB.Document): The Revit document to search for TextNoteType elements.
-
-    Returns:
-        int: The number of TextNoteType elements with a width factor not equal to 1.
-    """
-    text_note_type_collector = get_types_by_class(DB.TextNoteType, doc=document)
-    if not text_note_type_collector:
+    if text_notes_types is None:
         return 0
     changed_width_factor = 0
-    for textnote in text_note_type_collector:
+    for textnote in text_notes_types:
         width_factor = textnote.get_Parameter(
             DB.BuiltInParameter.TEXT_WIDTH_SCALE
         ).AsDouble()
@@ -371,57 +266,37 @@ def count_textnote_types_with_changed_width_factor(document):
     return changed_width_factor
 
 
-def count_textnote_types_with_opaque_background(document):
+def count_textnote_types_with_opaque_background(text_notes_types):
     """
-    Counts the number of TextNoteType elements with an opaque background in the given Revit document.
+    Counts the number of text notes with an opaque background.
 
     Args:
-        document (DB.Document): The Revit document to search for TextNoteType elements.
+        text_notes_types (list): A list of text note elements.
 
     Returns:
-        int: The number of TextNoteType elements with an opaque background.
+        int: The number of text notes with an opaque background.
     """
-    text_note_type_collector = get_types_by_class(DB.TextNoteType, doc=document)
-    if not text_note_type_collector:
+    if text_notes_types is None:
         return 0
     text_opaque_background = 0
-    for textnote in text_note_type_collector:
-        text_background = textnote.get_Parameter(
-            DB.BuiltInParameter.TEXT_BACKGROUND
-        ).AsInteger()
+    for textnote in text_notes_types:
+        text_background = textnote.get_Parameter(DB.BuiltInParameter.TEXT_BACKGROUND).AsInteger()
         if text_background == 0:
             text_opaque_background += 1
     return text_opaque_background
 
 
-def count_text_notes(document):
+def count_text_notes_with_all_caps(text_notes):
     """
-    Returns the count of all text notes in the given document.
+    Counts the number of text notes that have all capital letters.
 
     Args:
-        document (DB.Document): The document to search for text notes. Defaults to the active document.
+        text_notes (list): A list of text note objects.
 
     Returns:
-        int: The count of all text notes.
+        int: The number of text notes with all capital letters.
     """
-    text_notes = get_elements_by_class(DB.TextNote, doc=document)
-    if not text_notes:
-        return 0
-    return len(text_notes)
-
-
-def count_text_notes_with_all_caps(document):
-    """
-    Returns the count of text notes that have all caps formatting in the given document.
-
-    Args:
-        document (DB.Document): The document to search for text notes. Defaults to the active document.
-
-    Returns:
-        int: The count of text notes with all caps formatting.
-    """
-    text_notes = get_elements_by_class(DB.TextNote, doc=document)
-    if not text_notes:
+    if text_notes is None:
         return 0
     caps_count = 0
     for text_note in text_notes:
@@ -431,23 +306,7 @@ def count_text_notes_with_all_caps(document):
     return caps_count
 
 
-def count_reference_planes(document):
-    """
-    Returns the count of all reference planes in the given document.
-
-    Args:
-        document (DB.Document): The document to search for reference planes. Defaults to the active document.
-
-    Returns:
-        int: The count of all reference planes.
-    """
-    ref_planes = get_elements_by_class(DB.ReferencePlane, doc=document)
-    if not ref_planes:
-        return 0
-    return len(ref_planes)
-
-
-def count_unnamed_reference_planes(document):
+def count_unnamed_reference_planes(reference_planes):
     """
     Returns the count of unnamed reference planes in the given document.
 
@@ -457,122 +316,41 @@ def count_unnamed_reference_planes(document):
     Returns:
         int: The count of unnamed reference planes.
     """
-    ref_planes = get_elements_by_class(DB.ReferencePlane, doc=document)
-    if not ref_planes:
+    if reference_planes is None:
         return 0
     unnamed_ref_planes_count = 0
     # Default reference plane label, not the most elegant solution
     reference_plane_default_label = DB.LabelUtils.GetLabelFor(
         DB.BuiltInCategory.OST_CLines
     ).replace("s", "")
-    for ref_plane in ref_planes:
+    for ref_plane in reference_planes:
         if ref_plane.Name == reference_plane_default_label:
             unnamed_ref_planes_count += 1
     return unnamed_ref_planes_count
 
 
-def count_elements(document):
+def count_dimension_overrides(dimensions):
     """
-    Returns the number of non-element type elements in the given document.
+    Counts the number of dimension overrides in a list of dimensions.
+    This function iterates through a list of dimensions and counts how many of them
+    have a value override. It also checks for overrides in dimension segments if they exist.
 
     Args:
-    - document (DB.Document): The document to count elements in. Defaults to the current document.
+        dimensions (list): A list of dimension objects to check for overrides.
 
     Returns:
-    - int: The number of non-element type elements in the document.
+        int: The total count of dimension overrides found in the list of dimensions.
     """
-    return (
-        DB.FilteredElementCollector(document)
-        .WhereElementIsNotElementType()
-        .GetElementCount()
-    )
-
-
-def count_detail_lines(document):
-    """
-    Returns the number of detail lines in the given document.
-
-    Args:
-        document (DB.Document): The document to search for detail lines in.
-
-    Returns:
-        int: The number of detail lines in the document.
-    """
-    lines = get_elements_by_categories([DB.BuiltInCategory.OST_Lines], doc=document)
-    if not lines:
-        return 0
-    detail_line_count = 0
-    for line in lines:
-        if line.CurveElementType.ToString() == "DetailCurve":
-            detail_line_count += 1
-    return detail_line_count
-
-
-def count_dimension_types(document):
-    """
-    Returns the count of dimension types in the given document.
-
-    Args:
-        document (DB.Document): The document to search for dimension types in.
-
-    Returns:
-        int: The count of dimension types in the document.
-    """
-    dimension_type_count = (
-        DB.FilteredElementCollector(document)
-        .OfClass(DB.DimensionType)
-        .WhereElementIsElementType()
-        .GetElementCount()
-    )
-    return dimension_type_count
-
-
-def count_dimensions(document):
-    """
-    Returns the count of dimensions in the given document.
-
-    Args:
-        document (DB.Document): The document to search for dimensions in.
-
-    Returns:
-        int: The count of dimensions in the document.
-    """
-    dimensions = get_elements_by_categories(
-        [DB.BuiltInCategory.OST_Dimensions], doc=document
-    )
-    if not dimensions:
-        return 0
-    dimension_count = 0
-    for d in dimensions:
-        if d.OwnerViewId and d.ViewSpecific and d.View:
-            dimension_count += 1
-    return dimension_count
-
-
-def count_dimension_overrides(document):
-    """
-    Returns the count of dimension overrides in the given document.
-
-    Args:
-        document (DB.Document): The document to search for dimension overrides in.
-
-    Returns:
-        int: The count of dimension overrides in the document.
-    """
-    dimensions = get_elements_by_categories(
-        [DB.BuiltInCategory.OST_Dimensions], doc=document
-    )
-    if not dimensions:
+    if dimensions is None:
         return 0
     dim_overrides_count = 0
     for d in dimensions:
-        if d.OwnerViewId and d.ViewSpecific and d.View:
-            if d.ValueOverride is not None:
-                dim_overrides_count += 1
-            if d.Segments:
-                for seg in d.Segments:
-                    if seg.ValueOverride:
-                        dim_overrides_count += 1
+        if d.ValueOverride is not None:
+            dim_overrides_count += 1
+        if d.Segments:
+            for seg in d.Segments:
+                if seg.ValueOverride:
+                    dim_overrides_count += 1
     return dim_overrides_count
 
 
@@ -596,35 +374,23 @@ def count_revision_clouds(document):
 
 def count_purgeable_elements(document):
     """
-    Returns the count of purgeable elements in the given document.
+    Counts the number of purgeable detail group types in a given Revit document.
+    This function collects all detail group types in the specified document and
+    filters out those that are part of array groups. The remaining count of
+    detail group types is returned.
 
     Args:
-    document (DB.Document): The document to check for purgeable elements. Defaults to the current document.
+        document (DB.Document): The Revit document to process.
 
     Returns:
-    int: The count of purgeable elements in the document.
-    """
-    if not hasattr(document, "GetUnusedElements"):
-        return 0
-    return len(document.GetUnusedElements(HashSet[DB.ElementId]()))
-
-
-def count_detail_groups_types(document):
-    """
-    Counts the number of detail group types in the given Revit document, excluding those that are part of array groups.
-
-    Args:
-        document (DB.Document): The Revit document to search for detail group types.
-
-    Returns:
-        int: The count of detail group types excluding array group types.
+        int: The count of purgeable detail group types.
     """
     detail_groups_types = (
         DB.FilteredElementCollector(document)
         .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
         .WhereElementIsElementType()
     )
-    arrays_group_types = get_array_group_types(document)
+    arrays_group_types = q.get_array_group_types(document)
     detail_groups_types_count = detail_groups_types.GetElementCount()
     for detail_groups_type in detail_groups_types:
         if detail_groups_type.Id in arrays_group_types:
@@ -650,11 +416,34 @@ def count_detail_group_instances(doc):
         .WhereElementIsNotElementType()
     )
     detail_groups_instances_count = detail_groups_instances.GetElementCount()
-    arrays_groups = get_array_group_ids(doc)
+    arrays_groups = q.get_array_group_ids(doc)
     for group_in_array in arrays_groups:
         if group_in_array not in detail_groups_instances.ToElementIds():
             detail_groups_instances_count -= 1
     return detail_groups_instances_count
+
+
+def count_detail_groups_types(document):
+    """
+    Counts the number of detail group types in the given Revit document, excluding those that are part of array groups.
+
+    Args:
+        document (DB.Document): The Revit document to search for detail group types.
+
+    Returns:
+        int: The count of detail group types, excluding array group types.
+    """
+    detail_groups_types = (
+        DB.FilteredElementCollector(document)
+        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
+        .WhereElementIsElementType()
+    )
+    arrays_group_types = q.get_array_group_types(document)
+    detail_groups_types_count = detail_groups_types.GetElementCount()
+    for detail_groups_type in detail_groups_types:
+        if detail_groups_type.Id in arrays_group_types:
+            detail_groups_types_count -= 1
+    return detail_groups_types_count
 
 
 def count_model_groups_types(doc):
@@ -672,7 +461,7 @@ def count_model_groups_types(doc):
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
         .WhereElementIsElementType()
     )
-    arrays_group_types = get_array_group_types(doc)
+    arrays_group_types = q.get_array_group_types(doc)
     model_groups_types_count = model_group_types.GetElementCount()
     for model_groups_type in model_group_types:
         if model_groups_type.Id in arrays_group_types:
@@ -695,7 +484,7 @@ def count_model_group_instances(doc):
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
         .WhereElementIsNotElementType()
     )
-    arrays_groups = get_array_group_ids(doc)
+    arrays_groups = q.get_array_group_ids(doc)
     model_groupes_instances_count = model_groups_instances.GetElementCount()
     for group_in_array in arrays_groups:
         if group_in_array not in model_groups_instances.ToElementIds():

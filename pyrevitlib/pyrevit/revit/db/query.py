@@ -2,7 +2,7 @@
 """Helper functions to query info and elements from Revit."""
 # pylint: disable=W0703,C0103,too-many-lines
 from collections import namedtuple
-from os.path import join, basename, splitext
+from os.path import basename, splitext
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -729,64 +729,20 @@ def get_worksets_names(doc=None):
     return ", ".join(w.Name for w in worksets_collection)
 
 
-def get_warnings(doc=None):
+def get_critical_warnings_count(warnings=None, critical_warnings_template=None):
     """
-    Returns all the warnings in the document.
+    Counts the number of critical warnings from a list of warnings based on a template.
 
     Args:
-        doc (Document): A Revit document.
+        warnings (list): A list of warning objects. Each warning object should have a method 
+                         `GetFailureDefinitionId` that returns an object with a `Guid` attribute.
+        critical_warnings_template (list): A list of string representations of GUIDs that are 
+                                           considered critical warnings.
 
     Returns:
-        list: All the warnings in the document.
+        int: The count of critical warnings.
     """
-    doc = doc or DOCS.doc
-    return doc.GetWarnings() if doc.GetWarnings() else []
-
-
-def get_warnings_count(doc=None):
-    """
-    Returns the number of warnings in the document.
-
-    Args:
-        doc (Document): A Revit document.
-
-    Returns:
-        int: Number of warnings in the document.
-    """
-    doc = doc or DOCS.doc
-    all_warnings = get_warnings(doc)
-    return len(all_warnings) if all_warnings else 0
-
-
-def get_warnings_guid(doc=None):
-    """
-    Returns a list of GUIDs for all the warnings in the document.
-
-    Args:
-        doc (Document): A Revit document.
-
-    Returns:
-        list: A list of GUIDs for all the warnings in the document.
-    """
-    doc = doc or DOCS.doc
-    all_warnings = get_warnings(doc)
-    return [warning.GetFailureDefinitionId().Guid for warning in all_warnings] if all_warnings else []
-
-
-def get_critical_warnings_count(doc=None, critical_warnings_template=None):
-    """
-    Counts the number of critical warnings in a Revit document.
-
-    Args:
-        doc (Document, optional): The Revit document to check for warnings. Defaults to None.
-        critical_warnings_template (list of str, optional): A list of warning GUIDs (as strings) 
-            that are considered critical. Defaults to None.
-    
-    Returns:
-        int: The count of critical warnings in the document.
-    """
-    doc = doc or DOCS.doc
-    warnings_guid = get_warnings_guid(doc)
+    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in warnings] 
     return sum(
         1
         for warning_guid in warnings_guid
@@ -1076,9 +1032,9 @@ def get_document_clean_name(doc=None):
     if not document_name:
         return "File Not Saved"
     if document_name.startswith("BIM 360://"):
-        path = join(document_name.split("://", 1)[1])
+        path = document_name.split("://", 1)[1]
     else:
-        path = join(document_name)
+        path = document_name
     return splitext(basename(path))[0]
 
 
@@ -1212,7 +1168,7 @@ def get_rvt_link_status(doc=None):
     return [rvtlinktype.GetLinkedFileStatus() for rvtlinktype in rvtlinks_types]
 
 
-def get_rvt_link_doc_name(rvtlink_instance=None):
+def get_rvt_link_doc_name(rvtlink_instance):
     """
     Retrieves the name of the Revit link document from the given Revit link instance.
     
@@ -1230,7 +1186,7 @@ def get_rvt_link_instance_name(rvtlink_instance=None):
     Retrieves the name of a Revit link instance.
     
     Args:
-        rvtlink_instance: The Revit link instance object. Default is None.
+        rvtlink_instance: The Revit link instance object.
     
     Returns:
         str: The name of the Revit link instance, extracted from the full name.
@@ -3226,10 +3182,9 @@ def get_array_group_ids(doc=None):
     )
     arrays_groups = []
     for ar in array_list:
-        all_arrays_members = list(ar.GetOriginalMemberIds())
-        all_arrays_members.extend(list(ar.GetCopiedMemberIds()))
-        arrays_groups.append(all_arrays_members)
-    return [item for sublist in arrays_groups for item in sublist]
+        arrays_groups.extend(ar.GetOriginalMemberIds())
+        arrays_groups.extend(ar.GetCopiedMemberIds())
+    return arrays_groups
 
 
 def get_array_group_types(doc=None):
