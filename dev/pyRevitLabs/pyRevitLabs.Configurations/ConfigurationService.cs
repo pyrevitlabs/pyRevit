@@ -142,6 +142,8 @@ public sealed class ConfigurationService : IConfigurationService
             if (keyValue is not null)
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
+        
+        configuration.SaveConfiguration();
     }
 
     private static object CreateSection(Type configurationType, params IConfiguration[] configurations)

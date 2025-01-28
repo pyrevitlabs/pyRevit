@@ -540,6 +540,9 @@ class PyRevitConfig(object):
             self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.routes)
             self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.telemetry)
 
+            # save all sections (need to dynamic section on python)
+            self.config_service[ConfigurationService.DefaultConfigurationName].SaveConfiguration()
+
             # adjust environment per user configurations
             self._update_env()
         else:
