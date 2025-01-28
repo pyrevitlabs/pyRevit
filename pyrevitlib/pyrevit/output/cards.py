@@ -6,10 +6,12 @@
 def card_start_style(limit, value, alt):
     """
     Generates an HTML div element with a specific background color based on the ratio of value to limit.
+
     Args:
         limit (float): The limit value used to calculate the ratio.
         value (float): The current value to be compared against the limit.
         alt (str): The alt text for the div element.
+
     Returns:
         str: An HTML div element as a string with inline styles and the specified background color.
     The background color is determined by the following rules:
@@ -44,10 +46,12 @@ def card_start_style(limit, value, alt):
 def card_builder(limit, value, description):
     """
     Builds an HTML card with the given limit, value, and description.
+
     Args:
         limit (int): The limit value to be displayed in the card.
         value (int or str): The main value to be displayed in the card.
         description (str): A description to be displayed in the card.
+
     Returns:
         str: A string containing the HTML representation of the card.
     """
@@ -67,14 +71,18 @@ def card_builder(limit, value, description):
 def create_frame(title, *cards):
     """
     Creates an HTML div frame containing multiple cards with a rounded border and a title on the top left corner.
+
     Args:
         title (str): The title to be displayed on the top left corner of the frame.
         cards (str): Multiple strings representing HTML card elements.
+
     Returns:
         str: A string containing the HTML representation of the div frame.
+
     """
-    frame_start = '<div style="display: inline-block; border: 1px solid #ccc; border-radius: 10px; padding: 5px; margin: 10px 5px 10px 5px; position: relative;">'
-    title_html = '<div style="position: absolute; top: -10px; left: 10px; background: white; padding: 0 5px; font-weight: bold;">{}</div>'.format(
+    # Add vertical-align: top to the frame and adjust title position
+    frame_start = '<div style="display: inline-block; vertical-align: top; border: 1px solid #ccc; border-radius: 10px; padding: 5px; margin: 10px 5px 10px 5px; position: relative;">'
+    title_html = '<div style="position: absolute; top: -12px; left: 10px; background: white; padding: 0 5px; font-weight: bold;">{}</div>'.format(
         title
     )
     cards_html = "".join(cards)

@@ -632,28 +632,28 @@ def generate_html_content(data, links_cards=""):
         "Sheets, Views, Graphics",
         card_builder(500, data.sheet_view_info.sheets_count, " Sheets"),
         card_builder(1500, data.sheet_view_info.views_count, " Views"),
-        card_builder(200, data.sheet_view_info.views_floorplans_count, " Floor Plans"),
+        card_builder(500, data.sheet_view_info.views_floorplans_count, " Floor Plans"),
         card_builder(
-            200, data.sheet_view_info.views_ceilingplans_count, " Ceiling Plans"
+            500, data.sheet_view_info.views_ceilingplans_count, " Ceiling Plans"
         ),
         card_builder(200, data.sheet_view_info.views_elevations_count, " Elevations"),
         card_builder(200, data.sheet_view_info.views_sections_count, " Sections"),
-        card_builder(200, data.sheet_view_info.views_threed_count, " 3D Views"),
+        card_builder(100, data.sheet_view_info.views_threed_count, " 3D Views"),
         card_builder(
-            200, data.sheet_view_info.views_drawingsheet_count, " Drawing Sheets"
+            600, data.sheet_view_info.views_drawingsheet_count, " Drawing Sheets"
         ),
-        card_builder(200, data.sheet_view_info.views_legend_count, " Legends"),
+        card_builder(100, data.sheet_view_info.views_legend_count, " Legends"),
         card_builder(
             200, data.sheet_view_info.views_drafting_view_count, " Drafting Views"
         ),
-        card_builder(200, data.sheet_view_info.views_area_plan_count, " Area Plans"),
-        card_builder(200, data.sheet_view_info.views_detail_count, " Detail Views"),
+        card_builder(100, data.sheet_view_info.views_area_plan_count, " Area Plans"),
+        card_builder(500, data.sheet_view_info.views_detail_count, " Detail Views"),
         card_builder(
             300, data.sheet_view_info.views_not_on_sheets, " Views not on Sheets"
         ),
-        card_builder(20, data.sheet_view_info.schedule_count, " Schedules"),
+        card_builder(100, data.sheet_view_info.schedule_count, " Schedules"),
         card_builder(
-            5,
+            50,
             data.sheet_view_info.schedules_not_sheeted_count,
             " Schedules not on sheet",
         ),
