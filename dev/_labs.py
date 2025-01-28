@@ -110,4 +110,11 @@ def build_labs(args: Dict[str, str]):
 def build_runtime(args: Dict[str, str]):
     """Build pyRevit runtime."""
     config = args.get("<config>") or "Release"
-    _build("runtime", configs.RUNTIME, config=config)
+    
+    IPY2712PR = "IPY2712PR"
+    IPY340PR = "IPY340PR"
+    IPY342 = "IPY342"
+    
+    _build(f"runtime {IPY2712PR}", configs.RUNTIME, config=config + f" {IPY2712PR}")
+    _build(f"runtime {IPY340PR}", configs.RUNTIME, config=config + f" {IPY340PR}")
+    _build(f"runtime {IPY342}", configs.RUNTIME, config=config + f" {IPY342}")
