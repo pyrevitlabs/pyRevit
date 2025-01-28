@@ -2,7 +2,6 @@
 
 """ Counting functions for Revit elements. """
 
-from System.Collections.Generic import HashSet
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
 import pyrevit.revit.db.query as q
@@ -280,7 +279,9 @@ def count_textnote_types_with_opaque_background(text_notes_types):
         return 0
     text_opaque_background = 0
     for textnote in text_notes_types:
-        text_background = textnote.get_Parameter(DB.BuiltInParameter.TEXT_BACKGROUND).AsInteger()
+        text_background = textnote.get_Parameter(
+            DB.BuiltInParameter.TEXT_BACKGROUND
+        ).AsInteger()
         if text_background == 0:
             text_opaque_background += 1
     return text_opaque_background
@@ -372,32 +373,6 @@ def count_revision_clouds(document):
     )
 
 
-def count_purgeable_elements(document):
-    """
-    Counts the number of purgeable detail group types in a given Revit document.
-    This function collects all detail group types in the specified document and
-    filters out those that are part of array groups. The remaining count of
-    detail group types is returned.
-
-    Args:
-        document (DB.Document): The Revit document to process.
-
-    Returns:
-        int: The count of purgeable detail group types.
-    """
-    detail_groups_types = (
-        DB.FilteredElementCollector(document)
-        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
-        .WhereElementIsElementType()
-    )
-    arrays_group_types = q.get_array_group_types(document)
-    detail_groups_types_count = detail_groups_types.GetElementCount()
-    for detail_groups_type in detail_groups_types:
-        if detail_groups_type.Id in arrays_group_types:
-            detail_groups_types_count -= 1
-    return detail_groups_types_count
-
-
 def count_detail_group_instances(doc):
     """
     Counts the number of detail group instances in the given Revit document.
@@ -410,17 +385,14 @@ def count_detail_group_instances(doc):
     Returns:
         int: The count of detail group instances not part of an array.
     """
-    detail_groups_instances = (
+    detail_group_ids = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
         .WhereElementIsNotElementType()
+        .ToElementIds()
     )
-    detail_groups_instances_count = detail_groups_instances.GetElementCount()
-    arrays_groups = q.get_array_group_ids(doc)
-    for group_in_array in arrays_groups:
-        if group_in_array not in detail_groups_instances.ToElementIds():
-            detail_groups_instances_count -= 1
-    return detail_groups_instances_count
+    arrays_groups_ids = [array.IntegerValue for array in q.get_array_group_ids(doc)]
+    return len([group_id for group_id in detail_group_ids if group_id.IntegerValue not in arrays_groups_ids])
 
 
 def count_detail_groups_types(document):
@@ -433,17 +405,14 @@ def count_detail_groups_types(document):
     Returns:
         int: The count of detail group types, excluding array group types.
     """
-    detail_groups_types = (
+    detail_group_type_ids = (
         DB.FilteredElementCollector(document)
         .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
         .WhereElementIsElementType()
+        .ToElementIds()
     )
-    arrays_group_types = q.get_array_group_types(document)
-    detail_groups_types_count = detail_groups_types.GetElementCount()
-    for detail_groups_type in detail_groups_types:
-        if detail_groups_type.Id in arrays_group_types:
-            detail_groups_types_count -= 1
-    return detail_groups_types_count
+    array_group_type_ids = [array.IntegerValue for array in q.get_array_group_ids_types(document)]
+    return len([group_id for group_id in detail_group_type_ids if group_id.IntegerValue not in array_group_type_ids])
 
 
 def count_model_groups_types(doc):
@@ -456,17 +425,14 @@ def count_model_groups_types(doc):
     Returns:
         int: The count of model group types excluding array group types.
     """
-    model_group_types = (
+    model_group_types_ids = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
         .WhereElementIsElementType()
+        .ToElementIds()
     )
-    arrays_group_types = q.get_array_group_types(doc)
-    model_groups_types_count = model_group_types.GetElementCount()
-    for model_groups_type in model_group_types:
-        if model_groups_type.Id in arrays_group_types:
-            model_groups_types_count -= 1
-    return model_groups_types_count
+    array_group_type_ids = [array.IntegerValue for array in q.get_array_group_ids_types(doc)]
+    return len([model_group_id for model_group_id in model_group_types_ids if model_group_id.IntegerValue not in array_group_type_ids])
 
 
 def count_model_group_instances(doc):
@@ -479,14 +445,11 @@ def count_model_group_instances(doc):
     Returns:
         int: The count of model group instances not part of any array.
     """
-    model_groups_instances = (
+    model_groups_instances_ids = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
         .WhereElementIsNotElementType()
+        .ToElementIds()
     )
-    arrays_groups = q.get_array_group_ids(doc)
-    model_groupes_instances_count = model_groups_instances.GetElementCount()
-    for group_in_array in arrays_groups:
-        if group_in_array not in model_groups_instances.ToElementIds():
-            model_groupes_instances_count -= 1
-    return model_groupes_instances_count
+    arrays_groups_ids = [array.IntegerValue for array in q.get_array_group_ids(doc)]
+    return len([model_group_id for model_group_id in model_groups_instances_ids if model_group_id.IntegerValue not in arrays_groups_ids])

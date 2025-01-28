@@ -10,6 +10,7 @@ from os.path import isfile
 from datetime import datetime, timedelta
 from operator import attrgetter
 from collections import OrderedDict
+from System.Collections.Generic import HashSet
 
 from pyrevit.coreutils import Timer
 from pyrevit import HOST_APP
@@ -94,7 +95,7 @@ class ElementCounts:
             .WhereElementIsNotElementType()
             .GetElementCount()
         )
-        self.purgeable_elements_count = cnt.count_purgeable_elements(document)
+        self.purgeable_elements_count = len(document.GetUnusedElements(HashSet[DB.ElementId]()))
         self.activated_analytical_model_elements_count = (
             cnt.count_analytical_model_activated(document)
         )
@@ -273,14 +274,10 @@ class GroupInfo:
     """Handles group-related data."""
 
     def __init__(self, document):
-        self.detail_groups_count = len(
-            q.get_elements_by_categories(
-                [DB.BuiltInCategory.OST_DetailComponents], doc=document
-            )
-        )
+        self.detail_groups_instances_count = cnt.count_detail_group_instances(document)
         self.detail_groups_types_count = cnt.count_detail_groups_types(document)
-        self.model_group_count = cnt.count_model_group_instances(document)
-        self.model_group_type_count = cnt.count_model_groups_types(document)
+        self.model_groups_instances_count = cnt.count_model_group_instances(document)
+        self.model_groups_types_count = cnt.count_model_groups_types(document)
 
 
 class ReferencePlaneInfo:
@@ -683,10 +680,10 @@ def generate_html_content(data, links_cards=""):
     )
     groups_summary_frame = create_frame(
         "Groups",
-        card_builder(10, data.group_info.model_group_count, " Model Group Instances"),
-        card_builder(5, data.group_info.model_group_type_count, " Model Group Types"),
+        card_builder(10, data.group_info.model_groups_instances_count, " Model Group Instances"),
+        card_builder(5, data.group_info.model_groups_types_count, " Model Group Types"),
         card_builder(
-            10, data.group_info.detail_groups_count, " Detail Group Instances"
+            10, data.group_info.detail_groups_instances_count, " Detail Group Instances"
         ),
         card_builder(
             20, data.group_info.detail_groups_types_count, " Detail Group Types"
@@ -807,13 +804,14 @@ def audit_document(doc, output):
                 ]
             )
             links_documents_data.append(link_document_data)
-        output.print_md("# Linked Files Infos")
-        output.print_table(link_data, columns=FILE_INFO_HEADERS)
-        links_cards = card_builder(
-            50, data.links_info.rvtlinks_count, " Links"
-        ) + card_builder(
-            0, data.links_info.rvtlinks_unpinned_count, " Links not pinned"
-        )
+        if link_data:
+            output.print_md("# Linked Files Infos")
+            output.print_table(link_data, columns=FILE_INFO_HEADERS)
+            links_cards = card_builder(
+                50, data.links_info.rvtlinks_count, " Links"
+            ) + card_builder(
+                0, data.links_info.rvtlinks_unpinned_count, " Links not pinned"
+            )
 
         output.print_md(
             "# <p style='text-align: center;'>" + data.document_info.clean_name + "</p>"

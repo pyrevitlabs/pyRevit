@@ -3184,10 +3184,10 @@ def get_array_group_ids(doc=None):
     for ar in array_list:
         arrays_groups.extend(ar.GetOriginalMemberIds())
         arrays_groups.extend(ar.GetCopiedMemberIds())
-    return arrays_groups
+    return set(arrays_groups)
 
 
-def get_array_group_types(doc=None):
+def get_array_group_ids_types(doc=None):
     """
     Retrieves the unique types of array groups in the given Revit document.
 
