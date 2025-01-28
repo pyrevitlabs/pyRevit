@@ -383,7 +383,7 @@ class SettingsWindow(forms.WPFWindow):
         for checkbox  in self.supported_revit_versions_CB:
             #checkbox.IsEnabled and checkbox.IsChecked are False by default
             if checkbox.Version not in installed_revits:
-                checkbox.Content += self.get_locale_string("RevitAttachment.NotInstalled") #Change in local string file to avoid passing the version! already in RevitVersionCB class
+                checkbox.Content += self.get_locale_string("RevitAttachment.NotInstalled")
                 continue
             product = installed_revits[checkbox.Version]
             checkbox.Content += ' | {} | {}({}) '.format(product.Name,product.BuildNumber,product.BuildTarget)
