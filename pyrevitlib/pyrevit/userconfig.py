@@ -41,6 +41,7 @@ from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
 from pyrevit.compat import winreg as wr
+from pyrevit.coreutils.configparser import ConfigSections
 
 from pyrevit.labs import PyRevit
 from pyrevit.labs import ConfigurationService
@@ -78,6 +79,7 @@ class PyRevitConfig(object):
         # set log mode on the logger module based on
         # user settings (overriding the defaults)
         self.config_service = config_service
+        self.config_sections = ConfigSections(self.config_service[ConfigurationService.DefaultConfigurationName])
 
         self._update_env()
 
@@ -349,11 +351,11 @@ class PyRevitConfig(object):
     @property
     def apptelemetry_event_flags(self):
         """Telemetry event flags."""
-        return '{:x}'.format(self.telemetry.AppTelemetryEventFlags)
+        return str(hex(self.telemetry.AppTelemetryEventFlags))
 
     @apptelemetry_event_flags.setter
     def apptelemetry_event_flags(self, flags):
-        self.telemetry.AppTelemetryEventFlags = int(flags)
+        self.telemetry.AppTelemetryEventFlags = int(flags, 16)
 
     @property
     def user_can_update(self):
@@ -385,7 +387,7 @@ class PyRevitConfig(object):
     @property
     def colorize_docs(self):
         """Whether to enable the document colorizer."""
-        return self.ColorizeDocs
+        return self.core.ColorizeDocs
 
     @colorize_docs.setter
     def colorize_docs(self, state):
@@ -417,14 +419,6 @@ class PyRevitConfig(object):
     @respect_language_direction.setter
     def respect_language_direction(self, state):
         pass
-
-    def get_config_version(self):
-        """Return version of config file used for change detection.
-
-        Returns:
-            (str): hash of the config file
-        """
-        return self.get_config_file_hash()
 
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
@@ -561,6 +555,25 @@ class PyRevitConfig(object):
                 return wr.QueryValueEx(intkey, 'sList')[0]
             except Exception:
                 return DEFAULT_CSV_SEPARATOR
+
+    """Default config section code"""
+    def __iter__(self):
+        return self.config_sections.__iter__()
+
+    def __getattr__(self, section_name):
+        return self.config_sections.__getattr__(section_name)
+
+    def has_section(self, section_name):
+        return self.config_sections.has_section(section_name)
+
+    def add_section(self, section_name):
+        return self.config_sections.add_section(section_name)
+
+    def get_section(self, section_name):
+        return self.config_sections.get_section(section_name)
+
+    def remove_section(self, section_name):
+       self.config_sections.remove_section(section_name)
 
 
 def find_config_file(target_path):
