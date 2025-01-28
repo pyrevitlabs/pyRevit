@@ -386,7 +386,7 @@ class SettingsWindow(forms.WPFWindow):
                 checkbox.Content += self.get_locale_string("RevitAttachment.NotInstalled")
                 continue
             product = installed_revits[checkbox.Version]
-            checkbox.Content += ' | {} | {}({}) '.format(product.Name,product.BuildNumber,product.BuildTarget)
+            checkbox.Content += ' | {} | {}({}) '.format(product.Name, product.BuildNumber, product.BuildTarget)
             checkbox.IsEnabled = True
             if checkbox.Version not in attachments:
                 checkbox.Content += self.get_locale_string("RevitAttachment.NotAttached")
