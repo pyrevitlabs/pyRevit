@@ -11,7 +11,7 @@ KEY_VALUE_TRUE = "True"
 KEY_VALUE_FALSE = "False"
 
 
-class PyRevitConfigSectionParser(object):
+class ConfigSection(object):
     def __init__(self, section_name, configuration):
         self.section_name = section_name
         self.configuration = configuration
@@ -73,7 +73,7 @@ class PyRevitConfigSectionParser(object):
         subsections = []
         for section_name in self._parser.sections():
             if section_name.startswith(self._section_name + '.'):
-                subsec = PyRevitConfigSectionParser(self._parser, section_name)
+                subsec = ConfigSection(self._parser, section_name)
                 subsections.append(subsec)
         return subsections
 
@@ -98,10 +98,10 @@ class ConfigSections(object):
         return self.configuration.HasSection(section_name)
 
     def add_section(self, section_name):
-        return PyRevitConfigSectionParser(section_name, self.configuration)
+        return ConfigSection(section_name, self.configuration)
 
     def get_section(self, section_name):
-        return PyRevitConfigSectionParser(section_name, self.configuration)
+        return ConfigSection(section_name, self.configuration)
 
     def remove_section(self, section_name):
         self.configuration.RemoveSection(section_name)
