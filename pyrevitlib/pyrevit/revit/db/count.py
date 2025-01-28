@@ -577,17 +577,13 @@ def count_dimension_types(document):
     Returns:
         int: The count of dimension types in the document.
     """
-    dimension_types = get_types_by_class(DB.DimensionType, doc=document)
-    if not dimension_types:
-        return 0
-    dimension_types_count = 0
-    for dt in dimension_types:
-        try:
-            if dt.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM):
-                dimension_types_count += 1
-        except AttributeError:
-            pass
-    return dimension_types_count
+    dimension_type_count = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.DimensionType)
+        .WhereElementIsElementType()
+        .GetElementCount()
+    )
+    return dimension_type_count
 
 
 def count_dimensions(document):

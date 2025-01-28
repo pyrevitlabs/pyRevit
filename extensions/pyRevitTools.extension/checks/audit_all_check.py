@@ -361,7 +361,6 @@ class DimensionsInfo:
             count_dimension_overrides(document) if document else 0
         )
 
-
 class RevisionsInfo:
     """Manages revision clouds count."""
 
@@ -708,6 +707,7 @@ def generate_html_content(data, links_cards=""):
         card_builder(
             30, data.text_notes_info.text_notes_types_count, " Text Notes Types"
         ),
+        card_builder(2000, data.text_notes_info.text_notes_count, " Text Notes Instances"),
         card_builder(
             1, data.text_notes_info.text_bg_count, " Text Notes w/ White Background"
         ),
@@ -716,7 +716,6 @@ def generate_html_content(data, links_cards=""):
             data.text_notes_info.text_notes_types_wf_count,
             " Text Notes Width Factor !=1",
         ),
-        card_builder(2000, data.text_notes_info.text_notes_count, " Text Notes"),
         card_builder(
             100, data.text_notes_info.text_notes_caps_count, " Text Notes allCaps"
         ),
