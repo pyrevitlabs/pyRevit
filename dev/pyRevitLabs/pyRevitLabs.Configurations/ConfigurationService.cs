@@ -130,22 +130,23 @@ public sealed class ConfigurationService : IConfigurationService
         return configuration.GetValue<T>(sectionName, keyName);
     }
 
-    private static void SaveSection(Type configurationType, object? sectionValue, IConfiguration configuration)
+    private void SaveSection(Type configurationType, object sectionValue, IConfiguration configuration)
     {
         string sectionName =
             GetCustomAttribute<SectionNameAttribute>(configurationType)?.SectionName ?? configurationType.Name;
-        
+
         foreach (var propertyInfo in GetProperties(configurationType))
         {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
+            object? defaultValue = GetKeyValue(Configurations, propertyInfo, sectionName, keyName);
+
             object? keyValue = propertyInfo.GetValue(sectionValue);
-            
             if (keyValue is null)
                 configuration.RemoveOption(sectionName, keyName);
-            else
+            else if(!keyValue.Equals(defaultValue))
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
-        
+
         configuration.SaveConfiguration();
     }
 
