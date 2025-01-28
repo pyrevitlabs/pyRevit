@@ -3,7 +3,11 @@
 public interface IConfigurationService
 {
     bool ReadOnly { get; }
-    
+
+    IEnumerable<string> ConfigurationNames { get; }
+    IEnumerable<IConfiguration> Configurations { get; }
+    IConfiguration this[string configurationName] { get; }
+
     CoreSection Core { get; }
     RoutesSection Routes { get; }
     TelemetrySection Telemetry { get; }

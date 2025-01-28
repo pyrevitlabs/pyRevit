@@ -20,7 +20,7 @@ public sealed class ConfigurationService : IConfigurationService
     {
         _names = names;
         _configurations = configurations;
-        
+
         ReadOnly = readOnly;
 
         // TODO: Change behavior
@@ -32,7 +32,7 @@ public sealed class ConfigurationService : IConfigurationService
     {
         return new ConfigurationService(readOnly, names, configurations);
     }
-    
+
     public bool ReadOnly { get; }
 
     public IEnumerable<string> ConfigurationNames => _configurations.Keys;
@@ -40,6 +40,20 @@ public sealed class ConfigurationService : IConfigurationService
     public IEnumerable<IConfiguration> Configurations => _names
         .Select(item => _configurations[item.Name!])
         .ToArray();
+
+    public IConfiguration this[string configurationName]
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(configurationName))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(configurationName));
+            
+            if (!_configurations.TryGetValue(configurationName, out IConfiguration? configuration))
+                throw new InvalidOperationException($"Configuration {configurationName} not found");
+
+            return configuration;
+        }
+    }
 
     public CoreSection Core { get; private set; } = new();
     public RoutesSection Routes { get; private set; } = new();

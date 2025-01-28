@@ -3,11 +3,17 @@ using pyRevitLabs.Configurations.Exceptions;
 
 namespace pyRevitLabs.Configurations;
 
-public abstract class ConfigurationBase(string configurationPath, bool readOnly) : IConfiguration
+public abstract class ConfigurationBase : IConfiguration
 {
-    protected readonly string _configurationPath = configurationPath;
-    
-    public bool ReadOnly { get; } = readOnly;
+    protected readonly string _configurationPath;
+
+    protected ConfigurationBase(string configurationPath, bool readOnly)
+    {
+        _configurationPath = configurationPath;
+        ReadOnly = readOnly;
+    }
+
+    public bool ReadOnly { get; }
     public string ConfigurationPath => _configurationPath;
 
     public void SaveConfiguration()
@@ -69,10 +75,6 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
 
         bool result = HasSection(sectionName)
                       && RemoveSectionImpl(sectionName);
-        if (result)
-        {
-            SaveConfiguration();
-        }
 
         return result;
     }
@@ -89,11 +91,6 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
         bool result = HasSection(sectionName)
                       && HasSectionKey(sectionName, keyName)
                       && RemoveOptionImpl(sectionName, keyName);
-
-        if (result)
-        {
-            SaveConfiguration();
-        }
 
         return result;
     }
@@ -182,7 +179,6 @@ public abstract class ConfigurationBase(string configurationPath, bool readOnly)
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(keyName));
 
         SetValueImpl<T>(sectionName, keyName, value);
-        SaveConfiguration();
     }
 
     protected abstract void SaveConfigurationImpl();
