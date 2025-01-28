@@ -139,7 +139,10 @@ public sealed class ConfigurationService : IConfigurationService
         {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
             object? keyValue = propertyInfo.GetValue(sectionValue);
-            if (keyValue is not null)
+            
+            if (keyValue is null)
+                configuration.RemoveOption(sectionName, keyName);
+            else
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
         
