@@ -22,6 +22,7 @@ Install Visual Studio 2022 and select:
     - .NET Framework 4.7.2 Targeting Pack
     - .NET Framework 4.8 SDK
     - .NET Framework 4.8 Targeting Pack
+    - .NET 3.1 Runtime (MahApps.Metro)
     - NuGet package manager
     - MSBuild
 
@@ -110,7 +111,7 @@ git submodule update --init --recursive
 
 !!! note
 
-    you may have to repeat the `git sumbodule update` command when you switch to another existing branch, or when new commits in the develop branch update the dependencies.
+    you may have to repeat the `git submodule update` command when you switch to another existing branch, or when new commits in the develop branch update the dependencies.
 
 ## Initialize the pipenv environment
 

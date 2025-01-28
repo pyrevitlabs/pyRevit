@@ -13,25 +13,23 @@ pyrevit.userconfig to get a list of user extension folder and also
 pyrevit.extensions.extpackages to check whether an extension is active or not.
 """
 
-from pyrevit import EXEC_PARAMS
 from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
 
-if not EXEC_PARAMS.doc_mode:
-    try:
-        if user_config.bin_cache:
-            from pyrevit.extensions.cacher_bin import is_cache_valid,\
-                get_cached_extension, update_cache
-        else:
-            from pyrevit.extensions.cacher_asc import is_cache_valid,\
-                get_cached_extension, update_cache
-    except AttributeError:
-        user_config.bin_cache = True
-        user_config.save_changes()
+try:
+    if user_config.bin_cache:
         from pyrevit.extensions.cacher_bin import is_cache_valid,\
             get_cached_extension, update_cache
+    else:
+        from pyrevit.extensions.cacher_asc import is_cache_valid,\
+            get_cached_extension, update_cache
+except AttributeError:
+    user_config.bin_cache = True
+    user_config.save_changes()
+    from pyrevit.extensions.cacher_bin import is_cache_valid,\
+        get_cached_extension, update_cache
 
 #pylint: disable=C0413
 from pyrevit.extensions.parser import parse_dir_for_ext_type, get_parsed_extension

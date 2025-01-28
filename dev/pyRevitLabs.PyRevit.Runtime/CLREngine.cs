@@ -12,32 +12,13 @@ using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
-using SHARED = pyRevitLabs.PyRevit.Runtime.Shared;
+using pyRevitLabs.PyRevit.Runtime.Shared;
 
 namespace PyRevitLabs.PyRevit.Runtime
 {
-    public class ExecParams
-    {
-        public string ExecId { get; set; }
-        public string ExecTimeStamp { get; set; }
-        public string ScriptPath { get; set; }
-        public string ConfigScriptPath { get; set; }
-        public string CommandUniqueId { get; set; }
-        public string CommandControlId { get; set; }
-        public string CommandName { get; set; }
-        public string CommandBundle { get; set; }
-        public string CommandExtension { get; set; }
-        public string HelpSource { get; set; }
-        public bool RefreshEngine { get; set; }
-        public bool ConfigMode { get; set; }
-        public bool DebugMode { get; set; }
-        public bool ExecutedFromUI { get; set; }
-        public Autodesk.Windows.RibbonItem UIButton { get; set; }
-    }
-
     public class CLREngineOutputTarget : TargetWithLayout
     {
-        public SHARED.ExecParams CurrentExecParams { get; set; }
+        public ExecParams CurrentExecParams { get; set; }
 
         protected override void Write(LogEventInfo logEvent)
         {
@@ -290,7 +271,7 @@ namespace PyRevitLabs.PyRevit.Runtime
 
             // set properties if available
             // set ExecParams
-            var execParams = new SHARED.ExecParams(
+            var execParams = new ExecParams(
                 execId: runtime.ExecId,
                 execTimeStamp: runtime.ExecTimestamp,
                 scriptPath: runtime.ScriptData.ScriptPath,
@@ -311,7 +292,7 @@ namespace PyRevitLabs.PyRevit.Runtime
             FieldInfo execParamField = null;
             foreach (var fieldInfo in extCommandType.GetFields())
             {
-                if (fieldInfo.FieldType == typeof(SHARED.ExecParams))
+                if (fieldInfo.FieldType == typeof(ExecParams))
                 {
                     execParamField = fieldInfo;
                     execParamField.SetValue(extCommandInstance, execParams);
