@@ -177,7 +177,47 @@ class SheetViewInfo:
     def __init__(self, document, sheets_set, views):
         self.sheets_count = len(sheets_set) if sheets_set else 0
         self.views_count = len(views) if views else 0
-        self.views_floorplans_count = sum(1 for x in views if x.ViewType == DB.ViewType.FloorPlan) if views else 0
+        self.views_floorplans_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.FloorPlan) if views else 0
+        )
+        self.views_ceilingplans_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.CeilingPlan)
+            if views
+            else 0
+        )
+        self.views_elevations_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.Elevation) if views else 0
+        )
+        self.views_sections_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.Section) if views else 0
+        )
+        self.views_threed_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.ThreeD) if views else 0
+        )
+        self.views_drawingsheet_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.DrawingSheet)
+            if views
+            else 0
+        )
+        self.views_legend_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.Legend) if views else 0
+        )
+        self.views_drafting_view_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.DraftingView)
+            if views
+            else 0
+        )
+        self.views_area_plan_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.AreaPlan) if views else 0
+        )
+        self.views_detail_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.Detail) if views else 0
+        )
+        self.views_engineering_plan_count = (
+            sum(1 for x in views if x.ViewType == DB.ViewType.EngineeringPlan)
+            if views
+            else 0
+        )
         self.views_not_on_sheets = (
             count_unplaced_views(sheets_set, self.views_count)
             if sheets_set and views
@@ -253,7 +293,9 @@ class FamilyInfo:
         self.imports_subcats_count = (
             count_import_subcategories(document) if document else 0
         )
-        self.generic_models_types_count = count_generic_models_types(document) if document else 0
+        self.generic_models_types_count = (
+            count_generic_models_types(document) if document else 0
+        )
         self.detail_components_count = (
             count_detail_components(document) if document else 0
         )
@@ -289,7 +331,9 @@ class GroupInfo:
         self.detail_groups_types_count = (
             count_detail_groups_types(document) if document else 0
         )
-        self.model_group_count = count_model_group_instances(document) if document else 0
+        self.model_group_count = (
+            count_model_group_instances(document) if document else 0
+        )
         self.model_group_type_count = (
             count_model_groups_types(document) if document else 0
         )
@@ -423,11 +467,17 @@ class ReportData:
 
     def __init__(self, document=None):
         sheets_set = get_sheets(document) if document else None
-        views = get_all_views(document) if document else None
+        views = (
+            get_elements_by_categories([DB.BuiltInCategory.OST_Views], doc=document)
+            if document
+            else None
+        )
+        views_without_templates = (
+            [v for v in views if v.IsTemplate is False] if views else None
+        )
         self.rvtlinks_elements_items = (
             get_linked_model_instances(document).ToElements() if document else None
         )
-
         # Initialize component classes
         self.metadata = Metadata()
         self.document_info = DocumentInfo(document)
@@ -435,7 +485,9 @@ class ReportData:
         self.element_counts = ElementCounts(document)
         self.warnings_info = WarningsInfo(document)
         self.room_info = RoomInfo(document)
-        self.sheet_view_info = SheetViewInfo(document, sheets_set, views)
+        self.sheet_view_info = SheetViewInfo(
+            document, sheets_set, views_without_templates
+        )
         self.view_template_filter_info = ViewTemplateFilterInfo(document, views)
         self.materials_line_pattern_info = MaterialsLinePatternInfo(document)
         self.links_info = LinksInfo(document, self.rvtlinks_elements_items)
@@ -583,6 +635,21 @@ def generate_html_content(data, links_cards=""):
         card_builder(1500, data.sheet_view_info.views_count, " Views"),
         card_builder(200, data.sheet_view_info.views_floorplans_count, " Floor Plans"),
         card_builder(
+            200, data.sheet_view_info.views_ceilingplans_count, " Ceiling Plans"
+        ),
+        card_builder(200, data.sheet_view_info.views_elevations_count, " Elevations"),
+        card_builder(200, data.sheet_view_info.views_sections_count, " Sections"),
+        card_builder(200, data.sheet_view_info.views_threed_count, " 3D Views"),
+        card_builder(
+            200, data.sheet_view_info.views_drawingsheet_count, " Drawing Sheets"
+        ),
+        card_builder(200, data.sheet_view_info.views_legend_count, " Legends"),
+        card_builder(
+            200, data.sheet_view_info.views_drafting_view_count, " Drafting Views"
+        ),
+        card_builder(200, data.sheet_view_info.views_area_plan_count, " Area Plans"),
+        card_builder(200, data.sheet_view_info.views_detail_count, " Detail Views"),
+        card_builder(
             300, data.sheet_view_info.views_not_on_sheets, " Views not on Sheets"
         ),
         card_builder(20, data.sheet_view_info.schedule_count, " Schedules"),
@@ -596,7 +663,9 @@ def generate_html_content(data, links_cards=""):
             100, data.view_template_filter_info.view_templates_count, " View Templates"
         ),
         card_builder(
-            0, data.view_template_filter_info.unused_view_templates_count, " Unused View Templates"
+            0,
+            data.view_template_filter_info.unused_view_templates_count,
+            " Unused View Templates",
         ),
         card_builder(0, data.view_template_filter_info.all_filters_count, " Filters"),
         card_builder(
@@ -620,7 +689,9 @@ def generate_html_content(data, links_cards=""):
             data.family_info.not_parametric_families_count,
             " Non-Parametric Families",
         ),
-        card_builder(0, data.family_info.imports_subcats_count, " CAD Layers Imports in Families"),
+        card_builder(
+            0, data.family_info.imports_subcats_count, " CAD Layers Imports in Families"
+        ),
         card_builder(
             50, data.family_info.generic_models_types_count, " Generic Models Types"
         ),
@@ -662,7 +733,9 @@ def generate_html_content(data, links_cards=""):
         "Groups",
         card_builder(10, data.group_info.model_group_count, " Model Group Instances"),
         card_builder(5, data.group_info.model_group_type_count, " Model Group Types"),
-        card_builder(10, data.group_info.detail_groups_count, " Detail Group Instances"),
+        card_builder(
+            10, data.group_info.detail_groups_count, " Detail Group Instances"
+        ),
         card_builder(
             20, data.group_info.detail_groups_types_count, " Detail Group Types"
         ),
