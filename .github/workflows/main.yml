@@ -88,15 +88,15 @@ jobs:
         run: |
           pipenv run pyrevit set year
 
-      - name: Update Certificate
-        if: (github.repository == env.MainRepo)
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-        run: |
-          pipenv run pyrevit sign addcert
+      # - name: Update Certificate
+      #   if: (github.repository == env.MainRepo)
+      #   env:
+      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
+      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+      #   run: |
+      #     pipenv run pyrevit sign addcert
 
       # WIP only
       - name: Update Build Info (WIP)
@@ -132,32 +132,50 @@ jobs:
         with:
           path: release/version
 
-      - name: Sign Products
-        if: (github.repository == env.MainRepo)
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-        run: |
-          pipenv run pyrevit sign products
+      # - name: Sign Products
+      #   if: (github.repository == env.MainRepo)
+      #   env:
+      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
+      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+      #   run: |
+      #     pipenv run pyrevit sign products
 
       - name: Build Installers
         run: |
           pipenv run pyrevit build installers
 
-      - name: Sign Installers
-        if: (github.repository == env.MainRepo)
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-        run: |
-          pipenv run pyrevit sign installers
+      # - name: Sign Installers
+      #   if: (github.repository == env.MainRepo)
+      #   env:
+      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
+      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+      #   run: |
+      #     pipenv run pyrevit sign installers
 
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
+
+      - name: Sign files with Trusted Signing
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+
+          # Sign all exes inside the folder
+          files-folder: dist/
+          files-folder-filter: exe,msi,nupkg
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      
       - name: Upload Installers
         uses: actions/upload-artifact@v4
         with:
