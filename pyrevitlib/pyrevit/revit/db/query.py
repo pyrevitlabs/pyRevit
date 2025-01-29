@@ -1123,7 +1123,7 @@ def get_linked_model_doc(linked_model):
                 return open_doc
 
 
-def get_linked_model_types(doc=None, rvt_links_instances=None):
+def get_linked_model_types(doc, rvt_links_instances):
     """
     Retrieves the types of linked Revit models.
     Args:
