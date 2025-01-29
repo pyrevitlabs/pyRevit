@@ -160,6 +160,7 @@ jobs:
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
 
       - name: Sign files with Trusted Signing
+        if: (github.repository == env.MainRepo)
         uses: azure/trusted-signing-action@v0.5.1
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
