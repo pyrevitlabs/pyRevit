@@ -3,7 +3,7 @@ on:
   # when PRs from forked repos are merged
   push:
     branches:
-      - develop-4
+      - develop
     paths:
       - 'bin/**'
       - 'dev/**'
@@ -27,10 +27,10 @@ on:
 
 env:
   ReleaseBranch: "master"
+  MainRepo: "pyrevitlabs/pyRevit"
 
 jobs:
   build:
-    if: github.repository == 'pyrevitlabs/pyRevit'
     runs-on: windows-latest
     steps:
       - name: Report Context
@@ -49,10 +49,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref }}
-
-      - name: Checkout Submodules
-        uses: jmcouffin/submodules-init@ae47afe19152906d341ee759b39034176873f8ff
+          submodules: recursive
 
       - name: Prepare Python 3.10
         uses: actions/setup-python@v5
@@ -64,41 +61,57 @@ jobs:
           pip install pipenv
           pipenv install
 
+      # needed for MahApps XamlColorSchemeGenerator
+      - name: Prepare .NET 3.1
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 3.1.x
+
+      - name: Prepare .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
       - name: Prepare msbuild
         uses: microsoft/setup-msbuild@v2
 
       - name: Prepare git
+        if: (github.repository == env.MainRepo)
         uses: fregante/setup-git-user@v2
 
       - name: Check Build Environment
+        if: (github.repository == env.MainRepo)
         run: pipenv run pyrevit check
 
       - name: Update Copyright Info
+        if: (github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set year
 
-      - name: Update Certificate
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-        run: |
-          pipenv run pyrevit sign addcert
+      # - name: Update Certificate
+      #   if: (github.repository == env.MainRepo)
+      #   env:
+      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
+      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+      #   run: |
+      #     pipenv run pyrevit sign addcert
 
       # WIP only
       - name: Update Build Info (WIP)
-        if: (github.base_ref != env.ReleaseBranch)
+        if: (github.base_ref != env.ReleaseBranch && github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set build wip
 
       # RELEASE only
       - name: Update Build Info (Release)
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set build release
 
       - name: Publish Build Info
+        if: (github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set products
 
@@ -107,6 +120,7 @@ jobs:
           pipenv run pyrevit build products
 
       - name: Get Build Version
+        if: (github.repository == env.MainRepo)
         id: buildversion
         uses: juliangruber/read-file-action@v1
         with:
@@ -118,30 +132,51 @@ jobs:
         with:
           path: release/version
 
-      - name: Sign Products
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-        run: |
-          pipenv run pyrevit sign products
+      # - name: Sign Products
+      #   if: (github.repository == env.MainRepo)
+      #   env:
+      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
+      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+      #   run: |
+      #     pipenv run pyrevit sign products
 
       - name: Build Installers
         run: |
           pipenv run pyrevit build installers
 
-      - name: Sign Installers
-        env:
-          CERTIFICATE: ${{ secrets.CERTIFICATE }}
-          CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-          CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-          CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-        run: |
-          pipenv run pyrevit sign installers
+      # - name: Sign Installers
+      #   if: (github.repository == env.MainRepo)
+      #   env:
+      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
+      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
+      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
+      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
+      #   run: |
+      #     pipenv run pyrevit sign installers
 
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
+
+      - name: Sign files with Trusted Signing
+        if: (github.repository == env.MainRepo)
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+
+          # Sign all exes inside the folder
+          files-folder: dist/
+          files-folder-filter: exe,msi
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      
       - name: Upload Installers
         uses: actions/upload-artifact@v4
         with:
@@ -154,14 +189,14 @@ jobs:
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
       - name: Generate Release Notes (Release)
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit report releasenotes > release_notes.md
 
       - name: Commit & Tag Changes (Release)
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         # configure git and commit changes
         run: |
           pipenv run pyrevit build commit
@@ -170,7 +205,7 @@ jobs:
 
       - name: Publish Release (Release)
         id: publish_release
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -189,13 +224,13 @@ jobs:
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
 
       - name: Publish Choco Packages (Release)
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         run: |
           choco apikey --key ${{ secrets.CHOCO_TOKEN}} --source https://push.chocolatey.org/
           choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
 
       - name: Merge To Master (Release)
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         # configure git and commit changes
         run: |
           git checkout ${{ github.base_ref }}
@@ -204,21 +239,21 @@ jobs:
           git checkout ${{ github.head_ref }}
 
       - name: Notify Issue Threads (WIP)
-        if: (github.ref == 'refs/heads/develop')
+        if: (github.ref == 'refs/heads/develop' && github.repository == env.MainRepo)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit notify wip https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Notify Issue Threads (Release)
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit notify release ${{ steps.publish_release.outputs.url }}
 
       - name: Increment Version & Commit (Release)
-        if: (github.base_ref == env.ReleaseBranch)
+        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set next-version
           git push
