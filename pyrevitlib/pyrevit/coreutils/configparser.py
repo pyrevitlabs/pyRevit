@@ -1,32 +1,27 @@
 """Base module for pyRevit config parsing."""
 import json
-import codecs
-from pyrevit.compat import configparser
 
-from pyrevit import PyRevitException, PyRevitIOError
 from pyrevit import coreutils
-
-#pylint: disable=W0703,C0302
-KEY_VALUE_TRUE = "True"
-KEY_VALUE_FALSE = "False"
+from pyrevit.labs import ConfigurationService
 
 
 class ConfigSection(object):
     def __init__(self, section_name, configuration):
-        self.section_name = section_name
-        self.configuration = configuration
+        self.__section_name = section_name
+        self.__configuration = configuration
 
     def __iter__(self):
-        return list(self.configuration.GetSectionOptionNames(self.section_name))
+        for option_name in self.__configuration.GetSectionOptionNames(self.__section_name):
+            yield option_name
 
     def __str__(self):
-        return self.section_name
+        return self.__section_name
 
     def __repr__(self):
         return '<PyRevitConfigSectionParser object '    \
                'at 0x{0:016x} '                         \
                'config section \'{1}\'>'                \
-               .format(id(self), self.section_name)
+               .format(id(self), self.__section_name)
 
     def __getattr__(self, param_name):
         return self.get_option(param_name)
@@ -36,27 +31,25 @@ class ConfigSection(object):
 
     @property
     def header(self):
-        """Section header."""
-        return self.section_name
+        return self.__section_name
 
     @property
     def subheader(self):
-        """Section sub-header e.g. Section.SubSection."""
         return coreutils.get_canonical_parts(self.header)[-1]
 
     def has_option(self, option_name):
-        pass
+        return self.__configuration.HasSectionKey(self.__section_name, option_name)
 
     def get_option(self, op_name, default_value=None):
-        value = self.configuration.GetValueOrDefault(op_name, "")
-        return json.load(value) if value else None
+        value = self.__configuration.GetValueOrDefault(op_name, "")
+        return json.load(value) if value else default_value
 
     def set_option(self, op_name, value):
-        self.configuration.SetValue(self.section_name, op_name,
-                                    json.dumps(value, separators=(',', ':'), ensure_ascii=False))
+        self.__configuration.SetValue(self.__section_name, op_name,
+                                      json.dumps(value, separators=(',', ':'), ensure_ascii=False))
 
     def remove_option(self, option_name):
-        self.configuration.RemoveOption(self.section_name, option_name)
+        return self.__configuration.RemoveOption(self.__section_name, option_name)
 
     def has_subsection(self, section_name):
         """Check if section has any subsections."""
@@ -69,39 +62,42 @@ class ConfigSection(object):
         )
 
     def get_subsections(self):
-        """Get all subsections."""
         subsections = []
-        for section_name in self._parser.sections():
+        for section_name in self.__configuration.GetSectionNames():
             if section_name.startswith(self._section_name + '.'):
                 subsec = ConfigSection(self._parser, section_name)
                 subsections.append(subsec)
+
         return subsections
 
     def get_subsection(self, section_name):
-        """Get subsection with given name."""
         for subsection in self.get_subsections():
             if subsection.subheader == section_name:
                 return subsection
 
 
 class ConfigSections(object):
-    def __init__(self, configuration):
-        self.configuration = configuration
+    def __init__(self, configuration_service):
+        self.__configuration_service = configuration_service
 
     def __iter__(self):
-        return list(self.configuration.GetSectionNames())
+        for section_name in self.__get_default_config().GetSectionNames():
+            yield section_name
 
     def __getattr__(self, section_name):
         return self.get_section(section_name)
 
     def has_section(self, section_name):
-        return self.configuration.HasSection(section_name)
+        return self.__get_default_config().HasSection(section_name)
 
     def add_section(self, section_name):
-        return ConfigSection(section_name, self.configuration)
+        return ConfigSection(section_name, self.__get_default_config())
 
     def get_section(self, section_name):
-        return ConfigSection(section_name, self.configuration)
+        return ConfigSection(section_name, self.__get_default_config())
 
     def remove_section(self, section_name):
-        self.configuration.RemoveSection(section_name)
+        self.__get_default_config().RemoveSection(section_name)
+
+    def __get_default_config(self):
+        return self.__configuration_service[ConfigurationService.DefaultConfigurationName]

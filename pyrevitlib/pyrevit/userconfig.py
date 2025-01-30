@@ -79,7 +79,7 @@ class PyRevitConfig(object):
         # set log mode on the logger module based on
         # user settings (overriding the defaults)
         self.config_service = config_service
-        self.config_sections = ConfigSections(self.config_service[ConfigurationService.DefaultConfigurationName])
+        self.config_sections = ConfigSections(self.config_service)
 
         self._update_env()
 
