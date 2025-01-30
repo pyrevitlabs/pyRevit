@@ -244,7 +244,7 @@ class ExtensionPackage:
         All config parameters will be saved in user config file.
 
         Returns:
-            (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
+            (pyrevit.coreutils.configparser.ConfigSection):
                 Config section handler
         """
         try:

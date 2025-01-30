@@ -187,5 +187,3 @@ def report_env():
     mlogger.info('Home Directory is: %s', HOME_DIR)
     mlogger.info('Session uuid is: %s', get_session_uuid())
     mlogger.info('Runtime assembly is: %s', runtime.RUNTIME_ASSM_NAME)
-    mlogger.info('Config file is (%s): %s',
-                 user_config.config_type, user_config.config_file)

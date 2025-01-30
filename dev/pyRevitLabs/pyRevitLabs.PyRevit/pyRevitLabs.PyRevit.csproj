@@ -17,14 +17,14 @@
   <ItemGroup>
     <PackageReference Include="Nett" Version="0.15.0" />
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
-
-    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6" />
-    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
     <ProjectReference Include="..\pyRevitLabs.CommonWPF\pyRevitLabs.CommonWPF.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.Configurations.Json\pyRevitLabs.Configurations.Json.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
 

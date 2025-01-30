@@ -198,21 +198,10 @@ namespace pyRevitLabs.PyRevit {
 
         // pyRevit config file path
         // @reviewed
-        public static string ConfigFilePath {
-            get {
-                string configRoot = UserEnv.IsRunAsElevated() ? PyRevitLabsConsts.PyRevitProgramDataPath : PyRevitLabsConsts.PyRevitPath;
-                var cfgFile = FindConfigFileInDirectory(configRoot);
-                return cfgFile != null ? cfgFile : Path.Combine(configRoot, DefaultConfigsFileName);
-            }
-        }
+        public static string ConfigFilePath => Path.Combine(PyRevitLabsConsts.PyRevitPath, DefaultConfigsFileName);
 
         // pyRevit config file path
         // @reviewed
-        public static string AdminConfigFilePath {
-            get {
-                var cfgFile = FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
-                return cfgFile != null ? cfgFile : Path.Combine(PyRevitLabsConsts.PyRevitProgramDataPath, DefaultConfigsFileName);
-            }
-        }
+        public static string AdminConfigFilePath => Path.Combine(PyRevitLabsConsts.PyRevitProgramDataPath, DefaultConfigsFileName);
     }
 }
