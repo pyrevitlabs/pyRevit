@@ -109,7 +109,6 @@ namespace pyRevitLabs.PyRevit
         // @handled @logs
         public static List<PyRevitClone> GetRegisteredClones()
         {
-
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
             var clonesDict = cfg.GetDictValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsInstalledClonesKey);
@@ -138,6 +137,7 @@ namespace pyRevitLabs.PyRevit
                     var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
                     if (clone.IsValid && !validatedClones.Contains(clone))
                     {
+
                         logger.Debug("Verified clone \"{0}={1}\"", clone.Name, clone.ClonePath);
                         validatedClones.Add(clone);
                     }
@@ -147,7 +147,6 @@ namespace pyRevitLabs.PyRevit
                     logger.Debug("Error occured when processing registered clone \"{0}\" at \"{1}\"", cloneKeyValue.Key, clonePath);
                 }
             }
-
             if (listChanged)
             {
                 // rewrite the verified clones list back to config file
