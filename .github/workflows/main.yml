@@ -172,7 +172,7 @@ jobs:
 
           # Sign all exes inside the folder
           files-folder: dist/
-          files-folder-filter: exe,msi,nupkg
+          files-folder-filter: exe,msi
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
