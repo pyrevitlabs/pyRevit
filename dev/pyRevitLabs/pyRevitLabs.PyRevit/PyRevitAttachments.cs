@@ -84,42 +84,40 @@ namespace pyRevitLabs.PyRevit {
 
         // get all attached revit versions
         // @handled @logs
-        public static List<PyRevitAttachment> GetAttachments() {
-            var attachments = new List<PyRevitAttachment>();
+        public static IEnumerable<PyRevitAttachment> GetAttachments() {
+            var registeredClones = PyRevitClones.GetRegisteredClones();
 
             foreach (var revit in RevitProduct.ListInstalledProducts()) {
                 logger.Debug("Checking attachment to Revit \"{0}\"", revit.Version);
-                var userManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: false);
-                var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: true);
 
                 PyRevitAttachment attachment = null;
+                var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: true);
                 if (allUsersManifest != null) {
                     logger.Debug("pyRevit (All Users) is attached to Revit \"{0}\"", revit.Version);
                     attachment = new PyRevitAttachment(allUsersManifest, revit, PyRevitAttachmentType.AllUsers);
 
                 }
-                else if (userManifest != null) {
-                    logger.Debug("pyRevit (Current User) is attached to Revit \"{0}\"", revit.Version);
-                    attachment = new PyRevitAttachment(userManifest, revit, PyRevitAttachmentType.CurrentUser);
-                }
-
-                // verify attachment has found
-                if (attachment != null) {
-                    // try to find clone in registered clones
-                    foreach (var clone in PyRevitClones.GetRegisteredClones()) {
-                        if (attachment.Clone != null && attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
-                            attachment.SetClone(clone);
-                            break;
-                        }
+                else {
+                    var userManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: false);
+                    if (userManifest != null) {
+                        logger.Debug("pyRevit (Current User) is attached to Revit \"{0}\"", revit.Version);
+                        attachment = new PyRevitAttachment(userManifest, revit, PyRevitAttachmentType.CurrentUser);
                     }
-
-                    attachments.Add(attachment);
                 }
-                else
+                // verify attachment has found
+                if (attachment is null) {
                     logger.Debug("No attachment found for Revit \"{0}\"", revit.Version);
+                    continue;
+                }
+                // try to find clone in registered clones
+                foreach (var clone in registeredClones) {
+                    if (attachment.Clone != null && attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
+                        attachment.SetClone(clone);
+                        break;
+                    }
+                }
+                yield return attachment;
             }
-
-            return attachments;
         }
 
         // get all attachments for a revit version
