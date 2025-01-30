@@ -384,7 +384,11 @@ namespace pyRevitLabs.PyRevit
                 if (Directory.GetFiles(stagedImage).Length == 0)
                 {
                     var subDirs = Directory.GetDirectories(stagedImage);
+                    if (subDirs.Length > 1) { 
+                        logger.Debug("Found multiple subdirectories in extracted archive: {0}", string.Join(", ", subDirs));
+                    }
                     if (subDirs.Length == 1) {
+                        logger.Debug("Found single subdirectory, using it as clone root: \"{0}\"", subDirs[0]);
                         stagedImage = subDirs[0];
                     }
                 }
