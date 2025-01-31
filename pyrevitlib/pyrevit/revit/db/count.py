@@ -98,7 +98,7 @@ def count_analytical_model_activated(document):
     )
 
 
-def count_unplaced_schedules(schedules=None):
+def count_unplaced_schedules(schedules):
     """
     Counts the number of schedules that are not placed on a sheet in the given document.
 
