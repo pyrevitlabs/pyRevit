@@ -98,7 +98,7 @@ namespace pyRevitCLI {
                             }
                         },
                         { "clones", PyRevitClones.GetRegisteredClones() },
-                        { "attachments", PyRevitAttachments.GetAttachments() },
+                        { "attachments", PyRevitAttachments.GetAttachments().ToList() },
                         { "extensions", PyRevitExtensions.GetInstalledExtensions() },
                         { "searchPaths", searchPaths },
                         { "lookupSources", lookupSrc },
