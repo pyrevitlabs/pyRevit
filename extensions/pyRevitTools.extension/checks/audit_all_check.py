@@ -28,20 +28,13 @@ logger = get_logger()
 BODY_CSS = '<style>.grid-container { display: grid; justify-content: center; align-items: center; }</style><div class="grid-container">'
 
 config = get_config()
-if config is None:
+try:
+    CURRENT_FOLDER = config.get_option("current_folder")
+    CRITICAL_WARNINGS = config.get_option("critical_warnings")
+    EXPORT_FILE_PATH = config.get_option("export_file_path")
+except:
     alert(
-        "No configuration set, run the Preflight Checks clicking \
-        on the tool while maintaining ALT key to configurate. Exiting...",
-        exitscript=True,
-    )
-
-CURRENT_FOLDER = config.get_option("current_folder")
-CRITICAL_WARNINGS = config.get_option("critical_warnings")
-EXPORT_FILE_PATH = config.get_option("export_file_path")
-if EXPORT_FILE_PATH is None:
-    alert(
-        "No export file path set, run the Preflight Checks clicking \
-        on the tool while maintaining ALT key to configurate. Exiting...",
+        "No configuration set, run the Preflight Checks configuration mode using SHIFT+Click. ",
         exitscript=True,
     )
 
@@ -409,7 +402,10 @@ class ReportData:
             ("text_bg_count", "text_notes_info.text_bg_count"),
             ("text_notes_count", "text_notes_info.text_notes_count"),
             ("text_notes_caps_count", "text_notes_info.text_notes_caps_count"),
-            ("detail_groups_instances_count", "group_info.detail_groups_instances_count"),
+            (
+                "detail_groups_instances_count",
+                "group_info.detail_groups_instances_count",
+            ),
             ("detail_groups_types_count", "group_info.detail_groups_types_count"),
             ("model_groups_instances_count", "group_info.model_groups_instances_count"),
             ("model_groups_types_count", "group_info.model_groups_types_count"),
@@ -503,19 +499,20 @@ class ReportData:
     def export_to_csv(self, export_file_path=EXPORT_FILE_PATH, headers=None):
         """
         Exports the current data to a CSV file.
-        If the CSV file does not exist, it creates a new file with the specified headers and writes the data.
-        If the CSV file already exists, it checks if the data for the current date and document name already exists.
-        If the data does not exist, it appends the new data to the file.
+        If the CSV file does not exist, it creates a new file and writes the headers and data.
+        If the CSV file exists, it appends the data only if a row with the same date and document name does not already exist.
 
         Args:
             export_file_path (str): The path to the CSV file. Defaults to EXPORT_FILE_PATH.
-            headers (list, optional): The list of headers for the CSV file. Defaults to None, in which case self.COLUMNS is used.
+            headers (list, optional): The list of headers for the CSV file. Defaults to self.COLUMNS.
 
         Returns:
             None
         """
         if headers is None:
             headers = self.COLUMNS
+        if export_file_path is None:
+            return
         if not isfile(export_file_path):
             with open(export_file_path, mode="wb") as csv_file:
                 w = writer(csv_file, lineterminator="\n")
