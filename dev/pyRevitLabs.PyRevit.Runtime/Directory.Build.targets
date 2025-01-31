@@ -3,20 +3,14 @@
     <Import Project="../Directory.Build.targets" />
     
     <PropertyGroup>
-        <Configurations>Debug IPY2712PR;Debug IPY340PR;Debug IPY342</Configurations>
-        <Configurations>$(Configurations);Release IPY2712PR;Release IPY340PR;Release IPY342</Configurations>
+        <Configurations>Debug IPY2712PR;Debug IPY342</Configurations>
+        <Configurations>$(Configurations);Release IPY2712PR;Release IPY342</Configurations>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(Configuration.Contains('IPY2712PR'))">
         <IronPythonVersion>IPY2712PR</IronPythonVersion>
         <IronPythonPrefix>pyRevitLabs.</IronPythonPrefix>
         <DefineConstants>$(DefineConstants);IPY2712PR</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(Configuration.Contains('IPY340PR'))">
-        <IronPythonVersion>IPY340PR</IronPythonVersion>
-        <IronPythonPrefix>pyRevitLabs.</IronPythonPrefix>
-        <DefineConstants>$(DefineConstants);IPY340PR</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(Configuration.Contains('IPY342'))">
