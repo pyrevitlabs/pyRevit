@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pyrevit import script, revit, DB, DOCS
-from pyrevit.forms import alert
+
 from pyrevit.preflight import PreflightTestCase
 
 from System.Windows import Window # Used for cancel button
@@ -21,6 +21,15 @@ def collect_cadinstances(active_view_only):
     cadinstances = collector.OfClass(DB.ImportInstance).WhereElementIsNotElementType().ToElements()
     if cadinstances:
         return cadinstances
+
+
+# Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
+class ButtonClass(Window): # to handle button event (https://stackoverflow.com/questions/54756424/using-the-on-click-option-for-a-revit-rpw-flexform-button)
+    @staticmethod
+    def cancel_clicked(sender, e):
+        window = Window.GetWindow(sender)
+        window.close()
+        script.exit()
 
 
 # Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
@@ -86,6 +95,8 @@ def get_load_stat(cad, is_link):
         return ":warning: IMPORTED" # Not an external reference
     exfs = cad_type.GetExternalFileReference()
     status = exfs.GetLinkedFileStatus().ToString()
+    if status == "Loaded":
+        return "Loaded"
     if status == "NotFound":
         return ":cross_mark: NotFound"
     if status == "Unloaded":
