@@ -96,7 +96,7 @@ def get_load_stat(cad, is_link):
     exfs = cad_type.GetExternalFileReference()
     status = exfs.GetLinkedFileStatus().ToString()
     if status == "Loaded":
-        return "Loaded"
+        return ":white_check_mark: Loaded"
     if status == "NotFound":
         return ":cross_mark: NotFound"
     if status == "Unloaded":
