@@ -373,83 +373,45 @@ def count_revision_clouds(document):
     )
 
 
-def count_detail_group_instances(doc):
+def count_groups(doc):
     """
-    Counts the number of detail group instances in the given Revit document.
-    This function collects all detail group instances in the document and then
-    adjusts the count by excluding any groups that are part of an array.
-
+    Counts the instances and types of model and detail groups in a Revit document, excluding array members.
+    
     Args:
-        doc: The Revit document to search for detail group instances.
-
+        doc (DB.Document): The Revit document to process.
+    
     Returns:
-        int: The count of detail group instances not part of an array.
+        tuple: A tuple containing four integers:
+            - model_group_instances_count (int): The count of model group instances.
+            - model_group_types_count (int): The count of model group types.
+            - detail_group_instances_count (int): The count of detail group instances.
+            - detail_group_types_count (int): The count of detail group types.
     """
-    detail_group_ids = (
-        DB.FilteredElementCollector(doc)
-        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
-        .WhereElementIsNotElementType()
-        .ToElementIds()
-    )
-    arrays_groups_ids = [array.IntegerValue for array in q.get_array_group_ids(doc)]
-    return len([group_id for group_id in detail_group_ids if group_id.IntegerValue not in arrays_groups_ids])
+    arrays_members_collector = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSArrays).ToElements()
+    arraysmembers = set()
+    for array in arrays_members_collector:
+        if array.OwnerViewId != DB.ElementId.InvalidElementId:
+            arraysmembers.update(array.GetOriginalMemberIds())
+            arraysmembers.update(array.GetCopiedMemberIds())
+
+    arrays_grouptype_members = set(doc.GetElement(array).GetTypeId() for array in arraysmembers)
 
 
-def count_detail_groups_types(document):
-    """
-    Counts the number of detail group types in the given Revit document, excluding those that are part of array groups.
+    model_groups = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).ToElements()
+    model_group_instances_count = 0
+    model_group_types_count = 0
+    for model_group in model_groups:
+        if type(model_group) is DB.GroupType and model_group.Id not in arrays_grouptype_members:
+            model_group_types_count += 1
+        elif type(model_group) is DB.Group and model_group.Id not in arraysmembers:
+            model_group_instances_count += 1
 
-    Args:
-        document (DB.Document): The Revit document to search for detail group types.
-
-    Returns:
-        int: The count of detail group types, excluding array group types.
-    """
-    detail_group_type_ids = (
-        DB.FilteredElementCollector(document)
-        .OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups)
-        .WhereElementIsElementType()
-        .ToElementIds()
-    )
-    array_group_type_ids = [array.IntegerValue for array in q.get_array_group_ids_types(document)]
-    return len([group_id for group_id in detail_group_type_ids if group_id.IntegerValue not in array_group_type_ids])
-
-
-def count_model_groups_types(doc):
-    """
-    Counts the number of model group types in the given Revit document, excluding array group types.
-
-    Args:
-        doc: The Revit document to process.
-
-    Returns:
-        int: The count of model group types excluding array group types.
-    """
-    model_group_types_ids = (
-        DB.FilteredElementCollector(doc)
-        .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
-        .WhereElementIsElementType()
-        .ToElementIds()
-    )
-    array_group_type_ids = [array.IntegerValue for array in q.get_array_group_ids_types(doc)]
-    return len([model_group_id for model_group_id in model_group_types_ids if model_group_id.IntegerValue not in array_group_type_ids])
-
-
-def count_model_group_instances(doc):
-    """
-    Counts the number of model group instances in the given Revit document that are not part of any array.
-
-    Args:
-        doc: The Revit document to search for model group instances.
-
-    Returns:
-        int: The count of model group instances not part of any array.
-    """
-    model_groups_instances_ids = (
-        DB.FilteredElementCollector(doc)
-        .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
-        .WhereElementIsNotElementType()
-        .ToElementIds()
-    )
-    arrays_groups_ids = [array.IntegerValue for array in q.get_array_group_ids(doc)]
-    return len([model_group_id for model_group_id in model_groups_instances_ids if model_group_id.IntegerValue not in arrays_groups_ids])
+    detail_groups = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSDetailGroups).ToElements()
+    detail_group_instances_count = 0
+    detail_group_types_count = 0
+    for detail_group in detail_groups:
+        if type(detail_group) is DB.GroupType and detail_group.Id not in arrays_grouptype_members:
+            detail_group_types_count += 1
+        elif type(detail_group) is DB.Group and detail_group.Id not in arraysmembers:
+            detail_group_instances_count += 1
+    return model_group_instances_count, model_group_types_count, detail_group_instances_count, detail_group_types_count

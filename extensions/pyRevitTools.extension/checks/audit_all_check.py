@@ -95,7 +95,9 @@ class ElementCounts:
             .WhereElementIsNotElementType()
             .GetElementCount()
         )
-        self.purgeable_elements_count = len(document.GetUnusedElements(HashSet[DB.ElementId]()))
+        self.purgeable_elements_count = len(
+            document.GetUnusedElements(HashSet[DB.ElementId]())
+        )
         self.activated_analytical_model_elements_count = (
             cnt.count_analytical_model_activated(document)
         )
@@ -266,7 +268,9 @@ class TextNotesInfo:
         self.text_notes_types_wf_count = (
             cnt.count_textnote_types_with_changed_width_factor(text_notes_types)
         )
-        self.text_bg_count = cnt.count_textnote_types_with_opaque_background(text_notes_types)
+        self.text_bg_count = cnt.count_textnote_types_with_opaque_background(
+            text_notes_types
+        )
         self.text_notes_caps_count = cnt.count_text_notes_with_all_caps(text_notes)
 
 
@@ -274,10 +278,16 @@ class GroupInfo:
     """Handles group-related data."""
 
     def __init__(self, document):
-        self.detail_groups_instances_count = cnt.count_detail_group_instances(document)
-        self.detail_groups_types_count = cnt.count_detail_groups_types(document)
-        self.model_groups_instances_count = cnt.count_model_group_instances(document)
-        self.model_groups_types_count = cnt.count_model_groups_types(document)
+        (
+            model_groups_instances_count,
+            model_groups_types_count,
+            detail_groups_instances_count,
+            detail_groups_types_count,
+        ) = cnt.count_groups(document)
+        self.detail_groups_instances_count = detail_groups_instances_count
+        self.detail_groups_types_count = detail_groups_types_count
+        self.model_groups_instances_count = model_groups_instances_count
+        self.model_groups_types_count = model_groups_types_count
 
 
 class ReferencePlaneInfo:
@@ -399,10 +409,10 @@ class ReportData:
             ("text_bg_count", "text_notes_info.text_bg_count"),
             ("text_notes_count", "text_notes_info.text_notes_count"),
             ("text_notes_caps_count", "text_notes_info.text_notes_caps_count"),
-            ("detail_groups_count", "group_info.detail_groups_count"),
+            ("detail_groups_instances_count", "group_info.detail_groups_instances_count"),
             ("detail_groups_types_count", "group_info.detail_groups_types_count"),
-            ("model_group_count", "group_info.model_group_count"),
-            ("model_group_type_count", "group_info.model_group_type_count"),
+            ("model_groups_instances_count", "group_info.model_groups_instances_count"),
+            ("model_groups_types_count", "group_info.model_groups_types_count"),
             ("reference_planes_count", "reference_plane_info.reference_planes_count"),
             (
                 "unnamed_ref_planes_count",
@@ -680,7 +690,9 @@ def generate_html_content(data, links_cards=""):
     )
     groups_summary_frame = create_frame(
         "Groups",
-        card_builder(10, data.group_info.model_groups_instances_count, " Model Group Instances"),
+        card_builder(
+            10, data.group_info.model_groups_instances_count, " Model Group Instances"
+        ),
         card_builder(5, data.group_info.model_groups_types_count, " Model Group Types"),
         card_builder(
             10, data.group_info.detail_groups_instances_count, " Detail Group Instances"
