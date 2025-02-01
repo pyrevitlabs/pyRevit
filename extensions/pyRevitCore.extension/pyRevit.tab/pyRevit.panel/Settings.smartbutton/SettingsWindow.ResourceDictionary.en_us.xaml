@@ -327,7 +327,7 @@
     <system:String x:Key="RevitAttachment.Current">&lt;current&gt;</system:String>
     <system:String x:Key="RevitAttachment.AllUsers">&lt;all users&gt;</system:String>
     <system:String x:Key="RevitAttachment.NotAttached">&lt;Not attached&gt;</system:String>
-    <system:String x:Key="RevitAttachment.NotInstalled">Revit {} &lt;Not installed&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotInstalled">&lt;Not installed&gt;</system:String>
 
     <system:String x:Key="Engines.WasChanged">
         Active engine has changed.
