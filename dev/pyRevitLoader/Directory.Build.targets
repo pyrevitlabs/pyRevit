@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="../Directory.Build.targets"/>
-    
-    <PropertyGroup>
-        <DeployDestinationFiles>$(PyRevitEnginesDir)\$(IronPythonVersion)\$(AssemblyName).dll</DeployDestinationFiles>
-    </PropertyGroup>
 
     <ItemGroup>
         <None Remove="obj\**" />
@@ -21,13 +17,17 @@
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="$(IronPythonVersion.Contains('PR'))">
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.dll"/>
         <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.Modules.dll"/>
         <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.SQLite.dll"/>
         <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.Wpf.dll"/>
         <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Dynamic.dll"/>
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Scripting.dll"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="!$(IronPythonVersion.Contains('PR'))">
+        <PackageReference Include="IronPython" Version="$(Version)"/>
     </ItemGroup>
     
     <ItemGroup>
@@ -39,7 +39,14 @@
     </ItemGroup>
 
     <Target Name="Deploy" AfterTargets="AfterBuild">
-        <Copy  SourceFiles="$(TargetPath)" DestinationFiles="$(DeployDestinationFiles)"/>
-        <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(DeployDestinationFiles)'))" />
+        <ItemGroup>
+            <AllFilesToCopy Include="$(TargetDir)\**\*.dll"
+                            Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll" />
+        </ItemGroup>
+        <Copy SourceFiles="@(AllFilesToCopy)" 
+                DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
+        <Message Importance="high" 
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
     </Target>
+
 </Project>
