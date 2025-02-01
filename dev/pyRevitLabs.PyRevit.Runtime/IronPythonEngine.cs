@@ -258,10 +258,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // engine.Setup.Options["Arguments"] = arguments;
             // engine.Runtime.Setup.HostArguments = new List<object>(arguments);
             var sysmodule = Engine.GetSysModule();
+#if IPY342
+            var pythonArgv = PythonOps.MakeEmptyList();
+#else
             var pythonArgv = PythonOps.MakeEmptyList(2);
+#endif
             // for python make sure the first argument is the script
             pythonArgv.append(runtime.ScriptSourceFile);
-            pythonArgv.extend(runtime.ScriptRuntimeConfigs.Arguments);
+            foreach (var obj in runtime.ScriptRuntimeConfigs.Arguments)
+            {
+                pythonArgv.append(obj);
+            }
             sysmodule.SetVariable("argv", pythonArgv);
         }
 
