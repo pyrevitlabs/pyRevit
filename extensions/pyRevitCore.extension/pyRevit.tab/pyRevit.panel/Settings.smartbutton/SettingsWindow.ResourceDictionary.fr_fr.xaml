@@ -315,7 +315,7 @@
     <system:String x:Key="RevitAttachment.Current">&lt;actuel&gt;</system:String>
     <system:String x:Key="RevitAttachment.AllUsers">&lt;tous les utilisateurs&gt;</system:String>
     <system:String x:Key="RevitAttachment.NotAttached">&lt;Non attaché&gt;</system:String>
-    <system:String x:Key="RevitAttachment.NotInstalled">Revit {} &lt;Non installé&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotInstalled">&lt;Non installé&gt;</system:String>
     
     <system:String x:Key="Engines.WasChanged">
         Le moteur actif a été modifié.
