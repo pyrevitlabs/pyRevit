@@ -447,8 +447,8 @@
                 <Expander Header="{DynamicResource SupportedRevitVersions.Title}" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
                         <TextBlock x:Name="revitversions_tb" TextWrapping="WrapWithOverflow" Text="{DynamicResource SupportedRevitVersions.Description}"/>
-                        <!--Link the list 'SupportedRevitVersions_CB' from python to the xaml-->
-                        <ItemsControl ItemsSource="{Binding SupportedRevitVersions_CB}">
+                        <!--Link the list 'supported_revit_versions_CB' from python to the xaml-->
+                        <ItemsControl ItemsSource="{Binding supported_revit_versions_CB}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <CheckBox Content="{Binding Content}"
