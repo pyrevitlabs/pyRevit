@@ -50,6 +50,37 @@ FILE_INFO_HEADERS = [
     "Pinned status",
 ]
 
+VALID_VIEW_TYPES = [
+    DB.ViewType.FloorPlan,
+    DB.ViewType.CeilingPlan,
+    DB.ViewType.Elevation,
+    DB.ViewType.ThreeD,
+    DB.ViewType.Schedule,
+    DB.ViewType.DrawingSheet,
+    DB.ViewType.Report,
+    DB.ViewType.DraftingView,
+    DB.ViewType.Legend,
+    DB.ViewType.EngineeringPlan,
+    DB.ViewType.AreaPlan,
+    DB.ViewType.Section,
+    DB.ViewType.Detail,
+    DB.ViewType.CostReport,
+    DB.ViewType.LoadsReport,
+    DB.ViewType.PresureLossReport,
+    DB.ViewType.ColumnSchedule,
+    DB.ViewType.PanelSchedule,
+    DB.ViewType.Walkthrough,
+    DB.ViewType.Rendering,
+    DB.ViewType.SystemsAnalysisReport,
+]
+
+INVALID_VIEW_TYPES = [
+    DB.ViewType.Undefined,
+    DB.ViewType.ProjectBrowser,
+    DB.ViewType.SystemBrowser,
+    DB.ViewType.Internal,
+]
+
 
 class Metadata:
     """Encapsulates user and date metadata."""
@@ -123,6 +154,7 @@ class SheetViewInfo:
     """Handles sheets and views metrics."""
 
     def __init__(self, document, sheets_set, views):
+        schedules = [schedule for schedule in views if schedule.ViewType == DB.ViewType.Schedule]
         self.sheets_count = len(sheets_set)
         self.views_count = len(views)
         self.views_floorplans_count = sum(
@@ -134,36 +166,62 @@ class SheetViewInfo:
         self.views_elevations_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.Elevation
         )
-        self.views_sections_count = sum(
-            1 for x in views if x.ViewType == DB.ViewType.Section
-        )
         self.views_threed_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.ThreeD
         )
+        self.schedules_count = len(schedules)
         self.views_drawingsheet_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.DrawingSheet
+        )
+        self.reports_count = sum(1 for x in views if x.ViewType == DB.ViewType.Report)
+        self.views_drafting_view_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.DraftingView
         )
         self.views_legend_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.Legend
         )
-        self.views_drafting_view_count = sum(
-            1 for x in views if x.ViewType == DB.ViewType.DraftingView
+        self.views_engineering_plan_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.EngineeringPlan
         )
         self.views_area_plan_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.AreaPlan
         )
+        self.views_sections_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.Section
+        )
         self.views_detail_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.Detail
         )
-        self.views_engineering_plan_count = sum(
-            1 for x in views if x.ViewType == DB.ViewType.EngineeringPlan
+        self.views_cost_report_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.CostReport
         )
-        self.views_not_on_sheets = cnt.count_unplaced_views(
-            sheets_set, self.views_count
+        self.views_loads_report_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.LoadsReport
         )
-        schedules = q.get_all_schedules(document)
-        self.schedule_count = len(schedules)
-        self.schedules_not_sheeted_count = cnt.count_unplaced_schedules(schedules)
+        self.views_presure_loss_report_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.PresureLossReport
+        )
+        self.views_column_schedule_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.ColumnSchedule
+        )
+        self.views_panel_schedule_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.PanelSchedule
+        )
+        self.views_walkthrough_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.Walkthrough
+        )
+        self.views_rendering_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.Rendering
+        )
+        self.views_systems_analysis_report_count = sum(
+            1 for x in views if x.ViewType == DB.ViewType.SystemsAnalysisReport
+        )
+        self.views_not_on_sheets = sum(
+            1 for x in views if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
+        )
+        self.schedules_not_sheeted_count = sum(
+            1 for x in schedules if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
+        )
         self.copied_views_count = cnt.count_copied_views(views)
 
 
@@ -366,8 +424,43 @@ class ReportData:
             ("unbounded_rooms", "room_info.unbounded_rooms"),
             ("sheets_count", "sheet_view_info.sheets_count"),
             ("views_count", "sheet_view_info.views_count"),
+            ("views_floorplans_count", "sheet_view_info.views_floorplans_count"),
+            ("views_ceilingplans_count", "sheet_view_info.views_ceilingplans_count"),
+            ("views_elevations_count", "sheet_view_info.views_elevations_count"),
+            ("views_threed_count", "sheet_view_info.views_threed_count"),
+            ("schedules", "sheet_view_info.schedules_count"),
+            ("views_drawingsheet_count", "sheet_view_info.views_drawingsheet_count"),
+            ("views_reports_count", "sheet_view_info.reports_count"),
+            ("views_drafting_view_count", "sheet_view_info.views_drafting_view_count"),
+            ("views_legend_count", "sheet_view_info.views_legend_count"),
+            (
+                "views_engineering_plan_count",
+                "sheet_view_info.views_engineering_plan_count",
+            ),
+            ("views_area_plan_count", "sheet_view_info.views_area_plan_count"),
+            ("views_sections_count", "sheet_view_info.views_sections_count"),
+            ("views_detail_count", "sheet_view_info.views_detail_count"),
+            ("views_cost_report_count", "sheet_view_info.views_cost_report_count"),
+            ("views_loads_report_count", "sheet_view_info.views_loads_report_count"),
+            (
+                "views_presure_loss_report_count",
+                "sheet_view_info.views_presure_loss_report_count",
+            ),
+            (
+                "views_column_schedule_count",
+                "sheet_view_info.views_column_schedule_count",
+            ),
+            (
+                "views_panel_schedule_count",
+                "sheet_view_info.views_panel_schedule_count",
+            ),
+            ("views_walkthrough_count", "sheet_view_info.views_walkthrough_count"),
+            ("views_rendering_count", "sheet_view_info.views_rendering_count"),
+            (
+                "views_systems_analysis_report_count",
+                "sheet_view_info.views_systems_analysis_report_count",
+            ),
             ("views_not_on_sheets", "sheet_view_info.views_not_on_sheets"),
-            ("schedules", "sheet_view_info.schedule_count"),
             (
                 "schedules_not_sheeted_count",
                 "sheet_view_info.schedules_not_sheeted_count",
@@ -426,9 +519,20 @@ class ReportData:
 
         sheets_set = q.get_sheets(document)
         views = q.get_elements_by_categories(
-            [DB.BuiltInCategory.OST_Views], doc=document
+            [DB.BuiltInCategory.OST_Views,
+             DB.BuiltInCategory.OST_Sections,
+             DB.BuiltInCategory.OST_Schedules,
+             DB.BuiltInCategory.OST_PipeSchedules,
+             DB.BuiltInCategory.OST_HVAC_Load_Schedules,
+             ], doc=document
         )
-        views_without_templates = [v for v in views if v.IsTemplate is False]
+        views_without_templates = []
+        for v in views:
+            if hasattr(v, "IsTemplate") and v.IsTemplate is False and \
+               v.ViewType not in INVALID_VIEW_TYPES:
+                views_without_templates.append(v)
+            # else:
+            #     print(v.Name, v.Category.Name)
         self.rvtlinks_elements_items = q.get_linked_model_instances(
             document
         ).ToElements()
@@ -585,35 +689,72 @@ def generate_html_content(data, links_cards=""):
         card_builder(0, data.room_info.unbounded_rooms, " Unbounded Rooms"),
     )
     sheets_views_graphics_frame = create_frame(
-        "Sheets, Views, Graphics",
+        "Sheets, Views key numbers",
         card_builder(500, data.sheet_view_info.sheets_count, " Sheets"),
         card_builder(1500, data.sheet_view_info.views_count, " Views"),
-        card_builder(500, data.sheet_view_info.views_floorplans_count, " Floor Plans"),
-        card_builder(
-            500, data.sheet_view_info.views_ceilingplans_count, " Ceiling Plans"
-        ),
-        card_builder(200, data.sheet_view_info.views_elevations_count, " Elevations"),
-        card_builder(200, data.sheet_view_info.views_sections_count, " Sections"),
-        card_builder(100, data.sheet_view_info.views_threed_count, " 3D Views"),
-        card_builder(
-            600, data.sheet_view_info.views_drawingsheet_count, " Drawing Sheets"
-        ),
-        card_builder(100, data.sheet_view_info.views_legend_count, " Legends"),
-        card_builder(
-            200, data.sheet_view_info.views_drafting_view_count, " Drafting Views"
-        ),
-        card_builder(100, data.sheet_view_info.views_area_plan_count, " Area Plans"),
-        card_builder(500, data.sheet_view_info.views_detail_count, " Detail Views"),
         card_builder(
             300, data.sheet_view_info.views_not_on_sheets, " Views not on Sheets"
         ),
-        card_builder(100, data.sheet_view_info.schedule_count, " Schedules"),
         card_builder(
             50,
             data.sheet_view_info.schedules_not_sheeted_count,
             " Schedules not on sheet",
         ),
         card_builder(0, data.sheet_view_info.copied_views_count, " Copied Views"),
+    )
+    view_types_frame = create_frame(
+        "View Count per Type",
+        card_builder(500, data.sheet_view_info.views_floorplans_count, " Floor Plans"),
+        card_builder(
+            500, data.sheet_view_info.views_ceilingplans_count, " Ceiling Plans"
+        ),
+        card_builder(200, data.sheet_view_info.views_elevations_count, " Elevations"),
+        card_builder(100, data.sheet_view_info.views_threed_count, " 3D Views"),
+        card_builder(100, data.sheet_view_info.schedules_count, " Schedules"),
+        card_builder(
+            600, data.sheet_view_info.views_drawingsheet_count, " Drawing Sheets"
+        ),
+        card_builder(100, data.sheet_view_info.reports_count, " Reports"),
+        card_builder(
+            200, data.sheet_view_info.views_drafting_view_count, " Drafting Views"
+        ),
+        card_builder(100, data.sheet_view_info.views_legend_count, " Legends"),
+        card_builder(
+            100, data.sheet_view_info.views_engineering_plan_count, " Engineering Plans"
+        ),
+        card_builder(100, data.sheet_view_info.views_area_plan_count, " Area Plans"),
+        card_builder(200, data.sheet_view_info.views_sections_count, " Sections"),
+        card_builder(500, data.sheet_view_info.views_detail_count, " Detail Views"),
+        card_builder(
+            100, data.sheet_view_info.views_cost_report_count, " Cost Reports"
+        ),
+        card_builder(
+            100, data.sheet_view_info.views_loads_report_count, " Loads Reports"
+        ),
+        card_builder(
+            100,
+            data.sheet_view_info.views_presure_loss_report_count,
+            " Pressure Loss Reports",
+        ),
+        card_builder(
+            100, data.sheet_view_info.views_column_schedule_count, " Column Schedules"
+        ),
+        card_builder(
+            100, data.sheet_view_info.views_panel_schedule_count, " Panel Schedules"
+        ),
+        card_builder(
+            100, data.sheet_view_info.views_walkthrough_count, " Walkthroughs"
+        ),
+        card_builder(100, data.sheet_view_info.views_rendering_count, " Renderings"),
+        card_builder(
+            100,
+            data.sheet_view_info.views_systems_analysis_report_count,
+            " Systems Analysis Reports",
+        ),
+    )
+
+    templates_filters_frame = create_frame(
+        "Templates & Filters",
         card_builder(
             100, data.view_template_filter_info.view_templates_count, " View Templates"
         ),
@@ -722,6 +863,8 @@ def generate_html_content(data, links_cards=""):
         + critical_elements_frame
         + rooms_frame
         + sheets_views_graphics_frame
+        + view_types_frame
+        + templates_filters_frame
         + cad_files_frame
         + families_frame
         + graphical2d_elements_frame
@@ -884,7 +1027,7 @@ class ModelChecker(PreflightTestCase):
     - unplaced rooms count
     - unbounded rooms count
     - sheets count
-    - views count
+    - views count per ViewType
     - views not on sheets
     - schedules not sheeted count
     - copied views count
@@ -896,6 +1039,7 @@ class ModelChecker(PreflightTestCase):
     - line patterns count
     - dwgs count
     - linked dwg count
+    - imported dwg count
     - inplace family count
     - not parametric families count
     - family count
@@ -906,6 +1050,7 @@ class ModelChecker(PreflightTestCase):
     - text notes types with width factor != 1
     - text notes count
     - text notes with allCaps applied
+    - text notes with solid background
     - detail groups count
     - detail groups types count
     - model group count
