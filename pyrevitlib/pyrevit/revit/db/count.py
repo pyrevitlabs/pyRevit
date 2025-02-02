@@ -51,31 +51,6 @@ def count_unbounded_rooms(rooms):
     return sum(1 for room in rooms if room.Area == 0)
 
 
-def count_unplaced_views(sheets_set=None, views_count=None):
-    """
-    Returns the number of views not on a sheet.
-
-    Args:
-        sheets_set (list): A list of sheets.
-        views_count (int): The number of views in the document.
-
-    Returns:
-        int: The number of views not on a sheet.
-    """
-    views_on_sheet = []
-    if sheets_set is None or views_count is None:
-        return views_count
-    for sheet in sheets_set:
-        try:
-            for view in sheet.GetAllPlacedViews():
-                if view not in views_on_sheet:
-                    views_on_sheet.append(view)
-        except AttributeError:
-            pass
-    views_not_on_sheets = views_count - len(views_on_sheet)
-    return views_not_on_sheets
-
-
 def count_analytical_model_activated(document):
     """
     Returns the number of activated analytical models in the document.
@@ -95,23 +70,6 @@ def count_analytical_model_activated(document):
         DB.FilteredElementCollector(document)
         .WherePasses(elem_param_filter)
         .GetElementCount()
-    )
-
-
-def count_unplaced_schedules(schedules):
-    """
-    Counts the number of schedules that are not placed on a sheet in the given document.
-
-    Args:
-        document (DB.Document): The Revit document to query for schedules.
-
-    Returns:
-        int: The number of schedules that are not placed on a sheet.
-    """
-    return sum(
-        1
-        for v in schedules
-        if v.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
     )
 
 
@@ -150,7 +108,7 @@ def count_unused_view_templates(views_list, document):
     """
     if views_list is None:
         return 0
-    applied_templates = [v.ViewTemplateId for v in views_list]
+    applied_templates = [v.ViewTemplateId for v in views_list if hasattr(v, "ViewTemplateId")]
     view_templates_list = q.get_all_view_templates(doc=document)
     unused_view_templates = []
     for v in view_templates_list:
@@ -176,7 +134,7 @@ def count_unused_filters_in_views(view_list, filters):
     for flt in filters:
         all_filters.add(get_elementid_value(flt.Id))
     for v in view_list:
-        if v.AreGraphicsOverridesAllowed():
+        if hasattr(v, "AreGraphicsOverridesAllowed") and v.AreGraphicsOverridesAllowed():
             view_filters = v.GetFilters()
             for filter_id in view_filters:
                 used_filters_set.add(get_elementid_value(filter_id))
