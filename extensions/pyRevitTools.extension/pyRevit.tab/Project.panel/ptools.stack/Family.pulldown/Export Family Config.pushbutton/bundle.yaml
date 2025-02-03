@@ -2,6 +2,7 @@ title:
   ru: Экспортировать конфигурацию семейства
   fr_fr: Exporter la configuration de la famille
   en_us: Export Family Config
+  de_de: Exportiert die Familien Konfiguration
 tooltip:
   ru: >-
     Экспортирует конфигурацию семейства в yaml файл.
@@ -94,6 +95,40 @@ tooltip:
                   ...
     
     Example:
+    
+    parameters:
+          Shelf Height (Upper):
+                  type: Length
+                  group: PG_GEOMETRY
+                  instance: false
+                  
+    types:
+          24D"x36H":
+                  Shelf Height (Upper): 3'-0"
+  de_de: >-
+    Exportiert die Familien Konfiguration in eine yaml Datei.
+    
+    Die Familien Konfiguration ist eine yaml Datei, die Informationen
+    über die Parameter und Typen enthält, die in der Familie definiert wurden. 
+    
+    Die Formatierung der Konfigurationsdatei sieht folgendermaßen aus:
+    
+    parameters:
+          <parameter-name>:
+                  type: <Autodesk.Revit.DB.ParameterType>
+                  category: <Autodesk.Revit.DB.BuiltInParameterGroup>
+                  instance: <true|false>
+                  reporting: <true|false>
+                  formula: <str>
+                  default: <str>
+    
+    types:
+          <type-name>:
+                  <parameter-name>: <value>
+                  <parameter-name>: <value>
+                  ...
+    
+    Beispiel:
     
     parameters:
           Shelf Height (Upper):

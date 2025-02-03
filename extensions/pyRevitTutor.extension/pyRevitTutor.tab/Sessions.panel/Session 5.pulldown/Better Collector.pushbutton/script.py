@@ -6,12 +6,12 @@ from pyrevit.coreutils import Timer
 timer = Timer()
 # ------------------------------------------------------------------------------
 
-
+from pyrevit import HOST_APP
 import Autodesk.Revit.DB as DB
 
 
-doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
+doc = HOST_APP.doc
+uidoc = HOST_APP.uidoc
 
 height_param_id = DB.ElementId(DB.BuiltInParameter.WALL_USER_HEIGHT_PARAM)
 

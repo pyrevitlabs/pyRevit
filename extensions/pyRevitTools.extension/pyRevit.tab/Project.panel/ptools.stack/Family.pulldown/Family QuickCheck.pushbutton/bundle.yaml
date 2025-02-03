@@ -2,6 +2,7 @@ title:
   ru: Быстро проверить семейство
   fr_fr: Vérification rapide des familles
   en_us: Family QuickCheck
+  de_de: Familien Schnell-Check
 tooltip:
   ru: >-
     Неполная проверка для обнаружения поврежденных семейств Revit.
@@ -21,6 +22,14 @@ tooltip:
          PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
   en_us: >-
     Non-exhaustive check to detect corrupt Revit families.
+    
+    Copyright (c) 2017 Frederic Beaupere
+    
+    github.com/frederic-beaupere
+    
+    PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
+  de_de: >-
+    Grober Check, um fehlerhafte Revit Familien aufzuspüren.
     
     Copyright (c) 2017 Frederic Beaupere
     

@@ -2,6 +2,7 @@ title:
   ru: Уменьшить номер выделенного листа
   fr_fr: Décrémenter les Numéros des Feuilles Sélectionnées
   en_us: Decrement Selected Sheet Numbers
+  de_de: Verkleinere die gewählten Plannummern
 tooltip:
   ru: >-
     Уменьшает номер листа на один. Изменение листа будет выведено, 
@@ -13,3 +14,6 @@ tooltip:
   en_us: >-
     Decreases the sheet number of the selected sheets by one. The sheet name
     change will be printed if logging is set to Verbose in pyRevit settings
+  de_de: >-
+    Verringert die Plannummer der ausgewählten Pläne um eins. Die Änderung des Plannamens
+    wird gedruckt, wenn die Protokollierung in den pyRevit-Einstellungen auf Verbose eingestellt ist.

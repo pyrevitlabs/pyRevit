@@ -1,21 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <Platforms>x64</Platforms>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="WindowsBase"/>
+    <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="PresentationCore"/>
+    <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="PresentationFramework"/>
     <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Expression.Blend.Sdk" Version="1.0.2" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="WindowsBase" />
-    <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-
-  <Target Name="DeployDependencies" AfterTargets="Deploy">
-    <Copy SourceFiles="$(OutputPath)\System.Windows.Interactivity.dll" DestinationFolder="$(PyRevitBinDir)" />
-  </Target>
 </Project>

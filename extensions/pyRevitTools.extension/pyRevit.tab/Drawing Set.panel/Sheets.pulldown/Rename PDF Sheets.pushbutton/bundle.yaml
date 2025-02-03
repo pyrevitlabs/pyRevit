@@ -2,6 +2,7 @@ title:
   ru: Переименовать PDF листы
   fr_fr: Renommer les feuilles PDF
   en_us: Rename PDF Sheets
+  de_de: PDF Pläne umbenennen
 tooltip:
   ru: >-
     Переименовывает PDF листы напечатанные из Revit и удаляет имя модели
@@ -28,4 +29,13 @@ tooltip:
     Shift-Click:
 
     Rename files on Desktop
+  de_de: >-
+    Zunächst wird man aufgefordert einen Ordner auszuwählen, in denen die PDF Dateien liegen.
+    Die PDF Pläne werden umbenannt und der name der Zentraldatei wird von den PDF Datei 
+    Bezeichnungen entfernt. 
+
+
+    Shift-Click:
+
+    PDF Dateien auf dem Desktop werden umbenannt
 context: zero-doc

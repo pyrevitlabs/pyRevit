@@ -2,6 +2,7 @@ title:
   ru: Очистить
   fr_fr: Nettoyage
   en_us: Wipe
+  de_de: Löschen
 layout:
   - Wipe Model Components
   - Wipe Attached Constraints

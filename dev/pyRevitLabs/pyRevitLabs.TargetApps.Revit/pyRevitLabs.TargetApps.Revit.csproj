@@ -1,11 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Platforms>x64</Platforms>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
     <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.IO.Compression" />
+    <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.IO.Compression" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,7 +7,7 @@ functionality. See `https://github.com/go-toast/toast`
 import os.path as op
 import subprocess
 
-from pyrevit import BIN_DIR
+from pyrevit import ROOT_BIN_DIR
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -17,7 +17,7 @@ mlogger = get_logger(__name__)  #pylint: disable=C0103
 
 def get_toaster():
     """Return full file path of the toast binary utility."""
-    return op.join(BIN_DIR, 'pyrevit-toast.exe')
+    return op.join(op.dirname(__file__), 'pyrevit-toast.exe')
 
 
 def send_toast(message,
@@ -39,7 +39,7 @@ def send_toast(message,
     if not appid:
         appid = title
     if not icon:
-        icon = op.join(BIN_DIR, 'pyRevit.ico')
+        icon = op.join(ROOT_BIN_DIR, 'pyRevit.ico')
     if not actions:
         actions = {}
 

@@ -1,9 +1,9 @@
 # -*- coding: UTF-8 -*-
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import datetime
 
 from pyrevit import coreutils
 from pyrevit import revit, DB
+from pyrevit.compat import get_elementid_value_func
 
 from pyrevit.preflight import PreflightTestCase
 
@@ -257,6 +257,7 @@ def checkModel(doc, output):
     projectNumber = project_info_collector.Number
     projectName = project_info_collector.Name
     projectClient = project_info_collector.ClientName
+    get_elementid_value = get_elementid_value_func()
     if len(name) == 0:
         # name = "Not saved file"
         printedName = "Not saved file"
@@ -434,7 +435,7 @@ def checkModel(doc, output):
             # to support french files
             or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
-                if schedule.OwnerViewId.IntegerValue != -1:
+                if get_elementid_value(schedule.OwnerViewId) != -1:
                     # print schedName
                     # print schedule.Id
                     schedulesOnSheet.append(schedName)
@@ -446,7 +447,7 @@ def checkModel(doc, output):
             # to support french files
             or schedName[:28] != "<Nomenclature des révisions>"):
             if schedName not in schedulesOnSheet:
-                if schedule.OwnerViewId.IntegerValue != -1:
+                if get_elementid_value(schedule.OwnerViewId) != -1:
                     # print schedName
                     # print schedule.Id
                     schedulesOnSheet.append(schedName)
@@ -926,7 +927,7 @@ def checkModel(doc, output):
     for element in elements:
         try:
             category = element.Category.Name
-            categoryId = element.Category.Id.IntegerValue
+            categoryId = get_elementid_value(element.Category.Id)
             # filtering out DWGs and DXFs, categories from banlist
             # filtering out categories in catBanlist
             # DB.BuiltInCategory Ids are negative integers
@@ -1158,29 +1159,33 @@ def checkModel(doc, output):
         .WhereElementIsNotElementType()
         .ToElements()
     )
-    worksetTable = doc.GetWorksetTable()
-    for element in elcollector:
-        worksetId = element.WorksetId
-        worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
-        if worksetKind == "UserWorkset":
-            worksetName = worksetTable.GetWorkset(worksetId).Name
-            if element.Name not in ('DefaultLocation', '', None) or element.Category.Name not in ('', None):
-                # Removes the location objects from the list as well as empty elements or proxies
-                if worksetName not in worksetNames:
-                    worksetNames.append(worksetName)
-                graphWorksetsData.append(worksetName)
+    if doc.IsWorkshared:
+        worksetTable = doc.GetWorksetTable()
+        for element in elcollector:
+            worksetId = element.WorksetId
+            worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
+            if worksetKind == "UserWorkset":
+                worksetName = worksetTable.GetWorkset(worksetId).Name
+                if hasattr(element, "Name") and hasattr(element, "Category") and hasattr(element.Category, "Name"):
+                    if element.Name not in ('DefaultLocation', '', None) or element.Category.Name not in ('', None):
+                        # Removes the location objects from the list as well as empty elements or proxies
+                        if worksetName not in worksetNames:
+                            worksetNames.append(worksetName)
+                        graphWorksetsData.append(worksetName)
+                else:
+                    if "Unassigned" not in worksetNames:
+                        worksetNames.append("Unassigned")
+                    graphWorksetsData.append("Unassigned")
+
     # print worksetNames
     # sorting results in chart legend
     worksetNames.sort()
 
-    worksetsSet = []
-    for i in worksetNames:
-        count = graphWorksetsData.count(i)
-        worksetsSet.append(count)
+    worksetsSet = [graphWorksetsData.count(i) for i in worksetNames]
     worksetNames = [x.encode("utf8") for x in worksetNames]
 
     # Worksets OUTPUT print chart only when file is workshared
-    if len(worksetNames) > 0:
+    if worksetNames:
         chartWorksets = output.make_doughnut_chart()
         chartWorksets.options.title = {
             "display": True,
@@ -1202,8 +1207,7 @@ def checkModel(doc, output):
             chartWorksets.set_height(160)
         else:
             chartWorksets.set_height(200)
-
-        chartWorksets.draw()
+            chartWorksets.draw()
 
 class ModelChecker(PreflightTestCase):
     """
@@ -1233,8 +1237,6 @@ class ModelChecker(PreflightTestCase):
     name = "Model Checker"
     author = "David Vadkerti, Jean-Marc Couffin"
 
-    def setUp(self, doc, output):
-        pass
 
     def startTest(self, doc, output):
         timer = coreutils.Timer()
@@ -1243,9 +1245,3 @@ class ModelChecker(PreflightTestCase):
         endtime_hms = str(datetime.timedelta(seconds=endtime))
         endtime_hms_claim = "Transaction took " + endtime_hms
         print(endtime_hms_claim)
-
-    def tearDown(self, doc, output):
-        pass
-
-    def doCleanups(self, doc, output):
-        pass

@@ -38,6 +38,7 @@ namespace pyRevitLabs.PyRevit {
                              PyRevitEngineVersion engineVer,
                              bool runtime,
                              string enginePath,
+                             bool isNetCore,
                              string assemblyName = PyRevitConsts.LegacyEngineDllName,
                              string kernelName = "",
                              string engineDescription = "",
@@ -46,6 +47,7 @@ namespace pyRevitLabs.PyRevit {
             Version = engineVer;
             Runtime = runtime;
             Path = enginePath;
+            IsNetCore = isNetCore;
             AssemblyName = assemblyName;
             KernelName = kernelName;
             Description = engineDescription;
@@ -53,9 +55,8 @@ namespace pyRevitLabs.PyRevit {
         }
 
         public override string ToString() {
-            return string.Format(
-                "{0} | Kernel: {1} | Version: {2} | Runtime: {3} | Path: \"{4}\" | Desc: \"{5}\"",
-                Id, KernelName, Version, Runtime, AssemblyPath, Description);
+            var folder = IsNetCore ? PyRevitConsts.NetCoreFolder : PyRevitConsts.NetFxFolder;
+            return $"{Id} ({folder}) | Kernel: {KernelName} | Version: {Version.Version} | Runtime: {Runtime} | Path: \"{AssemblyPath}\" | Desc: \"{Description}\"";
         }
 
         public string Id { get; private set; }
@@ -65,6 +66,7 @@ namespace pyRevitLabs.PyRevit {
         public string AssemblyName { get; private set; }
         public string KernelName { get; private set; }
         public bool IsDefault { get; private set; }
+        public bool IsNetCore { get; private set; }
 
         public string AssemblyPath {
             get {

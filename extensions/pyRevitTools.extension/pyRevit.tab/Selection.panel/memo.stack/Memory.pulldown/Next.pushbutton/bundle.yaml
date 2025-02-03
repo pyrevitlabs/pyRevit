@@ -2,6 +2,7 @@ title:
   ru: Следующий
   fr_fr: Suivant
   en_us: Next
+  de_de: Nächstes Element im Speicher wählen
 tooltip:
   ru: >-
     Выбрать следующий элемент в памяти выбора.
@@ -20,3 +21,10 @@ tooltip:
     Click +1
     
     Shift+Click +10
+  de_de: >-
+    Wählt das nächste Element im Speicher aus
+    
+    Click +1
+    
+    Shift+Click +10
+    Wählt das 10. Element im Speicher aus

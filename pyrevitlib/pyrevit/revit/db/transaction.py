@@ -24,13 +24,13 @@ class Transaction():
     Automatically rolls back if exception is raised.
 
     ```python
-    with Transaction('Move Wall'):
-        wall.DoSomething()
+        with Transaction('Move Wall'):
+            wall.DoSomething()
 
-        with Transaction('Move Wall') as action:
-        wall.DoSomething()
-        assert action.status == ActionStatus.Started  # True
-        assert action.status == ActionStatus.Committed    # True
+        with Transaction('Move Wall', doc, clear_after_rollback=False, show_error_dialog=False, swallow_errors=False, log_errors=True, nested=False)) as action:
+            wall.DoSomething()
+            assert action.status == ActionStatus.Started  # True
+            assert action.status == ActionStatus.Committed    # True
         ```
     """
     def __init__(self, name=None,
@@ -77,8 +77,10 @@ class Transaction():
                 self._rvtxn.Commit()
             except Exception as errmsg:
                 self._rvtxn.RollBack()
-                mlogger.error('Error in Transaction Commit. '
-                              'Rolling back changes. | %s', errmsg)
+                if self._logerror:
+                    mlogger.error('Error in Transaction Commit. '
+                                  'Rolling back changes. | %s', errmsg)
+        self._rvtxn.Dispose()
 
     @property
     def name(self):
@@ -105,6 +107,7 @@ class DryTransaction(Transaction):
     """Wrapper to a transaction that doesn't commit anything (dry-run)."""
     def __exit__(self, exception, exception_value, traceback):
         self._rvtxn.RollBack()
+        self._rvtxn.Dispose()
 
 
 class TransactionGroup():
@@ -135,8 +138,10 @@ class TransactionGroup():
                     self._rvtxn_grp.Commit()
             except Exception as errmsg:
                 self._rvtxn_grp.RollBack()
-                mlogger.error('Error in TransactionGroup Commit: rolled back.')
-                mlogger.error('Error: %s', errmsg)
+                if self._logerror:
+                    mlogger.error('Error in TransactionGroup Commit. '
+                                  'Rolling back changes. | %s', errmsg)
+        self._rvtxn_grp.Dispose()
 
     @property
     def name(self):

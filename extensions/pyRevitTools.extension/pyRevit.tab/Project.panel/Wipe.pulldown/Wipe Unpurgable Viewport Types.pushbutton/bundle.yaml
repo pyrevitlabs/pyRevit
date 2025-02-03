@@ -2,7 +2,30 @@ title:
   ru: Очистить неочищаемые типы видовых экранов
   fr_fr: Supprimer les types de fenêtres non-purgeables
   en_us: Wipe Unpurgeable Viewport Types
+  de_de: Lösche nicht löschbare Ansichtsfenster Typen
 tooltip:
-  ru: Запрашивает пользователя выбрать типы видовых экранов для преобразования и тип видового экрана для замены. Я сделал этот инструмент, чтобы решить проблему с дублированием типов видовых экранов во время проектирования и превращением их в неудаляемые типы окон просмотра.
-  fr_fr: Demande à l'utilisateur de sélectionner les types de vues à convertir et le type de vues à remplacer. J'ai fait cet outil pour résoudre un problème avec les types de vues qui se dupliquent au cours d'un projet et deviendraient des types de fenêtres non purgeables
-  en_us: Asks user to select the viewport types to be converted and the viewport type to be replaced with. I made this tool to fix a problem with viewport types duplicating themselves during a project and would become unpurgable viewport types
+  ru: >-
+    Запрашивает пользователя выбрать типы видовых экранов 
+    для преобразования и тип видового экрана для замены. 
+    Я сделал этот инструмент, чтобы решить проблему с 
+    дублированием типов видовых экранов во время 
+    проектирования и превращением их в неудаляемые 
+    типы окон просмотра.
+  fr_fr: >-
+    Demande à l'utilisateur de sélectionner les types de 
+    vues à convertir et le type de vues à remplacer. J'ai 
+    fait cet outil pour résoudre un problème avec les types 
+    de vues qui se dupliquent au cours d'un projet et 
+    deviendraient des types de fenêtres non purgeables
+  en_us: >-
+    Asks user to select the viewport types to be converted 
+    and the viewport type to be replaced with. I made this 
+    tool to fix a problem with viewport types duplicating 
+    themselves during a project and would become unpurgable 
+    viewport types
+  de_de: >-
+    Der Benutzer wird aufgefordert, die zu konvertierenden Ansichtsfenstertypen auszuwählen 
+    und den Ansichtsfenstertyp, der den zurvor gewählten Ansichtsfenstertyp ersetzen soll. 
+    Dieses Skript wurde erstellt, um Ansichtsfenstertypen zu löschen,
+    die sich im Projektverlauf selbst dupliziert haben und über die normale
+    Benutzeroberfläche nicht mehr gelöscht werden können.

@@ -2,6 +2,7 @@ title:
   ru: Переопределение
   fr_fr: Remplacement
   en_us: Override
+  de_de: Überschreiben
 layout:
   - Edit
   - Override

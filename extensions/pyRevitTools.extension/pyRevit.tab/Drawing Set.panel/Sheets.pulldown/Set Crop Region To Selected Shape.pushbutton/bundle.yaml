@@ -2,6 +2,7 @@ title:
   ru: Установить границу обрезки на выделенной форме
   fr_fr: Définir la zone cadrée sur la forme sélectionnée
   en_us: Set Crop Region To Selected Shape
+  de_de: Zuschneidebereich der Ansicht von Detaillinien übernehmen 
 tooltip:
   ru: >-
     Начертите желаемую границу обрезки в виде замкнутого многоугольника
@@ -15,6 +16,17 @@ tooltip:
     contour dessiné à la vue de la fenêtre sélectionnée
   en_us: >-
     Draw the desired crop boundary as a closed polygon on your sheet (using
-    detail lines). Then select the bounday and the destination viewport and run
+    detail lines). Then select the boundary and the destination viewport and run
     the script. This script will apply the drafted boundary to the view of the
     selected viewport
+  de_de: >-
+    Zunächst muss auf dem Plan mit Detaillinien der gewünschte Zuscheidebereich 
+    skizziert werden. Es muss eine geschlossene Schleife sein. Zudem darf der
+    Zuschneidebereich nicht von einem Bildausschnitt gesteuert werden. Nun wählt 
+    man die gezeichneten Detaillinien aus und wählt zusätzlich auf dem Plan die 
+    platzierte Ansicht aus, von der man den Zuschneidebereich anpassen möchte. 
+    Nun startet man dieses Skript und der Zuschneidebereich der gewählten Ansicht
+    wird die Form der Detaillinien annehmen. Anschließend sollte man die Detaillinien
+    manuell löschen (optional). Dieses Skript erstellt den Zuschneidebereich im Skizzen
+    Modus. Man kann den Zuschneidebereich jederzeit wieder zurücksetzen, wenn man das 
+    Ansichtsfenster auswählt.

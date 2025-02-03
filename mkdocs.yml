@@ -36,7 +36,7 @@ theme:
         name: Switch to light mode
 
 extra_css:
-  - docs/styles.css
+  - styles.css
 
 watch:
   - pyrevitlib/pyrevit
@@ -51,6 +51,7 @@ plugins:
       default_handler: python
       handlers:
         python:
+          paths: [pyrevitlib]
           options:
             members_order: source
             merge_init_into_class: true
@@ -60,7 +61,6 @@ plugins:
             filters:
               - "!^_"
               - "^_HostApplication"
-          paths: [pyrevitlib]
   - exclude:
       glob:
         - "*.py"
@@ -76,6 +76,7 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.details
   - pymdownx.caret
   - pymdownx.keys
   - pymdownx.highlight
@@ -85,8 +86,12 @@ markdown_extensions:
 
 nav:
   - Home: README.md
-  - Contributing: CONTRIBUTING.md
+  - Developer Notes:
+    - Repository organization: repo-organization.md
+    - Developer Guide: dev-guide.md
+    - Architecture: architecture.md
+    - Contributing: CONTRIBUTING.md
+    - Code Of Conduct: CODE_OF_CONDUCT.md
   - Security: SECURITY.md
-  - Code Of Conduct: CODE_OF_CONDUCT.md
   - Credits: CREDITS.md
   - Reference API: reference/

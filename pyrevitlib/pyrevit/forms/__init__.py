@@ -20,10 +20,10 @@ import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DOCS, BIN_DIR
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
-from pyrevit.compat import PY3, IRONPY340
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import IRONPY
+from pyrevit.compat import safe_strtype, get_elementid_value_func
 
-if PY3 and not IRONPY340:
+if not IRONPY:
     raise PyRevitCPythonNotSupported('pyrevit.forms')
 
 from pyrevit import coreutils
@@ -1315,6 +1315,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         elif args.Key == Input.Key.Enter:
             active_button = self._get_active_button()
             if active_button:
+                if isinstance(active_button,
+                              framework.Controls.Primitives.ToggleButton):
+                    return
                 self.process_option(active_button, None)
                 args.Handled = True
         elif args.Key != Input.Key.Tab \
@@ -2765,19 +2768,20 @@ def select_family_parameters(family_doc,
         family_params = filter(filterfunc, family_params)
 
     param_defs = []
+    get_elementid_value = get_elementid_value_func()
     for family_param in family_params:
         if not include_instance and family_param.IsInstance:
             continue
         if not include_type and not family_param.IsInstance:
             continue
-        if not include_builtin and family_param.Id.IntegerValue < 0:
+        if not include_builtin and get_elementid_value(family_param.Id) < 0:
             continue
         if not include_labeled and family_param.Id in label_param_ids:
             continue
 
         param_defs.append(
             FamilyParamOption(family_param,
-                              builtin=family_param.Id.IntegerValue < 0,
+                              builtin=get_elementid_value(family_param.Id) < 0,
                               labeled=family_param.Id in label_param_ids)
             )
 

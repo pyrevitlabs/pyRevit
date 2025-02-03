@@ -5,6 +5,7 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB
 from pyrevit import script
+from pyrevit.compat import get_elementid_value_func
 
 
 output = script.get_output()
@@ -31,8 +32,9 @@ def log(msg):
 
 def log_element(doc, eid):
     el = doc.GetElement(eid)
+    get_elementid_value = get_elementid_value_func()
     log("id={} name={} type={} category={}".format(
-        eid.IntegerValue,
+        get_elementid_value(eid),
         revit.query.get_name(el),
         type(el),
         el.Category.Name if el.Category else "?"

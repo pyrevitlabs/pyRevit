@@ -4,6 +4,7 @@ title:
     Copier / mettre à jour les vues sélectionnées dans les feuilles
     sélectionnées
   en_us: Copy Viewports (Legends) To Other Sheets
+  de_de: Kopiere Legenden auf andere Pläne
 tooltip:
   ru: >-
     Откройте исходный лист. Запустите данный скрипт и выделите листы назначения.
@@ -21,3 +22,10 @@ tooltip:
     Viewports and push Finish button on the properties bar. The selected views
     will be added to the destination sheets. If the view or schedule already
     exists on that sheet, the location and type will be updated
+  de_de: >-
+    Öffnen Sie den Plan der als Quelle dienen soll. Führen Sie dieses Skript aus 
+    und wählen Sie den Plan bzw Pläne aus, der/die als Ziel dienen soll(en). 
+    Wählen Sie Ansichten und klicken Sie auf den Button Fertigstellen in der 
+    Eigenschaftsleiste. Die ausgewählten Ansichten werden zu den Zielplänen 
+    hinzugefügt. Wenn die Ansicht oder die Bauteilliste bereits auf diesem Plan 
+    vorhanden ist, werden die Position und der Typ aktualisiert
