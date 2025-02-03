@@ -517,7 +517,7 @@ class ReportData:
 
     def __init__(self, document):
 
-        sheets_set = q.get_sheets(document)
+        sheets_set = q.get_sheets(doc=document)
         views = q.get_elements_by_categories(
             [DB.BuiltInCategory.OST_Views,
              DB.BuiltInCategory.OST_Sections,
