@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
-#define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "5.0.0.24174"
+#define MyAppUUID "d4f4c5fe-d778-460e-a603-e4e5195567d9"
+#define MyAppVersion "5.0.0.25034"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 
@@ -13,7 +13,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2024 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2025 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
