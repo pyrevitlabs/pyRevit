@@ -75,7 +75,7 @@ def get_user_input():
         RadioButton("model", "in this project", True, GroupName="grp"), # GroupName implemented in class through kwargs
         RadioButton("active_view", "in only the active view", False, GroupName="grp"),
         Separator(),
-        Button("CANCEL", on_click=ButtonClass.cancel_clicked),
+        Button("CANCEL", on_click=cancel_clicked),
         Button("OK"),
     ]
 
