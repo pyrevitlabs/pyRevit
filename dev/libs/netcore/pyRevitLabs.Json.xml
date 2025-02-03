@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>Newtonsoft.Json</name>
+        <name>pyRevitLabs.Json</name>
     </assembly>
     <members>
         <member name="T:pyRevitLabs.Json.Bson.BsonObjectId">

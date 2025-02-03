@@ -10258,7 +10258,7 @@
             Unix/Linux operating systems.
             </summary>
         </member>
-        <member name="F:pyRevitLabs.NLog.Internal.RuntimeOS.Windows">
+        <member name="F:pyRevitLabs.NLog.Internal.RuntimeOS.Windows9x">
             <summary>
             Desktop versions of Windows (95,98,ME).
             </summary>
