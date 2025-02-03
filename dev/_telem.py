@@ -45,7 +45,7 @@ def build_telem(args: Dict[str, str]):
 
     print("Updating telemetry server dependencies...")
     go_tool = install.get_tool("go")
-    report = utils.system(
+    utils.system(
         [go_tool, "get", r"./..."],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
         dump_stdout=True
@@ -58,7 +58,7 @@ def build_telem(args: Dict[str, str]):
         if "<output>" in args
         else op.abspath(configs.TELEMETRYSERVERBIN)
     )
-    report = utils.system(
+    utils.system(
         [go_tool, "build", "-o", output_bin, op.abspath(configs.TELEMETRYSERVER)],
         cwd=op.abspath(configs.TELEMETRYSERVERPATH),
     )

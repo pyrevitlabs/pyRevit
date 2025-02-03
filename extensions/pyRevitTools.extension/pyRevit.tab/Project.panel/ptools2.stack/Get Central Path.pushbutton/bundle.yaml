@@ -2,6 +2,7 @@ title:
   ru: Получить путь к ФХ
   fr_fr: Obtenir le chemin du Central
   en_us: Get Central Path
+  de_de: Pfad von Zentraldatei abrufen
 tooltip:
   ru: >-
     Печатает полный путь до модели хранилища (если модель с совместным доступом).
@@ -21,3 +22,10 @@ tooltip:
     Shift+Click:
     
     Open central model path in file browser
+  de_de: >-
+    Gibt den vollständigen Pfad zur Zentraldatei aus 
+    (sofern das Modell Arbeitsteilung verwendet)
+    
+    Shift+Click:
+    
+    Öffnet den Pfad der Zentraldatei im Datei Explorer

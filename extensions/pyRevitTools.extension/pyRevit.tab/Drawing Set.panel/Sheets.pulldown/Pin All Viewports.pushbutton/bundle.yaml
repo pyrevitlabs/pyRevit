@@ -2,6 +2,7 @@ title:
   ru: Прикрепить все видовые экраны
   fr_fr: Epingler toutes les Vues
   en_us: Pin All Viewports
+  de_de: Ansichtsfenster auf Plänen pinnen
 tooltip:
   ru: |-
     Прикрепляет все видовые экраны на выделенных листах.
@@ -18,3 +19,11 @@ tooltip:
 
     Shift-Click:
     Pin all viewports on active sheet
+  de_de: |-
+    Es erscheint ein Dialog auf dem Pläne ausgewählt werden können. 
+    Auf allen ausgewählten Plänen werden die Ansichtsfenster gesperrt 
+    (Pin-Werkzeug). Dadurch werden die Ansichtsfenster auf den Plänen 
+    vor einem unbeabsichtigtem Verschieben geschützt. 
+
+    Shift-Click:
+    Sperre (Pin-Werkzeug) alle Ansichtsfenster auf dem aktiven Plan

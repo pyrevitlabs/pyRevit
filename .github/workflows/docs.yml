@@ -35,6 +35,6 @@ jobs:
       - name: Prepare pipenv
         run: |
           pip install pipenv
-          pipenv install
+          pipenv sync
 
       - run: pipenv run mkdocs gh-deploy --force

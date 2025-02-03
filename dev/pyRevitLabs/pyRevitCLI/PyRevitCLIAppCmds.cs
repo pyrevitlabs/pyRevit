@@ -98,7 +98,7 @@ namespace pyRevitCLI {
                             }
                         },
                         { "clones", PyRevitClones.GetRegisteredClones() },
-                        { "attachments", PyRevitAttachments.GetAttachments() },
+                        { "attachments", PyRevitAttachments.GetAttachments().ToList() },
                         { "extensions", PyRevitExtensions.GetInstalledExtensions() },
                         { "searchPaths", searchPaths },
                         { "lookupSources", lookupSrc },
@@ -175,7 +175,7 @@ namespace pyRevitCLI {
                 Console.WriteLine(string.Format("Installed .Net-Core Target Packs: {0}", targetPacks));
             }
             catch {
-                Console.WriteLine("No .Ne-Core Target Packs are installed.");
+                Console.WriteLine("No .Net-Core Target Packs are installed.");
             }
 
             Console.WriteLine(string.Format("pyRevit CLI v{0}", PyRevitCLI.CLIInfoVersion));

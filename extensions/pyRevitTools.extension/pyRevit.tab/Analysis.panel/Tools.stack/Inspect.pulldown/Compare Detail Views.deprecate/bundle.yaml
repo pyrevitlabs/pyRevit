@@ -2,6 +2,7 @@ title:
   ru: Сравнить виды
   fr_fr: Comparer les vues de détail
   en_us: Compare Detail Views
+  de_de: Detailansichten vergleichen
 tooltip:
   ru: >-
     Сравнение двух видов путем сравнения содержимого друг с другом. По умолчанию 
@@ -38,3 +39,15 @@ tooltip:
     SHIFT-Click:
 
     Include Element Types in comparing views
+  de_de: >-
+    Vergleicht zwei Ansichten, indem es die Inhalte gegeneinander abgleicht. Standardmäßig 
+    berücksichtigt dieses Werkzeug die Elementtypen nicht. So werden beispielsweise zwei 
+    Textelemente mit gleichem Inhalt, aber unterschiedlichem Stil als gleichwertig betrachtet. 
+    Dies kann jedoch mit dem SHIFT-Klick außer Kraft gesetzt werden. Wenn die Ansichten 
+    nicht übereinstimmen, werden alle unterschiedlichen Elemente ausgewählt. Dieses Werkzeug 
+    ist hilfreich beim Vergleich von doppelten Detailansichten
+
+
+    SHIFT-Click:
+
+    Ziehe Element Typen beim Vergleich mit ein

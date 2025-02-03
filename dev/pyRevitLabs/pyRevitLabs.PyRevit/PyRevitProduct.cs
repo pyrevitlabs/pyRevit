@@ -20,7 +20,7 @@ namespace pyRevitLabs.PyRevit {
     }
 
     public class PyRevitProductData {
-        public static string ProductFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TragetBranch, @"bin/pyrevit-products.json");
+        public static string ProductFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TargetBranch, @"bin/pyrevit-products.json");
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 

@@ -7,14 +7,13 @@ import os.path as op
 __context__ = 'zero-doc'
 
 import clr
-# add path of active pyRevitLabs.PythonNet.dll to the sys.path
-from pyrevit.userconfig import user_config
-sys.path.append(op.dirname(user_config.get_active_cpython_engine().AssemblyPath))
+# add path of pyRevitLabs.PythonNet.dll to the sys.path
+from pyrevit import BIN_DIR
+sys.path.append(BIN_DIR)
 print('\n'.join(sys.path))
 # now load the cpython assembly
-# clr.AddReference('pyRevitLabs.PythonNet')
 clr.AddReferenceToFile('pyRevitLabs.PythonNet.dll')
-import Python.Runtime as py
+from Python.Runtime import PythonEngine, PyModule
 
 TEST_CODE = """import sys
 print('\\n'.join(sys.path))
@@ -23,19 +22,18 @@ import System
 print(System)
 """
 
-pe = py.PythonEngine
+pe = PythonEngine
 
 if not pe.IsInitialized:
     pe.Initialize()
 
 try:
-    # with py.Py.GIL():
     # print version
     print(pe.Version)
 
     # import
-    print(pe.ImportModule("os"))
-    csys = pe.ImportModule("sys")
+    print(PyModule.Import("os"))
+    csys = PyModule.Import("sys")
 
     # set stdout to output stream for this command
     csys.stdout = sys.stdout
@@ -44,8 +42,8 @@ try:
     pe.Exec(TEST_CODE)
 
     # test adsk modules
-    print(pe.ImportModule("Autodesk.Revit.DB"))
-    print(pe.ImportModule("Autodesk.Revit.UI"))
+    print(PyModule.Import("Autodesk.Revit.DB"))
+    print(PyModule.Import("Autodesk.Revit.UI"))
 
     # eval
     print(pe.Eval("{1:2, 3:4}").GetPythonType())

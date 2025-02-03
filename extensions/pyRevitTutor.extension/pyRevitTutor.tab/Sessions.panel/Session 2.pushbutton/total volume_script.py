@@ -2,10 +2,10 @@
 
 __title__ = 'Total\nVolume'
 
-
+from pyrevit import HOST_APP
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter
 
-doc = __revit__.ActiveUIDocument.Document
+doc = HOST_APP.doc
 
 
 # Creating collector instance and collecting all the walls from the model

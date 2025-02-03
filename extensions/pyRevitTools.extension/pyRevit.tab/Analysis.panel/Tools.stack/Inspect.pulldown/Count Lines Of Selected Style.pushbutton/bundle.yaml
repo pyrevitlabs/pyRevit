@@ -3,6 +3,7 @@ title:
   ru: Посчитать линии выделенного стиля
   fr_fr: Compter les lignes d'un style choisi
   en_us: Count lines of selected style
+  de_de: Zähle die Linien des ausgewählten Stils
 tooltip:
   ru: >-
     Считает все линии в модели с таким же стилем выделенной линии.
@@ -19,3 +20,8 @@ tooltip:
 
 
     CTRL-Click: Lists every matching line
+  de_de: >-
+    Zählt alle Linien im Modell, deren Stil mit dem der ausgewählten Linie übereinstimmt
+
+
+    CTRL-Click: Listet jede übereinstimmende Linie auf

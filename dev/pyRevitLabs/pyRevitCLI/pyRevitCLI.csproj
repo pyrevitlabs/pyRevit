@@ -5,16 +5,23 @@
     <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
     <ApplicationManifest>pyrevit.manifest</ApplicationManifest>
     <SignAssembly>true</SignAssembly>
+    
+    <UseDefaultBin>true</UseDefaultBin>
+    
+    <Platforms>x64</Platforms>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    
+    <PermitDeploy>true</PermitDeploy>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
-    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
+    <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="true" />
+    <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="true" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Colorful.Console" Version="1.2.10" />
-    <PackageReference Include="docopt.net" Version="0.6.1.10" />
+    <PackageReference Include="docopt.net" Version="0.8.1" />
+    <PackageReference Include="Colorful.Console" Version="1.2.15" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,18 +31,4 @@
     <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
-
-  <Target Name="DeployDependencies" AfterTargets="Deploy">
-    <ItemGroup>
-      <CustomDependencies Include="$(PyRevitDevLibsDir)\*.dll" />
-      <CustomBinaries Include="$(PyRevitDevLibsDir)\*.exe" />
-    </ItemGroup>
-    <Copy SourceFiles="pyrevit.ico" DestinationFolder="$(PyRevitBinDir)" />
-    <Copy SourceFiles="pyrevit_cli.ico" DestinationFolder="$(PyRevitBinDir)" />
-    <Copy SourceFiles="pyrevit_pkg.ico" DestinationFolder="$(PyRevitBinDir)" />
-    <Copy SourceFiles="$(OutputPath)\Colorful.Console.dll" DestinationFolder="$(PyRevitBinDir)" />
-    <Copy SourceFiles="$(OutputPath)\DocoptNet.dll" DestinationFolder="$(PyRevitBinDir)" />
-    <Copy SourceFiles="@(CustomDependencies)" DestinationFolder="$(PyRevitBinDir)" />
-    <Copy SourceFiles="@(CustomBinaries)" DestinationFolder="$(PyRevitBinDir)" />
-  </Target>
 </Project>

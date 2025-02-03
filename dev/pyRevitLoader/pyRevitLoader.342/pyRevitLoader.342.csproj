@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <AssemblyName>pyRevitLoader</AssemblyName>
+        <RootNamespace>pyRevitLoader</RootNamespace>
+        
+        <IronPythonVersion>IPY342</IronPythonVersion>
+        <IronPythonStdLib>python_342_lib.zip</IronPythonStdLib>
+        <Version>3.4.2</Version>
+    </PropertyGroup>
+</Project>

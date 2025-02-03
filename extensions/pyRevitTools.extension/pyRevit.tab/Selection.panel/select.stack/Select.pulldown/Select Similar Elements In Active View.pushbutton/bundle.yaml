@@ -2,6 +2,7 @@ title:
   ru: Выделить похожие элементы в текущем виде
   fr_fr: Sélectionner les éléments similaires dans la vue active
   en_us: Select Similar Elements In Active View
+  de_de: Ähnliche Elemente in der aktiven Ansicht auswählen
 tooltip:
   ru: >-
     Выделяет похожие элементы в текущих
@@ -27,4 +28,10 @@ tooltip:
     Shift-Click :
     
     select in whole project
+  de_de: >-
+    Es werden in der aktiven Ansicht die Elemente ausgewählt die dem aktuell gewähltem Element ähnlich sind. 
+    
+    Shift-Click :
+    
+    Es werden im gesamten Modell die Elemente ausgewählt die dem aktuell gewähltem Element ähnlich sind. 
 context: selection

@@ -2,6 +2,7 @@ title:
   ru: Легенды
   en_us: Legends
   fr_fr: Légendes
+  de_de: Legenden
 layout:
   - Copy Legends to Other Documents
   - Copy Legends as Drafting to Other Documents
@@ -10,6 +11,9 @@ layout:
   - Convert Legend to Drafting
   - -----
   - List Legends on Sheets
+  - -----
+  - Find Unused Keynotes
+  - Open Keynotes File
   - -----
   - 3D
   - Section

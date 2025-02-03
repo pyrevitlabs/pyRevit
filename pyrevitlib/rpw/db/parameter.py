@@ -13,6 +13,7 @@ from rpw.base import BaseObjectWrapper
 from rpw.exceptions import RpwException, RpwWrongStorageType
 from rpw.exceptions import RpwParameterNotFound, RpwTypeError
 from rpw.utils.logger import logger
+from pyrevit.compat import get_elementid_value_func
 
 
 class ParameterSet(BaseObjectWrapper):
@@ -296,8 +297,11 @@ class Parameter(BaseObjectWrapper):
             * value: Uses best parameter method based on StorageType
             * value_string: Parameter.AsValueString
         """
-        value = self.value if not isinstance(self.value, DB.ElementId) \
-                           else self.value.IntegerValue
+        if not isinstance(self.value, DB.ElementId):
+            value = self.value
+        else:
+            get_elementid_value = get_elementid_value_func()
+            value = get_elementid_value(self.value)
         return {
                 'name': self.name,
                 'type': self.type.__name__,

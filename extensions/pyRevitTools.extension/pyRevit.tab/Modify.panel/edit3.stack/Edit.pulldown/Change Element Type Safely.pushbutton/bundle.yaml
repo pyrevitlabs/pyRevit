@@ -2,6 +2,7 @@ title:
   ru: Безопасно изменить тип элемента
   fr_fr: Changer le type d'élément de façon sécuritaire
   en_us: Change element type safely
+  de_de: Elementtyp auf sichere Weise ändern
 tooltip:
   ru: >-
     Изменяет тип выбранных элементов на тип выбранного элемента, сохраняя при этом
@@ -18,4 +19,9 @@ tooltip:
     picked element, while maintaining the values of all instance parameters.
     First select all the elements that you want to change the type for and run
     this tool. Then select the element that has the source element type
+  de_de: >-
+    Markieren Sie zunächst alle Elemente, deren Typ Sie ändern möchten und führen Sie dann
+    dieses Skript aus. Danach müssen Sie auf das Element klicken, das dem gewünschten
+    Typ entspricht. Mit diesem Werkzeug bleiben alle Exemplarparameter beim 
+    Ändern des Typs erhalten!
 context: selection

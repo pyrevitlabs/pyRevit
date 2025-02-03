@@ -1,7 +1,9 @@
 title:
   ru: Экспорт марок
   en_us: Export Tagged
+  de_de: Getaggte exportieren
 tooltip:
   ru: Управляет пакетами листов.
   en_us: Manage sheet packages
+  de_de: Plan Pakete verwalten.
 author: '{{author}}'

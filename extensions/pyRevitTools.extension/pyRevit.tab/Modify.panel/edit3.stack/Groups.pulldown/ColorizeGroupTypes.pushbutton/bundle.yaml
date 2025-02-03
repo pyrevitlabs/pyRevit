@@ -2,6 +2,7 @@ title:
   ru: Раскрасить типы групп
   fr_fr: Colorer les types de groupes
   en_us: Colorize Group Types
+  de_de: Gruppentypen einfärben
 tooltip:
   ru: |-
     Переопределяет графику в экземплярах групп на выделенных видах или активном виде
@@ -26,3 +27,13 @@ tooltip:
 
     Note:
     Groups with only 1 instance on views will be colored in gray
+  de_de: |-
+    Zunächst markiert man im Projektbrowser die Ansichten, auf denen man die 
+    Elementgrafiken von Gruppen überschreiben möchte. Wenn keine Ansichten 
+    ausgewählt wurden, wird die aktive Ansicht verwendet. 
+    Alle Instanzen eines Gruppentyps werden mit der gleichen Farbe überschrieben. 
+    Jeder Gruppentyp erhält automatisch eine spefizische Farbe.
+    Dadurch sind die Gruppentypen in der Ansicht optisch leicht unterscheidbar. 
+
+    Hinweis:
+    Gruppentypen von denen nur 1 Exemplar in der Ansicht exitiert, werden grau eingefärbt.

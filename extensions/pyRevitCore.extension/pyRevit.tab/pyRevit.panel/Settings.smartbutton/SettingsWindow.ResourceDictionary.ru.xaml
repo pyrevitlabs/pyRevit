@@ -329,7 +329,7 @@
     <system:String x:Key="RevitAttachment.Current">&lt;текущий&gt;</system:String>
     <system:String x:Key="RevitAttachment.AllUsers">&lt;все пользователи&gt;</system:String>
     <system:String x:Key="RevitAttachment.NotAttached">&lt;не прикреплен&gt;</system:String>
-    <system:String x:Key="RevitAttachment.NotInstalled">Revit {} &lt;не установлен&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotInstalled">&lt;не установлен&gt;</system:String>
 
     <system:String x:Key="Engines.WasChanged">
         Активный движок изменился.

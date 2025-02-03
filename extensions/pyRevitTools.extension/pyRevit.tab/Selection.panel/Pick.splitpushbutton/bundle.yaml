@@ -2,6 +2,7 @@ title:
   ru: Выбрать
   fr_fr: Choisir
   en_us: Pick
+  de_de: Auswahl
 layout:
   - Pick
   - Pick Detail Elements

@@ -1,6 +1,8 @@
 title:
   ru: Генерировать типы цветовых областей из штриховок
   en_us: Generate FilledRegion Types from Fill Patterns
+  de_de: Erstellen neue GefüllteBereich Typen von Füllmustern
 tooltip:
   ru: Генерирует образцы цветовых областей.
   en_us: Generate FilledRegion Swatches
+  de_de: Alle im Projekt vorhandene Füllmuster (Zeichen+Modell) werden als neue Gefüllte Bereich Typen angelegt. Die Namen werden übernommen. 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -31,7 +32,9 @@ namespace pyRevitLabs.PyRevit {
                 cfgOps.Encoding = CommonUtils.GetUTF8NoBOMEncoding();
                 _config = new IniFile(cfgOps);
 
-                _config.Load(cfgFilePath);
+                using (var cfgStream = File.Open(cfgFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    _config.Load(cfgStream);
+                }
                 _adminMode = adminMode;
             }
             else
@@ -49,9 +52,10 @@ namespace pyRevitLabs.PyRevit {
             try {
                 _config.Save(PyRevitConsts.ConfigFilePath);
             }
-            catch (Exception ex) {
-                throw new PyRevitException(string.Format("Failed to save config to \"{0}\". | {1}",
-                                                         PyRevitConsts.ConfigFilePath, ex.Message));
+            catch (Exception ex)
+            {
+                throw new PyRevitException(
+                    $"Failed to save config to \"{PyRevitConsts.ConfigFilePath}\". | {ex.Message}");
             }
         }
 
@@ -91,24 +95,29 @@ namespace pyRevitLabs.PyRevit {
 
         // set config key value, creates the config if not set yet
         public void SetValue(string sectionName, string keyName, string stringValue) {
-            if (stringValue != null) {
-                if (!_config.Sections.Contains(sectionName)) {
-                    logger.Debug("Adding config section \"{0}\"", sectionName);
-                    _config.Sections.Add(sectionName);
-                }
-
-                if (!_config.Sections[sectionName].Keys.Contains(keyName)) {
-                    logger.Debug("Adding config key \"{0}:{1}\"", sectionName, keyName);
-                    _config.Sections[sectionName].Keys.Add(keyName);
-                }
-
-                logger.Debug("Updating config \"{0}:{1} = {2}\"", sectionName, keyName, stringValue);
-                _config.Sections[sectionName].Keys[keyName].Value = stringValue;
-
-                SaveConfigFile();
-            }
-            else
+            if (stringValue is null)
+            {
                 logger.Debug("Can not set null value for \"{0}:{1}\"", sectionName, keyName);
+                return;
+            }
+            if (!_config.Sections.Contains(sectionName))
+            {
+                logger.Debug("Adding config section \"{0}\"", sectionName);
+                _config.Sections.Add(sectionName);
+            }
+            if (!_config.Sections[sectionName].Keys.Contains(keyName))
+            {
+                logger.Debug("Adding config key \"{0}:{1}\"", sectionName, keyName);
+                _config.Sections[sectionName].Keys.Add(keyName);
+            }
+            if (_config.Sections[sectionName].Keys[keyName].Value == stringValue)
+            {
+                logger.Debug("Config \"{0}:{1}\" already set to \"{2}\"", sectionName, keyName, stringValue);
+                return;
+            }
+            logger.Debug("Updating config \"{0}:{1} = {2}\"", sectionName, keyName, stringValue);
+            _config.Sections[sectionName].Keys[keyName].Value = stringValue;
+            SaveConfigFile();
         }
 
         // sets config key value as bool
