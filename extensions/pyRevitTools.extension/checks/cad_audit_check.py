@@ -24,15 +24,6 @@ def collect_cadinstances(active_view_only):
 
 
 # Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
-class ButtonClass(Window): # to handle button event (https://stackoverflow.com/questions/54756424/using-the-on-click-option-for-a-revit-rpw-flexform-button)
-    @staticmethod
-    def cancel_clicked(sender, e):
-        window = Window.GetWindow(sender)
-        window.close()
-        script.exit()
-
-
-# Manage Flexform cancel using .NET System.Windows RoutedEventArgs Class
 def cancel_clicked(sender, e):
     window = Window.GetWindow(sender)
     window.close()
