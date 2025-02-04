@@ -8,7 +8,7 @@ import importlib
 import os.path as op
 from collections import OrderedDict
 
-from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
+from pyrevit import HOST_APP, PyRevitException
 import pyrevit.compat as compat
 from pyrevit.compat import PY3, safe_strtype
 from pyrevit import framework
@@ -22,22 +22,21 @@ mlogger = get_logger(__name__)  #pylint: disable=C0103
 
 GIT_LIB = 'LibGit2Sharp'
 
-if not EXEC_PARAMS.doc_mode:
-    LIBGIT_DLL = framework.get_dll_file(GIT_LIB)
-    mlogger.debug('Loading dll: %s', LIBGIT_DLL)
+LIBGIT_DLL = framework.get_dll_file(GIT_LIB)
+mlogger.debug('Loading dll: %s', LIBGIT_DLL)
 
-    try:
-        if PY3:
-            clr.AddReference(LIBGIT_DLL)
-        else:
-            clr.AddReferenceToFileAndPath(LIBGIT_DLL)
+try:
+    if PY3:
+        clr.AddReference(LIBGIT_DLL)
+    else:
+        clr.AddReferenceToFileAndPath(LIBGIT_DLL)
 
-        import LibGit2Sharp as libgit   #pylint: disable=import-error
+    import LibGit2Sharp as libgit   #pylint: disable=import-error
 
-    except Exception as load_err:
-        mlogger.error('Can not load %s module. '
-                      'This module is necessary for getting pyRevit version '
-                      'and staying updated. | %s', GIT_LIB, load_err)
+except Exception as load_err:
+    mlogger.error('Can not load %s module. '
+                    'This module is necessary for getting pyRevit version '
+                    'and staying updated. | %s', GIT_LIB, load_err)
 
 
 class PyRevitGitAuthenticationError(PyRevitException):

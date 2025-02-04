@@ -2,7 +2,13 @@ title:
   ru: Очистить подкатегории
   fr_fr: Supprimer toutes les sous-catégories
   en_us: Wipe SubCategories
+  de_de: Lösche best. Unterkategorien
 tooltip:
   ru: Сбрасывает все категории и подкатегории моделей до значений по умолчанию.
   fr_fr: Réinitialise toutes les catégories et sous-catégories
   en_us: Reset all model categories and subcategories back to default
+  de_de: >-
+    Diese Skript löscht die ausgewählten Unterkategorien aus dem Modell.
+    Damit können also auch Linienstile und Unterkategorien von geladen Familien gelöscht werden!
+    Nach der Bestätigung der Warnmeldung erscheint ein Auswahldialog, in dem man 
+    die Unterkategorien auswählen kann, die gelöscht werden sollen.

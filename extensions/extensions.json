@@ -161,6 +161,33 @@
             "website": "https://github.com/romangolev/pyArchitect",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "Pam Building Design+",
+            "description": "Collection of tools for public health engineering",
+            "author": "Pam Building UK",
+            "author_profile": "https://www.linkedin.com/company/pam-building-uk",
+            "url": "https://github.com/InnovazziMEP/Pam-Building-Design-Plus.git",
+            "website": "https://www.pambuilding.co.uk",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pyRevit-Autosave",
+            "description": "Automatically save documents at periodic intervals",
+            "author": "Alex D'Aversa",
+            "author_profile": "https://www.linkedin.com/in/alexdaversa",
+            "url": "https://github.com/alexdaversa/pyRevit-Autosave.git",
+            "website": "https://github.com/alexdaversa/pyRevit-Autosave",
+            "image": "",
+            "dependencies": []
         }
+        
     ]
 }

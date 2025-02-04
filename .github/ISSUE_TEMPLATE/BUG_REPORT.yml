@@ -1,0 +1,78 @@
+---
+name: Bug report
+description: Thanks for taking the time to report a bug!
+title: "[Bug]: "
+labels: [Bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Please fill this form properly! 🙏🙏🙏
+        We're running on limited resources, so we don't have much time to get back to you if you don't provide enough info.
+        Please make a little effort, do your research and [ask questions the smart way](http://www.catb.org/~esr/faqs/smart-questions.html#beprecise).
+        **If you didn't fill the form properly or lie about the pre-flight checks, the issue could be closed without any explanation!** 
+        ## 🚧🚧 Revit 2025 🚧🚧
+        pyRevit 4.8.x is not compatible with Revit 2025. If you really need it, you can try (**at your own risk!**) the WIP version that you can find at [this page](https://www.pyrevitlabs.io/)
+        ## 🚧 SentinelOne 🚧
+        If you have SentinelOne installed as an antivirus, **look no further**.
+        **You will need to create exceptions for Revit and pyRevit**, both on the software and the %appdata% folders. ask your IT guy to do that.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: ✈ Pre-Flight checks
+      description: before submitting an issue, make sure you've checked the following.
+      options:
+        - label: I **don't have SentinelOne** antivirus installed (see above for the solution)
+        - label: I have **searched in the issues** (open and closed) but couldn't find a similar issue
+        - label: I have **searched in the [pyRevit Forum](https://discourse.pyrevitlabs.io)** for similar issues
+        - label: I already **followed the [installation troubleshooting guide](https://pyrevitlabs.notion.site/Installation-issues-f6495adb56254e9e8021f8a68e3b2ab7) thoroughly**
+        - label: I am using the **latest pyRevit Version**
+  - type: textarea
+    id: description
+    attributes:
+      label: 🐞 Describe the bug
+      description: Be **as specific as possible**. see "how to ask questions the smart way" above
+    validations:
+      required: true
+  - type: textarea
+    id: error-message
+    attributes:
+      label: ⌨ Error/Debug Message
+      description: |
+        Post the text (preferred) or screenshot of the error, if any.
+        For issues related to tools/scripts, run them in debug mode (CTRL+click on the button) and copy over the contents of the output window (use the copy button in the title bar and paste it here).
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce-steps
+    attributes:
+      label: ♻️ To Reproduce
+      description: Steps to reproduce the behavior. Tell us exactly what you did so that we can try to reproduce on our own computers.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Select '....'
+        4. Type '...'
+        5. See error
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: ⏲️ Expected behavior
+      description: A clear and concise description of what you expected to happen.
+  - type: textarea
+    id: env
+    attributes:
+      label: 🖥️ Hardware and Software Setup (please complete the following information)
+      description: |
+        Open a command prompt 🖥 and run the command `pyrevit env`. Paste the output here. 
+        **This is super important for us to know if there's something wrong/specific in your setup!**
+        Not filling this may result in the issue to be closed without explanation.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here. If you have any suggestions for the solution, please list that as well. 

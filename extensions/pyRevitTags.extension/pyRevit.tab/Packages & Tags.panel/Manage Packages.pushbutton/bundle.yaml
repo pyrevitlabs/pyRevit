@@ -7,8 +7,13 @@ title:
     Manage
   
     Packages
+  de_de: >-
+    Pakete
+  
+    verwalten
 tooltip:
   ru: Управляет пакетами листов.
   en_us: Manage sheet packages
+  de_de: Plan Pakete verwalten.
 help_url: '{{docpath}}po0lCldSGmk'
 author: '{{author}}'

@@ -136,6 +136,16 @@ class RevisedSheet:
             if not coreutils.is_blank(comment):
                 all_comments.add(comment)
         return all_comments
+    
+    def get_all_revision_marks(self):
+        all_marks = set()
+        for cloud in self._clouds:
+            cparam = \
+                cloud.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+            mark = cparam.AsString()
+            if not coreutils.is_blank(mark):
+                all_marks.add(mark)
+        return all_marks
 
     def get_revision_numbers(self):
         return self._rev_numbers
@@ -201,4 +211,9 @@ for rev_sheet in revised_sheets:
                   .format('\n'.join(['\t\t{}'.format(cmt)
                                      for cmt in comments])))
 
+        marks = rev_sheet.get_all_revision_marks()
+        if marks:
+            print('\n\t\tRevision Marks:\n{}'
+                  .format('\n'.join(['\t\t{}'.format(mrk)
+                                     for mrk in marks])))
         console.insert_divider()

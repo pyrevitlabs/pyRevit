@@ -2,6 +2,7 @@ title:
   ru: Выделить все объекты выделенного типа
   fr_fr: Sélectionner tous les objets du type sélectionné
   en_us: Select All Objects Of Selected Type
+  de_de: Alle Objekte des aktuell gewählten Typs auswählen
 tooltip:
   ru: >-
     Выделяет все элементы с одинаковым типом, что и текущий выделенный элемент
@@ -33,4 +34,16 @@ tooltip:
     Shift-Click:
     
     Show Results
+  de_de: >-
+    Wählen Sie zunächst ein Element aus und danach starten 
+    Sie das Skript. Es werden dann alle Elemente des gleichen 
+    Typs ausgewählt. 
+        
+    Shift-Click:
+    
+    Die durch das Skript ausgewählten Elemente werden in der 
+    Konsole mit anklickbaren IDs angezeigt. Zudem werden IDs 
+    der Exemplare angezeigt. Sortiert werden die Elemente 
+    nach der Ansicht, wenn es sich um ansichtsspezifische 
+    Elemente handelt. 
 context: selection

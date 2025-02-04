@@ -5,9 +5,19 @@ title:
     Rechercher les vues par filtrage
   en_us: |-
    Search Views By Filter
+  de_de: |-
+   Suche Ansichten mit/ohne Unterlagen o. Ansichtsvorlagen
 tooltip:
   ru: Показывает все виды на основе параметра поиска.
   fr_fr: |-
     Lister les vues à partir d'options de recherche
   en_us: |-
     Lists views based on a search option
+  de_de: >-
+    Es werden alle Ansichten mit dazugehöriger ID aufgelistet die 
+    den ausgewählten Kriterien entsprechen. 
+    Kriterien die zur Auswahl stehen:
+    1) Mit Unterlage
+    2) Ohne Unterlage
+    3) Mit Ansichtsvorlage
+    4) Ohne Ansichtsvorlage

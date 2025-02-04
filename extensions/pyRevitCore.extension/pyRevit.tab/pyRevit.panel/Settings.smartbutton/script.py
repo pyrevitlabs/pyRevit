@@ -6,6 +6,7 @@ import os.path as op
 import re
 
 from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit.compat import NETCORE
 from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
 from pyrevit.loader import hooks
@@ -26,7 +27,7 @@ import pyrevitcore_globals
 
 
 logger = script.get_logger()
-
+available_revit_versions = ['2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017']
 
 class EnvVariable(object):
     """List item for an environment variable.
@@ -66,6 +67,15 @@ class PyRevitEngineConfig(object):
                                     self.engine.Description)
 
 
+class RevitVersionCB:
+    """Represents a Revit version Checkbox for binding with XAML."""
+    def __init__(self, version, is_checked=False, is_enabled=False):
+        self.Content = "Revit {}".format(version)  # Display name in the UI
+        self.Version = version       # YEAR version (e.g., '2024')
+        self.IsChecked = is_checked  # Whether the checkbox is checked
+        self.IsEnabled = is_enabled  # Whether the checkbox is enabled
+        
+
 class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs"""
 
@@ -85,18 +95,9 @@ class SettingsWindow(forms.WPFWindow):
         self._setup_env_vars_list()
 
         # check boxes for each version of Revit
-        # this could be automated but it pushes me to verify and test
-        # before actually adding a new Revit version to the list
-        self._addinfiles_cboxes = {
-            '2017': self.revit2017_cb,
-            '2018': self.revit2018_cb,
-            '2019': self.revit2019_cb,
-            '2020': self.revit2020_cb,
-            '2021': self.revit2021_cb,
-            '2022': self.revit2022_cb,
-            '2023': self.revit2023_cb,
-            '2024': self.revit2024_cb,
-            }
+        self.supported_revit_versions_CB = [RevitVersionCB(rvt_ver, is_checked=False, is_enabled=False) for rvt_ver in available_revit_versions]
+        # Bind the SupportedVersions to the XAML's DataContext
+        self.DataContext = self
 
         self.set_image_source(self.lognone, 'lognone.png')
         self.set_image_source(self.logverbose, 'logverbose.png')
@@ -143,44 +144,63 @@ class SettingsWindow(forms.WPFWindow):
         self.loadbetatools_cb.IsChecked = user_config.load_beta
 
     def _setup_engines(self):
+        """Sets up the list of available engines."""
         attachment = user_config.get_current_attachment()
-        if attachment and attachment.Clone:
-            engine_cfgs = \
-                [PyRevitEngineConfig(x) for x in attachment.Clone.GetEngines()]
-            engine_cfgs = \
-                sorted(engine_cfgs,
-                       key=lambda x: x.engine.Version, reverse=True)
-
-            # add engines to ui
-            self.availableEngines.ItemsSource = \
-                [x for x in engine_cfgs if x.engine.Runtime]
-            self.cpythonEngines.ItemsSource = \
-                [x for x in engine_cfgs if not x.engine.Runtime]
-
-            # now select the current runtime engine
-            for engine_cfg in self.availableEngines.ItemsSource:
-                if engine_cfg.engine.Version == int(EXEC_PARAMS.engine_ver):
-                    self.availableEngines.SelectedItem = engine_cfg
-                    break
-
-            # if addin-file is not writable, lock changing of the engine
-            if attachment.IsReadOnly():
-                self.availableEngines.IsEnabled = False
-
-            # now select the current runtime engine
-            self.active_cpyengine = user_config.get_active_cpython_engine()
-            if self.active_cpyengine:
-                for engine_cfg in self.cpythonEngines.ItemsSource:
-                    if engine_cfg.engine.Version == \
-                            self.active_cpyengine.Version:
-                        self.cpythonEngines.SelectedItem = engine_cfg
-                        break
-            else:
-                logger.debug('Failed getting active cpython engine.')
-                self.cpythonEngines.IsEnabled = False
-        else:
+        if not attachment or not attachment.Clone:
             logger.debug('Error determining current attached clone.')
             self.disable_element(self.availableEngines)
+            return
+
+        self._setup_runtime_engines(attachment)
+        self._setup_cpython_engines(attachment)
+
+    def _setup_runtime_engines(self, attachment):
+        """Sets up the list of available runtime engines."""
+        engine_cfgs = [
+            PyRevitEngineConfig(x) 
+            for x in attachment.Clone.GetEngines(NETCORE)
+            if x.Runtime
+        ]
+        engine_cfgs = sorted(
+            engine_cfgs, key=lambda x: x.engine.Version, reverse=True
+        )
+
+        # add engines to ui
+        self.availableEngines.ItemsSource = engine_cfgs
+
+        # now select the current runtime engine
+        self.availableEngines.SelectedItem = next(
+            (
+                cfg for cfg in engine_cfgs 
+                if cfg.engine.Version == int(EXEC_PARAMS.engine_ver)
+            ),
+            None
+        )
+
+        # if addin-file is not writable, lock changing of the engine
+        if attachment.IsReadOnly():
+            self.availableEngines.IsEnabled = False
+    
+    def _setup_cpython_engines(self, attachment):
+        """Sets up the list of available cpython engines."""
+        cengine_cfgs = [
+            PyRevitEngineConfig(x) for x in attachment.Clone.GetCPythonEngines()
+        ]
+        cengine_cfgs = sorted(
+            cengine_cfgs, key=lambda x: x.engine.Version, reverse=True
+        )
+        self.cpythonEngines.ItemsSource = cengine_cfgs
+
+        # now select the current cpython engine
+        self.active_cpyengine = user_config.get_active_cpython_engine()
+        if not self.active_cpyengine:
+            logger.debug('Failed getting active cpython engine.')
+            self.cpythonEngines.IsEnabled = False
+            return
+        self.cpythonEngines.SelectedItem = next(
+            cfg for cfg in cengine_cfgs
+            if cfg.engine.Version == self.active_cpyengine.Version
+        )
 
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list"""
@@ -351,14 +371,6 @@ class SettingsWindow(forms.WPFWindow):
             event_checkbox.IsChecked = \
                 telemetry.get_apptelemetry_event_state(event_flags, event_type)
 
-    def _make_product_name(self, product, note):
-        return '_{} | {}({}) {}'.format(
-            product.Name,
-            product.BuildNumber,
-            product.BuildTarget,
-            note
-            )
-
     def _setup_addinfiles(self):
         """Gets the installed Revit versions and sets up the ui"""
         installed_revits = \
@@ -368,42 +380,23 @@ class SettingsWindow(forms.WPFWindow):
             {str(x.Product.ProductYear):x
              for x in PyRevit.PyRevitAttachments.GetAttachments()}
 
-        for rvt_ver, checkbox in self._addinfiles_cboxes.items():
-            if rvt_ver in attachments:
-                if rvt_ver != HOST_APP.version:
-                    checkbox.Content = \
-                        self._make_product_name(
-                            attachments[rvt_ver].Product,
-                            ''
-                            )
-                else:
-                    checkbox.Content = \
-                        self._make_product_name(
-                            attachments[rvt_ver].Product,
-                            self.get_locale_string("RevitAttachment.Current")
-                            )
-
-                checkbox.IsChecked = True
-                if attachments[rvt_ver].AttachmentType == \
-                        PyRevit.PyRevitAttachmentType.AllUsers:
-                    checkbox.IsEnabled = False
-                    checkbox.Content += self.get_locale_string("RevitAttachment.AllUsers")
-                else:
-                    checkbox.IsEnabled = True
-            else:
-                if rvt_ver in installed_revits:
-                    checkbox.Content = \
-                        self._make_product_name(
-                            installed_revits[rvt_ver],
-                            self.get_locale_string("RevitAttachment.NotAttached")
-                            )
-                    checkbox.IsEnabled = True
-                    checkbox.IsChecked = False
-                else:
-                    checkbox.Content = \
-                        self.get_locale_string("RevitAttachment.NotInstalled").format(rvt_ver)
-                    checkbox.IsEnabled = False
-                    checkbox.IsChecked = False
+        for checkbox in self.supported_revit_versions_CB:
+            #checkbox.IsEnabled and checkbox.IsChecked are False by default
+            if checkbox.Version not in installed_revits:
+                checkbox.Content += self.get_locale_string("RevitAttachment.NotInstalled")
+                continue
+            product = installed_revits[checkbox.Version]
+            checkbox.Content += ' | {} | {}({}) '.format(product.Name, product.BuildNumber, product.BuildTarget)
+            checkbox.IsEnabled = True
+            if checkbox.Version not in attachments:
+                checkbox.Content += self.get_locale_string("RevitAttachment.NotAttached")
+                continue
+            checkbox.IsChecked = True
+            if checkbox.Version == HOST_APP.version:
+                checkbox.Content += self.get_locale_string("RevitAttachment.Current")
+            if attachments[checkbox.Version].AttachmentType == PyRevit.PyRevitAttachmentType.AllUsers:
+                checkbox.Content += self.get_locale_string("RevitAttachment.AllUsers")
+                checkbox.IsEnabled = False
 
     def is_same_version_as_running(self, version):
         return str(version) == EXEC_PARAMS.engine_ver
@@ -433,17 +426,12 @@ class SettingsWindow(forms.WPFWindow):
                     )
 
                 # now setup the attachments for other versions
-                for rvt_ver, checkbox in self._addinfiles_cboxes.items():
+                for checkbox in self.supported_revit_versions_CB:
                     if checkbox.IsEnabled:
                         if checkbox.IsChecked:
-                            PyRevit.PyRevitAttachments.Attach(
-                                int(rvt_ver),
-                                attachment.Clone,
-                                new_engine,
-                                False
-                                )
+                            PyRevit.PyRevitAttachments.Attach(int(checkbox.Version),attachment.Clone,new_engine,False)
                         else:
-                            PyRevit.PyRevitAttachments.Detach(int(rvt_ver))
+                            PyRevit.PyRevitAttachments.Detach(int(checkbox.Version))
         else:
             logger.error('Error determining current attached clone.')
 

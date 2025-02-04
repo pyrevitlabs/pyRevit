@@ -5,6 +5,8 @@ title:
     Rechercher référencement des vues
   en_us: |-
     Query View Referencing
+  de_de: |-
+    Untersuche Ansichten auf Referenzierung
 tooltip:
   ru: |-
     Запрашивает все выделенные виды и определяет связанны они или нет.
@@ -12,3 +14,9 @@ tooltip:
     Interroger toutes les vues sélectionnées et déterminer si elles sont référencées ou non
   en_us: |-
     Query all selected views and determine if referenced or not
+  de_de: >-
+    Es erscheint ein Auswahldialog mit den verfügbaren Ansichten im aktiven Projekt. 
+    Die ausgewählten Ansichten werden daraufhin untersucht, ob diese referenziert werden 
+    (z.B. in einem Detailausschnitt mit referenzierter Ansicht oder eine Ansichtsreferenz 
+    Beschriftung) oder nicht. Achtung: Die Ausführung von diesem Befehl kann nicht 
+    unterbrochen werden und dauert unter Umständen lange!

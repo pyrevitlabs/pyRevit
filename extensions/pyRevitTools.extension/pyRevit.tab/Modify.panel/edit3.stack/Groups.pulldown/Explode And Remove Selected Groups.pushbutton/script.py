@@ -5,10 +5,12 @@ the group definition from project browser.
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.compat import get_elementid_value_func
 
 
 logger = script.get_logger()
 
+get_elementid_value = get_elementid_value_func()
 
 group_types = set()
 for el in revit.get_selection():
@@ -22,9 +24,9 @@ all_groups = [x for gt in group_types for x in gt.Groups]
 logger.debug('all groups: %s', all_groups)
 
 # grab all group types to be deleted
-group_type_ids = {x.Id.IntegerValue for x in group_types}
+group_type_ids = {get_elementid_value(x.Id) for x in group_types}
 group_type_ids.update(
-    [x.GroupType.Id.IntegerValue for x in all_groups
+    [get_elementid_value(x.GroupType.Id) for x in all_groups
      if x.Parameter[DB.BuiltInParameter.GROUP_ATTACHED_PARENT_NAME]]
 )
 logger.debug('group types: %s', group_type_ids)

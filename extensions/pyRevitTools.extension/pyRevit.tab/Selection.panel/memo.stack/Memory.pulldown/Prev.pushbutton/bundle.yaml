@@ -2,6 +2,7 @@ title:
   ru: Предыдущий
   fr_fr: Précédent
   en_us: Prev
+  de_de: Vorheriges Element im Speicher wählen
 tooltip:
   ru: >-
     Выбрать предыдущий элемент в памяти выбора.
@@ -21,3 +22,10 @@ tooltip:
     Click +1
     
     Shift+Click +10
+  de_de: >-
+    Wählt das vorherige Element im Speicher aus
+    
+    Click +1
+    
+    Shift+Click +10
+    Wählt das 10. Element im Speicher aus

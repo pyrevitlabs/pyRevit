@@ -1,26 +1,3 @@
-tooltip:
-  ru: |-
-    Экспортирует выделенные спецификации в CSV файлы.
-    
-    
-    Shift-Click:
-    Выберите путь экспорта по умолчанию.
-  fr_fr: |-
-    Exporte les nomenclatures sélectionnées vers des fichiers CSV
-
-
-     Shift-Clic :
-
-     Choisissez parmi les emplacements de sortie par défaut
-  en_us: |-
-    Exports selected schedules to CSV files
-
-
-    Shift-Click:
-
-    Pick from default output locations
-
-  
 title:
   ru: |-
     Экспортировать спецификацию в CSV
@@ -28,6 +5,39 @@ title:
     Exporter les nomenclatures en CSV 
   en_us: |-
     Export Schedules To CSV
+  de_de: |-
+    Exportiere Bauteilliste in eine CSV
 
+tooltip:
+  ru: |-
+    Экспортирует выделенные спецификации в CSV файлы.
+    
+    Shift-Click:
+    Выберите путь экспорта по умолчанию.
+  fr_fr: |-
+    Exporte les nomenclatures sélectionnées vers des fichiers CSV
 
+     Shift-Clic :
+
+     Choisissez parmi les emplacements de sortie par défaut
+  en_us: |-
+    Exports selected schedules to CSV files
+
+    Shift-Click:
+
+    Pick from default output locations
+  de_de: >-
+    Es erscheint ein Dialogfenster, um den Speicherort festzulegen. 
+    Danach erscheint ein weiteres Dialogfenster, um die Bauteillisten
+    auszuwählen, die exportiert werden sollen. Anschließend werden die
+    ausgewählten Bauteillisten in CSV Dateien exportiert. CSV Dateien
+    sind Textdateien, wobei die Werte mit Kommas voneinander getrennt sind.
+
+    Shift-Click:
+
+    Es erscheint ein Dialog in dem man häufig genutzte Speichereorte auswählen kann, 
+    z.B. Desktop, Projektspeicherort, Downloads usw. Zudem kann man angeben, 
+    ob die CSV Datei nach dem Speichern geöffnet werden soll und ob die Kopfzeile 
+    übertragen werden soll.
+  
 

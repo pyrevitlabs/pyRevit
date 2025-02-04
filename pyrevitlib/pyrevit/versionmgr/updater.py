@@ -11,6 +11,8 @@ from pyrevit.versionmgr import upgrade
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 
+import socket
+
 #pylint: disable=C0103,W0703
 logger = get_logger(__name__)
 
@@ -28,13 +30,14 @@ COREUPDATE_MESSAGE = '<div class="coreupdatewarn">' \
                      '</div>'
 
 
-def _check_connection():
-    logger.info('Checking internet connection...')
-    successful_url = coreutils.check_internet_connection()
-    if successful_url:
-        logger.debug('Url access successful: %s', successful_url)
+def _check_connection(host="8.8.8.8", port=53, timeout=3):
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        logger.debug('Internet access detected.')
         return True
-    else:
+    except socket.error as ex:
+        logger.debug('No internet access detected. %s', ex)
         return False
 
 

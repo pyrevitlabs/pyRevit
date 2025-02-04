@@ -5,6 +5,7 @@ from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.revit import ensure
 from pyrevit.revit import query
+from Autodesk.Revit import Exceptions as RevitExceptions
 
 
 __all__ = ('pick_element', 'pick_element_by_category',
@@ -145,74 +146,53 @@ class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
 
 
 def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=None):
-    refs = []
-
+    mlogger.debug(
+        "Picking elements: %s " "message: %s " "multiple: %s " "world: %s",
+        obj_type,
+        message,
+        multiple,
+        world,
+    )
+    picker_func = (
+        HOST_APP.uidoc.Selection.PickObjects
+        if multiple
+        else HOST_APP.uidoc.Selection.PickObject
+    )
     try:
-        mlogger.debug('Picking elements: %s '
-                      'message: %s '
-                      'multiple: %s '
-                      'world: %s', obj_type, message, multiple, world)
-
-        # decide which picker method to use
-        picker_func = HOST_APP.uidoc.Selection.PickObject
-        if multiple:
-            picker_func = HOST_APP.uidoc.Selection.PickObjects
-
-        # call the correct signature of the picker function
-        # if selection filter is provided
-        if selection_filter:
-            pick_result = \
-                picker_func(
-                    obj_type,
-                    selection_filter,
-                    message
-                )
-        else:
-            pick_result = \
-                picker_func(
-                    obj_type,
-                    message
-                )
-
-        # process the results
-        if multiple:
-            refs = list(pick_result)
-        else:
-            refs = []
-            refs.append(pick_result)
-
-        if not refs:
-            mlogger.debug('Nothing picked by user...Returning None')
-            return None
-
-        mlogger.debug('Picked elements are: %s', refs)
-
-        if obj_type == UI.Selection.ObjectType.Element:
-            return_values = \
-                [DOCS.doc.GetElement(ref)
-                 for ref in refs]
-        elif obj_type == UI.Selection.ObjectType.PointOnElement:
-            if world:
-                return_values = [ref.GlobalPoint for ref in refs]
-            else:
-                return_values = [ref.UVPoint for ref in refs]
-        else:
-            return_values = \
-                [DOCS.doc.GetElement(ref)
-                 .GetGeometryObjectFromReference(ref)
-                 for ref in refs]
-
-        mlogger.debug('Processed return elements are: %s', return_values)
-
-        if len(return_values) > 1 or multiple:
-            return return_values
-        elif len(return_values) == 1:
-            return return_values[0]
-        else:
-            mlogger.error('Error processing picked elements. '
-                          'return_values should be a list.')
-    except Exception:
+        pick_result = (
+            picker_func(obj_type, selection_filter, message)
+            if selection_filter
+            else picker_func(obj_type, message)
+        )
+    except RevitExceptions.OperationCanceledException:
+        mlogger.debug("Operation canceled by user")
         return None
+    refs = list(pick_result) if multiple else [pick_result]
+    if not refs:
+        mlogger.debug("Nothing picked by user")
+        return None
+
+    mlogger.debug("Picked elements are: %s", refs)
+
+    if obj_type == UI.Selection.ObjectType.Element:
+        return_values = [DOCS.doc.GetElement(ref) for ref in refs]
+    elif obj_type == UI.Selection.ObjectType.PointOnElement:
+        if world:
+            return_values = [ref.GlobalPoint for ref in refs]
+        else:
+            return_values = [ref.UVPoint for ref in refs]
+    else:
+        return_values = [
+            DOCS.doc.GetElement(ref).GetGeometryObjectFromReference(ref) for ref in refs
+        ]
+
+    mlogger.debug("Processed return elements are: %s", return_values)
+
+    if len(return_values) > 1 or multiple:
+        return return_values
+    if len(return_values) == 1:
+        return return_values[0]
+    mlogger.error("Error processing picked elements. return_values should be a list.")
 
 
 def pick_element(message=''):

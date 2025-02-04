@@ -2,6 +2,7 @@ title:
   ru: Загрузить семейства
   fr_fr: Charger les familles
   en_us: Load Families
+  de_de: Familien laden
 tooltip:
   ru: >-
     Данный инструмент дает Вам возможность загружать несколько семейств из папки и ее подпапок.
@@ -15,4 +16,8 @@ tooltip:
     This tool gives you the option to load multiple Families from a folder and its subfolders.
     
     You can choose to load the Family with all its Types, or select Types for each Family.
+  de_de: >-
+    Mit diesem Werkzeug können Sie mehrere Familien aus einem Ordner und seinen Unterordnern laden.
+    
+    Sie können wählen, ob Sie die Familie mit allen Typen laden möchten oder die Typen für jede Familie auswählen möchten.
 author: Hikmet Deniz Kibar

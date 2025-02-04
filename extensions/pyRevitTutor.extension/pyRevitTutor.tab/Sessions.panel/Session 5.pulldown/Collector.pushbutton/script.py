@@ -8,12 +8,12 @@ timer = Timer()
 
 
 from System.Collections.Generic import List
-
+from pyrevit import HOST_APP
 import Autodesk.Revit.DB as DB
 
 
-doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
+doc = HOST_APP.doc
+uidoc = HOST_APP.uidoc
 
 
 walls = DB.FilteredElementCollector(doc) \

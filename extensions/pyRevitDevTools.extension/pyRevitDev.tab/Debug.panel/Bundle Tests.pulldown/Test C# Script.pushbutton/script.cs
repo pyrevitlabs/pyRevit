@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
-using PyRevitLabs.PyRevit.Runtime;
+using pyRevitLabs.PyRevit.Runtime.Shared;
 using pyRevitLabs.NLog;
 
 using HeyRed.MarkdownSharp;
@@ -19,11 +19,6 @@ namespace HelloWorld {
             logger.Info("Logger works...");
             logger.Debug("Logger works...");
             Console.WriteLine(execParams.ScriptPath);
-
-            Debugger.Break();
-            int m = 12;
-            Console.WriteLine(m);
-            Debugger.Break();
 
             TaskDialog.Show(execParams.CommandName, "Hello World from C#!");
 

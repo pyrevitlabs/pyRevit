@@ -20,10 +20,10 @@ import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DOCS, BIN_DIR
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
-from pyrevit.compat import PY3, IRONPY340
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import IRONPY
+from pyrevit.compat import safe_strtype, get_elementid_value_func
 
-if PY3 and not IRONPY340:
+if not IRONPY:
     raise PyRevitCPythonNotSupported('pyrevit.forms')
 
 from pyrevit import coreutils
@@ -1315,6 +1315,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         elif args.Key == Input.Key.Enter:
             active_button = self._get_active_button()
             if active_button:
+                if isinstance(active_button,
+                              framework.Controls.Primitives.ToggleButton):
+                    return
                 self.process_option(active_button, None)
                 args.Handled = True
         elif args.Key != Input.Key.Tab \
@@ -2682,15 +2685,16 @@ def select_parameters(src_element,
 
     if include_type:
         # collect type parameters
-        src_type = revit.query.get_type(src_element)
-        param_defs.extend(
-            [ParamDef(name=x.Definition.Name,
-                      istype=True,
-                      definition=x.Definition,
-                      isreadonly=x.IsReadOnly)
-             for x in src_type.Parameters
-             if x.StorageType != non_storage_type]
-        )
+        src_type = revit.query.get_type(src_element) if src_element else None
+        if src_type is not None:
+            param_defs.extend(
+                [ParamDef(name=x.Definition.Name,
+                          istype=True,
+                          definition=x.Definition,
+                          isreadonly=x.IsReadOnly)
+                 for x in src_type.Parameters
+                 if x.StorageType != non_storage_type]
+            )
 
     if exclude_readonly:
         param_defs = filter(lambda x: not x.isreadonly, param_defs)
@@ -2764,19 +2768,20 @@ def select_family_parameters(family_doc,
         family_params = filter(filterfunc, family_params)
 
     param_defs = []
+    get_elementid_value = get_elementid_value_func()
     for family_param in family_params:
         if not include_instance and family_param.IsInstance:
             continue
         if not include_type and not family_param.IsInstance:
             continue
-        if not include_builtin and family_param.Id.IntegerValue < 0:
+        if not include_builtin and get_elementid_value(family_param.Id) < 0:
             continue
         if not include_labeled and family_param.Id in label_param_ids:
             continue
 
         param_defs.append(
             FamilyParamOption(family_param,
-                              builtin=family_param.Id.IntegerValue < 0,
+                              builtin=get_elementid_value(family_param.Id) < 0,
                               labeled=family_param.Id in label_param_ids)
             )
 
@@ -3346,7 +3351,7 @@ def toast(message, title='pyRevit', appid='pyRevit',
         script.toast("Hello World!",
                      title="My Script",
                      appid="MyAPP",
-                     click="https://eirannejad.github.io/pyRevit/",
+                     click="https://pyrevitlabs.github.io/pyRevit/",
                      actions={
                          "Open Google":"https://google.com",
                          "Open Toast64":"https://github.com/go-toast/toast"

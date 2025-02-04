@@ -1,13 +1,12 @@
-authors:
-  - thumDer
-  - Johannes Domeier
-  
 title:
   ru: Закрыть вкладки
   fr_fr: |-
     Fermer les onglets
   en_us: |-
     Close Tabs
+  de_de: |-
+    Offene Tabs schliessen
+
 tooltip:
   ru: |-
     Закрывает все виды, кроме выделенных.
@@ -15,4 +14,12 @@ tooltip:
     Fermez tout sauf les vues sélectionnées.
   en_us: |-
     Close everything but the selected views.
+  de_de: >-
+    Es öffnet sich ein Auswahlfenster, das die geöffneten Tabs (Ansichten)
+    vom aktiven Projekt auflistet. Alle im Dialog markierten Ansichten bleiben 
+    geöffnet und alle anderen Tabs werden geschlossen. 
 
+authors:
+  - thumDer
+  - Johannes Domeier
+  

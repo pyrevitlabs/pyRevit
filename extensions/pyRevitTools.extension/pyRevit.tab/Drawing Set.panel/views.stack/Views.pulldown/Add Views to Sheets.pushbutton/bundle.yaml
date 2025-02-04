@@ -2,6 +2,7 @@ title:
   ru: Добавить виды на листы
   fr_fr: Ajouter des vues aux feuilles
   en_us: Add Views to Sheets
+  de_de: Füge Ansichten Plänen hinzu
 tooltip:
   ru: >-
     Добавляет выделенные листы (фрагменты, секции, фасады) в выделенные листы. Модель видов будет добавлена только в первый выделенный лист, поскольку они не могут существовать на нескольких листах. Данная команда по умолчанию использует активный вид, если не выбраны никакие виды.
@@ -21,4 +22,16 @@ tooltip:
     Shift+Click:
     
     Pick source views from list instead of selection or active view
+  de_de: >-
+    Es öffnet sich ein Auswahldialog mit verfügbaren Ansichten im Projekt. 
+    Die ausgewählten Ansichten (callouts, sections, elevations) werden
+    den im nächsten Dialogfenster auswählbaren Plänen hinzugefügt. 
+    Modellansichten werden nur dem ersten ausgewählten Plan hinzugefügt, 
+    da diese nicht auf mehreren Plänen gleichzeitig platziert werden 
+    können. Der Befehl verwendet die aktive Ansicht, falls im Auswahldialog
+    keine Ansichten ausgewählt wurden.
+    
+    Shift+Click:
+    
+    Wähle die Ansichten vom Quellprojekt aus einer Liste aus, ansatt der Auswahl im Projekt oder die aktive Ansicht
 author: 'Dan Mapes'

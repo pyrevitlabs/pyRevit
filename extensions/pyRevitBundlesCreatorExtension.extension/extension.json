@@ -7,8 +7,8 @@
     "description": "Button to create buttons and panels for pyRevit",
     "author": "Jean-Marc Couffin",
     "author_profile": "https://www.linkedin.com/in/jmcouffin/",
-    "url": "https://github.com/eirannejad/pyRevit.git",
-    "website": "http://eirannejad.github.io/pyRevit/",
+    "url": "https://github.com/pyrevitlabs/pyRevit.git",
+    "website": "http://pyrevitlabs.github.io/pyRevit/",
     "image": "",
     "dependencies": []
 }

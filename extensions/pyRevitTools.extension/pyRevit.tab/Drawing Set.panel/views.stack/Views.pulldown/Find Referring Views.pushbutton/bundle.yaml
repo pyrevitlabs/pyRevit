@@ -5,6 +5,8 @@ title:
     Ouvrir les vues en référence
   en_us: |-
     Open Refererring Views
+  de_de: |-
+    Öffne referenzierte Ansichten
 tooltip:
   ru: |-
     Показывает все виды, которые связанны с выделенными видовыми экранами или активным видом.
@@ -12,3 +14,6 @@ tooltip:
     Répertorier toutes les vues faisant référence aux fenêtres sélectionnées ou à la vue active
   en_us: |-
     List all view that are referring the selected viewports or active view
+  de_de: >-
+    Es werden alle Ansichten aufgelistet, die das ausgewählte Ansichtsfenster oder aktive Ansicht referenzieren.
+    Achtung: Die Ausführung dieses Befehls kann sehr lange dauern und kann nicht unterbrochen werden!

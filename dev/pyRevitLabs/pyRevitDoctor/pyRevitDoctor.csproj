@@ -3,5 +3,12 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>pyrevit-doctor</AssemblyName>
     <ApplicationIcon>pyrevit-doctor.ico</ApplicationIcon>
+
+    <UseDefaultBin>true</UseDefaultBin>
+    
+    <Platforms>x64</Platforms>
+    <TargetFramework>net8.0-windows</TargetFramework>
+
+    <PermitDeploy>true</PermitDeploy>
   </PropertyGroup>
 </Project>
