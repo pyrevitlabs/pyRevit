@@ -13,7 +13,7 @@ import tempfile
 from collections import namedtuple
 from itertools import chain
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Iterator
 import xml.etree.ElementTree as ET
 
 from scripts import configs
@@ -144,7 +144,7 @@ def set_product_data(_: Dict[str, str]):
     _update_product_data_file(build_version, pyrevitcli_pc, cli=True)
 
 
-def _get_binaries():
+def _get_binaries() -> Iterator[Path]:
     base_path = Path(configs.BINPATH)
     dlls = base_path.rglob("pyrevit*.dll")
     exes = base_path.rglob("pyrevit*.exe")
@@ -203,7 +203,7 @@ def setup_certificate(_: Dict[str, str]):
     )
 
 
-def _sign_binary(filepath: str, cert_name: str, cert_fingerprint: str):
+def _sign_binary(filepath: str | Path, cert_name: str, cert_fingerprint: str):
     res, _ = utils.system(
         [
             install.get_tool("signtool"),
