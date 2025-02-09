@@ -10,8 +10,10 @@ import logging
 import hashlib
 import base64
 import tempfile
-from typing import Dict, List
 from collections import namedtuple
+from itertools import chain
+from pathlib import Path
+from typing import Dict, List
 import xml.etree.ElementTree as ET
 
 from scripts import configs
@@ -143,13 +145,10 @@ def set_product_data(_: Dict[str, str]):
 
 
 def _get_binaries():
-    for dirname, _, files in os.walk(configs.BINPATH):
-        for fn in files:
-            bf = fn.lower()
-            if bf.startswith("pyrevit") and any(
-                bf.endswith(x) for x in [".exe", ".dll"]
-            ):
-                yield op.join(dirname, fn)
+    base_path = Path(configs.BINPATH)
+    dlls = base_path.rglob("pyrevit*.dll")
+    exes = base_path.rglob("pyrevit*.exe")
+    return chain(dlls, exes)
 
 
 def _get_cert_info():
