@@ -27,6 +27,7 @@ from pyrevit.compat import get_elementid_value_func
 from pyrevit.script import get_logger
 import clr
 clr.AddReference('System.Data')
+clr.AddReference('System')
 from System.Data import DataTable
 
 
