@@ -106,11 +106,11 @@ def check_model(doc, output):
     
     table_data = [] # store array for table formatted output
     row_head = ["No", "Select/Zoom", "DWG instance", "Loaded status", "Workplane or single view", "Duplicate", "Workset", "Creator user", "Location site name"] # output table first and last row
-    row_empty = ["", "", "No CAD instances found", "", "", "", "", "", ""] # output table row for when no CAD found
-    cad_inst_count = 0
+    row_no_cad = ["-", "-", "No CAD instances found", "-", "-", "-", "-", "-", "-"] # output table row for when no CAD found
     cad_instances = collect_cadinstances(coll_mode)
-    if cad_instances:
-        cad_inst_count = len(cad_instances)
+    if not cad_instances:
+        table_data.append(row_no_cad)
+    else:
         for count, cad in enumerate(cad_instances, start=1):
             cad_id = cad.Id
             cad_is_link = cad.IsLinked
@@ -136,8 +136,6 @@ def check_model(doc, output):
             table_row.append(DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc, cad.Id).Creator) # ID of the user
             table_row.append(get_cad_site(cad)) # Extract site name from location
             table_data.append(table_row)
-    else:
-        table_data.append(row_empty)
     table_data.append(row_head)  
     output.print_md("## Preflight audit of imported and linked CAD")
     output.print_table(table_data=table_data,
@@ -148,7 +146,7 @@ def check_model(doc, output):
     
     # Summary output section:
     link_to_view = output.linkify(ac_view.Id, title="Show the view")
-    print("{} CAD instances found.".format(cad_inst_count))
+    print("{} CAD instances found.".format(len(cad_instances or [])))
     if coll_mode: # if active view only
         summary_msg = "the active view ('{}') {}".format(ac_view.Name, link_to_view)
     else:
