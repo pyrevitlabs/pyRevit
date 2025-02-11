@@ -167,7 +167,7 @@ jobs:
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
 
           files-folder: bin/
-          files-folder-filter: exe,dll
+          files-folder-filter: pyrevit*.exe,pyrevit*.dll
           files-folder-recurse: true
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
