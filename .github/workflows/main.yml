@@ -154,6 +154,9 @@ jobs:
 
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
+      - name: Find and list files for signing
+        run: |
+          find bin/ -type f \( -name "pyrevit*.exe" -o -name "pyrevit*.dll" \) > files-to-sign.txt
 
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)
@@ -167,8 +170,7 @@ jobs:
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
 
           # Sign all exes inside the folder
-          files-folder: bin/
-          files-folder-filter: "**/pyrevit*.exe,**/pyrevit*.dll"
+          files-list: files-to-sign.txt
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
