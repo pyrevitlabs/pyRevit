@@ -168,7 +168,7 @@ jobs:
 
           # Sign all exes inside the folder
           files-folder: bin/
-          files-folder-filter: pyrevit*.exe,pyrevit*.dll
+          files-folder-filter: "**/pyrevit*.exe,**/pyrevit*.dll"
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
