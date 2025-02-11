@@ -154,9 +154,10 @@ jobs:
 
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
-      - name: Find and list files for signing
+      - name: Find and list pyRevit files for signing (Windows)
         run: |
-          find bin/ -type f \( -name "pyrevit*.exe" -o -name "pyrevit*.dll" \) > files-to-sign.txt
+          Get-ChildItem -Path bin -Recurse -File | Where-Object { $_.Name -match '^pyrevit.*\.(exe|dll)$' } | ForEach-Object { $_.FullName } | Set-Content files-to-sign.txt
+        shell: pwsh
 
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)
