@@ -155,11 +155,6 @@ jobs:
       # default retention period is 90 days
       # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       
-      - name: Find and list pyRevit files for signing (Windows)
-        run: |
-          Get-ChildItem -Path bin -Recurse -File | Where-Object { $_.Name -match '^pyrevit.*\.(exe|dll)$' } | ForEach-Object { $_.FullName } | Set-Content files-to-sign.txt
-        shell: pwsh
-
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)
         uses: azure/trusted-signing-action@v0.5.1
@@ -171,7 +166,9 @@ jobs:
           trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
 
-          files-catalog: files-to-sign.txt
+          files-folder: bin/
+          files-folder-filter: exe,dll
+          files-folder-recurse: true
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
