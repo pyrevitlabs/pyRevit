@@ -129,7 +129,7 @@ Check the list of [Currently Open](https://github.com/pyrevitlabs/pyRevit/issues
 
 [Support on OpenCollective](https://opencollective.com/pyrevitlabs)
 
-[Support on Patreon](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
+[Support Guidelines](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
 
 [Supporters](https://www.notion.so/Supporters-4f3350243ba24dcd8228df6262723629)
 
