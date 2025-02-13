@@ -18,7 +18,7 @@ namespace pyRevitLabs.PyRevit {
     public static class PyRevitCaches {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        // pyrevit cache folder 
+        // pyrevit cache folder
         // @reviewed
         public static string GetCacheDirectory(int revitYear) {
             return Path.Combine(PyRevitLabsConsts.PyRevitPath, revitYear.ToString());
@@ -32,10 +32,11 @@ namespace pyRevitLabs.PyRevit {
                 RevitController.KillRunningRevits(revitYear);
                 CommonUtils.DeleteDirectory(GetCacheDirectory(revitYear));
             }
-            // it's just clearing caches. Let's not be paranoid and throw an exception is directory does not exist
+            else
+            // it's just clearing caches. Let's not be paranoid and throw an exception if directory does not exist
             // if it's not there, the clear cache request is technically already satisfied
-            //else
             //    throw new pyRevitResourceMissingException(pyRevitAppDataPath);
+                Console.WriteLine($"{PyRevitLabsConsts.PyRevitPath} directory not found, nothing to clear.");
         }
 
         // clear all caches
@@ -50,7 +51,7 @@ namespace pyRevitLabs.PyRevit {
                 }
             }
             else
-                throw new pyRevitResourceMissingException(PyRevitLabsConsts.PyRevitPath);
+                Console.WriteLine($"{PyRevitLabsConsts.PyRevitPath} directory not found, nothing to clear.");
         }
 
 
