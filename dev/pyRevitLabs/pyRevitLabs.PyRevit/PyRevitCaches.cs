@@ -51,7 +51,7 @@ namespace pyRevitLabs.PyRevit {
                 }
             }
             else
-                Console.WriteLine($"{PyRevitLabsConsts.PyRevitPath} directory not found, nothing to clear.");
+                logger.Debug($"{PyRevitLabsConsts.PyRevitPath} directory not found, nothing to clear.");
         }
 
 
