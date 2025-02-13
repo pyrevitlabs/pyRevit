@@ -32,10 +32,10 @@ namespace pyRevitLabs.PyRevit {
                 RevitController.KillRunningRevits(revitYear);
                 CommonUtils.DeleteDirectory(GetCacheDirectory(revitYear));
             }
-            else
             // it's just clearing caches. Let's not be paranoid and throw an exception if directory does not exist
             // if it's not there, the clear cache request is technically already satisfied
-            //    throw new pyRevitResourceMissingException(pyRevitAppDataPath);
+            else
+                // throw new pyRevitResourceMissingException(pyRevitAppDataPath);
                 logger.Debug($"{PyRevitLabsConsts.PyRevitPath} directory not found, nothing to clear.");
         }
 
