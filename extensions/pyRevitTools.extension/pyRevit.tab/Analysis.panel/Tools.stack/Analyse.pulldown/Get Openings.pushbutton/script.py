@@ -6,11 +6,8 @@ a selection filter for them."""
 # Sytem
 import time
 
-# Revit
-from Autodesk.Revit.DB import BuiltInCategory, ElementMulticategoryFilter, FilteredElementCollector, Opening, SelectionFilterElement, Transaction, ElementId
-
 # pyRevit
-from pyrevit import revit, script
+from pyrevit import revit, script, DB
 from pyrevit.framework import List
 doc         =__revit__.ActiveUIDocument.Document
 uidoc       =__revit__.ActiveUIDocument
@@ -21,24 +18,24 @@ timer_start = time.time()
 # GET ALL OPENINGS IN THE PROJECT
 
 # List of categories
-cats = [BuiltInCategory.OST_FloorOpening,
-        BuiltInCategory.OST_SWallRectOpening,
-        BuiltInCategory.OST_ShaftOpening,
-        BuiltInCategory.OST_RoofOpening]
-list_cats = List[BuiltInCategory](cats)
+cats = [DB.BuiltInCategory.OST_FloorOpening,
+        DB.BuiltInCategory.OST_SWallRectOpening,
+        DB.BuiltInCategory.OST_ShaftOpening,
+        DB.BuiltInCategory.OST_RoofOpening]
+list_cats = List[DB.BuiltInCategory](cats)
 
 # Create filter
-multi_cat_filter = ElementMulticategoryFilter(list_cats)
+multi_cat_filter = DB.ElementMulticategoryFilter(list_cats)
 
 # Apply filter to filteredElementCollector
-all_elements = FilteredElementCollector(doc)\
+all_elements = DB.FilteredElementCollector(doc)\
                 .WherePasses(multi_cat_filter)\
                 .WhereElementIsNotElementType()\
                 .ToElements()
 
 # Get elements for selection filter
-element_ids = FilteredElementCollector(doc).OfClass(Opening).ToElementIds()
-element_ids = List[ElementId](element_ids)
+element_ids = DB.FilteredElementCollector(doc).OfClass(DB.Opening).ToElementIds()
+element_ids = List[DB.ElementId](element_ids)
 
 # Declaration of a list to contains list of wanted element properties
 data = []
@@ -54,14 +51,14 @@ for e in all_elements:
     data.append(el)
 
 # Get All Selection Filters
-all_sel_filters  = FilteredElementCollector(doc).OfClass(SelectionFilterElement).ToElements()
+all_sel_filters  = DB.FilteredElementCollector(doc).OfClass(DB.SelectionFilterElement).ToElements()
 dict_sel_filters = {f.Name: f for f in all_sel_filters}
 
 # Transaction to create a new selection filter
 with revit.Transaction('Create Openings Filter'):
     new_filter_name = '0_ShaftOpenings'
     if new_filter_name not in dict_sel_filters:
-        new_fil = SelectionFilterElement.Create(doc, new_filter_name)
+        new_fil = DB.SelectionFilterElement.Create(doc, new_filter_name)
         new_fil.AddSet(element_ids)
         print ('Created a filter called : {}'.format(new_filter_name))
     else:
