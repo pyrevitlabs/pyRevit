@@ -1,39 +1,17 @@
 # -*- coding: utf-8 -*-
 
-__title__  = "Get Openings"
-__author__  = "Jakob Steiner"
-__doc__ = """Version = 1.1
-Date    = 24.03.2024
-_____________________________________________________________________
-Scans trough the project for openings. A list with clickable
-links will be presented. Open a 3D view to acces and see the
-selected openings. A selection Filter will be created or
-update to select all openings with one click.
+"""Lists all openings in the project and creates 
+a selection filter for them."""
 
-Inspired by the initial work of Mohamed Bedair and Andreas Draxl.
-Special thanks to Erik Frits for his help.
-_____________________________________________________________________
-REQUIREMENTS:
-_____________________________________________________________________
-[24.03.2024] - Added selection Filter
-[23.03.2024] - 1.0 First Release"""
-
-# IMPORTS
-
-# .NET
-import clr
-clr.AddReference('System')
-from System.Collections.Generic import List
+# Sytem
 import time
 
 # Revit
-from Autodesk.Revit.UI.Selection import *
-from Autodesk.Revit.DB import *
+from Autodesk.Revit.DB import BuiltInCategory, ElementMulticategoryFilter, FilteredElementCollector, Opening, SelectionFilterElement, Transaction, ElementId
 
 # pyRevit
-from pyrevit import *
 from pyrevit import script
-
+from pyrevit.framework import List
 doc         =__revit__.ActiveUIDocument.Document
 uidoc       =__revit__.ActiveUIDocument
 output      = script.get_output()
@@ -103,10 +81,8 @@ except Exception as ex:
     if t.HasStarted():
         t.RollBack()
     script.exit(str(ex))
-# ╦═╗╔═╗╔═╗╔═╗╦═╗╔╦╗╔═╗
-# ╠╦╝║╣ ╠═╝║ ║╠╦╝ ║ ╚═╗
-# ╩╚═╚═╝╩  ╚═╝╩╚═ ╩ ╚═╝
-#==================================================
+
+# Report
 
 output.print_md("#### There are {} openings (floor, wall, shaft, roof) in the project.".format(len(all_elements))) # TO DO Output link for all.
 if data:
