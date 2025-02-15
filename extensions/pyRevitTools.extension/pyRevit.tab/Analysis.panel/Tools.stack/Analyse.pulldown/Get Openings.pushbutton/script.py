@@ -10,7 +10,7 @@ import time
 from Autodesk.Revit.DB import BuiltInCategory, ElementMulticategoryFilter, FilteredElementCollector, Opening, SelectionFilterElement, Transaction, ElementId
 
 # pyRevit
-from pyrevit import script
+from pyrevit import revit, script
 from pyrevit.framework import List
 doc         =__revit__.ActiveUIDocument.Document
 uidoc       =__revit__.ActiveUIDocument
@@ -57,33 +57,19 @@ for e in all_elements:
 all_sel_filters  = FilteredElementCollector(doc).OfClass(SelectionFilterElement).ToElements()
 dict_sel_filters = {f.Name: f for f in all_sel_filters}
 
-try:
-    t = Transaction(doc, 'Create Openings Filter')
-    t.Start()
-
-    # Selection Filter Name
+# Transaction to create a new selection filter
+with revit.Transaction('Create Openings Filter'):
     new_filter_name = '0_ShaftOpenings'
-
-    # Create new if doesn't exist
     if new_filter_name not in dict_sel_filters:
         new_fil = SelectionFilterElement.Create(doc, new_filter_name)
         new_fil.AddSet(element_ids)
         print ('Created a filter called : {}'.format(new_filter_name))
-
-    # Update if already exists
     else:
         existing_fil = dict_sel_filters[new_filter_name]
         existing_fil.AddSet(element_ids)
         print ('Updated a filter called : {}'.format(new_filter_name))
 
-    t.Commit()
-except Exception as ex:
-    if t.HasStarted():
-        t.RollBack()
-    script.exit(str(ex))
-
 # Report
-
 output.print_md("#### There are {} openings (floor, wall, shaft, roof) in the project.".format(len(all_elements))) # TO DO Output link for all.
 if data:
     output.print_table(table_data=data, title="Shafts:", columns=["Family" ,"ElementId", "Select/Show Element"])
