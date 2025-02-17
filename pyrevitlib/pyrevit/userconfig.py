@@ -614,6 +614,21 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def respect_language_direction(self, state):
         pass
 
+    @property
+    def dynamo_isolation(self):
+        """Whether to isolate Python environment when running in Dynamo context."""
+        return self.core.get_option(
+            CONSTS.ConfigsDynamoIsolationKey,
+            default_value=CONSTS.ConfigsDynamoIsolationDefault,
+        )
+
+    @dynamo_isolation.setter
+    def dynamo_isolation(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsDynamoIsolationKey,
+            value=state
+        )
+
     def get_config_version(self):
         """Return version of config file used for change detection.
 

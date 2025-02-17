@@ -17,26 +17,90 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private List<string> _sysPaths = new List<string>();
+        private bool _isDynamoContext;
+        private Dictionary<string, string> _originalEnvVars;
+
+        private void SaveEnvironmentState() {
+            _originalEnvVars = new Dictionary<string, string>();
+            // Save Python-related environment variables
+            var varsToSave = new[] { "PYTHONPATH", "PYTHONHOME", "PYTHONNOUSERSITE" };
+            foreach (var varName in varsToSave) {
+                _originalEnvVars[varName] = Environment.GetEnvironmentVariable(varName);
+            }
+        }
+
+        private void RestoreEnvironmentState() {
+            if (_originalEnvVars != null) {
+                foreach (var kvp in _originalEnvVars) {
+                    Environment.SetEnvironmentVariable(kvp.Key, kvp.Value);
+                }
+            }
+        }
+
+        private void IsolatePythonEnvironment() {
+            // Isolate Python environment to avoid conflicts
+            Environment.SetEnvironmentVariable("PYTHONNOUSERSITE", "1");
+            Environment.SetEnvironmentVariable("PYTHONPATH", null);
+        }
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
 
+            // Check if running in Dynamo context
+            _isDynamoContext = DynamoDetector.IsRunningInDynamoContext();
+            
             // If the user is asking to refresh the cached engine for the command,
             UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
+
+            if (_isDynamoContext) {
+                // Get user config
+                var userConfig = PyRevitConfigs.GetUserConfig();
+                var isolationEnabled = userConfig.GetOption(
+                    PyRevitConsts.ConfigsDynamoIsolationKey, 
+                    PyRevitConsts.ConfigsDynamoIsolationDefault
+                );
+
+                if (isolationEnabled) {
+                    logger.Debug("Running in Dynamo context - using isolated Python environment");
+                    SaveEnvironmentState();
+                    IsolatePythonEnvironment();
+                }
+                else {
+                    logger.Debug("Running in Dynamo context - isolation disabled by user config");
+                }
+            }
         }
 
         public override void Start(ref ScriptRuntime runtime) {
             // if this is the first run
             if (!RecoveredFromCache) {
-                // load Python DLL
-                CpyRuntime.PythonDLL = GetPythonDll(runtime);
-                // initialize
-                PythonEngine.ProgramName = "pyrevit";
-                if (!PythonEngine.IsInitialized) {
-                        PythonEngine.Initialize();
+                if (_isDynamoContext) {
+                    // In Dynamo context, we need to be extra careful
+                    try {
+                        // load Python DLL
+                        CpyRuntime.PythonDLL = GetPythonDll(runtime);
+                        // initialize with isolation
+                        PythonEngine.ProgramName = "pyrevit_isolated";
+                        if (!PythonEngine.IsInitialized) {
+                            PythonEngine.Initialize();
+                        }
+                        // if this is a new engine, save the syspaths
+                        StoreSearchPaths();
+                    }
+                    catch (Exception ex) {
+                        logger.Error($"Failed to initialize Python in Dynamo context: {ex.Message}");
+                        throw;
+                    }
                 }
-                // if this is a new engine, save the syspaths
-                StoreSearchPaths();
+                else {
+                    // Normal initialization
+                    CpyRuntime.PythonDLL = GetPythonDll(runtime);
+                    PythonEngine.ProgramName = "pyrevit";
+                    if (!PythonEngine.IsInitialized) {
+                        PythonEngine.Initialize();
+                    }
+                    StoreSearchPaths();
+                }
             }
 
             SetupStreams(ref runtime);
@@ -121,9 +185,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Shutdown() {
-            CleanupBuiltins();
-            CleanupStreams();
-            PythonEngine.Shutdown();
+            try {
+                CleanupBuiltins();
+                CleanupStreams();
+                PythonEngine.Shutdown();
+            }
+            finally {
+                if (_isDynamoContext) {
+                    RestoreEnvironmentState();
+                }
+            }
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {

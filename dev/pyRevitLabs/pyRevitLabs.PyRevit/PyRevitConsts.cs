@@ -100,6 +100,8 @@ namespace pyRevitLabs.PyRevit {
         public const bool ConfigsColorizeDocsDefault = false;
         public const string ConfigsAppendTooltipExKey = "tooltip_debug_info";
         public const bool ConfigsAppendTooltipExDefault = false;
+        public const string ConfigsDynamoIsolationKey = "dynamoisolation";
+        public const bool ConfigsDynamoIsolationDefault = true;
 
         public const string ConfigsRoutesSection = "routes";
         public const string ConfigsRoutesServerKey = "enabled";
