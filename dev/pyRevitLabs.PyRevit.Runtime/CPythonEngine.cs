@@ -26,23 +26,39 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Start(ref ScriptRuntime runtime) {
-            // if this is the first run
-            if (!RecoveredFromCache) {
-                // load Python DLL
-                CpyRuntime.PythonDLL = GetPythonDll(runtime);
-                // initialize
-                PythonEngine.ProgramName = "pyrevit";
-                if (!PythonEngine.IsInitialized) {
-                        PythonEngine.Initialize();
-                }
-                // if this is a new engine, save the syspaths
-                StoreSearchPaths();
+            // Check for Dynamo context before initializing
+            if (IsRunningInDynamoContext()) {
+                logger.Error("pyRevit CPython engine cannot initialize while Dynamo is running");
+                throw new InvalidOperationException(
+                    "pyRevit detected that Dynamo is running. CPython initialization is disabled to prevent conflicts. " +
+                    "Please close Dynamo before running pyRevit CPython scripts. Note that IronPython scripts will still work.");
             }
 
-            SetupStreams(ref runtime);
-            SetupCaching(ref runtime);
-            SetupSearchPaths(ref runtime);
-            SetupArguments(ref runtime);
+            try {
+                // if this is the first run
+                if (!RecoveredFromCache) {
+                    logger.Debug("Initializing new CPython engine");
+                    // load Python DLL
+                    CpyRuntime.PythonDLL = GetPythonDll(runtime);
+                    // initialize
+                    PythonEngine.ProgramName = "pyrevit";
+                    if (!PythonEngine.IsInitialized) {
+                        PythonEngine.Initialize();
+                        logger.Debug("CPython engine initialized successfully");
+                    }
+                    // if this is a new engine, save the syspaths
+                    StoreSearchPaths();
+                }
+
+                SetupStreams(ref runtime);
+                SetupCaching(ref runtime);
+                SetupSearchPaths(ref runtime);
+                SetupArguments(ref runtime);
+            }
+            catch (Exception ex) {
+                logger.Error($"Failed to initialize CPython engine: {ex.Message}");
+                throw new Exception("Failed to initialize CPython engine. See logs for details.", ex);
+            }
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
@@ -121,9 +137,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Shutdown() {
-            CleanupBuiltins();
-            CleanupStreams();
-            PythonEngine.Shutdown();
+            try {
+                logger.Debug("Shutting down CPython engine");
+                
+                // Only cleanup if we actually initialized
+                if (PythonEngine.IsInitialized) {
+                    CleanupBuiltins();
+                    CleanupStreams();
+                    
+                    // Release GIL if we're holding it
+                    try {
+                        if (PythonEngine.IsInitialized && Runtime.PyGILState_Check() != 0) {
+                            Runtime.PyGILState_Release(Runtime.PyGILState_Ensure());
+                        }
+                    }
+                    catch (Exception ex) {
+                        logger.Debug($"Error releasing GIL during shutdown: {ex.Message}");
+                    }
+
+                    // Finally shutdown the engine
+                    PythonEngine.Shutdown();
+                    logger.Debug("CPython engine shutdown completed");
+                }
+            }
+            catch (Exception ex) {
+                logger.Error($"Error during CPython engine shutdown: {ex.Message}");
+                // Don't rethrow - we're shutting down anyway
+            }
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {
@@ -239,11 +279,43 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void CleanupBuiltins() {
+            try {
+                using (Py.GIL()) {
+                    // Get the sys module
+                    PyObject sys = PyModule.Import("sys");
+                    PyObject modules = sys.GetAttr("modules");
 
+                    // Clear main module's globals
+                    if (modules.HasAttr("__main__")) {
+                        PyObject main = modules.GetAttr("__main__");
+                        if (main.HasAttr("__dict__")) {
+                            PyDict globals = new PyDict(main.GetAttr("__dict__"));
+                            globals.Clear();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) {
+                logger.Debug($"Error during builtins cleanup: {ex.Message}");
+            }
         }
 
         private void CleanupStreams() {
-
+            try {
+                using (Py.GIL()) {
+                    // Get the sys module
+                    PyObject sys = PyModule.Import("sys");
+                    
+                    // Set streams to None
+                    var none = Runtime.PyNone;
+                    sys.SetAttr("stdout", none);
+                    sys.SetAttr("stderr", none);
+                    sys.SetAttr("stdin", none);
+                }
+            }
+            catch (Exception ex) {
+                logger.Debug($"Error during streams cleanup: {ex.Message}");
+            }
         }
 
         private void StoreSearchPaths() {
@@ -278,6 +350,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static void SetVariable(PyDict container, string key, object value) {
             container.SetItem(key.ToPython(), value.ToPython());
+        }
+
+        private bool IsRunningInDynamoContext() {
+            try {
+                // Check for Dynamo process
+                var processName = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+                if (processName.Contains("Dynamo"))
+                    return true;
+
+                // Check for Dynamo environment variables
+                var dynamoPath = Environment.GetEnvironmentVariable("DYNAMO_PATH");
+                var dynamoRuntime = Environment.GetEnvironmentVariable("DYNAMO_RUNTIME_VERSION");
+                
+                return !string.IsNullOrEmpty(dynamoPath) || !string.IsNullOrEmpty(dynamoRuntime);
+            }
+            catch (Exception ex) {
+                logger.Debug("Failed to check Dynamo context: " + ex.Message);
+                return false;
+            }
         }
 
         private string GetPythonDll(ScriptRuntime runtime)
