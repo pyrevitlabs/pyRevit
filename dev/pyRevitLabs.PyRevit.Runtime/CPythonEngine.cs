@@ -25,18 +25,53 @@ namespace PyRevitLabs.PyRevit.Runtime {
             UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
+        private bool IsDynamoActive() {
+            // Check if Dynamo is active by looking for DynamoRevitDS.dll
+            try {
+                var dynRevitAppType = Type.GetType("Dynamo.Applications.DynamoRevitApp, DynamoRevitDS");
+                return dynRevitAppType != null;
+            }
+            catch {
+                return false;
+            }
+        }
+
+        private void SetDynamoActiveState() {
+            var envDict = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey);
+            if (envDict != null) {
+                envDict[EnvDictionaryKeys.DynamoActive] = IsDynamoActive();
+            }
+        }
+
+        private bool ShouldInitializePython() {
+            var envDict = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey);
+            if (envDict != null && envDict.Contains(EnvDictionaryKeys.DynamoActive)) {
+                return !(bool)envDict[EnvDictionaryKeys.DynamoActive];
+            }
+            return true;
+        }
+
         public override void Start(ref ScriptRuntime runtime) {
+            // Check and set Dynamo state
+            SetDynamoActiveState();
+
             // if this is the first run
             if (!RecoveredFromCache) {
-                // load Python DLL
-                CpyRuntime.PythonDLL = GetPythonDll(runtime);
-                // initialize
-                PythonEngine.ProgramName = "pyrevit";
-                if (!PythonEngine.IsInitialized) {
+                // Only initialize Python if Dynamo is not active
+                if (ShouldInitializePython()) {
+                    // load Python DLL
+                    CpyRuntime.PythonDLL = GetPythonDll(runtime);
+                    // initialize
+                    PythonEngine.ProgramName = "pyrevit";
+                    if (!PythonEngine.IsInitialized) {
                         PythonEngine.Initialize();
+                    }
+                    // if this is a new engine, save the syspaths
+                    StoreSearchPaths();
                 }
-                // if this is a new engine, save the syspaths
-                StoreSearchPaths();
+                else {
+                    logger.Debug("Dynamo is active - skipping CPython initialization");
+                }
             }
 
             SetupStreams(ref runtime);
@@ -46,6 +81,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
+            // If Dynamo is active, prevent CPython script execution
+            if (!ShouldInitializePython()) {
+                logger.Debug("Dynamo is active - CPython script execution is disabled");
+                runtime.OutputStream.WriteError(
+                    "CPython script execution is disabled while Dynamo is active to prevent conflicts. " +
+                    "Please close Dynamo before running CPython scripts in pyRevit.", 
+                    ScriptEngineType.CPython);
+                return ScriptExecutorResultCodes.ExecutionException;
+            }
+
             int result = ScriptExecutorResultCodes.Succeeded;
 
             using (Py.GIL()) {
@@ -123,7 +168,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Shutdown() {
             CleanupBuiltins();
             CleanupStreams();
-            PythonEngine.Shutdown();
+            
+            // Only shutdown Python if we initialized it (Dynamo was not active)
+            if (ShouldInitializePython()) {
+                try {
+                    PythonEngine.Shutdown();
+                }
+                catch (Exception ex) {
+                    logger.Debug("Error during Python shutdown: " + ex.Message);
+                }
+            }
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {

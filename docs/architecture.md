@@ -124,3 +124,15 @@ In turn, the code in `ScriptExecutor.cs` calls the appropriate script engine bas
 ???+ info
 
     You can find the code of the engines in the files that end `Engine.cs`.
+
+### CPython Engine and Dynamo Integration
+
+The CPython engine in pyRevit is designed to coexist with other Python environments in Revit:
+
+- When Dynamo is active in the Revit session, pyRevit's CPython engine automatically detects this and:
+  - Skips Python runtime initialization to avoid conflicts
+  - Disables CPython script execution
+  - Provides clear error messages to users
+- This prevents memory access conflicts between Dynamo and pyRevit Python runtimes
+- Users need to close Dynamo before running CPython scripts in pyRevit
+- IronPython scripts continue to work normally as they use a different runtime

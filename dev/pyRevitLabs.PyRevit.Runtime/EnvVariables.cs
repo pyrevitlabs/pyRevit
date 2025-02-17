@@ -26,6 +26,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string Clone = string.Format("{0}_CLONE", keyPrefix);
         public static string IPYVersion = string.Format("{0}_IPYVERSION", keyPrefix);
         public static string CPYVersion = string.Format("{0}_CPYVERSION", keyPrefix);
+        public static string DynamoActive = string.Format("{0}_DYNAMOACTIVE", keyPrefix);
 
         public static string LoggingLevel = string.Format("{0}_LOGGINGLEVEL", keyPrefix);
         public static string FileLogging = string.Format("{0}_FILELOGGING", keyPrefix);
