@@ -1178,7 +1178,7 @@ def get_rvt_link_doc_name(rvtlink_instance):
     Returns:
         str: The name of the Revit link document, without the file extension and any directory paths.
     """
-    return get_name(rvtlink_instance).split(" \ ")[0].split(".rvt")[0]
+    return get_name(rvtlink_instance).split("\\")[0].split(".rvt")[0]
 
 
 def get_rvt_link_instance_name(rvtlink_instance=None):
