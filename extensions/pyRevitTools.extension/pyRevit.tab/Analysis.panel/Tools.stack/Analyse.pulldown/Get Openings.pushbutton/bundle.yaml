@@ -1,0 +1,13 @@
+title:
+  ru: Получить отверстия
+  fr_fr: Obtenir les ouvertures
+  en_us: Get Openings
+  de_de: Öffnungen ermitteln
+tooltip: >
+  en_us: |
+    Scans through the project for openings. A list with clickable links will be presented. Open a 3D view to access and see the selected openings. A selection filter will be created or updated to select all openings with one click.
+  de_de: |
+    Durchsucht das Projekt nach Öffnungen. Eine Liste mit anklickbaren Links wird angezeigt. Öffnen Sie eine 3D-Ansicht, um auf die ausgewählten Öffnungen zuzugreifen und diese zu sehen. Es wird ein Auswahlfilter erstellt oder aktualisiert, um alle Öffnungen mit einem Klick auszuwählen.
+  fr_fr: |
+    Examine le projet à la recherche d'ouvertures. Une liste avec des liens cliquables sera présentée. Ouvrez une vue 3D pour accéder et voir les ouvertures sélectionnées. Un filtre de sélection sera créé ou mis à jour pour sélectionner toutes les ouvertures en un seul clic.
+authors: Jakob Steiner, inspired by the initial work of Andreas Draxl, Mohamed Bedair, special thanks to Erik Frits
