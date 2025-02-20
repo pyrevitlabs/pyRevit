@@ -237,7 +237,7 @@ if selected_switch:
         untagged_elements = []
         for eltid in target_tags:
             elt = revit.doc.GetElement(eltid)
-            elif HOST_APP.is_newer_than(2022, or_equal=True):
+            if HOST_APP.is_newer_than(2022, or_equal=True):
                 if elt.GetTaggedLocalElementIds() != DB.ElementId.InvalidElementId:
                     tagged_elements.append(List[DB.ElementId](get_elementid_value(elt.GetTaggedLocalElementIds())[0]))
             else:

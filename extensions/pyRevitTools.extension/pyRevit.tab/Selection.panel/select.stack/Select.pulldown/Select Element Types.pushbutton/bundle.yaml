@@ -3,8 +3,40 @@ title:
   fr_fr: Sélectionner les types de l'élément
   en_us: Select Element Types
   de_de: Wähle Element Typen aus
+  es_es: Seleccionar los Typos de Elementos
 tooltip:
-  ru: Выделить все типы элементов выбранной категории.
-  fr_fr: Sélectionnez tous les types d'éléments de la catégorie choisie
-  en_us: Select all element types of chosen category
-  de_de: Wähle alle Element Typen der ausgewählten Kategorie aus
+  ru: >
+    Этот инструмент позволяет выбрать ElementTypes указанной категории.
+    Примечание:
+    ElementTypes не идентифицируются в пользовательском интерфейсе Revit при выборе. 
+    Это означает, что они видны в окне фильтра Revit, 
+    но нет способа узнать, является ли это элементом или ElementType
+    так как Revit отображает категорию указанного элемента или ElementType.
+  en_us: >
+    This tool allows you to select ElementTypes of a specified category.
+    Note: 
+    ElementTypes aren't identified in the Revit UI when selected. 
+    Meaning they are visible in the filter window of Revit, 
+    but there is no way to know if it is an Element or an ElementType
+    as Revit displays the Category of the said Element or ElementType. 
+  fr_fr: >
+    Cet outil vous permet de sélectionner les ElementTypes d'une catégorie spécifiée.
+    Note:
+    Les ElementTypes ne sont pas identifiés dans l'interface utilisateur de Revit lorsqu'ils sont sélectionnés. 
+    Cela signifie qu'ils sont visibles dans la fenêtre de filtre de Revit, 
+    mais il n'y a aucun moyen de savoir s'il s'agit d'un Element ou d'un ElementType
+    car Revit affiche la Catégorie de l'Element ou de l'ElementType en question.
+  es_es: >
+    Esta herramienta le permite seleccionar ElementTypes de una categoría especificada.
+    Nota:
+    Los ElementTypes no se identifican en la interfaz de usuario de Revit cuando se seleccionan. 
+    Esto significa que son visibles en la ventana de filtro de Revit, 
+    pero no hay forma de saber si es un Elemento o un ElementType
+    ya que Revit muestra la Categoría del Elemento o ElementType en cuestión.  
+  de_de: >
+    Mit diesem Tool können Sie ElementTypes einer bestimmten Kategorie auswählen.
+    Hinweis:
+    ElementTypes werden in der Revit-Benutzeroberfläche nicht identifiziert, wenn sie ausgewählt werden. 
+    Das bedeutet, dass sie im Filterfenster von Revit sichtbar sind, 
+    aber es gibt keine Möglichkeit zu wissen, ob es sich um ein Element oder einen ElementType handelt
+    da Revit die Kategorie des betreffenden Elements oder Elementtyps anzeigt.
