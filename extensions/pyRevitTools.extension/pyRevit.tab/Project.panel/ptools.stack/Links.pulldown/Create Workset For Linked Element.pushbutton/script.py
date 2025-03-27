@@ -6,21 +6,20 @@ logger = script.get_logger()
 
 selection = revit.get_selection()
 
-linked_model_name = ""
-
 if len(selection) > 0:
-    with revit.Transaction("Create Workset for linked model"):
-        for el in selection:
-            if isinstance(el, DB.RevitLinkInstance):
-                linked_model_name = "ZL_RVT_" + el.Name.split(":")[0].split(".rvt")[0]
-            elif isinstance(el, DB.ImportInstance):
-                linked_model_name = (
-                    "ZL_DWG_"
-                    + el.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME]
-                    .AsString()
-                    .split(".dwg")[0]
-                )
-            if linked_model_name:
+    for el in selection:
+        linked_model_name = ""
+        if isinstance(el, DB.RevitLinkInstance):
+            linked_model_name = "ZL_RVT_" + el.Name.split(":")[0].split(".rvt")[0]
+        elif isinstance(el, DB.ImportInstance):
+            linked_model_name = (
+                "ZL_DWG_"
+                + el.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME]
+                .AsString()
+                .split(".dwg")[0]
+            )
+        if linked_model_name:
+            with revit.Transaction("Create Workset for linked model"):
                 if not revit.doc.IsWorkshared and revit.doc.CanEnableWorksharing:
                     revit.doc.EnableWorksharing("Shared Levels and Grids", "Workset1")
                 try:
