@@ -10,9 +10,30 @@ curview = revit.active_view
 
 def orientsectionbox(view):
         try:
-            face = revit.pick_face()
+            # Pick face to align to
+            with forms.WarningBar(title='Pick a face to align to:'):
+                face = revit.pick_face()
+
+            # Get the section box
             box = view.GetSectionBox()
-            norm = face.ComputeNormal(DB.UV(0, 0)).Normalize()
+
+            # Get the geometry object of the reference
+            geometry_object = revit.doc.GetElement(face.ElementId).GetGeometryObjectFromReference(face)
+            
+            # Check if the object might have a Transformation (by checking if it's Non-Instance and not a System Family)
+            element = revit.doc.GetElement(face.ElementId)
+            if isinstance(element, DB.FamilyInstance) and element.Symbol.Family.FamilyType != DB.FamilyType.System:
+                # Get the transform of the family instance (converts local to world coordinates)
+                transform = element.GetTransform()
+                # Get the face normal in local coordinates
+                local_normal = geometry_object.ComputeNormal(DB.UV(0, 0)).Normalize()
+                # Apply the transform to convert normal to world coordinates
+                world_normal = transform.OfVector(local_normal).Normalize()
+                norm = world_normal
+            else:
+                norm = face.ComputeNormal(DB.UV(0, 0)).Normalize()
+            
+            # Orient the box
             boxNormal = box.Transform.Basis[0].Normalize()
             angle = norm.AngleTo(boxNormal)
             axis = DB.XYZ(0, 0, 1.0)
@@ -31,7 +52,7 @@ def orientsectionbox(view):
                 view.SetSectionBox(box)
                 revit.uidoc.RefreshActiveView()
         except Exception:
-            pass
+            passforms.alert('Error: {0}'.format(str(ex)))
 
 
 if isinstance(curview, DB.View3D) and curview.IsSectionBoxActive:
