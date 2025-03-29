@@ -4,7 +4,7 @@ from pyrevit.framework import Math
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 
-import Autodesk.Revit.UI.Selection.ObjectType
+from Autodesk.Revit.UI.Selection import ObjectType
 
 curview = revit.active_view
 
@@ -15,8 +15,6 @@ def orientsectionbox(view):
         face = revit.uidoc.Selection.PickObject(
             UI.Selection.ObjectType.Face, "Pick a face to align to:"
         )
-
-        revit.pick_face
 
         # Get the section box
         box = view.GetSectionBox()
