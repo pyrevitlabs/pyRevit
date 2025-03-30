@@ -2,6 +2,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 from Autodesk.Revit.UI.Selection import ObjectType
+from Autodesk.Revit.Exceptions import OperationCanceledException
 
 curview = revit.active_view
 
