@@ -1,41 +1,59 @@
-from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 
+from Autodesk.Revit.UI.Selection import ObjectType
 
-def reorient():
-    face = revit.pick_face()
+curview = revit.active_view
 
-    if face:
-        with revit.Transaction('Orient to Selected Face'):
-            # calculate normal
-            if HOST_APP.is_newer_than(2015):
-                normal_vec = face.ComputeNormal(DB.UV(0, 0))
-            else:
-                normal_vec = face.Normal
 
-            # create base plane for sketchplane
-            if HOST_APP.is_newer_than(2016):
-                base_plane = \
-                    DB.Plane.CreateByNormalAndOrigin(normal_vec, face.Origin)
-            else:
-                base_plane = DB.Plane(normal_vec, face.Origin)
+def reorient(view):
+    try:
+        # Pick face to align to using uidoc.Selection instead of revit.pick_face to get the reference instead of the face
+        face_ref = revit.uidoc.Selection.PickObject(
+            UI.Selection.ObjectType.Face, "Pick a face to align to:"
+        )
 
-            # now that we have the base_plane and normal_vec
-            # let's create the sketchplane
+        # Get the geometry object of the reference
+        element = revit.doc.GetElement(face_ref)
+        geometry_object = element.GetGeometryObjectFromReference(face_ref)
+
+        # Check if the object might have a Transformation (by checking if it's Non-Instance)
+        if isinstance(element, DB.FamilyInstance):
+            # Get the transform of the family instance (converts local to world coordinates)
+            transform = element.GetTransform()
+            # Get the face normal in local coordinates
+            local_normal = geometry_object.ComputeNormal(DB.UV(0, 0)).Normalize()
+            # Apply the transform to convert normal to world coordinates
+            world_normal = transform.OfVector(local_normal).Normalize()
+            norm = world_normal
+        else:
+            norm = geometry_object.ComputeNormal(DB.UV(0, 0)).Normalize()
+
+        # since we're working with a reference instead of the face, we can't use face.origin
+        if isinstance(geometry_object, DB.Face):
+            centroid = geometry_object.Evaluate(DB.UV(0.5, 0.5))
+        else:
+            raise Exception("The geometry object is not a face.")
+
+        base_plane = DB.Plane.CreateByNormalAndOrigin(norm, centroid)
+        # now that we have the base_plane and normal_vec
+        # let's create the sketchplane
+        with revit.Transaction("Orient to Selected Face"):
             sp = DB.SketchPlane.Create(revit.doc, base_plane)
 
             # orient the 3D view looking at the sketchplane
-            revit.active_view.OrientTo(normal_vec.Negate())
+            view.OrientTo(norm.Negate())
             # set the sketchplane to active
             revit.uidoc.ActiveView.SketchPlane = sp
 
         revit.uidoc.RefreshActiveView()
 
+    except Exception as ex:
+        forms.alert("Error: {0}".format(str(ex)))
 
-curview = revit.active_view
 
+# This check could be skipped, as there is a context file in the bundle.yaml
 if isinstance(curview, DB.View3D):
-    reorient()
+    reorient(curview)
 else:
-    forms.alert('You must be on a 3D view for this tool to work.')
+    forms.alert("You must be on a 3D view for this tool to work.")

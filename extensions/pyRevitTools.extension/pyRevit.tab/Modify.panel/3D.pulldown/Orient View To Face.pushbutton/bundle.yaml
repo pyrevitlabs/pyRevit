@@ -12,3 +12,5 @@ tooltip:
     Diese Skript richtet die aktuelle Kamera Ansicht senkrecht auf die 
     gewählte Fläche aus. Das Tool erstellt eine Skizzenebene über der 
     gewählten Fläche für die 3D Ansicht
+context: active-3d-view
+min_revit_version: 2016
