@@ -44,9 +44,12 @@ def reorient(view):
             # orient the 3D view looking at the sketchplane
             view.OrientTo(norm.Negate())
             # set the sketchplane to active
-            revit.uidoc.ActiveView.SketchPlane = sp
+            view.SketchPlane = sp
 
         revit.uidoc.RefreshActiveView()
+
+    except OperationCanceledException:
+        pass
 
     except Exception as ex:
         forms.alert("Error: {0}".format(str(ex)))
