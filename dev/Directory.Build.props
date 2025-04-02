@@ -26,8 +26,15 @@
 
   <ItemGroup Condition="'$(UseRevit)' == 'true'">
     <PackageReference Include="Autodesk.Revit.Sdk.Refs" Version="*" />
-    <PackageReference Include="Autodesk.Revit.Sdk.Refs.$(RevitVersion)" Version="*" />
 
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Api.AdWindows" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Api.UIFramework" Version="$(RevitVersion).*" />
+
+	
+  </ItemGroup>
+  <ItemGroup>
     <Reference
             Condition="'$(RevitVersion)' != '' and $(RevitVersion) &gt;= 2018"
             Include="Xceed.Wpf.AvalonDock"
