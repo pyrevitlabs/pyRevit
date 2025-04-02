@@ -26,7 +26,7 @@
 
   <ItemGroup Condition="'$(UseRevit)' == 'true'">
     <PackageReference Include="Autodesk.Revit.Sdk.Refs" Version="*" />
-	<PackageReference Include="Autodesk.Revit.Sdk.Refs.$(RevitVersion)" Version="*" />
+    <PackageReference Include="Autodesk.Revit.Sdk.Refs.$(RevitVersion)" Version="*" />
   </ItemGroup>
   <ItemGroup>
     <Reference
