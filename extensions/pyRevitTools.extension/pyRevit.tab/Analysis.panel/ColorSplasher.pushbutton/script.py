@@ -197,7 +197,7 @@ class CreateLegend(UI.IExternalEventHandler):
                 if vw.ViewType == DB.ViewType.Legend:
                     legends.append(vw)
                     break
-            if len(legends) = 0:
+            if len(legends) == 0:
                 task2 = UI.TaskDialog("Color Elements by Parameter")
                 task2.MainInstruction = "In order to create a new legend, you need to have at least one. Please, create a legend view."
                 wndw.TopMost = False
