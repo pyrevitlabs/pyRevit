@@ -128,7 +128,7 @@ class ApplyColors(UI.IExternalEventHandler):
                     if solid_fill_id is not None:
                         ogs.SetSurfaceForegroundPatternId(solid_fill_id)
                         ogs.SetCutForegroundPatternId(solid_fill_id)
-                    ogs.SetProjectionLinePatternId(DB.ElementId(-1))
+                        
                     for idt in wndw.list_box2.Items[indx]['Value'].ele_id:
                         view.SetElementOverrides(idt, ogs)
         except Exception:
@@ -197,7 +197,7 @@ class CreateLegend(UI.IExternalEventHandler):
                 if vw.ViewType == DB.ViewType.Legend:
                     legends.append(vw)
                     break
-            if len(legends) < 0:
+            if len(legends) = 0:
                 task2 = UI.TaskDialog("Color Elements by Parameter")
                 task2.MainInstruction = "In order to create a new legend, you need to have at least one. Please, create a legend view."
                 wndw.TopMost = False
@@ -361,7 +361,7 @@ class CreateFilters(UI.IExternalEventHandler):
                         ogs.SetSurfaceForegroundPatternId(solid_fill_id)
                         ogs.SetCutForegroundPatternId(solid_fill_id)
                         # Get filters apply to view
-                        filter_name = sel_cat.name + "/" + sel_par.name + " - " + item.value
+                        filter_name = sel_cat.name + " " + sel_par.name + " - " + item.value
                         # added ':' character and chaged the removal method to translate, ref: issue #2466
                         filter_name = filter_name.translate({ord(i): None for i in "{}[]:\\|?/<>*"})
                         if filter_name in dict_filters or filter_name in dict_rules:
