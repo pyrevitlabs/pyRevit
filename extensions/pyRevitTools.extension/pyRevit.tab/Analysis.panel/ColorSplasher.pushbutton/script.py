@@ -361,7 +361,7 @@ class CreateFilters(UI.IExternalEventHandler):
                         ogs.SetSurfaceForegroundPatternId(solid_fill_id)
                         ogs.SetCutForegroundPatternId(solid_fill_id)
                         # Get filters apply to view
-                        filter_name = sel_cat.name + " " + sel_par.name + " - " + item.value
+                        filter_name = sel_cat.name + '/" " + sel_par.name + " - " + item.value
                         # added ':' character and chaged the removal method to translate, ref: issue #2466
                         filter_name = filter_name.translate({ord(i): None for i in "{}[]:\\|?/<>*"})
                         if filter_name in dict_filters or filter_name in dict_rules:
