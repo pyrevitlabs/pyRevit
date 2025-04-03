@@ -277,7 +277,7 @@ class CreateLegend(UI.IExternalEventHandler):
                     if index != 0:
                         punto = DB.XYZ(0, fin_coord_y, 0)
                     item = vw_item['Value']
-                    text_line = sel_cat.name + "/" + sel_par.name + " - " + item.value
+                    text_line = sel_cat.name + " / " + sel_par.name + " - " + item.value
                     new_text = DB.TextNote.Create(new_doc, new_legend.Id, punto, text_line, ele_id_type)
                     new_doc.Regenerate()
                     prev_bbox = new_text.get_BoundingBox(new_legend)
