@@ -20,7 +20,7 @@
 and configure pyRevit in your production/development environment.
 Each section below showcases a specific set of functionality of the command line tool.
 </description>
-    <releaseNotes>https://github.com/pyrevitlabs/pyRevit/releases/tag/v5.1.0.25094%2B1133/</releaseNotes>
+    <releaseNotes>https://github.com/pyrevitlabs/pyRevit/releases/tag/v5.1.0.25094%2B1002/</releaseNotes>
     <dependencies>
       <dependency id="dotnetfx" version="4.8.0.20190930" />
     </dependencies>
