@@ -30,12 +30,10 @@ clr.AddReference('System.Data')
 clr.AddReference('System')
 from System.Data import DataTable
 
-
 # Categories to exclude
 CAT_EXCLUDED = (int(DB.BuiltInCategory.OST_RoomSeparationLines), int(DB.BuiltInCategory.OST_Cameras), int(DB.BuiltInCategory.OST_CurtainGrids), int(DB.BuiltInCategory.OST_Elev), int(DB.BuiltInCategory.OST_Grids), int(DB.BuiltInCategory.OST_IOSModelGroups), int(DB.BuiltInCategory.OST_Views), int(DB.BuiltInCategory.OST_SitePropertyLineSegment), int(DB.BuiltInCategory.OST_SectionBox), int(DB.BuiltInCategory.OST_ShaftOpening), int(DB.BuiltInCategory.OST_BeamAnalytical), int(DB.BuiltInCategory.OST_StructuralFramingOpening), int(DB.BuiltInCategory.OST_MEPSpaceSeparationLines), int(DB.BuiltInCategory.OST_DuctSystem), int(DB.BuiltInCategory.OST_Lines), int(DB.BuiltInCategory.OST_PipingSystem), int(DB.BuiltInCategory.OST_Matchline), int(DB.BuiltInCategory.OST_CenterLines), int(DB.BuiltInCategory.OST_CurtainGridsRoof), int(DB.BuiltInCategory.OST_SWallRectOpening), -2000278, -1)
 
 logger = get_logger() # get logger and trigger debug mode using CTRL+click
-
 
 class SubscribeView(UI.IExternalEventHandler):
     def __init__(self):
@@ -128,7 +126,6 @@ class ApplyColors(UI.IExternalEventHandler):
                     if solid_fill_id is not None:
                         ogs.SetSurfaceForegroundPatternId(solid_fill_id)
                         ogs.SetCutForegroundPatternId(solid_fill_id)
-                        
                     for idt in wndw.list_box2.Items[indx]['Value'].ele_id:
                         view.SetElementOverrides(idt, ogs)
         except Exception:
