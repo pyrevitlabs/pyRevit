@@ -62,3 +62,6 @@ site/
 *.pdb
 *.deps.json
 bin/**/*.xml
+*.so
+*.a
+*.dylib

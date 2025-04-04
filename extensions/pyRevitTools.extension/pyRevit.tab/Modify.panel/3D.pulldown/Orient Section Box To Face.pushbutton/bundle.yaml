@@ -14,3 +14,4 @@ tooltip:
     Fläche im Modell ausgewählt werden. Mit der TAB Taste kann man zwischen angrenzenden
     Flächen durchwechseln. Eine Seite des 3D-Schnittbereichs übernimmt die 
     Ausrichtung der gewählten Fläche!
+context: active-3d-view
