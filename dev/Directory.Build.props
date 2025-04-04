@@ -27,7 +27,8 @@
   <ItemGroup Condition="'$(UseRevit)' == 'true'">
     <PackageReference Include="Autodesk.Revit.Sdk.Refs" Version="*" />
     <PackageReference Include="Autodesk.Revit.Sdk.Refs.$(RevitVersion)" Version="*" />
-
+  </ItemGroup>
+  <ItemGroup>
     <Reference
             Condition="'$(RevitVersion)' != '' and $(RevitVersion) &gt;= 2018"
             Include="Xceed.Wpf.AvalonDock"
