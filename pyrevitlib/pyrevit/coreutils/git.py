@@ -116,13 +116,18 @@ def _make_fetch_options(repo_info):
 def _make_clone_options(username=None, password=None):
     mlogger.debug('Making clone options.')
     clone_ops = libgit.CloneOptions()
-    if username and password:
-        mlogger.debug('Making Credentials handler. '
-                      '(Username and password are available but'
-                      'will not be logged for privacy purposes.)')
 
-        clone_ops.CredentialsProvider = \
-            _get_credentials_hndlr(username, password)
+    if username and password:
+        mlogger.debug('Making Credentials handler.')
+        creds_handler = _get_credentials_hndlr(username, password)
+
+        # Only set the CredentialsProvider if it's a valid property
+        if hasattr(clone_ops, 'CredentialsProvider'):
+            clone_ops.CredentialsProvider = creds_handler
+        elif hasattr(clone_ops, 'FetchOptions') and hasattr(clone_ops.FetchOptions, 'CredentialsProvider'):
+            clone_ops.FetchOptions.CredentialsProvider = creds_handler
+        else:
+            mlogger.warning('CloneOptions does not support CredentialsProvider. Skipping credentials.')
 
     return clone_ops
 
