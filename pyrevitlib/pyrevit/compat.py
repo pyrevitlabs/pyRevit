@@ -27,14 +27,14 @@ if PY3:
 if PY2:
     import _winreg as winreg
     import ConfigParser as configparser
-    from collections import Iterable
+    from collections import Iterable, Callable
     import urllib2
     from urlparse import urlparse
 
 elif PY3:
     import winreg as winreg
     import configparser as configparser
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Callable
     import urllib
     from urllib.parse import urlparse
 
