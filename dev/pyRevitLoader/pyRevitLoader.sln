@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLoader.342", "pyRevi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitRunner.342", "pyRevitRunner.342\pyRevitRunner.342.csproj", "{C21AE8F2-9A0E-436F-9CBD-B7ED170F85A2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scaffolding", "Scaffolding", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitAssemblyBuilder", "pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj", "{37607FDE-9E96-28B6-AAB7-975357B22391}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -37,6 +41,10 @@ Global
 		{C21AE8F2-9A0E-436F-9CBD-B7ED170F85A2}.Debug|x64.Build.0 = Debug|Any CPU
 		{C21AE8F2-9A0E-436F-9CBD-B7ED170F85A2}.Release|x64.ActiveCfg = Release|Any CPU
 		{C21AE8F2-9A0E-436F-9CBD-B7ED170F85A2}.Release|x64.Build.0 = Release|Any CPU
+		{37607FDE-9E96-28B6-AAB7-975357B22391}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{37607FDE-9E96-28B6-AAB7-975357B22391}.Debug|x64.Build.0 = Debug|Any CPU
+		{37607FDE-9E96-28B6-AAB7-975357B22391}.Release|x64.ActiveCfg = Release|Any CPU
+		{37607FDE-9E96-28B6-AAB7-975357B22391}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,6 +54,7 @@ Global
 		{9DB5A32B-7C8A-463B-8DB5-DFD992ADED8A} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
 		{B1E9CE55-3A8E-4961-B441-33EEB933E237} = {5D24CE7B-67FD-4685-AC89-578FF15552A2}
 		{C21AE8F2-9A0E-436F-9CBD-B7ED170F85A2} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
+		{37607FDE-9E96-28B6-AAB7-975357B22391} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8CC1064C-1D16-446B-B480-989CE124102A}
