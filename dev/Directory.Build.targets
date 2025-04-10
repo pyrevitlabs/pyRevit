@@ -20,7 +20,7 @@
         <PyRevitExtDir>$(PyRevitRootDir)\extensions</PyRevitExtDir>
 
         <RevitDevDir>$(PyRevitDevDir)\libs\Revit</RevitDevDir>
-        <IronPythonStdLibDir>$(PyRevitDevDir)\libs\IronPython\</IronPythonStdLibDir>
+        <IronPythonStdLibDir>$(PyRevitDevDir)\libs\IronPython</IronPythonStdLibDir>
     </PropertyGroup>
     
     <PropertyGroup Condition="$(UseDefaultBin) == 'true'">
