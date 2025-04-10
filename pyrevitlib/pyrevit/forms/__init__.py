@@ -805,6 +805,8 @@ class SelectFromList(TemplateUserInputWindow):
             object attribute that should be read as item name.
         multiselect (bool, optional):
             allow multi-selection (uses check boxes). defaults to False
+        exitscript (bool, optional):
+            exit if close or nothing is returned. defaults to False
         info_panel (bool, optional):
             show information panel and fill with .description property of item
         return_all (bool, optional):
@@ -902,6 +904,9 @@ class SelectFromList(TemplateUserInputWindow):
             self.multiselect = False
             self.list_lb.SelectionMode = Controls.SelectionMode.Single
             self.hide_element(self.checkboxbuttons_g)
+
+        # exitscript
+        self.exitscript = kwargs.get('exitscript', False)
 
         # info panel?
         self.info_panel = kwargs.get("info_panel", False)
