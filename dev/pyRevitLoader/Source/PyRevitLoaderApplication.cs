@@ -98,15 +98,32 @@ namespace PyRevitLoader
             var startupScript = GetStartupScriptPath(false);
             if (startupScript != null)
             {
-                var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
-                result = executor.ExecuteScript(startupScript);
-                if (result == Result.Failed)
-                {
-                    TaskDialog.Show("Error Loading pyRevit", executor.Message);
-                }
-            }
+                var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
+                var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+                var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+                var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
 
-            return result;
+                var services = new ServiceCollection();
+                services.AddLogging(cfg => cfg.AddDebug());
+                services.AddAssemblyBuilder();
+
+                services.AddSingleton<IExtensionManager, ExtensionManagerService>();
+                services.AddSingleton<IHookManager, DummyHookManager>();
+                services.AddSingleton<IUIManager, DummyUIManager>();
+                services.AddSingleton<ISessionManager, SessionManagerService>();
+
+                var serviceProvider = services.BuildServiceProvider();
+                var sessionManager = serviceProvider.GetRequiredService<ISessionManager>();
+
+                sessionManager.LoadSessionAsync().Wait();
+
+                return Result.Succeeded;
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("Error Starting pyRevit Session", ex.ToString());
+                return Result.Failed;
+            }
         }
         public static Result ExecuteStartUpCsharp(UIControlledApplication uiControlledApplication)
         {
