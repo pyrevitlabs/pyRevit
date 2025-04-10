@@ -3,6 +3,12 @@ using System.IO;
 using System.Reflection;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using pyRevitAssemblyBuilder.AssemblyMaker;
+using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.Shared;
+using pyRevitAssemblyBuilder.Startup;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
@@ -28,7 +34,21 @@ namespace PyRevitLoader
 
             try
             {
-                return ExecuteStartupScript(application);
+                // we need a UIApplication object to assign as `__revit__` in python...
+                var versionNumber = application.ControlledApplication.VersionNumber;
+                var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+                var fi = application.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+                var uiApplication = (UIApplication)fi.GetValue(application);
+
+                var executor = new ScriptExecutor(uiApplication);
+                var result = ExecuteStartupScript(application);
+                if (result == Result.Failed)
+                {
+                    TaskDialog.Show("Error Loading pyRevit", executor.Message);
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -55,26 +75,34 @@ namespace PyRevitLoader
 
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
         {
-            // we need a UIApplication object to assign as `__revit__` in python...
-            var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
-            var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
-            var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
-
-            var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
-            // execute StartupScript
-            Result result = Result.Succeeded;
-            var startupScript = GetStartupScriptPath();
-            if (startupScript != null)
+            try
             {
-                var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
-                result = executor.ExecuteScript(startupScript);
-                if (result == Result.Failed)
-                {
-                    TaskDialog.Show("Error Loading pyRevit", executor.Message);
-                }
-            }
+                var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
+                var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+                var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+                var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
 
-            return result;
+                var services = new ServiceCollection();
+                services.AddLogging(cfg => cfg.AddDebug());
+                services.AddAssemblyBuilder();
+
+                services.AddSingleton<IExtensionManager, ExtensionManagerService>();
+                services.AddSingleton<IHookManager, DummyHookManager>();
+                services.AddSingleton<IUIManager, DummyUIManager>();
+                services.AddSingleton<ISessionManager, SessionManagerService>();
+
+                var serviceProvider = services.BuildServiceProvider();
+                var sessionManager = serviceProvider.GetRequiredService<ISessionManager>();
+
+                sessionManager.LoadSessionAsync().Wait();
+
+                return Result.Succeeded;
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("Error Starting pyRevit Session", ex.ToString());
+                return Result.Failed;
+            }
         }
 
         private static string GetStartupScriptPath()
