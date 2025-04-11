@@ -109,5 +109,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             Assembly.LoadFrom(assemblyInfo.Location);
         }
+
+        private static string GetStableHash(string input)
+        {
+            using (var sha1 = System.Security.Cryptography.SHA1.Create())
+            {
+                var hash = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
     }
 }

@@ -105,16 +105,27 @@ namespace PyRevitLoader
 
                 var services = new ServiceCollection();
                 services.AddLogging(cfg => cfg.AddDebug());
-                services.AddAssemblyBuilder();
 
-                services.AddSingleton<IExtensionManager, ExtensionManagerService>();
+                // Add Revit UIApplication to services
+                services.AddSingleton(uiApplication);
+
+                // Add known services
+                services.AddSingleton<ICommandTypeGenerator, DefaultCommandTypeGenerator>();
                 services.AddSingleton<IHookManager, DummyHookManager>();
-                services.AddSingleton<IUIManager, DummyUIManager>();
+                services.AddSingleton<IUIManager, UIManagerService>();
                 services.AddSingleton<ISessionManager, SessionManagerService>();
+                services.AddSingleton<IExtensionManager, ExtensionManagerService>();
+
+                // Register AssemblyBuilderService with explicit string parameter
+                services.AddSingleton<AssemblyBuilderService>(sp =>
+                    new AssemblyBuilderService(
+                        sp.GetRequiredService<ICommandTypeGenerator>(),
+                        versionNumber
+                    )
+                );
 
                 var serviceProvider = services.BuildServiceProvider();
                 var sessionManager = serviceProvider.GetRequiredService<ISessionManager>();
-
                 sessionManager.LoadSessionAsync().Wait();
 
                 return Result.Succeeded;
