@@ -4,6 +4,7 @@ using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.AssemblyMaker;
+using pyRevitAssemblyBuilder.Shared;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
