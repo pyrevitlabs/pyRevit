@@ -15,9 +15,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private readonly IServiceProvider _serviceProvider;
         private readonly List<string> _extensionRoots;
 
-        private static readonly string[] SupportedBundleTypes = new[]
+        private static readonly string[] BundleTypes = new[]
         {
-            ".pushbutton", ".pulldownbutton", ".splitbutton", ".stack", ".panel", ".tab"
+            ".tab", ".panel", ".stack", ".splitbutton", ".splitpushbutton", ".pulldown", ".smartbutton", ".pushbutton"
         };
 
         public ExtensionManagerService(IServiceProvider serviceProvider)
@@ -41,9 +41,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                     var extensionName = Path.GetFileNameWithoutExtension(dir);
                     var metadata = LoadMetadata(dir);
-                    var commands = LoadCommands(dir);
-                    if (commands.Any())
-                        yield return new FileSystemExtension(extensionName, dir, commands, metadata);
+                    var children = LoadBundleComponents(dir);
+
+                    if (children.Any())
+                        yield return new FileSystemExtension(extensionName, dir, children, metadata);
                 }
             }
         }
@@ -63,40 +64,51 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 var config = PyRevitConfig.Load(configPath);
                 if (config.UserExtensions != null && config.UserExtensions.Count > 0)
-                {
                     roots.AddRange(config.UserExtensions);
-                }
             }
 
             return roots;
         }
 
-        private IEnumerable<ICommandComponent> LoadCommands(string extensionPath)
+        private IEnumerable<ICommandComponent> LoadBundleComponents(string baseDir)
         {
-            var cmds = new List<ICommandComponent>();
+            var components = new List<ICommandComponent>();
 
-            foreach (var bundleDir in Directory.GetDirectories(extensionPath, "*.*", SearchOption.AllDirectories))
+            foreach (var dir in Directory.GetDirectories(baseDir))
             {
-                var bundleType = Path.GetExtension(bundleDir).ToLowerInvariant();
-                if (!SupportedBundleTypes.Contains(bundleType))
+                var type = Path.GetExtension(dir).ToLowerInvariant();
+                if (!BundleTypes.Contains(type))
                     continue;
 
-                var scriptPath = Path.Combine(bundleDir, "script.py");
-                if (!File.Exists(scriptPath))
-                    continue;
-
-                var name = Path.GetFileNameWithoutExtension(bundleDir);
-                cmds.Add(new FileCommandComponent
-                {
-                    Name = name,
-                    ScriptPath = scriptPath,
-                    Tooltip = $"Command: {name}",
-                    UniqueId = $"{Path.GetFileNameWithoutExtension(extensionPath)}.{name}",
-                    ExtensionName = Path.GetFileNameWithoutExtension(extensionPath)
-                });
+                components.Add(ParseComponent(dir, type));
             }
 
-            return cmds;
+            return components;
+        }
+
+        private FileCommandComponent ParseComponent(string dir, string type)
+        {
+            var name = Path.GetFileNameWithoutExtension(dir);
+            var children = LoadBundleComponents(dir);
+            var scriptPath = Path.Combine(dir, "script.py");
+
+            return new FileCommandComponent
+            {
+                Name = name,
+                ScriptPath = File.Exists(scriptPath) ? scriptPath : null,
+                Tooltip = $"Command: {name}",
+                UniqueId = $"{Path.GetFileNameWithoutExtension(dir)}.{name}",
+                ExtensionName = FindExtensionNameFromPath(dir),
+                Type = type,
+                Children = children.Cast<object>().ToList()
+            };
+        }
+
+        private string FindExtensionNameFromPath(string path)
+        {
+            var segments = path.Split(Path.DirectorySeparatorChar);
+            var extDir = segments.FirstOrDefault(s => s.EndsWith(".extension"));
+            return extDir != null ? Path.GetFileNameWithoutExtension(extDir) : "UnknownExtension";
         }
 
         private ExtensionMetadata LoadMetadata(string extensionPath)
@@ -148,8 +160,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
             public string Name { get; }
             public string Directory { get; }
             public ExtensionMetadata Metadata { get; }
+
             public string GetHash() => Directory.GetHashCode().ToString("X");
+
             public IEnumerable<ICommandComponent> GetAllCommands() => _commands;
+
+            public IEnumerable<object> Children => _commands;
+            public string Type => ".extension";
+
+            object IExtension.Children => Children;
         }
 
         private class FileCommandComponent : ICommandComponent
@@ -159,6 +178,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             public string Tooltip { get; set; }
             public string UniqueId { get; set; }
             public string ExtensionName { get; set; }
+            public string Type { get; set; }
+            public IEnumerable<object> Children { get; set; } = Enumerable.Empty<object>();
         }
 
         public class ExtensionMetadata
