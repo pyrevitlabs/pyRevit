@@ -75,6 +75,36 @@ namespace PyRevitLoader
 
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
         {
+            //TODO: Implement a switcher here to be able to switch between Python/C# loaders
+            //return ExecuteStartUpPython(uiControlledApplication);
+            return ExecuteStartUpCsharp(uiControlledApplication);
+        }
+
+        public static Result ExecuteStartUpPython(UIControlledApplication uiControlledApplication)
+        {
+            // we need a UIApplication object to assign as `__revit__` in python...
+            var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
+            var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+            var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+            var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
+            // execute StartupScript
+            Result result = Result.Succeeded;
+            var startupScript = GetStartupScriptPath();
+            if (startupScript != null)
+            {
+                var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
+                result = executor.ExecuteScript(startupScript);
+                if (result == Result.Failed)
+                {
+                    TaskDialog.Show("Error Loading pyRevit", executor.Message);
+                }
+            }
+
+            return result;
+        }
+        public static Result ExecuteStartUpCsharp(UIControlledApplication uiControlledApplication)
+        {
             try
             {
                 var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
@@ -84,16 +114,27 @@ namespace PyRevitLoader
 
                 var services = new ServiceCollection();
                 services.AddLogging(cfg => cfg.AddDebug());
-                services.AddAssemblyBuilder();
 
-                services.AddSingleton<IExtensionManager, ExtensionManagerService>();
+                // Add Revit UIApplication to services
+                services.AddSingleton(uiApplication);
+
+                // Add known services
+                services.AddSingleton<ICommandTypeGenerator, DefaultCommandTypeGenerator>();
                 services.AddSingleton<IHookManager, DummyHookManager>();
-                services.AddSingleton<IUIManager, DummyUIManager>();
+                services.AddSingleton<IUIManager, UIManagerService>();
                 services.AddSingleton<ISessionManager, SessionManagerService>();
+                services.AddSingleton<IExtensionManager, ExtensionManagerService>();
+
+                // Register AssemblyBuilderService with explicit string parameter
+                services.AddSingleton<AssemblyBuilderService>(sp =>
+                    new AssemblyBuilderService(
+                        sp.GetRequiredService<ICommandTypeGenerator>(),
+                        versionNumber
+                    )
+                );
 
                 var serviceProvider = services.BuildServiceProvider();
                 var sessionManager = serviceProvider.GetRequiredService<ISessionManager>();
-
                 sessionManager.LoadSessionAsync().Wait();
 
                 return Result.Succeeded;
@@ -104,7 +145,6 @@ namespace PyRevitLoader
                 return Result.Failed;
             }
         }
-
         private static string GetStartupScriptPath()
         {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
