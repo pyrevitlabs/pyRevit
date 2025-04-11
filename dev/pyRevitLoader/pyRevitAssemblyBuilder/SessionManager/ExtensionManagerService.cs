@@ -4,54 +4,71 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using pyRevitAssemblyBuilder.AssemblyMaker;
+using pyRevitAssemblyBuilder.Config;
 using pyRevitAssemblyBuilder.Shared;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class ExtensionManagerService : IExtensionManager
     {
-        private readonly string _extensionsRoot;
         private readonly ICommandTypeGenerator _typeGenerator;
         private readonly IServiceProvider _serviceProvider;
+        private readonly List<string> _extensionRoots;
 
         private static readonly string[] SupportedBundleTypes = new[]
         {
             ".pushbutton", ".pulldownbutton", ".splitbutton", ".stack", ".panel", ".tab"
         };
 
-        public ExtensionManagerService(string extensionsRoot = null)
-        {
-            _extensionsRoot = extensionsRoot ??
-                Path.Combine(
-                    Path.GetDirectoryName(typeof(ExtensionManagerService).Assembly.Location),
-                    "..", "extensions"
-                );
-            _extensionsRoot = Path.GetFullPath(_extensionsRoot);
-        }
-
-        public ExtensionManagerService(IServiceProvider serviceProvider, string extensionsRoot = null)
-            : this(extensionsRoot)
+        public ExtensionManagerService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
             _typeGenerator = _serviceProvider.GetRequiredService<ICommandTypeGenerator>();
+            _extensionRoots = GetExtensionRoots();
         }
 
         public IEnumerable<IExtension> GetInstalledExtensions()
         {
-            if (!Directory.Exists(_extensionsRoot))
-                yield break;
-
-            foreach (var dir in Directory.GetDirectories(_extensionsRoot))
+            foreach (var root in _extensionRoots)
             {
-                if (!dir.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+                if (!Directory.Exists(root))
                     continue;
 
-                var extensionName = Path.GetFileNameWithoutExtension(dir);
-                var metadata = LoadMetadata(dir);
-                var commands = LoadCommands(dir);
-                if (commands.Any())
-                    yield return new FileSystemExtension(extensionName, dir, commands, metadata);
+                foreach (var dir in Directory.GetDirectories(root))
+                {
+                    if (!dir.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var extensionName = Path.GetFileNameWithoutExtension(dir);
+                    var metadata = LoadMetadata(dir);
+                    var commands = LoadCommands(dir);
+                    if (commands.Any())
+                        yield return new FileSystemExtension(extensionName, dir, commands, metadata);
+                }
             }
+        }
+
+        private List<string> GetExtensionRoots()
+        {
+            var roots = new List<string>();
+
+            // Default: 4 folders up + extensions
+            var current = Path.GetDirectoryName(typeof(ExtensionManagerService).Assembly.Location);
+            var defaultPath = Path.GetFullPath(Path.Combine(current, "..", "..", "..", "..", "extensions"));
+            roots.Add(defaultPath);
+
+            // Custom userextensions from config
+            var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "pyRevit", "pyRevit_config.ini");
+            if (File.Exists(configPath))
+            {
+                var config = PyRevitConfig.Load(configPath);
+                if (config.UserExtensions != null && config.UserExtensions.Count > 0)
+                {
+                    roots.AddRange(config.UserExtensions);
+                }
+            }
+
+            return roots;
         }
 
         private IEnumerable<ICommandComponent> LoadCommands(string extensionPath)
