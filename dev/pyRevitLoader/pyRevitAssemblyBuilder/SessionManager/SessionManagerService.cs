@@ -38,7 +38,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             foreach (var ext in extensions)
             {
                 var assmInfo = _assemblyBuilder.BuildExtensionAssembly(ext);
-                //_uiManager.BuildUI(ext, assmInfo);
+                _uiManager.BuildUI(ext, assmInfo);
                 _hookManager.RegisterHooks(ext);
             }
 

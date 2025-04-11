@@ -9,35 +9,42 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
     public class AssemblyBuilderService
     {
         private readonly ICommandTypeGenerator _typeGenerator;
+        private readonly string _revitVersion;
 
-        public AssemblyBuilderService(ICommandTypeGenerator typeGenerator)
+        public AssemblyBuilderService(ICommandTypeGenerator typeGenerator, string revitVersion)
         {
             _typeGenerator = typeGenerator;
+            _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
         }
 
         public ExtensionAssemblyInfo BuildExtensionAssembly(IExtension extension)
         {
-            string fileId = $"{extension.GetHash()}_{extension.Name}";
-            string outputDir =   Path.Combine(Path.GetTempPath(), "pyRevit", "assemblies");
+            string extensionHash = GetStableHash(extension.GetHash() + _revitVersion).Substring(0, 16);
+            string fileName = $"pyRevit_{_revitVersion}_{extensionHash}_{extension.Name}.dll";
+
+            string outputDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "pyRevit",
+                _revitVersion
+            );
             Directory.CreateDirectory(outputDir);
 
-            string outputPath = Path.Combine(outputDir, fileId + ".dll");
+            string outputPath = Path.Combine(outputDir, fileName);
 
             var asmName = new AssemblyName(extension.Name)
             {
                 Version = new Version(1, 0, 0, 0)
             };
 
-            string fileName = Path.GetFileNameWithoutExtension(outputPath);
-            string fileNameWithExt = Path.GetFileName(outputPath);
+            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(outputPath);
 
 #if NETFRAMEWORK
             var domain = AppDomain.CurrentDomain;
             var asmBuilder = domain.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndSave, outputDir);
-            var moduleBuilder = asmBuilder.DefineDynamicModule(fileName, fileNameWithExt);
+            var moduleBuilder = asmBuilder.DefineDynamicModule(fileNameWithoutExt, fileName);
 #else
             var asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
-            var moduleBuilder = asmBuilder.DefineDynamicModule(fileName);
+            var moduleBuilder = asmBuilder.DefineDynamicModule(fileNameWithoutExt);
 #endif
 
             foreach (var cmd in extension.GetAllCommands())
@@ -46,7 +53,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
 
 #if NETFRAMEWORK
-            asmBuilder.Save(fileNameWithExt);
+            asmBuilder.Save(fileName);
 #else
             var generator = new Lokad.ILPack.AssemblyGenerator();
             generator.GenerateAssembly(asmBuilder, outputPath);
@@ -67,6 +74,15 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     return true;
             }
             return false;
+        }
+
+        private static string GetStableHash(string input)
+        {
+            using (var sha1 = System.Security.Cryptography.SHA1.Create())
+            {
+                var hash = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
         }
     }
 }
