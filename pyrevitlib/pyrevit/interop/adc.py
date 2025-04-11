@@ -1,30 +1,37 @@
+# coding=utf-8
 """Wrapping Autodesk Desktop Connector API."""
-#pylint: disable=bare-except,broad-except
+
 import os.path as op
 from pyrevit import PyRevitException
 from pyrevit.framework import clr, Process
 from pyrevit.coreutils import logger
 
+from pyrevit import HOST_APP
 
 mlogger = logger.get_logger(__name__)
 
-
 ADC_NAME = "Autodesk Desktop Connector"
 ADC_SHORTNAME = "ADC"
-ADC_DRIVE_SCHEMA = '{drive_name}://'
+ADC_DRIVE_SCHEMA = "{drive_name}://"
 
-ADC_DEFAULT_INSTALL_PATH = \
-    r'C:\Program Files\Autodesk\Desktop Connector'
-ADC_API_DLL = 'Autodesk.DesktopConnector.API.dll'
+if HOST_APP.is_newer_than("2024"):  # .net8 core version of the desktop connector API
+    ADC_DEFAULT_INSTALL_PATH = (
+        r"C:\Program Files\Autodesk\Desktop Connector\FOS\AddInProcess\Civil3DOE"
+    )
+else:  # .net framework version of the desktop connector API
+    ADC_DEFAULT_INSTALL_PATH = r"C:\Program Files\Autodesk\Desktop Connector"
+
+ADC_API_DLL = "Autodesk.DesktopConnector.API.dll"
 ADC_API_DLL_PATH = op.join(ADC_DEFAULT_INSTALL_PATH, ADC_API_DLL)
 
 API = None
 if op.exists(ADC_API_DLL_PATH):
     try:
         clr.AddReferenceToFileAndPath(ADC_API_DLL_PATH)
-        import Autodesk.DesktopConnector.API as API #pylint: disable=import-error
+        import Autodesk.DesktopConnector.API as API  # pylint: disable=import-error
     except:
         pass
+
 
 def _ensure_api():
     if not API:
@@ -66,10 +73,7 @@ def _get_drive_from_local_path(adc, local_path):
 def _drive_path_to_local_path(drv_info, path):
     drive_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
     return op.normpath(
-        op.join(
-            drv_info.WorkspaceLocation,
-            path.replace(drive_schema, '')
-        )
+        op.join(drv_info.WorkspaceLocation, path.replace(drive_schema, ""))
     )
 
 
@@ -157,8 +161,7 @@ def is_locked(path):
     adc = _get_adc()
     item = _get_item(adc, path)
     lock_status = _get_item_lockstatus(adc, item)
-    return lock_status.State == API.LockState.LockedByOther, \
-        lock_status.LockOwner
+    return lock_status.State == API.LockState.LockedByOther, lock_status.LockOwner
 
 
 def unlock_file(path):
@@ -178,13 +181,15 @@ def is_synced(path):
     # see https://github.com/pyrevitlabs/pyRevit/issues/1152
     # ADC version 15 changed property_id_value
     # see https://github.com/pyrevitlabs/pyRevit/issues/1371
-    prop_val = _get_item_property_id_value(adc, drive, item, 'DesktopConnector.Core.LocalState')
+    prop_val = _get_item_property_id_value(
+        adc, drive, item, "DesktopConnector.Core.LocalState"
+    )
     if prop_val is None:
         # version older than ADC 15
-        prop_val = _get_item_property_id_value(adc, drive, item, 'LocalState')
+        prop_val = _get_item_property_id_value(adc, drive, item, "LocalState")
     # possible values, 'Cached', 'Stale', 'Modified'
     # .Value is not translated
-    return prop_val.Value == 'Cached'or prop_val.Value == 'Synced'
+    return prop_val.Value == "Cached" or prop_val.Value == "Synced"
 
 
 def sync_file(path, force=False):
