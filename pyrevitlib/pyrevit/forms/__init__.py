@@ -2035,10 +2035,11 @@ class LevelOption(TemplateListItem):
 
 class FamilyParamOption(TemplateListItem):
     """Level wrapper for :func:`select_family_parameters`."""
-    def __init__(self, fparam, builtin=False, labeled=False):
+    def __init__(self, fparam, builtin=False, labeled=False, associated=False):
         super(FamilyParamOption, self).__init__(fparam)
         self.isbuiltin = builtin
         self.islabeled = labeled
+        self.isassociated = associated
 
     @property
     def name(self):
@@ -2727,7 +2728,8 @@ def select_family_parameters(family_doc,
                              include_instance=True,
                              include_type=True,
                              include_builtin=True,
-                             include_labeled=True):
+                             include_labeled=True,
+                             include_associated=True):
     """Standard form for selecting parameters from given family document.
 
     Args:
@@ -2742,6 +2744,8 @@ def select_family_parameters(family_doc,
         include_type (bool, optional): list type parameters
         include_builtin (bool, optional): list builtin parameters
         include_labeled (bool, optional): list parameters used as labels
+        include_associated (bool, optional):
+            list parameters associated to others
 
     Returns:
         (list[DB.FamilyParameter]): list of family parameter objects
@@ -2779,10 +2783,15 @@ def select_family_parameters(family_doc,
         if not include_labeled and family_param.Id in label_param_ids:
             continue
 
+        associated_to_others = not (family_param.AssociatedParameters.IsEmpty)
+        if not include_associated and associated_to_others:
+            continue
+
         param_defs.append(
             FamilyParamOption(family_param,
                               builtin=get_elementid_value(family_param.Id) < 0,
-                              labeled=family_param.Id in label_param_ids)
+                              labeled=family_param.Id in label_param_ids,
+                              associated=associated_to_others)
             )
 
     param_defs.sort(key=lambda x: x.name)
@@ -2796,6 +2805,7 @@ def select_family_parameters(family_doc,
             'Type Parameters': [x for x in param_defs if x.istype],
             'Built-in Parameters': [x for x in param_defs if x.isbuiltin],
             'Used as Label': [x for x in param_defs if x.islabeled],
+            'Associated to Others': [x for x in param_defs if x.isassociated],
         },
         title=title,
         button_name=button_name,
