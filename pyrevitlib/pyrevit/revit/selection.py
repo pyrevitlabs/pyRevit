@@ -68,7 +68,6 @@ class ElementSelection:
 
     @property
     def elements(self):
-        # type: () -> list[DB.Element]
         return [DOCS.doc.GetElement(x) for x in self._refs]
 
     @property
