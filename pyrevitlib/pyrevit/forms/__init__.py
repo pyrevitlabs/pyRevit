@@ -1181,6 +1181,32 @@ class SelectFromList(TemplateUserInputWindow):
         self.search_tb.Clear()
         self.search_tb.Focus()
 
+    @classmethod
+	    def show(
+	        cls,
+	        context,
+	        title='User Input',
+	        width=DEFAULT_INPUTWINDOW_WIDTH,
+	        height=DEFAULT_INPUTWINDOW_HEIGHT,
+	        exitscript=False
+	        **kwargs
+	    ):
+	        """Show user input window.
+	
+	        Args:
+	            context (any): window context element(s)
+	            width: ...
+	            height: ...
+	            exitscript: exit the script if the user cancels the dialog. Defaults to False
+	        """
+	        dlg = cls(context, title, width, height, **kwargs)
+	        dlg.ShowDialog()
+	
+	        if exitscript and not dlg.response:
+	            sys.exit()
+
+        return dlg.response
+
 
 class CommandSwitchWindow(TemplateUserInputWindow):
     """Standard form to select from a list of command options.
