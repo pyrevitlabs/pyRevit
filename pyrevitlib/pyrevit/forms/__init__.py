@@ -804,8 +804,6 @@ class SelectFromList(TemplateUserInputWindow):
             object attribute that should be read as item name.
         multiselect (bool, optional):
             allow multi-selection (uses check boxes). defaults to False
-        exitscript (bool, optional):
-            exit if close or nothing is returned. defaults to False
         info_panel (bool, optional):
             show information panel and fill with .description property of item
         return_all (bool, optional):
@@ -903,9 +901,6 @@ class SelectFromList(TemplateUserInputWindow):
             self.multiselect = False
             self.list_lb.SelectionMode = Controls.SelectionMode.Single
             self.hide_element(self.checkboxbuttons_g)
-
-        # exitscript
-        self.exitscript = kwargs.get('exitscript', False)
 
         # info panel?
         self.info_panel = kwargs.get("info_panel", False)
@@ -1187,20 +1182,28 @@ class SelectFromList(TemplateUserInputWindow):
         self.search_tb.Focus()
 
     @classmethod
-    def show(cls, context,  #pylint: disable=W0221
-             title='User Input',
-             width=DEFAULT_INPUTWINDOW_WIDTH,
-             height=DEFAULT_INPUTWINDOW_HEIGHT, **kwargs):
-        """Show user input window.
-
-        Args:
-            context (any): window context element(s)
-        """
-        dlg = cls(context, title, width, height, **kwargs)
-        dlg.ShowDialog()
-
-        if dlg.exitscript and not dlg.response:
-            sys.exit()
+	    def show(
+	        cls,
+	        context,
+	        title='User Input',
+	        width=DEFAULT_INPUTWINDOW_WIDTH,
+	        height=DEFAULT_INPUTWINDOW_HEIGHT,
+	        exitscript=False
+	        **kwargs
+	    ):
+	        """Show user input window.
+	
+	        Args:
+	            context (any): window context element(s)
+	            width: ...
+	            height: ...
+	            exitscript: exit the script if the user cancels the dialog. Defaults to False
+	        """
+	        dlg = cls(context, title, width, height, **kwargs)
+	        dlg.ShowDialog()
+	
+	        if exitscript and not dlg.response:
+	            sys.exit()
 
         return dlg.response
 
