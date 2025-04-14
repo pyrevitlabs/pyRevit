@@ -93,6 +93,30 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                     break;
 
+                        // Now post-process pulldowns to add nested pushbuttons
+                        if (stackedItems != null)
+                        {
+                            for (int i = 0; i < stackedItems.Count; i++)
+                            {
+                                var ribbonItem = stackedItems[i];
+                                var origComponent = originalItems[i];
+
+                                if (ribbonItem is PulldownButton pdBtn)
+                                {
+                                    foreach (var child in origComponent.Children ?? Enumerable.Empty<object>())
+                                    {
+                                        if (child is ICommandComponent subCmd &&
+                                            CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
+                                        {
+                                            var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);
+                                            pdBtn.AddPushButton(subData);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
                 case CommandComponentType.PushButton:
                 case CommandComponentType.SmartButton:
                     var pbData = CreatePushButton(component, assemblyInfo);
