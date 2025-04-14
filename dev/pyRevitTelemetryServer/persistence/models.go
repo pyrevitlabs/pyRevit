@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"fmt"
+	"sync"
 
 	"pyrevittelemetryserver/cli"
 
@@ -21,26 +22,37 @@ type TraceInfoV1 struct {
 }
 
 type ScriptTelemetryRecordV1 struct {
-	Date              string            `json:"date" bson:"date" valid:"-"`
-	Time              string            `json:"time" bson:"time" valid:"-"`
-	UserName          string            `json:"username" bson:"username" valid:"-"`
-	RevitVersion      string            `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
-	RevitBuild        string            `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
-	SessionId         string            `json:"sessionid" bson:"sessionid" valid:"uuidv4~Invalid session id"`
-	PyRevitVersion    string            `json:"pyrevit" bson:"pyrevit" valid:"-"`
-	IsDebugMode       bool              `json:"debug" bson:"debug"`
-	IsConfigMode      bool              `json:"config" bson:"config"`
-	CommandName       string            `json:"commandname" bson:"commandname" valid:"-"`
-	CommandUniqueName string            `json:"commanduniquename" bson:"commanduniquename" valid:"-"`
-	BundleName        string            `json:"commandbundle" bson:"commandbundle" valid:"-"`
-	ExtensionName     string            `json:"commandextension" bson:"commandextension" valid:"-"`
-	ResultCode        int               `json:"resultcode" bson:"resultcode" valid:"numeric~Invalid result code"`
-	CommandResults    map[string]string `json:"commandresults" bson:"commandresults" valid:"-"`
-	ScriptPath        string            `json:"scriptpath" bson:"scriptpath" valid:"-"`
-	TraceInfo         TraceInfoV1       `json:"trace" bson:"trace"`
+	Date              string      `json:"date" bson:"date" valid:"-"`
+	Time              string      `json:"time" bson:"time" valid:"-"`
+	UserName          string      `json:"username" bson:"username" valid:"-"`
+	RevitVersion      string      `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
+	RevitBuild        string      `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
+	SessionId         string      `json:"sessionid" bson:"sessionid" valid:"uuidv4~Invalid session id"`
+	PyRevitVersion    string      `json:"pyrevit" bson:"pyrevit" valid:"-"`
+	IsDebugMode       bool        `json:"debug" bson:"debug"`
+	IsConfigMode      bool        `json:"config" bson:"config"`
+	CommandName       string      `json:"commandname" bson:"commandname" valid:"-"`
+	CommandUniqueName string      `json:"commanduniquename" bson:"commanduniquename" valid:"-"`
+	BundleName        string      `json:"commandbundle" bson:"commandbundle" valid:"-"`
+	ExtensionName     string      `json:"commandextension" bson:"commandextension" valid:"-"`
+	ResultCode        int         `json:"resultcode" bson:"resultcode" valid:"numeric~Invalid result code"`
+	CommandResults    sync.Map    `json:"commandresults" bson:"commandresults" valid:"-"`
+	ScriptPath        string      `json:"scriptpath" bson:"scriptpath" valid:"-"`
+	TraceInfo         TraceInfoV1 `json:"trace" bson:"trace"`
 }
 
 func (logrec ScriptTelemetryRecordV1) PrintRecordInfo(logger *cli.Logger, message string) {
+	// Convert sync.Map to regular map for printing
+	results := make(map[string]string)
+	logrec.CommandResults.Range(func(key, value interface{}) bool {
+		if k, ok := key.(string); ok {
+			if v, ok := value.(string); ok {
+				results[k] = v
+			}
+		}
+		return true
+	})
+
 	logger.Print(fmt.Sprintf(
 		"%s %s-%s %q @ %s:%s [%s.%s] code=%d info=%v",
 		message,
@@ -52,7 +64,7 @@ func (logrec ScriptTelemetryRecordV1) PrintRecordInfo(logger *cli.Logger, messag
 		logrec.ExtensionName,
 		logrec.CommandName,
 		logrec.ResultCode,
-		logrec.CommandResults,
+		results,
 	))
 }
 
@@ -66,10 +78,10 @@ func (logrec ScriptTelemetryRecordV1) Validate() error {
 
 // v2.0
 type EngineInfoV2 struct {
-	Type     string                 `json:"type" bson:"type" valid:"engine~Invalid executor engine type"`
-	Version  string                 `json:"version" bson:"version" valid:"-"`
-	SysPaths []string               `json:"syspath" bson:"syspath" valid:"-"`
-	Configs  map[string]interface{} `json:"configs" bson:"configs" valid:"-"`
+	Type     string   `json:"type" bson:"type" valid:"engine~Invalid executor engine type"`
+	Version  string   `json:"version" bson:"version" valid:"-"`
+	SysPaths []string `json:"syspath" bson:"syspath" valid:"-"`
+	Configs  sync.Map `json:"configs" bson:"configs" valid:"-"`
 }
 
 type TraceInfoV2 struct {
@@ -82,33 +94,42 @@ type RecordMetaV2 struct {
 }
 
 type ScriptTelemetryRecordV2 struct {
-	RecordMeta        RecordMetaV2           `json:"meta" bson:"meta"`
-	TimeStamp         string                 `json:"timestamp" bson:"timestamp" valid:"rfc3339~Invalid timestamp"`
-	UserName          string                 `json:"username" bson:"username" valid:"-"`
-	HostUserName      string                 `json:"host_user" bson:"host_user" valid:"-"`
-	RevitVersion      string                 `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
-	RevitBuild        string                 `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
-	SessionId         string                 `json:"sessionid" bson:"sessionid" valid:"uuidv4~Invalid session id"`
-	PyRevitVersion    string                 `json:"pyrevit" bson:"pyrevit" valid:"-"`
-	Clone             string                 `json:"clone" bson:"clone" valid:"-"`
-	IsDebugMode       bool                   `json:"debug" bson:"debug"`
-	IsConfigMode      bool                   `json:"config" bson:"config"`
-	IsExecFromGUI     bool                   `json:"from_gui" bson:"from_gui"`
-	ExecId            string                 `json:"exec_id" bson:"exec_id" valid:"-"`
-	ExecTimeStamp     string                 `json:"exec_timestamp" bson:"exec_timestamp" valid:"-"`
-	CommandName       string                 `json:"commandname" bson:"commandname" valid:"-"`
-	CommandUniqueName string                 `json:"commanduniquename" bson:"commanduniquename" valid:"-"`
-	BundleName        string                 `json:"commandbundle" bson:"commandbundle" valid:"-"`
-	ExtensionName     string                 `json:"commandextension" bson:"commandextension" valid:"-"`
-	DocumentName      string                 `json:"docname" bson:"docname" valid:"-"`
-	DocumentPath      string                 `json:"docpath" bson:"docpath" valid:"-"`
-	ResultCode        int                    `json:"resultcode" bson:"resultcode" valid:"numeric~Invalid result code"`
-	CommandResults    map[string]interface{} `json:"commandresults" bson:"commandresults" valid:"-"`
-	ScriptPath        string                 `json:"scriptpath" bson:"scriptpath" valid:"-"`
-	TraceInfo         TraceInfoV2            `json:"trace" bson:"trace"`
+	RecordMeta        RecordMetaV2 `json:"meta" bson:"meta"`
+	TimeStamp         string       `json:"timestamp" bson:"timestamp" valid:"rfc3339~Invalid timestamp"`
+	UserName          string       `json:"username" bson:"username" valid:"-"`
+	HostUserName      string       `json:"host_user" bson:"host_user" valid:"-"`
+	RevitVersion      string       `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
+	RevitBuild        string       `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
+	SessionId         string       `json:"sessionid" bson:"sessionid" valid:"uuidv4~Invalid session id"`
+	PyRevitVersion    string       `json:"pyrevit" bson:"pyrevit" valid:"-"`
+	Clone             string       `json:"clone" bson:"clone" valid:"-"`
+	IsDebugMode       bool         `json:"debug" bson:"debug"`
+	IsConfigMode      bool         `json:"config" bson:"config"`
+	IsExecFromGUI     bool         `json:"from_gui" bson:"from_gui"`
+	ExecId            string       `json:"exec_id" bson:"exec_id" valid:"-"`
+	ExecTimeStamp     string       `json:"exec_timestamp" bson:"exec_timestamp" valid:"-"`
+	CommandName       string       `json:"commandname" bson:"commandname" valid:"-"`
+	CommandUniqueName string       `json:"commanduniquename" bson:"commanduniquename" valid:"-"`
+	BundleName        string       `json:"commandbundle" bson:"commandbundle" valid:"-"`
+	ExtensionName     string       `json:"commandextension" bson:"commandextension" valid:"-"`
+	DocumentName      string       `json:"docname" bson:"docname" valid:"-"`
+	DocumentPath      string       `json:"docpath" bson:"docpath" valid:"-"`
+	ResultCode        int          `json:"resultcode" bson:"resultcode" valid:"numeric~Invalid result code"`
+	CommandResults    sync.Map     `json:"commandresults" bson:"commandresults" valid:"-"`
+	ScriptPath        string       `json:"scriptpath" bson:"scriptpath" valid:"-"`
+	TraceInfo         TraceInfoV2  `json:"trace" bson:"trace"`
 }
 
 func (logrec ScriptTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, message string) {
+	// Convert sync.Map to regular map for printing
+	results := make(map[string]interface{})
+	logrec.CommandResults.Range(func(key, value interface{}) bool {
+		if k, ok := key.(string); ok {
+			results[k] = value
+		}
+		return true
+	})
+
 	logger.Print(fmt.Sprintf(
 		"%s %s %q %s:%s (%s) [%s.%s] code=%d info=%v",
 		message,
@@ -120,7 +141,7 @@ func (logrec ScriptTelemetryRecordV2) PrintRecordInfo(logger *cli.Logger, messag
 		logrec.ExtensionName,
 		logrec.CommandName,
 		logrec.ResultCode,
-		logrec.CommandResults,
+		results,
 	))
 }
 
@@ -158,15 +179,15 @@ func (logrec ScriptTelemetryRecordV2) Validate() error {
 
 // introduced with api v2
 type EventTelemetryRecordV2 struct {
-	RecordMeta   RecordMetaV2           `json:"meta" bson:"meta"`
-	TimeStamp    string                 `json:"timestamp" bson:"timestamp" valid:"rfc3339~Invalid timestamp"`
-	HandlerId    string                 `json:"handler_id" bson:"handler_id" valid:"-"`
-	EventType    string                 `json:"type" bson:"type" valid:"-"`
-	EventArgs    map[string]interface{} `json:"args" bson:"args" valid:"-"`
-	UserName     string                 `json:"username" bson:"username" valid:"-"`
-	HostUserName string                 `json:"host_user" bson:"host_user" valid:"-"`
-	RevitVersion string                 `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
-	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
+	RecordMeta   RecordMetaV2 `json:"meta" bson:"meta"`
+	TimeStamp    string       `json:"timestamp" bson:"timestamp" valid:"rfc3339~Invalid timestamp"`
+	HandlerId    string       `json:"handler_id" bson:"handler_id" valid:"-"`
+	EventType    string       `json:"type" bson:"type" valid:"-"`
+	EventArgs    sync.Map     `json:"args" bson:"args" valid:"-"`
+	UserName     string       `json:"username" bson:"username" valid:"-"`
+	HostUserName string       `json:"host_user" bson:"host_user" valid:"-"`
+	RevitVersion string       `json:"revit" bson:"revit" valid:"numeric~Invalid revit version"`
+	RevitBuild   string       `json:"revitbuild" bson:"revitbuild" valid:"matches(\\d{8}_\\d{4}\\(x\\d{2}\\))~Invalid revit build number"`
 
 	// general
 	Cancellable      bool   `json:"cancellable" bson:"cancellable"`
