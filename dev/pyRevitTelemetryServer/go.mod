@@ -17,7 +17,6 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	go.mongodb.org/mongo-driver v1.5.1
 	pkg.re/essentialkaos/ek.v10 v12.32.0+incompatible
-)
 
 require (
 	github.com/aws/aws-sdk-go v1.34.28 // indirect
