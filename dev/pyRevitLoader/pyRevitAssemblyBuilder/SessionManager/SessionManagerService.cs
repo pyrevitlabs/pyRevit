@@ -1,39 +1,32 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using pyRevitAssemblyBuilder.AssemblyMaker;
+using pyRevitAssemblyBuilder.FolderParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
-    public class SessionManagerService : ISessionManager
+    public class SessionManagerService
     {
-        private readonly ILogger<SessionManagerService> _logger;
         private readonly AssemblyBuilderService _assemblyBuilder;
-        private readonly IExtensionManager _extensionManager;
-        private readonly IHookManager _hookManager;
-        private readonly IUIManager _uiManager;
+        private readonly ExtensionManagerService _extensionManager;
+        private readonly HookManager _hookManager;
+        private readonly UIManagerService _uiManager;
 
         public SessionManagerService(
-            ILogger<SessionManagerService> logger,
             AssemblyBuilderService assemblyBuilder,
-            IExtensionManager extensionManager,
-            IHookManager hookManager,
-            IUIManager uiManager)
+            ExtensionManagerService extensionManager,
+            HookManager hookManager,
+            UIManagerService uiManager)
         {
-            _logger = logger;
             _assemblyBuilder = assemblyBuilder;
             _extensionManager = extensionManager;
             _hookManager = hookManager;
             _uiManager = uiManager;
         }
 
-        public async Task<string> LoadSessionAsync()
+        public void LoadSession()
         {
-            var stopwatch = Stopwatch.StartNew();
-
-            _logger.LogInformation("[pyRevit] Loading new session...");
-
             var extensions = _extensionManager.GetInstalledExtensions();
             foreach (var ext in extensions)
             {
@@ -41,11 +34,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _uiManager.BuildUI(ext, assmInfo);
                 _hookManager.RegisterHooks(ext);
             }
-
-            stopwatch.Stop();
-            _logger.LogInformation("Session loaded in {Time:F2} sec", stopwatch.Elapsed.TotalSeconds);
-
-            return Guid.NewGuid().ToString(); // simulate session UUID
         }
     }
 }

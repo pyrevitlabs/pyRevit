@@ -3,12 +3,9 @@ using System.IO;
 using System.Reflection;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
-using pyRevitAssemblyBuilder.Shared;
-using pyRevitAssemblyBuilder.Startup;
+using pyRevitAssemblyBuilder.FolderParser;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
@@ -112,31 +109,21 @@ namespace PyRevitLoader
                 var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
                 var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
 
-                var services = new ServiceCollection();
-                services.AddLogging(cfg => cfg.AddDebug());
+                // Instantiate all services
+                var typeGenerator = new CommandTypeGenerator();
+                var assemblyBuilder = new AssemblyBuilderService(typeGenerator, versionNumber);
+                var extensionManager = new ExtensionManagerService();
+                var hookManager = new HookManager();
+                var uiManager = new UIManagerService(uiApplication);
 
-                // Add Revit UIApplication to services
-                services.AddSingleton(uiApplication);
-
-                // Add known services
-                services.AddSingleton<ICommandTypeGenerator, DefaultCommandTypeGenerator>();
-                services.AddSingleton<IHookManager, DummyHookManager>();
-                services.AddSingleton<IUIManager, UIManagerService>();
-                services.AddSingleton<ISessionManager, SessionManagerService>();
-                services.AddSingleton<IExtensionManager, ExtensionManagerService>();
-
-                // Register AssemblyBuilderService with explicit string parameter
-                services.AddSingleton<AssemblyBuilderService>(sp =>
-                    new AssemblyBuilderService(
-                        sp.GetRequiredService<ICommandTypeGenerator>(),
-                        versionNumber
-                    )
+                var sessionManager = new SessionManagerService(
+                    assemblyBuilder,
+                    extensionManager,
+                    hookManager,
+                    uiManager
                 );
 
-                var serviceProvider = services.BuildServiceProvider();
-                var sessionManager = serviceProvider.GetRequiredService<ISessionManager>();
-                sessionManager.LoadSessionAsync().Wait();
-
+                sessionManager.LoadSession();
                 return Result.Succeeded;
             }
             catch (Exception ex)

@@ -8,10 +8,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
     public class AssemblyBuilderService
     {
-        private readonly ICommandTypeGenerator _typeGenerator;
+        private readonly CommandTypeGenerator _typeGenerator;
         private readonly string _revitVersion;
 
-        public AssemblyBuilderService(ICommandTypeGenerator typeGenerator, string revitVersion)
+        public AssemblyBuilderService(CommandTypeGenerator typeGenerator, string revitVersion)
         {
             _typeGenerator = typeGenerator;
             _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
