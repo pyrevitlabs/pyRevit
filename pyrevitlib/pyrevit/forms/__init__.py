@@ -15,7 +15,6 @@ import os.path as op
 import string
 from collections import OrderedDict, namedtuple
 import threading
-from functools import wraps
 import datetime
 import webbrowser
 
@@ -47,7 +46,7 @@ from pyrevit.forms import toaster
 from pyrevit import versionmgr
 from pyrevit.userconfig import user_config
 
-import pyevent  # pylint: disable=import-error
+import pyevent
 
 import Autodesk.Windows.ComponentManager  # pylint: disable=import-error
 import Autodesk.Internal.InfoCenter  # pylint: disable=import-error
@@ -696,7 +695,7 @@ class TemplateUserInputWindow(WPFWindow):
         title="User Input",
         width=DEFAULT_INPUTWINDOW_WIDTH,
         height=DEFAULT_INPUTWINDOW_HEIGHT,
-        **kwargs
+        **kwargs,
     ):
         """Show user input window.
 
@@ -1182,29 +1181,26 @@ class SelectFromList(TemplateUserInputWindow):
         self.search_tb.Focus()
 
     @classmethod
-	    def show(
-	        cls,
-	        context,
-	        title='User Input',
-	        width=DEFAULT_INPUTWINDOW_WIDTH,
-	        height=DEFAULT_INPUTWINDOW_HEIGHT,
-	        exitscript=False
-	        **kwargs
-	    ):
-	        """Show user input window.
-	
-	        Args:
-	            context (any): window context element(s)
-	            width: ...
-	            height: ...
-	            exitscript: exit the script if the user cancels the dialog. Defaults to False
-	        """
-	        dlg = cls(context, title, width, height, **kwargs)
-	        dlg.ShowDialog()
-	
-	        if exitscript and not dlg.response:
-	            sys.exit()
-
+    def show(
+        cls,
+        context,
+        title="User Input",
+        width=DEFAULT_INPUTWINDOW_WIDTH,
+        height=DEFAULT_INPUTWINDOW_HEIGHT,
+        exitscript=False,
+        **kwargs,
+    ):
+        """Show user input window.
+        Args:
+            context (any): window context element(s)
+            width: ...
+            height: ...
+            exitscript: exit the script if the user cancels the dialog. Defaults to False
+        """
+        dlg = cls(context, title, width, height, **kwargs)
+        dlg.ShowDialog()
+        if exitscript and not dlg.response:
+            sys.exit()
         return dlg.response
 
 
@@ -2011,7 +2007,7 @@ class SearchPrompt(WPFWindow):
         search_db,  # pylint: disable=W0221
         width=DEFAULT_SEARCHWND_WIDTH,
         height=DEFAULT_SEARCHWND_HEIGHT,
-        **kwargs
+        **kwargs,
     ):
         """Show search prompt."""
         dlg = cls(search_db, width, height, **kwargs)
@@ -2851,7 +2847,7 @@ def select_family_parameters(
         if not include_labeled and family_param.Id in label_param_ids:
             continue
 
-        associated_to_others = not (family_param.AssociatedParameters.IsEmpty)
+        associated_to_others = not family_param.AssociatedParameters.IsEmpty
         if not include_associated and associated_to_others:
             continue
 
@@ -3556,7 +3552,7 @@ def ask_for_unique_string(
         prompt=prompt,
         title=title,
         reserved_values=reserved_values,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -3593,7 +3589,7 @@ def ask_for_one_item(items, default=None, prompt=None, title=None, **kwargs):
         default=default,
         prompt=prompt,
         title=title,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -3667,7 +3663,7 @@ def ask_for_number_slider(
         max=max,
         min=min,
         interval=interval,
-        **kwargs
+        **kwargs,
     )
 
 
