@@ -697,7 +697,7 @@ class TemplateUserInputWindow(WPFWindow):
         title="User Input",
         width=DEFAULT_INPUTWINDOW_WIDTH,
         height=DEFAULT_INPUTWINDOW_HEIGHT,
-        **kwargs,
+        **kwargs
     ):
         """Show user input window.
 
@@ -2025,7 +2025,7 @@ class SearchPrompt(WPFWindow):
         search_db,  # pylint: disable=W0221
         width=DEFAULT_SEARCHWND_WIDTH,
         height=DEFAULT_SEARCHWND_HEIGHT,
-        **kwargs,
+        **kwargs
     ):
         """Show search prompt."""
         dlg = cls(search_db, width, height, **kwargs)
@@ -3582,7 +3582,7 @@ def ask_for_unique_string(
         prompt=prompt,
         title=title,
         reserved_values=reserved_values,
-        **kwargs,
+        **kwargs
     )
 
 
@@ -3619,7 +3619,7 @@ def ask_for_one_item(items, default=None, prompt=None, title=None, **kwargs):
         default=default,
         prompt=prompt,
         title=title,
-        **kwargs,
+        **kwargs
     )
 
 
@@ -3693,7 +3693,7 @@ def ask_for_number_slider(
         max=max,
         min=min,
         interval=interval,
-        **kwargs,
+        **kwargs
     )
 
 
