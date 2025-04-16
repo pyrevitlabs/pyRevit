@@ -1,18 +1,15 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
-using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.Config;
 using pyRevitAssemblyBuilder.Shared;
 
-namespace pyRevitAssemblyBuilder.SessionManager
+namespace pyRevitAssemblyBuilder.FolderParser
 {
-    public class ExtensionManagerService : IExtensionManager
+    public class ExtensionManagerService
     {
-        private readonly ICommandTypeGenerator _typeGenerator;
-        private readonly IServiceProvider _serviceProvider;
         private readonly List<string> _extensionRoots;
 
         private static readonly string[] BundleTypes = new[]
@@ -20,10 +17,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             ".tab", ".panel", ".stack", ".splitbutton", ".splitpushbutton", ".pulldown", ".smartbutton", ".pushbutton"
         };
 
-        public ExtensionManagerService(IServiceProvider serviceProvider)
+        public ExtensionManagerService()
         {
-            _serviceProvider = serviceProvider;
-            _typeGenerator = _serviceProvider.GetRequiredService<ICommandTypeGenerator>();
             _extensionRoots = GetExtensionRoots();
         }
 
@@ -53,12 +48,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             var roots = new List<string>();
 
-            // Default: 4 folders up + extensions
             var current = Path.GetDirectoryName(typeof(ExtensionManagerService).Assembly.Location);
             var defaultPath = Path.GetFullPath(Path.Combine(current, "..", "..", "..", "..", "extensions"));
             roots.Add(defaultPath);
 
-            // Custom userextensions from config
             var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "pyRevit", "pyRevit_config.ini");
             if (File.Exists(configPath))
             {

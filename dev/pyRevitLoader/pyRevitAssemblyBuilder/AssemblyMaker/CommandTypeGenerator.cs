@@ -4,7 +4,7 @@ using pyRevitAssemblyBuilder.Shared;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
-    public class DefaultCommandTypeGenerator : ICommandTypeGenerator
+    public class CommandTypeGenerator
     {
         public void DefineCommandType(IExtension extension, ICommandComponent command, ModuleBuilder moduleBuilder)
         {
