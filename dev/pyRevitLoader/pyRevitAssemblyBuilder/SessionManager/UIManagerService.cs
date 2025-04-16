@@ -7,7 +7,7 @@ using pyRevitAssemblyBuilder.Shared;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
-    public class UIManagerService : IUIManager
+    public class UIManagerService
     {
         private readonly UIApplication _uiApp;
 
