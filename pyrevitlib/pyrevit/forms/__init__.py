@@ -1239,7 +1239,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         cfgs = {'option1': { 'background': '0xFF55FF'}}
         rops, rswitches = forms.CommandSwitchWindow.show(
             ops,
-            switches=switches
+            switches=switches,
             message='Select Option',
             config=cfgs,
             recognize_access_key=False
