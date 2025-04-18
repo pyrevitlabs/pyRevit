@@ -26,7 +26,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Emit a default constructor
             typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
 
-            // Create the type (works in .NET Standard 2.0 via CreateTypeInfo)
+            // Create the type 
             _ = typeBuilder.CreateTypeInfo();
         }
     }

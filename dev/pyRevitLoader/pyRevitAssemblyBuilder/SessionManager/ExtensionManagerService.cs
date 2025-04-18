@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using pyRevitExtensionParser;
 
-namespace pyRevitAssemblyBuilder.FolderParser
+namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class ExtensionManagerService
     {
