@@ -105,7 +105,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                 {
                                     foreach (var child in origComponent.Children ?? Enumerable.Empty<object>())
                                     {
-                                        if (child is ICommandComponent subCmd &&
+                                        if (child is FileCommandComponent subCmd &&
                                             CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                                         {
                                             var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);

@@ -17,6 +17,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 yield return parsedExtension;
             }
         }
+        private IEnumerable<ParsedComponent> CollectCommandComponents(IEnumerable<ParsedComponent> components)
+        {
+            foreach (var component in components)
+            {
+                if (!string.IsNullOrEmpty(component.ScriptPath))
+                    yield return component;
 
         private void FlattenAndEnrich(IEnumerable<ParsedComponent> components)
         {
