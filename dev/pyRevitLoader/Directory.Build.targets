@@ -17,7 +17,7 @@
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(MSBuildProjectName)' != 'pyRevitAssemblyBuilder' AND $(IronPythonVersion.Contains('PR'))">
+    <ItemGroup Condition="'$(UseIronPython)' != 'false' AND $(IronPythonVersion.Contains('PR'))">
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.dll"/>
         <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.Modules.dll"/>
         <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.SQLite.dll"/>
@@ -26,19 +26,23 @@
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Scripting.dll"/>
     </ItemGroup>
 
-	<ItemGroup Condition="'$(MSBuildProjectName)' != 'pyRevitAssemblyBuilder' AND !$(IronPythonVersion.Contains('PR'))">
+    <ItemGroup Condition="'$(UseIronPython)' != 'false' AND !$(IronPythonVersion.Contains('PR'))">
         <PackageReference Include="IronPython" Version="$(Version)"/>
     </ItemGroup>
     
     <ItemGroup>
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp"/>
     </ItemGroup>
-	
-	<ItemGroup Condition="'$(UseAssemblyBuilder)' == 'true'">
-		<ProjectReference Include="..\pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj" />
-	</ItemGroup>
-	
-	<ItemGroup Condition="'$(MSBuildProjectName)' != 'pyRevitAssemblyBuilder'">
+    
+    <ItemGroup Condition="'$(UseAssemblyBuilder)' == 'true'">
+        <ProjectReference Include="..\pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(UseExtensionParser)' == 'true'">
+        <ProjectReference Include="..\pyRevitExtensionParser\pyRevitExtensionParser.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(UseIronPython)' != 'false'">
         <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)"/>
     </ItemGroup>
 

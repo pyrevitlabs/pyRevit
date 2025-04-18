@@ -19,6 +19,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scaffolding", "Scaffolding"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitAssemblyBuilder", "pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj", "{37607FDE-9E96-28B6-AAB7-975357B22391}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitExtensionParser", "pyRevitExtensionParser\pyRevitExtensionParser.csproj", "{E28B1811-FBD5-F701-8ECA-553894F780EC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Props and Targets - Solution", "Props and Targets - Solution", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Props and Targets - Master", "Props and Targets - Master", "{3744BF2E-E027-4A7E-8E3C-21B56DDB4971}"
+	ProjectSection(SolutionItems) = preProject
+		..\Directory.Build.props = ..\Directory.Build.props
+		..\Directory.Build.targets = ..\Directory.Build.targets
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -45,6 +59,10 @@ Global
 		{37607FDE-9E96-28B6-AAB7-975357B22391}.Debug|x64.Build.0 = Debug|Any CPU
 		{37607FDE-9E96-28B6-AAB7-975357B22391}.Release|x64.ActiveCfg = Release|Any CPU
 		{37607FDE-9E96-28B6-AAB7-975357B22391}.Release|x64.Build.0 = Release|Any CPU
+		{E28B1811-FBD5-F701-8ECA-553894F780EC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E28B1811-FBD5-F701-8ECA-553894F780EC}.Debug|x64.Build.0 = Debug|Any CPU
+		{E28B1811-FBD5-F701-8ECA-553894F780EC}.Release|x64.ActiveCfg = Release|Any CPU
+		{E28B1811-FBD5-F701-8ECA-553894F780EC}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,6 +73,7 @@ Global
 		{B1E9CE55-3A8E-4961-B441-33EEB933E237} = {5D24CE7B-67FD-4685-AC89-578FF15552A2}
 		{C21AE8F2-9A0E-436F-9CBD-B7ED170F85A2} = {74C50D6F-68E5-411B-A781-800BC60C9ECF}
 		{37607FDE-9E96-28B6-AAB7-975357B22391} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{E28B1811-FBD5-F701-8ECA-553894F780EC} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8CC1064C-1D16-446B-B480-989CE124102A}

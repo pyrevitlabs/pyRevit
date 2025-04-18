@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <DisableImplicitProps>true</DisableImplicitProps>
+        <DisableImplicitTargets>true</DisableImplicitTargets>
+        <AssemblyName>pyRevitExtensionParser</AssemblyName>
+        <RootNamespace>pyRevitExtensionParser</RootNamespace>
+        <UseRevit>false</UseRevit>
+        <UseAssemblyBuilder>false</UseAssemblyBuilder>
+        <IronPythonVersion>IPY342</IronPythonVersion>
+        <Version>3.4.2</Version>
+        <UseLoader>false</UseLoader>
+        <UseIronPython>false</UseIronPython>
+        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="ExtensionParser.cs" />
+    </ItemGroup>
+
+</Project>

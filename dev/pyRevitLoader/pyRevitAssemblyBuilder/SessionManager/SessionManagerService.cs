@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using pyRevitAssemblyBuilder.AssemblyMaker;
-using pyRevitAssemblyBuilder.FolderParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
