@@ -25,7 +25,7 @@ namespace pyRevitExtensionParser
                 {
                     var extName = Path.GetFileNameWithoutExtension(extDir);
                     var metadata = ParseMetadata(extDir);
-                    var children = ParseComponents(extDir);
+                    var children = ParseComponents(extDir, extName);
 
                     yield return new ParsedExtension
                     {
@@ -67,25 +67,33 @@ namespace pyRevitExtensionParser
             return roots;
         }
 
-        private static List<ParsedComponent> ParseComponents(string baseDir)
+        private static List<ParsedComponent> ParseComponents(string baseDir, string extensionName, string parentPath = null)
         {
             var components = new List<ParsedComponent>();
 
             foreach (var dir in Directory.GetDirectories(baseDir))
             {
-                var type = Path.GetExtension(dir).ToLowerInvariant();
+                var type = Path.GetExtension(dir);
                 if (!BundleTypes.Contains(type))
                     continue;
 
-                var children = ParseComponents(dir);
+                var namePart = Path.GetFileNameWithoutExtension(dir)
+                                    .Replace(" ", "");
+
+                // Construct full ID path with hyphens
+                var fullPath = string.IsNullOrEmpty(parentPath)
+                    ? $"{extensionName}-{namePart}"
+                    : $"{parentPath}-{namePart}";
+
+                var children = ParseComponents(dir, extensionName, fullPath);
                 var scriptPath = Path.Combine(dir, "script.py");
 
                 components.Add(new ParsedComponent
                 {
-                    Name = Path.GetFileNameWithoutExtension(dir),
+                    Name = namePart,
                     ScriptPath = File.Exists(scriptPath) ? scriptPath : null,
-                    Tooltip = $"Command: {Path.GetFileNameWithoutExtension(dir)}",
-                    UniqueId = $"{Path.GetFileNameWithoutExtension(dir)}.{Path.GetFileNameWithoutExtension(dir)}",
+                    Tooltip = $"Command: {namePart}",
+                    UniqueId = fullPath.ToLowerInvariant(),
                     Type = type,
                     Children = children
                 });
