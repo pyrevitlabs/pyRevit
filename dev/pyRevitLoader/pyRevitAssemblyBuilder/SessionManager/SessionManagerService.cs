@@ -27,6 +27,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public void LoadSession()
         {
             var extensions = _extensionManager.GetInstalledExtensions();
+
             foreach (var ext in extensions)
             {
                 var assmInfo = _assemblyBuilder.BuildExtensionAssembly(ext);

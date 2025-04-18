@@ -1,26 +1,44 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using pyRevitExtensionParser;
-using pyRevitAssemblyBuilder.Shared;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class ExtensionManagerService
     {
-        public IEnumerable<IExtension> GetInstalledExtensions()
+        public IEnumerable<WrappedExtension> GetInstalledExtensions()
         {
-            foreach (var parsedExtension in ExtensionParser.ParseInstalledExtensions())
+            var installedExtensions = ExtensionParser.ParseInstalledExtensions();
+            foreach (var parsedExtension in installedExtensions)
             {
-                yield return new FileSystemExtension(
+                var pushbuttonCommands = CollectCommandComponents(parsedExtension.Children)
+                    .Select(ConvertComponent)
+                    .ToList();
+
+                yield return new WrappedExtension(
                     name: parsedExtension.Name,
                     path: parsedExtension.Directory,
-                    commands: parsedExtension.Children.Select(ConvertComponent).ToList(),
+                    commands: pushbuttonCommands,
+                    children: parsedExtension.Children.Select(ConvertComponent).ToList(),
                     metadata: parsedExtension.Metadata
                 );
             }
         }
+        private IEnumerable<ParsedComponent> CollectCommandComponents(IEnumerable<ParsedComponent> components)
+        {
+            foreach (var component in components)
+            {
+                if (!string.IsNullOrEmpty(component.ScriptPath))
+                    yield return component;
 
-        private ICommandComponent ConvertComponent(ParsedComponent parsed)
+                if (component.Children != null)
+                {
+                    foreach (var child in CollectCommandComponents(component.Children))
+                        yield return child;
+                }
+            }
+        }
+        private FileCommandComponent ConvertComponent(ParsedComponent parsed)
         {
             return new FileCommandComponent
             {
@@ -32,43 +50,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 Type = parsed.Type,
                 Children = parsed.Children?.Select(ConvertComponent).Cast<object>().ToList() ?? new List<object>()
             };
-        }
-
-        private class FileSystemExtension : IExtension
-        {
-            private readonly IEnumerable<ICommandComponent> _commands;
-
-            public FileSystemExtension(string name, string path, IEnumerable<ICommandComponent> commands, ParsedExtensionMetadata metadata)
-            {
-                Name = name;
-                Directory = path;
-                _commands = commands;
-                Metadata = metadata;
-            }
-
-            public string Name { get; }
-            public string Directory { get; }
-            public ParsedExtensionMetadata Metadata { get; }
-
-            public string GetHash() => Directory.GetHashCode().ToString("X");
-
-            public IEnumerable<ICommandComponent> GetAllCommands() => _commands;
-
-            public IEnumerable<object> Children => _commands;
-            public string Type => ".extension";
-
-            object IExtension.Children => Children;
-        }
-
-        private class FileCommandComponent : ICommandComponent
-        {
-            public string Name { get; set; }
-            public string ScriptPath { get; set; }
-            public string Tooltip { get; set; }
-            public string UniqueId { get; set; }
-            public string ExtensionName { get; set; }
-            public string Type { get; set; }
-            public IEnumerable<object> Children { get; set; } = Enumerable.Empty<object>();
         }
     }
 }
