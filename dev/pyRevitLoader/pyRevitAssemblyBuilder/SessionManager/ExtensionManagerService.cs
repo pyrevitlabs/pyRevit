@@ -1,148 +1,44 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Linq;
-using pyRevitAssemblyBuilder.Config;
+using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.Shared;
 
-namespace pyRevitAssemblyBuilder.FolderParser
+namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class ExtensionManagerService
     {
-        private readonly List<string> _extensionRoots;
-
-        private static readonly string[] BundleTypes = new[]
-        {
-            ".tab", ".panel", ".stack", ".splitbutton", ".splitpushbutton", ".pulldown", ".smartbutton", ".pushbutton"
-        };
-
-        public ExtensionManagerService()
-        {
-            _extensionRoots = GetExtensionRoots();
-        }
-
         public IEnumerable<IExtension> GetInstalledExtensions()
         {
-            foreach (var root in _extensionRoots)
+            foreach (var parsedExtension in ExtensionParser.ParseInstalledExtensions())
             {
-                if (!Directory.Exists(root))
-                    continue;
-
-                foreach (var dir in Directory.GetDirectories(root))
-                {
-                    if (!dir.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    var extensionName = Path.GetFileNameWithoutExtension(dir);
-                    var metadata = LoadMetadata(dir);
-                    var children = LoadBundleComponents(dir);
-
-                    if (children.Any())
-                        yield return new FileSystemExtension(extensionName, dir, children, metadata);
-                }
+                yield return new FileSystemExtension(
+                    name: parsedExtension.Name,
+                    path: parsedExtension.Directory,
+                    commands: parsedExtension.Children.Select(ConvertComponent).ToList(),
+                    metadata: parsedExtension.Metadata
+                );
             }
         }
 
-        private List<string> GetExtensionRoots()
+        private ICommandComponent ConvertComponent(ParsedComponent parsed)
         {
-            var roots = new List<string>();
-
-            var current = Path.GetDirectoryName(typeof(ExtensionManagerService).Assembly.Location);
-            var defaultPath = Path.GetFullPath(Path.Combine(current, "..", "..", "..", "..", "extensions"));
-            roots.Add(defaultPath);
-
-            var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "pyRevit", "pyRevit_config.ini");
-            if (File.Exists(configPath))
-            {
-                var config = PyRevitConfig.Load(configPath);
-                if (config.UserExtensions != null && config.UserExtensions.Count > 0)
-                    roots.AddRange(config.UserExtensions);
-            }
-
-            return roots;
-        }
-
-        private IEnumerable<ICommandComponent> LoadBundleComponents(string baseDir)
-        {
-            var components = new List<ICommandComponent>();
-
-            foreach (var dir in Directory.GetDirectories(baseDir))
-            {
-                var type = Path.GetExtension(dir).ToLowerInvariant();
-                if (!BundleTypes.Contains(type))
-                    continue;
-
-                components.Add(ParseComponent(dir, type));
-            }
-
-            return components;
-        }
-
-        private FileCommandComponent ParseComponent(string dir, string type)
-        {
-            var name = Path.GetFileNameWithoutExtension(dir);
-            var children = LoadBundleComponents(dir);
-            var scriptPath = Path.Combine(dir, "script.py");
-
             return new FileCommandComponent
             {
-                Name = name,
-                ScriptPath = File.Exists(scriptPath) ? scriptPath : null,
-                Tooltip = $"Command: {name}",
-                UniqueId = $"{Path.GetFileNameWithoutExtension(dir)}.{name}",
-                ExtensionName = FindExtensionNameFromPath(dir),
-                Type = type,
-                Children = children.Cast<object>().ToList()
+                Name = parsed.Name,
+                ScriptPath = parsed.ScriptPath,
+                Tooltip = parsed.Tooltip,
+                UniqueId = parsed.UniqueId,
+                ExtensionName = parsed.UniqueId.Split('.')[0],
+                Type = parsed.Type,
+                Children = parsed.Children?.Select(ConvertComponent).Cast<object>().ToList() ?? new List<object>()
             };
-        }
-
-        private string FindExtensionNameFromPath(string path)
-        {
-            var segments = path.Split(Path.DirectorySeparatorChar);
-            var extDir = segments.FirstOrDefault(s => s.EndsWith(".extension"));
-            return extDir != null ? Path.GetFileNameWithoutExtension(extDir) : "UnknownExtension";
-        }
-
-        private ExtensionMetadata LoadMetadata(string extensionPath)
-        {
-            var yamlPath = Path.Combine(extensionPath, "extension.yaml");
-            if (!File.Exists(yamlPath))
-                return null;
-
-            try
-            {
-                var yamlText = File.ReadAllText(yamlPath);
-                return ParseYamlToMetadata(yamlText);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private ExtensionMetadata ParseYamlToMetadata(string yaml)
-        {
-            var metadata = new ExtensionMetadata();
-            var lines = yaml.Split('\n');
-            foreach (var line in lines)
-            {
-                var trimmed = line.Trim();
-                if (trimmed.StartsWith("author:"))
-                    metadata.Author = trimmed.Substring("author:".Length).Trim();
-                else if (trimmed.StartsWith("version:"))
-                    metadata.Version = trimmed.Substring("version:".Length).Trim();
-                else if (trimmed.StartsWith("description:"))
-                    metadata.Description = trimmed.Substring("description:".Length).Trim();
-            }
-            return metadata;
         }
 
         private class FileSystemExtension : IExtension
         {
             private readonly IEnumerable<ICommandComponent> _commands;
 
-            public FileSystemExtension(string name, string path, IEnumerable<ICommandComponent> commands, ExtensionMetadata metadata)
+            public FileSystemExtension(string name, string path, IEnumerable<ICommandComponent> commands, ParsedExtensionMetadata metadata)
             {
                 Name = name;
                 Directory = path;
@@ -152,7 +48,7 @@ namespace pyRevitAssemblyBuilder.FolderParser
 
             public string Name { get; }
             public string Directory { get; }
-            public ExtensionMetadata Metadata { get; }
+            public ParsedExtensionMetadata Metadata { get; }
 
             public string GetHash() => Directory.GetHashCode().ToString("X");
 
@@ -173,13 +69,6 @@ namespace pyRevitAssemblyBuilder.FolderParser
             public string ExtensionName { get; set; }
             public string Type { get; set; }
             public IEnumerable<object> Children { get; set; } = Enumerable.Empty<object>();
-        }
-
-        public class ExtensionMetadata
-        {
-            public string Author { get; set; }
-            public string Version { get; set; }
-            public string Description { get; set; }
         }
     }
 }
