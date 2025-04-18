@@ -5,7 +5,6 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
-using pyRevitAssemblyBuilder.FolderParser;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.

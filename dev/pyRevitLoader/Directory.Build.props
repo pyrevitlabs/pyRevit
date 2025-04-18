@@ -4,9 +4,8 @@
         <UseRevit>true</UseRevit>
         <UseWpf>true</UseWpf>
         <UseWindowsForms>true</UseWindowsForms>
-		<UseAssemblyBuilder>true</UseAssemblyBuilder>
+        <UseAssemblyBuilder>true</UseAssemblyBuilder>
         <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
-       
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     </PropertyGroup>
     
