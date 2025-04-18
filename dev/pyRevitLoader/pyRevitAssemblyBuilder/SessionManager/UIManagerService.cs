@@ -16,7 +16,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _uiApp = uiApp;
         }
 
-        public void BuildUI(IExtension extension, ExtensionAssemblyInfo assemblyInfo)
+        public void BuildUI(WrappedExtension extension, ExtensionAssemblyInfo assemblyInfo)
         {
             if (extension?.Children == null)
                 return;
@@ -27,7 +27,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         private void RecursivelyBuildUI(object obj, object parentComponent, RibbonPanel parentPanel, string tabName, ExtensionAssemblyInfo assemblyInfo)
         {
-            var component = obj as ICommandComponent;
+            var component = obj as FileCommandComponent;
             if (component == null)
                 return;
 
@@ -50,11 +50,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 case CommandComponentType.Stack:
                     var itemDataList = new List<RibbonItemData>();
-                    var originalItems = new List<ICommandComponent>();
+                    var originalItems = new List<FileCommandComponent>();
 
                     foreach (var child in component.Children as IEnumerable<object> ?? Enumerable.Empty<object>())
                     {
-                        var subCmd = child as ICommandComponent;
+                        var subCmd = child as FileCommandComponent;
                         if (subCmd == null)
                             continue;
 
@@ -93,7 +93,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                 {
                                     foreach (var child in origComponent.Children ?? Enumerable.Empty<object>())
                                     {
-                                        if (child is ICommandComponent subCmd &&
+                                        if (child is FileCommandComponent subCmd &&
                                             CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                                         {
                                             var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);
@@ -125,7 +125,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                     foreach (var child in component.Children ?? Enumerable.Empty<object>())
                     {
-                        if (child is ICommandComponent subCmd &&
+                        if (child is FileCommandComponent subCmd &&
                             CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                         {
                             var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);
@@ -137,7 +137,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         private PulldownButtonData CreatePulldown(
-            ICommandComponent component,
+            FileCommandComponent component,
             RibbonPanel parentPanel,
             string tabName,
             ExtensionAssemblyInfo assemblyInfo,
@@ -155,7 +155,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             foreach (var child in component.Children ?? Enumerable.Empty<object>())
             {
-                if (child is ICommandComponent subCmd &&
+                if (child is FileCommandComponent subCmd &&
                     CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                 {
                     var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);

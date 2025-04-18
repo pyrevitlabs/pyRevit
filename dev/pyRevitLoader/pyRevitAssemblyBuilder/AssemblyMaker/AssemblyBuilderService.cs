@@ -2,7 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using pyRevitAssemblyBuilder.Shared;
+using pyRevitAssemblyBuilder.SessionManager;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
@@ -17,7 +17,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
         }
 
-        public ExtensionAssemblyInfo BuildExtensionAssembly(IExtension extension)
+        public ExtensionAssemblyInfo BuildExtensionAssembly(WrappedExtension extension)
         {
             string extensionHash = GetStableHash(extension.GetHash() + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{extensionHash}_{extension.Name}.dll";
@@ -31,6 +31,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             string outputPath = Path.Combine(outputDir, fileName);
 
+            // TODO: Put the right version here
             var asmName = new AssemblyName(extension.Name)
             {
                 Version = new Version(1, 0, 0, 0)
@@ -46,12 +47,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             var asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
             var moduleBuilder = asmBuilder.DefineDynamicModule(fileNameWithoutExt);
 #endif
-
             foreach (var cmd in extension.GetAllCommands())
             {
                 _typeGenerator.DefineCommandType(extension, cmd, moduleBuilder);
             }
-
 #if NETFRAMEWORK
             asmBuilder.Save(fileName);
 #else
