@@ -1,8 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Text;
+using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using pyRevitAssemblyBuilder.SessionManager;
+using System.Reflection;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
@@ -30,58 +33,75 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             Directory.CreateDirectory(outputDir);
 
             string outputPath = Path.Combine(outputDir, fileName);
+            string code = _typeGenerator.GenerateExtensionCode(extension);
 
-            // TODO: Put the right version here
-            var asmName = new AssemblyName(extension.Name)
+            File.WriteAllText(Path.Combine(outputDir, $"{extension.Name}_Generated.cs"), code);
+
+            var syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+            var references = new List<MetadataReference>
             {
-                Version = new Version(1, 0, 0, 0)
+                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+                MetadataReference.CreateFromFile(@"C:\Program Files\Autodesk\Revit 2025\RevitAPI.dll"),
+                MetadataReference.CreateFromFile(@"C:\Program Files\Autodesk\Revit 2025\RevitAPIUI.dll"),
+                MetadataReference.CreateFromFile(@"C:\Users\Equipo\dev\romangolev\pyRevit\bin\netcore\engines\IPY342\pyRevitLabs.PyRevit.Runtime.2025.dll")
             };
 
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(outputPath);
+            string runtimePath = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "System.Runtime.dll");
+            if (File.Exists(runtimePath))
+                references.Add(MetadataReference.CreateFromFile(runtimePath));
 
-#if NETFRAMEWORK
-            var domain = AppDomain.CurrentDomain;
-            var asmBuilder = domain.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.RunAndSave, outputDir);
-            var moduleBuilder = asmBuilder.DefineDynamicModule(fileNameWithoutExt, fileName);
-#else
-            var asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
-            var moduleBuilder = asmBuilder.DefineDynamicModule(fileNameWithoutExt);
-#endif
-            foreach (var cmd in extension.GetAllCommands())
+            var compilation = CSharpCompilation.Create(
+                Path.GetFileNameWithoutExtension(outputPath),
+                syntaxTrees: new[] { syntaxTree },
+                references: references,
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, optimizationLevel: OptimizationLevel.Release));
+
+            using (var dllStream = new FileStream(outputPath, FileMode.Create))
             {
-                _typeGenerator.DefineCommandType(extension, cmd, moduleBuilder);
+                var result = compilation.Emit(dllStream);
+                if (!result.Success)
+                {
+                    Console.WriteLine("=== Roslyn Compilation Errors ===");
+                    foreach (var diagnostic in result.Diagnostics)
+                    {
+                        if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        {
+                            Console.WriteLine($"ERROR {diagnostic.Id}: {diagnostic.GetMessage()}");
+                            Console.WriteLine($"Location: {diagnostic.Location.GetLineSpan()}");
+                        }
+                        else if (diagnostic.Severity == DiagnosticSeverity.Warning)
+                        {
+                            Console.WriteLine($"WARNING {diagnostic.Id}: {diagnostic.GetMessage()}");
+                        }
+                    }
+                    Console.WriteLine("=================================");
+                    throw new Exception("Assembly compilation failed");
+                }
             }
-#if NETFRAMEWORK
-            asmBuilder.Save(fileName);
-#else
-            var generator = new Lokad.ILPack.AssemblyGenerator();
-            generator.GenerateAssembly(asmBuilder, outputPath);
-#endif
 
             return new ExtensionAssemblyInfo(
                 name: extension.Name,
                 location: outputPath,
-                isReloading: CheckIfExtensionAlreadyLoaded(extension.Name)
+                isReloading: false
             );
-        }
-
-        private bool CheckIfExtensionAlreadyLoaded(string extensionName)
-        {
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (asm.GetName().Name == extensionName)
-                    return true;
-            }
-            return false;
         }
 
         private static string GetStableHash(string input)
         {
             using (var sha1 = System.Security.Cryptography.SHA1.Create())
             {
-                var hash = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+                var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
                 return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
             }
+        }
+        public void LoadAssembly(ExtensionAssemblyInfo assemblyInfo)
+        {
+            if (!File.Exists(assemblyInfo.Location))
+                throw new FileNotFoundException("Assembly file not found", assemblyInfo.Location);
+
+            Assembly.LoadFrom(assemblyInfo.Location);
         }
     }
 }

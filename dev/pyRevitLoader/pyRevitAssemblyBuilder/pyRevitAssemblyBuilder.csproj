@@ -10,8 +10,7 @@
         <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
         <IronPythonVersion>IPY342</IronPythonVersion>
         <Version>3.4.2</Version>
+        <UseRoslyn>true</UseRoslyn>
+        <LangVersion>10.0</LangVersion>
     </PropertyGroup>
-    <ItemGroup>
-        <PackageReference Include="Lokad.ILPack" Version="0.3.0" />
-    </ItemGroup>
 </Project>

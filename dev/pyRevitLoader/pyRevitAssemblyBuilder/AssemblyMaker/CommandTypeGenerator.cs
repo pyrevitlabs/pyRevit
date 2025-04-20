@@ -1,99 +1,96 @@
 ﻿using System;
-using System.ComponentModel;
 using System.IO;
+using System.Text;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using pyRevitAssemblyBuilder.SessionManager;
+using Autodesk.Revit.Attributes;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
     public class CommandTypeGenerator
     {
-        private static Type _scriptCommandBaseType;
-
-        public CommandTypeGenerator()
+        public string GenerateExtensionCode(WrappedExtension extension)
         {
-            var runtimeAssembly = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(a => a.FullName.StartsWith("pyRevitLabs.PyRevit.Runtime"));
-
-            if (runtimeAssembly == null)
-                throw new InvalidOperationException("ScriptCommand base types could not be resolved. Ensure PyRevitLabs.PyRevit.Runtime is loaded.");
-
-            _scriptCommandBaseType = runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptCommand")
-                ?? throw new InvalidOperationException("ScriptCommand type not found in runtime assembly.");
+            var sb = new StringBuilder();
+            sb.AppendLine("#nullable disable");
+            //sb.AppendLine("using System;");
+            //sb.AppendLine("using System.ComponentModel;");
+            sb.AppendLine("using Autodesk.Revit.Attributes;");
+            //sb.AppendLine("using Autodesk.Revit.UI;");
+            sb.AppendLine("using PyRevitLabs.PyRevit.Runtime;");
+            foreach (var cmd in extension.GetAllCommands())
+            {
+                // Replace invalid characters with underscores for valid C# identifiers
+                string safeClassName = SanitizeClassName(cmd.UniqueId);
+                string originalUniqueName = cmd.UniqueId;
+                string scriptPath = cmd.ScriptPath;
+                string searchPaths = string.Join(";", new[] {
+                    Path.GetDirectoryName(cmd.ScriptPath),
+                    Path.Combine(extension.Directory, "lib"),
+                    Path.Combine(extension.Directory, "..", "..", "pyrevitlib"),
+                    Path.Combine(extension.Directory, "..", "..", "site-packages")
+                });
+                string tooltip = cmd.Tooltip ?? "";
+                string name = cmd.Name;
+                string bundle = Path.GetFileName(Path.GetDirectoryName(cmd.ScriptPath));
+                string extName = extension.Name;
+                string ctrlId = $"CustomCtrl_%{extName}%{bundle}%{name}";
+                string engineCfgs = @"{""clean"": false, ""persistent"": false, ""full_frame"": false}";
+                sb.AppendLine();
+                sb.AppendLine("[Regeneration(RegenerationOption.Manual)]");
+                sb.AppendLine("[Transaction(TransactionMode.Manual)]");
+                sb.AppendLine($"public class {safeClassName} : ScriptCommand");
+                sb.AppendLine("{");
+                sb.AppendLine($"    public {safeClassName}()");
+                sb.AppendLine("        : base(");
+                sb.AppendLine($"            @\"{Escape(scriptPath)}\",");
+                sb.AppendLine($"            @\"{Escape(scriptPath)}\",");
+                sb.AppendLine($"            @\"{Escape(searchPaths)}\",");
+                sb.AppendLine("            \"\",");
+                sb.AppendLine("            \"\",");
+                sb.AppendLine($"            @\"{Escape(tooltip)}\",");
+                sb.AppendLine($"            \"{Escape(name)}\",");
+                sb.AppendLine($"            \"{Escape(bundle)}\",");
+                sb.AppendLine($"            \"{Escape(extName)}\",");
+                sb.AppendLine($"            \"{originalUniqueName}\",");
+                sb.AppendLine($"            \"{Escape(ctrlId)}\",");
+                sb.AppendLine("            \"(zero-doc)\",");
+                sb.AppendLine($"            @\"{EscapeJsonForVerbatimString(engineCfgs)}\"");
+                sb.AppendLine("        )");
+                sb.AppendLine("    {");
+                sb.AppendLine("    }");
+                sb.AppendLine("}");
+            }
+            return sb.ToString();
         }
 
-        public void DefineCommandType(WrappedExtension extension, FileCommandComponent command, ModuleBuilder moduleBuilder)
+        private static string SanitizeClassName(string name)
         {
-            // TODO: try to build assemblies in the isolated context with referencies
-            //var typeBuilder = moduleBuilder.DefineType(
-            //    fullTypeName,
-            //    TypeAttributes.Public | TypeAttributes.Class,
-            //    _scriptCommandBaseType
-            //);
-
-            var typeBuilder = moduleBuilder.DefineType(
-                command.UniqueId,
-                TypeAttributes.Public | TypeAttributes.Class
-            );
-            // Add Description attribute
-            var descAttrCtor = typeof(DescriptionAttribute).GetConstructor(new[] { typeof(string) });
-            var descAttr = new CustomAttributeBuilder(descAttrCtor, new object[] { command.Tooltip ?? "" });
-            typeBuilder.SetCustomAttribute(descAttr);
-
-            var ctorParams = Enumerable.Repeat(typeof(string), 13).ToArray();
-
-            var baseCtor = _scriptCommandBaseType.GetConstructor(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                null, ctorParams, null
-            );
-
-            if (baseCtor == null)
-                throw new InvalidOperationException("Could not find ScriptCommand base constructor.");
-
-            var ctorBuilder = typeBuilder.DefineConstructor(
-                MethodAttributes.Public,
-                CallingConventions.Standard,
-                Type.EmptyTypes
-            );
-
-            var il = ctorBuilder.GetILGenerator();
-
-            // Setup constructor arguments
-            string scriptPath = command.ScriptPath;
-            string configScriptPath = null;
-            string searchPaths = string.Join(";", new[]
+            var sb = new StringBuilder();
+            foreach (char c in name)
             {
-                Path.GetDirectoryName(command.ScriptPath),
-                Path.Combine(extension.Directory, "lib"),
-                Path.Combine(extension.Directory, "..", "..", "pyrevitlib"),
-                Path.Combine(extension.Directory, "..", "..", "site-packages")
-            });
-            string args = "";
-            string help = "";
-            string tooltip = command.Tooltip ?? "";
-            string name = command.Name;
-            string bundle = Path.GetFileName(Path.GetDirectoryName(command.ScriptPath));
-            string extName = extension.Name;
-            string uniqueName = command.UniqueId;
-            string ctrlId = $"CustomCtrl_%{extName}%{bundle}%{name}";
-            string context = "(zero-doc)";
-            string engineCfgs = "{\"clean\": false, \"persistent\": false, \"full_frame\": false}";
-
-            foreach (var arg in new[]
-            {
-                scriptPath, configScriptPath, searchPaths, args, help,
-                tooltip, name, bundle, extName, uniqueName, ctrlId, context, engineCfgs
-            })
-            {
-                il.Emit(OpCodes.Ldstr, arg ?? string.Empty);
+                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
             }
+            return sb.ToString();
+        }
 
-            il.Emit(OpCodes.Call, baseCtor);
-            il.Emit(OpCodes.Ret);
+        private static string Escape(string str)
+        {
+            return str?
+                .Replace("\"", "\"\"") // for verbatim strings
+                .Replace("\r", "")
+                .Replace("\n", "\\n")
+                ?? "";
+        }
 
-            typeBuilder.CreateType();
+        private static string EscapeJsonForVerbatimString(string jsonStr)
+        {
+            // This method specifically handles JSON strings in verbatim string literals
+            // It properly escapes quotes by doubling them
+            if (string.IsNullOrEmpty(jsonStr))
+                return "";
+
+            return jsonStr.Replace("\"", "\"\"");
         }
     }
 }
