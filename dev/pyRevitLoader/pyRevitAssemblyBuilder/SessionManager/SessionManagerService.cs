@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using pyRevitAssemblyBuilder.AssemblyMaker;
+﻿using pyRevitAssemblyBuilder.AssemblyMaker;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -31,6 +28,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             foreach (var ext in extensions)
             {
                 var assmInfo = _assemblyBuilder.BuildExtensionAssembly(ext);
+                _assemblyBuilder.LoadAssembly(assmInfo);
                 _uiManager.BuildUI(ext, assmInfo);
                 _hookManager.RegisterHooks(ext);
             }

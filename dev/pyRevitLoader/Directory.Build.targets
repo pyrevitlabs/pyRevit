@@ -45,7 +45,11 @@
     <ItemGroup Condition="'$(UseIronPython)' != 'false'">
         <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)"/>
     </ItemGroup>
-
+    
+    <ItemGroup Condition="'$(UseRoslyn)' == 'true'">
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
+	</ItemGroup>
+    
     <Target Name="Deploy" AfterTargets="AfterBuild">
         <ItemGroup>
             <AllFilesToCopy Include="$(TargetDir)\**\*.dll"
