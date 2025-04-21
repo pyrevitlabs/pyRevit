@@ -80,10 +80,10 @@ namespace pyRevitExtensionParser
                 var namePart = Path.GetFileNameWithoutExtension(dir)
                                     .Replace(" ", "");
 
-                // Construct full ID path with hyphens
+                // Construct full ID path with underscores
                 var fullPath = string.IsNullOrEmpty(parentPath)
-                    ? $"{extensionName}-{namePart}"
-                    : $"{parentPath}-{namePart}";
+                    ? $"{extensionName}_{namePart}"
+                    : $"{parentPath}_{namePart}";
 
                 var children = ParseComponents(dir, extensionName, fullPath);
                 var scriptPath = Path.Combine(dir, "script.py");

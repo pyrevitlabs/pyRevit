@@ -248,12 +248,16 @@ def _new_session():
         uimaker.reflow_pyrevit_ui()
 
 
-def load_session():
+def load_session(light=False):
     """Handles loading/reloading of the pyRevit addin and extensions.
 
     To create a proper ui, pyRevit extensions needs to be properly parsed and
     a dll assembly needs to be created. This function handles these tasks
     through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
+
+    Load session now takes a light parameter that will skip the assembly creation
+    and UI creation. This is for the case when pyRevitAssemblyMaker.dll is 
+    used to create the assembly and UI
 
     Examples:
         ```python
@@ -282,7 +286,7 @@ def load_session():
     _perform_onsessionloadstart_ops()
 
     # create a new session
-    _new_session()
+    _new_session() if not light else None
 
     # perform post-load tasks
     _perform_onsessionloadcomplete_ops()

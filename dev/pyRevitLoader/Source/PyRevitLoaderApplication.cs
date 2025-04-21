@@ -72,8 +72,8 @@ namespace PyRevitLoader
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
         {
             //TODO: Implement a switcher here to be able to switch between Python/C# loaders
-            //return ExecuteStartUpPython(uiControlledApplication);
-            return ExecuteStartUpCsharp(uiControlledApplication);
+            return ExecuteStartUpPython(uiControlledApplication);
+            //return ExecuteStartUpCsharp(uiControlledApplication);
         }
 
         public static Result ExecuteStartUpPython(UIControlledApplication uiControlledApplication)
@@ -86,7 +86,7 @@ namespace PyRevitLoader
             var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
             // execute StartupScript
             Result result = Result.Succeeded;
-            var startupScript = GetStartupScriptPath();
+            var startupScript = GetStartupScriptPath(false);
             if (startupScript != null)
             {
                 var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
@@ -123,6 +123,22 @@ namespace PyRevitLoader
                 );
 
                 sessionManager.LoadSession();
+
+                // execute light version of StartupScript python script  
+                Result result = Result.Succeeded;
+                var startupScript = GetStartupScriptPath(true);
+                if (startupScript != null)
+                {
+                    var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
+                    result = executor.ExecuteScript(startupScript);
+                    if (result == Result.Failed)
+                    {
+                        TaskDialog.Show("Error Loading pyRevit", executor.Message);
+                    }
+                }
+
+
+
                 return Result.Succeeded;
             }
             catch (Exception ex)
@@ -131,13 +147,13 @@ namespace PyRevitLoader
                 return Result.Failed;
             }
         }
-        private static string GetStartupScriptPath()
+        private static string GetStartupScriptPath(bool isLight)
         {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dllDir = Path.GetDirectoryName(loaderDir);
-            return Path.Combine(dllDir, string.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
+            var formattedName = isLight ? "{0}Light.py" : "{0}.py";
+            return Path.Combine(dllDir, string.Format(formattedName, Assembly.GetExecutingAssembly().GetName().Name));
         }
-
         Result IExternalApplication.OnShutdown(UIControlledApplication application)
         {
             // FIXME: deallocate the python shell...

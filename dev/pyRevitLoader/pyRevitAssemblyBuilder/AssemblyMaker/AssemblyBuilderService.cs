@@ -36,16 +36,21 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             string code = _typeGenerator.GenerateExtensionCode(extension);
 
             File.WriteAllText(Path.Combine(outputDir, $"{extension.Name}_Generated.cs"), code);
-
             var syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+            // Resolve relative paths to dependencies
+            string currentAssemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string revitApiPath = Path.Combine(AppContext.BaseDirectory, "RevitAPI.dll");
+            string revitApiUIPath = Path.Combine(AppContext.BaseDirectory, "RevitAPIUI.dll");
+            string runtimeDllPath = Path.Combine(currentAssemblyDir, $"pyRevitLabs.PyRevit.Runtime.{_revitVersion}.dll");
 
             var references = new List<MetadataReference>
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-                MetadataReference.CreateFromFile(@"C:\Program Files\Autodesk\Revit 2025\RevitAPI.dll"),
-                MetadataReference.CreateFromFile(@"C:\Program Files\Autodesk\Revit 2025\RevitAPIUI.dll"),
-                MetadataReference.CreateFromFile(@"C:\Users\Equipo\dev\romangolev\pyRevit\bin\netcore\engines\IPY342\pyRevitLabs.PyRevit.Runtime.2025.dll")
+                MetadataReference.CreateFromFile(revitApiPath),
+                MetadataReference.CreateFromFile(revitApiUIPath),
+                MetadataReference.CreateFromFile(runtimeDllPath)
             };
 
             string runtimePath = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "System.Runtime.dll");

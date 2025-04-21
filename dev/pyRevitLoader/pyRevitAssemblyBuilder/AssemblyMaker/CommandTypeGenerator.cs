@@ -13,10 +13,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         {
             var sb = new StringBuilder();
             sb.AppendLine("#nullable disable");
-            //sb.AppendLine("using System;");
-            //sb.AppendLine("using System.ComponentModel;");
             sb.AppendLine("using Autodesk.Revit.Attributes;");
-            //sb.AppendLine("using Autodesk.Revit.UI;");
             sb.AppendLine("using PyRevitLabs.PyRevit.Runtime;");
             foreach (var cmd in extension.GetAllCommands())
             {
