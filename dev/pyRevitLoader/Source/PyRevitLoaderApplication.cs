@@ -118,6 +118,22 @@ namespace PyRevitLoader
                 );
 
                 sessionManager.LoadSession();
+
+                // execute light version of StartupScript python script  
+                Result result = Result.Succeeded;
+                var startupScript = GetStartupScriptPath(true);
+                if (startupScript != null)
+                {
+                    var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
+                    result = executor.ExecuteScript(startupScript);
+                    if (result == Result.Failed)
+                    {
+                        TaskDialog.Show("Error Loading pyRevit", executor.Message);
+                    }
+                }
+
+
+
                 return Result.Succeeded;
             }
             catch (Exception ex)

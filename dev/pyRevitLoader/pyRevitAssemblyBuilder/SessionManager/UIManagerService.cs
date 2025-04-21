@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.UI;
@@ -108,7 +109,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                         if (child is FileCommandComponent subCmd &&
                                             CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                                         {
-                                            var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);
+                                            var subData = CreatePushButton(subCmd, assemblyInfo);
                                             pdBtn.AddPushButton(subData);
                                         }
                                     }
@@ -117,6 +118,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         }
                     }
                     break;
+
                 case CommandComponentType.PushButton:
                 case CommandComponentType.SmartButton:
                     var pbData = CreatePushButton(component, assemblyInfo);
