@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.UI;
@@ -62,14 +63,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                         if (subType == CommandComponentType.PushButton)
                         {
-                            itemDataList.Add(new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId));
+                            itemDataList.Add(CreatePushButton(subCmd, assemblyInfo));
                             originalItems.Add(subCmd);
                         }
                         else if (subType == CommandComponentType.PullDown)
                         {
                             var pdData = new PulldownButtonData(subCmd.UniqueId, subCmd.Name);
                             itemDataList.Add(pdData);
-                            originalItems.Add(subCmd); // to match later
+                            originalItems.Add(subCmd);
                         }
                     }
 
@@ -81,7 +82,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         else if (itemDataList.Count >= 3)
                             stackedItems = parentPanel?.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
 
-                        // Now post-process pulldowns to add nested pushbuttons
                         if (stackedItems != null)
                         {
                             for (int i = 0; i < stackedItems.Count; i++)
@@ -96,7 +96,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                         if (child is FileCommandComponent subCmd &&
                                             CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                                         {
-                                            var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);
+                                            var subData = CreatePushButton(subCmd, assemblyInfo);
                                             pdBtn.AddPushButton(subData);
                                         }
                                     }
@@ -105,9 +105,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         }
                     }
                     break;
+
                 case CommandComponentType.PushButton:
                 case CommandComponentType.SmartButton:
-                    var pbData = new PushButtonData(component.UniqueId, component.Name, assemblyInfo.Location, component.UniqueId);
+                    var pbData = CreatePushButton(component, assemblyInfo);
                     var btn = parentPanel?.AddItem(pbData) as PushButton;
                     if (!string.IsNullOrEmpty(component.Tooltip))
                         btn.ToolTip = component.Tooltip;
@@ -128,7 +129,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         if (child is FileCommandComponent subCmd &&
                             CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                         {
-                            var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);
+                            var subData = CreatePushButton(subCmd, assemblyInfo);
                             splitBtn.AddPushButton(subData);
                         }
                     }
@@ -152,18 +153,27 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (pdBtn == null)
                 return null;
 
-
             foreach (var child in component.Children ?? Enumerable.Empty<object>())
             {
                 if (child is FileCommandComponent subCmd &&
                     CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
                 {
-                    var subData = new PushButtonData(subCmd.UniqueId, subCmd.Name, assemblyInfo.Location, subCmd.UniqueId);
+                    var subData = CreatePushButton(subCmd, assemblyInfo);
                     pdBtn.AddPushButton(subData);
                 }
             }
 
             return pdData;
+        }
+
+        private PushButtonData CreatePushButton(FileCommandComponent command, ExtensionAssemblyInfo assemblyInfo)
+        {
+            return new PushButtonData(
+                command.UniqueId,
+                command.Name,
+                assemblyInfo.Location,
+                command.UniqueId
+            );
         }
     }
 }
