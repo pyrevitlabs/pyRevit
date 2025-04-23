@@ -1,4 +1,5 @@
-﻿using System;
+﻿using pyRevitExtensionParser;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class HookManager
     {
-        public void RegisterHooks(WrappedExtension extension)
+        public void RegisterHooks(ParsedExtension extension)
         {
             if (extension == null)
                 return;
@@ -28,7 +29,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Future: implement actual execution logic for scripts if needed
         }
 
-        private IEnumerable<string> GetHookScripts(WrappedExtension extension)
+        private IEnumerable<string> GetHookScripts(ParsedExtension extension)
         {
             var hooksPath = Path.Combine(extension.Directory, "hooks");
             return Directory.Exists(hooksPath)
@@ -36,7 +37,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 : Enumerable.Empty<string>();
         }
 
-        private IEnumerable<string> GetCheckScripts(WrappedExtension extension)
+        private IEnumerable<string> GetCheckScripts(ParsedExtension extension)
         {
             var checksPath = Path.Combine(extension.Directory, "checks");
             return Directory.Exists(checksPath)

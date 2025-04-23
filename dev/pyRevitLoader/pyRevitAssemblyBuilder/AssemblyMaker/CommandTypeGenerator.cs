@@ -1,21 +1,19 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text;
-using System.Linq;
-using pyRevitAssemblyBuilder.SessionManager;
-using Autodesk.Revit.Attributes;
+using pyRevitExtensionParser;
+using System.Collections.Generic;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
     public class CommandTypeGenerator
     {
-        public string GenerateExtensionCode(WrappedExtension extension)
+        public string GenerateExtensionCode(ParsedExtension extension)
         {
             var sb = new StringBuilder();
             sb.AppendLine("#nullable disable");
             sb.AppendLine("using Autodesk.Revit.Attributes;");
             sb.AppendLine("using PyRevitLabs.PyRevit.Runtime;");
-            foreach (var cmd in extension.GetAllCommands())
+            foreach (var cmd in CollectCommandComponents(extension.Children))
             {
                 // Replace invalid characters with underscores for valid C# identifiers
                 string safeClassName = SanitizeClassName(cmd.UniqueId);
@@ -60,7 +58,20 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
             return sb.ToString();
         }
+        private IEnumerable<ParsedComponent> CollectCommandComponents(IEnumerable<ParsedComponent> components)
+        {
+            foreach (var component in components)
+            {
+                if (!string.IsNullOrEmpty(component.ScriptPath))
+                    yield return component;
 
+                if (component.Children != null)
+                {
+                    foreach (var child in CollectCommandComponents(component.Children))
+                        yield return child;
+                }
+            }
+        }
         private static string SanitizeClassName(string name)
         {
             var sb = new StringBuilder();
