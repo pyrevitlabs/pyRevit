@@ -1,11 +1,9 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.AssemblyMaker;
-using pyRevitAssemblyBuilder.Shared;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -106,10 +104,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                 {
                                     foreach (var child in origComponent.Children ?? Enumerable.Empty<object>())
                                     {
-                                        if (child is FileCommandComponent subCmd &&
-                                            CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
+                                        if (sub.Type == CommandComponentType.PushButton)
                                         {
-                                            var subData = CreatePushButton(subCmd, assemblyInfo);
+                                            var subData = CreatePushButton(sub, assemblyInfo);
                                             pdBtn.AddPushButton(subData);
                                         }
                                     }

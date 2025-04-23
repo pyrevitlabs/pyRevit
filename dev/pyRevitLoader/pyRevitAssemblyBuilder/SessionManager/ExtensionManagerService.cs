@@ -17,7 +17,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 yield return parsedExtension;
             }
         }
-        private IEnumerable<ParsedComponent> CollectCommandComponents(IEnumerable<ParsedComponent> components)
+
+        private void FlattenAndEnrich(IEnumerable<ParsedComponent> components)
         {
             foreach (var component in components)
             {
