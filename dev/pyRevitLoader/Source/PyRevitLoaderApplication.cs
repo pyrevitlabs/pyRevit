@@ -72,8 +72,8 @@ namespace PyRevitLoader
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
         {
             //TODO: Implement a switcher here to be able to switch between Python/C# loaders
-            return ExecuteStartUpPython(uiControlledApplication);
-            //return ExecuteStartUpCsharp(uiControlledApplication);
+            //return ExecuteStartUpPython(uiControlledApplication);
+            return ExecuteStartUpCsharp(uiControlledApplication);
         }
 
         public static Result ExecuteStartUpPython(UIControlledApplication uiControlledApplication)
