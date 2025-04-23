@@ -1,10 +1,9 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.UI;
+using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.AssemblyMaker;
-using pyRevitAssemblyBuilder.Shared;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -17,60 +16,48 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _uiApp = uiApp;
         }
 
-        public void BuildUI(WrappedExtension extension, ExtensionAssemblyInfo assemblyInfo)
+        public void BuildUI(ParsedExtension extension, ExtensionAssemblyInfo assemblyInfo)
         {
             if (extension?.Children == null)
                 return;
 
-            foreach (var obj in extension.Children as IEnumerable<object> ?? Enumerable.Empty<object>())
-                RecursivelyBuildUI(obj, null, null, extension.Name, assemblyInfo);
+            foreach (var component in extension.Children)
+                RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
         }
 
-        private void RecursivelyBuildUI(object obj, object parentComponent, RibbonPanel parentPanel, string tabName, ExtensionAssemblyInfo assemblyInfo)
+        private void RecursivelyBuildUI(ParsedComponent component, ParsedComponent parentComponent, RibbonPanel parentPanel, string tabName, ExtensionAssemblyInfo assemblyInfo)
         {
-            var component = obj as FileCommandComponent;
-            if (component == null)
-                return;
-
-            var type = CommandComponentTypeExtensions.FromExtension(component.Type);
-
-            switch (type)
+            switch (component.Type)
             {
                 case CommandComponentType.Tab:
                     try { _uiApp.CreateRibbonTab(component.Name); } catch { }
-                    foreach (var child in component.Children ?? Enumerable.Empty<object>())
+                    foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         RecursivelyBuildUI(child, component, null, component.Name, assemblyInfo);
                     break;
 
                 case CommandComponentType.Panel:
                     var panel = _uiApp.GetRibbonPanels(tabName).FirstOrDefault(p => p.Name == component.Name)
                              ?? _uiApp.CreateRibbonPanel(tabName, component.Name);
-                    foreach (var child in component.Children ?? Enumerable.Empty<object>())
+                    foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
                     break;
 
                 case CommandComponentType.Stack:
                     var itemDataList = new List<RibbonItemData>();
-                    var originalItems = new List<FileCommandComponent>();
+                    var originalItems = new List<ParsedComponent>();
 
-                    foreach (var child in component.Children as IEnumerable<object> ?? Enumerable.Empty<object>())
+                    foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                     {
-                        var subCmd = child as FileCommandComponent;
-                        if (subCmd == null)
-                            continue;
-
-                        var subType = CommandComponentTypeExtensions.FromExtension(subCmd.Type);
-
-                        if (subType == CommandComponentType.PushButton)
+                        if (child.Type == CommandComponentType.PushButton)
                         {
-                            itemDataList.Add(CreatePushButton(subCmd, assemblyInfo));
-                            originalItems.Add(subCmd);
+                            itemDataList.Add(CreatePushButton(child, assemblyInfo));
+                            originalItems.Add(child);
                         }
-                        else if (subType == CommandComponentType.PullDown)
+                        else if (child.Type == CommandComponentType.PullDown)
                         {
-                            var pdData = new PulldownButtonData(subCmd.UniqueId, subCmd.Name);
+                            var pdData = new PulldownButtonData(child.UniqueId, child.Name);
                             itemDataList.Add(pdData);
-                            originalItems.Add(subCmd);
+                            originalItems.Add(child);
                         }
                     }
 
@@ -91,12 +78,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                                 if (ribbonItem is PulldownButton pdBtn)
                                 {
-                                    foreach (var child in origComponent.Children ?? Enumerable.Empty<object>())
+                                    foreach (var sub in origComponent.Children ?? Enumerable.Empty<ParsedComponent>())
                                     {
-                                        if (child is FileCommandComponent subCmd &&
-                                            CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
+                                        if (sub.Type == CommandComponentType.PushButton)
                                         {
-                                            var subData = CreatePushButton(subCmd, assemblyInfo);
+                                            var subData = CreatePushButton(sub, assemblyInfo);
                                             pdBtn.AddPushButton(subData);
                                         }
                                     }
@@ -124,12 +110,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var splitBtn = parentPanel?.AddItem(splitData) as SplitButton;
                     if (splitBtn == null) return;
 
-                    foreach (var child in component.Children ?? Enumerable.Empty<object>())
+                    foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
                     {
-                        if (child is FileCommandComponent subCmd &&
-                            CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
+                        if (sub.Type == CommandComponentType.PushButton)
                         {
-                            var subData = CreatePushButton(subCmd, assemblyInfo);
+                            var subData = CreatePushButton(sub, assemblyInfo);
                             splitBtn.AddPushButton(subData);
                         }
                     }
@@ -138,7 +123,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         private PulldownButtonData CreatePulldown(
-            FileCommandComponent component,
+            ParsedComponent component,
             RibbonPanel parentPanel,
             string tabName,
             ExtensionAssemblyInfo assemblyInfo,
@@ -153,12 +138,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (pdBtn == null)
                 return null;
 
-            foreach (var child in component.Children ?? Enumerable.Empty<object>())
+            foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
-                if (child is FileCommandComponent subCmd &&
-                    CommandComponentTypeExtensions.FromExtension(subCmd.Type) == CommandComponentType.PushButton)
+                if (sub.Type == CommandComponentType.PushButton)
                 {
-                    var subData = CreatePushButton(subCmd, assemblyInfo);
+                    var subData = CreatePushButton(sub, assemblyInfo);
                     pdBtn.AddPushButton(subData);
                 }
             }
@@ -166,13 +150,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return pdData;
         }
 
-        private PushButtonData CreatePushButton(FileCommandComponent command, ExtensionAssemblyInfo assemblyInfo)
+        private PushButtonData CreatePushButton(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
         {
             return new PushButtonData(
-                command.UniqueId,
-                command.Name,
+                component.UniqueId,
+                component.Name,
                 assemblyInfo.Location,
-                command.UniqueId
+                component.UniqueId
             );
         }
     }

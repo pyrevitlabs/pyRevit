@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using pyRevitAssemblyBuilder.SessionManager;
 using System.Reflection;
+using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
@@ -20,7 +21,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
         }
 
-        public ExtensionAssemblyInfo BuildExtensionAssembly(WrappedExtension extension)
+        public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension)
         {
             string extensionHash = GetStableHash(extension.GetHash() + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{extensionHash}_{extension.Name}.dll";
