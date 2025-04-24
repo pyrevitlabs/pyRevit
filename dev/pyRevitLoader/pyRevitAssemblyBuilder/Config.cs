@@ -31,7 +31,7 @@ namespace pyRevitAssemblyBuilder.Config
         }
 
         public static PyRevitConfig Load(string customPath = null)
-        {
+            {
             string configName = "pyRevit_config.ini";
             string defaultPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -48,9 +48,9 @@ namespace pyRevitAssemblyBuilder.Config
         private readonly string _path;
 
         public IniFile(string iniPath)
-        {
+                {
             _path = iniPath;
-        }
+                }
 
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
@@ -59,11 +59,11 @@ namespace pyRevitAssemblyBuilder.Config
         private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
 
         public string IniReadValue(string section, string key)
-        {
+                        {
             var sb = new StringBuilder(512);
             GetPrivateProfileString(section, key, "", sb, sb.Capacity, _path);
             return sb.ToString();
-        }
+            }
 
         public void IniWriteValue(string section, string key, string value)
         {
