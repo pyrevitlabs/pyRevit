@@ -5,6 +5,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.Config;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
@@ -71,9 +72,17 @@ namespace PyRevitLoader
 
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
         {
-            //TODO: Implement a switcher here to be able to switch between Python/C# loaders
-            //return ExecuteStartUpPython(uiControlledApplication);
-            return ExecuteStartUpCsharp(uiControlledApplication);
+            var config = PyRevitConfig.Load();
+
+            // If the new "new_loader" is enabled in config, we will use the C# loader
+            if (config.NewLoader)
+            {
+                return ExecuteStartUpCsharp(uiControlledApplication);
+            }
+            else
+            {
+                return ExecuteStartUpPython(uiControlledApplication);
+            }
         }
 
         public static Result ExecuteStartUpPython(UIControlledApplication uiControlledApplication)

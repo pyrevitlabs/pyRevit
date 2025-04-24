@@ -85,6 +85,8 @@ namespace pyRevitLabs.PyRevit {
         public const int ConfigsMinDriveSpaceDefault = 0;
         public const string ConfigsLoadBetaKey = "loadbeta";
         public const bool ConfigsLoadBetaDefault = false;
+        public const string ConfigsNewLoaderKey = "new_loader";
+        public const bool ConfigsNewLoaderDefault = false;
         public const string ConfigsCPythonEngineKey = "cpyengine";
         public const int ConfigsCPythonEngineDefault = 0;
         public const string ConfigsLocaleKey = "user_locale";

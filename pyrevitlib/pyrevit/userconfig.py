@@ -301,7 +301,20 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsLoadBetaKey,
             value=state
         )
+    @property
+    def new_loader(self):
+        """Whether to load commands in beta."""
+        return self.core.get_option(
+            CONSTS.ConfigsNewLoaderKey,
+            default_value=CONSTS.ConfigsNewLoaderDefault,
+        )
 
+    @new_loader.setter
+    def new_loader(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsNewLoaderKey,
+            value=state
+        )
     @property
     def cpython_engine_version(self):
         """CPython engine version to use."""

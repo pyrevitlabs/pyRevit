@@ -156,6 +156,7 @@ class SettingsWindow(forms.WPFWindow):
         self.minhostdrivefreespace_tb.Text = str(user_config.min_host_drivefreespace)
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
+        self.new_loader.IsChecked = user_config.new_loader
 
     def _setup_engines(self):
         """Sets up the list of available engines."""
@@ -845,6 +846,7 @@ class SettingsWindow(forms.WPFWindow):
             user_config.min_host_drivefreespace = 0
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
+        user_config.new_loader = self.new_loader.IsChecked
 
     def _save_engines(self):
         # set active cpython engine

@@ -205,6 +205,10 @@
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
                                     <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.Development.LoadBeta}"/>
                                 </WrapPanel>
+                                <WrapPanel Margin="10,10,0,10">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="new_loader" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.Development.NewLoader}"/>
+                                </WrapPanel>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="{DynamicResource CoreSettings.Caching}" Margin="0,10,0,0">
