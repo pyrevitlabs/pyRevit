@@ -57,6 +57,7 @@
     <system:String x:Key="CoreSettings.Development">Разработка</system:String>
     <system:String x:Key="CoreSettings.Development.Description">Разные настройки разработки pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Загружать бета-инструменты (Скрипты с __beta__ = True, требуется перезапуск)</system:String>
+    <system:String x:Key="CoreSettings.Development.NewLoader">Использовать новую более быструю версию загрузчика pyRevit (бета)</system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Закрывать другие открытые консоли</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
