@@ -23,6 +23,18 @@ namespace pyRevitAssemblyBuilder.Config
                 _ini.IniWriteValue("core", "new_loader", value.ToString().ToLowerInvariant());
             }
         }
+        public bool NewLoaderRoslyn
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "new_loader_roslyn");
+                return bool.TryParse(value, out var result) ? result : false;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "new_loader_roslyn", value.ToString().ToLowerInvariant());
+            }
+        }
 
         public PyRevitConfig(string configPath)
         {
