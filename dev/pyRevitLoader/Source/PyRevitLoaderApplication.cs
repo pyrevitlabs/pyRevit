@@ -77,7 +77,15 @@ namespace PyRevitLoader
             // If the new "new_loader" is enabled in config, we will use the C# loader
             if (config.NewLoader)
             {
-                return ExecuteStartUpCsharp(uiControlledApplication);
+                // If the new "new_loader_roslyn" is enabled in config, we will use the Roslyn loader
+                if (config.NewLoaderRoslyn)
+                {
+                    return ExecuteStartUpCsharp(uiControlledApplication, AssemblyBuildStrategy.Roslyn);
+                }
+                else
+                {
+                    return ExecuteStartUpCsharp(uiControlledApplication, AssemblyBuildStrategy.ILPack);
+                }
             }
             else
             {
@@ -142,7 +150,7 @@ namespace PyRevitLoader
                 return Result.Failed;
             }
         }
-        public static Result ExecuteStartUpCsharp(UIControlledApplication uiControlledApplication)
+        public static Result ExecuteStartUpCsharp(UIControlledApplication uiControlledApplication, AssemblyBuildStrategy loadingMethod)
         {
             try
             {
@@ -152,8 +160,7 @@ namespace PyRevitLoader
                 var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
 
                 // Instantiate all services
-                var typeGenerator = new CommandTypeGenerator();
-                var assemblyBuilder = new AssemblyBuilderService(typeGenerator, versionNumber);
+                var assemblyBuilder = new AssemblyBuilderService(versionNumber, loadingMethod);
                 var extensionManager = new ExtensionManagerService();
                 var hookManager = new HookManager();
                 var uiManager = new UIManagerService(uiApplication);
