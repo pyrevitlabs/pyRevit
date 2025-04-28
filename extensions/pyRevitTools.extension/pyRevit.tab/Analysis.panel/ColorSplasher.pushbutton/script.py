@@ -303,6 +303,7 @@ class CreateLegend(UI.IExternalEventHandler):
                 old_all_ele = DB.FilteredElementCollector(
                     new_doc, legends[0].Id
                 ).ToElements()
+                ele_id_type = None
                 for ele in old_all_ele:
                     if ele.Id != new_legend.Id and ele.Category is not None:
                         if isinstance(ele, DB.TextNote):

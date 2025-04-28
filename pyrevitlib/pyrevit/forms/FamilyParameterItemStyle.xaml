@@ -10,6 +10,9 @@
         <Border x:Name="IsLabeled" Background="{DynamicResource pyRevitAccentBrush}" Height="16" Margin="5,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
             <TextBlock Text="Used as Label" Foreground="White" FontSize="10"/>
         </Border>
+        <Border x:Name="IsAssociated" Background="{DynamicResource pyRevitAccentBrush}" Height="16" Margin="5,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
+            <TextBlock Text="Associated to Others" Foreground="White" FontSize="10"/>
+        </Border>
     </WrapPanel>
     <ControlTemplate.Triggers>
         <DataTrigger Binding="{Binding Path=istype}" Value="True">
@@ -20,6 +23,9 @@
         </DataTrigger>
         <DataTrigger Binding="{Binding Path=islabeled}" Value="True">
             <Setter TargetName="IsLabeled" Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Path=isassociated}" Value="True">
+            <Setter TargetName="IsAssociated" Property="Visibility" Value="Visible"/>
         </DataTrigger>
     </ControlTemplate.Triggers>
 </ControlTemplate>

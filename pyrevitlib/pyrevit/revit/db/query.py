@@ -1364,7 +1364,7 @@ def is_schedule(view):
         isintkeynote = view.IsInternalKeynoteSchedule
         iskeynotelegend = (
             view.Definition.CategoryId
-            == get_category(DB.BuiltInCategory.OST_KeynoteTags).Id
+            == get_category(DB.BuiltInCategory.OST_KeynoteTags, view.Document).Id
         )
 
         return not (isrevsched or isintkeynote or iskeynotelegend)
