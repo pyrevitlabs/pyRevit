@@ -8,6 +8,7 @@ from pyrevit import forms
 
 
 output = script.get_output()
+mlogger = script.get_logger()
 
 
 def listdwgs(current_view_only=False):
@@ -57,11 +58,13 @@ def listdwgs(current_view_only=False):
                 transform = dwg.GetTransform()
                 if transform:
                     offset_z = transform.Origin.Z  # in feet
-                    offset_z_m = round(
-                        offset_z * 0.3048, 3
-                    )  # convert to meters, round for readability
-            except:
-                pass
+                    offset_z_m = DB.UnitUtils.ConvertFromInternalUnits(
+                        offset_z, DB.UnitTypeId.Meters
+                    )
+            except Exception as ex:
+                mlogger.debug(
+                    "Failed to convert offset Z from internal units: {}".format(ex)
+                )
 
             print("\n\n")
             output.print_md(
