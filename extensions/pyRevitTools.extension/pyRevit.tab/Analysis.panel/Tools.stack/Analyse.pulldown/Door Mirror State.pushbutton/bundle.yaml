@@ -7,7 +7,7 @@ tooltip:
   en_us: >-
     Writes the mirror state (aka Left/Right) of doors back to an instance parameter 'Door Wing Opening Direction' in doors. This needs to be an instance parameter of type text with the option different values for group instances. Prints a summary of accomplished job including changes to previous state.
   
-    All families to treat need 2 shared parameters 'DoorFamilyOpeningDirection_standard' and 'DoorFamilyOpeningDirection_mirrored' as instances with values corresponding, as in family defined standard to write back to parameter 'Door Wing Opening Direction'.
+    All families to treat need two shared parameters 'DoorFamilyOpeningDirection_standard' and 'DoorFamilyOpeningDirection_mirrored' as instances with values corresponding, as in family defined standard to write back to parameter 'Door Wing Opening Direction'.
     For families who have a symtetry chechbox "Door Mirrored" standard value my be changed by conditional statement in family: (f.ex -> if(Door Mirrored, "1 Wing Right", "1 Wing Left"))
   
     Prerequisites:
@@ -18,17 +18,29 @@ tooltip:
     In 'PROJECT' as instance:
     [Parameter] - 'Door Wing Opening Direction'
   de_de: >-
-    Schreibt den Spiegelzustand (auch bekannt als Links/Rechts) von Türen zurück in einen Instanzparameter 'Door Wing Opening Direction' in doors. Dies muss ein Instanzparameter vom Typ Text sein, mit der Option verschiedene Werte für Gruppeninstanzen. Druckt eine Zusammenfassung des ausgeführten Auftrags einschließlich der Änderungen zum vorherigen Zustand.
+    Schreibt den Zustand ungegespiegel/gespiegelt (Links/Rechts) von Türen zurück in einen Instanzparameter 'Door Wing Opening Direction' in doors. Es muss ein Instanzparameter vom Typ Text sein, mit der Option "Unterschiedliche Werte für das Exemplar einer Gruppe". Ein Bericht über den ausgeführten Auftrag einschließlich der Änderungen zum vorherigen Zustand wird angezeigt.
   
-    Alle zu behandelnden Familien benötigen 2 gemeinsame Parameter 'DoorFamilyOpeningDirection_standard' und 'DoorFamilyOpeningDirection_mirrored' als Instanzen mit Werten, die dem in der Familie definierten Standard entsprechen, um in den Parameter 'Door Wing Opening Direction' zurückzuschreiben.
-    Für Familien, die ein Symtetrie-Kästchen „Tür gespiegelt“ haben, kann der Standardwert durch eine bedingte Anweisung in der Familie geändert werden: (z.B. -> if(Tür gespiegelt, „1 Flügel rechts“, „1 Flügel links“))
+    Alle zu behandelnden Familien benötigen zwei gemeinsame genutzte Parameter 'DoorFamilyOpeningDirection_standard' und 'DoorFamilyOpeningDirection_mirrored' als Instanzen mit Werten, die dem in der Familie definierten Standard entsprechen, um in den Parameter 'Door Wing Opening Direction' zurückzuschreiben.
+    Für Familien, die eine Option (bool) „Tür gespiegelt“ haben, kann der Standardwert auch durch eine Formel in der Familie geändert werden: (z.B. -> if(Tür gespiegelt, „1 Flügel DIN/Rechts“, „1 Flügel DIN/Links“))
   
     Voraussetzungen:
-    In 'FAMILY' als Instanz, Standardwert als „blockierte“ Formel
+    In 'FAMILY' als Instanzparameter, Standardwert als „blockierte“ Formel
     [Parameter] - 'DoorFamilyOpeningDirection_standard'
-    [Parameter] - 'DoorFamilyOpeningDirection_mirrored' (Türöffnungsrichtung gespiegelt)
+    [Parameter] - 'DoorFamilyOpeningDirection_mirrored'
 
-    Im 'PROJEKT' als Instanzparameter mit der Option verschiedene "Unterschiedliche Werte für das Exemplar einer Gruppe" (Türöffnungsrichtung):
+    Im 'PROJEKT' als Instanzparameter mit der Option verschiedene "Unterschiedliche Werte für das Exemplar einer Gruppe":
     [Parameter] - 'Door Wing Opening Direction'
   fr_fr: >-
+    Réécrit l'état non-miroir/miroir (gauche/droite) des portes dans un paramètre d'instance 'Door Wing Opening Direction' dans les portes. Il doit s'agir d'un paramètre d'instance de type texte, avec l'option 'valeurs peuvent varier en fonction de l'occurrence de groupe'. Un rapport sur le travail effectué, y compris les modifications par rapport à l'état précédent, est affiché.
+  
+    Toutes les familles à traiter nécessitent deux paramètres communs utilisés 'DoorFamilyOpeningDirection_standard' et 'DoorFamilyOpeningDirection_mirrored' en tant qu'instances avec des valeurs correspondant au standard défini dans la famille, afin de pouvoir réécrire dans le paramètre 'Door Wing Opening Direction'.
+    Pour les familles qui ont une option (bool) « Miroiter la porte », la valeur par défaut peut également être modifiée par une formule dans la famille : (par ex. -> if(Miroiter la porte, " 1 vantail droite ", " 1 vantail gauche "))
+  
+    Conditions préalables :
+    Dans la ' FAMILLE ' comme paramètre d'instance, valeur par défaut comme formule 'bloquée'.
+    [paramètre] - 'DoorFamilyOpeningDirection_standard'
+    [paramètre] - 'DoorFamilyOpeningDirection_mirrored'
+
+    Dans le 'PROJET' comme paramètre d'instance avec l'option différentes 'valeurs peuvent varier en fonction de l'occurrence de groupe':
+    [paramètre] - 'Door Wing Opening Direction'
 author: Jakob Steiner (special thanks to Erik Frits)
