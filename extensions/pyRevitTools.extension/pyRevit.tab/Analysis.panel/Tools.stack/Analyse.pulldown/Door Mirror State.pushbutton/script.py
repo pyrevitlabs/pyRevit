@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-
+"""Writes the door swing direction of doors 
+to a shared parameter."""
 __title__ = "DoorMirrorState"
-__author__ = "Jakob Steiner"
-__doc__ = """Version = 0.3
-Date    = 13.04.2025
 
-"""
-#--------------------------------------------------------------------------------------------------------------------
 #IMPORTS
 # System
 import time, sys
@@ -20,14 +16,13 @@ doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
 app = __revit__.Application
 output = script.get_output()
-#--------------------------------------------------------------------------------------------------------------------
+
 #GLOBAL PARAMETERS
 DOORDIR_STANDARD_PARAM  = "DoorFamilyOpeningDirection_standard"
 DOORDIR_MIRRORED_PARAM  = "DoorFamilyOpeningDirection_mirrored"
 DOORDIR_WRITEBACK_PARAM = "Door Wing Opening Direction"
 DOORDIR_ERROR_VALUE    = "-" # Value if the family does't have shared param. above
 
-#--------------------------------------------------------------------------------------------------------------------
 #MAIN
 timer_start = time.time()
 
