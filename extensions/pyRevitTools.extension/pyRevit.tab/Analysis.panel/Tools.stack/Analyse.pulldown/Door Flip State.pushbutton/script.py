@@ -92,12 +92,12 @@ if not parameter_exists(TUERAUFG_WRITEBACK_PARAMETER):
 count_parameter = 0
 count_not_parameter = 0
 doors_without_parameter = []
+# CREATE A LIST FOR DOORS WITH CHANGED PARAMETERS
 data_doors_changed = []
 
 t = Transaction(doc,__title__)
 t.Start()
-# CREATE A DICT FOR DOORS WITH CHANGED PARAMETERS
-door_changed =[]
+#door_changed =[]
 # LOOP THROUGH ALL DOORS
 for door in doors_collector:
     # GET VALUE
@@ -129,12 +129,10 @@ for door in doors_collector:
         door_out_param_old = door.LookupParameter(TUERAUFG_WRITEBACK_PARAMETER).AsString()
         door_out_param_new = value
         if door_out_param_old != door_out_param_new:
-            data_doors_changed.append(door_changed)
             door_out_param_changed = "{} -> {}".format(door_out_param_old, door_out_param_new)
-            door_changed.append(door.Name)
-            door_changed.append(door_out_param_changed)
+            door_name = door.Name
             door_changed_link = output.linkify(door.Id)
-            door_changed.append(door_changed_link)
+            data_doors_changed.append([door_name, door_out_param_changed, door_changed_link])
         # SET DOOR FLIP STATE TO THE WRITEBACK PARAMETER
         door_out_param.Set(str(value))
     except:
