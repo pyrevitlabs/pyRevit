@@ -1,0 +1,34 @@
+title:
+  ru: Направление двери
+  fr_fr: Porte Miroir/Non Miroir
+  en_us: Door Mirrored/Unmirrored
+  de_de: Tür Gespiegelt/Ungespiegelt
+tooltip:
+  en_us: >-
+    Writes the mirror state (aka Left/Right) of doors back to an instance parameter 'Door Wing Opening Direction' in doors. This needs to be an instance parameter of type text with the option different values for group instances. Prints a summary of accomplished job including changes to previous state.
+  
+    All families to treat need 2 shared parameters 'DoorFamilyOpeningDirection_standard' and 'DoorFamilyOpeningDirection_mirrored' as instances with values corresponding, as in family defined standard to write back to parameter 'Door Wing Opening Direction'.
+    For families who have a symtetry chechbox "Door Mirrored" standard value my be changed by conditional statement in family: (f.ex -> if(Door Mirrored, "1 Wing Right", "1 Wing Left"))
+  
+    Prerequisites:
+    In 'FAMILY' as instance, standard value as "blocked" formula
+    [Parameter] - 'DoorFamilyOpeningDirection_standard'
+    [Parameter] - 'DoorFamilyOpeningDirection_mirrored'
+
+    In 'PROJECT' as instance:
+    [Parameter] - 'Door Wing Opening Direction'
+  de_de: >-
+    Schreibt den Spiegelzustand (auch bekannt als Links/Rechts) von Türen zurück in einen Instanzparameter 'Door Wing Opening Direction' in doors. Dies muss ein Instanzparameter vom Typ Text sein, mit der Option verschiedene Werte für Gruppeninstanzen. Druckt eine Zusammenfassung des ausgeführten Auftrags einschließlich der Änderungen zum vorherigen Zustand.
+  
+    Alle zu behandelnden Familien benötigen 2 gemeinsame Parameter 'DoorFamilyOpeningDirection_standard' und 'DoorFamilyOpeningDirection_mirrored' als Instanzen mit Werten, die dem in der Familie definierten Standard entsprechen, um in den Parameter 'Door Wing Opening Direction' zurückzuschreiben.
+    Für Familien, die ein Symtetrie-Kästchen „Tür gespiegelt“ haben, kann der Standardwert durch eine bedingte Anweisung in der Familie geändert werden: (z.B. -> if(Tür gespiegelt, „1 Flügel rechts“, „1 Flügel links“))
+  
+    Voraussetzungen:
+    In 'FAMILY' als Instanz, Standardwert als „blockierte“ Formel
+    [Parameter] - 'DoorFamilyOpeningDirection_standard'
+    [Parameter] - 'DoorFamilyOpeningDirection_mirrored' (Türöffnungsrichtung gespiegelt)
+
+    Im 'PROJEKT' als Instanzparameter mit der Option verschiedene "Unterschiedliche Werte für das Exemplar einer Gruppe" (Türöffnungsrichtung):
+    [Parameter] - 'Door Wing Opening Direction'
+  fr_fr: >-
+author: Jakob Steiner (special thanks to Erik Frits)
