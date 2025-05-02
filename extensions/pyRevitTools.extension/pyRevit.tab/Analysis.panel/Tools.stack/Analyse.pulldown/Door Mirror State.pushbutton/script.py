@@ -87,7 +87,7 @@ for door in doors_collector:
         door_out_param = door.LookupParameter(DOORDIR_WRITEBACK_PARAM)
         
         # WRITE CHANGES IN PARAMETERS
-        door_out_param_old = door.LookupParameter(DOORDIR_WRITEBACK_PARAM).AsString()
+        door_out_param_old = door_out_param.AsString()
         door_out_param_new = value
         if door_out_param_old != door_out_param_new:
             door_out_param_changed = "{} -> {}".format(door_out_param_old, door_out_param_new)
