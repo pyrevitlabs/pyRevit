@@ -8,7 +8,7 @@ tooltip:
     Writes the mirror state (aka Left/Right) of doors back to an instance parameter 'Door Wing Opening Direction' in doors. This needs to be an instance parameter of type text with the option different values for group instances. Prints a summary of accomplished job including changes to previous state.
   
     All families to treat need two shared parameters 'DoorFamilyOpeningDirection_standard' and 'DoorFamilyOpeningDirection_mirrored' as instances with values corresponding, as in family defined standard to write back to parameter 'Door Wing Opening Direction'.
-    For families who have a symtetry chechbox "Door Mirrored" standard value my be changed by conditional statement in family: (f.ex -> if(Door Mirrored, "1 Wing Right", "1 Wing Left"))
+    For families who have a symmetry checkbox "Door Mirrored" standard value may be changed by conditional statement in family: (f.ex -> if(Door Mirrored, "1 Wing Right", "1 Wing Left"))
   
     Prerequisites:
     In 'FAMILY' as instance, standard value as "blocked" formula
