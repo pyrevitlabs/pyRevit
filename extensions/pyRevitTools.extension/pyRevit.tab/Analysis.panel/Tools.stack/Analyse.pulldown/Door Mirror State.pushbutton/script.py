@@ -40,16 +40,11 @@ def parameter_exists(parameter_name):
 
 if not parameter_exists(DOORDIR_WRITEBACK_PARAM):
     print(
-        "The parameter '{}' does not exist in the current document.".format(
-            DOORDIR_WRITEBACK_PARAM
-        )
+        "The parameter '{}' does not exist in the current document.\n"
+        "Please create the parameter as an instance parameter, option different values for groupes,\n"
+        "for the category doors in the project.".format(DOORDIR_WRITEBACK_PARAM)
     )
-    print(
-        "Please create the parameter as an instance parameter, option different values for groupes,"
-    )
-    print("for the category doors in the project.")
-
-    sys.exit()
+    script.exit()
 
 count_parameter = 0
 count_not_parameter = 0
@@ -95,46 +90,34 @@ with revit.Transaction(doc, "DoorMirrorState"):
                 )
             door_out_param.Set(str(value))
         except AttributeError:
-            print(
+            forms.alert(
                 "Please make sure instance parameter exists: {}".format(
                     DOORDIR_WRITEBACK_PARAM
                 )
             )
+            script.exit()
 
 output.print_md(
-    "### Number of doors found in the project: {} ".format(len(doors_collector))
-)
-output.print_md(
-    "of these with writeback parameters defined in door family: {}".format(
-        count_parameter
+    "### Number of doors found in the project: {} \n"
+    "- With writeback parameters defined in door family: {}\n"
+    "- Without writeback parameters defined in door family: {}\n"
+    "- Parameters missing: '{}', '{}'\n"
+    "- You will find in the folder of the script a shared parameter file containing these parameters.\n"
+    "- The default writeback value for doors without defined values will be: '{}'\n"
+    "---\n".format(
+        len(doors_collector),
+        count_parameter,
+        count_not_parameter,
+        DOORDIR_STANDARD_PARAM,
+        DOORDIR_MIRRORED_PARAM,
+        DOORDIR_ERROR_VALUE,
     )
 )
-output.print_md(
-    "without writeback parameters defined in door family: {a}".format(
-        a=count_not_parameter,
-    )
-)
-output.print_md(
-    "parameters missing: "
-    "'{b}'"
-    ", "
-    "'{c}'"
-    "".format(b=DOORDIR_STANDARD_PARAM, c=DOORDIR_MIRRORED_PARAM)
-)
-output.print_md(
-    "you will find in the folder of the script a shared parameter file containing this parameters."
-)
-output.print_md(
-    "The default writeback value for doors without defined values will be : "
-    " {d} "
-    " ".format(d=DOORDIR_ERROR_VALUE)
-)
-output.print_md("---")
+
 output.print_md("### Door families without writeback parameter defined in family:")
 for door_type in doors_without_parameter:
     print(door_type)
-output.print_md("---")
-output.print_md("### Changes to previous run of the script:")
+output.print_md("---\n### Changes to previous run of the script:")
 
 if data_doors_changed:
     output.print_table(
@@ -145,6 +128,5 @@ if data_doors_changed:
 else:
     output.print_md("#### No doors with changed parameters were found.")
 
-output.print_md("---")
 elapsed_time = time.time() - timer_start
-output.print_md("#### Script has finished in {:.2f}s".format(elapsed_time))
+output.print_md("---\n#### Script has finished in {:.2f}s".format(elapsed_time))
