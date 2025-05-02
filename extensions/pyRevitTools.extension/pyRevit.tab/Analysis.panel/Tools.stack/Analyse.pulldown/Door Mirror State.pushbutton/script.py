@@ -10,7 +10,7 @@ output = script.get_output()
 DOORDIR_STANDARD_PARAM = "DoorFamilyOpeningDirection_standard"
 DOORDIR_MIRRORED_PARAM = "DoorFamilyOpeningDirection_mirrored"
 DOORDIR_WRITEBACK_PARAM = "Door Wing Opening Direction"
-DOORDIR_ERROR_VALUE = "-"  # Value if the family does't have shared param. above
+DOORDIR_ERROR_VALUE = "-"  # Value if the family doesn't have shared param. above
 
 # MAIN
 timer_start = time.time()
