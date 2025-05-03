@@ -193,6 +193,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
         }
 
+        // TODO: Implement a proper hashing module
         private static string GetStableHash(string input)
         {
             using var sha1 = System.Security.Cryptography.SHA1.Create();
