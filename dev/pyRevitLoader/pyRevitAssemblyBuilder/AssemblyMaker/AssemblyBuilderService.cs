@@ -141,7 +141,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             var moduleBuilder = asmBuilder.DefineDynamicModule(moduleName);
 #endif
 
-            foreach (var cmd in CollectCommandComponents(extension.Children))
+            foreach (var cmd in extension.CollectCommandComponents())
                 generator.DefineCommandType(extension, cmd, moduleBuilder);
 
 #if NETFRAMEWORK
@@ -149,21 +149,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 #else
             new AssemblyGenerator().GenerateAssembly(asmBuilder, outputPath);
 #endif
-        }
-
-        private IEnumerable<ParsedComponent> CollectCommandComponents(IEnumerable<ParsedComponent> components)
-        {
-            foreach (var component in components)
-            {
-                if (!string.IsNullOrEmpty(component.ScriptPath))
-                    yield return component;
-
-                if (component.Children != null)
-                {
-                    foreach (var child in CollectCommandComponents(component.Children))
-                        yield return child;
-                }
-            }
         }
 
         private List<MetadataReference> ResolveRoslynReferences()

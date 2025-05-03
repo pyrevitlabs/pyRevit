@@ -41,7 +41,11 @@ namespace pyRevitExtensionParser
             var defaultPath = Path.GetFullPath(Path.Combine(current, "..", "..", "..", "..", "extensions"));
             roots.Add(defaultPath);
 
-            var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "pyRevit", "pyRevit_config.ini");
+            var configPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "pyRevit",
+                "pyRevit_config.ini");
+
             if (File.Exists(configPath))
             {
                 foreach (var line in File.ReadAllLines(configPath))
@@ -62,7 +66,10 @@ namespace pyRevitExtensionParser
             return roots;
         }
 
-        private static List<ParsedComponent> ParseComponents(string baseDir, string extensionName, string parentPath = null)
+        private static List<ParsedComponent> ParseComponents(
+            string baseDir,
+            string extensionName,
+            string parentPath = null)
         {
             var components = new List<ParsedComponent>();
 
@@ -74,18 +81,41 @@ namespace pyRevitExtensionParser
                     continue;
 
                 var namePart = Path.GetFileNameWithoutExtension(dir).Replace(" ", "");
-
                 var fullPath = string.IsNullOrEmpty(parentPath)
                     ? $"{extensionName}_{namePart}"
                     : $"{parentPath}_{namePart}";
 
+                string scriptPath = null;
+
+                if (componentType == CommandComponentType.UrlButton)
+                {
+                    var yaml = Path.Combine(dir, "bundle.yaml");
+                    if (File.Exists(yaml))
+                        scriptPath = yaml;
+                }
+
+                if (scriptPath == null)
+                {
+                    scriptPath = Directory
+                        .EnumerateFiles(dir, "*", SearchOption.TopDirectoryOnly)
+                        .FirstOrDefault(f => f.EndsWith("script.py", StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (scriptPath == null &&
+                   (componentType == CommandComponentType.PushButton ||
+                    componentType == CommandComponentType.SmartButton))
+                {
+                    var yaml = Path.Combine(dir, "bundle.yaml");
+                    if (File.Exists(yaml))
+                        scriptPath = yaml;
+                }
+
                 var children = ParseComponents(dir, extensionName, fullPath);
-                var scriptPath = Path.Combine(dir, "script.py");
 
                 components.Add(new ParsedComponent
                 {
                     Name = namePart,
-                    ScriptPath = File.Exists(scriptPath) ? scriptPath : null,
+                    ScriptPath = scriptPath,
                     Tooltip = $"Command: {namePart}",
                     UniqueId = fullPath.ToLowerInvariant(),
                     Type = componentType,
@@ -126,6 +156,33 @@ namespace pyRevitExtensionParser
         public List<ParsedComponent> Children { get; set; }
 
         public string GetHash() => Directory.GetHashCode().ToString("X");
+
+        private static readonly CommandComponentType[] _allowedTypes = new[]
+        {
+            CommandComponentType.PushButton,
+            CommandComponentType.SmartButton,
+            CommandComponentType.UrlButton
+        };
+
+        public IEnumerable<ParsedComponent> CollectCommandComponents()
+            => Collect(this.Children);
+
+        private IEnumerable<ParsedComponent> Collect(IEnumerable<ParsedComponent> list)
+        {
+            if (list == null) yield break;
+
+            foreach (var comp in list)
+            {
+                if (comp.Children != null)
+                {
+                    foreach (var child in Collect(comp.Children))
+                        yield return child;
+                }
+
+                if (_allowedTypes.Contains(comp.Type))
+                    yield return comp;
+            }
+        }
     }
 
     public class ParsedComponent
