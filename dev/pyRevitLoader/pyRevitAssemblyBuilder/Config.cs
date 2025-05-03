@@ -60,9 +60,9 @@ namespace pyRevitAssemblyBuilder.Config
         private readonly string _path;
 
         public IniFile(string iniPath)
-                {
+        {
             _path = iniPath;
-                }
+        }
 
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);

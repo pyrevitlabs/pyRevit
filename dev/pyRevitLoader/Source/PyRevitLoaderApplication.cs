@@ -152,9 +152,6 @@ namespace PyRevitLoader
                         TaskDialog.Show("Error Loading pyRevit", executor.Message);
                     }
                 }
-
-
-
                 return Result.Succeeded;
             }
             catch (Exception ex)
