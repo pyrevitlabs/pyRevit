@@ -27,7 +27,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             sb.AppendLine("using PyRevitLabs.PyRevit.Runtime;");
             sb.AppendLine();
 
-            foreach (var cmd in CollectCommandComponents(extension.Children))
+            foreach (var cmd in extension.CollectCommandComponents())
             {
                 string safeClassName = SanitizeClassName(cmd.UniqueId);
                 string scriptPath = cmd.ScriptPath;
@@ -80,18 +80,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
 
             return sb.ToString();
-        }
-
-        private IEnumerable<ParsedComponent> CollectCommandComponents(IEnumerable<ParsedComponent> components)
-        {
-            foreach (var comp in components)
-            {
-                if (!string.IsNullOrEmpty(comp.ScriptPath))
-                    yield return comp;
-                if (comp.Children != null)
-                    foreach (var child in CollectCommandComponents(comp.Children))
-                        yield return child;
-            }
         }
 
         private static string SanitizeClassName(string name)
