@@ -19,15 +19,24 @@ namespace pyRevitExtensionParser
                 foreach (var extDir in Directory.GetDirectories(root, "*.extension"))
                 {
                     var extName = Path.GetFileNameWithoutExtension(extDir);
-                    var metadata = ParseMetadata(extDir);
                     var children = ParseComponents(extDir, extName);
+
+                    // Parse bundle.yaml if present in the extension folder
+                    var bundlePath = Path.Combine(extDir, "bundle.yaml");
+                    ParsedBundle parsedBundle = File.Exists(bundlePath)
+                        ? BundleYamlParser.Parse(bundlePath)
+                        : null;
 
                     yield return new ParsedExtension
                     {
                         Name = extName,
                         Directory = extDir,
-                        Metadata = metadata,
-                        Children = children
+                        Children = children,
+                        LayoutOrder = parsedBundle?.LayoutOrder,
+                        Titles = parsedBundle?.Titles,
+                        Tooltips = parsedBundle?.Tooltips,
+                        MinRevitVersion = parsedBundle?.MinRevitVersion,
+                        Engine = parsedBundle?.Engine
                     };
                 }
             }
@@ -110,7 +119,10 @@ namespace pyRevitExtensionParser
                         scriptPath = yaml;
                 }
 
+                var bundleFile = Path.Combine(dir, "bundle.yaml");
                 var children = ParseComponents(dir, extensionName, fullPath);
+
+                var bundleInComponent = File.Exists(bundleFile) ? BundleYamlParser.Parse(bundleFile) : null;
 
                 components.Add(new ParsedComponent
                 {
@@ -119,32 +131,13 @@ namespace pyRevitExtensionParser
                     Tooltip = $"Command: {namePart}",
                     UniqueId = fullPath.ToLowerInvariant(),
                     Type = componentType,
-                    Children = children
+                    Children = children,
+                    BundleFile = File.Exists(bundleFile) ? bundleFile : null,
+                    LayoutOrder = bundleInComponent?.LayoutOrder // Save layout as a property
                 });
             }
 
             return components;
-        }
-
-        private static ParsedExtensionMetadata ParseMetadata(string extPath)
-        {
-            var yamlPath = Path.Combine(extPath, "extension.yaml");
-            if (!File.Exists(yamlPath))
-                return null;
-
-            var metadata = new ParsedExtensionMetadata();
-            foreach (var line in File.ReadLines(yamlPath))
-            {
-                var trimmed = line.Trim();
-                if (trimmed.StartsWith("author:"))
-                    metadata.Author = trimmed.Substring("author:".Length).Trim();
-                else if (trimmed.StartsWith("version:"))
-                    metadata.Version = trimmed.Substring("version:".Length).Trim();
-                else if (trimmed.StartsWith("description:"))
-                    metadata.Description = trimmed.Substring("description:".Length).Trim();
-            }
-
-            return metadata;
         }
     }
 
@@ -152,13 +145,16 @@ namespace pyRevitExtensionParser
     {
         public string Name { get; set; }
         public string Directory { get; set; }
-        public ParsedExtensionMetadata Metadata { get; set; }
         public List<ParsedComponent> Children { get; set; }
+        public List<string> LayoutOrder { get; set; }
+        public Dictionary<string, string> Titles { get; set; }
+        public Dictionary<string, string> Tooltips { get; set; }
+        public string MinRevitVersion { get; set; }
+        public EngineConfig Engine { get; set; }
 
         public string GetHash() => Directory.GetHashCode().ToString("X");
 
-        private static readonly CommandComponentType[] _allowedTypes = new[]
-        {
+        private static readonly CommandComponentType[] _allowedTypes = new[] {
             CommandComponentType.PushButton,
             CommandComponentType.SmartButton,
             CommandComponentType.UrlButton
@@ -193,13 +189,90 @@ namespace pyRevitExtensionParser
         public string UniqueId { get; set; }
         public CommandComponentType Type { get; set; }
         public List<ParsedComponent> Children { get; set; }
+        public string BundleFile { get; set; }
+        public List<string> LayoutOrder { get; set; }  // Save layout as a property for the component
     }
 
-    public class ParsedExtensionMetadata
+    public class ParsedBundle
     {
+        public List<string> LayoutOrder { get; set; } = new List<string>();
+        public Dictionary<string, string> Titles { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Tooltips { get; set; } = new Dictionary<string, string>();
         public string Author { get; set; }
-        public string Version { get; set; }
-        public string Description { get; set; }
+        public string MinRevitVersion { get; set; }
+        public EngineConfig Engine { get; set; } = new EngineConfig();
+    }
+
+    public class EngineConfig
+    {
+        public bool Clean { get; set; }
+        public bool FullFrame { get; set; }
+        public bool Persistent { get; set; }
+    }
+
+    public static class BundleYamlParser
+    {
+        public static ParsedBundle Parse(string filePath)
+        {
+            var parsed = new ParsedBundle();
+            var lines = File.ReadAllLines(filePath);
+            string currentSection = null;
+
+            foreach (var raw in lines)
+            {
+                var line = raw.TrimEnd();
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                if (!line.StartsWith(" ") && line.Contains(":"))
+                {
+                    var parts = line.Split(new[] { ':' }, 2);
+                    currentSection = parts[0].Trim().ToLowerInvariant();
+                    var value = parts[1].Trim();
+
+                    switch (currentSection)
+                    {
+                        case "author": parsed.Author = value; break;
+                        case "min_revit_version": parsed.MinRevitVersion = value; break;
+                        case "engine":
+                        case "title":
+                        case "tooltip":
+                        case "layout": break; // handled below
+                    }
+                }
+                else if (line.StartsWith("  ") && currentSection == "layout" && line.TrimStart().StartsWith("-"))
+                {
+                    parsed.LayoutOrder.Add(line.TrimStart().Substring(1).Trim());
+                }
+                else if (line.StartsWith("  ") && (currentSection == "title" || currentSection == "tooltip"))
+                {
+                    var parts = line.Trim().Split(new[] { ':' }, 2);
+                    if (parts.Length == 2)
+                    {
+                        var lang = parts[0].Trim();
+                        var text = parts[1].Trim();
+                        if (currentSection == "title")
+                            parsed.Titles[lang] = text;
+                        else
+                            parsed.Tooltips[lang] = text;
+                    }
+                }
+                else if (line.StartsWith("  ") && currentSection == "engine" && line.Contains(":"))
+                {
+                    var parts = line.Trim().Split(new[] { ':' }, 2);
+                    var key = parts[0].Trim().ToLowerInvariant();
+                    var val = parts[1].Trim().ToLowerInvariant();
+
+                    switch (key)
+                    {
+                        case "clean": parsed.Engine.Clean = val == "true"; break;
+                        case "full_frame": parsed.Engine.FullFrame = val == "true"; break;
+                        case "persistent": parsed.Engine.Persistent = val == "true"; break;
+                    }
+                }
+            }
+
+            return parsed;
+        }
     }
 
     public enum CommandComponentType
