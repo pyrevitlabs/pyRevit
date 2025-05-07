@@ -15,9 +15,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 // Reorder children based on LayoutOrder inside the parsedExtension
                 ReorderChildren(parsedExtension);
 
-                // Populate tooltip, UniqueId, etc., if needed (e.g., add validation or enrichment)
-                //FlattenAndEnrich(parsedExtension.Children);
-
                 yield return parsedExtension;
             }
 

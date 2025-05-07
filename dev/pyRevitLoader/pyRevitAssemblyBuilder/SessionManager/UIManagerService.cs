@@ -30,14 +30,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
             switch (component.Type)
             {
                 case CommandComponentType.Tab:
-                    try { _uiApp.CreateRibbonTab(component.Name); } catch { }
+                    try { _uiApp.CreateRibbonTab(component.DisplayName); } catch { }
                     foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                        RecursivelyBuildUI(child, component, null, component.Name, assemblyInfo);
+                        RecursivelyBuildUI(child, component, null, component.DisplayName, assemblyInfo);
                     break;
 
                 case CommandComponentType.Panel:
-                    var panel = _uiApp.GetRibbonPanels(tabName).FirstOrDefault(p => p.Name == component.Name)
-                             ?? _uiApp.CreateRibbonPanel(tabName, component.Name);
+                    var panel = _uiApp.GetRibbonPanels(tabName).FirstOrDefault(p => p.Name == component.DisplayName)
+                             ?? _uiApp.CreateRibbonPanel(tabName, component.DisplayName);
                     foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
                     break;
@@ -55,7 +55,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         }
                         else if (child.Type == CommandComponentType.PullDown)
                         {
-                            var pdData = new PulldownButtonData(child.UniqueId, child.Name);
+                            var pdData = new PulldownButtonData(child.UniqueId, child.DisplayName);
                             itemDataList.Add(pdData);
                             originalItems.Add(child);
                         }
@@ -130,7 +130,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 case CommandComponentType.SplitButton:
                 case CommandComponentType.SplitPushButton:
-                    var splitData = new SplitButtonData(component.UniqueId, component.Name);
+                    var splitData = new SplitButtonData(component.UniqueId, component.DisplayName);
                     var splitBtn = parentPanel?.AddItem(splitData) as SplitButton;
                     if (splitBtn == null) return;
 
@@ -153,7 +153,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             ExtensionAssemblyInfo assemblyInfo,
             bool addToPanel)
         {
-            var pdData = new PulldownButtonData(component.UniqueId, component.Name);
+            var pdData = new PulldownButtonData(component.UniqueId, component.DisplayName);
 
             if (!addToPanel)
                 return pdData;
@@ -178,7 +178,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             return new PushButtonData(
                 component.UniqueId,
-                component.Name,
+                component.DisplayName,
                 assemblyInfo.Location,
                 component.UniqueId
             );

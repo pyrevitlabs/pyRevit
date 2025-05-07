@@ -90,6 +90,7 @@ namespace pyRevitExtensionParser
                     continue;
 
                 var namePart = Path.GetFileNameWithoutExtension(dir).Replace(" ", "");
+                var displayName = Path.GetFileNameWithoutExtension(dir);
                 var fullPath = string.IsNullOrEmpty(parentPath)
                     ? $"{extensionName}_{namePart}"
                     : $"{parentPath}_{namePart}";
@@ -127,6 +128,7 @@ namespace pyRevitExtensionParser
                 components.Add(new ParsedComponent
                 {
                     Name = namePart,
+                    DisplayName = displayName,
                     ScriptPath = scriptPath,
                     Tooltip = $"Command: {namePart}",
                     UniqueId = fullPath.ToLowerInvariant(),
@@ -144,6 +146,7 @@ namespace pyRevitExtensionParser
     public class ParsedExtension
     {
         public string Name { get; set; }
+        public string DisplayName { get; set; }
         public string Directory { get; set; }
         public List<ParsedComponent> Children { get; set; }
         public List<string> LayoutOrder { get; set; }
@@ -184,13 +187,14 @@ namespace pyRevitExtensionParser
     public class ParsedComponent
     {
         public string Name { get; set; }
+        public string DisplayName { get; set; }
         public string ScriptPath { get; set; }
         public string Tooltip { get; set; }
         public string UniqueId { get; set; }
         public CommandComponentType Type { get; set; }
         public List<ParsedComponent> Children { get; set; }
         public string BundleFile { get; set; }
-        public List<string> LayoutOrder { get; set; }  // Save layout as a property for the component
+        public List<string> LayoutOrder { get; set; }
     }
 
     public class ParsedBundle
@@ -231,12 +235,15 @@ namespace pyRevitExtensionParser
 
                     switch (currentSection)
                     {
-                        case "author": parsed.Author = value; break;
-                        case "min_revit_version": parsed.MinRevitVersion = value; break;
+                        case "author":
+                            parsed.Author = value; break;
+                        case "min_revit_version":
+                            parsed.MinRevitVersion = value; break;
                         case "engine":
                         case "title":
                         case "tooltip":
-                        case "layout": break; // handled below
+                        case "layout": 
+                            break;
                     }
                 }
                 else if (line.StartsWith("  ") && currentSection == "layout" && line.TrimStart().StartsWith("-"))
