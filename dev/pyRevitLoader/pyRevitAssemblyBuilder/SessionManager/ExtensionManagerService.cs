@@ -15,9 +15,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 // Reorder children based on LayoutOrder inside the parsedExtension
                 ReorderChildren(parsedExtension);
 
-                // Populate tooltip, UniqueId, etc., if needed (e.g., add validation or enrichment)
-                //FlattenAndEnrich(parsedExtension.Children);
-
                 yield return parsedExtension;
             }
 
@@ -94,14 +91,5 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
         }
 
-        private void FlattenAndEnrich(IEnumerable<ParsedComponent> components)
-        {
-            foreach (var component in components)
-            {
-                // Custom logic if needed, e.g., enrich tooltip or validate UniqueId
-                if (component.Children != null)
-                    FlattenAndEnrich(component.Children);
-            }
-        }
     }
 }
