@@ -119,7 +119,7 @@ def main():
         CheckBox("families", "Fonts used in Families", default=True),
         CheckBox("textnotes", "Text Notes Fonts in Project", default=True),
         CheckBox("dimensions", "Dimensions Fonts in Project", default=True),
-        Button("Select"),
+        Button("OK"),
     ]
 
     form = FlexForm("Change Font in Elements", components)
