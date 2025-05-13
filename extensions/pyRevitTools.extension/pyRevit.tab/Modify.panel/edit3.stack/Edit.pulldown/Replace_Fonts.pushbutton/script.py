@@ -18,7 +18,6 @@ output = script.get_output()
 logger = script.get_logger()
 
 
-
 def update_text_font_in_family(doc, family, font_name):
     """
     Updates the text font in a Revit family to the specified font name.
