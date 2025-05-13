@@ -53,7 +53,7 @@ def update_text_font_in_family(doc, family, font_name):
                         found = True
                         result.append((element_type.FamilyName, old_font, font_name))
                 except Exception as e:
-                    output.print_md(
+                    logger.error(
                         "Error updating {}: {}".format(element_type.FamilyName, str(e))
                     )
                     continue
@@ -92,7 +92,7 @@ def update_text_types(doc, element_types, font_name):
                         (DB.Element.Name.GetValue(elem_type), old_font, font_name)
                     )
             except Exception as e:
-                output.print_md(
+                logger.error(
                     "**Error updating {}: {}**".format(
                         DB.Element.Name.GetValue(elem_type), str(e)
                     )
