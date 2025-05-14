@@ -57,7 +57,8 @@
     <Target Name="Deploy" AfterTargets="AfterBuild">
         <ItemGroup>
             <AllFilesToCopy Include="$(TargetDir)\**\*.dll"
-                            Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll" />
+                            Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll"
+                            Condition="'$(IsTestProject)' != 'true'"/>
         </ItemGroup>
         <Copy SourceFiles="@(AllFilesToCopy)" 
                 DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />

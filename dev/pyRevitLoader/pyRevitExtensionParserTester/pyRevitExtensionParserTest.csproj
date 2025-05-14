@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	<DisableImplicitProps>true</DisableImplicitProps>
+	<DisableImplicitTargets>true</DisableImplicitTargets>
+	<IronPythonVersion>IPY342</IronPythonVersion>
+	<Version>3.4.2</Version>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+	<UseLoader>false</UseLoader>
+	<UseIronPython>false</UseIronPython>
+    <UseRevit>false</UseRevit>
+    <UseAssemblyBuilder>false</UseAssemblyBuilder>
+    <UseExtensionParser>true</UseExtensionParser>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ParserBasicTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+</Project>

@@ -9,16 +9,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public IEnumerable<ParsedExtension> GetInstalledExtensions()
         {
             var installedExtensions = ExtensionParser.ParseInstalledExtensions();
-
-            foreach (var parsedExtension in installedExtensions)
-            {
-                // Reorder children based on LayoutOrder inside the parsedExtension
-                ReorderChildren(parsedExtension);
-
-                yield return parsedExtension;
-            }
-
-            Console.WriteLine(installedExtensions);
+            //Console.WriteLine(installedExtensions);
+            return installedExtensions;
         }
 
         private void ReorderChildren(ParsedExtension parsedExtension)

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.AssemblyMaker;
+using System.ComponentModel;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -25,7 +27,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
         }
 
-        private void RecursivelyBuildUI(ParsedComponent component, ParsedComponent parentComponent, RibbonPanel parentPanel, string tabName, ExtensionAssemblyInfo assemblyInfo)
+        private void RecursivelyBuildUI(
+            ParsedComponent component,
+            ParsedComponent parentComponent,
+            RibbonPanel parentPanel,
+            string tabName,
+            ExtensionAssemblyInfo assemblyInfo)
         {
             switch (component.Type)
             {
@@ -36,60 +43,41 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     break;
 
                 case CommandComponentType.Panel:
-                    var panel = _uiApp.GetRibbonPanels(tabName).FirstOrDefault(p => p.Name == component.DisplayName)
-                             ?? _uiApp.CreateRibbonPanel(tabName, component.DisplayName);
+                    var panel = _uiApp.GetRibbonPanels(tabName)
+                        .FirstOrDefault(p => p.Name == component.DisplayName)
+                        ?? _uiApp.CreateRibbonPanel(tabName, component.DisplayName);
                     foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
                     break;
 
+                default:
+                    if (component.HasSlideout)
+                    {
+                        EnsureSlideOutApplied(parentComponent, parentPanel);
+                    }
+                    HandleComponentBuilding(component, parentPanel, tabName, assemblyInfo);
+                    break;
+            }
+        }
+
+        private void EnsureSlideOutApplied(ParsedComponent parentComponent,RibbonPanel parentPanel)
+        {
+            if (parentPanel != null && parentComponent.Type == CommandComponentType.Panel)
+            {
+                try { parentPanel.AddSlideOut(); } catch { }
+            }
+        }
+
+        private void HandleComponentBuilding(
+            ParsedComponent component,
+            RibbonPanel parentPanel,
+            string tabName,
+            ExtensionAssemblyInfo assemblyInfo)
+        {
+            switch (component.Type)
+            {
                 case CommandComponentType.Stack:
-                    var itemDataList = new List<RibbonItemData>();
-                    var originalItems = new List<ParsedComponent>();
-
-                    foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                    {
-                        if (child.Type == CommandComponentType.PushButton)
-                        {
-                            itemDataList.Add(CreatePushButton(child, assemblyInfo));
-                            originalItems.Add(child);
-                        }
-                        else if (child.Type == CommandComponentType.PullDown)
-                        {
-                            var pdData = new PulldownButtonData(child.UniqueId, child.DisplayName);
-                            itemDataList.Add(pdData);
-                            originalItems.Add(child);
-                        }
-                    }
-
-                    if (itemDataList.Count >= 2)
-                    {
-                        IList<RibbonItem> stackedItems = null;
-                        if (itemDataList.Count == 2)
-                            stackedItems = parentPanel?.AddStackedItems(itemDataList[0], itemDataList[1]);
-                        else if (itemDataList.Count >= 3)
-                            stackedItems = parentPanel?.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
-
-                        if (stackedItems != null)
-                        {
-                            for (int i = 0; i < stackedItems.Count; i++)
-                            {
-                                var ribbonItem = stackedItems[i];
-                                var origComponent = originalItems[i];
-
-                                if (ribbonItem is PulldownButton pdBtn)
-                                {
-                                    foreach (var sub in origComponent.Children ?? Enumerable.Empty<ParsedComponent>())
-                                    {
-                                        if (sub.Type == CommandComponentType.PushButton)
-                                        {
-                                            var subData = CreatePushButton(sub, assemblyInfo);
-                                            pdBtn.AddPushButton(subData);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    BuildStack(component, parentPanel, assemblyInfo);
                     break;
 
                         // Now post-process pulldowns to add nested pushbuttons
@@ -132,17 +120,69 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 case CommandComponentType.SplitPushButton:
                     var splitData = new SplitButtonData(component.UniqueId, component.DisplayName);
                     var splitBtn = parentPanel?.AddItem(splitData) as SplitButton;
-                    if (splitBtn == null) return;
-
-                    foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
+                    if (splitBtn != null)
                     {
-                        if (sub.Type == CommandComponentType.PushButton)
+                        foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         {
-                            var subData = CreatePushButton(sub, assemblyInfo);
-                            splitBtn.AddPushButton(subData);
+                            if (sub.Type == CommandComponentType.PushButton)
+                            {
+                                splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                            }
                         }
                     }
                     break;
+            }
+        }
+
+        private void BuildStack(
+            ParsedComponent component,
+            RibbonPanel parentPanel,
+            ExtensionAssemblyInfo assemblyInfo)
+        {
+            var itemDataList = new List<RibbonItemData>();
+            var originalItems = new List<ParsedComponent>();
+
+            foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
+            {
+                if (child.Type == CommandComponentType.PushButton)
+                {
+                    itemDataList.Add(CreatePushButton(child, assemblyInfo));
+                    originalItems.Add(child);
+                }
+                else if (child.Type == CommandComponentType.PullDown)
+                {
+                    var pdData = new PulldownButtonData(child.UniqueId, child.DisplayName);
+                    itemDataList.Add(pdData);
+                    originalItems.Add(child);
+                }
+            }
+
+            if (itemDataList.Count >= 2)
+            {
+                IList<RibbonItem> stackedItems = null;
+                if (itemDataList.Count == 2)
+                    stackedItems = parentPanel?.AddStackedItems(itemDataList[0], itemDataList[1]);
+                else
+                    stackedItems = parentPanel?.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
+
+                if (stackedItems != null)
+                {
+                    for (int i = 0; i < stackedItems.Count; i++)
+                    {
+                        var ribbonItem = stackedItems[i];
+                        var origComponent = originalItems[i];
+                        if (ribbonItem is PulldownButton pdBtn)
+                        {
+                            foreach (var sub in origComponent.Children ?? Enumerable.Empty<ParsedComponent>())
+                            {
+                                if (sub.Type == CommandComponentType.PushButton)
+                                {
+                                    pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -154,23 +194,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
             bool addToPanel)
         {
             var pdData = new PulldownButtonData(component.UniqueId, component.DisplayName);
+            if (!addToPanel) return pdData;
 
-            if (!addToPanel)
-                return pdData;
-
-            PulldownButton pdBtn = parentPanel.AddItem(pdData) as PulldownButton;
-            if (pdBtn == null)
-                return null;
+            var pdBtn = parentPanel.AddItem(pdData) as PulldownButton;
+            if (pdBtn == null) return null;
 
             foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
                 if (sub.Type == CommandComponentType.PushButton)
-                {
-                    var subData = CreatePushButton(sub, assemblyInfo);
-                    pdBtn.AddPushButton(subData);
-                }
+                    pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
             }
-
             return pdData;
         }
 
@@ -180,8 +213,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 component.UniqueId,
                 component.DisplayName,
                 assemblyInfo.Location,
-                component.UniqueId
-            );
+                component.UniqueId);
         }
     }
 }

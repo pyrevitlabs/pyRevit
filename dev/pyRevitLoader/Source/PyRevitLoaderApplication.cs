@@ -66,30 +66,24 @@ namespace PyRevitLoader
                 }
                 catch
                 {
+
                 }
             }
         }
 
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
         {
+            // defy the method of loading the assembly
+            // based on the config file setup
             var config = PyRevitConfig.Load();
-
-            // If the new "new_loader" is enabled in config, we will use the C# loader
-            if (config.NewLoader)
+            switch (config.NewLoader)
             {
-                // If the new "new_loader_roslyn" is enabled in config, we will use the Roslyn loader
-                if (config.NewLoaderRoslyn)
-                {
+                case true when config.NewLoaderRoslyn:
                     return ExecuteStartUpCsharp(uiControlledApplication, AssemblyBuildStrategy.Roslyn);
-                }
-                else
-                {
+                case true:
                     return ExecuteStartUpCsharp(uiControlledApplication, AssemblyBuildStrategy.ILPack);
-                }
-            }
-            else
-            {
-                return ExecuteStartUpPython(uiControlledApplication);
+                default:
+                    return ExecuteStartUpPython(uiControlledApplication);
             }
         }
 
