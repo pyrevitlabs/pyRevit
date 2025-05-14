@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using static pyRevitExtensionParser.BundleParser;
 
 namespace pyRevitExtensionParser
 {
@@ -21,13 +22,12 @@ namespace pyRevitExtensionParser
                     var extName = Path.GetFileNameWithoutExtension(extDir);
                     var children = ParseComponents(extDir, extName);
 
-                    // Parse bundle.yaml if present in the extension folder
                     var bundlePath = Path.Combine(extDir, "bundle.yaml");
                     ParsedBundle parsedBundle = File.Exists(bundlePath)
                         ? BundleYamlParser.Parse(bundlePath)
                         : null;
 
-                    yield return new ParsedExtension
+                    var parsedExtension = new ParsedExtension
                     {
                         Name = extName,
                         Directory = extDir,
@@ -38,7 +38,45 @@ namespace pyRevitExtensionParser
                         MinRevitVersion = parsedBundle?.MinRevitVersion,
                         Engine = parsedBundle?.Engine
                     };
+
+                    ReorderByLayout(parsedExtension);
+
+                    yield return parsedExtension;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Recursively reorders the given component’s Children in-place
+        /// according to its own LayoutOrder.  If LayoutOrder is null or empty,
+        /// we skip sorting here but still recurse into children.
+        /// </summary>
+        private static void ReorderByLayout(ParsedComponent component)
+        {
+            if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
+            {
+                component.Children.Sort((a, b) =>
+                {
+                    int ix = component.LayoutOrder.IndexOf(a.Name);
+                    int iy = component.LayoutOrder.IndexOf(b.Name);
+                    ix = ix >= 0 ? ix : int.MaxValue;
+                    iy = iy >= 0 ? iy : int.MaxValue;
+                    return ix.CompareTo(iy);
+                });
+
+                var slideoutIndex = component.LayoutOrder.IndexOf(">>>>>");
+                var nameIndex = component.LayoutOrder.IndexOf(component.Name);
+
+                if (slideoutIndex >= 0)
+                {
+                    Console.WriteLine($"Slideout index: {slideoutIndex}");
+                    component.Children[slideoutIndex + 1].HasSlideout = true;
+                }
+            }
+
+            foreach (var child in component.Children)
+            {
+                ReorderByLayout(child);
             }
         }
 
@@ -48,6 +86,13 @@ namespace pyRevitExtensionParser
 
             var current = Path.GetDirectoryName(typeof(ExtensionParser).Assembly.Location);
             var defaultPath = Path.GetFullPath(Path.Combine(current, "..", "..", "..", "..", "extensions"));
+
+            // Monkey patch for testing bench
+            if (!Directory.Exists(defaultPath))
+            {
+                defaultPath = Path.Combine(current, "..", "..", "..", "..", "..", "..", "extensions");
+            }
+
             roots.Add(defaultPath);
 
             var configPath = Path.Combine(
@@ -143,13 +188,9 @@ namespace pyRevitExtensionParser
         }
     }
 
-    public class ParsedExtension
+    public class ParsedExtension : ParsedComponent
     {
-        public string Name { get; set; }
-        public string DisplayName { get; set; }
         public string Directory { get; set; }
-        public List<ParsedComponent> Children { get; set; }
-        public List<string> LayoutOrder { get; set; }
         public Dictionary<string, string> Titles { get; set; }
         public Dictionary<string, string> Tooltips { get; set; }
         public string MinRevitVersion { get; set; }
@@ -183,7 +224,6 @@ namespace pyRevitExtensionParser
             }
         }
     }
-
     public class ParsedComponent
     {
         public string Name { get; set; }
@@ -195,93 +235,15 @@ namespace pyRevitExtensionParser
         public List<ParsedComponent> Children { get; set; }
         public string BundleFile { get; set; }
         public List<string> LayoutOrder { get; set; }
-    }
+        public bool HasSlideout { get; set; } = false;
 
-    public class ParsedBundle
-    {
-        public List<string> LayoutOrder { get; set; } = new List<string>();
-        public Dictionary<string, string> Titles { get; set; } = new Dictionary<string, string>();
-        public Dictionary<string, string> Tooltips { get; set; } = new Dictionary<string, string>();
-        public string Author { get; set; }
-        public string MinRevitVersion { get; set; }
-        public EngineConfig Engine { get; set; } = new EngineConfig();
     }
-
     public class EngineConfig
     {
         public bool Clean { get; set; }
         public bool FullFrame { get; set; }
         public bool Persistent { get; set; }
     }
-
-    public static class BundleYamlParser
-    {
-        public static ParsedBundle Parse(string filePath)
-        {
-            var parsed = new ParsedBundle();
-            var lines = File.ReadAllLines(filePath);
-            string currentSection = null;
-
-            foreach (var raw in lines)
-            {
-                var line = raw.TrimEnd();
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                if (!line.StartsWith(" ") && line.Contains(":"))
-                {
-                    var parts = line.Split(new[] { ':' }, 2);
-                    currentSection = parts[0].Trim().ToLowerInvariant();
-                    var value = parts[1].Trim();
-
-                    switch (currentSection)
-                    {
-                        case "author":
-                            parsed.Author = value; break;
-                        case "min_revit_version":
-                            parsed.MinRevitVersion = value; break;
-                        case "engine":
-                        case "title":
-                        case "tooltip":
-                        case "layout": 
-                            break;
-                    }
-                }
-                else if (line.StartsWith("  ") && currentSection == "layout" && line.TrimStart().StartsWith("-"))
-                {
-                    parsed.LayoutOrder.Add(line.TrimStart().Substring(1).Trim());
-                }
-                else if (line.StartsWith("  ") && (currentSection == "title" || currentSection == "tooltip"))
-                {
-                    var parts = line.Trim().Split(new[] { ':' }, 2);
-                    if (parts.Length == 2)
-                    {
-                        var lang = parts[0].Trim();
-                        var text = parts[1].Trim();
-                        if (currentSection == "title")
-                            parsed.Titles[lang] = text;
-                        else
-                            parsed.Tooltips[lang] = text;
-                    }
-                }
-                else if (line.StartsWith("  ") && currentSection == "engine" && line.Contains(":"))
-                {
-                    var parts = line.Trim().Split(new[] { ':' }, 2);
-                    var key = parts[0].Trim().ToLowerInvariant();
-                    var val = parts[1].Trim().ToLowerInvariant();
-
-                    switch (key)
-                    {
-                        case "clean": parsed.Engine.Clean = val == "true"; break;
-                        case "full_frame": parsed.Engine.FullFrame = val == "true"; break;
-                        case "persistent": parsed.Engine.Persistent = val == "true"; break;
-                    }
-                }
-            }
-
-            return parsed;
-        }
-    }
-
     public enum CommandComponentType
     {
         Unknown,
