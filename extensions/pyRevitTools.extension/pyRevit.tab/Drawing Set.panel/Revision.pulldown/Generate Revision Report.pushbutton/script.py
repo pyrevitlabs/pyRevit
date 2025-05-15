@@ -4,7 +4,7 @@
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import coreutils
 from pyrevit import revit, DB
-from pyrevit import script
+from pyrevit import script, forms
 
 
 # collect sheet
@@ -43,7 +43,8 @@ console.add_style(
     'th { background-color: #545454; color: white; }'
     'tr:nth-child(odd) {background-color: #f2f2f2}'
     )
-
+if not all_revisions:
+    script.exit()
 
 # Print Title and Report Info
 console.print_md('# {}'.format(report_title))
