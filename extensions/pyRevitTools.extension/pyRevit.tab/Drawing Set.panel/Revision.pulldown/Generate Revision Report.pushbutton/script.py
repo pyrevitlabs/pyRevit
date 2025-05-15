@@ -22,9 +22,9 @@ all_clouds = DB.FilteredElementCollector(revit.doc)\
                .WhereElementIsNotElementType()
 
 # collect all revisions
-all_revisions = DB.FilteredElementCollector(revit.doc)\
-                  .OfCategory(DB.BuiltInCategory.OST_Revisions)\
-                  .WhereElementIsNotElementType()
+all_revisions = forms.select_revisions(
+                    title='Select Revisions To Include In The Report'
+)
 
 
 console = script.get_output()
