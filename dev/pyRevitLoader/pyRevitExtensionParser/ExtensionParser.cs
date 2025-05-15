@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using static pyRevitExtensionParser.BundleParser;
 
 namespace pyRevitExtensionParser
@@ -55,22 +56,25 @@ namespace pyRevitExtensionParser
         {
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
+
+                var nameIndexMap = component.LayoutOrder
+                    .Select((name, index) => new { name, index })
+                    .GroupBy(x => x.name)
+                    .ToDictionary(g => g.Key, g => g.First().index);
+
                 component.Children.Sort((a, b) =>
                 {
-                    int ix = component.LayoutOrder.IndexOf(a.Name);
-                    int iy = component.LayoutOrder.IndexOf(b.Name);
-                    ix = ix >= 0 ? ix : int.MaxValue;
-                    iy = iy >= 0 ? iy : int.MaxValue;
+                    int ix = nameIndexMap.TryGetValue(a.DisplayName, out int indexA) ? indexA : int.MaxValue;
+                    int iy = nameIndexMap.TryGetValue(b.DisplayName, out int indexB) ? indexB : int.MaxValue;
                     return ix.CompareTo(iy);
                 });
 
                 var slideoutIndex = component.LayoutOrder.IndexOf(">>>>>");
-                var nameIndex = component.LayoutOrder.IndexOf(component.Name);
 
                 if (slideoutIndex >= 0)
                 {
-                    Console.WriteLine($"Slideout index: {slideoutIndex}");
-                    component.Children[slideoutIndex + 1].HasSlideout = true;
+                    var nextelem = component.LayoutOrder[slideoutIndex + 1];
+                    component.Children.Find(c => c.Name == nextelem).HasSlideout = true;
                 }
             }
 
@@ -176,7 +180,7 @@ namespace pyRevitExtensionParser
                     DisplayName = displayName,
                     ScriptPath = scriptPath,
                     Tooltip = $"Command: {namePart}",
-                    UniqueId = fullPath.ToLowerInvariant(),
+                    UniqueId = SanitizeClassName(fullPath.ToLowerInvariant()),
                     Type = componentType,
                     Children = children,
                     BundleFile = File.Exists(bundleFile) ? bundleFile : null,
@@ -185,6 +189,13 @@ namespace pyRevitExtensionParser
             }
 
             return components;
+        }
+        private static string SanitizeClassName(string name)
+        {
+            var sb = new StringBuilder();
+            foreach (char c in name)
+                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+            return sb.ToString();
         }
     }
 

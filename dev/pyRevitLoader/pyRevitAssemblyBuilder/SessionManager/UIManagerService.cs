@@ -83,7 +83,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 case CommandComponentType.PushButton:
                 case CommandComponentType.SmartButton:
                     var pbData = CreatePushButton(component, assemblyInfo);
-                    var btn = parentPanel?.AddItem(pbData) as PushButton;
+                    var btn = parentPanel.AddItem(pbData) as PushButton;
                     if (!string.IsNullOrEmpty(component.Tooltip))
                         btn.ToolTip = component.Tooltip;
                     break;
@@ -95,7 +95,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 case CommandComponentType.SplitButton:
                 case CommandComponentType.SplitPushButton:
                     var splitData = new SplitButtonData(component.UniqueId, component.DisplayName);
-                    var splitBtn = parentPanel?.AddItem(splitData) as SplitButton;
+                    var splitBtn = parentPanel.AddItem(splitData) as SplitButton;
                     if (splitBtn != null)
                     {
                         foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
@@ -120,7 +120,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
-                if (child.Type == CommandComponentType.PushButton)
+                if (child.Type == CommandComponentType.PushButton ||
+                    child.Type == CommandComponentType.SmartButton)
                 {
                     itemDataList.Add(CreatePushButton(child, assemblyInfo));
                     originalItems.Add(child);
@@ -137,9 +138,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 IList<RibbonItem> stackedItems = null;
                 if (itemDataList.Count == 2)
-                    stackedItems = parentPanel?.AddStackedItems(itemDataList[0], itemDataList[1]);
+                    stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1]);
                 else
-                    stackedItems = parentPanel?.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
+                    stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
 
                 if (stackedItems != null)
                 {
