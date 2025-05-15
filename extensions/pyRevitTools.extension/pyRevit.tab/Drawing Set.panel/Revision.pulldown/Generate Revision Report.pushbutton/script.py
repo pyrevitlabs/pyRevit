@@ -25,7 +25,8 @@ all_clouds = DB.FilteredElementCollector(revit.doc)\
 all_revisions = forms.select_revisions(
                     title='Select Revisions To Include In The Report'
 )
-
+if not all_revisions:
+    script.exit()
 
 console = script.get_output()
 console.set_height(800)
@@ -43,8 +44,7 @@ console.add_style(
     'th { background-color: #545454; color: white; }'
     'tr:nth-child(odd) {background-color: #f2f2f2}'
     )
-if not all_revisions:
-    script.exit()
+
 
 # Print Title and Report Info
 console.print_md('# {}'.format(report_title))
