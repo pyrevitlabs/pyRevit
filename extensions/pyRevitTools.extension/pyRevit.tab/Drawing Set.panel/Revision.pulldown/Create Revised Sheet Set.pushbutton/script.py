@@ -13,7 +13,7 @@ if revisions:
             forms.CommandSwitchWindow.show(['Matching ANY revision',
                                             'Matching ALL revisions'],
                                            message='Pick an option:')
-        name_str = "{}".format(" & ".join(revision_names))
+        name_str = " & ".join(revision_names)
     else:
         selected_switch = 'Matching ALL revisions'
         name_str = revision_names[0]
@@ -24,8 +24,8 @@ if revisions:
         ok_text='Create',
         cancel_text='Cancel'
     )
-    if not set_name:
-        forms.alert('No name provided. Exiting.')
+    if set_name is None or set_name.strip() == '':
+        forms.alert('Operation cancelled. No name was provided for the revision sheet set.')
         script.exit()
     if selected_switch:
         match_any = (selected_switch == 'Matching ANY revision')
