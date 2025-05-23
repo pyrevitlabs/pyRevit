@@ -531,7 +531,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
     def copy(self):
         viewports = revit.get_selection().include(DB.Viewport)
         if len(viewports) != 1:
-            raise Exception("Exactly one viewport must be selected")
+            raise PyRevitException("Exactly one viewport must be selected")
         viewport = viewports[0]
         view = revit.doc.GetElement(viewport.ViewId)
 
