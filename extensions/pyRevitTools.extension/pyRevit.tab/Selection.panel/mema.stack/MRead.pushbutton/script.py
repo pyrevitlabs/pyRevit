@@ -5,7 +5,7 @@ from pyrevit import revit, DB, HOST_APP
 from System import Int64
 
 selection = revit.get_selection()
-
+logger = script.get_logger()
 datafile = script.get_document_data_file("SelList", "pym")
 
 try:
@@ -22,5 +22,6 @@ try:
             element_ids.append(DB.ElementId(int(elid)))
 
     selection.set_to(element_ids)
-except Exception:
-    pass
+except Exception as e:
+    logger.debug("Error loading selection: %s" % e)
+    script.exit()
