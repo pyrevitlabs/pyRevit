@@ -1,4 +1,5 @@
 """ReNumber numbered elements in order of selection."""
+
 from collections import OrderedDict
 
 from pyrevit.coreutils import applocales
@@ -16,8 +17,10 @@ original_graphic_overrides = {}
 
 BIC = DB.BuiltInCategory
 
+
 class RNOpts(object):
     """Renumber tool option"""
+
     def __init__(self, cat, by_bicat=None):
         self.bicat = cat
         self._cat = revit.query.get_category(self.bicat)
@@ -29,9 +32,9 @@ class RNOpts(object):
         """Renumber option name derived from option categories."""
         if self.by_bicat:
             applocale = applocales.get_host_applocale()
-            if 'english' in applocale.lang_name.lower():
-                return '{} by {}'.format(self._cat.Name, self._by_cat.Name)
-            return '{} <- {}'.format(self._cat.Name, self._by_cat.Name)
+            if "english" in applocale.lang_name.lower():
+                return "{} by {}".format(self._cat.Name, self._by_cat.Name)
+            return "{} <- {}".format(self._cat.Name, self._by_cat.Name)
         return self._cat.Name
 
 
@@ -50,40 +53,49 @@ def toggle_element_selection_handles(target_view, bicat, state=True):
             ref_visible = None
             int_fill_visible = None
 
-            rr_cat = revit.query.get_subcategory(bicat, 'Reference')
+            rr_cat = revit.query.get_subcategory(bicat, "Reference")
             if rr_cat:
                 try:
                     ref_visible = rr_cat.Visible[target_view]
                 except Exception as vex:
                     logger.debug(
-                        'Failed to get Reference visibility for \"%s\" on view \"%s\" | %s',
-                        bicat, target_view.Name, str(vex)
+                        'Failed to get Reference visibility for "%s" on view "%s" | %s',
+                        bicat,
+                        target_view.Name,
+                        str(vex),
                     )
             else:
                 logger.debug(
-                    'Reference subcategory not found for \"%s\" on view \"%s\"',
-                    bicat, target_view.Name
+                    'Reference subcategory not found for "%s" on view "%s"',
+                    bicat,
+                    target_view.Name,
                 )
 
-            rr_int = revit.query.get_subcategory(bicat, 'Interior Fill')
+            rr_int = revit.query.get_subcategory(bicat, "Interior Fill")
             if not rr_int:
-                rr_int = revit.query.get_subcategory(bicat, 'Interior')
-            
+                rr_int = revit.query.get_subcategory(bicat, "Interior")
+
             if rr_int:
                 try:
                     int_fill_visible = rr_int.Visible[target_view]
                 except Exception as vex:
                     logger.debug(
-                        'Failed to get Interior Fill visibility for \"%s\" on view \"%s\" | %s',
-                        bicat, target_view.Name, str(vex)
+                        'Failed to get Interior Fill visibility for "%s" on view "%s" | %s',
+                        bicat,
+                        target_view.Name,
+                        str(vex),
                     )
             else:
                 logger.debug(
-                    'Interior Fill subcategory not found for \"%s\" on view \"%s\"',
-                    bicat, target_view.Name
+                    'Interior Fill subcategory not found for "%s" on view "%s"',
+                    bicat,
+                    target_view.Name,
                 )
-            
-            original_visibility_states[view_id][bicat_id] = (ref_visible, int_fill_visible)
+
+            original_visibility_states[view_id][bicat_id] = (
+                ref_visible,
+                int_fill_visible,
+            )
 
             # Enable temporary view properties mode
             target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
@@ -94,62 +106,76 @@ def toggle_element_selection_handles(target_view, bicat, state=True):
                     rr_cat.Visible[target_view] = True
                 except Exception as vex:
                     logger.debug(
-                        'Failed changing Reference visibility for \"%s\" to True on view \"%s\" | %s',
-                        bicat, target_view.Name, str(vex)
+                        'Failed changing Reference visibility for "%s" to True on view "%s" | %s',
+                        bicat,
+                        target_view.Name,
+                        str(vex),
                     )
             if rr_int:
                 try:
                     rr_int.Visible[target_view] = True
                 except Exception as vex:
                     logger.debug(
-                        'Failed changing Interior Fill visibility for \"%s\" to True on view \"%s\" | %s',
-                        bicat, target_view.Name, str(vex)
+                        'Failed changing Interior Fill visibility for "%s" to True on view "%s" | %s',
+                        bicat,
+                        target_view.Name,
+                        str(vex),
                     )
         else:
             # Restore original states
-            if view_id in original_visibility_states and bicat_id in original_visibility_states[view_id]:
-                original_ref_visible, original_int_fill_visible = original_visibility_states[view_id][bicat_id]
+            if (
+                view_id in original_visibility_states
+                and bicat_id in original_visibility_states[view_id]
+            ):
+                original_ref_visible, original_int_fill_visible = (
+                    original_visibility_states[view_id][bicat_id]
+                )
 
-                rr_cat = revit.query.get_subcategory(bicat, 'Reference')
+                rr_cat = revit.query.get_subcategory(bicat, "Reference")
                 if rr_cat and original_ref_visible is not None:
                     try:
                         rr_cat.Visible[target_view] = original_ref_visible
                     except Exception as vex:
                         logger.debug(
-                            'Failed restoring Reference visibility for \"%s\" to \"%s\" on view \"%s\" | %s',
-                            bicat, original_ref_visible, target_view.Name, str(vex)
+                            'Failed restoring Reference visibility for "%s" to "%s" on view "%s" | %s',
+                            bicat,
+                            original_ref_visible,
+                            target_view.Name,
+                            str(vex),
                         )
-                
-                rr_int = revit.query.get_subcategory(bicat, 'Interior Fill')
+
+                rr_int = revit.query.get_subcategory(bicat, "Interior Fill")
                 if not rr_int:
-                    rr_int = revit.query.get_subcategory(bicat, 'Interior')
+                    rr_int = revit.query.get_subcategory(bicat, "Interior")
 
                 if rr_int and original_int_fill_visible is not None:
                     try:
                         rr_int.Visible[target_view] = original_int_fill_visible
                     except Exception as vex:
                         logger.debug(
-                            'Failed restoring Interior Fill visibility for \"%s\" to \"%s\" on view \"%s\" | %s',
-                            bicat, original_int_fill_visible, target_view.Name, str(vex)
+                            'Failed restoring Interior Fill visibility for "%s" to "%s" on view "%s" | %s',
+                            bicat,
+                            original_int_fill_visible,
+                            target_view.Name,
+                            str(vex),
                         )
-                
+
                 # Clean up stored state
                 del original_visibility_states[view_id][bicat_id]
                 if not original_visibility_states[view_id]:
                     del original_visibility_states[view_id]
 
             # Disable temporary view mode
-            target_view.DisableTemporaryViewMode(DB.TemporaryViewMode.TemporaryViewProperties)
+            target_view.DisableTemporaryViewMode(
+                DB.TemporaryViewMode.TemporaryViewProperties
+            )
 
 
 class EasilySelectableElements(object):
     """Toggle spatial element handles for easy selection."""
-    def __init__(self, target_views, bicat): # Modified to accept a list of views
-        self.supported_categories = [
-            BIC.OST_Rooms,
-            BIC.OST_Areas,
-            BIC.OST_MEPSpaces
-            ]
+
+    def __init__(self, target_views, bicat):  # Modified to accept a list of views
+        self.supported_categories = [BIC.OST_Rooms, BIC.OST_Areas, BIC.OST_MEPSpaces]
         # Ensure target_views is a list
         if not isinstance(target_views, list):
             self.target_views = [target_views]
@@ -161,20 +187,14 @@ class EasilySelectableElements(object):
         if self.bicat in self.supported_categories:
             for view in self.target_views:
                 toggle_element_selection_handles(
-                    view,
-                    self.bicat,
-                    state=True # Explicitly set state to True
+                    view, self.bicat, state=True  # Explicitly set state to True
                 )
         return self
 
     def __exit__(self, exception, exception_value, traceback):
         if self.bicat in self.supported_categories:
             for view in self.target_views:
-                toggle_element_selection_handles(
-                    view,
-                    self.bicat,
-                    state=False
-                )
+                toggle_element_selection_handles(view, self.bicat, state=False)
 
 
 def increment(number):
@@ -192,7 +212,9 @@ def get_number(target_element):
     if isinstance(target_element, (DB.Level, DB.Grid)):
         mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
     if isinstance(target_element, DB.Viewport):
-        mark_param = target_element.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
+        mark_param = target_element.Parameter[
+            DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+        ]
     # get now
     if mark_param:
         return mark_param.AsString()
@@ -209,13 +231,17 @@ def set_number(target_element, new_number):
     if isinstance(target_element, (DB.Level, DB.Grid)):
         mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
     if isinstance(target_element, DB.Viewport):
-        mark_param = target_element.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
-    # set now 
+        mark_param = target_element.Parameter[
+            DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+        ]
+    # set now
     if mark_param:
         mark_param.Set(new_number)
 
 
-def mark_element_as_renumbered(target_views_list, room): # 'room' is used as a generic target_element here
+def mark_element_as_renumbered(
+    target_views_list, room
+):  # 'room' is used as a generic target_element here
     """Override element VG to transparent and halftone in multiple views.
 
     Intended to mark processed renumbered elements visually.
@@ -226,17 +252,25 @@ def mark_element_as_renumbered(target_views_list, room): # 'room' is used as a g
 
     for target_view in target_views_list:
         view_id = target_view.Id
-        if view_id not in original_graphic_overrides:
-            original_graphic_overrides[view_id] = {}
 
         # Store original overrides for this specific view and element
         try:
-            original_graphic_overrides[view_id][element_id] = target_view.GetElementOverrides(element_id)
+            original_overrides = target_view.GetElementOverrides(element_id)
         except Exception as e:
-            logger.error("Failed to get original graphic overrides for element %s in view %s (%s): %s",
-                         element_id, target_view.Name, view_id, e)
-            # Store a default/empty override if getting fails, so unmarking can still proceed
-            original_graphic_overrides[view_id][element_id] = DB.OverrideGraphicSettings()
+            logger.error(
+                "Failed to get original graphic overrides for element %s in view %s (%s): %s",
+                element_id,
+                target_view.Name,
+                view_id,
+                e,
+            )
+            # Skip this view rather than storing potentially incorrect data
+            continue
+
+        # Only create the view entry after successfully getting overrides
+        if view_id not in original_graphic_overrides:
+            original_graphic_overrides[view_id] = {}
+        original_graphic_overrides[view_id][element_id] = original_overrides
 
         # Apply new overrides for this specific view and element
         new_ogs = DB.OverrideGraphicSettings()
@@ -245,8 +279,13 @@ def mark_element_as_renumbered(target_views_list, room): # 'room' is used as a g
         try:
             target_view.SetElementOverrides(element_id, new_ogs)
         except Exception as e:
-            logger.error("Failed to set new graphic overrides for element %s in view %s (%s): %s",
-                         element_id, target_view.Name, view_id, e)
+            logger.error(
+                "Failed to set new graphic overrides for element %s in view %s (%s): %s",
+                element_id,
+                target_view.Name,
+                view_id,
+                e,
+            )
 
 
 def unmark_renamed_elements(target_views_list, marked_element_ids):
@@ -255,30 +294,48 @@ def unmark_renamed_elements(target_views_list, marked_element_ids):
 
     for target_view in target_views_list:
         view_id = target_view.Id
-        if view_id not in original_graphic_overrides:  # Check if the view was processed at all
-            logger.debug("View %s (%s) not found in original_graphic_overrides. Skipping for unmarking.",
-                         target_view.Name, view_id)
+        if (
+            view_id not in original_graphic_overrides
+        ):  # Check if the view was processed at all
+            logger.debug(
+                "View %s (%s) not found in original_graphic_overrides. Skipping for unmarking.",
+                target_view.Name,
+                view_id,
+            )
             continue
 
         for element_id in marked_element_ids:
             original_overrides_to_apply = None
             if element_id in original_graphic_overrides[view_id]:
-                original_overrides_to_apply = original_graphic_overrides[view_id][element_id]
+                original_overrides_to_apply = original_graphic_overrides[view_id][
+                    element_id
+                ]
                 # Clean up
                 del original_graphic_overrides[view_id][element_id]
             else:
                 # If not found for this specific element in this view.
-                logger.warning("Original graphic override not found for element %s in view %s (%s). Resetting to default for this view.",
-                               element_id, target_view.Name, view_id)
+                logger.warning(
+                    "Original graphic override not found for element %s in view %s (%s). Resetting to default for this view.",
+                    element_id,
+                    target_view.Name,
+                    view_id,
+                )
                 original_overrides_to_apply = DB.OverrideGraphicSettings()
 
             try:
                 if original_overrides_to_apply is not None:
-                    target_view.SetElementOverrides(element_id, original_overrides_to_apply)
+                    target_view.SetElementOverrides(
+                        element_id, original_overrides_to_apply
+                    )
             except Exception as e:
-                logger.error("Failed to restore graphic overrides for element %s in view %s (%s): %s",
-                             element_id, target_view.Name, view_id, e)
-        
+                logger.error(
+                    "Failed to restore graphic overrides for element %s in view %s (%s): %s",
+                    element_id,
+                    target_view.Name,
+                    view_id,
+                    e,
+                )
+
         # Clean up view entry if it becomes empty
         if not original_graphic_overrides[view_id]:
             del original_graphic_overrides[view_id]
@@ -290,15 +347,15 @@ def get_elements_dict(view, builtin_cat):
     # tool would fail to assign a new number to viewport
     # on current sheet, if a viewport with the same
     # number exists on any other sheet
-    if BIC.OST_Viewports == builtin_cat \
-            and isinstance(view, DB.ViewSheet):
-        return {get_number(revit.doc.GetElement(vpid)):vpid
-            for vpid in view.GetAllViewports()}
+    if BIC.OST_Viewports == builtin_cat and isinstance(view, DB.ViewSheet):
+        return {
+            get_number(revit.doc.GetElement(vpid)): vpid
+            for vpid in view.GetAllViewports()
+        }
 
-    all_elements = \
-        revit.query.get_elements_by_categories([builtin_cat])
+    all_elements = revit.query.get_elements_by_categories([builtin_cat])
 
-    return {get_number(x):x.Id for x in all_elements}
+    return {get_number(x): x.Id for x in all_elements}
 
 
 def find_replacement_number(existing_number, elements_dict):
@@ -309,19 +366,21 @@ def find_replacement_number(existing_number, elements_dict):
     return replaced_number
 
 
-def renumber_element(target_element, new_number, elements_dict, target_views_list): # Added target_views_list
+def renumber_element(
+    target_element, new_number, elements_dict, target_views_list
+):  # Added target_views_list
     """Renumber given element."""
     # check if elements with same number exists
     if new_number in elements_dict:
-        element_with_same_number = \
-            revit.doc.GetElement(elements_dict[new_number])
+        element_with_same_number = revit.doc.GetElement(elements_dict[new_number])
         # make sure its not the same as target_element
-        if element_with_same_number \
-                and element_with_same_number.Id != target_element.Id:
+        if (
+            element_with_same_number
+            and element_with_same_number.Id != target_element.Id
+        ):
             # replace its number with something else that is not conflicting
             current_number = get_number(element_with_same_number)
-            replaced_number = \
-                find_replacement_number(current_number, elements_dict)
+            replaced_number = find_replacement_number(current_number, elements_dict)
             set_number(element_with_same_number, replaced_number)
             # record the element with its new number for later renumber jobs
             elements_dict[replaced_number] = element_with_same_number.Id
@@ -333,7 +392,7 @@ def renumber_element(target_element, new_number, elements_dict, target_views_lis
         elements_dict.pop(existing_number)
 
     # renumber the given element
-    logger.debug('applying %s', new_number)
+    logger.debug("applying %s", new_number)
     set_number(target_element, new_number)
     elements_dict[new_number] = target_element.Id
     # mark the element visually to renumbered in all relevant views
@@ -343,21 +402,24 @@ def renumber_element(target_element, new_number, elements_dict, target_views_lis
 def ask_for_starting_number(category_name):
     """Ask user for starting number."""
     return forms.ask_for_string(
-        prompt="Enter starting number",
-        title="ReNumber {}".format(category_name)
-        )
+        prompt="Enter starting number", title="ReNumber {}".format(category_name)
+    )
 
 
-def _unmark_collected(category_name, renumbered_element_ids, target_views_list): # Added target_views_list
+def _unmark_collected(
+    category_name, renumbered_element_ids, target_views_list
+):  # Added target_views_list
     # unmark all renumbered elements
     with revit.Transaction("Unmark {}".format(category_name)):
         unmark_renamed_elements(target_views_list, renumbered_element_ids)
 
 
-def pick_and_renumber(rnopts, starting_index, relevant_views): # Added relevant_views
+def pick_and_renumber(rnopts, starting_index, relevant_views):  # Added relevant_views
     """Main renumbering routine for elements of given category."""
     # all actions under one transaction
-    active_view = revit.active_view # Keep active_view for context like get_elements_dict
+    active_view = (
+        revit.active_view
+    )  # Keep active_view for context like get_elements_dict
     with revit.TransactionGroup("Renumber {}".format(rnopts.name)):
         # make sure target elements are easily selectable across relevant views
         with EasilySelectableElements(relevant_views, rnopts.bicat):
@@ -368,52 +430,60 @@ def pick_and_renumber(rnopts, starting_index, relevant_views): # Added relevant_
             renumbered_element_ids = []
             # ask user to pick elements and renumber them
             for picked_element in revit.get_picked_elements_by_category(
-                    rnopts.bicat,
-                    message="Select {} in order".format(rnopts.name.lower())):
+                rnopts.bicat, message="Select {} in order".format(rnopts.name.lower())
+            ):
                 # need nested transactions to push revit to update view
                 # on each renumber task
                 with revit.Transaction("Renumber {}".format(rnopts.name)):
                     # actual renumber task
-                    renumber_element(picked_element,
-                                     index, existing_elements_data, relevant_views) # Pass relevant_views
+                    renumber_element(
+                        picked_element, index, existing_elements_data, relevant_views
+                    )  # Pass relevant_views
                     # record the renumbered element
                     renumbered_element_ids.append(picked_element.Id)
                 index = increment(index)
             # unmark all renumbered elements across relevant views
-            _unmark_collected(rnopts.name, renumbered_element_ids, relevant_views) # Pass relevant_views
+            _unmark_collected(
+                rnopts.name, renumbered_element_ids, relevant_views
+            )  # Pass relevant_views
 
 
-def door_by_room_renumber(rnopts, relevant_views): # Added relevant_views
+def door_by_room_renumber(rnopts, relevant_views):  # Added relevant_views
     """Main renumbering routine for elements of given categories."""
     # all actions under one transaction
-    active_view = revit.active_view # Keep active_view for context
+    active_view = revit.active_view  # Keep active_view for context
     with revit.TransactionGroup("Renumber Doors by Room"):
         # collect existing elements number:id data (uses active_view for context)
         existing_doors_data = get_elements_dict(active_view, rnopts.bicat)
         renumbered_door_ids = []
         # make sure target elements are easily selectable across relevant views
-        with EasilySelectableElements(relevant_views, rnopts.bicat) \
-                and EasilySelectableElements(relevant_views, rnopts.by_bicat):
+        with EasilySelectableElements(
+            relevant_views, rnopts.bicat
+        ) and EasilySelectableElements(relevant_views, rnopts.by_bicat):
             while True:
                 # pick door
-                picked_door = \
-                    revit.pick_element_by_category(rnopts.bicat,
-                                                   message="Select a door")
+                picked_door = revit.pick_element_by_category(
+                    rnopts.bicat, message="Select a door"
+                )
                 if not picked_door:
                     # user cancelled
-                    return _unmark_collected("Doors", renumbered_door_ids, relevant_views) # Pass relevant_views
+                    return _unmark_collected(
+                        "Doors", renumbered_door_ids, relevant_views
+                    )  # Pass relevant_views
                 # grab the associated rooms
                 from_room, to_room = revit.query.get_door_rooms(picked_door)
 
                 # if more than one option for room, ask to pick
                 if all([from_room, to_room]) or not any([from_room, to_room]):
                     # pick room
-                    picked_room = \
-                        revit.pick_element_by_category(rnopts.by_bicat,
-                                                       message="Select a room")
+                    picked_room = revit.pick_element_by_category(
+                        rnopts.by_bicat, message="Select a room"
+                    )
                     if not picked_room:
                         # user cancelled
-                        return _unmark_collected("Rooms", renumbered_door_ids, relevant_views) # Pass relevant_views
+                        return _unmark_collected(
+                            "Rooms", renumbered_door_ids, relevant_views
+                        )  # Pass relevant_views
                 else:
                     picked_room = from_room or to_room
 
@@ -424,9 +494,12 @@ def door_by_room_renumber(rnopts, relevant_views): # Added relevant_views
                     door_count = len(room_doors)
                     if door_count == 1:
                         # match door number to room number
-                        renumber_element(picked_door,
-                                         room_number,
-                                         existing_doors_data, relevant_views) # Pass relevant_views
+                        renumber_element(
+                            picked_door,
+                            room_number,
+                            existing_doors_data,
+                            relevant_views,
+                        )  # Pass relevant_views
                         renumbered_door_ids.append(picked_door.Id)
                     elif door_count > 1:
                         # match door number to extended room number e.g. 100A
@@ -437,9 +510,9 @@ def door_by_room_renumber(rnopts, relevant_views): # Added relevant_views
                         # max_attempts =len([x for x in room_door_numbers if x])
                         while new_number in room_door_numbers:
                             new_number = increment(new_number)
-                        renumber_element(picked_door,
-                                         new_number,
-                                         existing_doors_data, relevant_views) # Pass relevant_views
+                        renumber_element(
+                            picked_door, new_number, existing_doors_data, relevant_views
+                        )  # Pass relevant_views
                         renumbered_door_ids.append(picked_door.Id)
 
 
@@ -456,38 +529,49 @@ def door_by_room_renumber(rnopts, relevant_views): # Added relevant_views
 # [X] renumber room
 # [X] renumber doors by room
 
-if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.ViewSheet)):
+if isinstance(
+    revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.ViewSheet)
+):
     # Define active_view for context, and collect relevant_views for graphic overrides
     active_view = revit.active_view
-    
+
     # Collect all open, non-template ViewPlan, View3D, ViewSection, and ViewSheet views
     relevant_views = []
     all_views = DB.FilteredElementCollector(revit.doc).OfClass(DB.View).ToElements()
     for v in all_views:
         if not v.IsTemplate:
-            if v.ViewType == DB.ViewType.FloorPlan or \
-               v.ViewType == DB.ViewType.Section or \
-               v.ViewType == DB.ViewType.ThreeD or \
-               v.ViewType == DB.ViewType.DrawingSheet:
+            if (
+                v.ViewType == DB.ViewType.FloorPlan
+                or v.ViewType == DB.ViewType.Section
+                or v.ViewType == DB.ViewType.ThreeD
+                or v.ViewType == DB.ViewType.DrawingSheet
+            ):
                 # Additional check: Ensure the view is "open" or usable.
                 # For many API operations, a view being simply present in the document is enough.
                 # If "open" means visible in UI, that's harder to check reliably without UI access.
                 # For now, assume all non-template views of these types are relevant.
-                if revit.doc.GetElement(v.Id) is not None: # Basic check that view element is valid
+                if (
+                    revit.doc.GetElement(v.Id) is not None
+                ):  # Basic check that view element is valid
                     relevant_views.append(v)
-    
-    if not relevant_views: # Fallback to active_view if no relevant_views collected (should not happen in normal use)
-        logger.warning("No relevant views found for graphic overrides. Defaulting to active view only.")
+
+    if (
+        not relevant_views
+    ):  # Fallback to active_view if no relevant_views collected (should not happen in normal use)
+        logger.warning(
+            "No relevant views found for graphic overrides. Defaulting to active view only."
+        )
         relevant_views = [active_view]
 
     # prepare options
-    if not isinstance(active_view, DB.ViewSheet): # Option logic based on active_view type
+    if not isinstance(
+        active_view, DB.ViewSheet
+    ):  # Option logic based on active_view type
         renumber_options = [
             RNOpts(cat=BIC.OST_Rooms),
             RNOpts(cat=BIC.OST_MEPSpaces),
             RNOpts(cat=BIC.OST_Doors),
-            RNOpts(cat=BIC.OST_Doors,
-                   by_bicat=BIC.OST_Rooms),
+            RNOpts(cat=BIC.OST_Doors, by_bicat=BIC.OST_Rooms),
             RNOpts(cat=BIC.OST_Walls),
             RNOpts(cat=BIC.OST_Windows),
             RNOpts(cat=BIC.OST_Parking),
@@ -495,35 +579,42 @@ if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.Vie
             RNOpts(cat=BIC.OST_Grids),
         ]
         # add areas if active view is an Area Plan
-        if active_view.ViewType == DB.ViewType.AreaPlan: # Use active_view for this logic
+        if (
+            active_view.ViewType == DB.ViewType.AreaPlan
+        ):  # Use active_view for this logic
             renumber_options.insert(1, RNOpts(cat=BIC.OST_Areas))
-    else: # active_view is a ViewSheet
+    else:  # active_view is a ViewSheet
         renumber_options = [RNOpts(cat=BIC.OST_Viewports)]
-
 
     options_dict = OrderedDict()
     for renumber_option in renumber_options:
         options_dict[renumber_option.name] = renumber_option
-    selected_option_name = \
-        forms.CommandSwitchWindow.show(
-            options_dict,
-            message='Pick element type to renumber:',
-            width=400
-        )
+    selected_option_name = forms.CommandSwitchWindow.show(
+        options_dict, message="Pick element type to renumber:", width=400
+    )
 
     if selected_option_name:
         selected_option = options_dict[selected_option_name]
         if selected_option.by_bicat:
             # if renumber doors by room
-            if selected_option.bicat == BIC.OST_Doors \
-                    and selected_option.by_bicat == BIC.OST_Rooms:
+            if (
+                selected_option.bicat == BIC.OST_Doors
+                and selected_option.by_bicat == BIC.OST_Rooms
+            ):
                 with forms.WarningBar(
-                    title='Pick Pairs of Door and Room. ESCAPE to end.'):
-                    door_by_room_renumber(selected_option, relevant_views) # Pass relevant_views
+                    title="Pick Pairs of Door and Room. ESCAPE to end."
+                ):
+                    door_by_room_renumber(
+                        selected_option, relevant_views
+                    )  # Pass relevant_views
         else:
             starting_number = ask_for_starting_number(selected_option.name)
             if starting_number:
                 with forms.WarningBar(
-                    title='Pick {} One by One. ESCAPE to end.'.format(
-                        selected_option.name)):
-                    pick_and_renumber(selected_option, starting_number, relevant_views) # Pass relevant_views
+                    title="Pick {} One by One. ESCAPE to end.".format(
+                        selected_option.name
+                    )
+                ):
+                    pick_and_renumber(
+                        selected_option, starting_number, relevant_views
+                    )  # Pass relevant_views
