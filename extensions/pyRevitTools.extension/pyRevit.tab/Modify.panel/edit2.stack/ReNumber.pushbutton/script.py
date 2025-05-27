@@ -13,6 +13,46 @@ logger = script.get_logger()
 output = script.get_output()
 
 original_visibility_states = {}
+
+
+def collect_relevant_views(target_category):
+    """
+    Collect views where the target category is visible to optimize performance.
+    
+    Args:
+        target_category: The built-in category to check visibility for
+        
+    Returns:
+        List of views where the target category is visible
+    """
+    relevant_views = []
+    all_views = DB.FilteredElementCollector(revit.doc).OfClass(DB.View).ToElements()
+    
+    for v in all_views:
+        if not v.IsTemplate and v.ViewType in [
+            DB.ViewType.FloorPlan, 
+            DB.ViewType.Section, 
+            DB.ViewType.ThreeD, 
+            DB.ViewType.DrawingSheet
+        ]:
+            try:
+                # Check if the target category is visible in this view
+                category = revit.query.get_category(target_category)
+                if category and category.Visible[v]:
+                    relevant_views.append(v)
+            except Exception:
+                # Skip views where category visibility check fails
+                continue
+    
+    # Fallback to active view if no relevant views found
+    if not relevant_views:
+        logger.warning(
+            'No relevant views found for category. Defaulting to active view only.'
+        )
+        relevant_views = [revit.active_view]
+    
+    return relevant_views
+
 original_graphic_overrides = {}
 
 BIC = DB.BuiltInCategory
@@ -535,33 +575,7 @@ if isinstance(
     # Define active_view for context, and collect relevant_views for graphic overrides
     active_view = revit.active_view
 
-    # Collect all open, non-template ViewPlan, View3D, ViewSection, and ViewSheet views
-    relevant_views = []
-    all_views = DB.FilteredElementCollector(revit.doc).OfClass(DB.View).ToElements()
-    for v in all_views:
-        if not v.IsTemplate:
-            if (
-                v.ViewType == DB.ViewType.FloorPlan
-                or v.ViewType == DB.ViewType.Section
-                or v.ViewType == DB.ViewType.ThreeD
-                or v.ViewType == DB.ViewType.DrawingSheet
-            ):
-                # Additional check: Ensure the view is "open" or usable.
-                # For many API operations, a view being simply present in the document is enough.
-                # If "open" means visible in UI, that's harder to check reliably without UI access.
-                # For now, assume all non-template views of these types are relevant.
-                if (
-                    revit.doc.GetElement(v.Id) is not None
-                ):  # Basic check that view element is valid
-                    relevant_views.append(v)
 
-    if (
-        not relevant_views
-    ):  # Fallback to active_view if no relevant_views collected (should not happen in normal use)
-        logger.warning(
-            "No relevant views found for graphic overrides. Defaulting to active view only."
-        )
-        relevant_views = [active_view]
 
     # prepare options
     if not isinstance(
@@ -595,6 +609,10 @@ if isinstance(
 
     if selected_option_name:
         selected_option = options_dict[selected_option_name]
+        
+        # Collect relevant views based on the selected category
+        relevant_views = collect_relevant_views(selected_option.bicat)
+        
         if selected_option.by_bicat:
             # if renumber doors by room
             if (
