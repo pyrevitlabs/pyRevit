@@ -10,6 +10,8 @@ using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Windows.Input; // Added for KeyEventArgs and ModifierKeys
+using mshtml; // Added for IHTMLDocument2 - assuming COM reference is available
 
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
@@ -346,6 +348,46 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.Deactivated += ScriptOutput_LostFocus;
 
             this.OutputTitle = PyRevitLabsConsts.ProductName;
+
+            // Register PreviewKeyDown event handler
+            this.PreviewKeyDown += ScriptConsole_PreviewKeyDown;
+        }
+
+        private void ScriptConsole_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Check for Ctrl+C
+            if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                // Check if the WebBrowser control (renderer) or a child of it has focus
+                if (renderer != null && renderer.IsKeyboardFocusWithin)
+                {
+                    try
+                    {
+                        // Attempt to get selected text using IHTMLDocument2
+                        IHTMLDocument2 htmlDocument = renderer.Document.DomDocument as IHTMLDocument2;
+                        if (htmlDocument != null)
+                        {
+                            IHTMLSelectionObject currentSelection = htmlDocument.selection;
+                            if (currentSelection != null)
+                            {
+                                IHTMLTxtRange range = currentSelection.createRange() as IHTMLTxtRange;
+                                if (range != null && !string.IsNullOrEmpty(range.text))
+                                {
+                                    Clipboard.SetText(range.text);
+                                    e.Handled = true; // Mark event as handled to prevent further processing
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception /*ex*/)
+                    {
+                        // Log or handle the exception if necessary, or ignore if it's minor
+                        // For now, we can ignore it if direct text retrieval fails,
+                        // as the default WebBrowser Ctrl+C might still work.
+                        // Consider adding a debug log here: e.g., Debug.WriteLine($"Ctrl+C handler error: {ex.Message}");
+                    }
+                }
+            }
         }
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
