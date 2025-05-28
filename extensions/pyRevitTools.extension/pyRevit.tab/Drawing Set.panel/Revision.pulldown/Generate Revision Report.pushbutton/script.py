@@ -4,7 +4,7 @@
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import coreutils
 from pyrevit import revit, DB
-from pyrevit import script
+from pyrevit import script, forms
 
 
 # collect sheet
@@ -22,10 +22,11 @@ all_clouds = DB.FilteredElementCollector(revit.doc)\
                .WhereElementIsNotElementType()
 
 # collect all revisions
-all_revisions = DB.FilteredElementCollector(revit.doc)\
-                  .OfCategory(DB.BuiltInCategory.OST_Revisions)\
-                  .WhereElementIsNotElementType()
-
+all_revisions = forms.select_revisions(
+                    title='Select Revisions To Include In The Report'
+)
+if not all_revisions:
+    script.exit()
 
 console = script.get_output()
 console.set_height(800)
