@@ -4,3 +4,13 @@
     <TargetFramework>net48</TargetFramework>
   </PropertyGroup>
 </Project>
+<ItemGroup>
+  <COMReference Include="MSHTML">
+    <Guid>{3050F1C5-98B5-11CF-BB82-00AA00BDCE0B}</Guid>
+    <VersionMajor>4</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <Lcid>0</Lcid>
+    <WrapperTool>primary</WrapperTool>
+    <Isolated>false</Isolated>
+  </COMReference>
+</ItemGroup>
