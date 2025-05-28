@@ -53,14 +53,7 @@ def get_open_views():
 
 
 def toggle_element_selection_handles(target_views, bicat, state=True):
-    """
-    Toggle handles for spatial elements in the given list of views.
-    
-    Args:
-        target_views (list): A list of views to toggle handles for.
-        bicat (DB.BuiltInCategory): The category of spatial elements to toggle.
-        state (bool): Whether to enable (True) or disable (False) the handles.
-    """
+    """Toggle handles for spatial elements"""
     with revit.Transaction("Toggle handles"):
         rr_cat = revit.query.get_subcategory(bicat, 'Reference')
         rr_int = revit.query.get_subcategory(bicat, 'Interior Fill')
@@ -79,8 +72,6 @@ def toggle_element_selection_handles(target_views, bicat, state=True):
                         target_view.Name,
                         str(vex)
                         )
-                if not rr_int:
-                    rr_int = revit.query.get_subcategory(bicat, 'Interior')
                 try:
                     rr_int.Visible[target_view] = state
                 except Exception as vex:
@@ -97,8 +88,6 @@ def toggle_element_selection_handles(target_views, bicat, state=True):
             for target_view in target_views:
                 target_view.DisableTemporaryViewMode(
                     DB.TemporaryViewMode.TemporaryViewProperties)
-                if rr_int:
-                    rr_int = revit.query.get_subcategory(bicat, 'Interior')
                 try:
                     rr_int.Visible[target_view] = state
                 except Exception as vex:
@@ -197,16 +186,17 @@ def unmark_renamed_elements(target_views, marked_element_ids):
             target_view.SetElementOverrides(marked_element_id, ogs)
 
 
-def get_elements_dict(view, builtin_cat):
+def get_elements_dict(views, builtin_cat):
     """Collect number:id information about target elements."""
     # Note: on treating viewports differently
     # tool would fail to assign a new number to viewport
     # on current sheet, if a viewport with the same
     # number exists on any other sheet
-    if BIC.OST_Viewports == builtin_cat \
-            and isinstance(view, DB.ViewSheet):
-        return {get_number(revit.doc.GetElement(vpid)):vpid
-            for vpid in view.GetAllViewports()}
+    for view in views:
+        if BIC.OST_Viewports == builtin_cat \
+                and isinstance(view, DB.ViewSheet):
+            return {get_number(revit.doc.GetElement(vpid)):vpid
+                for vpid in view.GetAllViewports()}
 
     all_elements = \
         revit.query.get_elements_by_categories([builtin_cat])
