@@ -53,7 +53,14 @@ def get_open_views():
 
 
 def toggle_element_selection_handles(target_views, bicat, state=True):
-    """Toggle handles for spatial elements"""
+    """
+    Toggle handles for spatial elements in the given list of views.
+    
+    Args:
+        target_views (list): A list of views to toggle handles for.
+        bicat (DB.BuiltInCategory): The category of spatial elements to toggle.
+        state (bool): Whether to enable (True) or disable (False) the handles.
+    """
     with revit.Transaction("Toggle handles"):
         rr_cat = revit.query.get_subcategory(bicat, 'Reference')
         rr_int = revit.query.get_subcategory(bicat, 'Interior Fill')
