@@ -137,10 +137,10 @@ class ApplyColors(UI.IExternalEventHandler):
                 ):
                     # In case of rooms, spaces and areas. Check Color scheme is applied and if not
                     if version > 2021:
-                        if wndw.crt_view.GetColorFillSchemeId(sel_cat.cat.Id).ToString() is "-1":
+                        if wndw.crt_view.GetColorFillSchemeId(sel_cat.cat.Id).ToString() == "-1":
                             color_schemes = (
                                 DB.FilteredElementCollector(new_doc)
-                                .OfClass(DB.BuiltInCategoryFillScheme)
+                                .OfClass(DB.ColorFillScheme)
                                 .ToElements()
                             )
                             if len(color_schemes) > 0:
