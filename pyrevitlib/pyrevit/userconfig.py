@@ -783,7 +783,18 @@ def verify_configs(config_file_path=None):
     """
     if config_file_path:
         mlogger.debug('Creating default config file at: %s', config_file_path)
-        coreutils.touch(config_file_path)
+        try:
+            coreutils.touch(config_file_path)
+        except Exception as touch_err:
+            mlogger.warning('Failed to create config file with touch: %s | %s',
+                           config_file_path, touch_err)
+            # Try alternative approach for Windows 11 compatibility
+            try:
+                verify_configs_windows11_fallback(config_file_path)
+            except Exception as fallback_err:
+                mlogger.error('All config creation methods failed: %s | %s',
+                             config_file_path, fallback_err)
+                # Continue with in-memory config
 
     try:
         parser = PyRevitConfig(cfg_file_path=config_file_path)
@@ -791,9 +802,101 @@ def verify_configs(config_file_path=None):
         # can not create default user config file under appdata folder
         mlogger.warning('Can not create config file under: %s | %s',
                         config_file_path, read_err)
-        parser = PyRevitConfig()
+
+        # Try Windows 11 compatibility mode
+        try:
+            parser = verify_configs_with_fallback(config_file_path)
+        except Exception as fallback_err:
+            mlogger.warning('Fallback config creation also failed: %s', fallback_err)
+            parser = PyRevitConfig()
 
     return parser
+
+
+def verify_configs_windows11_fallback(config_file_path):
+    """Create config file with Windows 11 compatibility measures.
+
+    Args:
+        config_file_path (str): config file full name and path
+    """
+    import os
+    import os.path as op
+
+    # Ensure parent directory exists with proper permissions
+    parent_dir = op.dirname(config_file_path)
+    if parent_dir and not op.exists(parent_dir):
+        try:
+            coreutils.verify_directory(parent_dir)
+        except Exception as dir_err:
+            mlogger.warning('Failed to create config directory: %s | %s',
+                           parent_dir, dir_err)
+            raise
+
+    # Create config file with minimal content
+    try:
+        with open(config_file_path, 'w') as config_file:
+            config_file.write('# pyRevit Configuration File\n')
+            config_file.write('# Created with Windows 11 compatibility mode\n\n')
+            config_file.write('[core]\n')
+            config_file.write('# Core pyRevit settings\n\n')
+            config_file.write('[extensions]\n')
+            config_file.write('# Extension settings\n\n')
+            config_file.write('[user]\n')
+            config_file.write('# User-specific settings\n\n')
+
+        mlogger.debug('Successfully created config file with Windows 11 fallback method')
+
+    except (OSError, IOError, PermissionError) as ex:
+        mlogger.error('Windows 11 fallback config creation failed: %s', ex)
+        raise
+
+
+def verify_configs_with_fallback(config_file_path):
+    """Create PyRevitConfig with fallback for Windows 11 compatibility.
+
+    Args:
+        config_file_path (str): config file full name and path
+
+    Returns:
+        (pyrevit.userconfig.PyRevitConfig): pyRevit config file handler
+    """
+    # Try alternative config locations for Windows 11
+    fallback_locations = []
+
+    if config_file_path:
+        # Try LocalApplicationData instead of Roaming
+        import os
+        import os.path as op
+
+        local_appdata = os.getenv('LOCALAPPDATA')
+        if local_appdata:
+            fallback_dir = op.join(local_appdata, 'pyRevit')
+            fallback_file = op.join(fallback_dir, 'pyRevit_config.ini')
+            fallback_locations.append(fallback_file)
+
+        # Try user profile directory
+        user_profile = os.getenv('USERPROFILE')
+        if user_profile:
+            profile_dir = op.join(user_profile, '.pyrevit')
+            profile_file = op.join(profile_dir, 'pyRevit_config.ini')
+            fallback_locations.append(profile_file)
+
+    # Try each fallback location
+    for fallback_path in fallback_locations:
+        try:
+            mlogger.debug('Trying fallback config location: %s', fallback_path)
+            verify_configs_windows11_fallback(fallback_path)
+            parser = PyRevitConfig(cfg_file_path=fallback_path)
+            mlogger.warning('Using fallback config file at: %s', fallback_path)
+            mlogger.warning('Please copy this to the expected location: %s', config_file_path)
+            return parser
+        except Exception as fallback_err:
+            mlogger.debug('Fallback location failed: %s | %s', fallback_path, fallback_err)
+            continue
+
+    # If all fallbacks fail, return in-memory config
+    mlogger.warning('All config file creation attempts failed, using in-memory config')
+    raise Exception('All config creation methods failed')
 
 
 LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''

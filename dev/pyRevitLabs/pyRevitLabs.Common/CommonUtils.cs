@@ -6,6 +6,8 @@ using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 using pyRevitLabs.NLog;
 using System.Threading;
@@ -88,14 +90,95 @@ namespace pyRevitLabs.Common {
         }
 
         public static void EnsurePath(string path) {
-            Directory.CreateDirectory(path);
+            try {
+                Directory.CreateDirectory(path);
+            }
+            catch (UnauthorizedAccessException ex) {
+                // Windows 11 enhanced security might prevent directory creation
+                // Try with explicit permissions
+                logger.Debug("Initial directory creation failed, trying with explicit permissions: {0}", ex.Message);
+                EnsurePathWithPermissions(path);
+            }
+            catch (Exception ex) {
+                logger.Error("Failed to create directory: {0} | {1}", path, ex.Message);
+                throw;
+            }
+        }
+
+        private static void EnsurePathWithPermissions(string path) {
+            try {
+                var dirInfo = Directory.CreateDirectory(path);
+
+                // Set explicit permissions for Windows 11 compatibility
+                var security = dirInfo.GetAccessControl();
+                var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent();
+                var userSid = currentUser.User;
+
+                // Add full control for current user
+                var accessRule = new FileSystemAccessRule(
+                    userSid,
+                    FileSystemRights.FullControl,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None,
+                    AccessControlType.Allow
+                );
+
+                security.SetAccessRule(accessRule);
+                dirInfo.SetAccessControl(security);
+
+                logger.Debug("Successfully created directory with explicit permissions: {0}", path);
+            }
+            catch (Exception ex) {
+                logger.Error("Failed to create directory with explicit permissions: {0} | {1}", path, ex.Message);
+                throw new PyRevitException($"Cannot create directory at {path}. This may be due to Windows 11 enhanced security. Please run as administrator or check folder permissions. | {ex.Message}");
+            }
         }
 
         public static void EnsureFile(string filePath) {
-            EnsurePath(Path.GetDirectoryName(filePath));
-            if (!System.IO.File.Exists(filePath)) {
-                var file = System.IO.File.CreateText(filePath);
-                file.Close();
+            try {
+                EnsurePath(Path.GetDirectoryName(filePath));
+                if (!System.IO.File.Exists(filePath)) {
+                    EnsureFileWithPermissions(filePath);
+                }
+            }
+            catch (Exception ex) {
+                logger.Error("Failed to ensure file: {0} | {1}", filePath, ex.Message);
+                throw;
+            }
+        }
+
+        private static void EnsureFileWithPermissions(string filePath) {
+            try {
+                // Create file with proper permissions for Windows 11
+                using (var file = System.IO.File.Create(filePath)) {
+                    // File is created and immediately closed
+                }
+
+                // Set explicit permissions for Windows 11 compatibility
+                var fileInfo = new FileInfo(filePath);
+                var security = fileInfo.GetAccessControl();
+                var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent();
+                var userSid = currentUser.User;
+
+                // Add full control for current user
+                var accessRule = new FileSystemAccessRule(
+                    userSid,
+                    FileSystemRights.FullControl,
+                    AccessControlType.Allow
+                );
+
+                security.SetAccessRule(accessRule);
+                fileInfo.SetAccessControl(security);
+
+                logger.Debug("Successfully created file with explicit permissions: {0}", filePath);
+            }
+            catch (UnauthorizedAccessException ex) {
+                logger.Warning("Unauthorized access when creating file: {0} | {1}", filePath, ex.Message);
+                throw new PyRevitException($"Cannot create config file at {filePath}. This may be due to Windows 11 enhanced security. Please run as administrator or manually create the file. | {ex.Message}");
+            }
+            catch (Exception ex) {
+                logger.Error("Failed to create file with explicit permissions: {0} | {1}", filePath, ex.Message);
+                throw new PyRevitException($"Failed to create config file at {filePath} | {ex.Message}");
             }
         }
 

@@ -123,23 +123,117 @@ namespace pyRevitLabs.PyRevit
             string sourceFile = templateConfigFilePath;
             string targetFile = PyRevitConsts.ConfigFilePath;
 
-            if (sourceFile is string)
+            try
             {
-                logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
+                if (sourceFile is string)
+                {
+                    logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
+                    SetupConfigFromTemplate(sourceFile, targetFile);
+                }
+                else
+                {
+                    logger.Debug("Creating new config file at \"{0}\"", targetFile);
+                    CommonUtils.EnsureFile(targetFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Failed to setup config file: {0}", ex.Message);
 
+                // Try fallback approach for Windows 11 compatibility
                 try
                 {
-                    File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
+                    SetupConfigFallback(targetFile, sourceFile);
                 }
-                catch (Exception ex)
+                catch (Exception fallbackEx)
                 {
                     throw new PyRevitException(
-                        $"Failed configuring config file from template at {sourceFile} | {ex.Message}"
+                        $"Failed to create config file at {targetFile}. " +
+                        $"Original error: {ex.Message} | " +
+                        $"Fallback error: {fallbackEx.Message}. " +
+                        $"This may be due to Windows 11 enhanced security. " +
+                        $"Please run as administrator or manually create the config file."
                     );
                 }
             }
-            else
-                CommonUtils.EnsureFile(targetFile);
+        }
+
+        private static void SetupConfigFromTemplate(string sourceFile, string targetFile)
+        {
+            try
+            {
+                // Ensure target directory exists
+                CommonUtils.EnsurePath(Path.GetDirectoryName(targetFile));
+
+                // Copy template content
+                string templateContent = File.ReadAllText(sourceFile);
+                File.WriteAllText(targetFile, templateContent);
+
+                logger.Debug("Successfully created config file from template");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                logger.Warning("Unauthorized access when creating config from template: {0}", ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Error creating config from template: {0}", ex.Message);
+                throw new PyRevitException(
+                    $"Failed configuring config file from template at {sourceFile} | {ex.Message}"
+                );
+            }
+        }
+
+        private static void SetupConfigFallback(string targetFile, string sourceFile = null)
+        {
+            logger.Debug("Attempting fallback config creation for Windows 11 compatibility");
+
+            try
+            {
+                // Try alternative directory if primary fails
+                string fallbackDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "pyRevit"
+                );
+
+                string fallbackFile = Path.Combine(fallbackDir, "pyRevit_config.ini");
+
+                // Create fallback directory
+                Directory.CreateDirectory(fallbackDir);
+
+                // Create minimal config content
+                string configContent = sourceFile != null && File.Exists(sourceFile)
+                    ? File.ReadAllText(sourceFile)
+                    : CreateMinimalConfigContent();
+
+                File.WriteAllText(fallbackFile, configContent);
+
+                logger.Warning("Created fallback config file at: {0}", fallbackFile);
+                logger.Warning("Please copy this file to the expected location: {0}", targetFile);
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Fallback config creation also failed: {0}", ex.Message);
+                throw;
+            }
+        }
+
+        private static string CreateMinimalConfigContent()
+        {
+            return @"# pyRevit Configuration File
+# This file was created automatically due to Windows 11 compatibility issues
+# You can modify these settings through the pyRevit interface
+
+[core]
+# Core pyRevit settings
+
+[extensions]
+# Extension settings
+
+[user]
+# User-specific settings
+";
         }
 
         // specific configuration public access  ======================================================================

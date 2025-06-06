@@ -268,8 +268,51 @@ def verify_directory(folder):
     if not op.exists(folder):
         try:
             os.makedirs(folder)
-        except OSError as err:
-            raise err
+        except (OSError, PermissionError) as err:
+            # Windows 11 enhanced security might prevent directory creation
+            try:
+                verify_directory_with_permissions(folder)
+            except Exception as perm_err:
+                from pyrevit import PyRevitException
+                raise PyRevitException(
+                    'Cannot create directory: {} | Original error: {} | '
+                    'Permission error: {}. This may be due to Windows 11 enhanced '
+                    'security. Please run as administrator or check folder permissions.'
+                    .format(folder, err, perm_err)
+                )
+    return folder
+
+
+def verify_directory_with_permissions(folder):
+    """Create directory with explicit permissions for Windows 11 compatibility.
+
+    Args:
+        folder (str): path of folder to create
+
+    Returns:
+        (str): path of created folder
+    """
+    try:
+        # Try to create directory with explicit permissions
+        os.makedirs(folder, exist_ok=True)
+
+        # On Windows, try to set directory permissions
+        if os.name == 'nt':
+            try:
+                import stat
+                # Set directory permissions to be accessible by owner
+                os.chmod(folder, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+            except (OSError, AttributeError):
+                pass  # Permissions might not be settable, continue anyway
+
+    except (OSError, PermissionError) as ex:
+        from pyrevit import PyRevitException
+        raise PyRevitException(
+            'Cannot create directory with permissions: {} | Error: {}. '
+            'This may be due to Windows 11 enhanced security.'
+            .format(folder, ex)
+        )
+
     return folder
 
 
@@ -559,8 +602,67 @@ def touch(fname, times=None):
         fname (str): target file path
         times (int): number of times to touch the file
     """
-    with open(fname, 'a'):
+    try:
+        with open(fname, 'a'):
+            os.utime(fname, times)
+    except (OSError, IOError, PermissionError) as ex:
+        # Windows 11 enhanced security might prevent file creation
+        # Try alternative approach
+        try:
+            touch_with_permissions(fname, times)
+        except Exception as perm_ex:
+            from pyrevit import PyRevitException
+            raise PyRevitException(
+                'Cannot create or touch file: {} | Original error: {} | '
+                'Permission error: {}. This may be due to Windows 11 enhanced '
+                'security. Please run as administrator or check folder permissions.'
+                .format(fname, ex, perm_ex)
+            )
+
+
+def touch_with_permissions(fname, times=None):
+    """Create file with explicit permissions for Windows 11 compatibility.
+
+    Args:
+        fname (str): target file path
+        times (int): number of times to touch the file
+    """
+    import stat
+
+    # Ensure directory exists first
+    dir_path = op.dirname(fname)
+    if dir_path and not op.exists(dir_path):
+        verify_directory(dir_path)
+
+    # Create file if it doesn't exist
+    if not op.exists(fname):
+        try:
+            # Create file with explicit permissions
+            with open(fname, 'w') as f:
+                pass  # Just create empty file
+
+            # Set file permissions to be readable/writable by owner
+            if os.name == 'nt':  # Windows
+                # On Windows, try to set file attributes
+                try:
+                    import stat
+                    os.chmod(fname, stat.S_IWRITE | stat.S_IREAD)
+                except (OSError, AttributeError):
+                    pass  # Permissions might not be settable, continue anyway
+        except (OSError, IOError) as ex:
+            from pyrevit import PyRevitException
+            raise PyRevitException(
+                'Cannot create file with permissions: {} | Error: {}. '
+                'This may be due to Windows 11 enhanced security.'
+                .format(fname, ex)
+            )
+
+    # Update timestamp
+    try:
         os.utime(fname, times)
+    except (OSError, IOError):
+        # If we can't update timestamp, at least the file exists
+        pass
 
 
 def read_source_file(source_file_path):
