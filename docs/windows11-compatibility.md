@@ -27,7 +27,7 @@ The fix involves multiple layers of compatibility enhancements:
 ### 1. Enhanced C# File Creation (`CommonUtils.cs`)
 
 **Changes Made:**
-- Added explicit permission handling in `EnsureFile()` and `EnsurePath()` methods
+- Added explicit permission handling in `EnsureFile()` and `EnsurePath()` methods in `dev/pyRevitLabs/pyRevitLabs.Common/CommonUtils.cs`
 - Implemented fallback mechanisms with Windows 11-specific error handling
 - Added proper exception handling for `UnauthorizedAccessException`
 - Set explicit file system permissions for created files and directories

@@ -346,11 +346,12 @@ def main():
     if passed == total:
         print("\n🎉 All tests passed! The Windows 11 configuration fix should work correctly.")
         print("   Users should be able to create and modify pyRevit configurations.")
+        sys.exit(0)  # Exit with success status
     else:
         print(f"\n⚠ {total - passed} test(s) failed. There may still be compatibility issues.")
         print("   Consider running as Administrator or checking Windows Security settings.")
-    
-    print("\nFor more information, see: WINDOWS11_SOLUTION_SUMMARY.md")
+        print("\nFor more information, see: WINDOWS11_SOLUTION_SUMMARY.md")
+        sys.exit(1)  # Exit with failure status
 
 if __name__ == '__main__':
     main()

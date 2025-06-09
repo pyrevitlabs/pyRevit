@@ -57,6 +57,20 @@ DEFAULT_CSV_SEPARATOR = ','
 
 mlogger = logger.get_logger(__name__)
 
+# Minimal config template for Windows 11 compatibility
+MINIMAL_CONFIG_TEMPLATE = """# pyRevit Configuration File
+# Created with Windows 11 compatibility mode
+
+[core]
+# Core pyRevit settings
+
+[extensions]
+# Extension settings
+
+[user]
+# User-specific settings
+
+"""
 
 CONSTS = PyRevit.PyRevitConsts
 
@@ -835,14 +849,7 @@ def verify_configs_windows11_fallback(config_file_path):
     # Create config file with minimal content
     try:
         with open(config_file_path, 'w') as config_file:
-            config_file.write('# pyRevit Configuration File\n')
-            config_file.write('# Created with Windows 11 compatibility mode\n\n')
-            config_file.write('[core]\n')
-            config_file.write('# Core pyRevit settings\n\n')
-            config_file.write('[extensions]\n')
-            config_file.write('# Extension settings\n\n')
-            config_file.write('[user]\n')
-            config_file.write('# User-specific settings\n\n')
+            config_file.write(MINIMAL_CONFIG_TEMPLATE)
 
         mlogger.debug('Successfully created config file with Windows 11 fallback method')
 
