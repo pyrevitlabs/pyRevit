@@ -15,7 +15,10 @@ def bitmap_from_file(bitmap_file):
     """
     bitmap = Imaging.BitmapImage()
     bitmap.BeginInit()
-    _, bitmap.UriSource = Uri.TryCreate(bitmap_file, UriKind.RelativeOrAbsolute)
+    success, uri = Uri.TryCreate(bitmap_file, UriKind.RelativeOrAbsolute)
+    if not success or uri is None:
+        raise ValueError(f"Failed to create Uri from file path: {bitmap_file}")
+    bitmap.UriSource = uri
     bitmap.CacheOption = Imaging.BitmapCacheOption.OnLoad
     bitmap.CreateOptions = Imaging.BitmapCreateOptions.IgnoreImageCache
     bitmap.EndInit()
