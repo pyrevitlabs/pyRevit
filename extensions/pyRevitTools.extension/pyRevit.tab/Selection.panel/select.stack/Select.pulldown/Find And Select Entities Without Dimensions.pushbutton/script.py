@@ -3,6 +3,10 @@
 # pylint: disable=import-error,invalid-name
 from pyrevit import revit, DB, HOST_APP
 from pyrevit import forms
+from pyrevit.compat import get_elementid_value_func
+
+get_elementid_value = get_elementid_value_func()
+doc = HOST_APP.doc
 
 categories = {
     "Rooms": DB.BuiltInCategory.OST_Rooms,
@@ -36,7 +40,7 @@ if selected_switch:
         .WhereElementIsNotElementType()
     )
 
-    all_ids = set(x.Id.IntegerValue for x in all_elements)
+    all_ids = set(get_elementid_value(x.Id) for x in all_elements)
 
     all_dims = (
         DB.FilteredElementCollector(revit.doc, revit.active_view.Id)
@@ -51,10 +55,9 @@ if selected_switch:
                 dimmed_ids.add(ref.ElementId.Value)
             else:
                 dimmed_ids.add(ref.ElementId.IntegerValue)
-
     # find non dimmed
     not_dimmed_ids = all_ids.difference(dimmed_ids)
     if not_dimmed_ids:
-        selection.set_to(not_dimmed_ids)
+        selection.set_to([doc.GetElement(DB.ElementId(x)) for x in not_dimmed_ids])
     else:
         forms.alert("All %s have associated dimensions." % selected_switch)

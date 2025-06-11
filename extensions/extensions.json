@@ -200,6 +200,19 @@
             "website": "https://www.byggstyrning.se",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "true",
+            "name": "Quickly",
+            "description": "Quick Custom Tools for Design and BIM Cooordination",
+            "author": "Tay Othman",
+            "author_profile": "https://www.linkedin.com/in/tayothman",
+            "url": "https://github.com/tay0thman/Quickly.git",
+            "website": "http://tayothman.com",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
