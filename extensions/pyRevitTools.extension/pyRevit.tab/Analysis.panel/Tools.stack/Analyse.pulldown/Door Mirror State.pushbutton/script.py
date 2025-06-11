@@ -115,8 +115,7 @@ output.print_md(
 )
 
 output.print_md("### Door families without writeback parameter defined in family:")
-for door_type in doors_without_parameter:
-    print(door_type)
+output.print_md("- " + "\n - ".join(doors_without_parameter))
 output.print_md("---\n### Changes to previous run of the script:")
 
 if data_doors_changed:
