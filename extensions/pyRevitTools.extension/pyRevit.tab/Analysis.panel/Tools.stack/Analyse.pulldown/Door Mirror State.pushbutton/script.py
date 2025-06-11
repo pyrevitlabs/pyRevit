@@ -16,12 +16,7 @@ DOORDIR_ERROR_VALUE = "-"  # Value if the family doesn't have shared param. abov
 timer_start = time.time()
 
 # GET ALL DOORS
-doors_collector = (
-    DB.FilteredElementCollector(doc)
-    .OfCategory(DB.BuiltInCategory.OST_Doors)
-    .WhereElementIsNotElementType()
-    .ToElements()
-)
+doors_collector = get_doors(doc=doc)
 
 if not doors_collector:
     forms.alert("No doors found in the model.", title="Warning")
