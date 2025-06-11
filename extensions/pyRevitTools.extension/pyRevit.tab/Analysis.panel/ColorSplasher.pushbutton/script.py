@@ -137,13 +137,10 @@ class ApplyColors(UI.IExternalEventHandler):
                 ):
                     # In case of rooms, spaces and areas. Check Color scheme is applied and if not
                     if version > 2021:
-                        if (
-                            str(wndw.crt_view.GetColorFillSchemeId(sel_cat.cat.Id))
-                            == "-1"
-                        ):
+                        if wndw.crt_view.GetColorFillSchemeId(sel_cat.cat.Id).ToString() == "-1":
                             color_schemes = (
                                 DB.FilteredElementCollector(new_doc)
-                                .OfClass(DB.BuiltInCategoryFillScheme)
+                                .OfClass(DB.ColorFillScheme)
                                 .ToElements()
                             )
                             if len(color_schemes) > 0:
@@ -1487,20 +1484,19 @@ def get_used_categories_parameters(cat_exc, acti_view):
                 list_parameters.append(ParameterInfo(0, par))
         typ = ele.Document.GetElement(ele.GetTypeId())
         # Type parameters
-        if typ is None:
-            continue
-        for par in typ.Parameters:
-            if par.Definition.BuiltInParameter not in (
-                DB.BuiltInParameter.ELEM_CATEGORY_PARAM,
-                DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT,
-            ):
-                list_parameters.append(ParameterInfo(1, par))
+        if typ:
+            for par in typ.Parameters:
+                if par.Definition.BuiltInParameter not in (
+                    DB.BuiltInParameter.ELEM_CATEGORY_PARAM,
+                    DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT,
+                    ):
+                    list_parameters.append(ParameterInfo(1, par))
         # Sort and add
         list_parameters = sorted(
-            list_parameters, key=lambda x: x.name.upper(), reverse=False
+        list_parameters, key=lambda x: x.name.upper()
         )
         list_cat.append(CategoryInfo(ele.Category, list_parameters))
-    list_cat = sorted(list_cat, key=lambda x: x.name, reverse=False)
+    list_cat = sorted(list_cat, key=lambda x: x.name)
     return list_cat
 
 
