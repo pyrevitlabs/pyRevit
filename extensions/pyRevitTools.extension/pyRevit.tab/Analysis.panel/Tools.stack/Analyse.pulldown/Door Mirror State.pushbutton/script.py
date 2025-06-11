@@ -28,17 +28,7 @@ if not doors_collector:
     script.exit()
 
 
-def parameter_exists(parameter_name):
-    binding_map = doc.ParameterBindings
-    iterator = binding_map.ForwardIterator()
-    iterator.Reset()
-    while iterator.MoveNext():
-        if iterator.Key.Name == parameter_name:
-            return True
-    return False
-
-
-if not parameter_exists(DOORDIR_WRITEBACK_PARAM):
+if not model_has_parameter(DOORDIR_WRITEBACK_PARAM, doc=doc):
     print(
         "The parameter '{}' does not exist in the current document.\n"
         "Please create the parameter as an instance parameter, option different values for groupes,\n"
