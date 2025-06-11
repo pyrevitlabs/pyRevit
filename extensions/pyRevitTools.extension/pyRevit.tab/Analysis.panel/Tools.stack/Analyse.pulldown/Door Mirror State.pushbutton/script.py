@@ -48,7 +48,7 @@ if not parameter_exists(DOORDIR_WRITEBACK_PARAM):
 
 count_parameter = 0
 count_not_parameter = 0
-doors_without_parameter = []
+doors_without_parameter = set()
 data_doors_changed = []
 
 with revit.Transaction(doc, "DoorMirrorState"):
