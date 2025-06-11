@@ -71,8 +71,7 @@ with revit.Transaction(doc, "DoorMirrorState"):
                 DB.BuiltInParameter.ELEM_TYPE_PARAM
             ).AsValueString()
             door_name = "{family}-{type}".format(family=door_family, type=door_type)
-            if door_name not in doors_without_parameter:
-                doors_without_parameter.append(door_name)
+            doors_without_parameter.add(door_name)
 
         try:
             door_out_param = door.LookupParameter(DOORDIR_WRITEBACK_PARAM)
