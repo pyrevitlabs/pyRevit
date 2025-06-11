@@ -54,10 +54,8 @@ data_doors_changed = []
 with revit.Transaction(doc, "DoorMirrorState"):
     for door in doors_collector:
         try:
-            if door.Mirrored:
-                value = door.LookupParameter(DOORDIR_MIRRORED_PARAM).AsString()
-            else:
-                value = door.LookupParameter(DOORDIR_STANDARD_PARAM).AsString()
+            param_name = DOORDIR_MIRRORED_PARAM if door.Mirrored else DOORDIR_STANDARD_PARAM
+            value = get_param_value(get_param(door, param_name))
             count_parameter += 1
 
         except AttributeError:
