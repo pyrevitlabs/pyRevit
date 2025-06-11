@@ -125,7 +125,7 @@ if data_doors_changed:
         columns=["Door", "Changed Value (old->new)", "ElementId"],
     )
 else:
-    output.print_md("#### No doors with changed parameters were found.")
+    output.print_md("*No doors with changed parameters were found.*")
 
 elapsed_time = time.time() - timer_start
 output.print_md("---\n#### Script has finished in {:.2f}s".format(elapsed_time))
