@@ -17,7 +17,7 @@ def bitmap_from_file(bitmap_file):
     bitmap.BeginInit()
     success, uri = Uri.TryCreate(bitmap_file, UriKind.RelativeOrAbsolute)
     if not success or uri is None:
-        raise ValueError(f"Failed to create Uri from file path: {bitmap_file}")
+        raise ValueError("Failed to create Uri from file path: {}".format(bitmap_file))
     bitmap.UriSource = uri
     bitmap.CacheOption = Imaging.BitmapCacheOption.OnLoad
     bitmap.CreateOptions = Imaging.BitmapCreateOptions.IgnoreImageCache
