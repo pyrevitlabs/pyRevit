@@ -334,6 +334,17 @@ def apply_viewport_type(activedoc, vport_id, dest_doc, newvport_id):
                 newvport.ChangeTypeId(vtype_id)
 
 
+def match_detail_number(original_vport, nvport):
+    if not (original_vport and nvport):
+        error_msg = 'Missing view. Cannot match detail number'
+        print('\t\t\t{}'.format(error_msg))
+        logger.error(error_msg)
+    else:
+        dtl_num_param = DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+        nvport.get_Parameter(dtl_num_param)\
+              .Set(original_vport.get_Parameter(dtl_num_param).AsString())
+
+
 def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
     existing_views = [dest_doc.GetElement(x).ViewId
                       for x in dest_sheet.GetAllViewports()]
@@ -360,6 +371,9 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
                                                 dest_sheet.Id,
                                                 new_view.Id,
                                                 vport.GetBoxCenter())
+                    
+                    match_detail_number(vport, nvport)
+                    
                 if nvport:
                     apply_viewport_type(activedoc, vport_id,
                                         dest_doc, nvport.Id)
