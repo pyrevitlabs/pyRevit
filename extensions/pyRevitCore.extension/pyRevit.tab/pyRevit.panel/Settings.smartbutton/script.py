@@ -156,7 +156,9 @@ class SettingsWindow(forms.WPFWindow):
         self.minhostdrivefreespace_tb.Text = str(user_config.min_host_drivefreespace)
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
+        
         self.new_loader.IsChecked = user_config.new_loader
+        self.use_roslyn_loader.IsChecked = user_config.use_roslyn_loader
 
     def _setup_engines(self):
         """Sets up the list of available engines."""

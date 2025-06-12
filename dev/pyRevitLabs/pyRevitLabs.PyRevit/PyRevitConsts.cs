@@ -85,8 +85,6 @@ namespace pyRevitLabs.PyRevit {
         public const int ConfigsMinDriveSpaceDefault = 0;
         public const string ConfigsLoadBetaKey = "loadbeta";
         public const bool ConfigsLoadBetaDefault = false;
-        public const string ConfigsNewLoaderKey = "new_loader";
-        public const bool ConfigsNewLoaderDefault = false;
         public const string ConfigsCPythonEngineKey = "cpyengine";
         public const int ConfigsCPythonEngineDefault = 0;
         public const string ConfigsLocaleKey = "user_locale";
@@ -171,6 +169,12 @@ namespace pyRevitLabs.PyRevit {
         public const string BundleScriptGrasshopperPostfix = ".gh";
         public const string BundleScriptGrasshopperXPostfix = ".ghx";
         public const string BundleScriptRevitFamilyPostfix = ".rfa";
+
+        // loader settings
+        public const string ConfigsNewLoaderKey = "new_loader";
+        public const bool ConfigsNewLoaderDefault = false;
+        public const string ConfigsUseRoslynKey = "use_roslyn_loader";
+        public const bool ConfigsUseRoslynDefault = false;
 
         // theme
         public static SolidColorBrush PyRevitAccentBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12));

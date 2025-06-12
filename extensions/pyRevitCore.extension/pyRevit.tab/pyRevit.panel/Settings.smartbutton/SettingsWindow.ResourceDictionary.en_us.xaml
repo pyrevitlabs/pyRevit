@@ -56,7 +56,9 @@
     <system:String x:Key="CoreSettings.Development">Development</system:String>
     <system:String x:Key="CoreSettings.Development.Description">Misc options for pyRevit development</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</system:String>
-    <system:String x:Key="CoreSettings.Development.NewLoader">Enables new, faster version of pyRevit loader (beta)</system:String>
+
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Enables new, faster version of pyRevit loader (beta)</system:String>
+    <system:String x:Key="CoreSettings.Loader.RoslynLoader">Use RoslynLoader</system:String>
 
     <system:String x:Key="CoreSettings.Caching">Caching</system:String>
     <system:String x:Key="CoreSettings.Caching.Button">Reset Caching to default</system:String>
