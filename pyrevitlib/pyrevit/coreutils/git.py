@@ -8,7 +8,7 @@ import os.path as op
 from collections import OrderedDict
 
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit.compat import safe_strtype, IRONPY3, IRONPY2
+from pyrevit.compat import safe_strtype, IRONPY
 from pyrevit import framework
 from pyrevit.framework import clr
 from pyrevit.framework import DateTime, DateTimeOffset
