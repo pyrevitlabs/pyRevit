@@ -24,7 +24,7 @@ LIBGIT_DLL = framework.get_dll_file(GIT_LIB)
 mlogger.debug("Loading dll: %s", LIBGIT_DLL)
 
 try:
-    if IRONPY3 or IRONPY2:
+    if IRONPY:
         clr.AddReferenceToFileAndPath(LIBGIT_DLL)
     else:
         clr.AddReference(LIBGIT_DLL)
