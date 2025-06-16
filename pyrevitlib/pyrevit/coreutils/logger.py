@@ -125,19 +125,15 @@ class LoggerWrapper(logging.Logger):
 
     def callHandlers(self, record):
         """Override logging.Logger.callHandlers."""
-        # this method fails with IronPython 3 
-        try: 
-            for hdlr in self.handlers:
-                # stream-handler only records based on current level
-                if isinstance(hdlr, logging.StreamHandler) \
-                        and record.levelno >= self._curlevel:
-                    hdlr.handle(record)
-                # file-handler must record everything
-                elif isinstance(hdlr, logging.FileHandler) \
-                        and self._filelogstate:
-                    hdlr.handle(record)
-        except Exception as ex:
-            pass
+        for hdlr in self.handlers:
+            # stream-handler only records based on current level
+            if isinstance(hdlr, logging.StreamHandler) \
+                    and record.levelno >= self._curlevel:
+                hdlr.handle(record)
+            # file-handler must record everything
+            elif isinstance(hdlr, logging.FileHandler) \
+                    and self._filelogstate:
+                hdlr.handle(record)
 
     def isEnabledFor(self, level):
         """Override logging.Logger.isEnabledFor."""
@@ -351,7 +347,6 @@ def get_logger(logger_name):
         logger.addHandler(get_stdout_hndlr())
         logger.propagate = False
         logger.addHandler(get_file_hndlr())
-
         loggers.update({logger_name: logger})
         return logger
 

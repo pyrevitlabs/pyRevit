@@ -97,7 +97,7 @@ namespace PyRevitLoader
             var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
             // execute StartupScript
             Result result = Result.Succeeded;
-            var startupScript = GetStartupScriptPath(false);
+            var startupScript = GetStartupScriptPath();
             if (startupScript != null)
             {
                 var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
@@ -136,7 +136,7 @@ namespace PyRevitLoader
 
                 // execute light version of StartupScript python script  
                 Result result = Result.Succeeded;
-                var startupScript = GetStartupScriptPath(true);
+                var startupScript = GetStartupScriptPath();
                 if (startupScript != null)
                 {
                     var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
@@ -154,12 +154,11 @@ namespace PyRevitLoader
                 return Result.Failed;
             }
         }
-        private static string GetStartupScriptPath(bool isLight)
+        private static string GetStartupScriptPath()
         {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dllDir = Path.GetDirectoryName(loaderDir);
-            var formattedName = isLight ? "{0}Light.py" : "{0}.py";
-            return Path.Combine(dllDir, string.Format(formattedName, Assembly.GetExecutingAssembly().GetName().Name));
+            return Path.Combine(dllDir, string.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
         }
         Result IExternalApplication.OnShutdown(UIControlledApplication application)
         {
