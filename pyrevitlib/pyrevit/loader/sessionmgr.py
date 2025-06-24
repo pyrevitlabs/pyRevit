@@ -255,6 +255,10 @@ def load_session():
     a dll assembly needs to be created. This function handles these tasks
     through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
 
+    Load session now takes a light parameter that will skip the assembly creation
+    and UI creation. This is for the case when pyRevitAssemblyMaker.dll is 
+    used to create the assembly and UI
+
     Examples:
         ```python
         from pyrevit.loader.sessionmgr import load_session
@@ -282,7 +286,9 @@ def load_session():
     _perform_onsessionloadstart_ops()
 
     # create a new session
-    _new_session()
+    if not user_config.new_loader:
+        _new_session()
+    # other cases are carried out by the pyRevitAssemblyMaker.dll
 
     # perform post-load tasks
     _perform_onsessionloadcomplete_ops()

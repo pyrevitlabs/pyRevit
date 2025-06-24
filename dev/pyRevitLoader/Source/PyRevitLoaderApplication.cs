@@ -3,6 +3,9 @@ using System.IO;
 using System.Reflection;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
+using pyRevitAssemblyBuilder.AssemblyMaker;
+using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.Config;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
@@ -28,7 +31,21 @@ namespace PyRevitLoader
 
             try
             {
-                return ExecuteStartupScript(application);
+                // we need a UIApplication object to assign as `__revit__` in python...
+                var versionNumber = application.ControlledApplication.VersionNumber;
+                var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+                var fi = application.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+                var uiApplication = (UIApplication)fi.GetValue(application);
+
+                var executor = new ScriptExecutor(uiApplication);
+                var result = ExecuteStartupScript(application);
+                if (result == Result.Failed)
+                {
+                    TaskDialog.Show("Error Loading pyRevit", executor.Message);
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -49,11 +66,28 @@ namespace PyRevitLoader
                 }
                 catch
                 {
+
                 }
             }
         }
 
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
+        {
+            // defy the method of loading the assembly
+            // based on the config file setup
+            var config = PyRevitConfig.Load();
+            switch (config.NewLoader)
+            {
+                case true when config.NewLoaderRoslyn:
+                    return ExecuteStartUpCsharp(uiControlledApplication, AssemblyBuildStrategy.Roslyn);
+                case true:
+                    return ExecuteStartUpCsharp(uiControlledApplication, AssemblyBuildStrategy.ILPack);
+                default:
+                    return ExecuteStartUpPython(uiControlledApplication);
+            }
+        }
+
+        public static Result ExecuteStartUpPython(UIControlledApplication uiControlledApplication)
         {
             // we need a UIApplication object to assign as `__revit__` in python...
             var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
@@ -76,14 +110,56 @@ namespace PyRevitLoader
 
             return result;
         }
+        public static Result ExecuteStartUpCsharp(UIControlledApplication uiControlledApplication, AssemblyBuildStrategy loadingMethod)
+        {
+            try
+            {
+                var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
+                var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+                var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+                var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
 
+                // Instantiate all services
+                var assemblyBuilder = new AssemblyBuilderService(versionNumber, loadingMethod);
+                var extensionManager = new ExtensionManagerService();
+                var hookManager = new HookManager();
+                var uiManager = new UIManagerService(uiApplication);
+
+                var sessionManager = new SessionManagerService(
+                    assemblyBuilder,
+                    extensionManager,
+                    hookManager,
+                    uiManager
+                );
+
+                sessionManager.LoadSession();
+
+                // execute light version of StartupScript python script  
+                Result result = Result.Succeeded;
+                var startupScript = GetStartupScriptPath();
+                if (startupScript != null)
+                {
+                    var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
+                    result = executor.ExecuteScript(startupScript);
+                    if (result == Result.Failed)
+                    {
+                        TaskDialog.Show("Error Loading pyRevit", executor.Message);
+                    }
+                }
+                return Result.Succeeded;
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("Error Starting pyRevit Session", ex.ToString());
+                return Result.Failed;
+            }
+        }
         private static string GetStartupScriptPath()
         {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dllDir = Path.GetDirectoryName(loaderDir);
             return Path.Combine(dllDir, string.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
         }
-
         Result IExternalApplication.OnShutdown(UIControlledApplication application)
         {
             // FIXME: deallocate the python shell...

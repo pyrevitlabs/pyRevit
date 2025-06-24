@@ -6,5 +6,6 @@
         <IronPythonVersion>IPY342</IronPythonVersion>
         <IronPythonStdLib>python_342_lib.zip</IronPythonStdLib>
         <Version>3.4.2</Version>
+        <UseLoader>true</UseLoader>
     </PropertyGroup>
 </Project>

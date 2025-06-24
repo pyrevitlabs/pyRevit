@@ -377,7 +377,7 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.CONTENT_BUTTON_POSTFIX + ')'
-        # tnteresting directories
+        # interesting directories
         pat += '|(\\' + exts.COMP_LIBRARY_DIR_NAME + ')'
         pat += '|(\\' + exts.COMP_HOOKS_DIR_NAME + ')'
         # search for scripts, setting files (future support), and layout files

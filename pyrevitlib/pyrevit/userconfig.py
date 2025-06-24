@@ -301,7 +301,33 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsLoadBetaKey,
             value=state
         )
-
+    @property
+    def new_loader(self):
+        """Whether to use new csharp loader."""
+        return self.core.get_option(
+            CONSTS.ConfigsNewLoaderKey,
+            default_value=CONSTS.ConfigsNewLoaderDefault,
+        )
+    
+    @new_loader.setter
+    def new_loader(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsNewLoaderKey,
+            value=state
+        )
+    @property
+    def use_roslyn_loader(self):
+        """Whether to use a Roslyn loader."""
+        return self.core.get_option(
+            CONSTS.ConfigsUseRoslynKey,
+            default_value=CONSTS.ConfigsUseRoslynDefault,
+        )
+    @use_roslyn_loader.setter
+    def use_roslyn_loader(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsUseRoslynKey,
+            value=state
+        )
     @property
     def cpython_engine_version(self):
         """CPython engine version to use."""
@@ -858,6 +884,7 @@ mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 # this pushes reading settings at first import of this module.
 try:
     verify_configs(CONFIG_FILE)
+    print('Using config file: %s', CONFIG_FILE)
     user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
                                 config_type=CONFIG_TYPE)
     upgrade.upgrade_user_config(user_config)
