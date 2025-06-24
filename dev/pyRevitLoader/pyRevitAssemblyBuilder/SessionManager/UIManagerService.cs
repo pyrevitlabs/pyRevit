@@ -5,7 +5,10 @@ using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.AssemblyMaker;
-using System.ComponentModel;
+using Autodesk.Windows;
+using RibbonPanel = Autodesk.Revit.UI.RibbonPanel;
+using RibbonButton = Autodesk.Windows.RibbonButton;
+using RibbonItem = Autodesk.Revit.UI.RibbonItem;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -131,6 +134,31 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         }
                     }
                     break;
+            }
+        }
+
+        private void ModifyToPanelButton(string tabName, RibbonPanel parentPanel, PushButton panelBtn)
+        {
+            try
+            {
+                var adwTab = ComponentManager
+                    .Ribbon
+                    .Tabs
+                    .FirstOrDefault(t => t.Id == tabName);
+                var adwPanel = adwTab
+                    .Panels
+                    .First(p => p.Source.Title == parentPanel.Name);
+                var adwBtn = adwPanel
+                    .Source
+                    .Items
+                    .First(i => i.AutomationName == panelBtn.ItemText);
+                adwPanel.Source.Items.Remove(adwBtn);
+                adwPanel.Source.DialogLauncher = (RibbonButton)adwBtn;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed modify PushButton to PanelButton");
+                Console.WriteLine(ex.Message);
             }
         }
 

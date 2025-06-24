@@ -211,6 +211,7 @@ namespace pyRevitExtensionParser
 
         private static readonly CommandComponentType[] _allowedTypes = new[] {
             CommandComponentType.PushButton,
+            CommandComponentType.PanelButton,
             CommandComponentType.SmartButton,
             CommandComponentType.UrlButton
         };
