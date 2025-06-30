@@ -717,7 +717,7 @@ def store_data(slot_name, data, this_project=True):
                                   file_ext=DATAFEXT,
                                   add_cmd_name=False)
 
-    with open(data_file, 'w') as dfile:
+    with open(data_file, "wb") as dfile:
         pickle.dump(data, dfile)
 
 
@@ -774,7 +774,7 @@ def load_data(slot_name, this_project=True):
                                   file_ext=DATAFEXT,
                                   add_cmd_name=False)
 
-    with open(data_file, 'r') as dfile:
+    with open(data_file, 'rb') as dfile:
         return pickle.load(dfile)
 
 
