@@ -16,6 +16,7 @@ import csv
 import codecs
 import os.path as op
 from collections import defaultdict
+from System import Int64
 
 from pyrevit import PyRevitException
 from pyrevit import forms
@@ -66,7 +67,10 @@ def create_schedule_records(schedule, fields, records):
                     elif p.StorageType == DB.StorageType.String:
                         p.Set(record_data[idx])
                     elif p.StorageType == DB.StorageType.ElementId:
-                        p.Set(DB.ElementId(int(record_data[idx])))
+                        if HOST_APP.is_newer_than(2025):
+                            p.Set(DB.ElementId(Int64(record_data[idx])))
+                        else:
+                            p.Set(DB.ElementId(int(record_data[idx])))
 
 
 def has_matching_fields(keysched_def, fields):
@@ -107,8 +111,7 @@ def resolve_naming_conflicts(category, sched_name, fields, doc=None):
         (
             x
             for x in all_schedules
-            if x.Definition.IsKeySchedule
-            and x.Definition.CategoryId == category.Id
+            if x.Definition.IsKeySchedule and x.Definition.CategoryId == category.Id
         ),
         None,
     )
@@ -167,9 +170,7 @@ def create_key_schedule(
 
     # set name and key parameter name
     # fields[1:] because first field in keyname
-    new_name = resolve_naming_conflicts(
-        category, sched_name, fields[1:], doc=doc
-    )
+    new_name = resolve_naming_conflicts(category, sched_name, fields[1:], doc=doc)
     # if not name skip making schedule
     if not new_name:
         return
@@ -180,8 +181,7 @@ def create_key_schedule(
     new_key_sched.KeyScheduleParameterName = key_name
     # set the schedulable fields
     fsched_fields = {
-        x.GetName(doc): x
-        for x in new_key_sched.Definition.GetSchedulableFields()
+        x.GetName(doc): x for x in new_key_sched.Definition.GetSchedulableFields()
     }
     cancel_txn = False
     for field in fields:
@@ -219,8 +219,7 @@ def find_matching_keyschedule(category, fields, doc=None):
         (
             x
             for x in all_schedules
-            if x.Definition.IsKeySchedule
-            and x.Definition.CategoryId == category.Id
+            if x.Definition.IsKeySchedule and x.Definition.CategoryId == category.Id
         ),
         None,
     )
@@ -235,9 +234,7 @@ def update_key_schedule(keyschedule, category, fields, records, doc=None):
     if forms.alert(
         'key schedule "{}" has identical fields. Multiple key '
         "schedules can not set values for same parameter.\n"
-        "Do you want to update the data in existing schedule?".format(
-            keyschedule.Name
-        ),
+        "Do you want to update the data in existing schedule?".format(keyschedule.Name),
         yes=True,
         no=True,
     ):
@@ -292,8 +289,7 @@ def ensure_schedulable_parameters(category, parameter_defs, doc=None):
     with revit.DryTransaction(doc):
         temp_key_sched = DB.ViewSchedule.CreateKeySchedule(doc, category.Id)
         fsched_field_names = [
-            x.GetName(doc)
-            for x in temp_key_sched.Definition.GetSchedulableFields()
+            x.GetName(doc) for x in temp_key_sched.Definition.GetSchedulableFields()
         ]
 
         for param_def in parameter_defs:
@@ -394,9 +390,7 @@ def read_csv_typed_data(csv_file):
                     field_defs.append(
                         (
                             parts[0],
-                            coreutils.get_enum_value(
-                                DB.ParameterType, parts[1]
-                            ),
+                            coreutils.get_enum_value(DB.ParameterType, parts[1]),
                         )
                     )
     # return field definitions, and data
@@ -425,9 +419,7 @@ if __name__ == "__main__":
                 category=key_sched_cat, fields=param_names
             )
             if existing_keyschedule:
-                with revit.Transaction(
-                    "Update Schedule from CSV", log_errors=False
-                ):
+                with revit.Transaction("Update Schedule from CSV", log_errors=False):
                     # update the data in current schedule
                     update_key_schedule(
                         keyschedule=existing_keyschedule,
@@ -437,9 +429,7 @@ if __name__ == "__main__":
                         doc=revit.doc,
                     )
             else:
-                with revit.Transaction(
-                    "Create Schedule from CSV", log_errors=False
-                ):
+                with revit.Transaction("Create Schedule from CSV", log_errors=False):
                     # make sure field parameters exist
                     # creates project params if not
                     # skip the first on since it is "Key Name" and only applies
