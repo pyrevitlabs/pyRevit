@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit import forms
