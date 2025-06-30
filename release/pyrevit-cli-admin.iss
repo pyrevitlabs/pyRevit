@@ -1,5 +1,5 @@
 #define MyAppName "pyRevit CLI"
-#define MyAppUUID "9557b432-cf79-4ece-91cf-b8f996c88b47"
+#define MyAppUUID "1330326b-3675-4e8c-b85d-6af7b97430fa"
 #define MyAppVersion "5.2.0.25181"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
