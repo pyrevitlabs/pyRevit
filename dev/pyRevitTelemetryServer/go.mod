@@ -15,14 +15,18 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
-	go.mongodb.org/mongo-driver v1.3.0
+	go.mongodb.org/mongo-driver v1.5.1
 	pkg.re/essentialkaos/ek.v10 v12.32.0+incompatible
 )
 
 require (
+	github.com/aws/aws-sdk-go v1.34.28 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
-	github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
+	github.com/xdg-go/scram v1.0.2 // indirect
+	github.com/xdg-go/stringprep v1.0.2 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 )
 
 require (
