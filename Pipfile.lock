@@ -493,12 +493,12 @@
         },
         "pygount": {
             "hashes": [
-                "sha256:4c5d83d8069ea13a5740d3155d314508af1b6c37391777c9fc656dac3f904d57",
-                "sha256:7eb27c5095e3bb677e23d23e22707486b470d44a56fa3b41258f58d08968cc0d"
+                "sha256:2f4b064ac1689ba43bdf84bef244e7a45f27e315feae6fb19d1209c56a580361",
+                "sha256:974aaf7a77d7f93aefc220639a897364cdd88a77e5a102d7063f73f8b7100955"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9' and python_version < '4'",
-            "version": "==2.0.0"
+            "version": "==3.1.0"
         },
         "pymdown-extensions": {
             "hashes": [
@@ -695,11 +695,11 @@
         },
         "rich": {
             "hashes": [
-                "sha256:439594978a49a09530cff7ebc4b5c7103ef57baf48d5ea3184f21d9a2befa098",
-                "sha256:6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90"
+                "sha256:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0",
+                "sha256:82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725"
             ],
             "markers": "python_full_version >= '3.8.0'",
-            "version": "==13.9.4"
+            "version": "==14.0.0"
         },
         "ruff": {
             "hashes": [
