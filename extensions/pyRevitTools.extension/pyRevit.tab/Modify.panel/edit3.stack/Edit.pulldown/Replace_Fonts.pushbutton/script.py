@@ -33,6 +33,7 @@ def rename_element_type_if_needed(element_type, old_font, new_font):
     # Use case-insensitive check to see if the old font name is part of the type name
     if old_font.lower() in current_name.lower():
         # Use case-insensitive replace
+        new_name = current_name  # fallback value
         try:
             new_name = re.sub(re.escape(old_font), new_font, current_name, flags=re.IGNORECASE)
             if new_name != current_name:
@@ -59,20 +60,32 @@ def update_nested_generic_annotations(host_family_doc, font_name):
     found_in_any_nested = False
 
     # Find nested families of category "Generic Annotation"
-    nested_families = [
-        f
-        for f in DB.FilteredElementCollector(host_family_doc)
-        .OfClass(DB.Family)
-        .ToElements()
-        if f.FamilyCategory
-        and f.FamilyCategory.Id.IntegerValue
-        == int(DB.BuiltInCategory.OST_GenericAnnotation)
-    ]
+    if HOST_APP.is_newer_than(2024):
+        nested_families = [
+            f
+            for f in DB.FilteredElementCollector(host_family_doc)
+            .OfClass(DB.Family)
+            .ToElements()
+            if f.FamilyCategory
+            and f.FamilyCategory.Id.Value
+            == int(DB.BuiltInCategory.OST_GenericAnnotation)
+        ]
+    else:
+        nested_families = [
+            f
+            for f in DB.FilteredElementCollector(host_family_doc)
+            .OfClass(DB.Family)
+            .ToElements()
+            if f.FamilyCategory
+            and f.FamilyCategory.Id.IntegerValue
+            == int(DB.BuiltInCategory.OST_GenericAnnotation)
+        ]
+  
 
     for nested_family in nested_families:
         if not nested_family.IsEditable:
             continue
-
+        nested_family_doc = None 
         try:
             nested_family_doc = host_family_doc.EditFamily(nested_family)
 
@@ -121,6 +134,9 @@ def update_nested_generic_annotations(host_family_doc, font_name):
                 )
             )
             continue
+        finally:
+            if nested_family_doc:
+                nested_family_doc.Close(False)
 
     return results, found_in_any_nested
 
