@@ -19,13 +19,13 @@ output = script.get_output()
 logger = script.get_logger()
 
 
-def rename_element_type_if_needed(element_type, old_font, new_font):
+def rename_element_type_if_needed(element_type, old_font, new_font_name):
     # type: (DB.ElementType, str, str) -> None
     """Renames an element type if its name contains the old font name (case-insensitive).
     Args:
         element_type (DB.ElementType): The element type to rename.
         old_font (str): The old font name.
-        new_font (str): The new font name.
+        new_font_name (str): The new font name.
     Returns:
         None
     """
