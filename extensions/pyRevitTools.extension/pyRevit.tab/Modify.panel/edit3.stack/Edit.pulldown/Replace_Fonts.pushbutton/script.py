@@ -80,15 +80,12 @@ def update_nested_generic_annotations(host_family_doc, font_name):
             and f.FamilyCategory.Id.IntegerValue
             == int(DB.BuiltInCategory.OST_GenericAnnotation)
         ]
-  
-
     for nested_family in nested_families:
         if not nested_family.IsEditable:
             continue
-        nested_family_doc = None 
+        nested_family_doc = None
         try:
             nested_family_doc = host_family_doc.EditFamily(nested_family)
-
             found_in_this_nested = False
 
             # Update text types within this nested family
@@ -108,7 +105,6 @@ def update_nested_generic_annotations(host_family_doc, font_name):
                             rename_element_type_if_needed(et, old_font, font_name)
                             param.Set(font_name)
                             found_in_this_nested = True
-                            # Report the name of the type that was changed
                             results.append(
                                 (DB.Element.Name.GetValue(et), old_font, font_name)
                             )
@@ -126,17 +122,18 @@ def update_nested_generic_annotations(host_family_doc, font_name):
                 # Load the updated nested family back into its host family
                 nested_family_doc.LoadFamily(host_family_doc, FamilyLoaderOptionsHandler())
 
-            nested_family_doc.Close(False)
         except Exception as e:
             logger.error(
                 "Error processing nested family '{}' in '{}': {}".format(
                     nested_family.Name, host_family_doc.Title, e
                 )
             )
-            continue
         finally:
-            if nested_family_doc:
-                nested_family_doc.Close(False)
+            if nested_family_doc is not None:
+                try:
+                    nested_family_doc.Close(False)
+                except:
+                    pass
 
     return results, found_in_any_nested
 
