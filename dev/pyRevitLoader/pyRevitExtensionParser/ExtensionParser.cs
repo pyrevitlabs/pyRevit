@@ -172,6 +172,12 @@ namespace pyRevitExtensionParser
                 var bundleFile = Path.Combine(dir, "bundle.yaml");
                 var children = ParseComponents(dir, extensionName, fullPath);
 
+                string title = null, author = null, doc = null;
+                if (scriptPath != null)
+                {
+                    (title, author, doc) = ReadPythonScriptConstants(scriptPath);
+                }
+
                 var bundleInComponent = File.Exists(bundleFile) ? BundleYamlParser.Parse(bundleFile) : null;
 
                 components.Add(new ParsedComponent
@@ -179,23 +185,80 @@ namespace pyRevitExtensionParser
                     Name = namePart,
                     DisplayName = displayName,
                     ScriptPath = scriptPath,
-                    Tooltip = $"Command: {namePart}",
+                    Tooltip = doc ?? $"Command: {namePart}", // Set Tooltip from __doc__ or fallback
                     UniqueId = SanitizeClassName(fullPath.ToLowerInvariant()),
                     Type = componentType,
                     Children = children,
                     BundleFile = File.Exists(bundleFile) ? bundleFile : null,
-                    LayoutOrder = bundleInComponent?.LayoutOrder // Save layout as a property
+                    LayoutOrder = bundleInComponent?.LayoutOrder,
+                    Title = title,
+                    Author = author
                 });
             }
 
             return components;
         }
+
         private static string SanitizeClassName(string name)
         {
             var sb = new StringBuilder();
             foreach (char c in name)
                 sb.Append(char.IsLetterOrDigit(c) ? c : '_');
             return sb.ToString();
+        }
+
+        private static (string title, string author, string doc) ReadPythonScriptConstants(string scriptPath)
+        {
+            string title = null, author = null, doc = null;
+
+            foreach (var line in File.ReadLines(scriptPath))
+            {
+                if (line.StartsWith("__title__"))
+                {
+                    title = ExtractPythonConstantValue(line);
+                }
+                else if (line.StartsWith("__author__"))
+                {
+                    author = ExtractPythonConstantValue(line);
+                }
+                else if (line.StartsWith("\"\"\"") || line.StartsWith("'''"))
+                {
+                    if (doc == null)
+                    {
+                        doc = ExtractPythonDocstring(scriptPath);
+                        break;
+                    }
+                }
+            }
+
+            return (title, author, doc);
+        }
+
+        private static string ExtractPythonConstantValue(string line)
+        {
+            var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2)
+            {
+                var value = parts[1].Trim().Trim('\'', '"');
+                return value;
+            }
+            return null;
+        }
+
+        private static string ExtractPythonDocstring(string scriptPath)
+        {
+            var lines = File.ReadLines(scriptPath).SkipWhile(line => !line.StartsWith("\"\"\"") && !line.StartsWith("'''"));
+            var docLines = new List<string>();
+            var delimiter = lines.First().Substring(0, 3);
+
+            foreach (var line in lines.Skip(1))
+            {
+                if (line.StartsWith(delimiter))
+                    break;
+                docLines.Add(line.Trim());
+            }
+
+            return string.Join(" ", docLines);
         }
     }
 
@@ -248,7 +311,8 @@ namespace pyRevitExtensionParser
         public string BundleFile { get; set; }
         public List<string> LayoutOrder { get; set; }
         public bool HasSlideout { get; set; } = false;
-
+        public string Title { get; set; }
+        public string Author { get; set; }
     }
     public class EngineConfig
     {

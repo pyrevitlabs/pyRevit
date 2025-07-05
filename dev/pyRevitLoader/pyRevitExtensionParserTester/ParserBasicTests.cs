@@ -63,6 +63,24 @@ namespace pyRevitExtensionParserTest
                 Assert.Fail("...");
             }
         }
+
+        [Test]
+        public void IsParsingTitle()
+        {
+            if (_installedExtensions != null)
+            {
+                foreach (var parsedExtension in _installedExtensions)
+                {
+                    PrintTitleRecursively(parsedExtension);
+                }
+                Assert.Pass("...");
+            }
+            else
+            {
+                Assert.Fail("...");
+            }
+        }
+
         public void PrintLayoutRecursively(ParsedComponent parsedComponent)
         {
             TestContext.Out.WriteLine($"{parsedComponent.Name}");
@@ -108,6 +126,18 @@ namespace pyRevitExtensionParserTest
                 foreach (var child in parsedComponent.Children)
                 {
                     PrintComponentsRecursively(child, level + 1);
+                }
+            }
+        }
+        public void PrintTitleRecursively(ParsedComponent parsedComponent, int level = 0)
+        {
+            var indent = new string('-', level * 2);
+            TestContext.Out.WriteLine($"{indent}- ({parsedComponent.Name}) - {parsedComponent.DisplayName} - {parsedComponent.Title}");
+            if (parsedComponent.Children != null)
+            {
+                foreach (var child in parsedComponent.Children)
+                {
+                    PrintTitleRecursively(child, level + 1);
                 }
             }
         }
