@@ -1,4 +1,5 @@
-﻿using System;
+﻿using pyRevitExtensionParser.Config;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace pyRevitExtensionParser
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
         {
             var extensionRoots = GetExtensionRoots();
-
+            
             foreach (var root in extensionRoots)
             {
                 if (!Directory.Exists(root))
@@ -269,7 +270,7 @@ namespace pyRevitExtensionParser
         public Dictionary<string, string> Tooltips { get; set; }
         public string MinRevitVersion { get; set; }
         public EngineConfig Engine { get; set; }
-
+        public ExtensionConfig Config { get; set; }
         public string GetHash() => Directory.GetHashCode().ToString("X");
 
         private static readonly CommandComponentType[] _allowedTypes = new[] {
@@ -298,7 +299,13 @@ namespace pyRevitExtensionParser
                     yield return comp;
             }
         }
+
+        public void LoadConfig(PyRevitConfig config)
+        {
+            Config = config.ParseExtensionByName(Name);
+        }
     }
+
     public class ParsedComponent
     {
         public string Name { get; set; }
@@ -383,6 +390,14 @@ namespace pyRevitExtensionParser
                 case CommandComponentType.NoButton: return ".nobutton";
                 default: return string.Empty;
             }
+        }
+        public class ExtensionConfig
+        {
+            public string Name { get; set; }
+            public bool Disabled { get; set; }
+            public bool PrivateRepo { get; set; }
+            public string Username { get; set; }
+            public string Password { get; set; }
         }
     }
 }

@@ -16,6 +16,7 @@
 
     <ItemGroup>
       <Compile Include="BundleParser.cs" />
+      <Compile Include="Config.cs" />
       <Compile Include="ExtensionParser.cs" />
     </ItemGroup>
 
