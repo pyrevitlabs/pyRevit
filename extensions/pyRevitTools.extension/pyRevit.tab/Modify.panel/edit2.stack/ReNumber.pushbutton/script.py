@@ -47,18 +47,19 @@ def get_open_views():
     for ui_View in ui_views:
         viewId = ui_View.ViewId
         view = doc.GetElement(viewId)
-        if view.ViewType in (DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan):
+        if view.ViewType in (DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan, DB.ViewType.DrawingSheet):
             views.append(view)
     return views
 
 
 def toggle_element_selection_handles(target_views, bicat, state=True):
     """Toggle handles for spatial elements"""
+
     with revit.Transaction("Toggle handles"):
         rr_cat = revit.query.get_subcategory(bicat, 'Reference')
         rr_int = revit.query.get_subcategory(bicat, 'Interior Fill')
         # if view has template, toggle temp VG overrides
-        if state:
+        if state and bicat != BIC.OST_Viewports:
             for target_view in target_views:
                 target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
                 try:
@@ -72,6 +73,7 @@ def toggle_element_selection_handles(target_views, bicat, state=True):
                         target_view.Name,
                         str(vex)
                         )
+
                 try:
                     rr_int.Visible[target_view] = state
                 except Exception as vex:
@@ -260,7 +262,10 @@ def _unmark_collected(category_name, renumbered_element_ids):
 def pick_and_renumber(rnopts, starting_index):
     """Main renumbering routine for elements of given category."""
     # all actions under one transaction
-    open_views = get_open_views()
+    if rnopts.bicat != BIC.OST_Viewports:
+        open_views = get_open_views()
+    else:
+        open_views = [revit.active_view]
     with revit.TransactionGroup("Renumber {}".format(rnopts.name)):
         # make sure target elements are easily selectable
         with EasilySelectableElements(open_views, rnopts.bicat):
@@ -359,6 +364,7 @@ def door_by_room_renumber(rnopts):
 # [X] renumber room
 # [X] renumber doors by room
 
+
 if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.ViewSheet)):
     # prepare options
     if not isinstance(revit.active_view, DB.ViewSheet):
@@ -400,6 +406,7 @@ if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.Vie
                 with forms.WarningBar(
                     title='Pick Pairs of Door and Room. ESCAPE to end.'):
                     door_by_room_renumber(selected_option)
+
         else:
             starting_number = ask_for_starting_number(selected_option.name)
             if starting_number:
