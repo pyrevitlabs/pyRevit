@@ -2,11 +2,10 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using pyRevitExtensionParser;
 using Autodesk.Revit.Attributes;
+using static pyRevitExtensionParser.ExtensionParser;
 #if !NETFRAMEWORK
 using System.Runtime.Loader;
 #endif

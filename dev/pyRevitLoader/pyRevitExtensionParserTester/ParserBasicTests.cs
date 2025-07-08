@@ -1,4 +1,5 @@
 ﻿using pyRevitExtensionParser;
+using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParserTest
 {
@@ -65,7 +66,7 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void IsParsingTitle()
+        public void IsParsingScriptFile()
         {
             if (_installedExtensions != null)
             {
@@ -132,7 +133,7 @@ namespace pyRevitExtensionParserTest
         public void PrintTitleRecursively(ParsedComponent parsedComponent, int level = 0)
         {
             var indent = new string('-', level * 2);
-            TestContext.Out.WriteLine($"{indent}- ({parsedComponent.Name}) - {parsedComponent.DisplayName} - {parsedComponent.Title}");
+            TestContext.Out.WriteLine($"{indent}- ({parsedComponent.Name}) - {parsedComponent.DisplayName} - {parsedComponent.Title} - {parsedComponent.Tooltip} - {parsedComponent.Author}");
             if (parsedComponent.Children != null)
             {
                 foreach (var child in parsedComponent.Children)

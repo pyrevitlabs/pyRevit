@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Autodesk.Revit.UI;
-using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using Autodesk.Windows;
 using RibbonPanel = Autodesk.Revit.UI.RibbonPanel;
 using RibbonButton = Autodesk.Windows.RibbonButton;
 using RibbonItem = Autodesk.Revit.UI.RibbonItem;
+using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
