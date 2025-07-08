@@ -1,5 +1,4 @@
-﻿using pyRevitExtensionParser.Config;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,7 +11,13 @@ namespace pyRevitExtensionParser
     {
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
         {
+            //TODO Parse config file to get custom extension roots
+
+            //TODO : Add support for custom extension roots
             var extensionRoots = GetExtensionRoots();
+
+            // TODO check if they are activated in the config
+            //ParseExtensionByName
 
             foreach (var root in extensionRoots)
             {

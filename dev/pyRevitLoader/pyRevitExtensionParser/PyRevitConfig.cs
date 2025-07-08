@@ -1,16 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 
-namespace pyRevitExtensionParser.Config
+namespace pyRevitExtensionParser
 {
     public class PyRevitConfig
     {
         private readonly IniFile _ini;
         public string ConfigPath { get; }
+
+        public string UserExtensions 
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "userextensions");
+                return string.IsNullOrEmpty(value) ? null : value.Trim();
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "userextensions", value);
+            }
+        }
+
+        public string UserLocale
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "user_locale");
+                return string.IsNullOrEmpty(value) ? null : value.Trim();
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "user_locale", value);
+            }
+        }
 
         public bool NewLoader
         {
@@ -78,40 +101,6 @@ namespace pyRevitExtensionParser.Config
         }
     }
 
-    internal class IniFile
-    {
-        private readonly string _path;
-
-        public IniFile(string iniPath)
-        {
-            _path = iniPath;
-        }
-
-        [DllImport("kernel32")]
-        private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
-
-        [DllImport("kernel32")]
-        private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
-
-        public string IniReadValue(string section, string key)
-        {
-            var sb = new StringBuilder(512);
-            GetPrivateProfileString(section, key, "", sb, sb.Capacity, _path);
-            return sb.ToString();
-        }
-
-        public void IniWriteValue(string section, string key, string value)
-        {
-            WritePrivateProfileString(section, key, value, _path);
-        }
-
-        public IEnumerable<string> GetSections()
-        {
-            var sb = new StringBuilder(2048);
-            GetPrivateProfileString(null, null, null, sb, sb.Capacity, _path);
-            return sb.ToString().Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
-        }
-    }
 
     public class ExtensionConfig
     {

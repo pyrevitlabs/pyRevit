@@ -23,13 +23,37 @@ namespace pyRevitExtensionParser
                 var parsed = new ParsedBundle();
                 var lines = File.ReadAllLines(filePath);
                 string currentSection = null;
+                string currentKey = null;
+                bool isMultiline = false;
+                var multilineValue = new List<string>();
 
                 foreach (var raw in lines)
                 {
-                    // Trim both leading and trailing whitespace to simplify checks
                     var line = raw.Trim();
                     if (string.IsNullOrWhiteSpace(line))
                         continue;
+
+                    // Handle multiline values
+                    if (isMultiline)
+                    {
+                        if (line.StartsWith(" "))
+                        {
+                            multilineValue.Add(line.Trim());
+                            continue;
+                        }
+                        else
+                        {
+                            // End of multiline value
+                            var fullValue = string.Join("\n", multilineValue);
+                            if (currentSection == "title")
+                                parsed.Titles[currentKey] = fullValue;
+                            else if (currentSection == "tooltip")
+                                parsed.Tooltips[currentKey] = fullValue;
+
+                            isMultiline = false;
+                            multilineValue.Clear();
+                        }
+                    }
 
                     // Top‐level section header (no leading spaces)
                     if (!raw.StartsWith(" ") && line.Contains(":"))
@@ -70,12 +94,22 @@ namespace pyRevitExtensionParser
                     else if ((currentSection == "title" || currentSection == "tooltip") && line.Contains(":"))
                     {
                         var parts = line.Split(new[] { ':' }, 2);
-                        var lang = parts[0].Trim();
+                        currentKey = parts[0].Trim();
                         var text = parts[1].Trim();
-                        if (currentSection == "title")
-                            parsed.Titles[lang] = text;
+
+                        if (text == "|" || text == ">")
+                        {
+                            // Start of multiline value
+                            isMultiline = true;
+                        }
                         else
-                            parsed.Tooltips[lang] = text;
+                        {
+                            // Single-line value
+                            if (currentSection == "title")
+                                parsed.Titles[currentKey] = text;
+                            else
+                                parsed.Tooltips[currentKey] = text;
+                        }
                     }
                     // Engine config options
                     else if (currentSection == "engine" && line.Contains(":"))
@@ -97,6 +131,16 @@ namespace pyRevitExtensionParser
                                 break;
                         }
                     }
+                }
+
+                // Handle any remaining multiline value
+                if (isMultiline)
+                {
+                    var fullValue = string.Join("\n", multilineValue);
+                    if (currentSection == "title")
+                        parsed.Titles[currentKey] = fullValue;
+                    else if (currentSection == "tooltip")
+                        parsed.Tooltips[currentKey] = fullValue;
                 }
 
                 return parsed;

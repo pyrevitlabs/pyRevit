@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using pyRevitExtensionParser;
+using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
