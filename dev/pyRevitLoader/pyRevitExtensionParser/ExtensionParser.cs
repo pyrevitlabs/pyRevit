@@ -13,7 +13,7 @@ namespace pyRevitExtensionParser
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
         {
             var extensionRoots = GetExtensionRoots();
-            
+
             foreach (var root in extensionRoots)
             {
                 if (!Directory.Exists(root))
@@ -222,13 +222,9 @@ namespace pyRevitExtensionParser
                 {
                     author = ExtractPythonConstantValue(line);
                 }
-                else if (line.StartsWith("\"\"\"") || line.StartsWith("'''"))
+                else if (line.StartsWith("__doc__"))
                 {
-                    if (doc == null)
-                    {
-                        doc = ExtractPythonDocstring(scriptPath);
-                        break;
-                    }
+                    author = ExtractPythonConstantValue(line);
                 }
             }
 
@@ -246,130 +242,108 @@ namespace pyRevitExtensionParser
             return null;
         }
 
-        private static string ExtractPythonDocstring(string scriptPath)
+        public class ParsedExtension : ParsedComponent
         {
-            var lines = File.ReadLines(scriptPath).SkipWhile(line => !line.StartsWith("\"\"\"") && !line.StartsWith("'''"));
-            var docLines = new List<string>();
-            var delimiter = lines.First().Substring(0, 3);
+            public string Directory { get; set; }
+            public Dictionary<string, string> Titles { get; set; }
+            public Dictionary<string, string> Tooltips { get; set; }
+            public string MinRevitVersion { get; set; }
+            public EngineConfig Engine { get; set; }
+            public ExtensionConfig Config { get; set; }
+            public string GetHash() => Directory.GetHashCode().ToString("X");
 
-            foreach (var line in lines.Skip(1))
-            {
-                if (line.StartsWith(delimiter))
-                    break;
-                docLines.Add(line.Trim());
-            }
-
-            return string.Join(" ", docLines);
-        }
-    }
-
-    public class ParsedExtension : ParsedComponent
-    {
-        public string Directory { get; set; }
-        public Dictionary<string, string> Titles { get; set; }
-        public Dictionary<string, string> Tooltips { get; set; }
-        public string MinRevitVersion { get; set; }
-        public EngineConfig Engine { get; set; }
-        public ExtensionConfig Config { get; set; }
-        public string GetHash() => Directory.GetHashCode().ToString("X");
-
-        private static readonly CommandComponentType[] _allowedTypes = new[] {
+            private static readonly CommandComponentType[] _allowedTypes = new[] {
             CommandComponentType.PushButton,
             CommandComponentType.PanelButton,
             CommandComponentType.SmartButton,
             CommandComponentType.UrlButton
         };
 
-        public IEnumerable<ParsedComponent> CollectCommandComponents()
-            => Collect(this.Children);
+            public IEnumerable<ParsedComponent> CollectCommandComponents()
+                => Collect(this.Children);
 
-        private IEnumerable<ParsedComponent> Collect(IEnumerable<ParsedComponent> list)
-        {
-            if (list == null) yield break;
-
-            foreach (var comp in list)
+            private IEnumerable<ParsedComponent> Collect(IEnumerable<ParsedComponent> list)
             {
-                if (comp.Children != null)
+                if (list == null) yield break;
+
+                foreach (var comp in list)
                 {
-                    foreach (var child in Collect(comp.Children))
-                        yield return child;
+                    if (comp.Children != null)
+                    {
+                        foreach (var child in Collect(comp.Children))
+                            yield return child;
+                    }
+
+                    if (_allowedTypes.Contains(comp.Type))
+                        yield return comp;
                 }
-
-                if (_allowedTypes.Contains(comp.Type))
-                    yield return comp;
             }
         }
 
-        public void LoadConfig(PyRevitConfig config)
+        public class ParsedComponent
         {
-            Config = config.ParseExtensionByName(Name);
+            public string Name { get; set; }
+            public string DisplayName { get; set; }
+            public string ScriptPath { get; set; }
+            public string Tooltip { get; set; }
+            public string UniqueId { get; set; }
+            public CommandComponentType Type { get; set; }
+            public List<ParsedComponent> Children { get; set; }
+            public string BundleFile { get; set; }
+            public List<string> LayoutOrder { get; set; }
+            public bool HasSlideout { get; set; } = false;
+            public string Title { get; set; }
+            public string Author { get; set; }
         }
-    }
-
-    public class ParsedComponent
-    {
-        public string Name { get; set; }
-        public string DisplayName { get; set; }
-        public string ScriptPath { get; set; }
-        public string Tooltip { get; set; }
-        public string UniqueId { get; set; }
-        public CommandComponentType Type { get; set; }
-        public List<ParsedComponent> Children { get; set; }
-        public string BundleFile { get; set; }
-        public List<string> LayoutOrder { get; set; }
-        public bool HasSlideout { get; set; } = false;
-        public string Title { get; set; }
-        public string Author { get; set; }
-    }
-    public class EngineConfig
-    {
-        public bool Clean { get; set; }
-        public bool FullFrame { get; set; }
-        public bool Persistent { get; set; }
-    }
-    public enum CommandComponentType
-    {
-        Unknown,
-        Tab,
-        Panel,
-        PushButton,
-        PullDown,
-        SplitButton,
-        SplitPushButton,
-        Stack,
-        SmartButton,
-        PanelButton,
-        LinkButton,
-        InvokeButton,
-        UrlButton,
-        ContentButton,
-        NoButton
-    }
-
-    public static class CommandComponentTypeExtensions
-    {
-        public static CommandComponentType FromExtension(string ext)
+        public class EngineConfig
         {
-            switch (ext.ToLowerInvariant())
+            public bool Clean { get; set; }
+            public bool FullFrame { get; set; }
+            public bool Persistent { get; set; }
+        }
+        public enum CommandComponentType
+        {
+            Unknown,
+            Tab,
+            Panel,
+            PushButton,
+            PullDown,
+            SplitButton,
+            SplitPushButton,
+            Stack,
+            SmartButton,
+            PanelButton,
+            LinkButton,
+            InvokeButton,
+            UrlButton,
+            ContentButton,
+            NoButton
+        }
+
+        public static class CommandComponentTypeExtensions
+        {
+            public static CommandComponentType FromExtension(string ext)
             {
-                case ".tab": return CommandComponentType.Tab;
-                case ".panel": return CommandComponentType.Panel;
-                case ".pushbutton": return CommandComponentType.PushButton;
-                case ".pulldown": return CommandComponentType.PullDown;
-                case ".splitbutton": return CommandComponentType.SplitButton;
-                case ".splitpushbutton": return CommandComponentType.SplitPushButton;
-                case ".stack": return CommandComponentType.Stack;
-                case ".smartbutton": return CommandComponentType.SmartButton;
-                case ".panelbutton": return CommandComponentType.PanelButton;
-                case ".linkbutton": return CommandComponentType.LinkButton;
-                case ".invokebutton": return CommandComponentType.InvokeButton;
-                case ".urlbutton": return CommandComponentType.UrlButton;
-                case ".content": return CommandComponentType.ContentButton;
-                case ".nobutton": return CommandComponentType.NoButton;
-                default: return CommandComponentType.Unknown;
+                switch (ext.ToLowerInvariant())
+                {
+                    case ".tab": return CommandComponentType.Tab;
+                    case ".panel": return CommandComponentType.Panel;
+                    case ".pushbutton": return CommandComponentType.PushButton;
+                    case ".pulldown": return CommandComponentType.PullDown;
+                    case ".splitbutton": return CommandComponentType.SplitButton;
+                    case ".splitpushbutton": return CommandComponentType.SplitPushButton;
+                    case ".stack": return CommandComponentType.Stack;
+                    case ".smartbutton": return CommandComponentType.SmartButton;
+                    case ".panelbutton": return CommandComponentType.PanelButton;
+                    case ".linkbutton": return CommandComponentType.LinkButton;
+                    case ".invokebutton": return CommandComponentType.InvokeButton;
+                    case ".urlbutton": return CommandComponentType.UrlButton;
+                    case ".content": return CommandComponentType.ContentButton;
+                    case ".nobutton": return CommandComponentType.NoButton;
+                    default: return CommandComponentType.Unknown;
+                }
             }
         }
-
         public static string ToExtension(this CommandComponentType type)
         {
             switch (type)
