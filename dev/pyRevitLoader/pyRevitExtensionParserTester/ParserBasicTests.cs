@@ -12,7 +12,24 @@ namespace pyRevitExtensionParserTest
         public void Setup()
         {
             // Collect all supported by pyRevit extensions
-            _installedExtensions = ExtensionParser.ParseInstalledExtensions();
+            _installedExtensions = ParseInstalledExtensions();
+        }
+
+        [Test]
+        public void ParsingTest()
+        {
+            if (_installedExtensions != null)
+            {
+                foreach (var parsedExtension in _installedExtensions)
+                {
+                    TestContext.Out.WriteLine($"Parsed extension: {parsedExtension.Name}");
+                }
+                Assert.Pass("Installed extensions found.");
+            }
+            else
+            {
+                Assert.Fail("No installed extensions found.");
+            }
         }
 
         [Test]

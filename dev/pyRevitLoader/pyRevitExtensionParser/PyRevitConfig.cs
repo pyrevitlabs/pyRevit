@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Windows.Documents;
 
 namespace pyRevitExtensionParser
 {
@@ -59,7 +61,18 @@ namespace pyRevitExtensionParser
                 _ini.IniWriteValue("core", "new_loader_roslyn", value.ToString().ToLowerInvariant());
             }
         }
-
+        public List<string> UserExtensionsList
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "userextensions");
+                return string.IsNullOrEmpty(value) ? new List<string>() : PythonListParser.Parse(value);
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "userextensions", PythonListParser.ToPythonListString(value));
+            }
+        }
         public PyRevitConfig(string configPath)
         {
             ConfigPath = configPath;
@@ -99,15 +112,5 @@ namespace pyRevitExtensionParser
 
             return null; // Return null if the extension is not found
         }
-    }
-
-
-    public class ExtensionConfig
-    {
-        public string Name { get; set; }
-        public bool Disabled { get; set; }
-        public bool PrivateRepo { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
     }
 }

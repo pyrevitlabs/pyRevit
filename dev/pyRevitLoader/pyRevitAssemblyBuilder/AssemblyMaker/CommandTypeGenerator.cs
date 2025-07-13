@@ -5,7 +5,7 @@ using System.Text;
 using System.Reflection;
 using System.Reflection.Emit;
 using Autodesk.Revit.Attributes;
-using static pyRevitExtensionParser.ExtensionParser;
+using pyRevitExtensionParser;
 #if !NETFRAMEWORK
 using System.Runtime.Loader;
 #endif

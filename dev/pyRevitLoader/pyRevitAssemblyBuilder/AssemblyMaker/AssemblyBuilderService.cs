@@ -10,8 +10,8 @@ using System.Runtime.Loader;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Lokad.ILPack;
-using pyRevitExtensionParser;
 using System.Text;
+using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {

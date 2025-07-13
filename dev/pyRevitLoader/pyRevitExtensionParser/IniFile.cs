@@ -39,6 +39,41 @@ namespace pyRevitExtensionParser
             GetPrivateProfileString(null, null, null, sb, sb.Capacity, _path);
             return sb.ToString().Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
         }
+        // Adds a value to the Python-like list in the .ini file
+        public void AddValueToPythonList(string section, string key, string value)
+        {
+            var list = GetPythonList(section, key);
+            if (!list.Contains(value))
+            {
+                list.Add(value);
+                SavePythonList(section, key, list);
+            }
+        }
+
+        // Removes a value from the Python-like list in the .ini file
+        public void RemoveValueFromPythonList(string section, string key, string value)
+        {
+            var list = GetPythonList(section, key);
+            if (list.Contains(value))
+            {
+                list.Remove(value);
+                SavePythonList(section, key, list);
+            }
+        }
+
+        // Reads the Python-like list from the .ini file
+        public List<string> GetPythonList(string section, string key)
+        {
+            string pythonListString = IniReadValue(section, key);
+            return PythonListParser.Parse(pythonListString);
+        }
+
+        // Saves the Python-like list to the .ini file
+        public void SavePythonList(string section, string key, List<string> list)
+        {
+            string pythonListString = PythonListParser.ToPythonListString(list);
+            IniWriteValue(section, key, pythonListString);
+        }
     }
     public static class PythonListParser
     {

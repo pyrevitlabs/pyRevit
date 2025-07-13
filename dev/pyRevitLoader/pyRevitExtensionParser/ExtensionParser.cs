@@ -11,13 +11,12 @@ namespace pyRevitExtensionParser
     {
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
         {
-            //TODO Parse config file to get custom extension roots
-
-            //TODO : Add support for custom extension roots
-            var extensionRoots = GetExtensionRoots();
+            PyRevitConfig config = PyRevitConfig.Load();
+            List<string> extensionRoots = GetExtensionRoots();
+            extensionRoots.AddRange(config.UserExtensionsList);
 
             // TODO check if they are activated in the config
-            //ParseExtensionByName
+            // ParseExtensionByName
 
             foreach (var root in extensionRoots)
             {
@@ -247,65 +246,6 @@ namespace pyRevitExtensionParser
             return null;
         }
 
-        public class ParsedExtension : ParsedComponent
-        {
-            public string Directory { get; set; }
-            public Dictionary<string, string> Titles { get; set; }
-            public Dictionary<string, string> Tooltips { get; set; }
-            public string MinRevitVersion { get; set; }
-            public EngineConfig Engine { get; set; }
-            public ExtensionConfig Config { get; set; }
-            public string GetHash() => Directory.GetHashCode().ToString("X");
-
-            private static readonly CommandComponentType[] _allowedTypes = new[] {
-            CommandComponentType.PushButton,
-            CommandComponentType.PanelButton,
-            CommandComponentType.SmartButton,
-            CommandComponentType.UrlButton
-        };
-
-            public IEnumerable<ParsedComponent> CollectCommandComponents()
-                => Collect(this.Children);
-
-            private IEnumerable<ParsedComponent> Collect(IEnumerable<ParsedComponent> list)
-            {
-                if (list == null) yield break;
-
-                foreach (var comp in list)
-                {
-                    if (comp.Children != null)
-                    {
-                        foreach (var child in Collect(comp.Children))
-                            yield return child;
-                    }
-
-                    if (_allowedTypes.Contains(comp.Type))
-                        yield return comp;
-                }
-            }
-        }
-
-        public class ParsedComponent
-        {
-            public string Name { get; set; }
-            public string DisplayName { get; set; }
-            public string ScriptPath { get; set; }
-            public string Tooltip { get; set; }
-            public string UniqueId { get; set; }
-            public CommandComponentType Type { get; set; }
-            public List<ParsedComponent> Children { get; set; }
-            public string BundleFile { get; set; }
-            public List<string> LayoutOrder { get; set; }
-            public bool HasSlideout { get; set; } = false;
-            public string Title { get; set; }
-            public string Author { get; set; }
-        }
-        public class EngineConfig
-        {
-            public bool Clean { get; set; }
-            public bool FullFrame { get; set; }
-            public bool Persistent { get; set; }
-        }
         public enum CommandComponentType
         {
             Unknown,
@@ -369,14 +309,6 @@ namespace pyRevitExtensionParser
                 case CommandComponentType.NoButton: return ".nobutton";
                 default: return string.Empty;
             }
-        }
-        public class ExtensionConfig
-        {
-            public string Name { get; set; }
-            public bool Disabled { get; set; }
-            public bool PrivateRepo { get; set; }
-            public string Username { get; set; }
-            public string Password { get; set; }
         }
     }
 }
