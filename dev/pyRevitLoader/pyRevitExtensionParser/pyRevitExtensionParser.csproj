@@ -16,6 +16,8 @@
 
     <ItemGroup>
       <Compile Include="BundleParser.cs" />
+      <Compile Include="ParsedComponent.cs" />
+      <Compile Include="ParsedExtension.cs" />
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
       <Compile Include="IniFile.cs" />

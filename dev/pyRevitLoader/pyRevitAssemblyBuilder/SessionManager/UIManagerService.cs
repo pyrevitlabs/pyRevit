@@ -8,6 +8,7 @@ using RibbonPanel = Autodesk.Revit.UI.RibbonPanel;
 using RibbonButton = Autodesk.Windows.RibbonButton;
 using RibbonItem = Autodesk.Revit.UI.RibbonItem;
 using static pyRevitExtensionParser.ExtensionParser;
+using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
