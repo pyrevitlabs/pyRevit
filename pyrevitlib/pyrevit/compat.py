@@ -103,13 +103,13 @@ def get_elementid_from_value_func(DB):
         element_id = get_elementid_from_value(value)
         ```
     """
-    def from_value_post2025(value):
+    def from_value_post2024(value):
         return DB.ElementId(System.Int64(value))
 
-    def from_value_pre2025(value):
+    def from_value_pre2024(value):
         return DB.ElementId(int(value))
 
-    return from_value_post2025 if _get_revit_version() > 2023 else from_value_pre2025
+    return from_value_post2024 if _get_revit_version() > 2023 else from_value_pre2024
 
 
 def urlopen(url):
