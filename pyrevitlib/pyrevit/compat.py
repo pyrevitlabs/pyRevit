@@ -87,6 +87,31 @@ def get_elementid_value_func():
     return get_value_post2024 if _get_revit_version() > 2023 else get_value_pre2024
 
 
+def get_elementid_from_value_func(DB):
+    """Returns the ElementId constructor function based on the Revit version.
+
+    Args:
+        DB (module): The Revit API DB module
+
+    Returns:
+        function: A function that takes a numeric value and returns an ElementId.
+
+    Examples:
+        ```python
+        from pyrevit import DB
+        get_elementid_from_value = get_elementid_from_value_func(DB)
+        element_id = get_elementid_from_value(value)
+        ```
+    """
+    def from_value_post2025(value):
+        return DB.ElementId(System.Int64(value))
+
+    def from_value_pre2025(value):
+        return DB.ElementId(int(value))
+
+    return from_value_post2025 if _get_revit_version() > 2023 else from_value_pre2025
+
+
 def urlopen(url):
     """Urlopen wrapper.
 
