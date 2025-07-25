@@ -2,11 +2,11 @@
 
 This guide is designed to help new contributors set up their development environment, get familiar with the codebase, and start contributing to the project.
 
-!!! note
-
-    This guide is for people that wants to get their hands dirty in the core pyRevit code, the part written in C#.
-
-    It is not for the development of the python side.
+>[!note]
+>
+>This guide is for people that wants to get their hands dirty in the core pyRevit code, the part written in C#.
+>
+>It is not for the development of the python side.
 
 ## Requirements
 
