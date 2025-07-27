@@ -789,6 +789,46 @@ def get_defined_sharedparams():
     return pp_list
 
 
+def iter_project_parameters(doc=None):
+    """
+    Generator that yields project parameters from the given Revit document one at a time.
+    
+    Args:
+        doc (Document, optional): The Revit document from which to retrieve the project parameters.
+                                  If not provided, defaults to `DOCS.doc`.
+
+    Yields:
+        ProjectParameter: Individual ProjectParameter objects representing the project parameters in the document.
+    """
+    doc = doc or DOCS.doc
+    
+    # Build shared params dictionary more explicitly to avoid IronPython issues
+    shared_params = {}
+    try:
+        defined_shared_params = get_defined_sharedparams()
+        for param in defined_shared_params:
+            shared_params[param.Name] = param
+    except:
+        # If shared params can't be loaded, continue with empty dict
+        shared_params = {}
+
+    if doc and not doc.IsFamilyDocument:
+        param_bindings = doc.ParameterBindings
+        pb_iterator = param_bindings.ForwardIterator()
+        pb_iterator.Reset()
+        while pb_iterator.MoveNext():
+            key = pb_iterator.Key
+            binding = param_bindings[key]
+            param_ext_def = shared_params.get(key.Name, None)
+            
+            msp = db.ProjectParameter(
+                key,
+                binding,
+                param_ext_def=param_ext_def,
+            )
+            yield msp
+
+
 def get_project_parameters(doc=None):
     """
     Retrieves the project parameters from the given Revit document.
@@ -800,22 +840,7 @@ def get_project_parameters(doc=None):
     Returns:
         list: A list of ProjectParameter objects representing the project parameters in the document.
     """
-    doc = doc or DOCS.doc
-    shared_params = {x.Name: x for x in get_defined_sharedparams()}
-
-    pp_list = []
-    if doc and not doc.IsFamilyDocument:
-        param_bindings = doc.ParameterBindings
-        pb_iterator = param_bindings.ForwardIterator()
-        pb_iterator.Reset()
-        while pb_iterator.MoveNext():
-            msp = db.ProjectParameter(
-                pb_iterator.Key,
-                param_bindings[pb_iterator.Key],
-                param_ext_def=shared_params.get(pb_iterator.Key.Name, None),
-            )
-            pp_list.append(msp)
-    return pp_list
+    return list(iter_project_parameters(doc))
 
 
 def get_project_parameter_id(param_name, doc=None):
@@ -834,7 +859,7 @@ def get_project_parameter_id(param_name, doc=None):
         PyRevitException: If the parameter with the specified name is not found.
     """
     doc = doc or DOCS.doc
-    for project_param in get_project_parameters(doc):
+    for project_param in iter_project_parameters(doc):
         if project_param.name == param_name:
             return project_param.param_id
     raise PyRevitException("Parameter not found: {}".format(param_name))
@@ -851,8 +876,7 @@ def get_project_parameter(param_id_or_name, doc=None):
     Returns:
         ProjectParameter: The matching project parameter if found, otherwise None.
     """
-    pp_list = get_project_parameters(doc or DOCS.doc)
-    for msp in pp_list:
+    for msp in iter_project_parameters(doc or DOCS.doc):
         if msp == param_id_or_name:
             return msp
     return None
@@ -869,7 +893,7 @@ def model_has_parameter(param_id_or_name, doc=None):
     Returns:
         bool: True if the parameter exists in the model, False otherwise.
     """
-    return get_project_parameter(param_id_or_name, doc=doc)
+    return get_project_parameter(param_id_or_name, doc=doc) is not None
 
 
 def get_global_parameters(doc=None):
