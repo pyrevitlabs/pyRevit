@@ -65,7 +65,7 @@ if PY2:
 
 def get_elementid_value_func():
     """Returns the ElementId value extraction function based on the Revit version.
-    
+
     Follows API changes in Revit 2024.
 
     Returns:
@@ -78,38 +78,31 @@ def get_elementid_value_func():
         add_sheet_revids = {get_elementid_value(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
         ```
     """
-    def get_value_post2024(item):
-        return item.Value
-
-    def get_value_pre2024(item):
-        return item.IntegerValue
-
-    return get_value_post2024 if _get_revit_version() > 2023 else get_value_pre2024
+    attr = "Value" if _get_revit_version() > 2023 else "IntegerValue"
+    def from_elementid(item):
+        return getattr(item, attr)
+    return from_elementid
 
 
-def get_elementid_from_value_func(DB):
+def get_elementid_from_value_func():
     """Returns the ElementId constructor function based on the Revit version.
 
-    Args:
-        DB (module): The Revit API DB module
+    Follows API changes in Revit 2024.
 
     Returns:
         function: A function that takes a numeric value and returns an ElementId.
 
-    Examples:
+    Example:
         ```python
-        from pyrevit import DB
-        get_elementid_from_value = get_elementid_from_value_func(DB)
-        element_id = get_elementid_from_value(value)
+        get_elementid_from_value = get_elementid_from_value_func()
+        element_id = get_elementid_from_value(123456)
         ```
     """
-    def from_value_post2024(value):
-        return DB.ElementId(System.Int64(value))
-
-    def from_value_pre2024(value):
-        return DB.ElementId(int(value))
-
-    return from_value_post2024 if _get_revit_version() > 2023 else from_value_pre2024
+    from pyrevit.api import DB
+    cast_class = System.Int64 if _get_revit_version() > 2023 else int
+    def from_value(value):
+        return DB.ElementId(cast_class(value))
+    return from_value
 
 
 def urlopen(url):
