@@ -734,15 +734,15 @@ def get_critical_warnings_count(warnings, critical_warnings_template):
     Counts the number of critical warnings from a list of warnings based on a template.
 
     Args:
-        warnings (list): A list of warning objects. Each warning object should have a method 
+        warnings (list): A list of warning objects. Each warning object should have a method
                          `GetFailureDefinitionId` that returns an object with a `Guid` attribute.
-        critical_warnings_template (list): A list of string representations of GUIDs that are 
+        critical_warnings_template (list): A list of string representations of GUIDs that are
                                            considered critical warnings.
 
     Returns:
         int: The count of critical warnings.
     """
-    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in warnings] 
+    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in warnings]
     return sum(
         1
         for warning_guid in warnings_guid
@@ -792,7 +792,7 @@ def get_defined_sharedparams():
 def iter_project_parameters(doc=None):
     """
     Generator that yields project parameters from the given Revit document one at a time.
-    
+
     Args:
         doc (Document, optional): The Revit document from which to retrieve the project parameters.
                                   If not provided, defaults to `DOCS.doc`.
@@ -801,7 +801,7 @@ def iter_project_parameters(doc=None):
         ProjectParameter: Individual ProjectParameter objects representing the project parameters in the document.
     """
     doc = doc or DOCS.doc
-    
+
     # Build shared params dictionary more explicitly to avoid IronPython issues
     shared_params = {}
     try:
@@ -820,7 +820,7 @@ def iter_project_parameters(doc=None):
             key = pb_iterator.Key
             binding = param_bindings[key]
             param_ext_def = shared_params.get(key.Name, None)
-            
+
             msp = db.ProjectParameter(
                 key,
                 binding,
@@ -1195,10 +1195,10 @@ def get_rvt_link_status(doc=None):
 def get_rvt_link_doc_name(rvtlink_instance):
     """
     Retrieves the name of the Revit link document from the given Revit link instance.
-    
+
     Args:
         rvtlink_instance: The Revit link instance from which to extract the document name.
-    
+
     Returns:
         str: The name of the Revit link document, without the file extension and any directory paths.
     """
@@ -1208,10 +1208,10 @@ def get_rvt_link_doc_name(rvtlink_instance):
 def get_rvt_link_instance_name(rvtlink_instance=None):
     """
     Retrieves the name of a Revit link instance.
-    
+
     Args:
         rvtlink_instance: The Revit link instance object.
-    
+
     Returns:
         str: The name of the Revit link instance, extracted from the full name.
     """
@@ -1514,11 +1514,11 @@ def get_schedules_on_sheet(viewsheet, doc=None):
 def get_schedules_instances(doc=None):
     """
     Retrieves all schedule instances placed on sheets.
-    
+
     Args:
-        doc (Document, optional): The Revit document to search within. If not provided, 
+        doc (Document, optional): The Revit document to search within. If not provided,
                                   the default document (DOCS.doc) will be used.
-    
+
     Returns:
         List[ScheduleSheetInstance]: A list of ScheduleSheetInstance elements.
     """
