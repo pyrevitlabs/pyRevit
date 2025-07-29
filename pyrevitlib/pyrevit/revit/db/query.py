@@ -808,9 +808,9 @@ def iter_project_parameters(doc=None):
         defined_shared_params = get_defined_sharedparams()
         for param in defined_shared_params:
             shared_params[param.Name] = param
-    except:
+    except Exception:
         # If shared params can't be loaded, continue with empty dict
-        shared_params = {}
+        pass
 
     if doc and not doc.IsFamilyDocument:
         param_bindings = doc.ParameterBindings

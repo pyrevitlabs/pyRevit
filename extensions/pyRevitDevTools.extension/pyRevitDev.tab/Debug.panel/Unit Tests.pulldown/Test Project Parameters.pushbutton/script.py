@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """Test Project Parameters Functions - Issue #2695"""
 
 __context__ = "zero-doc"
