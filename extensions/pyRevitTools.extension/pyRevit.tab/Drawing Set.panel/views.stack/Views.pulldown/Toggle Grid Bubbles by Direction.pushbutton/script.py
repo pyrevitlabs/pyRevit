@@ -14,7 +14,7 @@ VIEW_TYPES = [
     DB.ViewType.FloorPlan,
     DB.ViewType.Elevation,
     DB.ViewType.Section,
-    DB.ViewType.CeilingPlan
+    DB.ViewType.CeilingPlan,
 ]
 PLAN_VIEWS = [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]
 ELEVATION_VIEWS = [DB.ViewType.Elevation, DB.ViewType.Section]
@@ -27,22 +27,32 @@ class CustomGrids:
         self.__grids = []
         self.is_valid = True
 
-        self.selection = [document.GetElement(el_id) for el_id in HOST_APP.uidoc.Selection.GetElementIds()]
+        self.selection = [
+            document.GetElement(el_id)
+            for el_id in HOST_APP.uidoc.Selection.GetElementIds()
+        ]
 
         if self.selection:
             self.__grids = self.selection
         else:
-            self.__grids = [grid for grid in DB.FilteredElementCollector(document).OfCategory(
-                DB.BuiltInCategory.OST_Grids).WhereElementIsNotElementType().ToElements() if
-                            grid.CanBeVisibleInView(view)]
+            self.__grids = [
+                grid
+                for grid in DB.FilteredElementCollector(document)
+                .OfCategory(DB.BuiltInCategory.OST_Grids)
+                .WhereElementIsNotElementType()
+                .ToElements()
+                if grid.CanBeVisibleInView(view)
+            ]
 
         if not self.__grids:
-            forms.alert('No grids are visible in the view.')
+            forms.alert("No grids are visible in the view.")
             self.is_valid = False
             return
 
         if self.is_grid_hidden(self.__grids):
-            forms.alert('Some grids are hidden in the view.\nReveal them and try again.')
+            forms.alert(
+                "Some grids are hidden in the view.\nReveal them and try again."
+            )
             self.is_valid = False
             return
 
@@ -93,33 +103,43 @@ class CustomGrids:
             # Check if all bubbles are visible
             if not reverse:
                 bubbles = [
-                    is_visible for grid in self.grids() for is_visible in \
-                    [grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view),
-                     grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)]]
+                    is_visible
+                    for grid in self.grids()
+                    for is_visible in [
+                        grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view),
+                        grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view),
+                    ]
+                ]
             else:
                 bubbles = [
-                    not is_visible for grid in self.grids() for is_visible in \
-                    [grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view),
-                     grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)]]
+                    not is_visible
+                    for grid in self.grids()
+                    for is_visible in [
+                        grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view),
+                        grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view),
+                    ]
+                ]
             return all(bubbles)
 
         else:
-            if direction in {'top', 'bottom'}:
+            if direction in {"top", "bottom"}:
                 grids = self.get_vertical_grids()
             else:
                 grids = self.get_horizontal_grids()
             for grid in grids:
                 xyz_0, xyz_1 = self.get_endpoints(grid)
-                if direction in {'top', 'right'}:
-                    ref_point = self.get_bounding_box_corner(grid, 'max')
+                if direction in {"top", "right"}:
+                    ref_point = self.get_bounding_box_corner(grid, "max")
                 else:
-                    ref_point = self.get_bounding_box_corner(grid, 'min')
+                    ref_point = self.get_bounding_box_corner(grid, "min")
 
-                if ((xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point) and
-                     grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view))
-                        or
-                        (xyz_0.DistanceTo(ref_point) > xyz_1.DistanceTo(ref_point) and
-                         grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view))):
+                if (
+                    xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point)
+                    and grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view)
+                ) or (
+                    xyz_0.DistanceTo(ref_point) > xyz_1.DistanceTo(ref_point)
+                    and grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)
+                ):
                     return True
 
         return False
@@ -134,22 +154,25 @@ class CustomGrids:
 
     def get_bounding_box_corner(self, grid, corner):
         if grid.get_BoundingBox(self.__view).Enabled:
-            return grid.get_BoundingBox(self.__view).Min if corner == 'min' \
+            return (
+                grid.get_BoundingBox(self.__view).Min
+                if corner == "min"
                 else grid.get_BoundingBox(self.__view).Max
+            )
 
-    @transaction.carryout('Toggle bubbles')
+    @transaction.carryout("Toggle bubbles")
     def toggle_bubbles(self, grid, action, end=None):
         """Toggle the bubbles of a grid in the view."""
 
         map_end = {0: DB.DatumEnds.End0, 1: DB.DatumEnds.End1}
         if end == 0 or end == 1:
-            if action == 'hide':
+            if action == "hide":
                 grid.HideBubbleInView(map_end[end], self.__view)
             else:
                 grid.ShowBubbleInView(map_end[end], self.__view)
         # If no end specified, toggle both ends
         else:
-            if action == 'hide':
+            if action == "hide":
                 grid.HideBubbleInView(DB.DatumEnds.End0, self.__view)
                 grid.HideBubbleInView(DB.DatumEnds.End1, self.__view)
             else:
@@ -159,23 +182,23 @@ class CustomGrids:
     def toggle_bubbles_by_direction(self, action, direction):
         """Toggle bubbles based on the specified direction."""
 
-        if direction in {'top', 'bottom'}:
+        if direction in {"top", "bottom"}:
             grids = self.get_vertical_grids()
         else:
             grids = self.get_horizontal_grids()
         for grid in grids:
             xyz_0, xyz_1 = self.get_endpoints(grid)
-            if direction in {'top', 'right'}:
-                ref_point = self.get_bounding_box_corner(grid, 'max')
+            if direction in {"top", "right"}:
+                ref_point = self.get_bounding_box_corner(grid, "max")
             else:
-                ref_point = self.get_bounding_box_corner(grid, 'min')
+                ref_point = self.get_bounding_box_corner(grid, "min")
 
             if xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point):
                 self.toggle_bubbles(grid, action, 0)
             else:
                 self.toggle_bubbles(grid, action, 1)
 
-    @transaction.carryout('Hide all bubbles')
+    @transaction.carryout("Hide all bubbles")
     def hide_all_bubbles(self):
         """Hide the bubbles of all grids in the view."""
         for grid in self.grids():
@@ -183,7 +206,7 @@ class CustomGrids:
                 grid.HideBubbleInView(DB.DatumEnds.End0, self.__view)
                 grid.HideBubbleInView(DB.DatumEnds.End1, self.__view)
 
-    @transaction.carryout('Show all bubbles')
+    @transaction.carryout("Show all bubbles")
     def show_all_bubbles(self):
         """Show the bubbles of all grids in the view."""
         for grid in self.grids():
@@ -220,7 +243,7 @@ class ToggleGridWindow(forms.WPFWindow):
             "top": self.FindName("check_top"),
             "left": self.FindName("check_left"),
             "right": self.FindName("check_right"),
-            "bottom": self.FindName("check_bottom")
+            "bottom": self.FindName("check_bottom"),
         }
 
         # Display the checkboxes based on the orientation of the grids and the view type
@@ -274,10 +297,12 @@ class ToggleGridWindow(forms.WPFWindow):
             for checkbox in self.checkboxes.values():
                 checkbox.IsChecked = state
         else:
-            self.checkboxes["top"].IsChecked = self.grids.are_bubbles_visible('top')
-            self.checkboxes["bottom"].IsChecked = self.grids.are_bubbles_visible('bottom')
-            self.checkboxes["left"].IsChecked = self.grids.are_bubbles_visible('left')
-            self.checkboxes["right"].IsChecked = self.grids.are_bubbles_visible('right')
+            self.checkboxes["top"].IsChecked = self.grids.are_bubbles_visible("top")
+            self.checkboxes["bottom"].IsChecked = self.grids.are_bubbles_visible(
+                "bottom"
+            )
+            self.checkboxes["left"].IsChecked = self.grids.are_bubbles_visible("left")
+            self.checkboxes["right"].IsChecked = self.grids.are_bubbles_visible("right")
 
             self.hide_all.IsChecked = self.grids.are_bubbles_visible(reverse=True)
             self.show_all.IsChecked = self.grids.are_bubbles_visible()
@@ -288,7 +313,7 @@ class ToggleGridWindow(forms.WPFWindow):
 
         if self.updating_checkboxes:
             return
-        action = 'show' if sender.IsChecked else 'hide'
+        action = "show" if sender.IsChecked else "hide"
         for direction, checkbox in self.checkboxes.items():
             if checkbox == sender:
                 self.grids.toggle_bubbles_by_direction(action, direction)
@@ -302,19 +327,35 @@ class ToggleGridWindow(forms.WPFWindow):
         """Set radio buttons visibility according to the state of the checkboxes."""
 
         all_checked = all(checkbox.IsChecked for checkbox in self.checkboxes.values())
-        all_unchecked = all(not checkbox.IsChecked for checkbox in self.checkboxes.values())
-        top_bottom_checked = self.checkboxes["top"].IsChecked and self.checkboxes["bottom"].IsChecked
-        right_left_checked = self.checkboxes["right"].IsChecked and self.checkboxes["left"].IsChecked
-        top_bottom_unchecked = not self.checkboxes["top"].IsChecked and not self.checkboxes["bottom"].IsChecked
-        right_left_unchecked = not self.checkboxes["right"].IsChecked and not self.checkboxes["left"].IsChecked
+        all_unchecked = all(
+            not checkbox.IsChecked for checkbox in self.checkboxes.values()
+        )
+        top_bottom_checked = (
+            self.checkboxes["top"].IsChecked and self.checkboxes["bottom"].IsChecked
+        )
+        right_left_checked = (
+            self.checkboxes["right"].IsChecked and self.checkboxes["left"].IsChecked
+        )
+        top_bottom_unchecked = (
+            not self.checkboxes["top"].IsChecked
+            and not self.checkboxes["bottom"].IsChecked
+        )
+        right_left_unchecked = (
+            not self.checkboxes["right"].IsChecked
+            and not self.checkboxes["left"].IsChecked
+        )
 
-        if all_checked or \
-                (right_left_checked and self.top_bottom_collapsed) or \
-                (top_bottom_checked and self.right_left_collapsed):
+        if (
+            all_checked
+            or (right_left_checked and self.top_bottom_collapsed)
+            or (top_bottom_checked and self.right_left_collapsed)
+        ):
             self.show_all.IsChecked = True
-        elif all_unchecked or \
-                (right_left_unchecked and self.top_bottom_collapsed) or \
-                (top_bottom_unchecked and self.right_left_collapsed):
+        elif (
+            all_unchecked
+            or (right_left_unchecked and self.top_bottom_collapsed)
+            or (top_bottom_unchecked and self.right_left_collapsed)
+        ):
             self.hide_all.IsChecked = True
 
     def move_window(self, sender, args):
@@ -331,15 +372,23 @@ class ToggleGridWindow(forms.WPFWindow):
 
 def validate_active_view():
     if active_view.ViewType == DB.ViewType.ProjectBrowser:
-        forms.alert('You\'ve selected a view in the project browser. \
-					Click inside the active view and try again.')
+        forms.alert(
+            "You've selected a view in the project browser. \
+					Click inside the active view and try again."
+        )
         return False
     elif active_view.ViewType not in VIEW_TYPES:
-        forms.alert('The view must be a floor plan, ceiling plan, elevation or section.\n\
-		Your active view is : {}'.format(active_view.ViewType))
+        forms.alert(
+            "The view must be a floor plan, ceiling plan, elevation or section.\n\
+		Your active view is : {}".format(
+                active_view.ViewType
+            )
+        )
         return False
     elif active_view.IsInTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate):
-        forms.alert('The active view is in temporary view mode. Exit the mode and try again.')
+        forms.alert(
+            "The active view is in temporary view mode. Exit the mode and try again."
+        )
         return False
     return True
 
@@ -348,7 +397,7 @@ def main():
     if not validate_active_view():
         return
 
-    tg = DB.TransactionGroup(doc, 'Toggle Grids')
+    tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
 
     window = ToggleGridWindow.create(xamlfile, active_view, tg)
@@ -359,5 +408,5 @@ def main():
         tg.Assimilate()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
