@@ -320,12 +320,12 @@ class ToggleGridWindow(forms.WPFWindow):
     def move_window(self, sender, args):
         self.DragMove()
 
-    def annuler(self, sender, args):
+    def cancel(self, sender, args):
         if self.transaction_group:
             self.transaction_group.RollBack()
         self.Close()
 
-    def fermer(self, sender, args):
+    def confirm(self, sender, args):
         self.Close()
 
 

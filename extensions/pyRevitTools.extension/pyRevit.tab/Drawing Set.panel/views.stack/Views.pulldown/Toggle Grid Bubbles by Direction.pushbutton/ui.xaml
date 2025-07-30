@@ -30,7 +30,7 @@
 
         <!-- Header -->
         <TextBlock Grid.Row="0" Text="Toggle Grid Bubbles" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10,0,10" Width="auto" VerticalAlignment="Center"/>
-        <Button Content="❌" Click="fermer" Background="{x:Null}" FontSize="12" FontWeight="ExtraBlack" Width="auto" Height="auto" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="{x:Null}"/>
+        <Button Content="❌" Click="cancel" Background="{x:Null}" FontSize="12" FontWeight="ExtraBlack" Width="auto" Height="auto" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="{x:Null}"/>
 
         <!-- Toggle All -->
         <GroupBox Grid.Row="1" Header="Toggle all" Margin="10,10,10,18">
@@ -73,8 +73,8 @@
                 <ColumnDefinition Width="1*"/>
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Ok" Click="fermer" HorizontalAlignment="Center" VerticalAlignment="Center"  Width="100" Height="20"/>
-            <Button Grid.Column="1" Content="Cancel" Click="annuler" HorizontalAlignment="Center"  VerticalAlignment="Center" Width="100" Height="20"/>
+            <Button Grid.Column="0" Content="Ok" Click="confirm" HorizontalAlignment="Center" VerticalAlignment="Center"  Width="100" Height="20"/>
+            <Button Grid.Column="1" Content="Cancel" Click="cancel" HorizontalAlignment="Center"  VerticalAlignment="Center" Width="100" Height="20"/>
         </Grid>
     </Grid>
 </Window>
