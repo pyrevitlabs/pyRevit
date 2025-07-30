@@ -73,8 +73,8 @@
                 <ColumnDefinition Width="1*"/>
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Valider" Click="fermer" HorizontalAlignment="Center" VerticalAlignment="Center"  Width="100" Height="20"/>
-            <Button Grid.Column="1" Content="Annuler" Click="annuler" HorizontalAlignment="Center"  VerticalAlignment="Center" Width="100" Height="20"/>
+            <Button Grid.Column="0" Content="Ok" Click="fermer" HorizontalAlignment="Center" VerticalAlignment="Center"  Width="100" Height="20"/>
+            <Button Grid.Column="1" Content="Cancel" Click="annuler" HorizontalAlignment="Center"  VerticalAlignment="Center" Width="100" Height="20"/>
         </Grid>
     </Grid>
 </Window>
