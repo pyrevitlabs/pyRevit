@@ -8,7 +8,6 @@ from pyrevit.revit.db import transaction
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
 active_view = doc.ActiveView
-active_ui_view = uidoc.GetOpenUIViews()[0]
 xamlfile = script.get_bundle_file("ui.xaml")
 
 VIEW_TYPES = [
@@ -25,18 +24,8 @@ class CustomGrids:
 	def __init__(self, document, view):
 		"""Initialize with the document and view, and collect all grids visible in the view."""
 		self.__view = view
-		self.__view_type = self.__view.ViewType
-
-		if self.__view_type == DB.ViewType.ProjectBrowser:
-			forms.alert('Vous avez sélectionné une vue dans l\'arborescence du projet.\n\
-						Cliquez au mileur de la vue courante et relancez le script.')
-			sys.exit()
-		elif self.__view_type not in VIEW_TYPES:
-			forms.alert('The view must be a floor plan, ceiling plan, elevation or section. {}'.format(view.ViewType))
-			sys.exit()
-		elif self.__view.IsInTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate):
-			forms.alert('The view is in temporary view mode.\nExit the mode and try again.')
-			sys.exit()
+		self.__grids = []
+		self.is_valid = True
 
 		self.selection = [document.GetElement(el_id) for el_id in HOST_APP.uidoc.Selection.GetElementIds()]
 
@@ -48,11 +37,17 @@ class CustomGrids:
 
 		if not self.__grids:
 			forms.alert('No grids are visible in the view.')
-			sys.exit()
+			self.is_valid = False
+			return
 
 		if self.is_grid_hidden(self.__grids):
 			forms.alert('Some grids are hidden in the view.\nReveal them and try again.')
-			sys.exit()
+			self.is_valid = False
+			return
+
+	def grids(self):
+		"""Return the collected grids."""
+		return self.__grids
 
 	def is_grid_hidden(self, grids):
 		"""Check if a grid is hidden in the view."""
@@ -60,10 +55,6 @@ class CustomGrids:
 			if grid.IsHidden(self.__view):
 				return True
 		return False
-
-	def grids(self):
-		"""Return the collected grids."""
-		return self.__grids
 
 	def get_grid_curve(self, grid):
 		"""Get the curves of a grid that are specific to the view."""
@@ -121,8 +112,11 @@ class CustomGrids:
 				else:
 					ref_point = self.get_bounding_box_corner(grid, 'min')
 
-				if (xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point) and grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view)) or\
-					(xyz_0.DistanceTo(ref_point) > xyz_1.DistanceTo(ref_point) and grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)):
+				if ((xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point) and
+					 grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view))
+						or
+						(xyz_0.DistanceTo(ref_point) > xyz_1.DistanceTo(ref_point) and
+						 grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view))):
 					return True
 
 		return False
@@ -196,11 +190,17 @@ class CustomGrids:
 
 
 class ToggleGridWindow(forms.WPFWindow):
-	def __init__(self, xaml_source, view, ):
+	def __init__(self, xaml_source, view, transaction_group=None):
 		super(ToggleGridWindow, self).__init__(xaml_source)
 
 		self.view = view
+		self.transaction_group = transaction_group
 		self.grids = CustomGrids(doc, self.view)
+
+		if not self.grids.is_valid:
+			self.is_valid = False
+			return
+		self.is_valid = True
 
 		# Flags to control the visibility of the checkboxes
 		self.right_left_collapsed = False
@@ -231,17 +231,22 @@ class ToggleGridWindow(forms.WPFWindow):
 			self.checkboxes["bottom"].Visibility = Windows.Visibility.Collapsed
 			self.top_bottom_collapsed = True
 
-		# Attach event handlers for radio buttons
 		self.hide_all.Checked += self.on_hide_all_checked
 		self.show_all.Checked += self.on_show_all_checked
 
-		# Attach event handlers for checkboxes
 		for checkbox in self.checkboxes.values():
 			checkbox.Checked += self.toggle_bubbles
 			checkbox.Unchecked += self.toggle_bubbles
 
-		# Initialize the checkboxes based on Revit grid states
 		self.update_checkboxes()
+
+	@classmethod
+	def create(cls, xaml_source, view, transaction_group=None):
+		"""Factory method to handle a clean exit"""
+		window = cls(xaml_source, view, transaction_group)
+		if not window.is_valid:
+			return None
+		return window
 
 	def is_view_elevation(self):
 		return self.view.ViewType in ELEVATION_VIEWS
@@ -274,7 +279,7 @@ class ToggleGridWindow(forms.WPFWindow):
 			self.hide_all.IsChecked = self.grids.are_bubbles_visible(reverse=True)
 			self.show_all.IsChecked = self.grids.are_bubbles_visible()
 		self.updating_checkboxes = False
-		# self.reset_radio_buttons()
+
 
 	def toggle_bubbles(self, sender, e):
 		"""Toggle the bubbles of the grids based on the checkbox state."""
@@ -314,15 +319,43 @@ class ToggleGridWindow(forms.WPFWindow):
 		self.DragMove()
 
 	def annuler(self, sender, args):
-		tg.RollBack()
+		if self.transaction_group:
+			self.transaction_group.RollBack()
 		self.Close()
 
 	def fermer(self, sender, args):
 		self.Close()
 
 
-tg = DB.TransactionGroup(doc, 'Toggle Grids')
-tg.Start()
-ToggleGridWindow(xamlfile, active_view).ShowDialog()
-if tg.GetStatus() == DB.TransactionStatus.Started:
-	tg.Assimilate()
+def validate_active_view():
+	if active_view.ViewType == DB.ViewType.ProjectBrowser:
+		forms.alert('You\'ve selected a view in the project browser. \
+					Click inside the active view and try again.')
+		return False
+	elif active_view.ViewType not in VIEW_TYPES:
+		forms.alert('The view must be a floor plan, ceiling plan, elevation or section.\n\
+		Your active view is : {}'.format(active_view.ViewType))
+		return False
+	elif active_view.IsInTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate):
+		forms.alert('The active view is in temporary view mode. Exit the mode and try again.')
+		return False
+	return True
+
+
+def main():
+	if not validate_active_view():
+		return
+
+	tg = DB.TransactionGroup(doc, 'Toggle Grids')
+	tg.Start()
+
+	window = ToggleGridWindow.create(xamlfile, active_view, tg)
+	if window is not None:
+		window.ShowDialog()
+
+	if tg.GetStatus() == DB.TransactionStatus.Started:
+		tg.Assimilate()
+
+
+if __name__ == '__main__':
+	main()
