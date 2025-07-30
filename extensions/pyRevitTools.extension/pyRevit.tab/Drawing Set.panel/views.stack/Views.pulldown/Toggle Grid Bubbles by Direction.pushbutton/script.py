@@ -49,13 +49,6 @@ class CustomGrids:
             self.is_valid = False
             return
 
-        if self.is_grid_hidden(self.__grids):
-            forms.alert(
-                "Some grids are hidden in the view.\nReveal them and try again."
-            )
-            self.is_valid = False
-            return
-
     def grids(self):
         """Return the collected grids."""
         return self.__grids
@@ -132,15 +125,17 @@ class CustomGrids:
                     ref_point = self.get_bounding_box_corner(grid, "max")
                 else:
                     ref_point = self.get_bounding_box_corner(grid, "min")
-
-                if (
-                    xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point)
-                    and grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view)
-                ) or (
-                    xyz_0.DistanceTo(ref_point) > xyz_1.DistanceTo(ref_point)
-                    and grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)
-                ):
-                    return True
+                if ref_point:
+                    if (
+                        xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point)
+                        and grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view)
+                    ) or (
+                        xyz_0.DistanceTo(ref_point) > xyz_1.DistanceTo(ref_point)
+                        and grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)
+                    ):
+                        return True
+                else:
+                    continue
 
         return False
 
@@ -153,12 +148,10 @@ class CustomGrids:
         return self.filter_grids_by_orientation(is_vertical=False)
 
     def get_bounding_box_corner(self, grid, corner):
-        if grid.get_BoundingBox(self.__view).Enabled:
-            return (
-                grid.get_BoundingBox(self.__view).Min
-                if corner == "min"
-                else grid.get_BoundingBox(self.__view).Max
-            )
+        bbox = grid.get_BoundingBox(self.__view)
+        if bbox and bbox.Enabled:
+            return bbox.Min if corner == "min" else bbox.Max
+        return None
 
     @transaction.carryout("Toggle bubbles")
     def toggle_bubbles(self, grid, action, end=None):
@@ -192,11 +185,13 @@ class CustomGrids:
                 ref_point = self.get_bounding_box_corner(grid, "max")
             else:
                 ref_point = self.get_bounding_box_corner(grid, "min")
-
-            if xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point):
-                self.toggle_bubbles(grid, action, 0)
+            if ref_point:
+                if xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point):
+                    self.toggle_bubbles(grid, action, 0)
+                else:
+                    self.toggle_bubbles(grid, action, 1)
             else:
-                self.toggle_bubbles(grid, action, 1)
+                continue
 
     @transaction.carryout("Hide all bubbles")
     def hide_all_bubbles(self):
@@ -383,11 +378,6 @@ def validate_active_view():
 		Your active view is : {}".format(
                 active_view.ViewType
             )
-        )
-        return False
-    elif active_view.IsInTemporaryViewMode(DB.TemporaryViewMode.TemporaryHideIsolate):
-        forms.alert(
-            "The active view is in temporary view mode. Exit the mode and try again."
         )
         return False
     return True
