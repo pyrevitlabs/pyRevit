@@ -428,12 +428,12 @@
         },
         "mkdocstrings": {
             "hashes": [
-                "sha256:37a9736134934eea89cbd055a513d40a020d87dfcae9e3052c2a6b8cd4af09b6",
-                "sha256:8722f8f8c5cd75da56671e0a0c1bbed1df9946c0cef74794d6141b34011abd42"
+                "sha256:5d8019b9c31ddacd780b6784ffcdd6f21c408f34c0bd1103b5351d609d5b4444",
+                "sha256:ae9e4a0d8c1789697ac776f2e034e2ddd71054ae1cf2c2bb1433ccfd07c226f2"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==0.29.1"
+            "version": "==0.30.0"
         },
         "mkdocstrings-python": {
             "hashes": [
