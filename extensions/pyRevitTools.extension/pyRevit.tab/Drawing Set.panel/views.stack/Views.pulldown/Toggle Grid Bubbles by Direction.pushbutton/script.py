@@ -20,6 +20,47 @@ PLAN_VIEWS = [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]
 ELEVATION_VIEWS = [DB.ViewType.Elevation, DB.ViewType.Section]
 
 
+def check_grids_exist():
+    """Quick check if any valid grids exist before prompting user."""
+    selection = [
+        doc.GetElement(el_id)
+        for el_id in HOST_APP.uidoc.Selection.GetElementIds()
+    ]
+
+    if selection:
+        # Filter selection to only include grids
+        valid_grids = []
+        for elem in selection:
+            try:
+                if (elem.Category and
+                        elem.Category.Id.IntegerValue == int(DB.BuiltInCategory.OST_Grids) and
+                        hasattr(elem, 'GetCurvesInView')):
+                    valid_grids.append(elem)
+            except:
+                continue
+
+        if len(valid_grids) == 0:
+            forms.alert(
+                "No grids found in your selection.\nPlease select grids or run with no selection to use all grids in the view.")
+            return False
+        return True
+    else:
+        # Check if any grids exist in view
+        grids = [
+            grid
+            for grid in DB.FilteredElementCollector(doc)
+            .OfCategory(DB.BuiltInCategory.OST_Grids)
+            .WhereElementIsNotElementType()
+            .ToElements()
+            if grid.CanBeVisibleInView(active_view)
+        ]
+
+        if len(grids) == 0:
+            forms.alert("No grids are visible in the current view.")
+            return False
+        return True
+
+
 class CustomGrids:
     def __init__(self, document, view):
         """Initialize with the document and view, and collect all grids visible in the view."""
@@ -48,13 +89,6 @@ class CustomGrids:
                     continue  # Skip problematic elements
 
             self.__grids = filtered_selection
-
-            if not self.__grids:
-                forms.alert(
-                    "No grids found in your selection.\nPlease select grids or run with no selection to use all grids in the view."
-                )
-                self.is_valid = False
-                return
         else:
             self.__grids = [
                 grid
@@ -65,10 +99,10 @@ class CustomGrids:
                 if grid.CanBeVisibleInView(view)
             ]
 
-            if not self.__grids:
-                forms.alert("No grids are visible in the view.")
-                self.is_valid = False
-                return
+        if not self.__grids:
+            forms.alert("No valid grids found.")
+            self.is_valid = False
+            return
 
     def grids(self):
         """Return the collected grids."""
@@ -406,6 +440,9 @@ def validate_active_view():
 
 def main():
     if not validate_active_view():
+        return
+
+    if not check_grids_exist():
         return
 
     tg = DB.TransactionGroup(doc, "Toggle Grids")
