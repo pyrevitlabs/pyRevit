@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-import sys
+import math
 
 from System import Windows
 from pyrevit import HOST_APP, DB, script, forms
@@ -19,6 +19,12 @@ VIEW_TYPES = [
 ]
 PLAN_VIEWS = [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]
 ELEVATION_VIEWS = [DB.ViewType.Elevation, DB.ViewType.Section]
+
+
+def angle_to_dot_product_threshold(angle_degrees):
+    """Convert angle in degrees to dot product threshold."""
+    angle_radians = math.radians(angle_degrees)
+    return math.cos(angle_radians)
 
 
 def check_grids_exist():
@@ -63,12 +69,22 @@ def check_grids_exist():
 
 
 class CustomGrids:
-    def __init__(self, document, view):
-        """Initialize with the document and view, and collect all grids visible in the view."""
+    def __init__(self, document, view, coordinate_system='internal', angle_tolerance=10):
+        """Initialize with the document, view, coordinate system choice, and angle tolerance."""
         self.__view = view
+        self.__document = document
+        self.__coordinate_system = coordinate_system
+        self.__angle_tolerance = angle_tolerance
         self.__grids = []
         self.is_valid = True
 
+        # Convert angle tolerance to dot product threshold
+        self.__alignment_threshold = angle_to_dot_product_threshold(angle_tolerance)
+
+        # Initialize coordinate system attributes first
+        self._transform = DB.Transform.Identity
+
+        # Filter selection first before anything else
         self.selection = [
             document.GetElement(el_id)
             for el_id in HOST_APP.uidoc.Selection.GetElementIds()
@@ -100,21 +116,70 @@ class CustomGrids:
                 if grid.CanBeVisibleInView(view)
             ]
 
+        # Set up coordinate system transformation only after grids are validated
+        self._setup_coordinate_transform()
+
         if not self.__grids:
             forms.alert("No valid grids found.")
             self.is_valid = False
             return
 
+    def _setup_coordinate_transform(self):
+        """Set up the coordinate transformation based on user choice."""
+        try:
+            if self.__coordinate_system == 'internal':
+                # Use identity transform (no transformation)
+                self._transform = DB.Transform.Identity
+
+            elif self.__coordinate_system == 'project':
+                # Get project base point transformation
+                pbp_collector = DB.FilteredElementCollector(self.__document).OfCategory(
+                    DB.BuiltInCategory.OST_ProjectBasePoint)
+                pbp = pbp_collector.FirstElement()
+
+                if pbp:
+                    # Get the angle parameter
+                    angle_param = pbp.get_Parameter(DB.BuiltInParameter.BASEPOINT_ANGLETON_PARAM)
+                    if angle_param:
+                        angle = angle_param.AsDouble()
+                        # Create rotation transform
+                        self._transform = DB.Transform.CreateRotation(DB.XYZ.BasisZ, -angle)
+                    else:
+                        self._transform = DB.Transform.Identity
+                else:
+                    self._transform = DB.Transform.Identity
+
+            elif self.__coordinate_system == 'view':
+                # Calculate angle from view's RightDirection and treat it like base point rotation
+                view_right = self.__view.RightDirection
+
+                # Calculate angle between view's right direction and world X axis
+                world_x = DB.XYZ(1, 0, 0)
+                angle = math.atan2(view_right.Y, view_right.X)
+
+                # Create rotation transform (negate angle for proper transformation)
+                self._transform = DB.Transform.CreateRotation(DB.XYZ.BasisZ, -angle)
+
+            else:
+                self._transform = DB.Transform.Identity
+
+        except:
+            # Fallback to identity transform
+            self._transform = DB.Transform.Identity
+
+    def _transform_point(self, point):
+        """Transform a point using the selected coordinate system."""
+        try:
+            if self.__coordinate_system == 'internal':
+                return point
+            else:
+                return self._transform.OfPoint(point)
+        except:
+            return point
+
     def grids(self):
         """Return the collected grids."""
         return self.__grids
-
-    def is_grid_hidden(self, grids):
-        """Check if a grid is hidden in the view."""
-        for grid in grids:
-            if grid.IsHidden(self.__view):
-                return True
-        return False
 
     def get_grid_curve(self, grid):
         """Get the curves of a grid that are specific to the view."""
@@ -133,16 +198,75 @@ class CustomGrids:
             return DB.XYZ(pt0.X, pt0.Y, pt0.Z), DB.XYZ(pt1.X, pt1.Y, pt1.Z)
         return None, None
 
+    def get_transformed_endpoints(self, grid):
+        """Get grid endpoints transformed to the selected coordinate system."""
+        pt0, pt1 = self.get_endpoints(grid)
+        if pt0 and pt1:
+            # Transform points to selected coordinate system
+            transformed_pt0 = self._transform_point(pt0)
+            transformed_pt1 = self._transform_point(pt1)
+            return transformed_pt0, transformed_pt1
+        return None, None
+
     def filter_grids_by_orientation(self, is_vertical=True):
-        """Filter grids based on their orientation."""
+        """Filter grids based on their orientation in the selected coordinate system."""
         filtered_grids = []
+
         for g in self.grids():
             pt1, pt2 = self.get_endpoints(g)
             if pt1 and pt2:
-                if is_vertical and round(pt1.X, 3) == round(pt2.X, 3):
-                    filtered_grids.append(g)
-                elif not is_vertical and round(pt1.Y, 3) == round(pt2.Y, 3):
-                    filtered_grids.append(g)
+
+                if self.__coordinate_system == 'view':
+                    # For view orientation, use direction vector approach with user-defined tolerance
+                    grid_vector = pt2 - pt1
+                    grid_vector = grid_vector.Normalize()
+
+                    # Get view directions
+                    view_right = self.__view.RightDirection.Normalize()
+                    view_up = self.__view.UpDirection.Normalize()
+
+                    # Calculate alignment with view directions
+                    right_alignment = abs(grid_vector.DotProduct(view_right))
+                    up_alignment = abs(grid_vector.DotProduct(view_up))
+
+                    if is_vertical:
+                        # Vertical grids should be closely aligned with view's up direction
+                        # Using strict threshold 0.95 for better filtering
+                        if up_alignment > 0.95 and up_alignment > right_alignment:
+                            filtered_grids.append(g)
+                    else:
+                        # Horizontal grids should be closely aligned with view's right direction
+                        if right_alignment > 0.95 and right_alignment > up_alignment:
+                            filtered_grids.append(g)
+                else:
+                    # For internal and project coordinate systems, use transformation approach
+                    transformed_pt1 = self._transform_point(pt1)
+                    transformed_pt2 = self._transform_point(pt2)
+
+                    # Calculate grid direction vector in transformed space
+                    dx = transformed_pt2.X - transformed_pt1.X
+                    dy = transformed_pt2.Y - transformed_pt1.Y
+                    grid_length = math.sqrt(dx * dx + dy * dy)
+
+                    if grid_length > 0:
+                        # Normalize the direction vector
+                        dx_norm = dx / grid_length
+                        dy_norm = dy / grid_length
+
+                        # Calculate angle from horizontal (in radians)
+                        grid_angle = math.atan2(abs(dy_norm), abs(dx_norm))
+                        grid_angle_degrees = math.degrees(grid_angle)
+
+                        if is_vertical:
+                            # Vertical grids should be close to 90° (±tolerance from 90°)
+                            angle_from_vertical = abs(90.0 - grid_angle_degrees)
+                            if angle_from_vertical < self.__angle_tolerance:
+                                filtered_grids.append(g)
+                        else:
+                            # Horizontal grids should be close to 0° (±tolerance from 0°)
+                            if grid_angle_degrees < self.__angle_tolerance:
+                                filtered_grids.append(g)
+
         return filtered_grids
 
     def are_bubbles_visible(self, direction=None, reverse=False):
@@ -175,32 +299,37 @@ class CustomGrids:
                 grids = self.get_vertical_grids()
             else:
                 grids = self.get_horizontal_grids()
+
             for grid in grids:
-                xyz_0, xyz_1 = self.get_endpoints(grid)
-                if direction in {"top", "right"}:
-                    ref_point = self.get_bounding_box_corner(grid, "max")
-                else:
-                    ref_point = self.get_bounding_box_corner(grid, "min")
-                if ref_point:
-                    if (
-                        xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point)
-                        and grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view)
-                    ) or (
-                        xyz_0.DistanceTo(ref_point) > xyz_1.DistanceTo(ref_point)
-                        and grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)
-                    ):
-                        return True
-                else:
-                    continue
+                # Use transformed coordinate system
+                xyz_0, xyz_1 = self.get_transformed_endpoints(grid)
+                if xyz_0 and xyz_1:
+                    if direction in {"top", "right"}:
+                        ref_point = self.get_bounding_box_corner(grid, "max")
+                    else:
+                        ref_point = self.get_bounding_box_corner(grid, "min")
+
+                    if ref_point:
+                        # Transform reference point to selected coordinate system
+                        transformed_ref_point = self._transform_point(ref_point)
+
+                        if (
+                                xyz_0.DistanceTo(transformed_ref_point) < xyz_1.DistanceTo(transformed_ref_point)
+                                and grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view)
+                        ) or (
+                                xyz_0.DistanceTo(transformed_ref_point) > xyz_1.DistanceTo(transformed_ref_point)
+                                and grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)
+                        ):
+                            return True
 
         return False
 
     def get_vertical_grids(self):
-        """Get all vertical grids."""
+        """Get all vertical grids in the selected coordinate system."""
         return self.filter_grids_by_orientation(is_vertical=True)
 
     def get_horizontal_grids(self):
-        """Get all horizontal grids."""
+        """Get all horizontal grids in the selected coordinate system."""
         return self.filter_grids_by_orientation(is_vertical=False)
 
     def get_bounding_box_corner(self, grid, corner):
@@ -229,25 +358,29 @@ class CustomGrids:
                 grid.ShowBubbleInView(DB.DatumEnds.End1, self.__view)
 
     def toggle_bubbles_by_direction(self, action, direction):
-        """Toggle bubbles based on the specified direction."""
-
+        """Toggle bubbles based on the specified direction in selected coordinate system."""
         if direction in {"top", "bottom"}:
             grids = self.get_vertical_grids()
         else:
             grids = self.get_horizontal_grids()
+
         for grid in grids:
-            xyz_0, xyz_1 = self.get_endpoints(grid)
-            if direction in {"top", "right"}:
-                ref_point = self.get_bounding_box_corner(grid, "max")
-            else:
-                ref_point = self.get_bounding_box_corner(grid, "min")
-            if ref_point:
-                if xyz_0.DistanceTo(ref_point) < xyz_1.DistanceTo(ref_point):
-                    self.toggle_bubbles(grid, action, 0)
+            # Use transformed coordinate system
+            xyz_0, xyz_1 = self.get_transformed_endpoints(grid)
+            if xyz_0 and xyz_1:
+                if direction in {"top", "right"}:
+                    ref_point = self.get_bounding_box_corner(grid, "max")
                 else:
-                    self.toggle_bubbles(grid, action, 1)
-            else:
-                continue
+                    ref_point = self.get_bounding_box_corner(grid, "min")
+
+                if ref_point:
+                    # Transform reference point to selected coordinate system
+                    transformed_ref_point = self._transform_point(ref_point)
+
+                    if xyz_0.DistanceTo(transformed_ref_point) < xyz_1.DistanceTo(transformed_ref_point):
+                        self.toggle_bubbles(grid, action, 0)
+                    else:
+                        self.toggle_bubbles(grid, action, 1)
 
     @transaction.carryout("Hide all bubbles")
     def hide_all_bubbles(self):
@@ -274,7 +407,7 @@ class ToggleGridWindow(forms.WPFWindow):
         self.coordinate_system = coordinate_system
         self.angle_tolerance = angle_tolerance
         self.transaction_group = transaction_group
-        self.grids = CustomGrids(doc, self.view)
+        self.grids = CustomGrids(doc, self.view, coordinate_system, angle_tolerance)
 
         if not self.grids.is_valid:
             self.is_valid = False
