@@ -33,7 +33,28 @@ class CustomGrids:
         ]
 
         if self.selection:
-            self.__grids = self.selection
+            # Filter selection to only include grids
+            filtered_selection = []
+            for elem in self.selection:
+                try:
+                    if (
+                        elem.Category
+                        and elem.Category.Id.IntegerValue
+                        == int(DB.BuiltInCategory.OST_Grids)
+                        and hasattr(elem, "GetCurvesInView")
+                    ):
+                        filtered_selection.append(elem)
+                except:
+                    continue  # Skip problematic elements
+
+            self.__grids = filtered_selection
+
+            if not self.__grids:
+                forms.alert(
+                    "No grids found in your selection.\nPlease select grids or run with no selection to use all grids in the view."
+                )
+                self.is_valid = False
+                return
         else:
             self.__grids = [
                 grid
@@ -44,10 +65,10 @@ class CustomGrids:
                 if grid.CanBeVisibleInView(view)
             ]
 
-        if not self.__grids:
-            forms.alert("No grids are visible in the view.")
-            self.is_valid = False
-            return
+            if not self.__grids:
+                forms.alert("No grids are visible in the view.")
+                self.is_valid = False
+                return
 
     def grids(self):
         """Return the collected grids."""
