@@ -4,6 +4,7 @@ import sys
 from System import Windows
 from pyrevit import HOST_APP, DB, script, forms
 from pyrevit.revit.db import transaction
+from coordinate_selector import show_coordinate_system_selector
 
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
@@ -266,10 +267,12 @@ class CustomGrids:
 
 
 class ToggleGridWindow(forms.WPFWindow):
-    def __init__(self, xaml_source, view, transaction_group=None):
+    def __init__(self, xaml_source, view, coordinate_system, angle_tolerance, transaction_group=None):
         super(ToggleGridWindow, self).__init__(xaml_source)
 
         self.view = view
+        self.coordinate_system = coordinate_system
+        self.angle_tolerance = angle_tolerance
         self.transaction_group = transaction_group
         self.grids = CustomGrids(doc, self.view)
 
@@ -317,9 +320,9 @@ class ToggleGridWindow(forms.WPFWindow):
         self.update_checkboxes()
 
     @classmethod
-    def create(cls, xaml_source, view, transaction_group=None):
+    def create(cls, xaml_source, view, coordinate_system, angle_tolerance, transaction_group=None):
         """Factory method to handle a clean exit"""
-        window = cls(xaml_source, view, transaction_group)
+        window = cls(xaml_source, view, coordinate_system, angle_tolerance, transaction_group)
         if not window.is_valid:
             return None
         return window
@@ -445,10 +448,17 @@ def main():
     if not check_grids_exist():
         return
 
+    selection_result = show_coordinate_system_selector()
+    if selection_result is None:
+        return
+
+    coordinate_system = selection_result['coordinate_system']
+    angle_tolerance = selection_result['angle_tolerance']
+
     tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
 
-    window = ToggleGridWindow.create(xamlfile, active_view, tg)
+    window = ToggleGridWindow.create(xamlfile, active_view, coordinate_system, angle_tolerance, tg)
     if window is not None:
         window.ShowDialog()
 
