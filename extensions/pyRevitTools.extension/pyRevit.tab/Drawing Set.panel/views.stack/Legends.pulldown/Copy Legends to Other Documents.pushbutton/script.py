@@ -29,10 +29,10 @@ class LogMessage:
     def __init__(self):
         self.__messages = []
 
-    def log_message_with_doc(self, doc_title, message):
-        doc_title = '\n** {} **'.format(doc_title)
-        if doc_title not in self.__messages:
-            self.__messages.append(doc_title)
+    def log_message_with_doc_and_legend(self, doc_title, legend_name, message):
+        doc_title_and_legend_name = '\n** {} : {} **'.format(doc_title, legend_name)
+        if doc_title_and_legend_name not in self.__messages:
+            self.__messages.append(doc_title_and_legend_name)
         self.__messages.append('- {}'.format(message))
 
     def get_messages(self):
@@ -71,24 +71,28 @@ with forms.ProgressBar(cancellable=True) as pb:
 
         with revit.TransactionGroup("Copy Legends to document", doc=dest_doc):
             for src_legend in legends:
+                legend_name = revit.query.get_name(src_legend)
                 pb.title = "Processing: {} > {}".format(
-                    dest_doc.Title, revit.query.get_name(src_legend)
+                    dest_doc.Title, legend_name
                 )
 
                 view_elements = DB.FilteredElementCollector(revit.doc, src_legend.Id).ToElements()
                 elements_to_copy = []
                 for el in view_elements:
-                    if isinstance(el, DB.Element) and el.Category:
+                    # skip reference plane for now, they are copied in the model space
+                    if isinstance(el, DB.Element) and el.Category and not isinstance(el, DB.ReferencePlane):
                         elements_to_copy.append(el.Id)
                     else:
-                        logger_messages.log_message_with_doc(
+                        logger_messages.log_message_with_doc_and_legend(
                             dest_doc.Title,
+                            legend_name,
                             "Skipping element: {}".format(el.Id)
                         )
 
                 if not elements_to_copy:
-                    logger_messages.log_message_with_doc(
+                    logger_messages.log_message_with_doc_and_legend(
                         dest_doc.Title,
+                        legend_name,
                         "Skipping empty view: {}".format(revit.query.get_name(src_legend))
                     )
                     current_operation += 1
@@ -117,8 +121,9 @@ with forms.ProgressBar(cancellable=True) as pb:
                                 dest_id, src_legend.GetElementOverrides(src_id)
                             )
                         except Exception as ex:
-                            logger_messages.log_message_with_doc(
+                            logger_messages.log_message_with_doc_and_legend(
                                 dest_doc.Title,
+                                legend_name,
                                 "Error setting element overrides: {}\n{} in "
                                 "{}".format(ex, src_id, dest_doc.Title)
                             )
@@ -130,9 +135,10 @@ with forms.ProgressBar(cancellable=True) as pb:
                     while new_name in all_legend_names:
                         counter += 1
                         new_name = src_name + " (Duplicate %s)" % counter
-                        logger_messages.log_message_with_doc(
-                            dest_doc.Title,
-                            "Legend name already exists. Renaming to: {}".format(new_name))
+                    logger_messages.log_message_with_doc_and_legend(
+                        dest_doc.Title,
+                        legend_name,
+                        "Legend name already exists. Renaming to: {}".format(new_name))
 
                     revit.update.set_name(dest_view, new_name)
                     dest_view.Scale = src_legend.Scale
@@ -170,8 +176,9 @@ if processed_docs:
 
     content = "\n".join(details)
     forms.alert(msg=main_instruction, sub_msg=content)
+
+    if logger_messages:
+        logger.warning(logger_messages.get_messages())
+
 else:
     forms.alert("Copy operation failed.")
-
-if logger_messages:
-    logger.warning(logger_messages.get_messages())
