@@ -1,7 +1,7 @@
 # pylint: disable=E0401,W0613,C0103,C0111
 # -*- coding: utf-8 -*-
 import sys
-
+from Autodesk.Revit.DB import Transaction, TransactionGroup
 from pyrevit import revit, DB, script, forms
 from pyrevit.framework import List
 
@@ -30,13 +30,22 @@ class LogMessage:
         self.__messages = []
 
     def log_message_with_doc_and_legend(self, doc_title, legend_name, message):
-        doc_title_and_legend_name = '\n** {} : {} **'.format(doc_title, legend_name)
-        if doc_title_and_legend_name not in self.__messages:
-            self.__messages.append(doc_title_and_legend_name)
-        self.__messages.append('- {}'.format(message))
+        doc_title = "\n**** {} ****".format(
+            doc_title,
+        )
+        legend_name = "\n** {} **".format(legend_name)
+        if doc_title not in self.__messages:
+            self.__messages.append(doc_title)
+        # Add the legend name only if it is not already included in the current document's list
+        if legend_name not in self.__messages[(self.__messages.index(doc_title)) :]:
+            self.__messages.append(legend_name)
+        self.__messages.append("- {}".format(message))
 
     def get_messages(self):
         return "\n" + "\n".join(self.__messages)
+
+    def __len__(self):
+        return len(self.__messages)
 
 
 logger = script.get_logger()
@@ -48,6 +57,11 @@ skipped_docs = []
 
 with forms.ProgressBar(cancellable=True) as pb:
     for dest_doc in open_docs:
+        if pb.cancelled:
+            tg.RollBack()
+            forms.alert("Operation cancelled.")
+            sys.exit(0)
+
         pb.title = "Processing Document: {}".format(dest_doc.Title)
         pb.update_progress(current_operation, total_operations)
 
@@ -69,83 +83,100 @@ with forms.ProgressBar(cancellable=True) as pb:
             current_operation += len(legends)
             continue
 
-        with revit.TransactionGroup("Copy Legends to document", doc=dest_doc):
-            for src_legend in legends:
-                legend_name = revit.query.get_name(src_legend)
-                pb.title = "Processing: {} > {}".format(
-                    dest_doc.Title, legend_name
+        tg = TransactionGroup(dest_doc, "Copy Legends to document")
+        tg.Start()
+
+        for src_legend in legends:
+            if pb.cancelled:
+                tg.RollBack()
+                forms.alert("Operation cancelled.")
+                sys.exit(0)
+
+            legend_name = revit.query.get_name(src_legend)
+            pb.title = "Processing: {} > {}".format(dest_doc.Title, legend_name)
+
+            view_elements = DB.FilteredElementCollector(
+                revit.doc, src_legend.Id
+            ).ToElements()
+            elements_to_copy = []
+            for el in view_elements:
+                # ReferencePlanes  skipped because they are copied in the model space, not in the legend view
+                is_element_reference_plane = isinstance(el, DB.ReferencePlane)
+                if isinstance(el, DB.Element) and el.Category and not is_element_reference_plane:
+                    elements_to_copy.append(el.Id)
+                else:
+                    logger_messages.log_message_with_doc_and_legend(
+                        dest_doc.Title,
+                        legend_name,
+                        "Skipping element: {}".format(el.Id),
+                    )
+
+            if not elements_to_copy:
+                logger_messages.log_message_with_doc_and_legend(
+                    dest_doc.Title,
+                    legend_name,
+                    "Skipping empty view: {}".format(revit.query.get_name(src_legend)),
                 )
-
-                view_elements = DB.FilteredElementCollector(revit.doc, src_legend.Id).ToElements()
-                elements_to_copy = []
-                for el in view_elements:
-                    # skip reference plane for now, they are copied in the model space
-                    if isinstance(el, DB.Element) and el.Category and not isinstance(el, DB.ReferencePlane):
-                        elements_to_copy.append(el.Id)
-                    else:
-                        logger_messages.log_message_with_doc_and_legend(
-                            dest_doc.Title,
-                            legend_name,
-                            "Skipping element: {}".format(el.Id)
-                        )
-
-                if not elements_to_copy:
-                    logger_messages.log_message_with_doc_and_legend(
-                        dest_doc.Title,
-                        legend_name,
-                        "Skipping empty view: {}".format(revit.query.get_name(src_legend))
-                    )
-                    current_operation += 1
-                    pb.update_progress(current_operation, total_operations)
-                    continue
-
-                with revit.Transaction("Copy Legends to document", doc=dest_doc):
-                    dest_view = dest_doc.GetElement(
-                        base_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
-                    )
-
-                    options = DB.CopyPasteOptions()
-                    options.SetDuplicateTypeNamesHandler(CopyUseDestination())
-                    copied_elements = DB.ElementTransformUtils.CopyElements(
-                        src_legend,
-                        List[DB.ElementId](elements_to_copy),
-                        dest_view,
-                        None,
-                        options
-                    )
-
-                    # copy element overrides
-                    for dest_id, src_id in zip(copied_elements, elements_to_copy):
-                        try:
-                            dest_view.SetElementOverrides(
-                                dest_id, src_legend.GetElementOverrides(src_id)
-                            )
-                        except Exception as ex:
-                            logger_messages.log_message_with_doc_and_legend(
-                                dest_doc.Title,
-                                legend_name,
-                                "Error setting element overrides: {}\n{} in "
-                                "{}".format(ex, src_id, dest_doc.Title)
-                            )
-
-                    # set unique name
-                    src_name = revit.query.get_name(src_legend)
-                    new_name = src_name
-                    counter = 0
-                    while new_name in all_legend_names:
-                        counter += 1
-                        new_name = src_name + " (Duplicate %s)" % counter
-                    logger_messages.log_message_with_doc_and_legend(
-                        dest_doc.Title,
-                        legend_name,
-                        "Legend name already exists. Renaming to: {}".format(new_name))
-
-                    revit.update.set_name(dest_view, new_name)
-                    dest_view.Scale = src_legend.Scale
-                    all_legend_names.append(new_name)
-
                 current_operation += 1
                 pb.update_progress(current_operation, total_operations)
+                continue
+
+            t = Transaction(dest_doc, "Copy Legends to document")
+            t.Start()
+            dest_view = dest_doc.GetElement(
+                base_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
+            )
+
+            options = DB.CopyPasteOptions()
+            options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+            copied_elements = DB.ElementTransformUtils.CopyElements(
+                src_legend,
+                List[DB.ElementId](elements_to_copy),
+                dest_view,
+                None,
+                options,
+            )
+
+            # copy element overrides
+            for dest_id, src_id in zip(copied_elements, elements_to_copy):
+                try:
+                    dest_view.SetElementOverrides(
+                        dest_id, src_legend.GetElementOverrides(src_id)
+                    )
+                except Exception as ex:
+                    logger_messages.log_message_with_doc_and_legend(
+                        dest_doc.Title,
+                        legend_name,
+                        "Error setting element overrides: {}\n{} in "
+                        "{}".format(ex, src_id, dest_doc.Title),
+                    )
+
+            # set unique name
+            src_name = revit.query.get_name(src_legend)
+            new_name = src_name
+            counter = 0
+
+            while new_name in all_legend_names:
+                counter += 1
+                new_name = src_name + " (Duplicate %s)" % counter
+
+            if counter > 0:
+                logger_messages.log_message_with_doc_and_legend(
+                    dest_doc.Title,
+                    legend_name,
+                    "Legend name already exists. Renaming to: {}".format(new_name),
+                )
+
+            revit.update.set_name(dest_view, new_name)
+            dest_view.Scale = src_legend.Scale
+            all_legend_names.append(new_name)
+
+            t.Commit()
+
+            current_operation += 1
+            pb.update_progress(current_operation, total_operations)
+
+        tg.Assimilate()
 
 
 processed_docs = [doc for doc in open_docs if doc.Title not in skipped_docs]
@@ -177,7 +208,7 @@ if processed_docs:
     content = "\n".join(details)
     forms.alert(msg=main_instruction, sub_msg=content)
 
-    if logger_messages:
+    if len(logger_messages):
         logger.warning(logger_messages.get_messages())
 
 else:
