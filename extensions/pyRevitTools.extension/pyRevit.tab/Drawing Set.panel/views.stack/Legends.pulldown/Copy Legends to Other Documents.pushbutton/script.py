@@ -57,10 +57,6 @@ skipped_docs = []
 
 with forms.ProgressBar(cancellable=True) as pb:
     for dest_doc in open_docs:
-        if pb.cancelled:
-            tg.RollBack()
-            forms.alert("Operation cancelled.")
-            sys.exit(0)
 
         pb.title = "Processing Document: {}".format(dest_doc.Title)
         pb.update_progress(current_operation, total_operations)
