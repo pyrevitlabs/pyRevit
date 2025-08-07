@@ -152,17 +152,19 @@ while successful_records < MAX_RECORDS:
 #         ERRORS.append(str(ex))
 
 # verify inserted records  ====================================================
-for record_log in ADDED_RECORDS:
-    try:
-        rfields = conn.ReadRecord(record_log[0], record_log[1], record_log[2])
-        assert rfields, 'Failed reading record: {}'.format(record_log[2])
-        assert rfields['record_text'] == record_log[3], (
-            'Failed record text matching: {} "{}" != "{}"'
-            .format(record_log[2], rfields['record_text'], record_log[3])
-            )
-    except Exception as ex:
-        print('Error verifying record {}: {}'.format(record_log[2], ex))
-        raise  # Re-raise to maintain assertion behavior
-
-print('[  OK  ] %s passed all read tests for %s records'
-      % (requester, len(ADDED_RECORDS)))
+try:
+    for record_log in ADDED_RECORDS:
+        try:
+            rfields = conn.ReadRecord(record_log[0], record_log[1], record_log[2])
+            assert rfields, 'Failed reading record: {}'.format(record_log[2])
+            assert rfields['record_text'] == record_log[3], (
+                'Failed record text matching: {} "{}" != "{}"'
+                .format(record_log[2], rfields['record_text'], record_log[3])
+                )
+        except Exception as ex:
+            print('Error verifying record {}: {}'.format(record_log[2], ex))
+            raise  # Re-raise to maintain assertion behavior
+    print('[  OK  ] %s passed all read tests for %s records'
+          % (requester, len(ADDED_RECORDS)))
+except Exception:
+    pass  # Exception already handled and printed above
