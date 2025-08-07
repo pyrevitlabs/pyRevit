@@ -166,5 +166,6 @@ try:
             raise  # Re-raise to maintain assertion behavior
     print('[  OK  ] %s passed all read tests for %s records'
           % (requester, len(ADDED_RECORDS)))
-except Exception:
-    pass  # Exception already handled and printed above
+except Exception as ex:
+    print('[ FAIL ] %s failed some read tests: {}'.format(requester, ex))
+    raise  # Let the test fail properly
