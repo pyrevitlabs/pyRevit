@@ -14,12 +14,16 @@ xamlfile = script.get_bundle_file("ui.xaml")
 
 VIEW_TYPES = [
     DB.ViewType.FloorPlan,
-	DB.ViewType.EngineeringPlan,
+    DB.ViewType.EngineeringPlan,
     DB.ViewType.Elevation,
     DB.ViewType.Section,
     DB.ViewType.CeilingPlan,
 ]
-PLAN_VIEWS = [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan, DB.ViewType.EngineeringPlan]
+PLAN_VIEWS = [
+    DB.ViewType.FloorPlan,
+    DB.ViewType.CeilingPlan,
+    DB.ViewType.EngineeringPlan,
+]
 ELEVATION_VIEWS = [DB.ViewType.Elevation, DB.ViewType.Section]
 
 
@@ -32,8 +36,7 @@ def angle_to_dot_product_threshold(angle_degrees):
 def check_grids_exist():
     """Quick check if any valid grids exist before prompting user."""
     selection = [
-        doc.GetElement(el_id)
-        for el_id in HOST_APP.uidoc.Selection.GetElementIds()
+        doc.GetElement(el_id) for el_id in HOST_APP.uidoc.Selection.GetElementIds()
     ]
 
     if selection:
@@ -41,16 +44,20 @@ def check_grids_exist():
         valid_grids = []
         for elem in selection:
             try:
-                if (elem.Category and
-                        elem.Category.Id.IntegerValue == int(DB.BuiltInCategory.OST_Grids) and
-                        hasattr(elem, 'GetCurvesInView')):
+                if (
+                    elem.Category
+                    and elem.Category.Id.IntegerValue
+                    == int(DB.BuiltInCategory.OST_Grids)
+                    and hasattr(elem, "GetCurvesInView")
+                ):
                     valid_grids.append(elem)
             except:
                 continue
 
         if len(valid_grids) == 0:
             forms.alert(
-                "No grids found in your selection.\nPlease select grids or run with no selection to use all grids in the view.")
+                "No grids found in your selection.\nPlease select grids or run with no selection to use all grids in the view."
+            )
             return False
         return True
     else:
@@ -71,7 +78,9 @@ def check_grids_exist():
 
 
 class CustomGrids:
-    def __init__(self, document, view, coordinate_system='internal', angle_tolerance=10):
+    def __init__(
+        self, document, view, coordinate_system="internal", angle_tolerance=10
+    ):
         """Initialize with the document, view, coordinate system choice, and angle tolerance."""
         self.__view = view
         self.__document = document
@@ -135,29 +144,34 @@ class CustomGrids:
     def _setup_coordinate_transform(self):
         """Set up the coordinate transformation based on user choice."""
         try:
-            if self.__coordinate_system == 'internal':
+            if self.__coordinate_system == "internal":
                 # Use identity transform (no transformation)
                 self._transform = DB.Transform.Identity
 
-            elif self.__coordinate_system == 'project':
+            elif self.__coordinate_system == "project":
                 # Get project base point transformation
                 pbp_collector = DB.FilteredElementCollector(self.__document).OfCategory(
-                    DB.BuiltInCategory.OST_ProjectBasePoint)
+                    DB.BuiltInCategory.OST_ProjectBasePoint
+                )
                 pbp = pbp_collector.FirstElement()
 
                 if pbp:
                     # Get the angle parameter
-                    angle_param = pbp.get_Parameter(DB.BuiltInParameter.BASEPOINT_ANGLETON_PARAM)
+                    angle_param = pbp.get_Parameter(
+                        DB.BuiltInParameter.BASEPOINT_ANGLETON_PARAM
+                    )
                     if angle_param:
                         angle = angle_param.AsDouble()
                         # Create rotation transform
-                        self._transform = DB.Transform.CreateRotation(DB.XYZ.BasisZ, -angle)
+                        self._transform = DB.Transform.CreateRotation(
+                            DB.XYZ.BasisZ, -angle
+                        )
                     else:
                         self._transform = DB.Transform.Identity
                 else:
                     self._transform = DB.Transform.Identity
 
-            elif self.__coordinate_system == 'view':
+            elif self.__coordinate_system == "view":
                 # Calculate angle from view's RightDirection and treat it like base point rotation
                 view_right = self.__view.RightDirection
 
@@ -177,7 +191,7 @@ class CustomGrids:
     def _transform_point(self, point):
         """Transform a point using the selected coordinate system."""
         try:
-            if self.__coordinate_system == 'internal':
+            if self.__coordinate_system == "internal":
                 return point
             else:
                 return self._transform.OfPoint(point)
@@ -272,7 +286,7 @@ class CustomGrids:
             pt1, pt2 = self.get_endpoints(g)
             if pt1 and pt2:
 
-                if self.__coordinate_system == 'view':
+                if self.__coordinate_system == "view":
                     # For view orientation, use direction vector approach with user-defined tolerance
                     grid_vector = pt2 - pt1
                     grid_vector = grid_vector.Normalize()
@@ -287,12 +301,17 @@ class CustomGrids:
 
                     if is_vertical:
                         # Vertical grids should be closely aligned with view's up direction
-                        # Using strict threshold 0.95 for better filtering
-                        if up_alignment > 0.95 and up_alignment > right_alignment:
+                        if (
+                            up_alignment > self.__alignment_threshold
+                            and up_alignment > right_alignment
+                        ):
                             filtered_grids.append(g)
                     else:
                         # Horizontal grids should be closely aligned with view's right direction
-                        if right_alignment > 0.95 and right_alignment > up_alignment:
+                        if (
+                            right_alignment > self.__alignment_threshold
+                            and right_alignment > up_alignment
+                        ):
                             filtered_grids.append(g)
                 else:
                     # For internal and project coordinate systems, use transformation approach
@@ -329,11 +348,16 @@ class CustomGrids:
         """Check if the bubbles of the grids are visible."""
 
         if not direction:
-            # Check if all bubbles are visible
+            # Check bubbles for only active grids
+            active_grids = self.get_active_grids()
+
+            if not active_grids:
+                return False
+
             if not reverse:
                 bubbles = [
                     is_visible
-                    for grid in self.grids()
+                    for grid in active_grids
                     for is_visible in [
                         grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view),
                         grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view),
@@ -342,13 +366,13 @@ class CustomGrids:
             else:
                 bubbles = [
                     not is_visible
-                    for grid in self.grids()
+                    for grid in active_grids
                     for is_visible in [
                         grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view),
                         grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view),
                     ]
                 ]
-            return all(bubbles)
+            return all(bubbles) if bubbles else False
 
         else:
             if direction in {"top", "bottom"}:
@@ -370,11 +394,17 @@ class CustomGrids:
                         transformed_ref_point = self._transform_point(ref_point)
 
                         if (
-                                xyz_0.DistanceTo(transformed_ref_point) < xyz_1.DistanceTo(transformed_ref_point)
-                                and grid.IsBubbleVisibleInView(DB.DatumEnds.End0, self.__view)
+                            xyz_0.DistanceTo(transformed_ref_point)
+                            < xyz_1.DistanceTo(transformed_ref_point)
+                            and grid.IsBubbleVisibleInView(
+                                DB.DatumEnds.End0, self.__view
+                            )
                         ) or (
-                                xyz_0.DistanceTo(transformed_ref_point) > xyz_1.DistanceTo(transformed_ref_point)
-                                and grid.IsBubbleVisibleInView(DB.DatumEnds.End1, self.__view)
+                            xyz_0.DistanceTo(transformed_ref_point)
+                            > xyz_1.DistanceTo(transformed_ref_point)
+                            and grid.IsBubbleVisibleInView(
+                                DB.DatumEnds.End1, self.__view
+                            )
                         ):
                             return True
 
@@ -433,30 +463,43 @@ class CustomGrids:
                     # Transform reference point to selected coordinate system
                     transformed_ref_point = self._transform_point(ref_point)
 
-                    if xyz_0.DistanceTo(transformed_ref_point) < xyz_1.DistanceTo(transformed_ref_point):
+                    if xyz_0.DistanceTo(transformed_ref_point) < xyz_1.DistanceTo(
+                        transformed_ref_point
+                    ):
                         self.toggle_bubbles(grid, action, 0)
                     else:
                         self.toggle_bubbles(grid, action, 1)
 
     @transaction.carryout("Hide all bubbles")
     def hide_all_bubbles(self):
-        """Hide the bubbles of all grids in the view."""
-        for grid in self.grids():
+        """Hide the bubbles of only the actively managed grids."""
+        active_grids = self.get_active_grids()
+
+        for grid in active_grids:
             if grid.CanBeVisibleInView(self.__view):
                 grid.HideBubbleInView(DB.DatumEnds.End0, self.__view)
                 grid.HideBubbleInView(DB.DatumEnds.End1, self.__view)
 
     @transaction.carryout("Show all bubbles")
     def show_all_bubbles(self):
-        """Show the bubbles of all grids in the view."""
-        for grid in self.grids():
+        """Show the bubbles of only the actively managed grids."""
+        active_grids = self.get_active_grids()
+
+        for grid in active_grids:
             if grid.CanBeVisibleInView(self.__view):
                 grid.ShowBubbleInView(DB.DatumEnds.End0, self.__view)
                 grid.ShowBubbleInView(DB.DatumEnds.End1, self.__view)
 
 
 class ToggleGridWindow(forms.WPFWindow):
-    def __init__(self, xaml_source, view, coordinate_system, angle_tolerance, transaction_group=None):
+    def __init__(
+        self,
+        xaml_source,
+        view,
+        coordinate_system,
+        angle_tolerance,
+        transaction_group=None,
+    ):
         super(ToggleGridWindow, self).__init__(xaml_source)
 
         self.view = view
@@ -559,9 +602,18 @@ class ToggleGridWindow(forms.WPFWindow):
         self.status_active_controls.Text = controls_status
 
     @classmethod
-    def create(cls, xaml_source, view, coordinate_system, angle_tolerance, transaction_group=None):
+    def create(
+        cls,
+        xaml_source,
+        view,
+        coordinate_system,
+        angle_tolerance,
+        transaction_group=None,
+    ):
         """Factory method to handle a clean exit"""
-        window = cls(xaml_source, view, coordinate_system, angle_tolerance, transaction_group)
+        window = cls(
+            xaml_source, view, coordinate_system, angle_tolerance, transaction_group
+        )
         if not window.is_valid:
             return None
         return window
@@ -617,6 +669,8 @@ class ToggleGridWindow(forms.WPFWindow):
 
     def reset_radio_buttons(self):
         """Set radio buttons visibility according to the state of the checkboxes."""
+        # Temporarily disable event handling to prevent unwanted grid toggles
+        self.updating_checkboxes = True
 
         all_checked = all(checkbox.IsChecked for checkbox in self.checkboxes.values())
         all_unchecked = all(
@@ -637,6 +691,10 @@ class ToggleGridWindow(forms.WPFWindow):
             and not self.checkboxes["left"].IsChecked
         )
 
+        # Reset both radio buttons first
+        self.show_all.IsChecked = False
+        self.hide_all.IsChecked = False
+
         if (
             all_checked
             or (right_left_checked and self.top_bottom_collapsed)
@@ -649,6 +707,9 @@ class ToggleGridWindow(forms.WPFWindow):
             or (top_bottom_unchecked and self.right_left_collapsed)
         ):
             self.hide_all.IsChecked = True
+
+        # Re-enable event handling
+        self.updating_checkboxes = False
 
     def move_window(self, sender, args):
         self.DragMove()
@@ -693,13 +754,15 @@ def main():
     if selection_result is None:
         return
 
-    coordinate_system = selection_result['coordinate_system']
-    angle_tolerance = selection_result['angle_tolerance']
+    coordinate_system = selection_result["coordinate_system"]
+    angle_tolerance = selection_result["angle_tolerance"]
 
     tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
 
-    window = ToggleGridWindow.create(xamlfile, active_view, coordinate_system, angle_tolerance, tg)
+    window = ToggleGridWindow.create(
+        xamlfile, active_view, coordinate_system, angle_tolerance, tg
+    )
     if window is not None:
         window.ShowDialog()
 
