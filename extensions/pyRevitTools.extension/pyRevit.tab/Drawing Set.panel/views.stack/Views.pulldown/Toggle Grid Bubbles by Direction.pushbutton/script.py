@@ -12,11 +12,12 @@ xamlfile = script.get_bundle_file("ui.xaml")
 
 VIEW_TYPES = [
     DB.ViewType.FloorPlan,
+	DB.ViewType.EngineeringPlan,
     DB.ViewType.Elevation,
     DB.ViewType.Section,
     DB.ViewType.CeilingPlan,
 ]
-PLAN_VIEWS = [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]
+PLAN_VIEWS = [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan, DB.ViewType.EngineeringPlan]
 ELEVATION_VIEWS = [DB.ViewType.Elevation, DB.ViewType.Section]
 
 
