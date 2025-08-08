@@ -2,6 +2,7 @@
 import math
 
 from System import Windows
+from System.Collections.Generic import List
 from pyrevit import HOST_APP, DB, script, forms
 from pyrevit.revit.db import transaction
 from coordinate_selector import show_coordinate_system_selector
@@ -85,11 +86,18 @@ class CustomGrids:
         # Initialize coordinate system attributes first
         self._transform = DB.Transform.Identity
 
-        # Filter selection first before anything else
-        self.selection = [
-            document.GetElement(el_id)
-            for el_id in HOST_APP.uidoc.Selection.GetElementIds()
-        ]
+        self.right_left_collapsed = False
+        self.top_bottom_collapsed = False
+
+        self._original_selection = []
+        self._all_active_grids_selected = False
+
+        selection_ids = HOST_APP.uidoc.Selection.GetElementIds()
+        self.selection = (
+            [document.GetElement(el_id) for el_id in selection_ids]
+            if selection_ids
+            else []
+        )
 
         if self.selection:
             # Filter selection to only include grids
@@ -104,7 +112,7 @@ class CustomGrids:
                     ):
                         filtered_selection.append(elem)
                 except:
-                    continue  # Skip problematic elements
+                    continue
 
             self.__grids = filtered_selection
         else:
@@ -117,7 +125,6 @@ class CustomGrids:
                 if grid.CanBeVisibleInView(view)
             ]
 
-        # Set up coordinate system transformation only after grids are validated
         self._setup_coordinate_transform()
 
         if not self.__grids:
@@ -155,7 +162,6 @@ class CustomGrids:
                 view_right = self.__view.RightDirection
 
                 # Calculate angle between view's right direction and world X axis
-                world_x = DB.XYZ(1, 0, 0)
                 angle = math.atan2(view_right.Y, view_right.X)
 
                 # Create rotation transform (negate angle for proper transformation)
@@ -178,13 +184,59 @@ class CustomGrids:
         except:
             return point
 
+    def set_ui_state(self, right_left_collapsed, top_bottom_collapsed):
+        self.right_left_collapsed = right_left_collapsed
+        self.top_bottom_collapsed = top_bottom_collapsed
+
+    def highlight_all_active_grids_once(self):
+        try:
+            if not self._all_active_grids_selected:
+                self._original_selection = [
+                    self.__document.GetElement(el_id)
+                    for el_id in HOST_APP.uidoc.Selection.GetElementIds()
+                ]
+
+                active_grids = self.get_active_grids()
+                if active_grids:
+                    grid_ids = [grid.Id for grid in active_grids if grid and grid.Id]
+                    if grid_ids:
+                        id_list = List[DB.ElementId](grid_ids)
+                        HOST_APP.uidoc.Selection.SetElementIds(id_list)
+                        self._all_active_grids_selected = True
+        except:
+            pass
+
+    def unhighlight_grids(self):
+        try:
+            if self._all_active_grids_selected:
+                HOST_APP.uidoc.Selection.SetElementIds(List[DB.ElementId]())
+                self._all_active_grids_selected = False
+        except:
+            pass
+
+    def get_active_grids(self):
+        active_grids = []
+
+        if not self.top_bottom_collapsed:
+            active_grids.extend(self.get_vertical_grids())
+
+        if not self.right_left_collapsed:
+            active_grids.extend(self.get_horizontal_grids())
+
+        return active_grids
+
     def grids(self):
         """Return the collected grids."""
         return self.__grids
 
     def get_grid_curve(self, grid):
         """Get the curves of a grid that are specific to the view."""
-        return grid.GetCurvesInView(DB.DatumExtentType.ViewSpecific, self.__view)
+        try:
+            if not hasattr(grid, "GetCurvesInView"):
+                return []
+            return grid.GetCurvesInView(DB.DatumExtentType.ViewSpecific, self.__view)
+        except:
+            return []
 
     def is_linear(self, grid):
         """Check if a grid is linear."""
@@ -214,6 +266,9 @@ class CustomGrids:
         filtered_grids = []
 
         for g in self.grids():
+            if not hasattr(g, "GetCurvesInView"):
+                continue
+
             pt1, pt2 = self.get_endpoints(g)
             if pt1 and pt2:
 
@@ -426,6 +481,10 @@ class ToggleGridWindow(forms.WPFWindow):
         self.hide_all = self.FindName("hide_all")
         self.show_all = self.FindName("show_all")
 
+        self.status_grids = self.FindName("status_grids")
+        self.status_coordinate_system = self.FindName("status_coordinate_system")
+        self.status_active_controls = self.FindName("status_active_controls")
+
         self.checkboxes = {
             "top": self.FindName("check_top"),
             "left": self.FindName("check_left"),
@@ -444,6 +503,12 @@ class ToggleGridWindow(forms.WPFWindow):
             self.checkboxes["bottom"].Visibility = Windows.Visibility.Collapsed
             self.top_bottom_collapsed = True
 
+        self.grids.set_ui_state(self.right_left_collapsed, self.top_bottom_collapsed)
+
+        self.grids.highlight_all_active_grids_once()
+
+        self.update_status_display()
+
         self.hide_all.Checked += self.on_hide_all_checked
         self.show_all.Checked += self.on_show_all_checked
 
@@ -452,6 +517,46 @@ class ToggleGridWindow(forms.WPFWindow):
             checkbox.Unchecked += self.toggle_bubbles
 
         self.update_checkboxes()
+
+    def update_status_display(self):
+        total_grids = len(self.grids.grids())
+        active_grids = len(self.grids.get_active_grids())
+
+        if self.grids.selection:
+            grid_status = "Scope: {} selected grids".format(total_grids)
+        else:
+            grid_status = "Scope: All {} grids in view".format(total_grids)
+
+        if active_grids != total_grids:
+            grid_status += " ({} active - selected in view)".format(active_grids)
+
+        self.status_grids.Text = grid_status
+
+        coord_system_map = {
+            "internal": "Internal Origin (World)",
+            "project": "Project Base Point",
+            "view": "View/Scope Box Orientation",
+        }
+        coord_status = "Coordinates: {} ({}° tolerance)".format(
+            coord_system_map.get(self.coordinate_system, self.coordinate_system),
+            self.angle_tolerance,
+        )
+        self.status_coordinate_system.Text = coord_status
+
+        active_controls = []
+        if not self.top_bottom_collapsed:
+            vertical_count = len(self.grids.get_vertical_grids())
+            active_controls.append("Vertical ({})".format(vertical_count))
+        if not self.right_left_collapsed:
+            horizontal_count = len(self.grids.get_horizontal_grids())
+            active_controls.append("Horizontal ({})".format(horizontal_count))
+
+        if active_controls:
+            controls_status = "Active: {}".format(", ".join(active_controls))
+        else:
+            controls_status = "Active: None"
+
+        self.status_active_controls.Text = controls_status
 
     @classmethod
     def create(cls, xaml_source, view, coordinate_system, angle_tolerance, transaction_group=None):
@@ -549,11 +654,13 @@ class ToggleGridWindow(forms.WPFWindow):
         self.DragMove()
 
     def cancel(self, sender, args):
+        self.grids.unhighlight_grids()
         if self.transaction_group:
             self.transaction_group.RollBack()
         self.Close()
 
     def confirm(self, sender, args):
+        self.grids.unhighlight_grids()
         self.Close()
 
 
