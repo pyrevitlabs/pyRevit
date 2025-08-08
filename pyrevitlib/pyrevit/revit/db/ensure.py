@@ -1,4 +1,4 @@
-"""Idempotent operations to ensure a datbase object exists."""
+"""Idempotent operations to ensure a database object exists."""
 import os.path as op
 
 from pyrevit import HOST_APP, DOCS, PyRevitException
@@ -97,7 +97,7 @@ def ensure_text_type(name,
                      bold=False,
                      italic=False,
                      underline=False,
-                     with_factor=1.0,
+                     width_factor=1.0,
                      doc=None):
     doc = doc or DOCS.doc
     # check if type exists
@@ -113,7 +113,7 @@ def ensure_text_type(name,
         bold=bold,
         italic=italic,
         underline=underline,
-        with_factor=with_factor,
+        width_factor=width_factor,
         doc=doc)
 
 
