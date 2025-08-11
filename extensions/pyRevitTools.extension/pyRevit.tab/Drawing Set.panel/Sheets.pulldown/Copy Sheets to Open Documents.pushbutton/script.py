@@ -364,8 +364,9 @@ def apply_detail_number(original_vport, nvport):
                     if original_detail_num:
                         nvport.get_Parameter(dtl_num_param).Set(original_detail_num)
                         print("\t\t\tPreserved detail number: {}".format(original_detail_num))
-            except Exception as e:
-                logger.error("Error setting detail number: {}".format(str(e)))
+            except (AttributeError, System.ArgumentException) as e: 
+                logger.error("Error setting detail number: {}".format(str(e))) 
+                print("\t\t\tCould not preserve detail number: parameter issue")
         else:
             print("\t\t\tSkipping detail number preservation (option not checked)")
 
