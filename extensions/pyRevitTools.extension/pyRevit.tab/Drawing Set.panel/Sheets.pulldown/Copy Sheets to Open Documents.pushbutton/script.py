@@ -357,10 +357,13 @@ def apply_detail_number(original_vport, nvport):
         if OPTION_SET.op_preserve_detail_numbers:
             try:
                 dtl_num_param = DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
-                original_detail_num = original_vport.get_Parameter(dtl_num_param).AsString()
-                if original_detail_num:
-                    nvport.get_Parameter(dtl_num_param).Set(original_detail_num)
-                    print("\t\t\tPreserved detail number: {}".format(original_detail_num))
+
+                original_param = original_vport.get_Parameter(dtl_num_param) 
+                if original_param: 
+                    original_detail_num = original_param.AsString() 
+                    if original_detail_num:
+                        nvport.get_Parameter(dtl_num_param).Set(original_detail_num)
+                        print("\t\t\tPreserved detail number: {}".format(original_detail_num))
             except Exception as e:
                 logger.error("Error setting detail number: {}".format(str(e)))
         else:
