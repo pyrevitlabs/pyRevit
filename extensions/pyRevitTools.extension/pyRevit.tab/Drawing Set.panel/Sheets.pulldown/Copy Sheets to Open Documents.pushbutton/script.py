@@ -360,7 +360,9 @@ def apply_detail_number(original_vport, nvport):
 
                 original_param = original_vport.get_Parameter(dtl_num_param) 
                 if original_param: 
-                    original_detail_num = original_param.AsString() 
+                original_detail_param = original_vport.get_Parameter(dtl_num_param) 
+                if original_detail_param: 
+                    original_detail_num = original_detail_param.AsString() 
                     if original_detail_num:
                         nvport.get_Parameter(dtl_num_param).Set(original_detail_num)
                         print("\t\t\tPreserved detail number: {}".format(original_detail_num))
