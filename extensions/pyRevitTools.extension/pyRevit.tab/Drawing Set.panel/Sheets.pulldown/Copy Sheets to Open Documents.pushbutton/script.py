@@ -365,7 +365,13 @@ def apply_detail_number(original_vport, nvport):
                     original_detail_num = original_detail_param.AsString() 
                     if original_detail_num:
                         nvport.get_Parameter(dtl_num_param).Set(original_detail_num)
-                        print("\t\t\tPreserved detail number: {}".format(original_detail_num))
+                        dest_param = nvport.get_Parameter(dtl_num_param)
+                        if dest_param and not dest_param.IsReadOnly:
+                            dest_param.Set(original_detail_num)
+                            print("\t\t\tPreserved detail number: {}".format(original_detail_num))
+                        else:
+                            logger.error("Destination viewport parameter for detail number is missing or read-only.")
+                            print("\t\t\tCould not preserve detail number: destination parameter issue")
             except (AttributeError, System.ArgumentException) as e: 
                 logger.error("Error setting detail number: {}".format(str(e))) 
                 print("\t\t\tCould not preserve detail number: parameter issue ({})".format(str(e)))
