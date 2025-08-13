@@ -127,7 +127,7 @@ opened_families = [od.Title for od in HOST_APP.uiapp.Application.Documents
 
 # Get all family instances to count them
 all_family_instances = DB.FilteredElementCollector(revit.doc)\
-                        .WhereElementIsNotElementType()\
+                        .OfClass(DB.FamilyInstance)\
                         .ToElements()
 
 # Create a dictionary to count instances per family
