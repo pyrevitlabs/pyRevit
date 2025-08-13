@@ -137,7 +137,12 @@ for instance in all_family_instances:
         if instance.Symbol:
             family_name = instance.Symbol.Family.Name
             family_instance_counts[family_name] = \
-                family_instance_counts.get(family_name, 0) + 1
+family_instance_counts = defaultdict(int)
+for instance in all_family_instances:
+    try:
+        if hasattr(instance, 'Symbol') and instance.Symbol:
+            family_name = instance.Symbol.Family.Name
+            family_instance_counts[family_name] += 1
     except Exception:
         continue
 
