@@ -134,7 +134,7 @@ all_family_instances = DB.FilteredElementCollector(revit.doc)\
 family_instance_counts = {}
 for instance in all_family_instances:
     try:
-        if hasattr(instance, 'Symbol') and instance.Symbol:
+        if instance.Symbol:
             family_name = instance.Symbol.Family.Name
             family_instance_counts[family_name] = \
                 family_instance_counts.get(family_name, 0) + 1
