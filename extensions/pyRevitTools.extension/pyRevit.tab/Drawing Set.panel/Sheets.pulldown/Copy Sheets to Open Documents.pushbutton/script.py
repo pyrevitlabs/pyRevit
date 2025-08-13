@@ -34,6 +34,8 @@ class OptionSet:
         )
         self.op_copy_guides = Option("Copy Guide Grids", True)
         self.op_update_exist_view_contents = Option("Update Existing View Contents")
+        self.op_preserve_detail_numbers = Option("Preserve Detail Numbers", True)
+
         # self.op_update_exist_vport_locations = \
         #    Option('Update Existing Viewport Locations')
 
@@ -345,15 +347,45 @@ def apply_viewport_type(activedoc, vport_id, dest_doc, newvport_id):
 
 
 def apply_detail_number(original_vport, nvport):
+    """Apply detail number from original viewport to new viewport if option is enabled"""
     if not (original_vport and nvport):
         error_msg = "Missing view. Cannot match detail number"
         print("\t\t\t{}".format(error_msg))
         logger.error(error_msg)
+        return
     else:
-        dtl_num_param = DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
-        nvport.get_Parameter(dtl_num_param).Set(
-            original_vport.get_Parameter(dtl_num_param).AsString()
-        )
+        # Only apply detail number if the option is checked
+        if OPTION_SET.op_preserve_detail_numbers:
+            try:
+                dtl_num_param = DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+                original_detail_param = original_vport.get_Parameter(dtl_num_param)
+                if original_detail_param:
+                    original_detail_num = original_detail_param.AsString()
+                    if original_detail_num:
+                        dest_param = nvport.get_Parameter(dtl_num_param)
+                        if dest_param and not dest_param.IsReadOnly:
+                            dest_param.Set(original_detail_num)
+                            print(
+                                "\t\t\tPreserved detail number: {}".format(
+                                    original_detail_num
+                                )
+                            )
+                        else:
+                            logger.error(
+                                "Destination viewport parameter for detail number is missing or read-only."
+                            )
+                            print(
+                                "\t\t\tCould not preserve detail number: destination parameter issue"
+                            )
+            except (AttributeError, System.ArgumentException) as e:
+                logger.error("Error setting detail number: {}".format(str(e)))
+                print(
+                    "\t\t\tCould not preserve detail number: parameter issue ({})".format(
+                        str(e)
+                    )
+                )
+        else:
+            print("\t\t\tSkipping detail number preservation (option not checked)")
 
 
 def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):

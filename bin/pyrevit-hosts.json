@@ -1872,6 +1872,18 @@
         "version": "23.1.70.22"
     },
     {
+        "build": "20250724_1515",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023updates_2023_1_8_html"
+        },
+        "notes": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023updates_2023_1_8_html",
+        "product": "Autodesk Revit",
+        "release": "2023.1.8",
+        "target": "x64",
+        "version": "23.1.80.30"
+    },
+    {
         "build": "20230308_1635",
         "meta": {
             "schema": "1.0",
