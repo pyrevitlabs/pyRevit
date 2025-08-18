@@ -68,7 +68,7 @@ def check_grids_exist():
             .OfCategory(DB.BuiltInCategory.OST_Grids)
             .WhereElementIsNotElementType()
             .ToElements()
-            if grid.CanBeVisibleInView(active_view)
+            if not grid.IsHidden(active_view)
         ]
 
         if len(grids) == 0:
@@ -131,7 +131,7 @@ class CustomGrids:
                 .OfCategory(DB.BuiltInCategory.OST_Grids)
                 .WhereElementIsNotElementType()
                 .ToElements()
-                if grid.CanBeVisibleInView(view)
+                if not grid.IsHidden(active_view)
             ]
 
         self._setup_coordinate_transform()
@@ -499,8 +499,14 @@ class ToggleGridWindow(forms.WPFWindow):
         coordinate_system,
         angle_tolerance,
         transaction_group=None,
+        window_left=None,
+        window_top=None,
     ):
         super(ToggleGridWindow, self).__init__(xaml_source)
+
+        if window_left is not None and window_top is not None:
+            self.Left = window_left
+            self.Top = window_top
 
         self.view = view
         self.coordinate_system = coordinate_system
@@ -615,10 +621,12 @@ class ToggleGridWindow(forms.WPFWindow):
         coordinate_system,
         angle_tolerance,
         transaction_group=None,
+        window_left=None,
+        window_top=None,
     ):
         """Factory method to handle a clean exit"""
         window = cls(
-            xaml_source, view, coordinate_system, angle_tolerance, transaction_group
+            xaml_source, view, coordinate_system, angle_tolerance, transaction_group, window_left, window_top
         )
         if not window.is_valid:
             return None
@@ -762,12 +770,14 @@ def main():
 
     coordinate_system = selection_result["coordinate_system"]
     angle_tolerance = selection_result["angle_tolerance"]
+    window_left = selection_result.get("window_left", None)
+    window_top = selection_result.get("window_top", None)
 
     tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
 
     window = ToggleGridWindow.create(
-        xamlfile, active_view, coordinate_system, angle_tolerance, tg
+        xamlfile, active_view, coordinate_system, angle_tolerance, tg, window_left, window_top
     )
     if window is not None:
         window.ShowDialog()
