@@ -15,7 +15,7 @@
     BorderBrush="#FFA0A0A0"
     BorderThickness="1,1,1,1"
     MouseLeftButtonDown="move_window"
-    WindowStartupLocation="CenterOwner">
+    WindowStartupLocation="Manual">
 
     <Grid Margin="0,0,0,0">
         <Grid.RowDefinitions>

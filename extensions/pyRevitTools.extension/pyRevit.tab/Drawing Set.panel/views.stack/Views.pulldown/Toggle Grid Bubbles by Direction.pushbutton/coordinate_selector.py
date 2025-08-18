@@ -62,7 +62,9 @@ class CoordinateSystemSelector(forms.WPFWindow):
         """Handle Continue button click."""
         self.result = {
             'coordinate_system': self.get_selected_coordinate_system(),
-            'angle_tolerance': int(self.angle_slider.Value)
+            'angle_tolerance': int(self.angle_slider.Value),
+            'window_left': self.Left,
+            'window_top': self.Top
         }
         self.Close()
 
