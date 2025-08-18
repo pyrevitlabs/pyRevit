@@ -78,9 +78,7 @@ def check_grids_exist():
 
 
 class CustomGrids:
-    def __init__(
-        self, document, view, coordinate_system="project_north", angle_tolerance=1
-    ):
+    def __init__(self, document, view, coordinate_system="project_north", angle_tolerance=1):
         """Initialize with the document, view, coordinate system choice, and angle tolerance."""
         self.__view = view
         self.__document = document
@@ -199,10 +197,12 @@ class CustomGrids:
             return point
 
     def set_ui_state(self, right_left_collapsed, top_bottom_collapsed):
+        """Set the UI state so the grids class knows which controls are active."""
         self.right_left_collapsed = right_left_collapsed
         self.top_bottom_collapsed = top_bottom_collapsed
 
     def highlight_all_active_grids_once(self):
+        """Highlight all active grids once at startup and keep them selected."""
         try:
             if not self._all_active_grids_selected:
                 self._original_selection = [
@@ -221,6 +221,7 @@ class CustomGrids:
             pass
 
     def unhighlight_grids(self):
+        """Clear selection."""
         try:
             if self._all_active_grids_selected:
                 HOST_APP.uidoc.Selection.SetElementIds(List[DB.ElementId]())
@@ -229,6 +230,7 @@ class CustomGrids:
             pass
 
     def get_active_grids(self):
+        """Get only the grids that are actively managed by the current UI state."""
         active_grids = []
 
         if not self.top_bottom_collapsed:
@@ -572,6 +574,8 @@ class ToggleGridWindow(forms.WPFWindow):
         self.update_checkboxes()
 
     def update_status_display(self):
+        """Update the status display to show current operation scope."""
+
         total_grids = len(self.grids.grids())
         active_grids = len(self.grids.get_active_grids())
 
