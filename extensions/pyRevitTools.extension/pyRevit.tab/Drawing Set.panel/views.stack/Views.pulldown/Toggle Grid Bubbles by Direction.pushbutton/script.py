@@ -824,12 +824,16 @@ def main():
     tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
 
+    previous_system = None
+    previous_tolerance = None
     window_left = None
     window_top = None
 
     # Loop to handle back button
     while True:
-        selection_result = show_coordinate_system_selector(window_left, window_top)
+        selection_result = show_coordinate_system_selector(
+            previous_system, previous_tolerance, window_left, window_top
+        )
         if selection_result is None:
             if tg.GetStatus() == DB.TransactionStatus.Started:
                 tg.RollBack()
@@ -837,6 +841,9 @@ def main():
 
         coordinate_system = selection_result["coordinate_system"]
         angle_tolerance = selection_result["angle_tolerance"]
+        previous_system = coordinate_system
+        previous_tolerance = angle_tolerance
+
         window_left = selection_result.get("window_left", None)
         window_top = selection_result.get("window_top", None)
 
