@@ -103,7 +103,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0" Click="go_back"
+            <Button x:Name="back_button" Grid.Column="0" Click="go_back"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Height="40" Margin="0,0,5,0" Background="#FFF8F9FA"
                     BorderBrush="#FFDEE2E6" Foreground="#FF666666">

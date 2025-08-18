@@ -134,7 +134,7 @@ class CustomGrids:
                 if not grid.IsHidden(active_view)
             ]
 
-        if coordinate_system != "all_grids":
+        if coordinate_system not in ["all_grids", "elevation_mode"]:
             self._setup_coordinate_transform()
 
         if not self.__grids:
@@ -236,9 +236,12 @@ class CustomGrids:
         """Get only the grids that are actively managed by the current UI state."""
         active_grids = []
 
+        if self.__coordinate_system == "elevation_mode":
+            active_grids.extend(self.get_vertical_grids())
+            return active_grids
+
         if self.__coordinate_system == "all_grids":
-            # If all grids are selected, return all grids in the document
-            return self.__grids
+            active_grids.extend(self.__grids)
 
         if not self.top_bottom_collapsed:
             active_grids.extend(self.get_vertical_grids())
@@ -295,7 +298,7 @@ class CustomGrids:
             pt1, pt2 = self.get_endpoints(g)
             if pt1 and pt2:
 
-                if self.__coordinate_system == "view":
+                if self.__coordinate_system in  ["view", "elevation_mode"]:
                     # For view orientation, use direction vector approach with user-defined tolerance
                     grid_vector = pt2 - pt1
                     grid_vector = grid_vector.Normalize()
@@ -532,6 +535,11 @@ class ToggleGridWindow(forms.WPFWindow):
             return
         self.is_valid = True
 
+        # Hide back button if in elevation mode
+        self.back_button = self.FindName("back_button")
+        if self.coordinate_system == "elevation_mode" and self.back_button:
+            self.back_button.Visibility = Windows.Visibility.Collapsed
+
         # Flags to control the visibility of the checkboxes
         self.right_left_collapsed = False
         self.top_bottom_collapsed = False
@@ -598,7 +606,10 @@ class ToggleGridWindow(forms.WPFWindow):
         if self.grids.selection:
             grid_status = "Scope: {} selected grids".format(total_grids)
         else:
-            grid_status = "Scope: All {} grids in view".format(total_grids)
+            if self.coordinate_system == "elevation_mode":
+                grid_status = "Scope: All visible grids"
+            else:
+                grid_status = "Scope: All {} grids in view".format(total_grids)
 
         if active_grids != total_grids:
             # Split the text to show the active part in red
@@ -614,6 +625,7 @@ class ToggleGridWindow(forms.WPFWindow):
 
         coord_system_map = {
             "all_grids": "No coordinates",
+            "elevation_mode": "Elevation View",
             "true_north": "True North",
             "project_north": "Project North",
             "view": "View/Scope Box Orientation",
@@ -621,6 +633,8 @@ class ToggleGridWindow(forms.WPFWindow):
 
         if self.coordinate_system == "all_grids":
             coord_status = "Coordinates: -"
+        elif self.coordinate_system == "elevation_mode":
+            coord_status = "View Type: Elevation/Section"
         else:
             coord_status = "Coordinates: {} ({}° tolerance)".format(
                 coord_system_map.get(self.coordinate_system, self.coordinate_system),
@@ -823,6 +837,37 @@ def main():
 
     tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
+
+    # Check if view is elevation/section
+    if active_view.ViewType in ELEVATION_VIEWS:
+        # For elevation views, skip coordinate system selection
+        coordinate_system = "elevation_mode"
+        angle_tolerance = 1  # Not used in elevation mode
+
+        window = ToggleGridWindow.create(
+            xamlfile,
+            active_view,
+            coordinate_system,
+            angle_tolerance,
+            tg,
+            None,
+            None,
+        )
+
+        if window is not None:
+            window.ShowDialog()
+
+            if window.result == "cancel":
+                if tg.GetStatus() == DB.TransactionStatus.Started:
+                    tg.RollBack()
+                return
+            elif window.result == "ok":
+                if tg.GetStatus() == DB.TransactionStatus.Started:
+                    tg.Assimilate()
+        else:
+            if tg.GetStatus() == DB.TransactionStatus.Started:
+                tg.RollBack()
+        return
 
     previous_system = None
     previous_tolerance = None
