@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Route custom exceptions."""
 #pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import HOST_APP
