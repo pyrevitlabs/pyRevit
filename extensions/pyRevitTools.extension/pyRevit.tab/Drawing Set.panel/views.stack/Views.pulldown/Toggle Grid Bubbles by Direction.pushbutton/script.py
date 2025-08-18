@@ -510,6 +510,7 @@ class ToggleGridWindow(forms.WPFWindow):
         self.PreviewKeyDown += self.handle_key_press
 
         if window_left is not None and window_top is not None:
+            self.WindowStartupLocation = Windows.WindowStartupLocation.Manual
             self.Left = window_left
             self.Top = window_top
 
@@ -738,7 +739,12 @@ class ToggleGridWindow(forms.WPFWindow):
     def go_back(self, sender, args):
         """Go back to coordinate system selector."""
         self.grids.unhighlight_grids()
-        self.result = "back"
+        # ✅ Return action + current window coordinates
+        self.result = {
+            "action": "back",
+            "window_left": self.Left,
+            "window_top": self.Top
+        }
         self.Close()
 
     def cancel(self, sender, args):
@@ -810,7 +816,9 @@ def main():
         if window is not None:
             window.ShowDialog()
 
-            if window.result == "back":
+            if isinstance(window.result, dict) and window.result.get("action") == "back":
+                window_left = window.result.get("window_left", window_left)
+                window_top = window.result.get("window_top", window_top)
                 continue
             elif window.result == "cancel":
                 if tg.GetStatus() == DB.TransactionStatus.Started:

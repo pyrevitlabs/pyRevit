@@ -88,7 +88,7 @@ def show_coordinate_system_selector(window_left=None, window_top=None):
     # Create and show dialog
     dialog = CoordinateSystemSelector(xamlfile)
 
-    if window_left and window_top:
+    if window_left is not None and window_top is not None:
         dialog.WindowStartupLocation = Windows.WindowStartupLocation.Manual
         dialog.Left = window_left
         dialog.Top = window_top
