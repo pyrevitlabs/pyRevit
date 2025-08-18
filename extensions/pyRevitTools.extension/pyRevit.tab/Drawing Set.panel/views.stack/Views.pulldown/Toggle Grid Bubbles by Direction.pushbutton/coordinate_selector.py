@@ -39,7 +39,7 @@ class CoordinateSystemSelector(forms.WPFWindow):
             15: "Relaxed - includes slightly angled grids",
             25: "Permissive - includes more angled grids",
             35: "Very permissive - includes most orientations",
-            40: "Maximum tolerance - includes heavily angled grids"
+            40: "Maximum tolerance - includes heavily angled grids",
         }
 
         # Find closest description
@@ -53,22 +53,22 @@ class CoordinateSystemSelector(forms.WPFWindow):
     def get_selected_coordinate_system(self):
         """Get the selected coordinate system."""
         if self.all_grids.IsChecked:
-            return 'all_grids'
+            return "all_grids"
         elif self.radio_true_north.IsChecked:
-            return 'true_north'
+            return "true_north"
         elif self.radio_project_north.IsChecked:
-            return 'project_north'
+            return "project_north"
         elif self.radio_view_orientation.IsChecked:
-            return 'view'
-        return 'true_north'  # fallback
+            return "view"
+        return "true_north"  # fallback
 
     def proceed(self, sender, args):
         """Handle Continue button click."""
         self.result = {
-            'coordinate_system': self.get_selected_coordinate_system(),
-            'angle_tolerance': int(self.angle_slider.Value),
-            'window_left': self.Left,
-            'window_top': self.Top
+            "coordinate_system": self.get_selected_coordinate_system(),
+            "angle_tolerance": int(self.angle_slider.Value),
+            "window_left": self.Left,
+            "window_top": self.Top,
         }
         self.Close()
 

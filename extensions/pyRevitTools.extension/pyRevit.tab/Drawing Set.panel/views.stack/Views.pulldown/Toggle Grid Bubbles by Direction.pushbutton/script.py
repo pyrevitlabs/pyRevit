@@ -78,7 +78,9 @@ def check_grids_exist():
 
 
 class CustomGrids:
-    def __init__(self, document, view, coordinate_system="project_north", angle_tolerance=1):
+    def __init__(
+        self, document, view, coordinate_system="project_north", angle_tolerance=1
+    ):
         """Initialize with the document, view, coordinate system choice, and angle tolerance."""
         self.__view = view
         self.__document = document
@@ -601,7 +603,9 @@ class ToggleGridWindow(forms.WPFWindow):
         if active_grids != total_grids:
             # Split the text to show the active part in red
             self.status_grids.Text = grid_status
-            self.status_grids_active.Text = " ({} active - selected in view)".format(active_grids)
+            self.status_grids_active.Text = " ({} active - selected in view)".format(
+                active_grids
+            )
             self.status_grids_active.Visibility = Windows.Visibility.Visible
         else:
             self.status_grids.Text = grid_status
@@ -655,7 +659,13 @@ class ToggleGridWindow(forms.WPFWindow):
     ):
         """Factory method to handle a clean exit"""
         window = cls(
-            xaml_source, view, coordinate_system, angle_tolerance, transaction_group, window_left, window_top
+            xaml_source,
+            view,
+            coordinate_system,
+            angle_tolerance,
+            transaction_group,
+            window_left,
+            window_top,
         )
         if not window.is_valid:
             return None
@@ -760,11 +770,11 @@ class ToggleGridWindow(forms.WPFWindow):
     def go_back(self, sender, args):
         """Go back to coordinate system selector."""
         self.grids.unhighlight_grids()
-        # ✅ Return action + current window coordinates
+        # Return action + current window coordinates
         self.result = {
             "action": "back",
             "window_left": self.Left,
-            "window_top": self.Top
+            "window_top": self.Top,
         }
         self.Close()
 
@@ -831,13 +841,22 @@ def main():
         window_top = selection_result.get("window_top", None)
 
         window = ToggleGridWindow.create(
-            xamlfile, active_view, coordinate_system, angle_tolerance, tg, window_left, window_top
+            xamlfile,
+            active_view,
+            coordinate_system,
+            angle_tolerance,
+            tg,
+            window_left,
+            window_top,
         )
 
         if window is not None:
             window.ShowDialog()
 
-            if isinstance(window.result, dict) and window.result.get("action") == "back":
+            if (
+                isinstance(window.result, dict)
+                and window.result.get("action") == "back"
+            ):
                 window_left = window.result.get("window_left", window_left)
                 window_top = window.result.get("window_top", window_top)
                 continue
