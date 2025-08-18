@@ -79,7 +79,7 @@ def check_grids_exist():
 
 class CustomGrids:
     def __init__(
-        self, document, view, coordinate_system="internal", angle_tolerance=10
+        self, document, view, coordinate_system="project_north", angle_tolerance=1
     ):
         """Initialize with the document, view, coordinate system choice, and angle tolerance."""
         self.__view = view
@@ -144,11 +144,11 @@ class CustomGrids:
     def _setup_coordinate_transform(self):
         """Set up the coordinate transformation based on user choice."""
         try:
-            if self.__coordinate_system == "internal":
+            if self.__coordinate_system == "project_north":
                 # Use identity transform (no transformation)
                 self._transform = DB.Transform.Identity
 
-            elif self.__coordinate_system == "project":
+            elif self.__coordinate_system == "true_north":
                 # Get project base point transformation
                 pbp_collector = DB.FilteredElementCollector(self.__document).OfCategory(
                     DB.BuiltInCategory.OST_ProjectBasePoint
@@ -191,7 +191,7 @@ class CustomGrids:
     def _transform_point(self, point):
         """Transform a point using the selected coordinate system."""
         try:
-            if self.__coordinate_system == "internal":
+            if self.__coordinate_system == "project_north":
                 return point
             else:
                 return self._transform.OfPoint(point)
@@ -314,7 +314,7 @@ class CustomGrids:
                         ):
                             filtered_grids.append(g)
                 else:
-                    # For internal and project coordinate systems, use transformation approach
+                    # For project_north and project coordinate systems, use transformation approach
                     transformed_pt1 = self._transform_point(pt1)
                     transformed_pt2 = self._transform_point(pt2)
 
@@ -525,6 +525,7 @@ class ToggleGridWindow(forms.WPFWindow):
         self.show_all = self.FindName("show_all")
 
         self.status_grids = self.FindName("status_grids")
+        self.status_grids_active = self.FindName("status_grids_active")
         self.status_coordinate_system = self.FindName("status_coordinate_system")
         self.status_active_controls = self.FindName("status_active_controls")
 
@@ -571,13 +572,18 @@ class ToggleGridWindow(forms.WPFWindow):
             grid_status = "Scope: All {} grids in view".format(total_grids)
 
         if active_grids != total_grids:
-            grid_status += " ({} active - selected in view)".format(active_grids)
-
-        self.status_grids.Text = grid_status
+            # Split the text to show the active part in red
+            self.status_grids.Text = grid_status
+            self.status_grids_active.Text = " ({} active - selected in view)".format(active_grids)
+            self.status_grids_active.Visibility = Windows.Visibility.Visible
+        else:
+            self.status_grids.Text = grid_status
+            self.status_grids_active.Text = ""
+            self.status_grids_active.Visibility = Windows.Visibility.Collapsed
 
         coord_system_map = {
-            "internal": "Internal Origin (World)",
-            "project": "Project Base Point",
+            "true_north": "True North",
+            "project_north": "Project North",
             "view": "View/Scope Box Orientation",
         }
         coord_status = "Coordinates: {} ({}° tolerance)".format(

@@ -46,17 +46,17 @@
         <GroupBox Grid.Row="2" Header="Coordinate System" Margin="15,5,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
             <StackPanel Margin="15">
-                <RadioButton x:Name="radio_internal" GroupName="CoordSystem" Content="Internal Origin"
-                             Margin="0,8,0,5" IsChecked="True" FontWeight="Normal" FontSize="12"/>
-                <TextBlock Text="Uses world coordinates (X=East, Y=North)"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,15"/>
-
-                <RadioButton x:Name="radio_project" GroupName="CoordSystem" Content="Project Base Point"
+                <RadioButton x:Name="radio_true_north" GroupName="CoordSystem" Content="True North"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
-                <TextBlock Text="Uses project north rotation"
+                <TextBlock Text="Uses true north orientation"
                            FontSize="10" Foreground="#FF666666" Margin="20,0,0,15"/>
 
-                <RadioButton x:Name="radio_view" GroupName="CoordSystem" Content="View/Scope Box Orientation"
+                <RadioButton x:Name="radio_project_north" GroupName="CoordSystem" Content="Project North"
+                             Margin="0,8,0,5" IsChecked="True" FontWeight="Normal" FontSize="12"/>
+                <TextBlock Text="Uses project coordinate system (applies the 'Angle to True North')"
+                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,15"/>
+
+                <RadioButton x:Name="radio_view_orientation" GroupName="CoordSystem" Content="View/Scope Box Orientation"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="Uses current view orientation and scope boxes"
                            FontSize="10" Foreground="#FF666666" Margin="20,0,0,15"/>
@@ -102,7 +102,7 @@
                     <StackPanel>
                         <TextBlock Text="How this works" FontSize="12" FontWeight="SemiBold"
                                    Foreground="#FF1976D2" Margin="0,0,0,5"/>
-                        <TextBlock Text="Controls how perfectly aligned grids need to be. Lower values = only straight grids. Higher values = includes angled grids."
+                        <TextBlock Text="Controls how closely grids must align with the chosen coordinate system. Lower values = only straight grids. Higher values = includes angled grids."
                                    FontSize="11" Foreground="#FF1565C0" TextWrapping="Wrap" LineHeight="16"/>
                     </StackPanel>
                 </Border>

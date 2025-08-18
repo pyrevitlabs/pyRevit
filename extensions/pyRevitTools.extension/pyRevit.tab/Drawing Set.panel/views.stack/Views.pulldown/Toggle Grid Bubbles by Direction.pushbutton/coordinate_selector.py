@@ -12,16 +12,16 @@ class CoordinateSystemSelector(forms.WPFWindow):
         self.result = None
 
         # Find controls
-        self.radio_internal = self.FindName("radio_internal")
-        self.radio_project = self.FindName("radio_project")
-        self.radio_view = self.FindName("radio_view")
+        self.radio_true_north = self.FindName("radio_true_north")
+        self.radio_project_north = self.FindName("radio_project_north")
+        self.radio_view_orientation = self.FindName("radio_view_orientation")
         self.angle_slider = self.FindName("angle_slider")
         self.angle_display = self.FindName("angle_display")
         self.angle_description = self.FindName("angle_description")
 
         # Set initial values
-        self.radio_internal.IsChecked = True
-        self.angle_slider.Value = 10
+        self.radio_true_north.IsChecked = True
+        self.angle_slider.Value = 1
         self.update_angle_display()
 
     def update_angle_display(self):
@@ -50,13 +50,13 @@ class CoordinateSystemSelector(forms.WPFWindow):
 
     def get_selected_coordinate_system(self):
         """Get the selected coordinate system."""
-        if self.radio_internal.IsChecked:
-            return 'internal'
-        elif self.radio_project.IsChecked:
-            return 'project'
-        elif self.radio_view.IsChecked:
+        if self.radio_true_north.IsChecked:
+            return 'true_north'
+        elif self.radio_project_north.IsChecked:
+            return 'project_north'
+        elif self.radio_view_orientation.IsChecked:
             return 'view'
-        return 'internal'  # fallback
+        return 'true_north'  # fallback
 
     def proceed(self, sender, args):
         """Handle Continue button click."""

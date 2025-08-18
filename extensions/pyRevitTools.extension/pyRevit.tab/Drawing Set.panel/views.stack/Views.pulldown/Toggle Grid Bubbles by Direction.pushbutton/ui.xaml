@@ -41,9 +41,12 @@
         <GroupBox Grid.Row="1" Header="Operation Scope" Margin="15,10,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
             <StackPanel Margin="15">
-                <TextBlock x:Name="status_grids" Text="" FontSize="12" Margin="0,5" Foreground="#FF333333"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="status_grids" Text="" FontSize="12" Margin="0,5,0,5" Foreground="#FF333333"/>
+                    <TextBlock x:Name="status_grids_active" Text="" FontSize="12" Margin="0,5,0,5" Foreground="#FFFF0000" FontWeight="Bold"/>
+                </StackPanel>
                 <TextBlock x:Name="status_coordinate_system" Text="" FontSize="12" Margin="0,5" Foreground="#FF333333"/>
-                <TextBlock x:Name="status_active_controls" Text="" FontSize="12" Margin="0,5" Foreground="#FF666666"/>
+                <TextBlock x:Name="status_active_controls" Text="" FontSize="12" Margin="0,5" Foreground="#FFFF0000" FontWeight="Bold"/>
             </StackPanel>
         </GroupBox>
 
