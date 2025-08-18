@@ -100,16 +100,32 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0" Content="Cancel" Click="cancel"
+            <Button Grid.Column="0" Click="go_back"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Height="40" Margin="0,0,10,0" Background="#FFF8F9FA"
+                    Height="40" Margin="0,0,5,0" Background="#FFF8F9FA"
+                    BorderBrush="#FFDEE2E6" Foreground="#FF666666">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="30"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="◀" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="Back" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+
+            <Button Grid.Column="1" Content="Cancel" Click="cancel"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Height="40" Margin="5,0,5,0" Background="#FFF8F9FA"
                     BorderBrush="#FFDEE2E6" Foreground="#FF666666" FontSize="12"/>
 
-            <Button Grid.Column="1" Content="OK" Click="confirm"
+            <Button Grid.Column="2" Content="OK" Click="confirm"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Height="40" Margin="10,0,0,0" Background="#FF667EEA"
+                    Height="40" Margin="5,0,0,0" Background="#FF667EEA"
                     BorderBrush="#FF667EEA" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
         </Grid>
     </Grid>

@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+from System import Windows
 from pyrevit import forms, script
 
 
@@ -78,7 +79,7 @@ class CoordinateSystemSelector(forms.WPFWindow):
         self.DragMove()
 
 
-def show_coordinate_system_selector():
+def show_coordinate_system_selector(window_left=None, window_top=None):
     """Show the coordinate system selector dialog and return user selection."""
 
     # Load XAML file using pyRevit's method (same as your main script)
@@ -86,6 +87,12 @@ def show_coordinate_system_selector():
 
     # Create and show dialog
     dialog = CoordinateSystemSelector(xamlfile)
+
+    if window_left and window_top:
+        dialog.WindowStartupLocation = Windows.WindowStartupLocation.Manual
+        dialog.Left = window_left
+        dialog.Top = window_top
+
     dialog.ShowDialog()
 
     return dialog.result

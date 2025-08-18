@@ -504,6 +504,8 @@ class ToggleGridWindow(forms.WPFWindow):
     ):
         super(ToggleGridWindow, self).__init__(xaml_source)
 
+        self.result = None
+
         if window_left is not None and window_top is not None:
             self.Left = window_left
             self.Top = window_top
@@ -728,14 +730,22 @@ class ToggleGridWindow(forms.WPFWindow):
     def move_window(self, sender, args):
         self.DragMove()
 
+    def go_back(self, sender, args):
+        """Go back to coordinate system selector."""
+        self.grids.unhighlight_grids()
+        self.result = "back"
+        self.Close()
+
     def cancel(self, sender, args):
         self.grids.unhighlight_grids()
         if self.transaction_group:
             self.transaction_group.RollBack()
+        self.result = "cancel"
         self.Close()
 
     def confirm(self, sender, args):
         self.grids.unhighlight_grids()
+        self.result = "ok"
         self.Close()
 
 
@@ -764,23 +774,44 @@ def main():
     if not check_grids_exist():
         return
 
-    selection_result = show_coordinate_system_selector()
-    if selection_result is None:
-        return
-
-    coordinate_system = selection_result["coordinate_system"]
-    angle_tolerance = selection_result["angle_tolerance"]
-    window_left = selection_result.get("window_left", None)
-    window_top = selection_result.get("window_top", None)
-
     tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
 
-    window = ToggleGridWindow.create(
-        xamlfile, active_view, coordinate_system, angle_tolerance, tg, window_left, window_top
-    )
-    if window is not None:
-        window.ShowDialog()
+    window_left = None
+    window_top = None
+
+    # Loop to handle back button
+    while True:
+        selection_result = show_coordinate_system_selector(window_left, window_top)
+        if selection_result is None:
+            if tg.GetStatus() == DB.TransactionStatus.Started:
+                tg.RollBack()
+            return
+
+        coordinate_system = selection_result["coordinate_system"]
+        angle_tolerance = selection_result["angle_tolerance"]
+        window_left = selection_result.get("window_left", None)
+        window_top = selection_result.get("window_top", None)
+
+        window = ToggleGridWindow.create(
+            xamlfile, active_view, coordinate_system, angle_tolerance, tg, window_left, window_top
+        )
+
+        if window is not None:
+            window.ShowDialog()
+
+            if window.result == "back":
+                continue
+            elif window.result == "cancel":
+                if tg.GetStatus() == DB.TransactionStatus.Started:
+                    tg.RollBack()
+                return
+            elif window.result == "ok":
+                break
+        else:
+            if tg.GetStatus() == DB.TransactionStatus.Started:
+                tg.RollBack()
+            return
 
     if tg.GetStatus() == DB.TransactionStatus.Started:
         tg.Assimilate()
