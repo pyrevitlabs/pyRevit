@@ -132,7 +132,8 @@ class CustomGrids:
                 if not grid.IsHidden(active_view)
             ]
 
-        self._setup_coordinate_transform()
+        if coordinate_system != "all_grids":
+            self._setup_coordinate_transform()
 
         if not self.__grids:
             forms.alert("No valid grids found.")
@@ -232,6 +233,10 @@ class CustomGrids:
     def get_active_grids(self):
         """Get only the grids that are actively managed by the current UI state."""
         active_grids = []
+
+        if self.__coordinate_system == "all_grids":
+            # If all grids are selected, return all grids in the document
+            return self.__grids
 
         if not self.top_bottom_collapsed:
             active_grids.extend(self.get_vertical_grids())
@@ -548,6 +553,14 @@ class ToggleGridWindow(forms.WPFWindow):
             "bottom": self.FindName("check_bottom"),
         }
 
+        if self.coordinate_system == "all_grids":
+            self.checkboxes["top"].Visibility = Windows.Visibility.Collapsed
+            self.checkboxes["bottom"].Visibility = Windows.Visibility.Collapsed
+            self.checkboxes["left"].Visibility = Windows.Visibility.Collapsed
+            self.checkboxes["right"].Visibility = Windows.Visibility.Collapsed
+            self.right_left_collapsed = True
+            self.top_bottom_collapsed = True
+
         # Display the checkboxes based on the orientation of the grids and the view type
         if self.is_view_elevation() or not self.grids.get_horizontal_grids():
             self.checkboxes["right"].Visibility = Windows.Visibility.Collapsed
@@ -596,17 +609,25 @@ class ToggleGridWindow(forms.WPFWindow):
             self.status_grids_active.Visibility = Windows.Visibility.Collapsed
 
         coord_system_map = {
+            "all_grids": "No coordinates",
             "true_north": "True North",
             "project_north": "Project North",
             "view": "View/Scope Box Orientation",
         }
-        coord_status = "Coordinates: {} ({}° tolerance)".format(
-            coord_system_map.get(self.coordinate_system, self.coordinate_system),
-            self.angle_tolerance,
-        )
+
+        if self.coordinate_system == "all_grids":
+            coord_status = "Coordinates: -"
+        else:
+            coord_status = "Coordinates: {} ({}° tolerance)".format(
+                coord_system_map.get(self.coordinate_system, self.coordinate_system),
+                self.angle_tolerance,
+            )
         self.status_coordinate_system.Text = coord_status
 
         active_controls = []
+        if self.coordinate_system == "all_grids":
+            active_controls.append("All Grids - {} active".format(total_grids))
+
         if not self.top_bottom_collapsed:
             vertical_count = len(self.grids.get_vertical_grids())
             active_controls.append("Vertical ({})".format(vertical_count))

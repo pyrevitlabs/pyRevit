@@ -13,6 +13,7 @@ class CoordinateSystemSelector(forms.WPFWindow):
         self.result = None
 
         # Find controls
+        self.all_grids = self.FindName("all_grids")
         self.radio_true_north = self.FindName("radio_true_north")
         self.radio_project_north = self.FindName("radio_project_north")
         self.radio_view_orientation = self.FindName("radio_view_orientation")
@@ -21,7 +22,7 @@ class CoordinateSystemSelector(forms.WPFWindow):
         self.angle_description = self.FindName("angle_description")
 
         # Set initial values
-        self.radio_true_north.IsChecked = True
+        self.all_grids.IsChecked = True
         self.angle_slider.Value = 1
         self.update_angle_display()
 
@@ -51,7 +52,9 @@ class CoordinateSystemSelector(forms.WPFWindow):
 
     def get_selected_coordinate_system(self):
         """Get the selected coordinate system."""
-        if self.radio_true_north.IsChecked:
+        if self.all_grids.IsChecked:
+            return 'all_grids'
+        elif self.radio_true_north.IsChecked:
             return 'true_north'
         elif self.radio_project_north.IsChecked:
             return 'project_north'

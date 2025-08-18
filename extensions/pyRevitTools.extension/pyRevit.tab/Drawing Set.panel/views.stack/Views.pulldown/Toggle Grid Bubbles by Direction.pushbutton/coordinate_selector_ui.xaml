@@ -45,21 +45,26 @@
         <!-- Coordinate System Selection -->
         <GroupBox Grid.Row="2" Header="Coordinate System" Margin="15,5,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
-            <StackPanel Margin="15">
+            <StackPanel Margin="15,5,15,0">
+                <RadioButton x:Name="all_grids" GroupName="CoordSystem" Content="All grids"
+                             Margin="0,8,0,5" FontWeight="Normal" FontSize="12"/>
+                <TextBlock Text="Toggles all grids in the active view"
+                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
+
                 <RadioButton x:Name="radio_true_north" GroupName="CoordSystem" Content="True North"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="Uses true north orientation"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,15"/>
+                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
 
                 <RadioButton x:Name="radio_project_north" GroupName="CoordSystem" Content="Project North"
-                             Margin="0,8,0,5" IsChecked="True" FontWeight="Normal" FontSize="12"/>
+                             Margin="0,8,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="Uses project coordinate system (applies the 'Angle to True North')"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,15"/>
+                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
 
                 <RadioButton x:Name="radio_view_orientation" GroupName="CoordSystem" Content="View/Scope Box Orientation"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
                 <TextBlock Text="Uses current view orientation and scope boxes"
-                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,15"/>
+                           FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
             </StackPanel>
         </GroupBox>
 
