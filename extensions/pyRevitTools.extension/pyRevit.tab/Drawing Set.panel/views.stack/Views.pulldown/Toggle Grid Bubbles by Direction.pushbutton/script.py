@@ -505,6 +505,7 @@ class ToggleGridWindow(forms.WPFWindow):
         super(ToggleGridWindow, self).__init__(xaml_source)
 
         self.result = None
+        self.PreviewKeyDown += self.handle_key_press
 
         if window_left is not None and window_top is not None:
             self.Left = window_left
@@ -742,6 +743,11 @@ class ToggleGridWindow(forms.WPFWindow):
             self.transaction_group.RollBack()
         self.result = "cancel"
         self.Close()
+
+    def handle_key_press(self, sender, args):
+        """Handle keyboard input, especially ESC key."""
+        if args.Key == Windows.Input.Key.Escape:
+            self.cancel(None, None)
 
     def confirm(self, sender, args):
         self.grids.unhighlight_grids()
