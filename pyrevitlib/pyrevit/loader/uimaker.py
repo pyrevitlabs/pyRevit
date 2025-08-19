@@ -569,8 +569,8 @@ def _produce_ui_panels(ui_maker_params):
 
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
-        parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
-        panel_ui = parent_ui_tab.ribbon_panel(panel.name)
+        parent_ui_tab.create_ribbon_panel(panel.ui_title, update_if_exists=True)
+        panel_ui = parent_ui_tab.ribbon_panel(panel.ui_title)
 
         # set backgrounds
         panel_ui.reset_backgrounds()

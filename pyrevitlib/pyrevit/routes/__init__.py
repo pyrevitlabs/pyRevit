@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """HTTP API framework similar to flask."""
 # types to be exported
 #pylint: disable=wildcard-import,redefined-outer-name,unused-variable

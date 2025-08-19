@@ -162,7 +162,7 @@ class ErrorSwallower():
             mlogger.debug('setting failure processing results to: %s', result)
             event_args.SetProcessingResult(result)
         except Exception as fpex:
-            mlogger.error('Error occured while processing failures. | %s', fpex)
+            mlogger.error('Error occurred while processing failures. | %s', fpex)
 
     def get_swallowed_errors(self):
         """Return swallowed errors."""

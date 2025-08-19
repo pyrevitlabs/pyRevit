@@ -361,7 +361,7 @@ def create_text_type(name,
                      bold=False,
                      italic=False,
                      underline=False,
-                     with_factor=1.0,
+                     width_factor=1.0,
                      doc=None):
     doc = doc or DOCS.doc
     tnote_typeid = doc.GetDefaultElementTypeId(DB.ElementTypeGroup.TextNoteType)
@@ -378,7 +378,7 @@ def create_text_type(name,
     spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_UNDERLINE]\
         .Set(1 if underline else 0)
     spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_WIDTH_SCALE]\
-        .Set(1 if with_factor else 0)
+        .Set(width_factor if width_factor != 1.0 else 1.0)
     return spec_tnote_type
 
 

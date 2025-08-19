@@ -157,7 +157,7 @@ jobs:
       
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v0.5.1
+        uses: azure/trusted-signing-action@v0.5.9
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -167,7 +167,7 @@ jobs:
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
 
           files-folder: bin/
-          files-folder-filter: pyrevit*.exe,pyrevit*.dll
+          files-folder-filter: pyrevit*.exe,pyrevit*.dll, pyRevit*.dll
           files-folder-recurse: true
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
@@ -179,7 +179,7 @@ jobs:
 
       - name: Sign files with Trusted Signing (installers)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v0.5.1
+        uses: azure/trusted-signing-action@v0.5.9
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
