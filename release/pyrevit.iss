@@ -119,6 +119,7 @@ begin
                                     Exit;
                                 end;
                             except
+                                Log('Failed to convert "' + Copy(Version, 1, SeparatorPos - 1) + '" to integer in version directory scan.');
                             end;
                         end;
                     end;
