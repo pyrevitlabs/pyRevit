@@ -66,12 +66,33 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detac
 const
     REQUIRED_MAJOR_VERSION = 8;
 
+function GetMajorVersion(VersionStr: String): Integer;
+var
+    SeparatorPos, DashPos: Integer;
+    MajorStr: String;
+begin
+    Result := 0;
+    SeparatorPos := Pos('.', VersionStr);
+    if SeparatorPos > 0 then
+    begin
+        MajorStr := Copy(VersionStr, 1, SeparatorPos - 1);
+        // Handle preview/rc versions by checking for dash
+        DashPos := Pos('-', MajorStr);
+        if DashPos > 0 then
+            MajorStr := Copy(MajorStr, 1, DashPos - 1);
+        try
+            Result := StrToInt(MajorStr);
+        except
+            Result := 0; // Invalid version
+        end;
+    end;
+end;
+
 function CheckForDotNetRuntime(Path: String; var FoundVersion: String): Boolean;
 var
     FindRec: TFindRec;
     Version: String;
     Major: Integer;
-    SeparatorPos: Integer;
 begin
     Result := False;
     if DirExists(Path) then
@@ -83,19 +104,12 @@ begin
                     if (FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0) and (FindRec.Name <> '.') and (FindRec.Name <> '..') then
                     begin
                         Version := FindRec.Name;
-                        SeparatorPos := Pos('.', Version);
-                        if SeparatorPos > 0 then
+                        Major := GetMajorVersion(Version);
+                        if Major >= REQUIRED_MAJOR_VERSION then
                         begin
-                            try
-                                Major := StrToInt(Copy(Version, 1, SeparatorPos - 1));
-                                if Major >= REQUIRED_MAJOR_VERSION then
-                                begin
-                                    FoundVersion := Version;
-                                    Result := True;
-                                    Exit;
-                                end;
-                            except
-                            end;
+                            FoundVersion := Version;
+                            Result := True;
+                            Exit;
                         end;
                     end;
                 until not FindNext(FindRec);
@@ -136,11 +150,7 @@ var
     ErrorCode: Integer;
 begin
     GetDotNetDesktopRuntimeInfo(IsInstalled, FoundVersion, FoundPath);
-    if IsInstalled then
-    begin
-        // Continue silently with installation
-    end
-    else
+    if not IsInstalled then
     begin
         MsgResult := MsgBox('Could not find .NET 8 Runtime.'#13#10#13#10'Click OK to download .NET 8 Runtime from Microsoft, or Cancel to abort installation.', mbError, MB_OKCANCEL);
         if MsgResult = IDOK then
