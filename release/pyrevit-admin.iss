@@ -85,3 +85,81 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Param
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
+
+[Code]
+const
+    REQUIRED_MAJOR_VERSION = 8;
+    DOTNET_DESKTOP_RUNTIME_URL = 'https://dotnet.microsoft.com/en-us/download/dotnet/8.0';
+
+function CheckForDotNetRuntime(Path: String): Boolean;
+var
+    FindRec: TFindRec;
+    Version: String;
+    Major: Integer;
+    SeparatorPos: Integer;
+begin
+    Result := False;
+    if DirExists(Path) then
+    begin
+        if FindFirst(Path + '\*', FindRec) then
+        begin
+            try
+                repeat
+                    if (FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0) and (FindRec.Name <> '.') and (FindRec.Name <> '..') then
+                    begin
+                        Version := FindRec.Name;
+                        SeparatorPos := Pos('.', Version);
+                        if SeparatorPos > 0 then
+                        begin
+                            try
+                                Major := StrToInt(Copy(Version, 1, SeparatorPos - 1));
+                                if Major >= REQUIRED_MAJOR_VERSION then
+                                begin
+                                    Result := True;
+                                    Exit;
+                                end;
+                            except
+                            end;
+                        end;
+                    end;
+                until not FindNext(FindRec);
+            finally
+                FindClose(FindRec);
+            end;
+        end;
+    end;
+end;
+
+function IsDotNetDesktopRuntimeInstalled(): Boolean;
+var
+    PathX64, PathX86: String;
+begin
+    PathX64 := ExpandConstant('{pf64}\dotnet\shared\Microsoft.WindowsDesktop.App');
+    PathX86 := ExpandConstant('{pf32}\dotnet\shared\Microsoft.WindowsDesktop.App');
+
+    if CheckForDotNetRuntime(PathX64) then
+    begin
+        Result := True;
+        Exit;
+    end;
+
+    if CheckForDotNetRuntime(PathX86) then
+    begin
+        Result := True;
+        Exit;
+    end;
+
+    Result := False;
+end;
+
+procedure InitializeWizard();
+var
+    ErrorCode: Integer;
+begin
+    if not IsDotNetDesktopRuntimeInstalled() then
+    begin
+        MsgBox('This application requires .NET ' + IntToStr(REQUIRED_MAJOR_VERSION) + ' Desktop Runtime or a later version. Please install it before running this setup.'#13#10'Click OK to open the download page.', mbError, MB_OK);
+        ShellExec('open', DOTNET_DESKTOP_RUNTIME_URL, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+        Abort;
+    end;
+end;
