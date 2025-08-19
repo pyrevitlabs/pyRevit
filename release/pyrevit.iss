@@ -85,3 +85,79 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Param
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+
+[Code]
+const
+    REQUIRED_MAJOR_VERSION = 8;
+    DOTNET_DESKTOP_RUNTIME_URL = 'https://dotnet.microsoft.com/en-us/download/dotnet/8.0';
+
+function GetDotNetDesktopRuntimeVersion(var Major, Minor, Patch: Integer): Boolean;
+var
+    Path: String;
+    FindRec: TFindRec;
+    Version, MajorStr, MinorStr, PatchStr: String;
+    SeparatorPos: Integer;
+begin
+    Result := False;
+    Path := ExpandConstant('{autopf64}\dotnet\shared\Microsoft.WindowsDesktop.App');
+    if not DirExists(Path) then
+    begin
+        Path := ExpandConstant('{autopf}\dotnet\shared\Microsoft.WindowsDesktop.App');
+        if not DirExists(Path) then
+            Exit;
+    end;
+
+    if FindFirst(Path + '\*', FindRec) then
+    begin
+        try
+            repeat
+                if (FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0) and (FindRec.Name <> '.') and (FindRec.Name <> '..') then
+                begin
+                    Version := FindRec.Name;
+                    SeparatorPos := Pos('.', Version);
+                    if SeparatorPos > 0 then
+                    begin
+                        MajorStr := Copy(Version, 1, SeparatorPos - 1);
+                        Delete(Version, 1, SeparatorPos);
+                        SeparatorPos := Pos('.', Version);
+                        if SeparatorPos > 0 then
+                        begin
+                            MinorStr := Copy(Version, 1, SeparatorPos - 1);
+                            PatchStr := Copy(Version, SeparatorPos + 1, Length(Version));
+                            Major := StrToInt(MajorStr);
+                            Minor := StrToInt(MinorStr);
+                            Patch := StrToInt(PatchStr);
+                            if Major > REQUIRED_MAJOR_VERSION then
+                            begin
+                                Result := True;
+                                Exit;
+                            end
+                            else if Major = REQUIRED_MAJOR_VERSION then
+                            begin
+                                Result := True;
+                            end;
+                        end;
+                    end;
+                end;
+            until not FindNext(FindRec);
+        finally
+            FindClose(FindRec);
+        end;
+    end;
+end;
+
+function InitializeSetup(): Boolean;
+var
+    Major, Minor, Patch: Integer;
+begin
+    if GetDotNetDesktopRuntimeVersion(Major, Minor, Patch) then
+    begin
+        Result := True;
+    end
+    else
+    begin
+        MsgBox('This application requires .NET ' + IntToStr(REQUIRED_MAJOR_VERSION) + ' Desktop Runtime or a later version. Please install it before running this setup.'#13#10'Click OK to open the download page.', mbError, MB_OK);
+        ShellExec('open', DOTNET_DESKTOP_RUNTIME_URL, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+        Result := False;
+    end;
+end;
