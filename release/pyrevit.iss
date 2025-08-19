@@ -165,6 +165,8 @@ begin
         // Continue silently with installation
     end
     else
+    // If .NET 8 Runtime is found, continue silently with installation.
+    if not IsInstalled then
     begin
         MsgResult := MsgBox('Could not find .NET 8 Runtime.'#13#10#13#10'Click OK to download .NET 8 Runtime from Microsoft, or Cancel to abort installation.', mbError, MB_OKCANCEL);
         if MsgResult = IDOK then
