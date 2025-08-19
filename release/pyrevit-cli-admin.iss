@@ -61,3 +61,9 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Par
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
+
+[Code]
+procedure InitializeWizard();
+begin
+  MsgBox('Hello from pyRevit installer!', mbInformation, MB_OK);
+end;
