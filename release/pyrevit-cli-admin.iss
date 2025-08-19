@@ -80,11 +80,35 @@ begin
         DashPos := Pos('-', MajorStr);
         if DashPos > 0 then
             MajorStr := Copy(MajorStr, 1, DashPos - 1);
-        try
-            Result := StrToInt(MajorStr);
-        except
-            Result := 0; // Invalid version
+        
+        // Validate that MajorStr contains only digits
+        if (Length(MajorStr) > 0) and (Length(MajorStr) <= 3) then
+        begin
+            try
+                Result := StrToInt(MajorStr);
+                // Additional validation: major version should be reasonable (1-99)
+                if (Result < 1) or (Result > 99) then
+                begin
+                    Log('Warning: Invalid major version number: ' + MajorStr + ' from version: ' + VersionStr);
+                    Result := 0;
+                end;
+            except
+                on E: Exception do
+                begin
+                    Log('Error parsing major version from "' + MajorStr + '" in version "' + VersionStr + '": ' + E.Message);
+                    Result := 0;
+                end;
+            end;
+        end
+        else
+        begin
+            Log('Warning: Invalid major version format: "' + MajorStr + '" from version: "' + VersionStr + '"');
+            Result := 0;
         end;
+    end
+    else
+    begin
+        Log('Warning: No dot separator found in version string: "' + VersionStr + '"');
     end;
 end;
 
