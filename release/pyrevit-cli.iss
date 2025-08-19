@@ -128,18 +128,14 @@ begin
     Result := False;
 end;
 
-function InitializeSetup(): Boolean;
+procedure InitializeWizard();
 var
     ErrorCode: Integer;
 begin
-    if IsDotNetDesktopRuntimeInstalled() then
-    begin
-        Result := True;
-    end
-    else
+    if not IsDotNetDesktopRuntimeInstalled() then
     begin
         MsgBox('This application requires .NET ' + IntToStr(REQUIRED_MAJOR_VERSION) + ' Desktop Runtime or a later version. Please install it before running this setup.'#13#10'Click OK to open the download page.', mbError, MB_OK);
         ShellExec('open', DOTNET_DESKTOP_RUNTIME_URL, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
-        Result := False;
+        Abort;
     end;
 end;
