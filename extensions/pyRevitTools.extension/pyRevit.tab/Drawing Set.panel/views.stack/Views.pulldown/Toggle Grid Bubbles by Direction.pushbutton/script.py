@@ -33,61 +33,170 @@ def angle_to_dot_product_threshold(angle_degrees):
     return math.cos(angle_radians)
 
 
-def check_grids_exist():
-    """Quick check if any valid grids exist before prompting user."""
-    selection = [
-        doc.GetElement(el_id) for el_id in HOST_APP.uidoc.Selection.GetElementIds()
-    ]
+class GridsCollector:
+    """Handles all grid collection, filtering, and validation."""
 
-    if selection:
-        # Filter selection to only include grids
-        valid_grids = []
-        for elem in selection:
-            try:
-                if (
-                    elem.Category
-                    and elem.Category.Id.IntegerValue
-                    == int(DB.BuiltInCategory.OST_Grids)
-                    and hasattr(elem, "GetCurvesInView")
-                ):
-                    valid_grids.append(elem)
-            except:
-                continue
+    def __init__(self, document, view):
+        self.document = document
+        self.view = view
+        self.selection = self._get_selection()
 
-        if len(valid_grids) == 0:
+        if self.selection:
+            self._analyze_selection()
+        else:
+            self._analyze_all_grids()
+
+    def _get_selection(self):
+        """Get current selection if any."""
+        selection_ids = HOST_APP.uidoc.Selection.GetElementIds()
+        if selection_ids:
+            return [self.document.GetElement(el_id) for el_id in selection_ids]
+        return None
+
+    def _is_valid_grid(self, elem):
+        """Check if an element is a valid grid for processing."""
+        try:
+            grid_category_id = int(DB.BuiltInCategory.OST_Grids)
+            return (
+                elem.Category
+                and elem.Category.Id.IntegerValue == grid_category_id
+                and hasattr(elem, "GetCurvesInView")
+                and not elem.IsCurved
+                and not self._is_grid_segment(elem)
+            )
+        except:
+            return False
+
+    def _is_grid_segment(self, grid):
+        """Check if a grid is a segment (not a full grid)."""
+        try:
+            return not (
+                grid.HasBubbleInView(DB.DatumEnds.End0, self.view)
+                and grid.HasBubbleInView(DB.DatumEnds.End1, self.view)
+            )
+        except:
+            return True
+
+    def _analyze_selection(self):
+        """Analyze selected elements."""
+        self._analyze_grids(self.selection)
+        self.from_selection = True
+
+    def _analyze_all_grids(self):
+        grids = (
+            DB.FilteredElementCollector(self.document)
+            .OfCategory(DB.BuiltInCategory.OST_Grids)
+            .WhereElementIsNotElementType()
+        )
+        self._analyze_grids(grids)
+
+    def _analyze_grids(self, grids):
+        """Analyze all grids in view."""
+
+        self.valid_grids = []
+        self.hidden_count = 0
+        self.curved_count = 0
+        self.segment_count = 0
+
+        for grid in grids:
+            print("Analyzing grid: {}".format(grid.Name))
+            if grid.IsHidden(self.view):
+                print("hidden")
+                self.hidden_count += 1
+            elif hasattr(grid, "IsCurved") and grid.IsCurved:
+                print("curved")
+                self.curved_count += 1
+            elif self._is_grid_segment(grid):
+                print("segment")
+                self.segment_count += 1
+            else:
+                print("valid")
+                self.valid_grids.append(grid)
+
+        self.from_selection = False
+
+    def get_grid_chain_count(self):
+        """Get the count of the multi-segment grids in the active view."""
+        grid_chains = (
+            DB.FilteredElementCollector(self.document, self.view.Id)
+            .OfCategory(DB.BuiltInCategory.OST_GridChains)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
+
+        # Count only visible grid chains
+        count = 0
+        for chain in grid_chains:
+            if not chain.IsHidden(self.view):
+                count += 1
+
+        return count
+
+    def check_validity(self):
+        """Check if any valid grids exist and show appropriate alerts."""
+        alert_message = "No valid grid found {}"
+        if self.from_selection:
+            alert_main_message = alert_message.format("in your selection.")
+        else:
+            alert_main_message = alert_message.format("in the current view.")
+
+        if not self.valid_grids:
+            sub_message = ""
+            if self.hidden_count > 0:
+                sub_message += "Hidden grids: {}\n".format(self.hidden_count)
+            if self.get_grid_chain_count() > 0:
+                sub_message += "Multi-segment grids: {}\n".format(
+                    self.get_grid_chain_count()
+                )
+            if self.curved_count > 0:
+                sub_message += "Curved grids: {}".format(self.curved_count)
+
             forms.alert(
-                "No grids found in your selection.\nPlease select grids or run with no selection to use all grids in the view."
+                msg=alert_main_message,
+                sub_msg=sub_message,
             )
             return False
         return True
-    else:
-        # Check if any grids exist in view
-        grids = [
-            grid
-            for grid in DB.FilteredElementCollector(doc)
-            .OfCategory(DB.BuiltInCategory.OST_Grids)
-            .WhereElementIsNotElementType()
-            .ToElements()
-            if not grid.IsHidden(active_view)
-        ]
 
-        if len(grids) == 0:
-            forms.alert("No grids are visible in the current view.")
-            return False
-        return True
+    def get_status_text(self):
+        """Get status text for UI display."""
+        total = len(self.valid_grids)
+        if self.from_selection:
+            return "Scope: {} selected grids".format(total)
+        else:
+            return "Scope: All {} grids in view".format(total)
 
 
 class CustomGrids:
     def __init__(
-        self, document, view, coordinate_system="project_north", angle_tolerance=1
+        self,
+        document,
+        view,
+        coordinate_system="project_north",
+        angle_tolerance=1,
+        grid_collector=None,
     ):
-        """Initialize with the document, view, coordinate system choice, and angle tolerance."""
+        """Initialize with the document, view, coordinate system choice, and angle tolerance and GridsCollector instance."""
         self.__view = view
         self.__document = document
         self.__coordinate_system = coordinate_system
         self.__angle_tolerance = angle_tolerance
-        self.__grids = []
         self.is_valid = True
+
+        # Use provided collector or create new one
+        if grid_collector:
+            self.collector = grid_collector
+            self.__grids = grid_collector.valid_grids
+            print(len(self.__grids), "grids collected from collector")
+            self.selection = grid_collector.selection
+        else:
+            # Fallback - create collector
+            self.collector = GridsCollector(document, view)
+            if not self.collector.check_validity():
+                self.is_valid = False
+                return
+            self.__grids = self.collector.valid_grids
+            self.selection = self.collector.selection
 
         # Convert angle tolerance to dot product threshold
         self.__alignment_threshold = angle_to_dot_product_threshold(angle_tolerance)
@@ -108,33 +217,8 @@ class CustomGrids:
             else []
         )
 
-        if self.selection:
-            # Filter selection to only include grids
-            filtered_selection = []
-            for elem in self.selection:
-                try:
-                    if (
-                        elem.Category
-                        and elem.Category.Id.IntegerValue
-                        == int(DB.BuiltInCategory.OST_Grids)
-                        and hasattr(elem, "GetCurvesInView")
-                    ):
-                        filtered_selection.append(elem)
-                except:
-                    continue
-
-            self.__grids = filtered_selection
-        else:
-            self.__grids = [
-                grid
-                for grid in DB.FilteredElementCollector(document)
-                .OfCategory(DB.BuiltInCategory.OST_Grids)
-                .WhereElementIsNotElementType()
-                .ToElements()
-                if not grid.IsHidden(active_view)
-            ]
-
-        if coordinate_system not in ["all_grids", "elevation_mode"]:
+        # Setyp transformation only if not in elevation or all grids mode
+        if coordinate_system in ["project_north", "true_north", "view"]:
             self._setup_coordinate_transform()
 
         if not self.__grids:
@@ -186,7 +270,6 @@ class CustomGrids:
                 self._transform = DB.Transform.Identity
 
         except:
-            # Fallback to identity transform
             self._transform = DB.Transform.Identity
 
     def _transform_point(self, point):
@@ -298,7 +381,7 @@ class CustomGrids:
             pt1, pt2 = self.get_endpoints(g)
             if pt1 and pt2:
 
-                if self.__coordinate_system in  ["view", "elevation_mode"]:
+                if self.__coordinate_system in ["view", "elevation_mode"]:
                     # For view orientation, use direction vector approach with user-defined tolerance
                     grid_vector = pt2 - pt1
                     grid_vector = grid_vector.Normalize()
@@ -510,6 +593,7 @@ class ToggleGridWindow(forms.WPFWindow):
         view,
         coordinate_system,
         angle_tolerance,
+        grid_collector,
         transaction_group=None,
         window_left=None,
         window_top=None,
@@ -528,7 +612,9 @@ class ToggleGridWindow(forms.WPFWindow):
         self.coordinate_system = coordinate_system
         self.angle_tolerance = angle_tolerance
         self.transaction_group = transaction_group
-        self.grids = CustomGrids(doc, self.view, coordinate_system, angle_tolerance)
+        self.grids = CustomGrids(
+            doc, self.view, coordinate_system, angle_tolerance, grid_collector
+        )
 
         if not self.grids.is_valid:
             self.is_valid = False
@@ -604,7 +690,9 @@ class ToggleGridWindow(forms.WPFWindow):
         active_grids = len(self.grids.get_active_grids())
 
         if self.grids.selection:
-            grid_status = "Scope: {} selected grids".format(total_grids)
+            grid_status = "Scope: {} selected grid{}".format(
+                total_grids, "s" if total_grids > 1 else ""
+            )
         else:
             if self.coordinate_system == "elevation_mode":
                 grid_status = "Scope: All visible grids"
@@ -667,6 +755,7 @@ class ToggleGridWindow(forms.WPFWindow):
         view,
         coordinate_system,
         angle_tolerance,
+        grid_collector=None,
         transaction_group=None,
         window_left=None,
         window_top=None,
@@ -677,6 +766,7 @@ class ToggleGridWindow(forms.WPFWindow):
             view,
             coordinate_system,
             angle_tolerance,
+            grid_collector,
             transaction_group,
             window_left,
             window_top,
@@ -832,17 +922,18 @@ def main():
     if not validate_active_view():
         return
 
-    if not check_grids_exist():
+    grid_collector = GridsCollector(doc, active_view)
+
+    if not grid_collector.check_validity():
         return
 
     tg = DB.TransactionGroup(doc, "Toggle Grids")
     tg.Start()
 
-    # Check if view is elevation/section
+    # Check if view is elevation/section, if true skip coordinate system selection
     if active_view.ViewType in ELEVATION_VIEWS:
-        # For elevation views, skip coordinate system selection
         coordinate_system = "elevation_mode"
-        angle_tolerance = 1  # Not used in elevation mode
+        angle_tolerance = 1
 
         window = ToggleGridWindow.create(
             xamlfile,
@@ -897,6 +988,7 @@ def main():
             active_view,
             coordinate_system,
             angle_tolerance,
+            grid_collector,
             tg,
             window_left,
             window_top,
