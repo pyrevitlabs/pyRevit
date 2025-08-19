@@ -89,9 +89,8 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detac
 [Code]
 const
     REQUIRED_MAJOR_VERSION = 8;
-    DOTNET_DESKTOP_RUNTIME_URL = 'https://dotnet.microsoft.com/en-us/download/dotnet/8.0';
 
-function CheckForDotNetRuntime(Path: String): Boolean;
+function CheckForDotNetRuntime(Path: String; var FoundVersion: String): Boolean;
 var
     FindRec: TFindRec;
     Version: String;
@@ -115,6 +114,7 @@ begin
                                 Major := StrToInt(Copy(Version, 1, SeparatorPos - 1));
                                 if Major >= REQUIRED_MAJOR_VERSION then
                                 begin
+                                    FoundVersion := Version;
                                     Result := True;
                                     Exit;
                                 end;
@@ -130,36 +130,40 @@ begin
     end;
 end;
 
-function IsDotNetDesktopRuntimeInstalled(): Boolean;
+procedure GetDotNetDesktopRuntimeInfo(var Found: Boolean; var Version: String; var Path: String);
 var
     PathX64, PathX86: String;
 begin
     PathX64 := ExpandConstant('{pf64}\dotnet\shared\Microsoft.WindowsDesktop.App');
     PathX86 := ExpandConstant('{pf32}\dotnet\shared\Microsoft.WindowsDesktop.App');
 
-    if CheckForDotNetRuntime(PathX64) then
+    Found := CheckForDotNetRuntime(PathX64, Version);
+    if Found then
     begin
-        Result := True;
-        Exit;
+      Path := PathX64;
+      Exit;
     end;
 
-    if CheckForDotNetRuntime(PathX86) then
+    Found := CheckForDotNetRuntime(PathX86, Version);
+    if Found then
     begin
-        Result := True;
-        Exit;
+      Path := PathX86;
+      Exit;
     end;
-
-    Result := False;
 end;
 
 procedure InitializeWizard();
 var
-    ErrorCode: Integer;
+    IsInstalled: Boolean;
+    FoundVersion, FoundPath: String;
 begin
-    if not IsDotNetDesktopRuntimeInstalled() then
+    GetDotNetDesktopRuntimeInfo(IsInstalled, FoundVersion, FoundPath);
+    if IsInstalled then
     begin
-        MsgBox('This application requires .NET ' + IntToStr(REQUIRED_MAJOR_VERSION) + ' Desktop Runtime or a later version. Please install it before running this setup.'#13#10'Click OK to open the download page.', mbError, MB_OK);
-        ShellExec('open', DOTNET_DESKTOP_RUNTIME_URL, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
-        Abort;
+        MsgBox('Found compatible .NET Desktop Runtime.'#13#10#13#10'Version: ' + FoundVersion + #13#10'Path: ' + FoundPath, mbInformation, MB_OK);
+    end
+    else
+    begin
+        MsgBox('Could not find .NET 8 Desktop Runtime.', mbError, MB_OK);
     end;
 end;
