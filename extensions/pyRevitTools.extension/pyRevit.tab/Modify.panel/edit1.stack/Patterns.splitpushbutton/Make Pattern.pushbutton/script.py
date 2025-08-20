@@ -397,7 +397,7 @@ class MakePatternWindow(forms.WPFWindow):
 
     def verify_name(self):
         if not self.pat_name.strip():
-            forms.alert('Pattern name can not be empty or contain only spaces.')
+            forms.alert('Pattern name cannot be empty or contain only spaces.')
             return False
         elif self.pat_name.lower() in readonly_patterns:
             forms.alert('Read-Only pattern with name "{}" already exists '
