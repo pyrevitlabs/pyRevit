@@ -52,7 +52,6 @@ if family_dict:
             for idx, family in enumerate(
                     [family_dict[x] for x in selected_families]
                 ):
-                # family_filepath = op.join(dest_folder, family.Name + ".rfa")
                 target_dir = dest_folder
                 if create_subfolders:
                     category_name = family.FamilyCategory.Name or "Unknown"
