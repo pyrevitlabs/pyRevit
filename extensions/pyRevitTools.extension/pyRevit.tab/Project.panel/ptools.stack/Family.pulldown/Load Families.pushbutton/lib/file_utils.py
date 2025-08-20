@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ Module to search for files in a directory """
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
