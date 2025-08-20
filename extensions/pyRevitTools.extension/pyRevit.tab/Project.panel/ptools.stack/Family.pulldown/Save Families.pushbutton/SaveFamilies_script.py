@@ -55,9 +55,15 @@ if family_dict:
                 # family_filepath = op.join(dest_folder, family.Name + ".rfa")
                 target_dir = dest_folder
                 if create_subfolders:
-                    target_dir = op.join(dest_folder, family.FamilyCategory.Name)
+                    category_name = family.FamilyCategory.Name or "Unknown"
+                    target_dir = op.join(dest_folder, category_name)
                     if not op.exists(target_dir):
-                        os.makedirs(target_dir)
+                        try:
+                            os.makedirs(target_dir)
+                        except OSError as ex:
+                            target_dir = dest_folder
+                            logger.error("Failed to create directory %s | %s", target_dir, ex)
+                            continue
                 family_filepath = op.join(target_dir, family.Name + ".rfa")
                 if not overwrite_exst and op.exists(family_filepath):
                     logger.info(
