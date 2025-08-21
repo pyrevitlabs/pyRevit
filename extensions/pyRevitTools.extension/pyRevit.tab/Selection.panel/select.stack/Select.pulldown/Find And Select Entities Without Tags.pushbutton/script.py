@@ -2,7 +2,7 @@
 #pylint: disable=import-error,invalid-name
 from collections import namedtuple
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, HOST_APP
 from pyrevit import forms
 from pyrevit.compat import get_elementid_value_func
 from System.Collections.Generic import List
