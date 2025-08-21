@@ -229,7 +229,7 @@ if selected_switch:
             elt = revit.doc.GetElement(eltid)
             if HOST_APP.is_newer_than(2022, or_equal=True):
                 tagged_element_ids = elt.GetTaggedLocalElementIds()
-                if tagged_element_ids and len(tagged_element_ids) > 0:
+                if tagged_element_ids:
                     for tagged_id in tagged_element_ids:
                         tagged_elements.append(get_elementid_value(tagged_id))
             else:
