@@ -1,16 +1,15 @@
 """Selects elements with no associated tags in current view."""
 
-# pylint: disable=import-error,invalid-name
 from collections import namedtuple
 
-from pyrevit import revit, DB, HOST_APP
-from pyrevit import forms
+from pyrevit import revit, DB, HOST_APP, forms
 from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
 
 Taggable = namedtuple("Taggable", ["tag_type", "element_type"])
 
+doc = revit.doc
 
 # make sure active view is not a sheet
 curview = revit.active_view
@@ -155,14 +154,14 @@ if selected_switch:
 
     # collect target elements and tags in view
     target_tags = (
-        DB.FilteredElementCollector(revit.doc, curview.Id)
+        DB.FilteredElementCollector(doc, curview.Id)
         .OfCategory(target.tag_type)
         .WhereElementIsNotElementType()
         .ToElementIds()
     )
 
     target_elements = (
-        DB.FilteredElementCollector(revit.doc, curview.Id)
+        DB.FilteredElementCollector(doc, curview.Id)
         .OfCategory(target.element_type)
         .WhereElementIsNotElementType()
         .ToElementIds()
@@ -172,12 +171,12 @@ if selected_switch:
         tagged_rooms = []
         untagged_rooms = []
         for room_tag_id in target_tags:
-            room_tag = revit.doc.GetElement(room_tag_id)
+            room_tag = doc.GetElement(room_tag_id)
             if room_tag.Room is not None:
                 tagged_rooms.append(get_elementid_value(room_tag.Room.Id))
 
         for room_id in target_elements:
-            room = revit.doc.GetElement(room_id)
+            room = doc.GetElement(room_id)
             if get_elementid_value(room.Id) not in tagged_rooms:
                 untagged_rooms.append(room_id)
 
@@ -190,12 +189,12 @@ if selected_switch:
         tagged_areas = []
         untagged_areas = []
         for area_tag_id in target_tags:
-            area_tag = revit.doc.GetElement(area_tag_id)
+            area_tag = doc.GetElement(area_tag_id)
             if area_tag.Area is not None:
                 tagged_areas.append(get_elementid_value(area_tag.Area.Id))
 
         for area_id in target_elements:
-            area = revit.doc.GetElement(area_id)
+            area = doc.GetElement(area_id)
             if get_elementid_value(area.Id) not in tagged_areas:
                 untagged_areas.append(area_id)
 
@@ -208,12 +207,12 @@ if selected_switch:
         tagged_spaces = []
         untagged_spaces = []
         for space_tag_id in target_tags:
-            space_tag = revit.doc.GetElement(space_tag_id)
+            space_tag = doc.GetElement(space_tag_id)
             if space_tag.Space is not None:
                 tagged_spaces.append(get_elementid_value(space_tag.Space.Id))
 
         for space_id in target_elements:
-            space = revit.doc.GetElement(space_id)
+            space = doc.GetElement(space_id)
             if get_elementid_value(space.Id) not in tagged_spaces:
                 untagged_spaces.append(space_id)
 
@@ -226,10 +225,10 @@ if selected_switch:
         tagged_elements = []
         untagged_elements = []
         for eltid in target_tags:
-            elt = revit.doc.GetElement(eltid)
+            elt = doc.GetElement(eltid)
             if HOST_APP.is_newer_than(2022, or_equal=True):
                 tagged_element_ids = elt.GetTaggedLocalElementIds()
-                if tagged_element_ids:
+                if tagged_element_ids and len(tagged_element_ids) > 0:
                     for tagged_id in tagged_element_ids:
                         tagged_elements.append(get_elementid_value(tagged_id))
             else:
@@ -237,7 +236,7 @@ if selected_switch:
                     tagged_elements.append(elt.TaggedLocalElementId.IntegerValue)
 
         for elid in target_elements:
-            el = revit.doc.GetElement(elid)
+            el = doc.GetElement(elid)
             if get_elementid_value(el.Id) not in tagged_elements:
                 untagged_elements.append(elid)
 
