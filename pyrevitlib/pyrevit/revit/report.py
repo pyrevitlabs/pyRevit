@@ -27,7 +27,7 @@ def print_revision(rev, prefix='', print_id=True):
 
     outstr = 'SEQ#: {} REV#: {} DATE: {} TYPE: {} DESC: {} ' \
              .format(rev.SequenceNumber,
-                     str(query.get_param(rev, 'RevisionNumber', '')).ljust(5),
+                     str(rev.RevisionNumber).ljust(5),
                      str(rev.RevisionDate).ljust(10),
                      str(revision_number_type).ljust(15),
                      str(rev.Description).replace('\n', '').replace('\r', ''))
