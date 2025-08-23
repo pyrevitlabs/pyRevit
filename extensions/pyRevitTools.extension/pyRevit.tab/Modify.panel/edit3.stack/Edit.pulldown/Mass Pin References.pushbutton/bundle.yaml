@@ -2,28 +2,28 @@ title:
   en_us: Mass Pin/Unpin References
   ru: Массовое закрепление/открепление ссылок
   fr_fr: Épinglage/Désépinglage massif des références
-  de_de: Referenzen massenhaft an-/abpinnen
+  de_de: Referenzen massenhaft (ent-)sperren
 
 tooltip:
-  en_us: >
+  en_us: |
     Allows you to select one or more categories (e.g., Grids, Levels, Links) and pin all unpinned instances in the model.
 
     Shift-Click:
     Unpins all pinned instances in the selected categories.
     
-  ru: >
+  ru: |
     Позволяет выбрать одну или несколько категорий (например, оси, уровни, связи) и закрепить все незакреплённые элементы в модели.
 
     Shift-Click:
     Открепляет все закреплённые элементы в выбранных категориях.
 
-  fr_fr: >
+  fr_fr: |
     Permet de sélectionner une ou plusieurs catégories (ex : grilles, niveaux, liens) et d’épingler toutes les instances non épinglées dans le modèle.
 
     Shift-Click:
     Désépingler toutes les instances épinglées dans les catégories sélectionnées.
 
-  de_de: >
+  de_de: |
     Ermöglicht die Auswahl einer oder mehrerer Kategorien (z. B. Raster, Ebenen, Verknüpfungen), um alle nicht angehefteten Elemente im Modell anzuheften.
 
     Shift-Click:
