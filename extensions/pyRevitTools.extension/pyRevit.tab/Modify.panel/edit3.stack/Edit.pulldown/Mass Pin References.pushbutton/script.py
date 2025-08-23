@@ -2,7 +2,7 @@ from pyrevit import revit, forms, DB, EXEC_PARAMS
 
 category_map = {}
 
-category_map["Imported DWG Files"] = "DWG_IMPORT"
+category_map["Imported CAD Files"] = "CAD_IMPORT"
 category_map["Project Base Point"] = "PROJECT_BASE_POINT"
 category_map["Survey Point"] = "SURVEY_POINT"
 options = [
@@ -28,7 +28,7 @@ if selection:
 
     for name in selection:
         cat = category_map[name]
-        if cat == "DWG_IMPORT":
+        if cat == "CAD_IMPORT":
             elements = (
                 DB.FilteredElementCollector(revit.doc)
                 .OfClass(DB.ImportInstance)
