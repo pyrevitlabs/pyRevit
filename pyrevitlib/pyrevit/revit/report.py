@@ -1,12 +1,15 @@
 """"Utility methods for reporting Revit data uniformly."""
 
-from pyrevit import DB, HOST_APP
+from pyrevit import DB, script, HOST_APP
 from pyrevit.output import PyRevitOutputWindow
 from pyrevit.revit import query
 
 app = HOST_APP.app
 doc = HOST_APP.doc
 revit_version = int(app.VersionNumber)
+
+logger = script.get_logger()
+
 
 def print_revision(rev, prefix='', print_id=True):
     """Print a revision.
@@ -22,8 +25,9 @@ def print_revision(rev, prefix='', print_id=True):
             revision_number_type = revision_sequence.NumberType
         else:
             revision_number_type = rev.NumberType
-    except:
+    except Exception as e:
         revision_number_type = ""
+        logger.warning('Could not get revision number type for revision {}: {}'.format(rev.Id, e))
 
     outstr = 'SEQ#: {} REV#: {} DATE: {} TYPE: {} DESC: {} ' \
              .format(rev.SequenceNumber,
