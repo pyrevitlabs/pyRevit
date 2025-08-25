@@ -1,7 +1,12 @@
 # -*- coding: UTF-8 -*-
 import math
 
-from System import Windows
+import clr
+
+clr.AddReference("PresentationFramework")
+
+import System
+from System.Windows import WindowStartupLocation
 from System.Collections.Generic import List
 from pyrevit import HOST_APP, DB, script, forms
 from pyrevit.revit.db import transaction
@@ -99,18 +104,13 @@ class GridsCollector:
         self.segment_count = 0
 
         for grid in grids:
-            print("Analyzing grid: {}".format(grid.Name))
             if grid.IsHidden(self.view):
-                print("hidden")
                 self.hidden_count += 1
             elif hasattr(grid, "IsCurved") and grid.IsCurved:
-                print("curved")
                 self.curved_count += 1
             elif self._is_grid_segment(grid):
-                print("segment")
                 self.segment_count += 1
             else:
-                print("valid")
                 self.valid_grids.append(grid)
 
         self.from_selection = False
@@ -187,7 +187,6 @@ class CustomGrids:
         if grid_collector:
             self.collector = grid_collector
             self.__grids = grid_collector.valid_grids
-            print(len(self.__grids), "grids collected from collector")
             self.selection = grid_collector.selection
         else:
             # Fallback - create collector
@@ -604,7 +603,7 @@ class ToggleGridWindow(forms.WPFWindow):
         self.PreviewKeyDown += self.handle_key_press
 
         if window_left is not None and window_top is not None:
-            self.WindowStartupLocation = Windows.WindowStartupLocation.Manual
+            self.WindowStartupLocation = WindowStartupLocation.Manual
             self.Left = window_left
             self.Top = window_top
 
@@ -624,7 +623,7 @@ class ToggleGridWindow(forms.WPFWindow):
         # Hide back button if in elevation mode
         self.back_button = self.FindName("back_button")
         if self.coordinate_system == "elevation_mode" and self.back_button:
-            self.back_button.Visibility = Windows.Visibility.Collapsed
+            self.back_button.Visibility = System.Windows.Visibility.Collapsed
 
         # Flags to control the visibility of the checkboxes
         self.right_left_collapsed = False
@@ -650,22 +649,22 @@ class ToggleGridWindow(forms.WPFWindow):
         }
 
         if self.coordinate_system == "all_grids":
-            self.checkboxes["top"].Visibility = Windows.Visibility.Collapsed
-            self.checkboxes["bottom"].Visibility = Windows.Visibility.Collapsed
-            self.checkboxes["left"].Visibility = Windows.Visibility.Collapsed
-            self.checkboxes["right"].Visibility = Windows.Visibility.Collapsed
+            self.checkboxes["top"].Visibility = System.Windows.Visibility.Collapsed
+            self.checkboxes["bottom"].Visibility = System.Windows.Visibility.Collapsed
+            self.checkboxes["left"].Visibility = System.Windows.Visibility.Collapsed
+            self.checkboxes["right"].Visibility = System.Windows.Visibility.Collapsed
             self.right_left_collapsed = True
             self.top_bottom_collapsed = True
 
         # Display the checkboxes based on the orientation of the grids and the view type
         if self.is_view_elevation() or not self.grids.get_horizontal_grids():
-            self.checkboxes["right"].Visibility = Windows.Visibility.Collapsed
-            self.checkboxes["left"].Visibility = Windows.Visibility.Collapsed
+            self.checkboxes["right"].Visibility = System.Windows.Visibility.Collapsed
+            self.checkboxes["left"].Visibility = System.Windows.Visibility.Collapsed
             self.right_left_collapsed = True
 
         if not self.grids.get_vertical_grids():
-            self.checkboxes["top"].Visibility = Windows.Visibility.Collapsed
-            self.checkboxes["bottom"].Visibility = Windows.Visibility.Collapsed
+            self.checkboxes["top"].Visibility = System.Windows.Visibility.Collapsed
+            self.checkboxes["bottom"].Visibility = System.Windows.Visibility.Collapsed
             self.top_bottom_collapsed = True
 
         self.grids.set_ui_state(self.right_left_collapsed, self.top_bottom_collapsed)
@@ -705,11 +704,11 @@ class ToggleGridWindow(forms.WPFWindow):
             self.status_grids_active.Text = " ({} active - selected in view)".format(
                 active_grids
             )
-            self.status_grids_active.Visibility = Windows.Visibility.Visible
+            self.status_grids_active.Visibility = System.Windows.Visibility.Visible
         else:
             self.status_grids.Text = grid_status
             self.status_grids_active.Text = ""
-            self.status_grids_active.Visibility = Windows.Visibility.Collapsed
+            self.status_grids_active.Visibility = System.Windows.Visibility.Collapsed
 
         coord_system_map = {
             "all_grids": "No coordinates",
@@ -891,7 +890,7 @@ class ToggleGridWindow(forms.WPFWindow):
 
     def handle_key_press(self, sender, args):
         """Handle keyboard input, especially ESC key."""
-        if args.Key == Windows.Input.Key.Escape:
+        if args.Key == System.Windows.Input.Key.Escape:
             self.cancel(None, None)
 
     def confirm(self, sender, args):
