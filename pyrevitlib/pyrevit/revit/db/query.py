@@ -3121,20 +3121,28 @@ def is_cropable_view(view):
     )
 
 
-def get_view_filters(view):
+def get_view_filters(view, ordered=True):
     """
     Retrieves the filters applied to a given Revit view.
 
     Args:
         view (Autodesk.Revit.DB.View): The Revit view from which to retrieve the filters.
+        ordered (bool, optional): If True, returns filters in their proper order using GetOrderedFilters().
+                                 If False, returns filters in arbitrary order using GetFilters().
+                                 Defaults to True.
 
     Returns:
         list[Autodesk.Revit.DB.Element]: A list of filter elements applied to the view.
     """
     view_filters = []
-    for filter_id in view.GetFilters():
-        filter_element = view.Document.GetElement(filter_id)
-        view_filters.append(filter_element)
+    if ordered:
+        for filter_id in view.GetOrderedFilters():
+            filter_element = view.Document.GetElement(filter_id)
+            view_filters.append(filter_element)
+    else:
+        for filter_id in view.GetFilters():
+            filter_element = view.Document.GetElement(filter_id)
+            view_filters.append(filter_element)
     return view_filters
 
 
