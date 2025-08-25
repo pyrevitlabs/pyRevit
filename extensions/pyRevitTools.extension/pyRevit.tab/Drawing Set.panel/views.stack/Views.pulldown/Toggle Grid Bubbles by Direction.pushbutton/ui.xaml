@@ -5,76 +5,128 @@
     AllowsTransparency="True"
     Background="White"
     Title="Toggle Grid Bubbles"
-    MinHeight="330"
-    MinWidth="320"
+    MinHeight="400"
+    MinWidth="380"
+    SizeToContent="Height"
+    Width="325"
     ResizeMode="NoResize"
     ShowInTaskbar="False"
     ScrollViewer.VerticalScrollBarVisibility="Disabled"
-    Width="320"
-    Height="330"
     BorderBrush="#FFA0A0A0"
     BorderThickness="1,1,1,1"
     MouseLeftButtonDown="move_window"
-    WindowStartupLocation="CenterOwner">
+    WindowStartupLocation="Manual">
+
     <Grid Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="100"/>
-            <RowDefinition Height="145"/>
-            <RowDefinition/>
-            <!-- Added Row Definition -->
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
 
         <!-- Header -->
-        <TextBlock Grid.Row="0" Text="Toggle Grid Bubbles" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10,0,10" Width="auto" VerticalAlignment="Center"/>
-        <Button Content="❌" Click="cancel" Background="{x:Null}" FontSize="12" FontWeight="ExtraBlack" Width="auto" Height="auto" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="{x:Null}"/>
+        <Grid Grid.Row="0" Background="#FF667EEA">
+            <TextBlock Text="Toggle Grid Bubbles" FontSize="18" FontWeight="Bold"
+                       HorizontalAlignment="Center" Margin="0,15,0,15"
+                       Foreground="White" VerticalAlignment="Center"/>
+            <Button Content="❌" Click="cancel" Background="Transparent" FontSize="14"
+                    FontWeight="Bold" Width="30" Height="30" HorizontalAlignment="Right"
+                    VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="White"
+                    Foreground="White" BorderThickness="1"/>
+        </Grid>
+
+        <!-- Operation Scope -->
+        <GroupBox Grid.Row="1" Header="Operation Scope" Margin="15,10,15,15"
+                  FontWeight="SemiBold" Foreground="#FF444444">
+            <StackPanel Margin="15">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="status_grids" Text="" FontSize="12" Margin="0,5,0,5" Foreground="#FF333333"/>
+                    <TextBlock x:Name="status_grids_active" Text="" FontSize="12" Margin="0,5,0,5" Foreground="#FFFF0000" FontWeight="Bold"/>
+                </StackPanel>
+                <TextBlock x:Name="status_coordinate_system" Text="" FontSize="12" Margin="0,5" Foreground="#FF333333"/>
+                <TextBlock x:Name="status_active_controls" Text="" FontSize="12" Margin="0,5" Foreground="#FFFF0000" FontWeight="Bold"/>
+            </StackPanel>
+        </GroupBox>
 
         <!-- Toggle All -->
-        <GroupBox Grid.Row="1" Header="Toggle all" Margin="10,10,10,18">
-            <Grid>
+        <GroupBox Grid.Row="2" Header="Toggle all active grids" Margin="15,5,15,15"
+                  FontWeight="SemiBold" Foreground="#FF444444">
+            <Grid Margin="15">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*" />
-                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <RadioButton x:Name="show_all" Grid.Column="0" GroupName="ToggleAll" Content="Show" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <RadioButton x:Name="hide_all" Grid.Column="1" GroupName="ToggleAll" Content="Hide" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <RadioButton x:Name="show_all" Grid.Column="0" GroupName="ToggleAll" Content="Show All"
+                             Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                <RadioButton x:Name="hide_all" Grid.Column="1" GroupName="ToggleAll" Content="Hide All"
+                             Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
             </Grid>
         </GroupBox>
-
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
 
         <!-- Toggle by Direction -->
-        <GroupBox Grid.Row="1" Header="Toggle by direction" Margin="10,100,10,0" Grid.RowSpan="2">
-            <Grid>
+        <GroupBox Grid.Row="3" Header="Toggle active grids by direction" Margin="15,5,15,15"
+                  FontWeight="SemiBold" Foreground="#FF444444">
+            <Grid Margin="15">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="1*"/>
-                    <RowDefinition Height="1*"/>
-                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*"/>
-                    <ColumnDefinition Width="1*"/>
-                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <CheckBox x:Name="check_top" Grid.Row="0" Grid.Column="1" Content="Top" HorizontalAlignment="Center" Width="auto" Height="auto" VerticalAlignment="Center"/>
-                <CheckBox x:Name="check_left" Grid.Row="1" Grid.Column="0" Content="Left" HorizontalAlignment="Center" Width="auto" Height="auto" VerticalAlignment="Center"/>
-                <CheckBox x:Name="check_right" Grid.Row="1" Grid.Column="2" Content="Right" HorizontalAlignment="Center" Width="auto" Height="auto" VerticalAlignment="Center"/>
-                <CheckBox x:Name="check_bottom" Grid.Row="2" Grid.Column="1" Content="Bottom" HorizontalAlignment="Center" Width="auto" Height="auto" VerticalAlignment="Center"/>
+                <CheckBox x:Name="check_top" Grid.Row="0" Grid.Column="1" Content="Top"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Margin="0,8,0,8" FontSize="12"/>
+                <CheckBox x:Name="check_left" Grid.Row="1" Grid.Column="0" Content="Left"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Margin="0,8,0,8" FontSize="12"/>
+                <CheckBox x:Name="check_right" Grid.Row="1" Grid.Column="2" Content="Right"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Margin="0,8,0,8" FontSize="12"/>
+                <CheckBox x:Name="check_bottom" Grid.Row="2" Grid.Column="1" Content="Bottom"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Margin="0,8,0,8" FontSize="12"/>
             </Grid>
         </GroupBox>
 
-        <!-- Centered Button in the Last Row -->
-        <Grid Grid.Row="3" Margin="35,0,35,0">
+        <!-- Buttons -->
+        <Grid Grid.Row="4" Margin="15,10,15,20">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Ok" Click="confirm" HorizontalAlignment="Center" VerticalAlignment="Center"  Width="100" Height="20"/>
-            <Button Grid.Column="1" Content="Cancel" Click="cancel" HorizontalAlignment="Center"  VerticalAlignment="Center" Width="100" Height="20"/>
+
+            <Button x:Name="back_button" Grid.Column="0" Click="go_back"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Height="40" Margin="0,0,5,0" Background="#FFF8F9FA"
+                    BorderBrush="#FFDEE2E6" Foreground="#FF666666">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="30"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="◀" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="Back" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+
+            <Button Grid.Column="1" Content="Cancel" Click="cancel"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Height="40" Margin="5,0,5,0" Background="#FFF8F9FA"
+                    BorderBrush="#FFDEE2E6" Foreground="#FF666666" FontSize="12"/>
+
+            <Button Grid.Column="2" Content="OK" Click="confirm"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Height="40" Margin="5,0,0,0" Background="#FF667EEA"
+                    BorderBrush="#FF667EEA" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
         </Grid>
     </Grid>
 </Window>
