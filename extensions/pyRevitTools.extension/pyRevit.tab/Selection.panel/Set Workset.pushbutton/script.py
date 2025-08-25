@@ -1,7 +1,5 @@
 """
 This tool will set the active workset from the selected element's workset.
-Copyright (c) 2020 Jean-Marc Couffin
-https://github.com/jmcouffin
 """
 
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
