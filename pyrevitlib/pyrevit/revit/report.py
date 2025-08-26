@@ -8,8 +8,6 @@ app = HOST_APP.app
 doc = HOST_APP.doc
 revit_version = int(app.VersionNumber)
 
-logger = script.get_logger()
-
 
 def print_revision(rev, prefix='', print_id=True):
     """Print a revision.
@@ -19,15 +17,12 @@ def print_revision(rev, prefix='', print_id=True):
         prefix (str, optional): prefix to add to the output text. Defaults to empty string.
         print_id (bool, optional): whether to print the revision id. Defaults to True.
     """
-    try:
-        if revit_version > 2022:
-            revision_sequence = doc.GetElement(rev.RevisionNumberingSequenceId)
-            revision_number_type = revision_sequence.NumberType
-        else:
-            revision_number_type = rev.NumberType
-    except Exception as e:
-        revision_number_type = ""
-        logger.warning('Could not get revision number type for revision {}: {}'.format(rev.Id, e))
+ 
+    if revit_version > 2022:
+        revision_sequence = doc.GetElement(rev.RevisionNumberingSequenceId)
+        revision_number_type = revision_sequence.NumberType
+    else:
+        revision_number_type = rev.NumberType
 
     outstr = 'SEQ#: {} REV#: {} DATE: {} TYPE: {} DESC: {} ' \
              .format(rev.SequenceNumber,
