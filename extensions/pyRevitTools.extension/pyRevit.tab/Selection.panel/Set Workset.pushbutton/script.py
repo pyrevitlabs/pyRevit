@@ -44,10 +44,13 @@ if set_workplane_to_level:
         level_name = level_name.split(":")[-1].strip()
         collector = DB.FilteredElementCollector(revit.doc).OfClass(DB.Level)
         level = next((lvl for lvl in collector if lvl.Name == level_name), None)
-        with revit.Transaction("Set Active Work Plane to Elements Work Plane"):
-            sketch_plane = DB.SketchPlane.Create(revit.doc, level.Id)
-            revit.doc.ActiveView.SketchPlane = sketch_plane
-            revit.doc.ActiveView.ShowActiveWorkPlane()
+        if level is not None:
+            with revit.Transaction("Set Active Work Plane to Elements Work Plane"):
+                sketch_plane = DB.SketchPlane.Create(revit.doc, level.Id)
+                revit.doc.ActiveView.SketchPlane = sketch_plane
+                revit.doc.ActiveView.ShowActiveWorkPlane()
+        else:
+            forms.alert("No matching level found for work plane: '{}'".format(level_name), exitscript=True)
     else:
         sl_param = element.get_Parameter(DB.BuiltInParameter.SCHEDULE_LEVEL_PARAM)
         if sl_param and sl_param.HasValue:
