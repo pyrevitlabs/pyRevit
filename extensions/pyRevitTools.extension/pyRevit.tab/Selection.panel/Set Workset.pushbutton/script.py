@@ -38,21 +38,32 @@ if set_workset_checkout and forms.check_workshared():
         DB.WorksharingUtils.CheckoutWorksets(revit.doc, workset_ids)
 
 if set_workplane_to_level:
-    wp_param = element.get_Parameter(DB.BuiltInParameter.SCHEDULE_LEVEL_PARAM)
+    wp_param = element.get_Parameter(DB.BuiltInParameter.SKETCH_PLANE_PARAM)
     if wp_param and wp_param.HasValue:
-        level_id = wp_param.AsElementId()
-        if level_id and level_id != DB.ElementId.InvalidElementId:
-            level = revit.doc.GetElement(level_id)
-            if isinstance(level, DB.Level):
-                elevation = level.Elevation
-                plane = DB.Plane.CreateByNormalAndOrigin(
-                    DB.XYZ.BasisZ,  # Up vector
-                    DB.XYZ(0, 0, elevation)
-                )
-                with revit.Transaction("Set Active Work Plane"):
-                    sketch_plane = DB.SketchPlane.Create(revit.doc, plane)
-                    revit.doc.ActiveView.SketchPlane = sketch_plane
-                    revit.doc.ActiveView.ShowActiveWorkPlane()
+        level_name = wp_param.AsString()
+        level_name = level_name.split(":")[-1].strip()
+        collector = DB.FilteredElementCollector(revit.doc).OfClass(DB.Level)
+        level = next((lvl for lvl in collector if lvl.Name == level_name), None)
+        with revit.Transaction("Set Active Work Plane to Elements Work Plane"):
+            sketch_plane = DB.SketchPlane.Create(revit.doc, level.Id)
+            revit.doc.ActiveView.SketchPlane = sketch_plane
+            revit.doc.ActiveView.ShowActiveWorkPlane()
+    else:
+        sl_param = element.get_Parameter(DB.BuiltInParameter.SCHEDULE_LEVEL_PARAM)
+        if sl_param and sl_param.HasValue:
+            level_id = sl_param.AsElementId()
+            if level_id and level_id != DB.ElementId.InvalidElementId:
+                level = revit.doc.GetElement(level_id)
+                if isinstance(level, DB.Level):
+                    elevation = level.Elevation
+                    plane = DB.Plane.CreateByNormalAndOrigin(
+                        DB.XYZ.BasisZ,  # Up vector
+                        DB.XYZ(0, 0, elevation)
+                    )
+                    with revit.Transaction("Set Active Work Plane to Elements Schedule Level"):
+                        sketch_plane = DB.SketchPlane.Create(revit.doc, plane)
+                        revit.doc.ActiveView.SketchPlane = sketch_plane
+                        revit.doc.ActiveView.ShowActiveWorkPlane()
 
 if set_phase:
     pc_param = element.get_Parameter(DB.BuiltInParameter.PHASE_CREATED)
