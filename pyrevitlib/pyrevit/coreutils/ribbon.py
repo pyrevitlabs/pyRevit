@@ -1459,7 +1459,10 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                                  tooltip='', tooltip_ext='', tooltip_media='',
                                  ctxhelpurl=None,
                                  avail_class_name=None,
-                                 update_if_exists=False):
+                                 update_if_exists=False,
+                                 ui_title=None):
+        if ui_title:
+            self.button(button_name).set_title(ui_title)
         self.create_push_button(button_name=button_name,
                                 asm_location=asm_location,
                                 class_name=class_name,
@@ -1472,6 +1475,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                                 update_if_exists=update_if_exists,
                                 ui_title=None)
         self.set_dlglauncher(self.button(button_name))
+
 
 
 class _PyRevitRibbonTab(GenericPyRevitUIContainer):
