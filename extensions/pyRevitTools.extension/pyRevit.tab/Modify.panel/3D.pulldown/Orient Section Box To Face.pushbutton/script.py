@@ -1,61 +1,103 @@
 """Aligns the section box of the current 3D view to selected face."""
 
 from pyrevit.framework import Math
-from pyrevit import revit, DB, UI
-from pyrevit import forms
+from pyrevit import revit, DB, UI, forms
 
-from Autodesk.Revit.UI.Selection import ObjectType
 
 curview = revit.active_view
+uidoc = revit.uidoc
+doc = revit.doc
 
 
 def orientsectionbox(view):
     try:
-        # Pick face to align to using uidoc.Selection instead of revit.pick_face to get the reference instead of the face
-        face = revit.uidoc.Selection.PickObject(
-            UI.Selection.ObjectType.Face, "Pick a face to align to:"
+        world_normal = None
+
+        reference = uidoc.Selection.PickObject(
+            UI.Selection.ObjectType.PointOnElement, "Pick a face on a solid object"
         )
 
-        # Get the section box
-        box = view.GetSectionBox()
+        link_instance = doc.GetElement(reference.ElementId)
+        picked_point = reference.GlobalPoint
 
-        # Get the geometry object of the reference
-        element = revit.doc.GetElement(face)
-        geometry_object = element.GetGeometryObjectFromReference(face)
-
-        # Check if the object might have a Transformation (by checking if it's Non-Instance)
-        if isinstance(element, DB.FamilyInstance):
-            # Get the transform of the family instance (converts local to world coordinates)
-            transform = element.GetTransform()
-            # Get the face normal in local coordinates
-            local_normal = geometry_object.ComputeNormal(DB.UV(0, 0)).Normalize()
-            # Apply the transform to convert normal to world coordinates
-            world_normal = transform.OfVector(local_normal).Normalize()
-            norm = world_normal
+        if isinstance(link_instance, DB.RevitLinkInstance):
+            linked_doc = link_instance.GetLinkDocument()
+            linked_element_id = reference.LinkedElementId
+            linked_element = linked_doc.GetElement(linked_element_id)
+            transform = link_instance.GetTransform()
         else:
-            norm = geometry_object.ComputeNormal(DB.UV(0, 0)).Normalize()
+            linked_element = link_instance
+            transform = DB.Transform.Identity
 
-        # Orient the box
-        boxNormal = box.Transform.Basis[0].Normalize()
-        angle = norm.AngleTo(boxNormal)
+        # Get geometry
+        options = DB.Options()
+        options.ComputeReferences = True
+        options.IncludeNonVisibleObjects = True
+        options.DetailLevel = DB.ViewDetailLevel.Fine
+
+        geom_elem = linked_element.get_Geometry(options)
+
+        def extract_solids(geom_element):
+            solids = []
+            for geom_obj in geom_element:
+                if isinstance(geom_obj, DB.Solid) and geom_obj.Faces.Size > 0:
+                    solids.append(geom_obj)
+                elif isinstance(geom_obj, DB.GeometryInstance):
+                    solids.extend(extract_solids(geom_obj.GetInstanceGeometry()))
+            return solids
+
+        solids = extract_solids(geom_elem)
+
+        # Find face that contains the picked point
+        target_face = None
+        for solid in solids:
+            for face in solid.Faces:
+                try:
+                    result = face.Project(picked_point)
+                    if result and result.XYZPoint.DistanceTo(picked_point) < 1e-6:
+                        target_face = face
+                        break
+                except Exception:
+                    continue
+            if target_face:
+                break
+
+        if not target_face:
+            forms.alert("Couldn't find a face at the picked point.", exitscript=True)
+
+        local_normal = target_face.ComputeNormal(DB.UV(0.5, 0.5)).Normalize()
+        world_normal = transform.OfVector(local_normal).Normalize()
+
+        # --- Orient section box ---
+        box = view.GetSectionBox()
+        box_normal = box.Transform.BasisX.Normalize()
+        angle = world_normal.AngleTo(box_normal)
+
+        # Choose rotation axis - Z axis in world coordinates
         axis = DB.XYZ(0, 0, 1.0)
         origin = DB.XYZ(
             box.Min.X + (box.Max.X - box.Min.X) / 2,
             box.Min.Y + (box.Max.Y - box.Min.Y) / 2,
-            0.0,
+            box.Min.Z,
         )
-        if norm.Y * boxNormal.X < 0:
+
+        if world_normal.Y * box_normal.X < 0:
             rotate = DB.Transform.CreateRotationAtPoint(
                 axis, Math.PI / 2 - angle, origin
             )
         else:
             rotate = DB.Transform.CreateRotationAtPoint(axis, angle, origin)
-        box.Transform = box.Transform.Multiply(rotate)
+
+        new_box_transform = box.Transform.Multiply(rotate)
+        box.Transform = new_box_transform
+
+        # Apply updated section box
         with revit.Transaction("Orient Section Box to Face"):
             view.SetSectionBox(box)
             revit.uidoc.RefreshActiveView()
+
     except Exception as ex:
-        forms.alert("Error: {0}".format(str(ex)))
+        forms.alert("Error: {}".format(str(ex)))
 
 
 if isinstance(curview, DB.View3D) and curview.IsSectionBoxActive:
