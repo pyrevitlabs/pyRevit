@@ -17,16 +17,16 @@ def orientsectionbox(view):
             UI.Selection.ObjectType.PointOnElement, "Pick a face on a solid object"
         )
 
-        link_instance = doc.GetElement(reference.ElementId)
+        instance = doc.GetElement(reference.ElementId)
         picked_point = reference.GlobalPoint
 
-        if isinstance(link_instance, DB.RevitLinkInstance):
-            linked_doc = link_instance.GetLinkDocument()
+        if isinstance(instance, DB.RevitLinkInstance):
+            linked_doc = instance.GetLinkDocument()
             linked_element_id = reference.LinkedElementId
-            linked_element = linked_doc.GetElement(linked_element_id)
-            transform = link_instance.GetTransform()
+            element = linked_doc.GetElement(linked_element_id)
+            transform = instance.GetTransform()
         else:
-            linked_element = link_instance
+            element = instance
             transform = DB.Transform.Identity
 
         # Get geometry
@@ -35,7 +35,7 @@ def orientsectionbox(view):
         options.IncludeNonVisibleObjects = True
         options.DetailLevel = DB.ViewDetailLevel.Fine
 
-        geom_elem = linked_element.get_Geometry(options)
+        geom_elem = element.get_Geometry(options)
 
         def extract_solids(geom_element):
             solids = []
@@ -88,10 +88,8 @@ def orientsectionbox(view):
         else:
             rotate = DB.Transform.CreateRotationAtPoint(axis, angle, origin)
 
-        new_box_transform = box.Transform.Multiply(rotate)
-        box.Transform = new_box_transform
+        box.Transform = box.Transform.Multiply(rotate)
 
-        # Apply updated section box
         with revit.Transaction("Orient Section Box to Face"):
             view.SetSectionBox(box)
             revit.uidoc.RefreshActiveView()
