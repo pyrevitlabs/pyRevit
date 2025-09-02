@@ -133,7 +133,7 @@ namespace pyRevitCLI
                             { "<clone_name>",           "Name of target clone" },
                             { "<revit_year>",           "Revit version year e.g. 2019" },
                             { "<engine_version>",       "Engine version to be used e.g. 2711" },
-                            { "DEFAULT",                 "Use default engine" },
+                            { "DEFAULT",                "Use default engine" },
                             { "--installed",            "All installed Revits" },
                             { "--attached",             "All currently attached Revits" },
                             { "--allusers",             "Attach for all users" },
