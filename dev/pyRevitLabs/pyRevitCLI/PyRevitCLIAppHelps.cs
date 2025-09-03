@@ -376,88 +376,77 @@ namespace pyRevitCLI
                                       IDictionary<string, string> mgmtCommands = null,
                                       IDictionary<string, string> commands = null,
                                       IDictionary<string, string> helpCommands = null,
-                                      IDictionary<string, string> options = null) {
+                                      IDictionary<string, string> options = null)
+        {
             // print commands help
-            int indent = 25;
-            string outputFormat = "        {0,-" + indent.ToString() + "}{1}";
+            const int indent = 25;
 
-            var helpString = "";
             // header
-            helpString += header + Environment.NewLine;
-            helpString += Environment.NewLine;
+            PyRevitCLIColorfulConsole.WriteLine(header);
+            PyRevitCLIColorfulConsole.WriteLine(string.Empty);
 
             // build a help guide for a subcommand based on doctop usage entries
-            if (docoptKeywords != null) {
+            if (docoptKeywords != null)
+            {
                 foreach (var hline in PyRevitCLI.UsagePatterns.GetLines())
                     if (hline.Contains("Usage:"))
-                        helpString += hline + Environment.NewLine;
+                        PyRevitCLIColorfulConsole.WriteUsage(hline);
                     else
-                        foreach (var kword in docoptKeywords) {
+                        foreach (var kword in docoptKeywords)
+                        {
                             if ((hline.Contains("pyrevit " + kword + " ") || hline.EndsWith(" " + kword))
                                 && !hline.Contains("pyrevit " + kword + " --help"))
-                                helpString += "    " + hline.Trim() + Environment.NewLine;
+                                PyRevitCLIColorfulConsole.WriteLine("    " + hline.Trim());
                         }
-                helpString += Environment.NewLine;
+                PyRevitCLIColorfulConsole.WriteLine(string.Empty);
             }
 
             if (optionsfirst)
-                helpString = BuildOptions(
-                    helpString,
+                PrintOptions(
                     header: "    Options:",
                     options: options,
-                    outputFormat: outputFormat
+                    indent: indent
                     );
 
-            helpString = BuildOptions(
-                helpString,
+            PrintOptions(
                 header: "    Management Commands:",
                 options: mgmtCommands,
-                outputFormat: outputFormat
+                indent: indent
                 );
 
-            helpString = BuildOptions(
-                helpString,
+            PrintOptions(
                 header: "    Commands:",
                 options: commands,
-                outputFormat: outputFormat
+                indent: indent
                 );
 
-            helpString = BuildOptions(
-                helpString,
+            PrintOptions(
                 header: "    Help Commands:",
                 options: helpCommands,
-                outputFormat: outputFormat
+                indent: indent
                 );
 
             if (!optionsfirst)
-                helpString = BuildOptions(
-                    helpString,
+                PrintOptions(
                     header: "    Arguments & Options:",
                     options: options,
-                    outputFormat: outputFormat
+                    indent: indent
                     );
 
             // footer
             if (footer != null)
-                helpString += footer + Environment.NewLine;
-
-            Console.WriteLine(helpString);
+                PyRevitCLIColorfulConsole.WriteLine(footer);
         }
 
-        private static string BuildOptions(string baseHelp, string header, IDictionary<string, string> options, string outputFormat) {
-            if (options != null) {
-                baseHelp += header + Environment.NewLine;
-                foreach (var optionPair in options) {
-                    baseHelp +=
-                        string.Format(outputFormat, optionPair.Key, optionPair.Value)
-                        + Environment.NewLine;
-                }
-                baseHelp += Environment.NewLine;
-
-                return baseHelp;
+        private static void PrintOptions(string header, IDictionary<string, string> options, int indent)
+        {
+            if (options != null)
+            {
+                PyRevitCLIColorfulConsole.WriteHeader(header);
+                foreach (var optionPair in options)
+                    PyRevitCLIColorfulConsole.WriteCommand(optionPair.Key, optionPair.Value, indent);
+                PyRevitCLIColorfulConsole.WriteLine(string.Empty);
             }
-
-            return baseHelp;
         }
     }
 }
