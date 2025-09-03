@@ -207,8 +207,8 @@
                                 </WrapPanel>
 
                                 <StackPanel Margin="10,5,10,10">
-                                    <TextBlock Margin="0,5,0,0" FontWeight="Medium" Text="{DynamicResource CoreSettings.CloseOtherConsoles}"/>
-                                    <TextBlock Margin="0,5,0,0" TextWrapping="WrapWithOverflow" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Description}"/>
+                                    <TextBlock FontWeight="Medium" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Description}"/>
                                     <WrapPanel Margin="0,15,0,0">
                                         <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="minimize_consoles_cb" IsChecked="False"/>
                                         <TextBlock Margin="30,4,0,0" Text="Minimize the number of open consoles:" />
@@ -216,12 +216,11 @@
                                 </StackPanel>
 
                                 <StackPanel Margin="26,0,0,10" IsEnabled="{Binding ElementName=minimize_consoles_cb, Path=IsChecked}">
-                                    <RadioButton x:Name="closewindows_current_rb" GroupName="console_close_mode" Margin="0,5,0,5" IsChecked="True">
-                                        <TextBlock Text="Close console windows for current command" />
-                                    </RadioButton>
-                                    <RadioButton x:Name="closewindows_orphaned_rb" GroupName="console_close_mode" Margin="0,0,0,5" IsChecked="False">
-                                        <TextBlock Text="Close all orphaned console windows" />
-                                    </RadioButton>
+                                    <RadioButton x:Name="closewindows_current_rb" GroupName="console_close_mode" Margin="0,5,0,5" IsChecked="False" Content="{DynamicResource CoreSettings.CloseOtherConsoles.Current}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="20,0,0,5" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Current.Description}"/>
+
+                                    <RadioButton x:Name="closewindows_orphaned_rb" GroupName="console_close_mode" Margin="0,10,0,5" IsChecked="False" Content="{DynamicResource CoreSettings.CloseOtherConsoles.Orphaned}"/>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="20,0,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Orphaned.Description}"/>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>

@@ -61,7 +61,17 @@
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Закрывать другие открытые консоли</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         Если включено, pyRevit будет закрывать другие консоли вывода при запуске нового скрипта.
-        Это помогает уменьшить количество одновременно открытых окон вывода.
+        Это помогает уменьшить количество открытых окон вывода.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Консоли текущей команды</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
+        Закрыть все окна консоли, связанные с текущей выполняемой командой.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Orphaned">Все консоли</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Orphaned.Description">
+        Закрыть все открытые в данный момент окна консоли, даже те, которые не связаны с выполняемой командой.
     </system:String>
 
     <system:String x:Key="CoreSettings.Caching">Кеширование</system:String>

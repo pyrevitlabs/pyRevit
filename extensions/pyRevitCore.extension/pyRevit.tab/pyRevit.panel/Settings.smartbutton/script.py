@@ -156,6 +156,7 @@ class SettingsWindow(forms.WPFWindow):
         self.minhostdrivefreespace_tb.Text = str(user_config.min_host_drivefreespace)
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
+
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
         if user_config.output_close_mode == 'current_command':
             self.closewindows_current_rb.IsChecked = True
