@@ -154,7 +154,22 @@ def get_output():
     Returns:
         (pyrevit.output.PyRevitOutputWindow): Output wrapper object
     """
-    return output.get_output()
+    from pyrevit.userconfig import user_config
+
+    # Get the output window using the output module's get_output() function
+    output_window = output.get_output()
+
+    # Apply user configuration for output window management
+    if user_config.output_close_others:
+        try:
+            if user_config.output_close_mode == 'current_command':
+                output_window.close_others()
+            else:
+                output_window.close_others(True)
+        except:
+            pass  # Silently fail if not supported
+
+    return output_window
 
 
 def get_config(section=None):
@@ -264,7 +279,7 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
         script.get_data_file('mydata', 'data', add_cmd_name=True)
         ```
         '/pyRevit_2018_Command Name_mydata.data'
-        
+
 
     Data files are not cleaned up at pyRevit startup.
     Script should manage cleaning up these files.
@@ -547,7 +562,7 @@ def load_ui(ui_instance, ui_file='ui.xaml', handle_esc=True, set_owner=True):
     """Load xaml file into given window instance.
 
     If window instance defines a method named `setup` it
-    will be called after loading 
+    will be called after loading
 
     Args:
         ui_instance (forms.WPFWindow): ui form instance
@@ -679,29 +694,29 @@ def store_data(slot_name, data, this_project=True):
         ```python
         from pyrevit import revit
             from pyrevit import script
-        
-        
+
+
             class CustomData(object):
                 def __init__(self, count, element_ids):
                     self._count = count
                     # serializes the Revit native objects
                     self._elmnt_ids = [revit.serialize(x) for x in element_ids]
-        
+
                 @property
                 def count(self):
                     return self._count
-        
+
                 @property
                 def element_ids(self):
                     # de-serializes the Revit native objects
                     return [x.deserialize() for x in self._elmnt_ids]
-        
-        
+
+
             mydata = CustomData(
                 count=3,
                 element_ids=[<DB.ElementId>, <DB.ElementId>, <DB.ElementId>]
             )
-        
+
             script.store_data("Selected Elements", mydata)
         ```
 
@@ -740,24 +755,24 @@ def load_data(slot_name, this_project=True):
         ```python
         from pyrevit import revit
         from pyrevit import script
-        
-        
+
+
             class CustomData(object):
                 def __init__(self, count, element_ids):
                     self._count = count
                     # serializes the Revit native objects
                     self._elmnt_ids = [revit.serialize(x) for x in element_ids]
-        
+
                 @property
                 def count(self):
                     return self._count
-        
+
                 @property
                 def element_ids(self):
                     # de-serializes the Revit native objects
                     return [x.deserialize() for x in self._elmnt_ids]
-        
-        
+
+
             mydata = script.load_data("Selected Elements")
             mydata.element_ids
         ```

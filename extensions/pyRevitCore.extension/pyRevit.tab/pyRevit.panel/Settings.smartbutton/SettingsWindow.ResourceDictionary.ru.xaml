@@ -58,6 +58,12 @@
     <system:String x:Key="CoreSettings.Development.Description">Разные настройки разработки pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Загружать бета-инструменты (Скрипты с __beta__ = True, требуется перезапуск)</system:String>
 
+    <system:String x:Key="CoreSettings.CloseOtherConsoles">Закрывать другие открытые консоли</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
+        Если включено, pyRevit будет закрывать другие консоли вывода при запуске нового скрипта.
+        Это помогает уменьшить количество одновременно открытых окон вывода.
+    </system:String>
+
     <system:String x:Key="CoreSettings.Caching">Кеширование</system:String>
     <system:String x:Key="CoreSettings.Caching.Button">Сбросить настройки кеширования</system:String>
     <system:Double x:Key="CoreSettings.Caching.Button.With">220</system:Double>

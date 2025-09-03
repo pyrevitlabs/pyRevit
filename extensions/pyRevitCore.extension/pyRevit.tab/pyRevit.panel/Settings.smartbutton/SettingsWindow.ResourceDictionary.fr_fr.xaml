@@ -57,6 +57,12 @@
     <system:String x:Key="CoreSettings.Development.Description">Options diverses pour le développement de pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Charger les outils bêta (Scripts avec __beta__ = True, le rechargement est requis)</system:String>
 
+    <system:String x:Key="CoreSettings.CloseOtherConsoles">Fermer les consoles ouvertes</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
+        Si activé, pyRevit fermera les autres consoles de sortie lorsqu'un nouveau script est exécuté.
+        Cela aide à réduire le nombre de fenêtres de sortie ouvertes simultanément.
+    </system:String>
+
     <system:String x:Key="CoreSettings.Caching">Mise en cache</system:String>
     <system:String x:Key="CoreSettings.Caching.Button">Reset la mise en cache par défaut</system:String>
     <system:Double x:Key="CoreSettings.Caching.Button.With">200</system:Double>

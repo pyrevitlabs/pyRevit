@@ -303,6 +303,36 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         )
 
     @property
+    def output_close_others(self):
+        """Whether to close other output windows."""
+        return self.core.get_option(
+            'closeothers',
+            default_value=False,
+        )
+
+    @output_close_others.setter
+    def output_close_others(self, state):
+        self.core.set_option(
+            'closeothers',
+            value=state
+        )
+
+    @property
+    def output_close_mode(self):
+        """Output window closing mode: 'current_command' or 'orphaned'."""
+        return self.core.get_option(
+            'closeomode',
+            default_value='current_command',
+        )
+
+    @output_close_mode.setter
+    def output_close_mode(self, mode):
+        self.core.set_option(
+            'closeomode',
+            value=mode
+        )
+
+    @property
     def cpython_engine_version(self):
         """CPython engine version to use."""
         return self.core.get_option(

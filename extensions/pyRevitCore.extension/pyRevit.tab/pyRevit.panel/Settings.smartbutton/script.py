@@ -156,6 +156,13 @@ class SettingsWindow(forms.WPFWindow):
         self.minhostdrivefreespace_tb.Text = str(user_config.min_host_drivefreespace)
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
+        self.minimize_consoles_cb.IsChecked = user_config.output_close_others
+        if user_config.output_close_mode == 'current_command':
+            self.closewindows_current_rb.IsChecked = True
+            self.closewindows_orphaned_rb.IsChecked = False
+        else:  # 'orphaned'
+            self.closewindows_current_rb.IsChecked = False
+            self.closewindows_orphaned_rb.IsChecked = True
 
     def _setup_engines(self):
         """Sets up the list of available engines."""
@@ -845,6 +852,12 @@ class SettingsWindow(forms.WPFWindow):
             user_config.min_host_drivefreespace = 0
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
+
+        user_config.output_close_others = self.minimize_consoles_cb.IsChecked
+        if self.closewindows_current_rb.IsChecked:
+            user_config.output_close_mode = 'current_command'
+        else:
+            user_config.output_close_mode = 'orphaned'
 
     def _save_engines(self):
         # set active cpython engine
