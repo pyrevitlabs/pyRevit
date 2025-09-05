@@ -1,4 +1,4 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 """
 Script to copy parameter values from selected parameters to a target parameter
 for elements in a selected category using XAML UI.
@@ -8,6 +8,7 @@ import clr
 clr.AddReference("PresentationFramework")
 
 from System.Collections.Generic import List
+from System import ArgumentException, NullReferenceException
 from pyrevit import revit, DB, forms, HOST_APP, script
 
 
@@ -32,6 +33,7 @@ def get_localized_texts():
             "select_source_error": "Please select at least one source parameter",
             "select_target_error": "Please select a target parameter",
             "elements_updated": "{} elements updated with parameter values from [{}] to '{}' parameter",
+            "elements_failed": "{} elements failed to update.",
         },
         "French": {
             "window_title": "Params2Param - Copier les Valeurs de Paramètres",
@@ -47,6 +49,7 @@ def get_localized_texts():
             "select_source_error": "Veuillez sélectionner au moins un paramètre source",
             "select_target_error": "Veuillez sélectionner un paramètre cible",
             "elements_updated": "{} éléments mis à jour avec les valeurs de paramètres de [{}] vers le paramètre '{}'",
+            "elements_failed": "{} éléments n'ont pas pu être mis à jour.",
         },
         "German": {
             "window_title": "Params2Param - Parameterwerte kopieren",
@@ -62,6 +65,7 @@ def get_localized_texts():
             "select_source_error": "Bitte wählen Sie mindestens einen Quellparameter",
             "select_target_error": "Bitte wählen Sie einen Zielparameter",
             "elements_updated": "{} Elemente mit Parameterwerten von [{}] zum Parameter '{}' aktualisiert",
+            "elements_failed": "{} Elemente konnten nicht aktualisiert werden.",
         },
         "Spanish": {
             "window_title": "Params2Param - Copiar Valores de Parámetros",
@@ -77,6 +81,7 @@ def get_localized_texts():
             "select_source_error": "Por favor seleccione al menos un parámetro fuente",
             "select_target_error": "Por favor seleccione un parámetro objetivo",
             "elements_updated": "{} elementos actualizados con valores de parámetros de [{}] al parámetro '{}'",
+            "elements_failed": "{} elementos no pudieron ser actualizados.",
         },
         "Russian": {
             "window_title": "Params2Param - Копирование Значений Параметров",
@@ -92,6 +97,7 @@ def get_localized_texts():
             "select_source_error": "Пожалуйста, выберите хотя бы один исходный параметр",
             "select_target_error": "Пожалуйста, выберите целевой параметр",
             "elements_updated": "{} элементов обновлено значениями параметров из [{}] в параметр '{}'",
+            "elements_failed": "{} элементов не удалось обновить.",
         },
     }
 
@@ -278,8 +284,11 @@ class Params2ParamWindow(forms.WPFWindow):
             self.targetParametersListBox.ItemsSource = None
             return
 
-        # Get parameter names from first element
-        self.parameter_names = get_parameter_names(self.elements[0])
+        # Get parameter names from all elements to ensure completeness
+        all_param_names = set()
+        for elem in self.elements[:min(5, len(self.elements))]:  # Sample first 5 elements
+            all_param_names.update(get_parameter_names(elem))
+        self.parameter_names = sorted(all_param_names)
 
         # Populate parameter lists
         param_list = List[str]()
@@ -332,21 +341,29 @@ class Params2ParamWindow(forms.WPFWindow):
                     # Create combined value from source parameters
                     param_value = create_parameter_value(element, source_parameters)
 
-                    # Set the value
+                    # Set the value based on storage type
                     if target_param.StorageType == DB.StorageType.String:
                         target_param.Set(param_value)
-                    else:
-                        # For non-string parameters, try to set as string
-                        try:
-                            target_param.Set(param_value)
-                        except Exception:
-                            # If setting fails, skip this element
-                            failed_count += 1
+                    elif target_param.StorageType == DB.StorageType.Double:
+                        # Only set if single source parameter and numeric
+                        if len(source_parameters) == 1:
+                            try:
+                                target_param.Set(float(param_value))
+                            except (ValueError, TypeError):
+                                failed_count += 1
+                                continue
+                        else:
+                            failed_count += 1  # Cannot concatenate into numeric parameter
                             continue
+                    else:
+                        # For other types, skip
+                        failed_count += 1
+                        continue
 
                     updated_count += 1
 
-                except Exception:
+                except (AttributeError, ArgumentException, NullReferenceException):
+                    # Handle common Revit API exceptions
                     failed_count += 1
                     continue
 
@@ -356,7 +373,7 @@ class Params2ParamWindow(forms.WPFWindow):
         )
 
         if failed_count > 0:
-            message += "\n\n{} elements failed to update.".format(failed_count)
+            message += "\n\n" + self.texts["elements_failed"].format(failed_count)
 
         forms.alert(message)
 
