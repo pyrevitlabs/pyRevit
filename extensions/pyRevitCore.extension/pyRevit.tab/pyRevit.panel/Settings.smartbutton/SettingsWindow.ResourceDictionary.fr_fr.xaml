@@ -60,7 +60,8 @@
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Fermer les consoles ouvertes</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         Si activé, pyRevit fermera les autres consoles de sortie lors de l'exécution d'un nouveau script.
-        Cela permet de réduire le nombre de fenêtres de sortie ouvertes.
+        Cela permet de réduire le nombre de fenêtres de sortie ouvertes. Activez cette option, sauf si vous
+        voulez comparez les sorties de plusieurs scripts.
     </system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Consoles de la commande actuelle</system:String>
