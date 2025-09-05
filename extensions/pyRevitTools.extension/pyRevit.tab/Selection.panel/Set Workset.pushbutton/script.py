@@ -11,6 +11,7 @@ my_config = script.get_config()
 set_workset = my_config.get_option("set_workset", True)
 set_workset_checkout = my_config.get_option("set_workset_checkout", False)
 set_workplane_to_level = my_config.get_option("set_workplane_to_level", False)
+set_workplane_visible = my_config.get_option("set_workplane_visible", False)
 set_phase = my_config.get_option("set_phase", False)
 # set_design_option = my_config.get_option("set_design_option", False)
 
@@ -38,35 +39,45 @@ if set_workset_checkout and forms.check_workshared():
         DB.WorksharingUtils.CheckoutWorksets(revit.doc, workset_ids)
 
 if set_workplane_to_level:
-    wp_param = element.get_Parameter(DB.BuiltInParameter.SKETCH_PLANE_PARAM)
-    if wp_param and wp_param.HasValue:
-        level_name = wp_param.AsString()
-        level_name = level_name.split(":")[-1].strip()
-        collector = DB.FilteredElementCollector(revit.doc).OfClass(DB.Level)
-        level = next((lvl for lvl in collector if lvl.Name == level_name), None)
-        if level is not None:
-            with revit.Transaction("Set Active Work Plane to Elements Work Plane"):
-                sketch_plane = DB.SketchPlane.Create(revit.doc, level.Id)
-                revit.doc.ActiveView.SketchPlane = sketch_plane
+    level = None
+    level_name = None
+
+    # Try parameters in order
+    param_order = [
+        DB.BuiltInParameter.SKETCH_PLANE_PARAM,
+        DB.BuiltInParameter.SCHEDULE_LEVEL_PARAM,
+        DB.BuiltInParameter.LEVEL_PARAM,
+    ]
+
+    for bip in param_order:
+        level_param = element.get_Parameter(bip)
+        if level_param and level_param.HasValue:
+            if bip == DB.BuiltInParameter.SKETCH_PLANE_PARAM:
+                raw = level_param.AsValueString()
+                if raw:
+                    level_name = raw.split(":")[-1].strip()
+            else:
+                level_name = level_param.AsValueString()
+
+            if level_name:
+                levels = {
+                    lvl.Name: lvl
+                    for lvl in DB.FilteredElementCollector(revit.doc).OfClass(DB.Level)
+                }
+                level = levels.get(level_name)
+            break
+
+    if not level and hasattr(element, "LevelId"):
+        level_id = element.LevelId
+        if level_id and level_id != DB.ElementId.InvalidElementId:
+            level = revit.doc.GetElement(level_id)
+
+    if level:
+        with revit.Transaction("Set Active Work Plane to Level"):
+            sketch_plane = DB.SketchPlane.Create(revit.doc, level.Id)
+            revit.doc.ActiveView.SketchPlane = sketch_plane
+            if set_workplane_visible:
                 revit.doc.ActiveView.ShowActiveWorkPlane()
-        else:
-            forms.alert("No matching level found for work plane: '{}'".format(level_name), exitscript=True)
-    else:
-        sl_param = element.get_Parameter(DB.BuiltInParameter.SCHEDULE_LEVEL_PARAM)
-        if sl_param and sl_param.HasValue:
-            level_id = sl_param.AsElementId()
-            if level_id and level_id != DB.ElementId.InvalidElementId:
-                level = revit.doc.GetElement(level_id)
-                if isinstance(level, DB.Level):
-                    elevation = level.Elevation
-                    plane = DB.Plane.CreateByNormalAndOrigin(
-                        DB.XYZ.BasisZ,  # Up vector
-                        DB.XYZ(0, 0, elevation)
-                    )
-                    with revit.Transaction("Set Active Work Plane to Elements Schedule Level"):
-                        sketch_plane = DB.SketchPlane.Create(revit.doc, plane)
-                        revit.doc.ActiveView.SketchPlane = sketch_plane
-                        revit.doc.ActiveView.ShowActiveWorkPlane()
 
 if set_phase:
     pc_param = element.get_Parameter(DB.BuiltInParameter.PHASE_CREATED)

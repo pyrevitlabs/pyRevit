@@ -1,62 +1,91 @@
-from pyrevit import revit, DB, UI
-from pyrevit import forms
+from pyrevit import revit, DB, UI, forms
 
-from Autodesk.Revit.UI.Selection import ObjectType
-from Autodesk.Revit.Exceptions import OperationCanceledException
 
+doc = revit.doc
+uidoc = revit.uidoc
 curview = revit.active_view
 
 
 def reorient(view):
     try:
-        # Pick face to align to using uidoc.Selection instead of revit.pick_face to get the reference instead of the face
-        face_ref = revit.uidoc.Selection.PickObject(
-            UI.Selection.ObjectType.Face, "Pick a face to align to:"
+        world_normal = None
+
+        reference = uidoc.Selection.PickObject(
+            UI.Selection.ObjectType.PointOnElement, "Pick a face to orient view to"
         )
 
-        # Get the geometry object of the reference
-        element = revit.doc.GetElement(face_ref)
-        geometry_object = element.GetGeometryObjectFromReference(face_ref)
+        instance = doc.GetElement(reference.ElementId)
+        picked_point = reference.GlobalPoint
 
-        # Check if the object might have a Transformation (by checking if it's Non-Instance)
-        if isinstance(element, DB.FamilyInstance):
-            # Get the transform of the family instance (converts local to world coordinates)
-            transform = element.GetTransform()
-            # Get the face normal in local coordinates
-            local_normal = geometry_object.ComputeNormal(DB.UV(0, 0)).Normalize()
-            # Apply the transform to convert normal to world coordinates
-            world_normal = transform.OfVector(local_normal).Normalize()
-            norm = world_normal
+        if isinstance(instance, DB.RevitLinkInstance):
+            linked_doc = instance.GetLinkDocument()
+            linked_element_id = reference.LinkedElementId
+            element = linked_doc.GetElement(linked_element_id)
+            transform = instance.GetTransform()
         else:
-            norm = geometry_object.ComputeNormal(DB.UV(0, 0)).Normalize()
+            element = instance
+            transform = DB.Transform.Identity
 
-        # since we're working with a reference instead of the face, we can't use face.origin
-        if isinstance(geometry_object, DB.Face):
-            centroid = geometry_object.Evaluate(DB.UV(0.5, 0.5))
-        else:
-            raise Exception("The geometry object is not a face.")
+        # Get geometry
+        options = DB.Options()
+        options.ComputeReferences = True
+        options.IncludeNonVisibleObjects = True
+        options.DetailLevel = DB.ViewDetailLevel.Fine
 
-        base_plane = DB.Plane.CreateByNormalAndOrigin(norm, centroid)
-        # now that we have the base_plane and normal_vec
-        # let's create the sketchplane
-        with revit.Transaction("Orient to Selected Face"):
-            sp = DB.SketchPlane.Create(revit.doc, base_plane)
+        geom_elem = element.get_Geometry(options)
 
-            # orient the 3D view looking at the sketchplane
-            view.OrientTo(norm.Negate())
-            # set the sketchplane to active
-            view.SketchPlane = sp
+        def extract_solids(geom_element):
+            solids = []
+            for geom_obj in geom_element:
+                if isinstance(geom_obj, DB.Solid) and geom_obj.Faces.Size > 0:
+                    solids.append(geom_obj)
+                elif isinstance(geom_obj, DB.GeometryInstance):
+                    solids.extend(extract_solids(geom_obj.GetInstanceGeometry()))
+            return solids
 
-        revit.uidoc.RefreshActiveView()
+        solids = extract_solids(geom_elem)
 
-    except OperationCanceledException:
-        pass
+        # Find face that contains the picked point
+        target_face = None
+        for solid in solids:
+            for face in solid.Faces:
+                try:
+                    result = face.Project(picked_point)
+                    if result and result.XYZPoint.DistanceTo(picked_point) < 1e-6:
+                        target_face = face
+                        break
+                except Exception:
+                    continue
+            if target_face:
+                break
+
+        if not target_face:
+            forms.alert("Could not find face at the picked point.", exitscript=True)
+
+        local_normal = target_face.ComputeNormal(DB.UV(0.5, 0.5)).Normalize()
+        world_normal = transform.OfVector(local_normal).Normalize()
+
+        # Compute face origin in world coordinates
+        local_origin = target_face.Evaluate(DB.UV(0.5, 0.5))
+        world_origin = transform.OfPoint(local_origin)
+
+        # Create plane and sketch plane
+        base_plane = DB.Plane.CreateByNormalAndOrigin(world_normal, world_origin)
+
+        with revit.Transaction("Orient to Face"):
+            sketch_plane = DB.SketchPlane.Create(doc, base_plane)
+            view_direction = view.ViewDirection.Normalize()
+            if view_direction.DotProduct(world_normal) > 0:
+                world_normal = world_normal.Negate()
+            view.OrientTo(world_normal)
+            view.SketchPlane = sketch_plane
+
+        uidoc.RefreshActiveView()
 
     except Exception as ex:
         forms.alert("Error: {0}".format(str(ex)))
 
 
-# This check could be skipped, as there is a context file in the bundle.yaml
 if isinstance(curview, DB.View3D):
     reorient(curview)
 else:
