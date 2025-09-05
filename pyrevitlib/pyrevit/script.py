@@ -154,22 +154,7 @@ def get_output():
     Returns:
         (pyrevit.output.PyRevitOutputWindow): Output wrapper object
     """
-    from pyrevit.userconfig import user_config
-
-    # Get the output window using the output module's get_output() function
-    output_window = output.get_output()
-
-    # Apply user configuration for output window management
-    if user_config.output_close_others:
-        try:
-            if user_config.output_close_mode == 'current_command':
-                output_window.close_others()
-            else:
-                output_window.close_others(True)
-        except:
-            pass  # Silently fail if not supported
-
-    return output_window
+    return output.get_output()
 
 
 def get_config(section=None):

@@ -69,8 +69,8 @@
         Закрыть все окна консоли, связанные с текущей выполняемой командой.
     </system:String>
 
-    <system:String x:Key="CoreSettings.CloseOtherConsoles.Orphaned">Все консоли</system:String>
-    <system:String x:Key="CoreSettings.CloseOtherConsoles.Orphaned.Description">
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll">Все консоли</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll.Description">
         Закрыть все открытые в данный момент окна консоли, даже те, которые не связаны с выполняемой командой.
     </system:String>
 

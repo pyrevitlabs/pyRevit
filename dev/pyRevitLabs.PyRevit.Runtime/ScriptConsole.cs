@@ -376,6 +376,64 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return ScriptConsoleConfigs.DOCTYPE + head.OuterHtml + ActiveDocument.Body.OuterHtml;
         }
 
+        private static (bool closeOthers, string closeMode) ReadCloseOtherOutputsSetting() {
+            try {
+                var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                var cfg = System.IO.Path.Combine(appData, "pyRevit", "pyRevit_config.ini");
+                if (!System.IO.File.Exists(cfg))
+                    return (false, "current_command");
+
+                bool inCore = false;
+                bool close = false;
+                string mode = "current_command";
+                foreach (var raw in System.IO.File.ReadAllLines(cfg)) {
+                    var line = raw.Trim();
+                    if (line.Length == 0 || line.StartsWith("#") || line.StartsWith(";"))
+                        continue;
+
+                    if (line == "[core]") { inCore = true; continue; }
+                    if (line.StartsWith("[") && line.EndsWith("]")) { inCore = false; continue; }
+
+                    if (!inCore) continue;
+
+                    if (line.StartsWith("close_other_outputs", StringComparison.InvariantCultureIgnoreCase))
+                        close = line.IndexOf("true", StringComparison.InvariantCultureIgnoreCase) >= 0;
+
+                    else if (line.StartsWith("close_mode", StringComparison.InvariantCultureIgnoreCase)) {
+                        var parts = line.Split(new[] { '=' }, 2);
+                        if (parts.Length == 2)
+                            mode = parts[1].Trim().Trim('"');
+                    }
+                }
+                return (close, mode);
+            }
+            catch {
+                return (false, "current_command");
+            }
+        }
+
+        public void CloseOtherOutputs(bool filterByCommandId = true) {
+            try {
+                var filterId = filterByCommandId ? this.OutputId : null;
+                ScriptConsoleManager.CloseActiveOutputWindows(excludeOutputWindow: this, filterOutputWindowId: filterId);
+            }
+            catch {
+            }
+        }
+
+        private void ApplyCloseOtherOutputsIfConfigured() {
+            var (close, mode) = ReadCloseOtherOutputsSetting();
+            if (!close) return;
+
+            this.Dispatcher.BeginInvoke(new Action(() => {
+                if (string.Equals(mode, "current_command", StringComparison.InvariantCultureIgnoreCase))
+                    CloseOtherOutputs(filterByCommandId: true);
+                else if (string.Equals(mode, "close_all", StringComparison.InvariantCultureIgnoreCase)) {
+                    CloseOtherOutputs(filterByCommandId: false);
+                }
+            }));
+        }
+
         private void SetupDefaultPage(string styleSheetFilePath = null) {
             string cssFilePath;
             if (styleSheetFilePath != null)
@@ -448,7 +506,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public System.Windows.Forms.HtmlElement ComposeEntry(string contents, string HtmlElementType) {
             WaitReadyBrowser();
-            
+
             // order is important
             // "<"      --->    &lt;
             contents = ScriptConsoleConfigs.EscapeForHtml(contents);
@@ -552,7 +610,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     dbgMode = true;
                 }
             }
-            
+
             // if no debugger, find other patterns
             if (!dbgMode &&
                     new string[] { "select", "file" }.All(x => lastLine.Contains(x)))
@@ -782,6 +840,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void Window_Loaded(object sender, System.EventArgs e) {
             var outputWindow = (ScriptConsole)sender;
             ScriptConsoleManager.AppendToOutputWindowList(this);
+            ApplyCloseOtherOutputsIfConfigured();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {

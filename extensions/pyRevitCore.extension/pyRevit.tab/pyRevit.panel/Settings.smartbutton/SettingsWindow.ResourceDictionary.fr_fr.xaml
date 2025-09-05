@@ -68,8 +68,8 @@
         Fermer toutes les fenêtres de console associées à la commande en cours d'exécution.
     </system:String>
 
-    <system:String x:Key="CoreSettings.CloseOtherConsoles.Orphaned">Toutes les consoles</system:String>
-    <system:String x:Key="CoreSettings.CloseOtherConsoles.Orphaned.Description">
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll">Toutes les consoles</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll.Description">
         Fermer toutes les fenêtres de console actuellement ouvertes, même celles qui ne sont pas associées à la commande en cours.
     </system:String>
 

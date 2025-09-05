@@ -158,12 +158,13 @@ class SettingsWindow(forms.WPFWindow):
         self.loadbetatools_cb.IsChecked = user_config.load_beta
 
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
+
         if user_config.output_close_mode == 'current_command':
             self.closewindows_current_rb.IsChecked = True
-            self.closewindows_orphaned_rb.IsChecked = False
-        else:  # 'orphaned'
+            self.closewindows_close_all_rb.IsChecked = False
+        else: # 'close_all'
             self.closewindows_current_rb.IsChecked = False
-            self.closewindows_orphaned_rb.IsChecked = True
+            self.closewindows_close_all_rb.IsChecked = True
 
     def _setup_engines(self):
         """Sets up the list of available engines."""
@@ -858,7 +859,7 @@ class SettingsWindow(forms.WPFWindow):
         if self.closewindows_current_rb.IsChecked:
             user_config.output_close_mode = 'current_command'
         else:
-            user_config.output_close_mode = 'orphaned'
+            user_config.output_close_mode = 'close_all'
 
     def _save_engines(self):
         # set active cpython engine

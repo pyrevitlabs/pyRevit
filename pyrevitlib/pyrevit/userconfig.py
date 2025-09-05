@@ -50,7 +50,21 @@ from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
+# pylint: disable=C0103,C0413,W0703
+import os
+import os.path as op
 
+from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
+from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
+from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
+from pyrevit import PyRevitException
+from pyrevit import coreutils
+from pyrevit.compat import winreg as wr
+from pyrevit.coreutils import appdata
+from pyrevit.coreutils import configparser
+from pyrevit.coreutils import logger
+from pyrevit.labs import PyRevit
+from pyrevit.versionmgr import upgrade
 
 DEFAULT_CSV_SEPARATOR = ','
 
@@ -306,29 +320,29 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def output_close_others(self):
         """Whether to close other output windows."""
         return self.core.get_option(
-            'closeothers',
+            'close_other_outputs',
             default_value=False,
         )
 
     @output_close_others.setter
     def output_close_others(self, state):
         self.core.set_option(
-            'closeothers',
+            'close_other_outputs',
             value=state
         )
 
     @property
     def output_close_mode(self):
-        """Output window closing mode: 'current_command' or 'orphaned'."""
+        """Output window closing mode: 'current_command' or 'close_all'."""
         return self.core.get_option(
-            'closeomode',
+            'close_mode',
             default_value='current_command',
         )
 
     @output_close_mode.setter
     def output_close_mode(self, mode):
         self.core.set_option(
-            'closeomode',
+            'close_mode',
             value=mode
         )
 
