@@ -18,6 +18,10 @@ else:
     selection = (
         DB.FilteredElementCollector(revit.doc)
         .WhereElementIsNotElementType()
+        .WherePasses(DB.LogicalOrFilter([
+            DB.ElementClassFilter(DB.RevitLinkInstance),
+            DB.ElementClassFilter(DB.ImportInstance)
+        ]))
         .ToElements()
     )
 
