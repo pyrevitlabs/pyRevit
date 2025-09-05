@@ -1,4 +1,4 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 """
 Script to copy parameter values from selected parameters to a target parameter
 for elements in a selected category using XAML UI.
