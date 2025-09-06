@@ -14,7 +14,7 @@ logger = script.get_logger()
 datafile = script.get_document_data_file("SectionBox", "pym")
 
 my_config = script.get_config()
-sb_visbility = my_config.get_option("sb_visbility", True)
+sb_visibility = my_config.get_option("sb_visibility", True)
 sb_active = my_config.get_option("sb_active", False)
 
 
@@ -41,7 +41,7 @@ def toggle_sectionbox_visibility():
     active_view.DisableTemporaryViewMode(DB.TemporaryViewMode.RevealHiddenElements)
 
 
-if sb_visbility:
+if sb_visibility:
     with revit.Transaction("Toggle Section Box"):
         toggle_sectionbox_visibility()
 
