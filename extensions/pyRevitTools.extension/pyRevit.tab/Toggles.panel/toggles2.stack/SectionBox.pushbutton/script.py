@@ -17,6 +17,9 @@ my_config = script.get_config()
 sb_visibility = my_config.get_option("sb_visibility", True)
 sb_active = my_config.get_option("sb_active", False)
 
+if not sb_active and not sb_visibility:
+    logger.error("Invalid configuration: No mode is enabled")
+
 
 def toggle_sectionbox_visibility():
     # activate the show hidden so we can collect
