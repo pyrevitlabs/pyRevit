@@ -5,7 +5,7 @@ doc = revit.doc
 active_view = revit.active_view
 uidoc = revit.uidoc
 
-filters = list(DB.FilteredElementCollector(doc).OfClass(DB.FilterElement))
+filters = list(DB.FilteredElementCollector(doc).OfClass(DB.ParameterFilterElement))
 
 if not filters:
     forms.alert("No Filters found", exitscript=True)
