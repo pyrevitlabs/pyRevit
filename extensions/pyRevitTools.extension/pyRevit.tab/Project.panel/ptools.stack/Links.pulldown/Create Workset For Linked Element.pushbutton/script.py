@@ -71,12 +71,12 @@ if len(selection) > 0:
                     worksetParam = el.get_Parameter(
                         DB.BuiltInParameter.ELEM_PARTITION_PARAM
                     )
-                    setting_failed = False
+                    success = False
                     if not worksetParam.IsReadOnly:
                         worksetParam.Set(workset.Id.IntegerValue)
+                        success = True
                     else:
                         logger.error("Instance Workset Parameter is read-only")
-                        setting_failed = True
                     if set_type_ws:
                         type_id = el.GetTypeId()
                         type_el = revit.doc.GetElement(type_id)
@@ -85,10 +85,10 @@ if len(selection) > 0:
                         )
                         if not type_workset_param.IsReadOnly:
                             type_workset_param.Set(workset.Id.IntegerValue)
+                            success = True
                         else:
                             logger.error("Type Workset Parameter is read-only")
-                            setting_failed = True
-                    if setting_failed and not existing_ws:
+                    if not success and not existing_ws:
                         workset_table = revit.doc.GetWorksetTable()
                         workset_table.DeleteWorkset(
                             revit.doc, workset.Id, DB.DeleteWorksetSettings()
