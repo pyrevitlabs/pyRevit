@@ -34,4 +34,9 @@ def toggle_sectionbox():
         )
 
 
-toggle_sectionbox()
+#toggle_sectionbox()
+
+
+from pyrevit import forms
+el = revit.pick_element()
+forms.select_parameters(el, exclude_readonly=False)

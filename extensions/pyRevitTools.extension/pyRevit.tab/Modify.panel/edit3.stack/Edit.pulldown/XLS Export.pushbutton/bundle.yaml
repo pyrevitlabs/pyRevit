@@ -1,0 +1,24 @@
+title:
+  en_us: Export Parameters to Excel
+  de_de: Parameter nach Excel exportieren
+  fr_fr: Exporter les paramètres vers Excel
+  ru: Экспорт параметров в Excel
+
+tooltip:
+  en_us: >-
+    Exports instance parameters of selected families or types to an Excel file.
+    You can choose which parameters to include. Parameter values are converted
+    into project units for later reimport. Read-only, usermodifiable and unsupported parameters are marked.
+  de_de: >-
+    Exportiert Instanzparameter ausgewählter Familien oder Typen in eine Excel-Datei.
+    Sie können auswählen, welche Parameter exportiert werden sollen. Werte messbarer Parameter
+    werden in die im Projekt eingestellten Einheiten konvertiert. Schreibgeschützte, 
+    nicht bearbeitbare und nicht unterstützte Parameter werden gekennzeichnet.
+  fr_fr: >-
+    Exporte les paramètres d'instance des familles ou types sélectionnés dans un fichier Excel.
+    Vous pouvez choisir les paramètres à inclure. Les valeurs sont converties selon les unités du projet
+    pour permettre une réimportation. Les paramètres en lecture seule, non modifiables et non pris en charge sont signalés.
+  ru: >-
+    Экспортирует параметры экземпляров выбранных семейств или типов в файл Excel.
+    Можно выбрать, какие параметры экспортировать. Значения параметров преобразуются
+    в проектные единицы для последующего импорта. Только для чтения, не редактируемые и неподдерживаемые параметры отмечаются.
