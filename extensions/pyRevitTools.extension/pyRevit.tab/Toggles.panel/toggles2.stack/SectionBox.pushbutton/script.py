@@ -89,9 +89,8 @@ def toggle_sectionbox_active():
     sectionbox_active_state = active_view.IsSectionBoxActive
 
     try:
-        f = open(datafile, "rb")
-        view_boxes = pickle.load(f)
-        f.close()
+        with open(datafile, "rb") as f:
+            view_boxes = pickle.load(f)
     except Exception:
         view_boxes = {}
 
@@ -100,9 +99,8 @@ def toggle_sectionbox_active():
             sectionbox = active_view.GetSectionBox()
             if sectionbox:
                 view_boxes[active_view_id_value] = serialize_bbox(sectionbox)
-                f = open(datafile, "wb")
-                pickle.dump(view_boxes, f)
-                f.close()
+                with open(datafile, "wb") as f:
+                    pickle.dump(view_boxes, f)
             active_view.IsSectionBoxActive = False
         except Exception as e:
             logger.error("Error saving section box: {}".format(e))
