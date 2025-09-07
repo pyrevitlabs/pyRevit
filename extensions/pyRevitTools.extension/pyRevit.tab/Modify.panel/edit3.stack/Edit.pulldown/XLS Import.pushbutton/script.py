@@ -3,6 +3,9 @@ import xlrd
 
 from pyrevit import script, forms, revit
 from pyrevit import DB
+from pyrevit.compat import get_elementid_from_value_func
+
+get_elementid_from_value = get_elementid_from_value_func()
 
 logger = script.get_logger()
 doc = revit.doc
@@ -37,7 +40,7 @@ def main():
             row = sheet.row_values(row_idx)
             try:
                 el_id_val = int(row[0])
-                el = doc.GetElement(DB.ElementId(el_id_val))
+                el = doc.GetElement(get_elementid_from_value(el_id_val))
                 if not el:
                     logger.warning("Element with ID {} not found.".format(el_id_val))
                     continue
@@ -72,10 +75,13 @@ def main():
                         elif storage_type == DB.StorageType.Integer:
                             param.Set(int(float(new_val)))
                         elif storage_type == DB.StorageType.Double:
-                            try:
-                                param.SetValueString(str(new_val))  # converts from project units string
-                            except Exception as e:
-                                logger.error("Failed SetValueString for '{}': {}".format(param_name, e))
+                            if DB.UnitUtils.IsMeasurableSpec(param.Definition.GetDataType()):
+                                try:
+                                    param.SetValueString(str(new_val))  # converts from project units string
+                                except Exception as e:
+                                    logger.error("Failed SetValueString for '{}': {}".format(param_name, e))
+                            else:
+                                param.Set(float(new_val))
                         elif storage_type == DB.StorageType.ElementId:
                             logger.info(
                                 "Skipping ElementId parameter '{}': not supported.".format(

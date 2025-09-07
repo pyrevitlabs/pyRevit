@@ -2,14 +2,21 @@ import xlsxwriter
 import os
 from collections import namedtuple
 
-from pyrevit import script, forms, coreutils, revit, traceback
-from pyrevit import DB
+from pyrevit import script, forms, coreutils, revit, traceback, DB
+from pyrevit.compat import get_elementid_value_func
 
 itemplate = forms.utils.load_ctrl_template(
     os.path.join(forms.XAML_FILES_DIR, "ParameterItemStyle.xaml")
 )
 logger = script.get_logger()
 doc = revit.doc
+active_view = revit.active_view
+
+get_elementid_value = get_elementid_value_func()
+
+my_config = script.get_config()
+exclude_nested = my_config.get_option("exclude_nested", True)
+scope = my_config.get_option("scope", "document")
 
 ParamDef = namedtuple(
     "ParamDef",
@@ -95,13 +102,7 @@ def select_parameters(src_elements):
             if p.StorageType != non_storage_type:
                 def_name = p.Definition.Name
                 if def_name not in param_defs_dict:
-                    # param_defs_dict[def_name] = forms.ParamDef(
-                    #     name=def_name,
-                    #     istype=False,
-                    #     definition=p.Definition,
-                    #     isreadonly=p.IsReadOnly,
-                    # )
-                    param_def = ParamDef(
+                    param_defs_dict[def_name] = ParamDef(
                         name=def_name,
                         istype=False,
                         definition=p.Definition,
@@ -109,7 +110,6 @@ def select_parameters(src_elements):
                         storagetype=p.StorageType,
                         usermodifiable=p.UserModifiable,
                     )
-                    param_defs_dict[def_name] = param_def
 
     param_defs = sorted(param_defs_dict.values(), key=lambda pd: pd.name)
 
@@ -130,7 +130,7 @@ def export_xls(src_elements, selected_params):
     default_name = "Export_{}.xlsx".format(
         doc.Title.replace(".rvt", "").replace(" ", "_")
     )
-    file_path = forms.save_file(file_ext=".xlsx", default_name=default_name)
+    file_path = forms.save_file(file_ext="xlsx", default_name=default_name)
     if not file_path:
         raise ValueError("No file path set")
     workbook = xlsxwriter.Workbook(file_path)
@@ -156,7 +156,7 @@ def export_xls(src_elements, selected_params):
     max_widths = [len("ElementId")] + [len(p.name) for p in selected_params]
 
     for row_idx, el in enumerate(src_elements, start=1):
-        worksheet.write(row_idx, 0, str(el.Id.IntegerValue))
+        worksheet.write(row_idx, 0, str(get_elementid_value(el.Id)))
         for col_idx, param in enumerate(selected_params):
             param_name = param.name
             param_val = el.LookupParameter(param_name)
@@ -166,7 +166,12 @@ def export_xls(src_elements, selected_params):
                 if param_val.HasValue:
                     try:
                         if param_val.StorageType == DB.StorageType.Double:
-                            val = param_val.AsValueString()
+                            if DB.UnitUtils.IsMeasurableSpec(
+                                param.definition.GetDataType()
+                            ):
+                                val = param_val.AsValueString()
+                            else:
+                                val = param_val.AsDouble()
                         elif param_val.StorageType == DB.StorageType.String:
                             val = param_val.AsString()
                         elif param_val.StorageType == DB.StorageType.Integer:
@@ -195,13 +200,26 @@ def export_xls(src_elements, selected_params):
 
 def main():
     try:
-        instances = (
-            DB.FilteredElementCollector(doc)
-            .OfClass(DB.FamilyInstance)
-            .WhereElementIsNotElementType()
-            .ToElements()
-        )
-        instances = [i for i in instances if not i.SuperComponent]
+        if scope == "document":
+            instances = (
+                DB.FilteredElementCollector(doc)
+                .OfClass(DB.FamilyInstance)
+                .WhereElementIsNotElementType()
+                .ToElements()
+            )
+        elif scope == "current view":
+            instances = (
+                DB.FilteredElementCollector(doc, active_view.Id)
+                .OfClass(DB.FamilyInstance)
+                .WhereElementIsNotElementType()
+                .ToElements()
+            )
+        else:
+            instances = revit.get_selection()
+            if not instances:
+                instances = revit.pick_elements(message="Pick Elements to Export")
+        if exclude_nested:
+            instances = [i for i in instances if not i.SuperComponent]
         src_elements = select_types(instances)
         selected_params = select_parameters(src_elements)
         export_xls(src_elements, selected_params)
