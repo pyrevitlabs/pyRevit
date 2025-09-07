@@ -14,11 +14,7 @@ logger = script.get_logger()
 datafile = script.get_document_data_file("SectionBox", "pym")
 
 my_config = script.get_config()
-sb_visibility = my_config.get_option("sb_visibility", True)
-sb_active = my_config.get_option("sb_active", False)
-
-if not sb_active and not sb_visibility:
-    logger.error("Invalid configuration: No mode is enabled")
+scope = my_config.get_option("scope", "Visibility")
 
 
 def toggle_sectionbox_visibility():
@@ -44,7 +40,7 @@ def toggle_sectionbox_visibility():
     active_view.DisableTemporaryViewMode(DB.TemporaryViewMode.RevealHiddenElements)
 
 
-if sb_visibility:
+if scope == "Visibility":
     with revit.Transaction("Toggle Section Box"):
         toggle_sectionbox_visibility()
 
@@ -114,6 +110,6 @@ def toggle_sectionbox_active():
             logger.error("No saved section box found or failed to load: {}".format(e))
 
 
-if sb_active:
+if scope == "Active State":
     with revit.Transaction("Toggle Section Box Active"):
         toggle_sectionbox_active()
