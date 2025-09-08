@@ -1,5 +1,6 @@
 import os
 import xlrd
+import re
 
 from pyrevit import script, forms, revit
 from pyrevit import DB
@@ -9,6 +10,12 @@ get_elementid_from_value = get_elementid_from_value_func()
 
 logger = script.get_logger()
 doc = revit.doc
+
+script.get_output().close_others()
+my_config = script.get_config("xlseximport")
+exportunit = my_config.get_option("exportunit", "ValueString")
+
+unit_postfix_pattern = re.compile(r"\s*\[.*\]$")
 
 
 def main():
@@ -50,6 +57,8 @@ def main():
                     if new_val in (None, ""):
                         continue
 
+                    if exportunit == "Project Unit":
+                        param_name = unit_postfix_pattern.sub("", param_name).strip()
                     param = el.LookupParameter(param_name)
                     if not param:
                         logger.info(
@@ -75,12 +84,37 @@ def main():
                         elif storage_type == DB.StorageType.Integer:
                             param.Set(int(float(new_val)))
                         elif storage_type == DB.StorageType.Double:
-                            if DB.UnitUtils.IsMeasurableSpec(param.Definition.GetDataType()):
+                            forge_type_id = param.Definition.GetDataType()
+                            if (
+                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
+                                and exportunit == "ValueString"
+                            ):
                                 try:
-                                    param.SetValueString(str(new_val))  # converts from project units string
+                                    param.SetValueString(str(new_val))
                                 except Exception as e:
-                                    logger.error("Failed SetValueString for '{}': {}".format(param_name, e))
+                                    logger.error(
+                                        "Failed SetValueString for '{}': {}".format(
+                                            param_name, e
+                                        )
+                                    )
+                            elif (
+                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
+                                and exportunit == "Project Unit"
+                            ):
+                                try:
+                                    unit_type_id = doc.GetUnits().GetFormatOptions(forge_type_id).GetUnitTypeId()
+                                    new_val = DB.UnitUtils.ConvertToInternalUnits(
+                                        float(new_val), unit_type_id
+                                    )
+                                    param.Set(new_val)
+                                except Exception as e:
+                                    logger.error(
+                                        "Failed Set converted value for '{}': {}".format(
+                                            param_name, e
+                                        )
+                                    )
                             else:
+                                print("hi3")
                                 param.Set(float(new_val))
                         elif storage_type == DB.StorageType.ElementId:
                             logger.info(

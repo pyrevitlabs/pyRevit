@@ -1,22 +1,28 @@
 import xlsxwriter
 import os
+import re
 from collections import namedtuple
 
 from pyrevit import script, forms, coreutils, revit, traceback, DB
 from pyrevit.compat import get_elementid_value_func
 
+get_elementid_value = get_elementid_value_func()
+
 itemplate = forms.utils.load_ctrl_template(
     os.path.join(forms.XAML_FILES_DIR, "ParameterItemStyle.xaml")
 )
+script.get_output().close_others()
 logger = script.get_logger()
 doc = revit.doc
 active_view = revit.active_view
+project_units = doc.GetUnits()
 
-get_elementid_value = get_elementid_value_func()
-
-my_config = script.get_config()
+my_config = script.get_config("xlseximport")
 exclude_nested = my_config.get_option("exclude_nested", True)
 scope = my_config.get_option("scope", "document")
+exportunit = my_config.get_option("exportunit", "ValueString")
+
+unit_postfix_pattern = re.compile(r"\[.*\]")
 
 ParamDef = namedtuple(
     "ParamDef",
@@ -142,15 +148,29 @@ def export_xls(src_elements, selected_params):
     # Header row
     worksheet.freeze_panes(1, 0)
     worksheet.write(0, 0, "ElementId", bold)
+    postfix = ""
     for col_idx, param in enumerate(selected_params):
         header_format = bold
+        if unit_postfix_pattern.search(param.name):
+            logger.warning(
+                "Dropping {} from export. [] is not supported.".format(param.name)
+            )
+            continue
         if param.usermodifiable:
             header_format = workbook.add_format({"bold": True, "bg_color": "#B7FD5C"})
         if param.storagetype == DB.StorageType.ElementId:
             header_format = workbook.add_format({"bold": True, "bg_color": "#FFBD80"})
         if param.isreadonly:
             header_format = workbook.add_format({"bold": True, "bg_color": "#FF3131"})
-        worksheet.write(0, col_idx + 1, param.name, header_format)
+        if exportunit == "Project Unit":
+            forge_type_id = param.definition.GetDataType()
+            if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
+                symbol_type_id = project_units.GetFormatOptions(
+                    forge_type_id
+                ).GetSymbolTypeId()
+                symbol = DB.LabelUtils.GetLabelForSymbol(symbol_type_id)
+                postfix = " [" + symbol + "]"
+        worksheet.write(0, col_idx + 1, param.name + postfix, header_format)
 
     # Content rows
     max_widths = [len("ElementId")] + [len(p.name) for p in selected_params]
@@ -166,10 +186,21 @@ def export_xls(src_elements, selected_params):
                 if param_val.HasValue:
                     try:
                         if param_val.StorageType == DB.StorageType.Double:
-                            if DB.UnitUtils.IsMeasurableSpec(
-                                param.definition.GetDataType()
+                            forge_type_id = param.definition.GetDataType()
+                            if (
+                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
+                                and exportunit == "ValueString"
                             ):
                                 val = param_val.AsValueString()
+                            elif (
+                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
+                                and exportunit == "Project Unit"
+                            ):
+                                unit_type_id = param_val.GetUnitTypeId()
+                                val = param_val.AsDouble()
+                                val = DB.UnitUtils.ConvertFromInternalUnits(
+                                    val, unit_type_id
+                                )
                             else:
                                 val = param_val.AsDouble()
                         elif param_val.StorageType == DB.StorageType.String:
@@ -180,7 +211,8 @@ def export_xls(src_elements, selected_params):
                             val = param_val.AsValueString()
                         else:
                             val = "<unsupported>"
-                    except Exception:
+                    except Exception as e:
+                        print(e)
                         val = "<Error>"
 
             worksheet.write(row_idx, col_idx + 1, val)
