@@ -106,7 +106,10 @@ def main():
                             )
                         )
     else:
-        alert("At least one linked element must be selected.")
+        if set_all:
+            alert("No links found in the document.")
+        else:
+            alert("At least one linked element must be selected.")
 
 
 if __name__ == "__main__":
