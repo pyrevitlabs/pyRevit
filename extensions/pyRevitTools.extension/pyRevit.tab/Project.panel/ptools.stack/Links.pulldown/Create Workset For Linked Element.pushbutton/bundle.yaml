@@ -4,11 +4,37 @@ title:
   en_us: Create Workset For Linked Element
   de_de: Erstelle Bearbeitungsbereich für verlinktes Element
 tooltip:
-  ru: Данный инструмент создаст рабочий набор для выделенного связанного элемента на основе его имени. Если модель не является совместной, она будет преобразована в модель для совмесного использования.
-  fr_fr: Cet outil créera un sous-projet pour le fichier lié sélectionné en fonction de son nom. Si le modèle n'est pas partagé, il sera converti en modèle partagé
-  en_us: This tool will create a workset for the selected linked element base on its name. If the model is not workshared, it will be converted to workshared model
+  ru: >-
+    Этот инструмент создаст рабочий набор для выбранного связанного элемента на основе его имени. 
+    Если модель не является совместной, она будет преобразована в совместную модель.
+    Настройки позволяют:
+    - обрабатывать все элементы, а не только выбранные
+    - устанавливать рабочий набор также для типа элемента
+    - использовать собственные префиксы
+
+  fr_fr: >-
+    Cet outil créera un sous-projet (workset) pour l'élément lié sélectionné en fonction de son nom. 
+    Si le modèle n'est pas encore partagé, il sera converti en modèle partagé.
+    Paramètres disponibles :
+    - appliquer à tous les éléments au lieu des seuls sélectionnés
+    - affecter aussi le type d'élément
+    - utiliser des préfixes personnalisés
+
+  en_us: >-
+    This tool will create a workset for the selected linked element based on its name. 
+    If the model is not workshared, it will be converted into a workshared model.
+    Configurable options:
+    - include all elements instead of only selected ones
+    - apply workset to the element type as well
+    - use custom prefixes
+
   de_de: >-
     Dieses Werkzeug erstellt ein Bearbeitungsbereich für das 
     ausgewählte verknüpfte Element auf der Grundlage seines Namens. 
     Wenn das Modell keine Arbeitsteilung verwendet, 
-    wird es in ein Modell mir Arbeitsteilung umgewandelt. 
+    wird es in ein Modell mit Arbeitsteilung umgewandelt.
+    Konfiguration für:
+    - alle Elemente anstatt nur gewählte
+    - auch der Typ des Elements wird gesetzt
+    - spezifische Prefixes
+
