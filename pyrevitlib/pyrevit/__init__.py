@@ -19,7 +19,7 @@ import os.path as op
 from collections import namedtuple
 import traceback
 import re
-from pyrevit.compat import PY3, PY2
+from pyrevit.compat import PY3
 
 import clr  # pylint: disable=E0401
 
