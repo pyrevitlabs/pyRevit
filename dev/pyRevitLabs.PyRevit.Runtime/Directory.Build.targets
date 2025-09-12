@@ -1,35 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
+    <Import Project="../Directory.Build.targets" />
+    
     <PropertyGroup>
-        <DefineConstants>$(DefineConstants);REVIT$(RevitVersion)</DefineConstants>
+        <Configurations>Debug IPY2712PR;Debug IPY342</Configurations>
+        <Configurations>$(Configurations);Release IPY2712PR;Release IPY342</Configurations>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$(Configuration.Contains('IPY2712PR'))">
+        <IronPythonVersion>IPY2712PR</IronPythonVersion>
+        <IronPythonPrefix>pyRevitLabs.</IronPythonPrefix>
+        <DefineConstants>$(DefineConstants);IPY2712PR</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Configuration.Contains('IPY342'))">
+        <IronPythonVersion>IPY342</IronPythonVersion>
+        <IronPythonPrefix></IronPythonPrefix>
+        <DefineConstants>$(DefineConstants);IPY342</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DeployDestinationFiles>$(PyRevitEnginesDir)\$(IronPythonVersion)\$(AssemblyName).dll</DeployDestinationFiles>
+    </PropertyGroup>
+    
     <ItemGroup>
         <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
         <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
         <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
+        <Reference Include="pyRevitLabs.Python.Net" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="WindowsBase" />
-        <Reference Include="WindowsFormsIntegration" />
-        <Reference Include="PresentationCore" />
-        <Reference Include="PresentationFramework" />
-        <Reference Include="System.Windows.Forms" />
-        <Reference Include="System.Xaml" />
-        <Reference Include="System.Web" />
-
-        <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLoader.dll" />
-        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.dll" />
-        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Modules.dll" />
-        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.SQLite.dll" />
-        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll" />
-        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.IronPython.Wpf.dll" />
-        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Dynamic.dll" />
-        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2711PR\pyRevitLabs.Microsoft.Scripting.dll" />
-
-        <Reference Include="pyRevitLabs.PythonNet" HintPath="$(PyRevitEnginesDir)\CPY385\pyRevitLabs.PythonNet.dll" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Web" />
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Net.Http" />
+        
+        <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLoader.dll" />
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.dll" />
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.Modules.dll" />
+        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.SQLite.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.Wpf.dll" />
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Dynamic.dll" />
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Scripting.dll" />
 
         <Reference Include="pyRevitLabs.Common" HintPath="$(PyRevitBinDir)\pyRevitLabs.Common.dll" />
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
@@ -37,50 +48,17 @@
         <Reference Include="pyRevitLabs.PyRevit" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.dll" />
         <Reference Include="pyRevitLabs.PyRevit.Runtime.Shared" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.Runtime.Shared.dll" />
         <Reference Include="pyRevitLabs.TargetApps.Revit" HintPath="$(PyRevitBinDir)\pyRevitLabs.TargetApps.Revit.dll" />
-
-        <Reference Include="AdWindows" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\AdWindows.dll" />
-        <Reference Include="UIFramework" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\UIFramework.dll" />
-        <Reference Include="RevitAPI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPI.dll" />
-        <Reference Include="RevitAPIUI" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\RevitAPIUI.dll" />
-        <Reference Include="Xceed.Wpf.AvalonDock" HintPath="$(PyRevitDevLibsDir)\Revit\$(RevitVersion)\Xceed.Wpf.AvalonDock.dll" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="docopt.net" Version="0.6.1.10" />
-        <PackageReference Include="AirspaceFixer" Version="1.0.5" />
-        <PackageReference Include="ControlzEx" Version="3.0.2.4" />
+        <PackageReference Include="docopt.net" Version="0.8.1" />
+        <PackageReference Include="AirspaceFixer" Version="1.0.6" />
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'"  Include="ControlzEx" Version="4.4.0" />
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"  Include="ControlzEx" Version="3.0.2.4" />
     </ItemGroup>
 
-    <ItemGroup>
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\CLREngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ContentEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\CPythonEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\DynamoBIMEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\Exceptions.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\GrasshopperEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\HyperlinkEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\InvokableDLLEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\IronPythonEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\IronRubyEngine.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\UpdaterListener.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\JournalListener.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptCommands.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptData.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptEngineManager.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptEngines.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EnvVariables.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\Telemetry.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EventHandling.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptExecutor.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EventHooks.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptConsole.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptConsoleUtils.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptConsoleManager.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptIO.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptRuntime.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\EventTelemetry.cs" />
-        <Compile Include="$(PyRevitLibDir)\pyrevit\runtime\ScriptTelemetry.cs" />
-    </ItemGroup>
-
-    <Import Project="../Directory.Build.targets" />
+    <Target Name="Deploy" AfterTargets="AfterBuild">
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
+        <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
+    </Target>
 </Project>

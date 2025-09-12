@@ -75,7 +75,8 @@ namespace PyRevitRunner {
         private static string GetDeployPath() {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var engineDir = Path.GetDirectoryName(loaderDir);
-            var binDir = Path.GetDirectoryName(engineDir);
+            var runtimeDir = Path.GetDirectoryName(engineDir); // netcore or netfx
+            var binDir = Path.GetDirectoryName(runtimeDir);
             return Path.GetDirectoryName(binDir);
         }
 

@@ -1,0 +1,22 @@
+title:
+  ru: Выделить все объекты, проходящие через фильтр
+  fr_fr: Sélectionner tous les objets correspondant au filtre
+  en_us: Select All Objects Passing Filter
+  de_de: Alle Objekte auswählen, die dem Filter entsprechen
+tooltip:
+  ru: >-
+    Выделяет все элементы, проходящие через один или несколько выбранных фильтров
+    и отображающиеся в активном виде.
+    Полезно для быстрой фильтрации объектов по заданным условиям.
+  fr_fr: >-
+    Sélectionne tous les éléments correspondant à un ou plusieurs filtres choisis,
+    visibles dans la vue active.
+    Utile pour filtrer rapidement selon des critères définis.
+  en_us: >-
+    Selects all elements that pass one or more selected filters
+    and are visible in the active view.
+    Useful for quickly filtering elements based on predefined conditions.
+  de_de: >-
+    Wählt alle Elemente aus, die einem oder mehreren ausgewählten Filtern entsprechen
+    und in der aktuellen Ansicht sichtbar sind.
+    Praktisch für eine schnelle Filterung basierend auf vordefinierten Kriterien.

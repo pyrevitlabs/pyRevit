@@ -1,44 +1,58 @@
-import os
+# -*- coding: utf-8 -*-
 import sys
 import os.path as op
+from pathlib import Path
+import re
 
-from pyrevit import UI
 from pyrevit import forms
 
+def renamepdf(old_name):
+    new_name = prefix_stripper.sub("", old_name)
+    new_name = capitalizer.sub(lambda m : "-{}".format(m.group(1).upper()), new_name)
+    new_name = normalizer.sub("-", new_name)
+    if not new_name:
+        raise ValueError("Renaming results in an empty string.")
+    return new_name
 
 # if user shift-clicks, default to user desktop,
 # otherwise ask for a folder containing the PDF files
 if __shiftclick__:
-    basefolder = op.expandvars('%userprofile%\\desktop')
+    basefolder = op.expandvars(r"%userprofile%\desktop")
 else:
     basefolder = forms.pick_folder()
 
+if not basefolder:
+    sys.exit()
 
-def renamePDF(pdffile):
-    import re
-    r = re.compile('(?<=Sheet - )(.+)')
-    fname = r.findall(pdffile)[0]
-    r = re.compile('(.+)\s-\s(.+)')
-    fnameList = r.findall(fname)
-    return fnameList[0][0] + ' - ' + fnameList[0][1].upper()
+prefix_stripper = re.compile(r"^.*?Sheet\s*-\s*")   #"Sheet -", with space management
+capitalizer = re.compile(r"-(?!.*-)\s*(.*)")        #Capitalized after the last hyphen
+normalizer = re.compile("\s*-\s*")                  #Normalize all other hyphens surrounded by spaces
+sheet_count, rename_count, err_count = 0, 0, 0
 
+# Ask for sub folder treatment and define a search pattern
+dir_pattern = "**/" if forms.alert("Do you want to include subfolders?", yes=True, no=True) else ""
 
-if basefolder:
-    sheetcount = 0
+pdf_files = Path(basefolder).glob("{}*.pdf".format(dir_pattern))
+pdf_count = len(pdf_files)
+for pdf_file in pdf_files:
+    # do nothing if not a 'Sheet - ' pdf
+    if not prefix_stripper.search(pdf_file.stem):
+        continue
+    sheet_count += 1
+    try:
+        new_pdf = renamepdf(pdf_file.stem)
+    except (ValueError, re.error):
+        continue
+    try :
+        pdf_file.rename(pdf_file.with_name("{}.pdf".format(new_pdf)))
+        rename_count += 1
+    except OSError as e:
+        err_count += 1
+        print("File NOT RENAMED : {}".format(pdf_file))
+        print(" -> File already exist : {}".format(pdf_file.with_name("{}.pdf".format(new_pdf))))
+        continue
 
-    # list files and find the PDF files in the base folder
-    filenames = os.listdir(basefolder)
-    for pdffile in filenames:
-        ext = op.splitext(pdffile)[1].upper()
-        if ext == '.PDF' and ('Sheet' in pdffile):
-            # if PDF make a new file name and rename the exisitng PDF file
-            newfile = renamePDF(pdffile)
-            try:
-                os.rename(op.join(basefolder, pdffile),
-                          op.join(basefolder, newfile))
-                sheetcount += 1
-            except Exception as e:
-                print("Unexpected error:", sys.exc_info()[0])
-
-    # let user know how many sheets have been renames
-    forms.alert('{0} FILES RENAMED.'.format(sheetcount))
+if err_count != 0:
+    print("\n{0} PDF files found\n{1} Files with 'SHEET - '\n{2} Files renamed\n{3} Errors".format(pdf_count, sheet_count, rename_count, err_count))
+    
+forms.alert("{0} PDF Files found\n{1} Files with 'SHEET - '\n{2} Files renamed".format(pdf_count, sheet_count, rename_count))

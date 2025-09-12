@@ -5,6 +5,8 @@ title:
     Renommer les vues sélectionnées
   en_us: |-
     Rename Selected Views
+  de_de: |-
+    Schreibweise von ausgewählte Ansichten ändern
 tooltip:
   ru: |-
     Изменяет наименование выделенных видов.
@@ -12,4 +14,9 @@ tooltip:
     Changer le nom des vues sélectionnées
   en_us: |-
     Changes the selected view names
-
+  de_de: >-
+    Entweder man wählt im Projektbrowser bereits die Ansichten aus
+    oder es erscheint ein Auswahldialog mit verfübaren Ansichten im 
+    Projekt. Man kann die Schreibweise der gewählten Ansichten nach 
+    folgenden Kriterien ändern: 1) Title Case 2) UPPER CASE 3) lower case
+    4) camel Case 5) Sentence case

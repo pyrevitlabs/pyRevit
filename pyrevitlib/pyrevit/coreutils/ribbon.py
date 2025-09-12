@@ -30,7 +30,7 @@ DEFAULT_DPI = 96
 
 DEFAULT_TOOLTIP_IMAGE_FORMAT = '.png'
 DEFAULT_TOOLTIP_VIDEO_FORMAT = '.swf'
-if not EXEC_PARAMS.doc_mode and HOST_APP.is_newer_than(2019, or_equal=True):
+if HOST_APP.is_newer_than(2019, or_equal=True):
     DEFAULT_TOOLTIP_VIDEO_FORMAT = '.mp4'
 
 
@@ -749,9 +749,19 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def set_tooltip_image(self, tooltip_image):
         try:
             adwindows_obj = self.get_adwindows_object()
-            if adwindows_obj and adwindows_obj.ToolTip:
-                adwindows_obj.ToolTip.ExpandedImage = \
-                    load_bitmapimage(tooltip_image)
+            if adwindows_obj:
+                exToolTip = self.get_rvtapi_object().ToolTip
+                if not isinstance(exToolTip, str):
+                    exToolTip = None
+                adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
+                adwindows_obj.ToolTip.Title = self.ui_title
+                adwindows_obj.ToolTip.Content = exToolTip
+                _StackPanel = System.Windows.Controls.StackPanel()
+                _image = System.Windows.Controls.Image()
+                _image.Source = load_bitmapimage(tooltip_image)
+                _StackPanel.Children.Add(_image)
+                adwindows_obj.ToolTip.ExpandedContent = _StackPanel
+                adwindows_obj.ResolveToolTip()
             else:
                 self.tooltip_image = tooltip_image
         except Exception as ttimage_err:
@@ -761,11 +771,10 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def set_tooltip_video(self, tooltip_video):
         try:
             adwindows_obj = self.get_adwindows_object()
-            if isinstance(self.get_rvtapi_object().ToolTip, str):
-                exToolTip = self.get_rvtapi_object().ToolTip
-            else:
-                exToolTip = None
             if adwindows_obj:
+                exToolTip = self.get_rvtapi_object().ToolTip
+                if not isinstance(exToolTip, str):
+                    exToolTip = None
                 adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
                 adwindows_obj.ToolTip.Title = self.ui_title
                 adwindows_obj.ToolTip.Content = exToolTip
@@ -1450,7 +1459,10 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                                  tooltip='', tooltip_ext='', tooltip_media='',
                                  ctxhelpurl=None,
                                  avail_class_name=None,
-                                 update_if_exists=False):
+                                 update_if_exists=False,
+                                 ui_title=None):
+        if ui_title:
+            self.button(button_name).set_title(ui_title)
         self.create_push_button(button_name=button_name,
                                 asm_location=asm_location,
                                 class_name=class_name,
@@ -1463,6 +1475,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                                 update_if_exists=update_if_exists,
                                 ui_title=None)
         self.set_dlglauncher(self.button(button_name))
+
 
 
 class _PyRevitRibbonTab(GenericPyRevitUIContainer):

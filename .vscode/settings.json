@@ -1,18 +1,4 @@
 {
-    "python.linting.pylintEnabled": false,
-    "python.linting.pylintArgs": ["--max-line-length=80"],
-    "python.linting.pylintUseMinimalCheckers": false,
-    "python.linting.pycodestyleEnabled": false,
-    "python.linting.flake8Enabled": true,
-    "python.linting.pylamaEnabled": false,
-    "python.linting.mypyEnabled": false,
-    "python.jediEnabled": true,
-    "restructuredtext.confPath": "${workspaceFolder}/docs",
-    "python.formatting.provider": "autopep8",
-    "python.languageServer": "Jedi",
-    "python.formatting.blackArgs": [
-        "--line-length=80"
-    ],
     "editor.formatOnSave": false,
     "files.exclude": {
         "**/.git": true,
@@ -29,6 +15,4 @@
         "**/__pycache__": true,
         "**/Prerequisites": true,
     },
-    "python.pythonPath": "C:\\Users\\ehsan\\.virtualenvs\\pyrevit-dev-2PO7Kqjk\\Scripts\\python.exe",
-    "python.linting.enabled": true
 }

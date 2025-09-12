@@ -52,9 +52,9 @@ class PyRevitConfigSectionParser(object):
                         # but is not encapsulated in quotes
                         # e.g. option = C:\Users\Desktop
                         value = value.strip()
-                        if not value.startswith('(') \
-                                or not value.startswith('[') \
-                                or not value.startswith('{'):
+                        if (not value.startswith('(')
+                                and not value.startswith('[')
+                                and not value.startswith('{')):
                             value = "\"%s\"" % value
                         return json.loads(value)  #pylint: disable=W0123
             except Exception:
@@ -146,7 +146,10 @@ class PyRevitConfigParser(object):
         if self._cfg_file_path:
             try:
                 with codecs.open(self._cfg_file_path, 'r', 'utf-8') as cfg_file:
-                    self._parser.readfp(cfg_file)
+                    try:
+                        self._parser.readfp(cfg_file)
+                    except AttributeError:
+                        self._parser.read_file(cfg_file)
             except (OSError, IOError):
                 raise PyRevitIOError()
             except Exception as read_err:
@@ -223,7 +226,10 @@ class PyRevitConfigParser(object):
         try:
             with codecs.open(cfg_file_path \
                     or self._cfg_file_path, 'r', 'utf-8') as cfg_file:
-                self._parser.readfp(cfg_file)
+                try:
+                    self._parser.readfp(cfg_file)
+                except AttributeError:
+                    self._parser.read_file(cfg_file)
         except (OSError, IOError):
             raise PyRevitIOError()
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Routes HTTP Server."""
 #pylint: disable=import-error,invalid-name,broad-except
 #pylint: disable=missing-docstring

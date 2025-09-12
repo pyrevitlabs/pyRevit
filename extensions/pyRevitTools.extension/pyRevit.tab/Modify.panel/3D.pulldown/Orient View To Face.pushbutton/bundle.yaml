@@ -3,7 +3,14 @@ title:
   ru: Расположить вид по границе
   fr_fr: Orienter la vue sur la face
   en_us: Orient view to face
+  de_de: 3D Kamera Ansicht auf Fläche ausrichten
 tooltip:
   ru: Распологает текущую камеру 3D вида перпедикулярно выбранной грани. Данный инструмент установит плоскость эскиза над выделенной грани для 3D проектирования.
   fr_fr: Réoriente la caméra de vue 3D actuelle, perpendiculairement à la face sélectionnée. Cet outil définira un plan d'esquisse sur la face sélectionnée pour le dessin 3D
   en_us: Reorients the current 3D view camera, perpendicular to the selected face. This tool will set a sketch plane over the selected face for 3d drawing
+  de_de: >-
+    Diese Skript richtet die aktuelle Kamera Ansicht senkrecht auf die 
+    gewählte Fläche aus. Das Tool erstellt eine Skizzenebene über der 
+    gewählten Fläche für die 3D Ansicht
+context: active-3d-view
+min_revit_version: 2016

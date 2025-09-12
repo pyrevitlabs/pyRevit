@@ -2,6 +2,7 @@ title:
   ru: Виды
   en_us: Views
   fr_fr: Vues
+  de_de: Ansichten
 layout:
   - Open Referencing Sheet
   - Find Referring Views
@@ -16,10 +17,14 @@ layout:
   - Create Print Set From Selected Views
   - Find Used View Templates Filters
   - Copy View Templates to Open Documents
+  - -----
   - Toggle All Grid Bubbles in Current View
+  - Toggle Grid Bubbles by Direction
+  - -----
   - Match Title on Sheet in Open Docs
   - Create Parallel Section
   - Add Views to Sheets
+  - Move Viewport Label
   - Remove Underlay From Selected Views
   - -----
   - Set View Template Controlled Parameters

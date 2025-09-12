@@ -6,6 +6,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit import DB
 from Autodesk.Revit.DB import Element   #pylint: disable=E0401
+from pyrevit.compat import get_elementid_value_func
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -22,7 +23,8 @@ class BaseWrapper(object):
     def __repr__(self, data=None):
         pdata = {}
         if hasattr(self._wrapped, 'Id'):
-            pdata['id'] = self._wrapped.Id.IntegerValue
+            get_elementid_value = get_elementid_value_func()
+            pdata['id'] = get_elementid_value(self._wrapped.Id)
 
         if data:
             pdata.update(data)
@@ -179,23 +181,23 @@ class ProjectParameter(BaseWrapper):
         # Revit <2017 does not have the Id parameter
         self.param_id = getattr(self.param_def, 'Id', None)
 
-
-        if HOST_APP.is_newer_than(2022, or_equal=True):
-            # GetSpecTypeId() Removed in Revit 2022
-            self.unit_type = self.param_def.GetDataType()
-        elif HOST_APP.is_exactly(2021):
+        if HOST_APP.is_exactly(2021):
             # Revit >2021 does not have the UnitType property
             self.unit_type = self.param_def.GetSpecTypeId()
+            self.param_type = self.param_def.ParameterType
+            self.param_group = self.param_def.ParameterGroup
+        elif HOST_APP.is_newer_than(2022, or_equal=True):
+            # GetSpecTypeId() Removed in Revit 2022
+            self.unit_type = self.param_def.GetDataType()
+            # Revit >2022 does not have the ParameterType property
+            self.param_type = self.param_def.GetDataType()
+            # ParameterGroup deprecated
+            self.param_group = self.param_def.GetGroupTypeId().TypeId
         else:
             self.unit_type = self.param_def.UnitType
-
-        # Revit >2022 does not have the ParameterType property
-        if HOST_APP.is_newer_than(2022, or_equal=True):
-            self.param_type = self.param_def.GetDataType()
-        else:
             self.param_type = self.param_def.ParameterType
+            self.param_group = self.param_def.ParameterGroup
 
-        self.param_group = self.param_def.ParameterGroup
 
     def __eq__(self, other):
         if isinstance(self.param_def, DB.ExternalDefinition):

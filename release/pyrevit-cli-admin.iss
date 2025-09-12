@@ -1,9 +1,10 @@
 #define MyAppName "pyRevit CLI"
-#define MyAppUUID "2e94b164-49b1-49ff-8329-75a15000d3f9"
-#define MyAppVersion "4.8.15.24089"
+#define MyAppUUID "9557b432-cf79-4ece-91cf-b8f996c88b47"
+#define MyAppVersion "5.2.0.25181"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #define MyAppExeName "pyrevit.exe"
+#include "CodeDependencies.iss"
 
 [Setup]
 ; App information
@@ -14,14 +15,13 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2024 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2025 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
 DisableDirPage=auto
 DisableStartupPrompt=yes
 DisableProgramGroupPage=yes
-ArchitecturesInstallIn64BitMode=x64
 ChangesEnvironment=yes
 ;     path
 DefaultDirName={autopf}\{#MyAppName}
@@ -39,6 +39,7 @@ DisableWelcomePage=no
 WizardStyle=classic
 WizardImageFile=.\pyrevit-cli.bmp
 WizardSmallImageFile=.\pyrevit-banner.bmp
+ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -61,3 +62,11 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Par
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
+
+[Code]
+function InitializeSetup: Boolean;
+begin
+  Dependency_AddDotNet80;
+  Dependency_AddDotNet80Desktop;
+  Result := True;
+end;

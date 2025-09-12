@@ -1,8 +1,9 @@
 #define MyAppName "pyRevit"
-#define MyAppUUID "6f430f6a-c452-4aa1-bb00-b690c50bea01"
-#define MyAppVersion "4.8.15.24089"
+#define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
+#define MyAppVersion "5.2.0.25181"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
+#include "CodeDependencies.iss"
 
 [Setup]
 ; App information
@@ -13,14 +14,13 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2024 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2025 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
 DisableDirPage=auto
 DisableStartupPrompt=yes
 DisableProgramGroupPage=yes
-ArchitecturesInstallIn64BitMode=x64
 ChangesEnvironment=yes
 ;     path
 DefaultDirName={autopf}\{#MyAppName}-Master
@@ -38,6 +38,7 @@ DisableWelcomePage=no
 WizardStyle=classic
 WizardImageFile=.\pyrevit.bmp
 WizardSmallImageFile=.\pyrevit-banner.bmp
+ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -80,8 +81,16 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden runascurrentuser
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master 2711 --installed"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed"; Flags: runhidden runascurrentuser
 
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
+
+[Code]
+function InitializeSetup: Boolean;
+begin
+  Dependency_AddDotNet80;
+  Dependency_AddDotNet80Desktop;
+  Result := True;
+end;

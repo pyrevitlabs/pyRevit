@@ -7,15 +7,17 @@
 from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import forms
+from pyrevit.compat import get_elementid_value_func
 
 
 selected_views = \
     forms.select_views(filterfunc=lambda x: isinstance(x, DB.ViewPlan), use_selection=True)
 
 if selected_views:
+    get_elementid_value = get_elementid_value_func()
     with revit.Transaction('Batch Set Underlay to None'):
         for view in selected_views:
-            if view.Category.Id.IntegerValue == \
+            if get_elementid_value(view.Category.Id) == \
                     int(DB.BuiltInCategory.OST_Views) \
                     and (view.CanBePrinted):
                 if HOST_APP.is_newer_than(2016):

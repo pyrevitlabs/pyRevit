@@ -2,6 +2,7 @@ title:
   ru: Удалить пустые марки
   fr_fr: Enlever les étiquettes vides
   en_us: Remove Empty Tags
+  de_de: Lösche alle leeren Beschriftungen
 tooltip:
   ru: >-
     Удаляет пустые парки на текущем виде.
@@ -21,3 +22,10 @@ tooltip:
     Shift+Click:
 
     Remove tags in selected views
+  de_de: >-
+    Es werden alle leeren Beschriftungen in der aktuellen Ansicht gelöscht
+
+    Shift+Click:
+
+    Es erscheint ein Auswahldialog mit verfügbaren Ansichten im Projekt. 
+    Auf den ausgewählten Ansichten werden alle leeren Beschriftungen gelöscht

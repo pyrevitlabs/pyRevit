@@ -1,7 +1,11 @@
 title:
   ru: Сообщить об ошибках
   en_us: Report Bugs
+  es_es: Reportar Errores
+  de_de: Bugs auf GitHub melden
 tooltip:
   ru: Открывает issue на github, чтобы сообщать о багах и ошибках.
   en_us: Opens the issue tracker on github to report bugs and issues
+  es_es: Abre el seguimiento de incidencias en github para reportar problemas y errores
+  de_de: Öffnet den Issue Tracker auf GitHub, um Fehler, Bugs und Probleme zu melden. Auf "New issue" klicken, um ein Bericht zu erstellen. 
 context: zero-doc

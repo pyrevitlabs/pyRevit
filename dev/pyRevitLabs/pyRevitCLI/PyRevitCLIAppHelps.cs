@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-
-using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.TargetApps.Revit;
-using pyRevitLabs.PyRevit;
 
-namespace pyRevitCLI {
+namespace pyRevitCLI
+{
     internal static class PyRevitCLIAppHelps {
-        internal static void
-        PrintHelp(PyRevitCLICommandType commandType) {
+        internal static void PrintHelp(PyRevitCLICommandType commandType)
+        {
+            PrintHelp(commandType, 0);
+        }
+        internal static void PrintHelp(PyRevitCLICommandType commandType, int exitCode) {
             switch (commandType) {
 
                 case PyRevitCLICommandType.Main:
@@ -133,8 +133,7 @@ namespace pyRevitCLI {
                             { "<clone_name>",           "Name of target clone" },
                             { "<revit_year>",           "Revit version year e.g. 2019" },
                             { "<engine_version>",       "Engine version to be used e.g. 2711" },
-                            { "latest",                 "Use latest engine" },
-                            { "dynamosafe",             "Use latest engine that is compatible with DynamoBIM" },
+                            { "DEFAULT",                "Use default engine" },
                             { "--installed",            "All installed Revits" },
                             { "--attached",             "All currently attached Revits" },
                             { "--allusers",             "Attach for all users" },
@@ -366,7 +365,7 @@ namespace pyRevitCLI {
             }
 
             // now exit
-            Environment.Exit(0);
+            Environment.Exit(exitCode);
         }
 
         private static void BuildHelp(IEnumerable<string> docoptKeywords,

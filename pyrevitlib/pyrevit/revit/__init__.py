@@ -2,7 +2,7 @@
 import types
 import sys
 
-from pyrevit import EXEC_PARAMS, HOST_APP, DOCS
+from pyrevit import HOST_APP, DOCS
 from pyrevit import PyRevitException
 from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
@@ -162,7 +162,7 @@ class ErrorSwallower():
             mlogger.debug('setting failure processing results to: %s', result)
             event_args.SetProcessingResult(result)
         except Exception as fpex:
-            mlogger.error('Error occured while processing failures. | %s', fpex)
+            mlogger.error('Error occurred while processing failures. | %s', fpex)
 
     def get_swallowed_errors(self):
         """Return swallowed errors."""
@@ -185,5 +185,4 @@ class ErrorSwallower():
                           exception, exception_value)
 
 
-if not EXEC_PARAMS.doc_mode:
-    sys.modules[__name__] = RevitWrapper()
+sys.modules[__name__] = RevitWrapper()

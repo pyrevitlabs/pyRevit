@@ -2,6 +2,7 @@ title:
   ru: Переупорядочить листы
   fr_fr: Réorganiser les Feuilles
   en_us: ReOrder Sheets
+  de_de: Planreihenfolge neu anordnen
 tooltip:
   ru: >-
     Показывает элементы в порядке по индексу листа.
@@ -18,3 +19,16 @@ tooltip:
 
     This tool looks for project parameters (on Sheets) that are Instance, of
     type Integer, and have "Order" in their names
+  de_de: >-
+    Es erscheint ein Dialog, in dem Pläne in eine bestimmte Reihenfolge sortiert werden
+    können. Dazu wird ein Order-Parameter (siehe unten) verwendet und durch das Skript mit Zahlen versehen.
+    Der Planliste (Bauteilliste) muss der Order-Paramter in den Eigenschaften als Feld 
+    hinzugefügt werden. Wenn man nun die Planliste (Bauteilliste) nach dem Order-Parameter sortiert,
+    kann man die Reihenfolge der Pläne mit diesem Tool beliebig einstellen (z.B. unabhängig von der Plannummer). 
+    Zudem ist es empfehlenswert die Order-Parameter Spalte in den Bauteillisten Eigenschaften
+    im Tab Formatierung > "Verdecktes Feld" unsichtbar zu schalten. 
+    
+    Hinweis: Bevor diese Werkzeug verwendet werden kann muss ein Exemplar-Projektparameter
+    z.B. "Plansortierungs_Order_Index" vom Datentyp Ganzzahl erstellt und der 
+    Kategorie "Pläne" zugewiesen werden. Wichtig ist, dass der Parametername das
+    Wort "Order" enthält. Es können optional auch mehrere Sortiertparameter angelegt werden.

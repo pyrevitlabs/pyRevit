@@ -6,6 +6,7 @@ from collections import namedtuple
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import revit, DB
+from pyrevit.compat import get_elementid_value_func
 
 from pkgcommits import CommitPointTypes, CommitTypes
 from pkgcommits import CommitPoint, Commit, CommitHistory
@@ -68,11 +69,9 @@ class CommitedSheet(object):
                     mlogger.debug(self._chistory)
 
         # process revisions
-        sheet_revids = \
-            {x.IntegerValue for x in self.revit_sheet.GetAllRevisionIds()}
-        add_sheet_revids = \
-            {x.IntegerValue
-             for x in self.revit_sheet.GetAdditionalRevisionIds()}
+        get_elementid_value = get_elementid_value_func()
+        sheet_revids = {get_elementid_value(x) for x in self.revit_sheet.GetAllRevisionIds()}
+        add_sheet_revids = {get_elementid_value(x) for x in self.revit_sheet.GetAdditionalRevisionIds()}
         readonly_sheet_revids = sheet_revids - add_sheet_revids
 
         default_rev_commit_type = CommitPointTypes.Revision.default_commit_type
@@ -153,6 +152,7 @@ def get_commit_points():
     commit_points = []
     # grab defined packages
     dockpkgs = []
+    get_elementid_value = get_elementid_value_func()
     docpkg_finder = \
         re.compile(r'docpkg(\d+)\s*[-_]*?\s*(.+)', flags=re.IGNORECASE)
     for project_param in revit.query.get_project_parameters(doc=revit.doc):
@@ -167,7 +167,6 @@ def get_commit_points():
         elif 'docpkg' in project_param.name.lower():
             mlogger.warning('Package parameter "%s" is not formatted '
                             'correctly and is skipped.', project_param.name)
-
     last_docpkg_idx = -1
     for idx, docpkg in enumerate(sorted(dockpkgs, key=lambda x: x.pkg_idx)):
         last_docpkg_idx = idx
@@ -185,7 +184,7 @@ def get_commit_points():
                      key=lambda x: x.SequenceNumber)
     commit_points.extend([
         CommitPoint(cptype=CommitPointTypes.Revision,
-                    target=x.Id.IntegerValue,
+                    target=get_elementid_value(x.Id),
                     idx=last_docpkg_idx + i + 1,
                     name='R{}'.format(x.SequenceNumber),
                     desc='{}{} (Sequence #{})'.format(
@@ -195,7 +194,6 @@ def get_commit_points():
                         x.SequenceNumber))
         for i, x in enumerate(docrevs)
         ])
-
     sorted_cpoints = sorted(commit_points, key=lambda x: x.idx)
     mlogger.debug(sorted_cpoints)
     return sorted_cpoints

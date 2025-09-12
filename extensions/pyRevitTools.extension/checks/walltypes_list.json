@@ -1,0 +1,10 @@
+{
+  "allowed_wall_types": [
+	"Wand_STB_0250_IfcBeam",
+	"Wand_STB_0300",
+	"Wand_STB_0350_IfcBeam",
+	"Wand_STB_0250",
+	"Wand_STB_0300_IfcBeam",
+  	"Any wall"
+  ]
+}

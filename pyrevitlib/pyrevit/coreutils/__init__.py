@@ -24,12 +24,10 @@ from collections import defaultdict
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit import compat
 from pyrevit.compat import PY3, PY2
 from pyrevit.compat import safe_strtype
 from pyrevit.compat import winreg as wr
 from pyrevit import framework
-from pyrevit import api
 
 # RE: https://github.com/pyrevitlabs/pyRevit/issues/413
 # import uuid
@@ -544,39 +542,6 @@ def escape_for_html(input_string):
     return input_string.replace('<', '&lt;').replace('>', '&gt;')
 
 
-# def check_internet_connection():
-    # import urllib2
-    #
-    # def internet_on():
-    #     try:
-    #         urllib2.urlopen('http://216.58.192.142', timeout=1)
-    #         return True
-    #     except urllib2.URLError as err:
-    #         return False
-
-
-def can_access_url(url_to_open, timeout=1000):
-    """Check if url is accessible within timeout.
-
-    Args:
-        url_to_open (str): url to check access for
-        timeout (int): timeout in milliseconds
-
-    Returns:
-        (bool): true if accessible
-    """
-    try:
-        client = framework.WebRequest.Create(url_to_open)
-        client.Method = "HEAD"
-        client.Timeout = timeout
-        client.Proxy = framework.WebProxy.GetDefaultProxy()
-        response = client.GetResponse()
-        response.GetResponseStream()
-        return True
-    except Exception:
-        return False
-
-
 def read_url(url_to_open):
     """Get the url and return response.
 
@@ -585,33 +550,6 @@ def read_url(url_to_open):
     """
     client = framework.WebClient()
     return client.DownloadString(url_to_open)
-
-
-def check_internet_connection(timeout=1000):
-    """Check if internet connection is available.
-
-    Pings a few well-known websites to check if internet connection is present.
-
-    Args:
-        timeout (int): timeout in milliseconds
-
-    Returns:
-        (str): url if internet connection is present, None if no internet.
-    """
-    solid_urls = ["http://google.com/",
-                  "http://github.com/",
-                  "http://bitbucket.com/",
-                  "http://airtable.com/",
-                  "http://todoist.com/",
-                  "http://stackoverflow.com/",
-                  "http://twitter.com/",
-                  "http://youtube.com/"]
-    random.shuffle(solid_urls)
-    for url in solid_urls:
-        if can_access_url(url, timeout):
-            return url
-
-    return None
 
 
 def touch(fname, times=None):

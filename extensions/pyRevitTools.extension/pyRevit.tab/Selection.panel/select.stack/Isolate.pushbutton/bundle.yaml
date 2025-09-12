@@ -2,6 +2,7 @@ title:
   ru: Изолировать
   fr_fr: Isoler
   en_us: Isolate
+  de_de: Isolieren
 tooltip:
   ru: >-
     Изолирует определенные элементы в текущем виде
@@ -15,3 +16,23 @@ tooltip:
     Isolates specific elements in current view and
 
     put the view in isolate element mode
+  de_de: >-
+    Isloiert spezifische Elemente in der aktuellen Ansicht 
+    und stellt die Ansicht in den Isloationsmodus um. 
+    Es werden folgende Kategorien als Schnellauswahl angeboten:
+    1) Flächenbegrenzungen
+    2) Fenster
+    3) Geschossdecken
+    4) Skelettbau
+    5) Stützen
+    6) Tragwerkstützen
+    7) Türen
+    8) Wände
+    9) Room Tags (Raumbeschriftungen)
+    10) Model Groups (Modellgruppen)
+    11) Painted Elemente (Eingefärbte Elemente)
+    12) Model Elements (Modellelemente)
+
+    Shift-Select:
+    Es können in einem Auswahldialog gezielt Kategorien festgelegt werden,
+    die isoliert werden sollen. 

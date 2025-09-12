@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
     <PropertyGroup>
-        <ProductIdCode>2e94b164-49b1-49ff-8329-75a15000d3f9</ProductIdCode>
+        <ProductIdCode>2669428b-35bc-4824-afb5-9c8b7e343d3d</ProductIdCode>
         <ProductUpgradeCode>618520c4-0c3a-4e8d-8e8a-b74db3f3592b</ProductUpgradeCode>
     </PropertyGroup>
 

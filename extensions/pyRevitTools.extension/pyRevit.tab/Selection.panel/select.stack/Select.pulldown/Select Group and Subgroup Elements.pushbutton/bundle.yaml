@@ -2,8 +2,14 @@ title:
   ru: Выделить элементы групп и подгрупп
   en_us: Select Group and Subgroup Elements
   fr_fr: Sélectionner les Eléments du Groupe et des Groupes Imbriqués
+  de_de: Alle Elemente der gewählten Gruppen inkl. verschachtelten Gruppen auswählen
 tooltip:
   ru: Заменяет текущее выделение элементами внутри групп и их подгрупп.
   en_us: Replaces current selection with elements inside the groups and their subgroups.
   fr_fr: Remplace la sélection du groupe par les éléments du Groupe et des Groupes Imbriqués
+  de_de: >-
+    Wählen Sie eine Gruppe oder mehrere Gruppen aus. 
+    Dieser Befehl ersetz die aktuelle Auswahl mit den 
+    Elementen, die sich in den Gruppen und in 
+    verschachtelten Gruppen befinden.
 context: selection

@@ -5,6 +5,7 @@ from pyrevit import HOST_APP, DOCS
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
+from pyrevit.compat import get_elementid_value_func
 
 
 def set_name(element, new_name):
@@ -20,28 +21,26 @@ def set_name(element, new_name):
 
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     doc = doc or DOCS.doc
+    get_elementid_value = get_elementid_value_func()
     # make sure revisions is a list
     if not isinstance(revisions, list):
         revisions = [revisions]
-
     updated_sheets = []
     if revisions:
         # get sheets if not available
         for sheet in sheets or query.get_sheets(doc=doc):
-            addrevs = set([x.IntegerValue
+            addrevs = set([get_elementid_value(x)
                            for x in sheet.GetAdditionalRevisionIds()])
             for rev in revisions:
                 # skip issued revisions
                 if not rev.Issued:
                     if state:
-                        addrevs.add(rev.Id.IntegerValue)
-                    elif rev.Id.IntegerValue in addrevs:
-                        addrevs.remove(rev.Id.IntegerValue)
-
+                        addrevs.add(get_elementid_value(rev.Id))
+                    elif get_elementid_value(rev.Id) in addrevs:
+                        addrevs.remove(get_elementid_value(rev.Id))
             rev_elids = [DB.ElementId(x) for x in addrevs]
             sheet.SetAdditionalRevisionIds(List[DB.ElementId](rev_elids))
             updated_sheets.append(sheet)
-
     return updated_sheets
 
 

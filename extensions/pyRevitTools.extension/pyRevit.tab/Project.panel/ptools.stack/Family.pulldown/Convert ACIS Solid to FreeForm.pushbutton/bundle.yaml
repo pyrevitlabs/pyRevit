@@ -3,6 +3,7 @@ title:
   ru: Конвертировать тело ACIS в формообразующую
   fr_fr: Convertir solid ACIS en forme FreeForm
   en_us: Convert ACIS Solid to FreeForm
+  de_de: Konvertiere ACIS Solid in FreeForm
 tooltip:
   ru: >-
     Конвертирует тело ACIS в формообразующий элемент, создает
@@ -17,6 +18,11 @@ tooltip:
     Convert ACIS Solid to FreeForm Element creates FreeForm elements from your
     selected imported acis SAT solid geometry, so you can turn it into
     Void/Solid apply materials easily and get access to its shape handles
+  de_de: >-
+    Dieser Befehl konvertiert ein ACIS Solid (importierte SAT Geometrie) in ein FreeForm Element.
+    Dadurch kann es in ein Körper bzw. Abzugskörper umgewandelt werden und
+    Materialien können leichter vergeben werden. Zudem hat man dadurch Zugriff auf die
+    Geometrie Formgriffe. 
 authors:
   - '{{author}}'
   - Frederic Beaupere
