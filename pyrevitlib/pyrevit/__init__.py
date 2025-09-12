@@ -19,6 +19,7 @@ import os.path as op
 from collections import namedtuple
 import traceback
 import re
+from pyrevit.compat import PY3, PY2
 
 import clr  # pylint: disable=E0401
 
@@ -29,8 +30,12 @@ PYREVIT_CLI_NAME = 'pyrevit.exe'
 
 # extract version from version file
 VERSION_STRING = '0.0.'
-with open(op.join(op.dirname(__file__), 'version'), 'r') as version_file:
-    VERSION_STRING = version_file.read()
+if PY3:
+    with open(op.join(op.dirname(__file__), 'version'), 'r', encoding='utf-8') as version_file:
+        VERSION_STRING = version_file.read()
+else:
+    with open(op.join(op.dirname(__file__), 'version'), 'r') as version_file:
+        VERSION_STRING = version_file.read()
 matches = re.findall(r'(\d+)\.(\d+)\.(\d+)\.?(.+)?', VERSION_STRING)[0]
 if len(matches) == 4:
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, BUILD_METADATA = matches
