@@ -159,10 +159,11 @@ class SettingsWindow(forms.WPFWindow):
 
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
 
-        if user_config.output_close_mode == 'current_command':
+        mode = user_config.output_close_mode_enum
+        if mode == PyRevit.OutputCloseMode.CurrentCommand:
             self.closewindows_current_rb.IsChecked = True
             self.closewindows_close_all_rb.IsChecked = False
-        else: # 'close_all'
+        else:
             self.closewindows_current_rb.IsChecked = False
             self.closewindows_close_all_rb.IsChecked = True
 
@@ -857,9 +858,9 @@ class SettingsWindow(forms.WPFWindow):
 
         user_config.output_close_others = self.minimize_consoles_cb.IsChecked
         if self.closewindows_current_rb.IsChecked:
-            user_config.output_close_mode = 'current_command'
+            user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CurrentCommand
         else:
-            user_config.output_close_mode = 'close_all'
+            user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CloseAll
 
     def _save_engines(self):
         # set active cpython engine

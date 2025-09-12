@@ -305,31 +305,47 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def output_close_others(self):
         """Whether to close other output windows."""
         return self.core.get_option(
-            'close_other_outputs',
-            default_value=False,
+            CONSTS.ConfigsCloseOtherOutputsKey,
+            default_value=CONSTS.ConfigsCloseOtherOutputsDefault,
         )
 
     @output_close_others.setter
     def output_close_others(self, state):
         self.core.set_option(
-            'close_other_outputs',
+            CONSTS.ConfigsCloseOtherOutputsKey,
             value=state
         )
 
     @property
-    def output_close_mode(self):
-        """Output window closing mode: 'current_command' or 'close_all'."""
-        return self.core.get_option(
-            'close_mode',
-            default_value='current_command',
+    def output_close_mode_enum(self):
+        """Output window closing mode as enum (CurrentCommand | CloseAll)."""
+        value = self.core.get_option(
+            CONSTS.ConfigsCloseOutputModeKey,
+            default_value=CONSTS.ConfigsCloseOutputModeDefault,
         )
+        if not value:
+            value = CONSTS.ConfigsCloseOutputModeDefault
 
-    @output_close_mode.setter
-    def output_close_mode(self, mode):
-        self.core.set_option(
-            'close_mode',
-            value=mode
-        )
+        value_lc = str(value).lower()
+
+        if value_lc == str(CONSTS.ConfigsCloseOutputModeCloseAll).lower():
+            return PyRevit.OutputCloseMode.CloseAll
+        else:
+            return PyRevit.OutputCloseMode.CurrentCommand
+
+    @output_close_mode_enum.setter
+    def output_close_mode_enum(self, mode):
+        """Store string in INI, mapped from enum."""
+        if mode == PyRevit.OutputCloseMode.CloseAll:
+            self.core.set_option(
+                CONSTS.ConfigsCloseOutputModeKey,
+                value=CONSTS.ConfigsCloseOutputModeCloseAll
+            )
+        else:
+            self.core.set_option(
+                CONSTS.ConfigsCloseOutputModeKey,
+                value=CONSTS.ConfigsCloseOutputModeCurrentCommand
+            )
 
     @property
     def cpython_engine_version(self):
