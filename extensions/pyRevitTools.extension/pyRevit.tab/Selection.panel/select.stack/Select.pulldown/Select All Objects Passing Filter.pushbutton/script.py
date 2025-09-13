@@ -5,6 +5,12 @@ doc = revit.doc
 active_view = revit.active_view
 uidoc = revit.uidoc
 
+my_config = script.get_config()
+
+exclude_nested = my_config.get_option("exclude_nested", True)
+only_current_view = my_config.get_option("only_current_view", True)
+reverse_filter = my_config.get_option("reverse_filter", False)
+
 filters = list(DB.FilteredElementCollector(doc).OfClass(DB.ParameterFilterElement))
 
 if not filters:
@@ -12,9 +18,9 @@ if not filters:
 
 selected_filters = forms.SelectFromList.show(
     sorted(filters, key=lambda f: f.Name),
-    name_attr='Name',
+    name_attr="Name",
     multiselect=True,
-    title='Select Filter(s)'
+    title="Select Filter(s)",
 )
 
 if not selected_filters:
@@ -31,11 +37,23 @@ if not element_filters:
 
 combined_filter = DB.LogicalOrFilter(List[DB.ElementFilter](element_filters))
 
-collector = DB.FilteredElementCollector(doc, active_view.Id)
-filtered_elements = collector.WherePasses(combined_filter).ToElements()
+view_id = active_view.Id if only_current_view else None
 
-if not filtered_elements:
-    forms.alert("No Elements pass that Filter", exitscript=True)
+collector = (
+    DB.FilteredElementCollector(doc, view_id)
+    if view_id
+    else DB.FilteredElementCollector(doc)
+)
 
-element_ids = [el.Id for el in filtered_elements]
+if reverse_filter:
+    all_elements = collector.WhereElementIsNotElementType().ToElements()
+    filtered_elements = [el for el in all_elements if not combined_filter.PassesFilter(el)]
+else:
+    filtered_elements = collector.WhereElementIsNotElementType().WherePasses(combined_filter).ToElements()
+
+element_ids = []
+for el in filtered_elements:
+    if exclude_nested and isinstance(el, DB.FamilyInstance) and el.SuperComponent:
+        continue
+    element_ids.append(el.Id)
 uidoc.Selection.SetElementIds(List[DB.ElementId](element_ids))
