@@ -37,7 +37,7 @@ if results:
         "only_current_view", selected_items.get("Only Current View", True)
     )
     my_config.set_option(
-        "reverse_filter", selected_items.get("Reverse Selection", True)
+        "reverse_filter", selected_items.get("Reverse Selection", False)
     )
 
     script.save_config()
