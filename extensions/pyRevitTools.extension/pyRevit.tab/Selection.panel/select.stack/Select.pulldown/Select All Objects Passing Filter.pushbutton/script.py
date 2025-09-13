@@ -45,14 +45,11 @@ collector = (
     else DB.FilteredElementCollector(doc)
 )
 
-all_elements = collector.WhereElementIsNotElementType().ToElements()
-
-filtered_elements = [el for el in all_elements if combined_filter.PassesFilter(el)]
-
 if reverse_filter:
-    filtered_ids = set(el.Id for el in filtered_elements)
-    rev_el = [el for el in all_elements if el.Id not in filtered_ids]
-    filtered_elements = rev_el
+    all_elements = collector.WhereElementIsNotElementType().ToElements()
+    filtered_elements = [el for el in all_elements if not combined_filter.PassesFilter(el)]
+else:
+    filtered_elements = collector.WhereElementIsNotElementType().WherePasses(combined_filter).ToElements()
 
 element_ids = []
 for el in filtered_elements:
