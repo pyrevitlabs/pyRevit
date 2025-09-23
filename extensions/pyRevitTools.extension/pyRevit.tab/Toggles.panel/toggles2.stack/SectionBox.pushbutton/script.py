@@ -41,40 +41,8 @@ def toggle_sectionbox_visibility():
 
 
 if scope == "Visibility":
-    with revit.Transaction("Toggle Section Box"):
+    with revit.Transaction("Toggle Section Box Visible"):
         toggle_sectionbox_visibility()
-
-
-# Has to be done because pickle doesn't support serializing complex .NET types
-def serialize_bbox(bbox):
-    return {
-        "min": (bbox.Min.X, bbox.Min.Y, bbox.Min.Z),
-        "max": (bbox.Max.X, bbox.Max.Y, bbox.Max.Z),
-        "transform": [
-            (bbox.Transform.BasisX.X, bbox.Transform.BasisX.Y, bbox.Transform.BasisX.Z),
-            (bbox.Transform.BasisY.X, bbox.Transform.BasisY.Y, bbox.Transform.BasisY.Z),
-            (bbox.Transform.BasisZ.X, bbox.Transform.BasisZ.Y, bbox.Transform.BasisZ.Z),
-            (bbox.Transform.Origin.X, bbox.Transform.Origin.Y, bbox.Transform.Origin.Z),
-        ],
-    }
-
-
-def deserialize_bbox(data):
-    bbox = DB.BoundingBoxXYZ()
-
-    # Min/Max
-    bbox.Min = DB.XYZ(*data["min"])
-    bbox.Max = DB.XYZ(*data["max"])
-
-    # Transform
-    transform = DB.Transform.Identity
-    transform.BasisX = DB.XYZ(*data["transform"][0])
-    transform.BasisY = DB.XYZ(*data["transform"][1])
-    transform.BasisZ = DB.XYZ(*data["transform"][2])
-    transform.Origin = DB.XYZ(*data["transform"][3])
-    bbox.Transform = transform
-
-    return bbox
 
 
 def toggle_sectionbox_active():
@@ -94,7 +62,7 @@ def toggle_sectionbox_active():
         try:
             sectionbox = active_view.GetSectionBox()
             if sectionbox:
-                view_boxes[active_view_id_value] = serialize_bbox(sectionbox)
+                view_boxes[active_view_id_value] = revit.serialize(sectionbox)
                 with open(datafile, "wb") as f:
                     pickle.dump(view_boxes, f)
             active_view.IsSectionBoxActive = False
@@ -104,7 +72,7 @@ def toggle_sectionbox_active():
         try:
             if active_view_id_value in view_boxes:
                 bbox_data = view_boxes[active_view_id_value]
-                restored_bbox = deserialize_bbox(bbox_data)
+                restored_bbox = revit.deserialize(bbox_data)
                 active_view.SetSectionBox(restored_bbox)
         except Exception as e:
             logger.error("No saved section box found or failed to load: {}".format(e))
