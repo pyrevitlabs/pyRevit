@@ -21,7 +21,11 @@ output wrapper.
 
 from __future__ import print_function
 import os.path as op
-import itertools
+from pyrevit.compat import PY2, PY3
+if PY2:
+    from itertools import izip_longest
+elif PY3:
+    from itertools import zip_longest as izip_longest
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import framework
@@ -579,7 +583,7 @@ class PyRevitOutputWindow(object):
             self.add_style('tr:last-child {{ {style} }}'
                            .format(style=last_line_style))
 
-        zipper = itertools.izip_longest #pylint: disable=E1101
+        zipper = izip_longest #pylint: disable=E1101
         adjust_base_col = '|'
         adjust_extra_col = ':---|'
         base_col = '|'
