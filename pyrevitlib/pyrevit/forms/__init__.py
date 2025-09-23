@@ -1018,13 +1018,19 @@ class SelectFromList(TemplateUserInputWindow):
 
     def _get_all_ctx(self):
         """Get all context items across all groups"""
-        if isinstance(self._context, dict):
-            all_items = []
-            for group_items in self._context.values():
-                all_items.extend(group_items)
-            return all_items
+        ctx = self._context
+        if ctx is None:
+            return
+
+        if isinstance(ctx, dict):
+            for group_items in ctx.values():
+                for item in group_items:
+                    yield item
+        elif isinstance(ctx, (list, tuple, set)):
+            for item in ctx:
+                yield item
         else:
-            return self._context
+            yield ctx
 
     def _list_options(self, option_filter=None):
         if option_filter:
@@ -1072,7 +1078,7 @@ class SelectFromList(TemplateUserInputWindow):
     def _get_options(self):
         if self.multiselect:
             if self.return_all:
-                return [x for x in self._get_all_ctx()]
+                return list(self._get_all_ctx())
             else:
                 return self._unwrap_options(
                     [
