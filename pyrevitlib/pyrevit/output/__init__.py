@@ -21,11 +21,12 @@ output wrapper.
 
 from __future__ import print_function
 import os.path as op
+import sys
 from pyrevit.compat import PY2, PY3
 if PY2:
-    from itertools import izip_longest
+    from itertools import izip_longest as zip_longest
 elif PY3:
-    from itertools import zip_longest as izip_longest
+    from itertools import zip_longest
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import framework
@@ -547,6 +548,8 @@ class PyRevitOutputWindow(object):
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
         html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
+        if PY3:
+            sys.stdout.flush()
 
     def print_table(self, table_data, columns=None, formats=None,
                     title='', last_line_style=''):
@@ -583,7 +586,6 @@ class PyRevitOutputWindow(object):
             self.add_style('tr:last-child {{ {style} }}'
                            .format(style=last_line_style))
 
-        zipper = izip_longest #pylint: disable=E1101
         adjust_base_col = '|'
         adjust_extra_col = ':---|'
         base_col = '|'
@@ -595,7 +597,7 @@ class PyRevitOutputWindow(object):
         header = ''
         if columns:
             header = base_col
-            for idx, col_name in zipper(range(max_col), columns, fillvalue=''): #pylint: disable=W0612
+            for idx, col_name in zip_longest(range(max_col), columns, fillvalue=''): #pylint: disable=W0612
                 header += extra_col.format(data=col_name)
 
             header += '\n'
@@ -610,7 +612,7 @@ class PyRevitOutputWindow(object):
         for entry in table_data:
             row = base_col
             for idx, attrib, attr_format \
-                    in zipper(range(max_col), entry, formats, fillvalue=''):
+                    in zip_longest(range(max_col), entry, formats, fillvalue=''):
                 if attr_format:
                     value = attr_format.format(attrib)
                 else:
