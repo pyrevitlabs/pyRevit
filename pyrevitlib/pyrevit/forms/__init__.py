@@ -1016,6 +1016,22 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             return self._context
 
+    def _get_all_ctx(self):
+        """Get all context items across all groups"""
+        ctx = self._context
+        if ctx is None:
+            return
+
+        if isinstance(ctx, dict):
+            for group_items in ctx.values():
+                for item in group_items:
+                    yield item
+        elif isinstance(ctx, (list, tuple, set)):
+            for item in ctx:
+                yield item
+        else:
+            yield ctx
+
     def _list_options(self, option_filter=None):
         if option_filter:
             self.checkall_b.Content = "Check"
@@ -1062,12 +1078,12 @@ class SelectFromList(TemplateUserInputWindow):
     def _get_options(self):
         if self.multiselect:
             if self.return_all:
-                return [x for x in self._get_active_ctx()]
+                return list(self._get_all_ctx())
             else:
                 return self._unwrap_options(
                     [
                         x
-                        for x in self._get_active_ctx()
+                        for x in self._get_all_ctx()
                         if x.state or x in self.list_lb.SelectedItems
                     ]
                 )
