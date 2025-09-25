@@ -28,7 +28,7 @@ from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
-from pyrevit.coreutils import envvars
+from pyrevit.coreutils import envvars, random
 from pyrevit.runtime.types import ScriptConsoleManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
@@ -544,16 +544,104 @@ class PyRevitOutputWindow(object):
         html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
 
-    def print_table(self, table_data, columns=None, formats=None,
-                    title='', last_line_style=''):
-        """Print provided data in a table in output window.
+    def table_html_header(self, columns, table_uid):
+        """Helper method for print_table() method
+
+        Return html <thead><tr><th> row for the table header
+        Args:
+            columns (list[str]): list of column names
+            table_uid (str): a unique ID for this table's CSS classes
+        
+        """
+        html_head = "<thead><tr>"
+        for i, c in enumerate(columns):
+            html_head += "<th class='head_title-{}-{}' align='left'>{}</th>".format(table_uid, i, c)
+            # pyRevit original print_table uses align='left'.
+            # This is now overridden by CSS if specified
+        html_head += "</tr></thead>"
+
+        return html_head
+
+
+    def table_check_input_lists(self, 
+                            table_data,
+                            columns,
+                            formats,
+                            input_kwargs):
+        """Helper method for print_table() method
+        
+        Check that the table_data is present and is a list
+        Check that table_data rows are of the same length
+        Check that all print_table() kwargs of type list are of the right length
+
+        Args:
+            table_data(iterable[Any]]): The whole table data 
+            columns (list[str]): columns
+            formats (list[str]): formats
+            input_kwargs (iterable[Any]]): list of arg lists
+        
+        Return:
+            True if input lists are OK to proceed to build the table
+            False if not, with a relevant warning message
+        """
+  
+        # First check positional and named keyword args
+        if not table_data:
+            return False, "No table_data list"
+        if not isinstance(table_data, list):
+            return False, "table_data is not a list"
+        else: # table_data is a list. The first sublist must also be a list
+            first_data_row = table_data[0]
+            if not isinstance(first_data_row, list):
+                return False, "table_data's first row is not a list"
+            else:
+                len_data_row = len(first_data_row)
+                if not all(len(row) == len_data_row for row in table_data):
+                    return False, "Not all rows of table_data are of equal length"
+            
+        if columns and len_data_row != len(columns): # columns is allowed to be None
+            return False, "Column head list length not equal to data row"
+        
+        if formats and len_data_row != len(formats): # formats is allowed to be None
+            return False, "Formats list length not equal to data row"
+        
+        # Next check **kwargs
+        # Loop through the lists and return if not a list or len not equal
+        for l in input_kwargs:
+                if not l: # No kwarg is OK beacause they are optional
+                    return True, "kwarg None"
+                if not isinstance(l, list):
+                    return False, "One of the print_table kwargs that should be a list is not a list ({})".format(l)
+                else:
+                    if len(l) != len_data_row:
+                        return False, "print_table kwarg list length problem (should match {} columns)".format(len_data_row)
+
+        return True, "Inputs OK"
+
+    
+    def print_table(self,
+                table_data,
+                title='',
+                columns=None,
+                formats=None,
+                last_line_style='',
+                **kwargs):
+        """Print provided data in a HTML table in output window.
+           The same window can output several tables, each with their own formatting options.
 
         Args:
             table_data (list[iterable[Any]]): 2D array of data
             title (str): table title
             columns (list[str]): list of column names
-            formats (list[str]): column data formats
-            last_line_style (str): css style of last row
+            formats (list[str]): column data formats using python string formatting
+            last_line_style (str): css style of last row of data (NB applies to all tables in this output)
+            new kwargs:
+                column_head_align_styles (list[str]): list css align-text styles for header row
+                column_data_align_styles (list[str]): list css align-text styles for data rows
+                column_widths (list[str]): list of CSS widths in either px or % or 'auto' or a combination
+                column_vertical_border_style (str): CSS compact border definition
+                table_width_style (str): CSS to use for width for the whole table, in either px or % 
+                repeat_head_as_foot (bool): Repeat the header row at the table foot (useful for long tables)
 
         Examples:
             ```python
@@ -566,57 +654,117 @@ class PyRevitOutputWindow(object):
             title="Example Table",
             columns=["Row Name", "Column 1", "Column 2", "Percentage"],
             formats=['', '', '', '{}%'],
-            last_line_style='color:red;'
+            last_line_style='color:red;',
+            # new kwargs:
+                col_head_align_styles = ["left", "left", "center", "right"],
+                col_data_align_styles = ["left", "left", "center", "right"],
+                column_widths = ["100px", "100px", "500px", "100px"], | ["115px", "75px", "auto", "auto"]
+                column_vertical_border_style = "border:black solid 1px",
+                table_width_style='width:100%', 
+                repeat_head_as_foot=True
             )
+            Returns:
+                Directly prints:
+                    print_md of the title (str): 
+                    print_html of the generated HTML table with formatting.
             ```
         """
-        if not columns:
-            columns = []
-        if not formats:
-            formats = []
+
+        # Get user formatting options from kwargs
+        column_head_align_styles     = kwargs.get("column_head_align_styles", None)
+        column_data_align_styles     = kwargs.get("column_data_align_styles", None)
+        column_widths                = kwargs.get("column_widths", None)
+        column_vertical_border_style = kwargs.get("column_vertical_border_style", None)
+        table_width_style            = kwargs.get("table_width_style", None)
+        repeat_head_as_foot          = kwargs.get("repeat_head_as_foot", False)
+
+        # Set a unique ID for each table
+        # This is used in HTML tags to define CSS classes for formatting per table
+        table_uid = random.randint(10000, 99999) 
+
+        # Validate input arguments should be lists:
+        input_kwargs = [column_head_align_styles, column_data_align_styles, column_widths]
+        inputs_ok, inputs_msg = self.table_check_input_lists(table_data,
+                                             columns,
+                                             formats,
+                                             input_kwargs)
+
+        if not inputs_ok:
+            self.print_md('### :warning: {} '.format(inputs_msg))
+            return
 
         if last_line_style:
-            self.add_style('tr:last-child {{ {style} }}'
-                           .format(style=last_line_style))
+            # Adds a CCS class to allow a last-row format per table (if several in the same output)
+            self.add_style('tr.data-row-{}:last-child {{ {style} }}'.format(table_uid, style=last_line_style))
 
-        zipper = itertools.izip_longest #pylint: disable=E1101
-        adjust_base_col = '|'
-        adjust_extra_col = ':---|'
-        base_col = '|'
-        extra_col = '{data}|'
+        if column_head_align_styles:
+            for i, s in enumerate(column_head_align_styles):
+                self.add_style('.head_title-{}-{} {{ text-align:{style} }}'.format(table_uid, i, style=s))
 
-        # find max column count
-        max_col = max([len(x) for x in table_data])
+        if column_data_align_styles:
+            for i, s in enumerate(column_data_align_styles):
+                self.add_style('.data_cell-{}-{} {{ text-align:{style} }}'.format(table_uid, i, style=s))
 
-        header = ''
+        if table_width_style:
+            self.add_style('.tab-{} {{ width:{} }}'.format(table_uid, table_width_style))
+
+        # Open HTML table and its CSS class
+        html = "<table class='tab-{}'>".format(table_uid)
+
+        # Build colgroup if user argument specifies column widths
+        if column_widths:
+              COL = "<col style='width: {}'>"
+              html += '<colgroup>'
+              for w in column_widths:
+                  html += COL.format(w)
+              html += "</colgroup>"
+                
+        # Build header row (column titles) if requested
         if columns:
-            header = base_col
-            for idx, col_name in zipper(range(max_col), columns, fillvalue=''): #pylint: disable=W0612
-                header += extra_col.format(data=col_name)
+            html_head = self.table_html_header(columns, table_uid)
+            html += html_head
+        else:
+            html_head =""
+            repeat_head_as_foot = False
+        
+        if column_vertical_border_style:
+            border_style = "style='{}'".format(column_vertical_border_style)
+        else:
+            border_style = ""
+        
+        # Build body rows from 2D python list table_data
+        html += "<tbody>"
+        for row in table_data:
+            # Build an HTML data row with CSS class for this table
+            html += "<tr class='data-row-{}'>".format(table_uid)
+            for i, cell_data in enumerate(row):
+                
+                # Slight workaround to be backwards compatible with pyRevit original print_table
+                # pyRevit documentation gives the example: formats=['', '', '', '{}%'],
+                #     ie, sometimes giving an empty string, sometimes a placeholder with string formatting
+                if formats: # If format options provided
+                    if len(formats[i])<1: # Test for the empty string case
+                        format_placeholder = "{}"
+                    else: 
+                        format_placeholder = formats[i]
+                    
+                    cell_data = format_placeholder.format(cell_data) # Insert data with or without formatting
 
-            header += '\n'
+                html += "<td class='data_cell-{}-{}' {}>{}</td>".format(table_uid, i, border_style, cell_data)
+            html += "</tr>"
+        
+        # Re-insert header row at the end, if requested and if column titles provided
+        if repeat_head_as_foot:
+            html += html_head
 
-        justifier = adjust_base_col
-        for idx in range(max_col):
-            justifier += adjust_extra_col
 
-        justifier += '\n'
+        html += "</tbody>"
+        html += "</table>" # Close table
 
-        rows = ''
-        for entry in table_data:
-            row = base_col
-            for idx, attrib, attr_format \
-                    in zipper(range(max_col), entry, formats, fillvalue=''):
-                if attr_format:
-                    value = attr_format.format(attrib)
-                else:
-                    value = attrib
-                row += extra_col.format(data=value)
-            rows += row + '\n'
-
-        table = header + justifier + rows
-        self.print_md('### {title}'.format(title=title))
-        self.print_md(table)
+        if title:
+            self.print_md('### {title}'.format(title=title))
+        self.print_html(html)
+    
 
     def print_image(self, image_path):
         r"""Prints given image to the output.
