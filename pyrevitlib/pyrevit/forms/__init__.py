@@ -70,7 +70,7 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly"])
+ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
 """Parameter definition tuple.
 
 Attributes:
@@ -78,6 +78,8 @@ Attributes:
     istype (bool): true if type parameter, otherwise false
     definition (Autodesk.Revit.DB.Definition): parameter definition object
     isreadonly (bool): true if the parameter value can't be edited
+    isunit (bool): true if its ForgeTypeId is measurable
+    storagetype (Autodesk.Revit.DB.Storagetype): String, Integer, Double or ElementId
 """
 
 
@@ -2751,6 +2753,12 @@ def select_parameters(
                     istype=False,
                     definition=x.Definition,
                     isreadonly=x.IsReadOnly,
+                    isunit=(
+                        DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
+                        if HOST_APP.is_newer_than(2022, True)
+                        else False
+                    ),
+                    storagetype=x.StorageType,
                 )
                 for x in src_element.Parameters
                 if x.StorageType != non_storage_type
@@ -2768,6 +2776,12 @@ def select_parameters(
                         istype=True,
                         definition=x.Definition,
                         isreadonly=x.IsReadOnly,
+                        isunit=(
+                            DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
+                            if HOST_APP.is_newer_than(2022, True)
+                            else False
+                        ),
+                        storagetype=x.StorageType,
                     )
                     for x in src_type.Parameters
                     if x.StorageType != non_storage_type
