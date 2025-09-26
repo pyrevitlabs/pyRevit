@@ -590,14 +590,13 @@ class PyRevitOutputWindow(object):
             return False, "No table_data list"
         if not isinstance(table_data, list):
             return False, "table_data is not a list"
-        else: # table_data is a list. The first sublist must also be a list
-            first_data_row = table_data[0]
-            if not isinstance(first_data_row, list):
-                return False, "table_data's first row is not a list"
-            else:
-                len_data_row = len(first_data_row)
-                if not all(len(row) == len_data_row for row in table_data):
-                    return False, "Not all rows of table_data are of equal length"
+        # table_data is a list. The first sublist must also be a list
+        first_data_row = table_data[0]
+        if not isinstance(first_data_row, list):
+            return False, "table_data's first row is not a list"
+        len_data_row = len(first_data_row)
+        if not all(len(row) == len_data_row for row in table_data):
+            return False, "Not all rows of table_data are of equal length"
             
         if columns and len_data_row != len(columns): # columns is allowed to be None
             return False, "Column head list length not equal to data row"
@@ -608,13 +607,12 @@ class PyRevitOutputWindow(object):
         # Next check **kwargs
         # Loop through the lists and return if not a list or len not equal
         for l in input_kwargs:
-                if not l: # No kwarg is OK beacause they are optional
-                    return True, "kwarg None"
-                if not isinstance(l, list):
-                    return False, "One of the print_table kwargs that should be a list is not a list ({})".format(l)
-                else:
-                    if len(l) != len_data_row:
-                        return False, "print_table kwarg list length problem (should match {} columns)".format(len_data_row)
+            if not l: # No kwarg is OK beacause they are optional
+                return True, "kwarg None"
+            if not isinstance(l, list):
+                return False, "One of the print_table kwargs that should be a list is not a list ({})".format(l)
+            if len(l) != len_data_row:
+                return False, "print_table kwarg list length problem (should match {} columns)".format(len_data_row)
 
         return True, "Inputs OK"
 
