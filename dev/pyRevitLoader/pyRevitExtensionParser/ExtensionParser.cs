@@ -167,7 +167,10 @@ namespace pyRevitExtensionParser
 
                 if (scriptPath == null &&
                    (componentType == CommandComponentType.PushButton ||
-                    componentType == CommandComponentType.SmartButton))
+                    componentType == CommandComponentType.SmartButton ||
+                    componentType == CommandComponentType.PullDown ||
+                    componentType == CommandComponentType.SplitButton ||
+                    componentType == CommandComponentType.SplitPushButton))
                 {
                     var yaml = Path.Combine(dir, "bundle.yaml");
                     if (File.Exists(yaml))

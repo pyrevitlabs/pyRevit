@@ -125,6 +125,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var splitBtn = parentPanel.AddItem(splitData) as SplitButton;
                     if (splitBtn != null)
                     {
+                        // Assign tooltip to the split button itself
+                        if (!string.IsNullOrEmpty(component.Tooltip))
+                            splitBtn.ToolTip = component.Tooltip;
+
                         foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         {
                             if (sub.Type == CommandComponentType.PushButton)
@@ -211,6 +215,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         
                         if (ribbonItem is PulldownButton pdBtn)
                         {
+                            // Assign tooltip to the pulldown button itself in stack
+                            if (!string.IsNullOrEmpty(origComponent.Tooltip))
+                                pdBtn.ToolTip = origComponent.Tooltip;
+
                             foreach (var sub in origComponent.Children ?? Enumerable.Empty<ParsedComponent>())
                             {
                                 if (sub.Type == CommandComponentType.PushButton)
@@ -238,6 +246,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             var pdBtn = parentPanel.AddItem(pdData) as PulldownButton;
             if (pdBtn == null) return null;
+
+            // Assign tooltip to the pulldown button itself
+            if (!string.IsNullOrEmpty(component.Tooltip))
+                pdBtn.ToolTip = component.Tooltip;
 
             foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
