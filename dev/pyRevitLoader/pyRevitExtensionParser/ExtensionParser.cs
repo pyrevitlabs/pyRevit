@@ -151,13 +151,23 @@ namespace pyRevitExtensionParser
 
                 string scriptPath = null;
 
-                // Look for script files first (highest priority for script path)
-                scriptPath = Directory
-                    .EnumerateFiles(dir, "*", SearchOption.TopDirectoryOnly)
-                    .FirstOrDefault(f => f.EndsWith("script.py", StringComparison.OrdinalIgnoreCase));
+                if (componentType == CommandComponentType.UrlButton)
+                {
+                    var yaml = Path.Combine(dir, "bundle.yaml");
+                    if (File.Exists(yaml))
+                        scriptPath = yaml;
+                }
 
-                // If no script file found, check for bundle.yaml (for components that only have bundle configs)
                 if (scriptPath == null)
+                {
+                    scriptPath = Directory
+                        .EnumerateFiles(dir, "*", SearchOption.TopDirectoryOnly)
+                        .FirstOrDefault(f => f.EndsWith("script.py", StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (scriptPath == null &&
+                   (componentType == CommandComponentType.PushButton ||
+                    componentType == CommandComponentType.SmartButton))
                 {
                     var yaml = Path.Combine(dir, "bundle.yaml");
                     if (File.Exists(yaml))
@@ -167,15 +177,17 @@ namespace pyRevitExtensionParser
                 var bundleFile = Path.Combine(dir, "bundle.yaml");
                 var children = ParseComponents(dir, extensionName, fullPath);
 
-                // Parse values from Python script if available
+                // First, get values from Python script
                 string title = null, author = null, doc = null;
                 if (scriptPath != null && scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
                 {
                     (title, author, doc) = ReadPythonScriptConstants(scriptPath);
                 }
 
-                // Parse bundle and override script values if bundle values exist
+                // Then parse bundle and override with bundle values if they exist
                 var bundleInComponent = File.Exists(bundleFile) ? BundleYamlParser.Parse(bundleFile) : null;
+                
+                // Override script values with bundle values (bundle takes precedence)
                 if (bundleInComponent != null)
                 {
                     // Use en_us as default locale, fallback to first available, then to script values
@@ -192,18 +204,12 @@ namespace pyRevitExtensionParser
                         author = bundleInComponent.Author;
                 }
 
-                // Ensure every component gets a script path if it has either a script or bundle file
-                if (string.IsNullOrEmpty(scriptPath) && File.Exists(bundleFile))
-                {
-                    scriptPath = bundleFile;
-                }
-
                 components.Add(new ParsedComponent
                 {
                     Name = namePart,
                     DisplayName = displayName,
                     ScriptPath = scriptPath,
-                    Tooltip = doc ?? $"Command: {namePart}", // Bundle tooltip -> script __doc__ -> fallback
+                    Tooltip = doc ?? $"Command: {namePart}", // Set Tooltip from bundle -> __doc__ -> fallback
                     UniqueId = SanitizeClassName(fullPath.ToLowerInvariant()),
                     Type = componentType,
                     Children = children,
@@ -249,98 +255,20 @@ namespace pyRevitExtensionParser
         {
             string title = null, author = null, doc = null;
 
-            try
+            foreach (var line in File.ReadLines(scriptPath))
             {
-                var lines = File.ReadAllLines(scriptPath);
-                bool inMultilineDoc = false;
-                var docLines = new List<string>();
-
-                for (int i = 0; i < lines.Length; i++)
+                if (line.StartsWith("__title__"))
                 {
-                    var line = lines[i].Trim();
-
-                    // Handle multiline docstrings
-                    if (inMultilineDoc)
-                    {
-                        if (line.EndsWith("\"\"\"") || line.EndsWith("'''"))
-                        {
-                            // End of multiline docstring
-                            if (line.Length > 3)
-                            {
-                                docLines.Add(line.Substring(0, line.Length - 3).Trim());
-                            }
-                            doc = string.Join(" ", docLines).Trim();
-                            inMultilineDoc = false;
-                            docLines.Clear();
-                        }
-                        else
-                        {
-                            docLines.Add(line);
-                        }
-                        continue;
-                    }
-
-                    // Handle single-line constants
-                    if (line.StartsWith("__title__"))
-                    {
-                        title = ExtractPythonConstantValue(line);
-                    }
-                    else if (line.StartsWith("__author__"))
-                    {
-                        author = ExtractPythonConstantValue(line);
-                    }
-                    else if (line.StartsWith("__doc__"))
-                    {
-                        var docValue = ExtractPythonConstantValue(line);
-                        if (!string.IsNullOrEmpty(docValue))
-                        {
-                            doc = docValue;
-                        }
-                    }
-                    // Handle module-level docstrings (first triple-quoted string in file)
-                    else if ((line.StartsWith("\"\"\"") || line.StartsWith("'''")) && string.IsNullOrEmpty(doc))
-                    {
-                        var quote = line.StartsWith("\"\"\"") ? "\"\"\"" : "'''";
-                        
-                        if (line.Length > 6 && line.EndsWith(quote))
-                        {
-                            // Single-line docstring
-                            doc = line.Substring(3, line.Length - 6).Trim();
-                        }
-                        else if (line.Length > 3)
-                        {
-                            // Start of multiline docstring
-                            docLines.Add(line.Substring(3).Trim());
-                            inMultilineDoc = true;
-                        }
-                        else
-                        {
-                            // Empty start of multiline docstring
-                            inMultilineDoc = true;
-                        }
-                    }
-                    // Stop looking for docstring after we hit actual code
-                    else if (!string.IsNullOrWhiteSpace(line) && 
-                            !line.StartsWith("#") && 
-                            !line.StartsWith("import") && 
-                            !line.StartsWith("from") &&
-                            !line.StartsWith("__") &&
-                            string.IsNullOrEmpty(doc))
-                    {
-                        // We've hit actual code without finding a docstring, stop looking
-                        break;
-                    }
+                    title = ExtractPythonConstantValue(line);
                 }
-
-                // Handle incomplete multiline docstring at end of file
-                if (inMultilineDoc && docLines.Count > 0)
+                else if (line.StartsWith("__author__"))
                 {
-                    doc = string.Join(" ", docLines).Trim();
+                    author = ExtractPythonConstantValue(line);
                 }
-            }
-            catch (Exception)
-            {
-                // If file reading fails, just return nulls
+                else if (line.StartsWith("__doc__"))
+                {
+                    doc = ExtractPythonConstantValue(line);
+                }
             }
 
             return (title, author, doc);
@@ -351,23 +279,7 @@ namespace pyRevitExtensionParser
             var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2)
             {
-                var value = parts[1].Trim();
-                
-                // Handle single quotes
-                if ((value.StartsWith("'") && value.EndsWith("'")) ||
-                    (value.StartsWith("\"") && value.EndsWith("\"")))
-                {
-                    return value.Substring(1, value.Length - 2);
-                }
-                
-                // Handle triple quotes (multiline strings on single line)
-                if ((value.StartsWith("'''") && value.EndsWith("'''") && value.Length > 6) ||
-                    (value.StartsWith("\"\"\"") && value.EndsWith("\"\"\"") && value.Length > 6))
-                {
-                    return value.Substring(3, value.Length - 6).Trim();
-                }
-                
-                // Return as-is if no quotes (might be a variable reference)
+                var value = parts[1].Trim().Trim('\'', '"');
                 return value;
             }
             return null;

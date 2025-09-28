@@ -129,7 +129,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         {
                             if (sub.Type == CommandComponentType.PushButton)
                             {
-                                splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                                var subBtn = splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                                if (!string.IsNullOrEmpty(sub.Tooltip))
+                                    subBtn.ToolTip = sub.Tooltip;
                             }
                         }
                     }
@@ -200,13 +202,22 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     {
                         var ribbonItem = stackedItems[i];
                         var origComponent = originalItems[i];
+                        
+                        // Assign tooltip to push buttons in stack
+                        if (ribbonItem is PushButton pushBtn && !string.IsNullOrEmpty(origComponent.Tooltip))
+                        {
+                            pushBtn.ToolTip = origComponent.Tooltip;
+                        }
+                        
                         if (ribbonItem is PulldownButton pdBtn)
                         {
                             foreach (var sub in origComponent.Children ?? Enumerable.Empty<ParsedComponent>())
                             {
                                 if (sub.Type == CommandComponentType.PushButton)
                                 {
-                                    pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                                    var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                                    if (!string.IsNullOrEmpty(sub.Tooltip))
+                                        subBtn.ToolTip = sub.Tooltip;
                                 }
                             }
                         }
@@ -231,7 +242,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
                 if (sub.Type == CommandComponentType.PushButton)
-                    pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                {
+                    var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                    if (!string.IsNullOrEmpty(sub.Tooltip))
+                        subBtn.ToolTip = sub.Tooltip;
+                }
             }
             return pdData;
         }
