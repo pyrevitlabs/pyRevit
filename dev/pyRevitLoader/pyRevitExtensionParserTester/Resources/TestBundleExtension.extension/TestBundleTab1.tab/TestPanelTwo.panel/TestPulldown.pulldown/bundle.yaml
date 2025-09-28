@@ -1,0 +1,9 @@
+title:
+  en_us: Test Pulldown Button
+
+tooltip:
+  en_us: >-
+    This is a test tooltip for the pulldown button. It should appear when
+    hovering over the main pulldown button, not the default command tooltip.
+
+author: Test Author

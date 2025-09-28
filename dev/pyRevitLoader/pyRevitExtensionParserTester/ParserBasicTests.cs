@@ -322,6 +322,68 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        public void TestPulldownTooltipParsing()
+        {
+            var testBundlePath = @"Resources\TestBundleExtension.extension\TestBundleTab1.tab\TestPulldown.pulldown\bundle.yaml";
+            if (File.Exists(testBundlePath))
+            {
+                try
+                {
+                    var bundleData = BundleParser.BundleYamlParser.Parse(testBundlePath);
+                    
+                    TestContext.Out.WriteLine("=== Test Pulldown Bundle Parsing Results ===");
+                    TestContext.Out.WriteLine($"Bundle file: {testBundlePath}");
+                    
+                    if (bundleData.Titles?.Count > 0)
+                    {
+                        TestContext.Out.WriteLine("Titles:");
+                        foreach (var title in bundleData.Titles)
+                        {
+                            TestContext.Out.WriteLine($"  {title.Key}: {title.Value}");
+                        }
+                    }
+                    
+                    if (bundleData.Tooltips?.Count > 0)
+                    {
+                        TestContext.Out.WriteLine("Tooltips:");
+                        foreach (var tooltip in bundleData.Tooltips)
+                        {
+                            TestContext.Out.WriteLine($"  {tooltip.Key}: {tooltip.Value}");
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(bundleData.Author))
+                    {
+                        TestContext.Out.WriteLine($"Author: {bundleData.Author}");
+                    }
+                    
+                    // Verify that en_us tooltip was parsed correctly
+                    Assert.IsTrue(bundleData.Tooltips.ContainsKey("en_us"), "Should contain en_us tooltip");
+                    
+                    var enTooltip = bundleData.Tooltips["en_us"];
+                    TestContext.Out.WriteLine($"English tooltip: '{enTooltip}'");
+                    
+                    // Should not contain YAML syntax
+                    Assert.IsFalse(enTooltip.Contains("en_us:"), "Tooltip should not contain YAML syntax");
+                    Assert.IsFalse(enTooltip.Contains(">-"), "Tooltip should not contain YAML folding indicators");
+                    
+                    // Should contain the actual content
+                    Assert.IsTrue(enTooltip.Contains("This is a test tooltip for the pulldown button"), "Should contain the pulldown tooltip content");
+                    
+                    Assert.Pass("Pulldown tooltip parsing test completed successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Assert.Fail($"Failed to parse test pulldown bundle: {ex.Message}");
+                }
+            }
+            else
+            {
+                Assert.Fail($"Test pulldown bundle file not found: {testBundlePath}");
+            }
+        }
+
+        [Test]
         public void TestMultilineTooltipParsing()
         {
             var testBundlePath = @"Resources\TestBundleExtension.extension\TestBundleTab1.tab\TestTooltip.pushbutton\bundle.yaml";
@@ -381,6 +443,78 @@ namespace pyRevitExtensionParserTest
             {
                 Assert.Fail($"Test bundle file not found: {testBundlePath}");
             }
+        }
+
+        [Test]
+        public void TestPulldownComponentParsing()
+        {
+            if (_installedExtensions != null)
+            {
+                foreach (var parsedExtension in _installedExtensions)
+                {
+                    if (parsedExtension.Name == "TestBundleExtension")
+                    {
+                        TestContext.Out.WriteLine($"=== Testing Pulldown Component in {parsedExtension.Name} ===");
+                        
+                        var pulldownComponent = FindComponentRecursively(parsedExtension, "TestPulldown");
+                        if (pulldownComponent != null)
+                        {
+                            TestContext.Out.WriteLine($"Found pulldown component: {pulldownComponent.Name}");
+                            TestContext.Out.WriteLine($"Display Name: {pulldownComponent.DisplayName}");
+                            TestContext.Out.WriteLine($"Type: {pulldownComponent.Type}");
+                            TestContext.Out.WriteLine($"Tooltip: '{pulldownComponent.Tooltip ?? "NULL"}'");
+                            TestContext.Out.WriteLine($"Bundle File: {pulldownComponent.BundleFile ?? "NULL"}");
+                            TestContext.Out.WriteLine($"Title: {pulldownComponent.Title ?? "NULL"}");
+                            
+                            // Verify the component was parsed correctly
+                            Assert.AreEqual(CommandComponentType.PullDown, pulldownComponent.Type, "Component should be PullDown type");
+                            Assert.IsNotNull(pulldownComponent.Tooltip, "Tooltip should not be null");
+                            Assert.IsTrue(pulldownComponent.Tooltip.Contains("test tooltip for the pulldown button"), 
+                                         $"Tooltip should contain expected text, but was: '{pulldownComponent.Tooltip}'");
+                            
+                            // Check child components
+                            if (pulldownComponent.Children != null && pulldownComponent.Children.Count > 0)
+                            {
+                                TestContext.Out.WriteLine($"Child components count: {pulldownComponent.Children.Count}");
+                                foreach (var child in pulldownComponent.Children)
+                                {
+                                    TestContext.Out.WriteLine($"  Child: {child.Name} - {child.DisplayName} - Tooltip: '{child.Tooltip ?? "NULL"}'");
+                                }
+                            }
+                            
+                            Assert.Pass("Pulldown component parsing test completed successfully.");
+                        }
+                        else
+                        {
+                            Assert.Fail("TestPulldown component not found in parsed extension");
+                        }
+                        return;
+                    }
+                }
+                Assert.Fail("TestBundleExtension not found");
+            }
+            else
+            {
+                Assert.Fail("No installed extensions found.");
+            }
+        }
+
+        private ParsedComponent FindComponentRecursively(ParsedComponent parent, string componentName)
+        {
+            if (parent.Name == componentName)
+                return parent;
+
+            if (parent.Children != null)
+            {
+                foreach (var child in parent.Children)
+                {
+                    var found = FindComponentRecursively(child, componentName);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
         }
     }
 }
