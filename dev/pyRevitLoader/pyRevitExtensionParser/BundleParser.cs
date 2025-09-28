@@ -4,7 +4,7 @@ using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParser
 {
-    class BundleParser
+    public class BundleParser
     {
         public class ParsedBundle
         {
@@ -23,44 +23,60 @@ namespace pyRevitExtensionParser
                 var parsed = new ParsedBundle();
                 var lines = File.ReadAllLines(filePath);
                 string currentSection = null;
-                string currentKey = null;
-                bool isMultiline = false;
-                var multilineValue = new List<string>();
+                string currentLanguageKey = null;
+                bool isInMultilineValue = false;
+                bool isLiteralMultiline = false; // |-
+                bool isFoldedMultiline = false;  // >-
+                var multilineContent = new List<string>();
 
-                foreach (var raw in lines)
+                for (int i = 0; i < lines.Length; i++)
                 {
+                    var raw = lines[i];
                     var line = raw.Trim();
+                    
+                    // Skip empty lines (but preserve them in multiline content)
                     if (string.IsNullOrWhiteSpace(line))
-                        continue;
-
-                    // Handle multiline values
-                    if (isMultiline)
                     {
-                        if (line.StartsWith(" "))
+                        if (isInMultilineValue)
                         {
-                            multilineValue.Add(line.Trim());
+                            multilineContent.Add("");
+                        }
+                        continue;
+                    }
+
+                    // Handle multiline content continuation
+                    if (isInMultilineValue)
+                    {
+                        // Content must be indented more than the language key (more than 2 spaces)
+                        if (raw.StartsWith("    ") || raw.StartsWith("\t\t"))
+                        {
+                            var content = raw.TrimStart();
+                            multilineContent.Add(content);
                             continue;
                         }
                         else
                         {
-                            // End of multiline value
-                            var fullValue = string.Join("\n", multilineValue);
-                            if (currentSection == "title")
-                                parsed.Titles[currentKey] = fullValue;
-                            else if (currentSection == "tooltip")
-                                parsed.Tooltips[currentKey] = fullValue;
-
-                            isMultiline = false;
-                            multilineValue.Clear();
+                            // End of multiline - process accumulated content
+                            FinishMultilineValue(parsed, currentSection, currentLanguageKey, multilineContent, 
+                                               isLiteralMultiline, isFoldedMultiline);
+                            
+                            // Reset multiline state
+                            isInMultilineValue = false;
+                            isLiteralMultiline = false;
+                            isFoldedMultiline = false;
+                            multilineContent.Clear();
+                            currentLanguageKey = null;
+                            
+                            // Continue to process the current line that ended the multiline
                         }
                     }
 
-                    // Top‐level section header (no leading spaces)
-                    if (!raw.StartsWith(" ") && line.Contains(":"))
+                    // Top-level sections (no indentation)
+                    if (!raw.StartsWith(" ") && !raw.StartsWith("\t") && line.Contains(":"))
                     {
-                        var parts = line.Split(new[] { ':' }, 2);
-                        currentSection = parts[0].Trim().ToLowerInvariant();
-                        var value = parts[1].Trim();
+                        var colonIndex = line.IndexOf(':');
+                        currentSection = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
+                        var value = line.Substring(colonIndex + 1).Trim();
 
                         switch (currentSection)
                         {
@@ -70,80 +86,163 @@ namespace pyRevitExtensionParser
                             case "min_revit_version":
                                 parsed.MinRevitVersion = value;
                                 break;
-                            case "engine":
                             case "title":
                             case "tooltip":
                             case "layout":
+                            case "engine":
+                                // These sections have nested content
                                 break;
                         }
+                        continue;
                     }
-                    // Layout entries: any line starting with '-' under a layout section
-                    else if (currentSection == "layout" && line.StartsWith("-"))
+
+                    // Second-level items (indented with 2 spaces or 1 tab)
+                    if ((raw.StartsWith("  ") && !raw.StartsWith("    ")) || 
+                        (raw.StartsWith("\t") && !raw.StartsWith("\t\t")))
                     {
-                        var item = line.Substring(1).Trim();
-
-                        if ((item.StartsWith("\"") && item.EndsWith("\"")) ||
-                            (item.StartsWith("'") && item.EndsWith("'")))
+                        if (currentSection == "layout" && line.StartsWith("-"))
                         {
-                            item = item.Substring(1, item.Length - 2);
+                            // Layout list item
+                            var item = line.Substring(1).Trim();
+                            if ((item.StartsWith("\"") && item.EndsWith("\"")) ||
+                                (item.StartsWith("'") && item.EndsWith("'")))
+                            {
+                                item = item.Substring(1, item.Length - 2);
+                            }
+                            parsed.LayoutOrder.Add(item);
                         }
-
-                        parsed.LayoutOrder.Add(item);
-                    }
-                    // Titles and tooltips
-                    else if ((currentSection == "title" || currentSection == "tooltip") && line.Contains(":"))
-                    {
-                        var parts = line.Split(new[] { ':' }, 2);
-                        currentKey = parts[0].Trim();
-                        var text = parts[1].Trim();
-
-                        if (text == "|" || text == ">")
+                        else if ((currentSection == "title" || currentSection == "tooltip") && line.Contains(":"))
                         {
-                            // Start of multiline value
-                            isMultiline = true;
-                        }
-                        else
-                        {
-                            // Single-line value
-                            if (currentSection == "title")
-                                parsed.Titles[currentKey] = text;
+                            // Language-specific title or tooltip
+                            var colonIndex = line.IndexOf(':');
+                            currentLanguageKey = line.Substring(0, colonIndex).Trim();
+                            var value = line.Substring(colonIndex + 1).Trim();
+
+                            if (value == "|-")
+                            {
+                                // Literal multiline (preserve line breaks)
+                                isInMultilineValue = true;
+                                isLiteralMultiline = true;
+                            }
+                            else if (value == ">-")
+                            {
+                                // Folded multiline (join lines)
+                                isInMultilineValue = true;
+                                isFoldedMultiline = true;
+                            }
+                            else if (value == "|" || value == ">")
+                            {
+                                // Legacy multiline
+                                isInMultilineValue = true;
+                            }
+                            else if (!string.IsNullOrEmpty(value))
+                            {
+                                // Single-line value
+                                if (currentSection == "title")
+                                    parsed.Titles[currentLanguageKey] = value;
+                                else if (currentSection == "tooltip")
+                                    parsed.Tooltips[currentLanguageKey] = value;
+                            }
                             else
-                                parsed.Tooltips[currentKey] = text;
+                            {
+                                // Empty value after colon - might be implicit multiline
+                                isInMultilineValue = true;
+                            }
                         }
-                    }
-                    // Engine config options
-                    else if (currentSection == "engine" && line.Contains(":"))
-                    {
-                        var parts = line.Split(new[] { ':' }, 2);
-                        var key = parts[0].Trim().ToLowerInvariant();
-                        var val = parts[1].Trim().ToLowerInvariant();
-
-                        switch (key)
+                        else if (currentSection == "engine" && line.Contains(":"))
                         {
-                            case "clean":
-                                parsed.Engine.Clean = val == "true";
-                                break;
-                            case "full_frame":
-                                parsed.Engine.FullFrame = val == "true";
-                                break;
-                            case "persistent":
-                                parsed.Engine.Persistent = val == "true";
-                                break;
+                            // Engine configuration
+                            var colonIndex = line.IndexOf(':');
+                            var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
+                            var value = line.Substring(colonIndex + 1).Trim().ToLowerInvariant();
+
+                            switch (key)
+                            {
+                                case "clean":
+                                    parsed.Engine.Clean = value == "true";
+                                    break;
+                                case "full_frame":
+                                    parsed.Engine.FullFrame = value == "true";
+                                    break;
+                                case "persistent":
+                                    parsed.Engine.Persistent = value == "true";
+                                    break;
+                            }
                         }
                     }
                 }
 
-                // Handle any remaining multiline value
-                if (isMultiline)
+                // Handle any remaining multiline content at end of file
+                if (isInMultilineValue && multilineContent.Count > 0)
                 {
-                    var fullValue = string.Join("\n", multilineValue);
-                    if (currentSection == "title")
-                        parsed.Titles[currentKey] = fullValue;
-                    else if (currentSection == "tooltip")
-                        parsed.Tooltips[currentKey] = fullValue;
+                    FinishMultilineValue(parsed, currentSection, currentLanguageKey, multilineContent,
+                                       isLiteralMultiline, isFoldedMultiline);
                 }
 
                 return parsed;
+            }
+
+            private static void FinishMultilineValue(ParsedBundle parsed, string section, string languageKey,
+                                                   List<string> content, bool isLiteral, bool isFolded)
+            {
+                if (content.Count == 0 || string.IsNullOrEmpty(languageKey) || string.IsNullOrEmpty(section))
+                    return;
+
+                var processedValue = ProcessMultilineValue(content, isLiteral, isFolded);
+                
+                if (section == "title")
+                    parsed.Titles[languageKey] = processedValue;
+                else if (section == "tooltip")
+                    parsed.Tooltips[languageKey] = processedValue;
+            }
+
+            private static string ProcessMultilineValue(List<string> lines, bool isLiteral, bool isFolded)
+            {
+                if (lines.Count == 0)
+                    return string.Empty;
+
+                if (isLiteral)
+                {
+                    // Literal style: preserve line breaks
+                    return string.Join("\n", lines).TrimEnd('\n');
+                }
+                else if (isFolded)
+                {
+                    // Folded style: join lines with spaces, preserve paragraph breaks
+                    var result = new List<string>();
+                    var currentParagraph = new List<string>();
+
+                    foreach (var line in lines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            // Empty line - end current paragraph
+                            if (currentParagraph.Count > 0)
+                            {
+                                result.Add(string.Join(" ", currentParagraph));
+                                currentParagraph.Clear();
+                            }
+                            result.Add("");
+                        }
+                        else
+                        {
+                            currentParagraph.Add(line.Trim());
+                        }
+                    }
+
+                    // Add final paragraph
+                    if (currentParagraph.Count > 0)
+                    {
+                        result.Add(string.Join(" ", currentParagraph));
+                    }
+
+                    return string.Join("\n", result).Trim();
+                }
+                else
+                {
+                    // Default: join with newlines
+                    return string.Join("\n", lines);
+                }
             }
         }
     }
