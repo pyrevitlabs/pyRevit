@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 import os.path as op
 import pickle
-from System import Int64
 
-from pyrevit import revit, DB, HOST_APP
+from pyrevit import revit
 from pyrevit import script
+from pyrevit.compat import get_elementid_from_value_func
 
 
 logger = script.get_logger()
+
+get_elementid_from_value = get_elementid_from_value_func()
 
 
 def iterate(mode, step_size=1):
@@ -38,10 +40,7 @@ def iterate(mode, step_size=1):
                     idx = abs(idx / len(cursel)) * len(cursel) + idx
                 elif idx >= len(cursel):
                     idx = idx - abs(idx / len(cursel)) * len(cursel)
-                if HOST_APP.is_newer_than(2025):
-                    selection.set_to([DB.ElementId(Int64(list(cursel)[idx]))])
-                else:
-                    selection.set_to([DB.ElementId(int(list(cursel)[idx]))])
+                selection.set_to(get_elementid_from_value(list(cursel)[idx]))
 
                 with open(index_datafile, "wb") as f:
                     pickle.dump(idx, f)
