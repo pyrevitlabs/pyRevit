@@ -544,7 +544,8 @@ class PyRevitOutputWindow(object):
         html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
 
-    def table_html_header(self, columns, table_uid):
+
+    def table_html_header(self, columns, table_uid, border_style):
         """Helper method for print_table() method
 
         Return html <thead><tr><th> row for the table header
@@ -553,7 +554,7 @@ class PyRevitOutputWindow(object):
             table_uid (str): a unique ID for this table's CSS classes
         
         """
-        html_head = "<thead><tr>"
+        html_head = "<thead><tr {}>".format(border_style)
         for i, c in enumerate(columns):
             html_head += "<th class='head_title-{}-{}' align='left'>{}</th>".format(table_uid, i, c)
             # pyRevit original print_table uses align='left'.
@@ -591,9 +592,9 @@ class PyRevitOutputWindow(object):
         if not isinstance(table_data, list):
             return False, "table_data is not a list"
         # table_data is a list. The first sublist must also be a list
-        first_data_row = table_data[0]
+        first_data_row = list(table_data[0])
         if not isinstance(first_data_row, list):
-            return False, "table_data's first row is not a list"
+            return False, "table_data's first row is not a list or tuple ({})".format(type(first_data_row))
         len_data_row = len(first_data_row)
         if not all(len(row) == len_data_row for row in table_data):
             return False, "Not all rows of table_data are of equal length"
@@ -616,12 +617,12 @@ class PyRevitOutputWindow(object):
 
         return True, "Inputs OK"
 
-    
+
     def print_table(self,
                 table_data,
-                title='',
                 columns=None,
                 formats=None,
+                title='',
                 last_line_style='',
                 **kwargs):
         """Print provided data in a HTML table in output window.
@@ -633,13 +634,14 @@ class PyRevitOutputWindow(object):
             columns (list[str]): list of column names
             formats (list[str]): column data formats using python string formatting
             last_line_style (str): css style of last row of data (NB applies to all tables in this output)
-            new kwargs:
-                column_head_align_styles (list[str]): list css align-text styles for header row
-                column_data_align_styles (list[str]): list css align-text styles for data rows
-                column_widths (list[str]): list of CSS widths in either px or % or 'auto' or a combination
-                column_vertical_border_style (str): CSS compact border definition
-                table_width_style (str): CSS to use for width for the whole table, in either px or % 
-                repeat_head_as_foot (bool): Repeat the header row at the table foot (useful for long tables)
+            column_head_align_styles (list[str]): list css align-text styles for header row
+            column_data_align_styles (list[str]): list css align-text styles for data rows
+            column_widths (list[str]): list of CSS widths in either px or % 
+            column_vertical_border_style (str): CSS compact border definition
+            table_width_style (str): CSS to use for width for the whole table, in either px or % 
+            repeat_head_as_foot (bool): Repeat the header row at the table foot (useful for long tables)
+            row_striping (bool): False to override the default white-grey row stripes and make all white)
+
 
         Examples:
             ```python
@@ -653,13 +655,14 @@ class PyRevitOutputWindow(object):
             columns=["Row Name", "Column 1", "Column 2", "Percentage"],
             formats=['', '', '', '{}%'],
             last_line_style='color:red;',
-            # new kwargs:
-                col_head_align_styles = ["left", "left", "center", "right"],
-                col_data_align_styles = ["left", "left", "center", "right"],
-                column_widths = ["100px", "100px", "500px", "100px"], | ["115px", "75px", "auto", "auto"]
-                column_vertical_border_style = "border:black solid 1px",
-                table_width_style='width:100%', 
-                repeat_head_as_foot=True
+            col_head_align_styles = ["left", "left", "center", "right"],
+            col_data_align_styles = ["left", "left", "center", "right"],
+            column_widths = ["100px", "100px", "500px", "100px"],
+            column_vertical_border_style = "border:black solid 1px",
+            table_width_style='width:100%', 
+            repeat_head_as_foot=True,
+            row_striping=False
+
             )
             Returns:
                 Directly prints:
@@ -675,6 +678,8 @@ class PyRevitOutputWindow(object):
         column_vertical_border_style = kwargs.get("column_vertical_border_style", None)
         table_width_style            = kwargs.get("table_width_style", None)
         repeat_head_as_foot          = kwargs.get("repeat_head_as_foot", False)
+        row_striping                 = kwargs.get("row_striping", True)
+
 
         # Set a unique ID for each table
         # This is used in HTML tags to define CSS classes for formatting per table
@@ -691,6 +696,11 @@ class PyRevitOutputWindow(object):
             self.print_md('### :warning: {} '.format(inputs_msg))
             return
 
+        
+        if not row_striping:
+            # Override default original pyRevit white-grey row striping. Makes all rows white.
+            self.add_style('tr.data-row-{} {{ {style} }}'.format(table_uid, style="background-color: #ffffff"))
+
         if last_line_style:
             # Adds a CCS class to allow a last-row format per table (if several in the same output)
             self.add_style('tr.data-row-{}:last-child {{ {style} }}'.format(table_uid, style=last_line_style))
@@ -706,6 +716,7 @@ class PyRevitOutputWindow(object):
         if table_width_style:
             self.add_style('.tab-{} {{ width:{} }}'.format(table_uid, table_width_style))
 
+	
         # Open HTML table and its CSS class
         html = "<table class='tab-{}'>".format(table_uid)
 
@@ -716,19 +727,20 @@ class PyRevitOutputWindow(object):
               for w in column_widths:
                   html += COL.format(w)
               html += "</colgroup>"
-                
-        # Build header row (column titles) if requested
-        if columns:
-            html_head = self.table_html_header(columns, table_uid)
-            html += html_head
-        else:
-            html_head =""
-            repeat_head_as_foot = False
         
         if column_vertical_border_style:
             border_style = "style='{}'".format(column_vertical_border_style)
         else:
             border_style = ""
+
+        # Build header row (column titles) if requested
+        if columns:
+            html_head = self.table_html_header(columns, table_uid, border_style)
+            html += html_head
+        else:
+            html_head =""
+            repeat_head_as_foot = False
+
         
         # Build body rows from 2D python list table_data
         html += "<tbody>"
@@ -739,7 +751,7 @@ class PyRevitOutputWindow(object):
                 
                 # Slight workaround to be backwards compatible with pyRevit original print_table
                 # pyRevit documentation gives the example: formats=['', '', '', '{}%'],
-                #     ie, sometimes giving an empty string, sometimes a placeholder with string formatting
+                # Sometimes giving an empty string, sometimes a placeholder with string formatting
                 if formats: # If format options provided
                     if len(formats[i])<1: # Test for the empty string case
                         format_placeholder = "{}"
