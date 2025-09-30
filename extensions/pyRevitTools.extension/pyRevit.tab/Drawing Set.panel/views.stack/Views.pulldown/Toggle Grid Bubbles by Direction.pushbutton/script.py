@@ -10,12 +10,15 @@ from System.Windows import WindowStartupLocation
 from System.Collections.Generic import List
 from pyrevit import HOST_APP, DB, script, forms
 from pyrevit.revit.db import transaction
+from pyrevit.compat import get_elementid_value_func
 from coordinate_selector import show_coordinate_system_selector
 
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
 active_view = doc.ActiveView
 xamlfile = script.get_bundle_file("ui.xaml")
+
+get_elementid_value = get_elementid_value_func()
 
 VIEW_TYPES = [
     DB.ViewType.FloorPlan,
@@ -64,7 +67,7 @@ class GridsCollector:
             grid_category_id = int(DB.BuiltInCategory.OST_Grids)
             return (
                 elem.Category
-                and elem.Category.Id.IntegerValue == grid_category_id
+                and int(get_elementid_value(elem.Category.Id)) == grid_category_id
                 and hasattr(elem, "GetCurvesInView")
                 and not elem.IsCurved
                 and not self._is_grid_segment(elem)
