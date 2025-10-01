@@ -34,15 +34,12 @@ from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
 from pyrevit import DB
 
-
-#pylint: disable=W0703,C0302,C0103
 mlogger = logger.get_logger(__name__)
-
 
 DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
 
 
-def docclosing_eventhandler(sender, args):  #pylint: disable=W0613
+def docclosing_eventhandler(sender, args):
     """Close all output window on document closing."""
     ScriptConsoleManager.CloseActiveOutputWindows()
 
