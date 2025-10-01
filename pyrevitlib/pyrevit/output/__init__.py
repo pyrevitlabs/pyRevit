@@ -28,7 +28,7 @@ from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
-from pyrevit.coreutils import envvars, random
+from pyrevit.coreutils import envvars
 from pyrevit.runtime.types import ScriptConsoleManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
@@ -92,7 +92,10 @@ set_stylesheet(active_stylesheet)
 
 class PyRevitOutputWindow(object):
     """Wrapper to interact with the output window."""
-
+	
+    def __init__(self):  #  Mutable instance variable, which is incremented each time you print a table. 
+        self._table_counter = 0 # initialize the counter
+	
     @property
     def window(self):
         """``PyRevitLabs.PyRevit.Runtime.ScriptConsole``: Return output window object."""
@@ -609,7 +612,7 @@ class PyRevitOutputWindow(object):
         # Loop through the lists and return if not a list or len not equal
         for l in input_kwargs:
             if not l: # No kwarg is OK beacause they are optional
-                return True, "kwarg None"
+                continue
             if not isinstance(l, list):
                 return False, "One of the print_table kwargs that should be a list is not a list ({})".format(l)
             if len(l) != len_data_row:
@@ -681,9 +684,10 @@ class PyRevitOutputWindow(object):
         row_striping                 = kwargs.get("row_striping", True)
 
 
-        # Set a unique ID for each table
+        # Get a unique ID for each table from _table_counter
         # This is used in HTML tags to define CSS classes for formatting per table
-        table_uid = random.randint(10000, 99999) 
+        self._table_counter+=1
+        table_uid = self._table_counter
 
         # Validate input arguments should be lists:
         input_kwargs = [column_head_align_styles, column_data_align_styles, column_widths]
@@ -753,10 +757,7 @@ class PyRevitOutputWindow(object):
                 # pyRevit documentation gives the example: formats=['', '', '', '{}%'],
                 # Sometimes giving an empty string, sometimes a placeholder with string formatting
                 if formats: # If format options provided
-                    if len(formats[i])<1: # Test for the empty string case
-                        format_placeholder = "{}"
-                    else: 
-                        format_placeholder = formats[i]
+                    format_placeholder = formats[i] if formats[i] else "{}"
                     
                     cell_data = format_placeholder.format(cell_data) # Insert data with or without formatting
 
