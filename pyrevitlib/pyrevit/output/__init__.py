@@ -93,8 +93,8 @@ set_stylesheet(active_stylesheet)
 class PyRevitOutputWindow(object):
     """Wrapper to interact with the output window."""
 	
-    def __init__(self):  #  Mutable instance variable, which is incremented each time you print a table. 
-        self._table_counter = 0 # initialize the counter
+    def __init__(self): 
+        self._table_counter = 0
 	
     @property
     def window(self):
@@ -686,7 +686,7 @@ class PyRevitOutputWindow(object):
 
         # Get a unique ID for each table from _table_counter
         # This is used in HTML tags to define CSS classes for formatting per table
-        self._table_counter+=1
+        self._table_counter += 1
         table_uid = self._table_counter
 
         # Validate input arguments should be lists:
