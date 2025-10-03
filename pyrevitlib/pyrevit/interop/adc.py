@@ -130,6 +130,8 @@ def _get_organization_name(drv_info, path):
     """Get the organization name from the ADC path."""
     drive_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
     parts = path.replace(drive_schema, "").split('/')
+    if len(parts) < 2:
+        return None
     file_name = parts[1]
     drv_local_path = op.normpath(drv_info.WorkspaceLocation)
     subdirs = os.walk(drv_local_path)
