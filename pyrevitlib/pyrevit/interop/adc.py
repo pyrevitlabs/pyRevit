@@ -73,9 +73,9 @@ def _get_drive_from_local_path(adc, local_path):
 def _drive_path_to_local_path(drv_info, path):
     drive_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
     return op.normpath(
-        op.join(drv_info.WorkspaceLocation,
-                  path.replace(drive_schema, ""))
-        )
+        op.join(drv_info.WorkspaceLocation, path.replace(drive_schema, ""))
+    )
+
 
 def _ensure_local_path(adc, path):
     drv_info = _get_drive_from_path(adc, path)
@@ -129,7 +129,7 @@ def _get_item_property_id_value(adc, drive, item, prop_id):
 def _get_organization_name(drv_info, path):
     """Get the organization name from the ADC path."""
     drive_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
-    parts = path.replace(drive_schema, "").split('/')
+    parts = path.replace(drive_schema, "").split("/")
     if len(parts) < 2:
         return None
     file_name = parts[1]
@@ -175,11 +175,8 @@ def get_model_path(path):
         if org_name:
             drv_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
             rel_path = path.replace(drv_schema, "")
-            return os.path.normpath(os.path.join(
-                drv_info.WorkspaceLocation,
-                  org_name, 
-                  rel_path
-                )
+            return os.path.normpath(
+                os.path.join(drv_info.WorkspaceLocation, org_name, rel_path)
             )
     return None
 
