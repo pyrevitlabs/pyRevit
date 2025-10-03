@@ -1,6 +1,6 @@
 # coding=utf-8
 """Wrapping Autodesk Desktop Connector API."""
-
+import os
 import os.path as op
 from pyrevit import PyRevitException
 from pyrevit.framework import clr, Process
@@ -73,9 +73,9 @@ def _get_drive_from_local_path(adc, local_path):
 def _drive_path_to_local_path(drv_info, path):
     drive_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
     return op.normpath(
-        op.join(drv_info.WorkspaceLocation, path.replace(drive_schema, ""))
-    )
-
+        op.join(drv_info.WorkspaceLocation,
+                  path.replace(drive_schema, ""))
+        )
 
 def _ensure_local_path(adc, path):
     drv_info = _get_drive_from_path(adc, path)
@@ -126,6 +126,21 @@ def _get_item_property_id_value(adc, drive, item, prop_id):
                 return res.Values[0]
 
 
+def _get_organization_name(drv_info, path):
+    """Get the organization name from the ADC path."""
+    drive_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
+    parts = path.replace(drive_schema, "").split('/')
+    file_name = parts[1]
+    drv_local_path = op.normpath(drv_info.WorkspaceLocation)
+    subdirs = os.walk(drv_local_path)
+    for root, dirs, files in subdirs:
+        for f in files:
+            if f == file_name:
+                file_path = op.join(root, f)
+                org_name = file_path.replace(drv_local_path, "").split(os.sep)[1]
+                return org_name
+
+
 def is_available():
     """Check if ADC service is available."""
     try:
@@ -142,11 +157,29 @@ def get_drive_paths():
 
 
 def get_local_path(path):
-    """Convert ADC BIM360 drive path to local path."""
+    """Get the Local Path of the model on ADC."""
     adc = _get_adc()
     drv_info = _get_drive_from_path(adc, path)
     if drv_info:
         return _drive_path_to_local_path(drv_info, path)
+
+
+def get_model_path(path):
+    """Get the Model Path of the model on ADC."""
+    adc = _get_adc()
+    drv_info = _get_drive_from_path(adc, path)
+    org_name = _get_organization_name(drv_info, path)
+    if org_name:
+        if drv_info:
+            drv_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
+            rel_path = path.replace(drv_schema, "")
+            return os.path.normpath(os.path.join(
+                drv_info.WorkspaceLocation,
+                  org_name, 
+                  rel_path
+                )
+            )
+    return None
 
 
 def lock_file(path):
