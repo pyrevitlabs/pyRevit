@@ -170,9 +170,9 @@ def get_model_path(path):
     """Get the Model Path of the model on ADC."""
     adc = _get_adc()
     drv_info = _get_drive_from_path(adc, path)
-    org_name = _get_organization_name(drv_info, path)
-    if org_name:
-        if drv_info:
+    if drv_info:
+        org_name = _get_organization_name(drv_info, path)
+        if org_name:
             drv_schema = ADC_DRIVE_SCHEMA.format(drive_name=drv_info.Name)
             rel_path = path.replace(drv_schema, "")
             return os.path.normpath(os.path.join(
