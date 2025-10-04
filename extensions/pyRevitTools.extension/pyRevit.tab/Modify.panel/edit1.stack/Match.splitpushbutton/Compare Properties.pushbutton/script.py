@@ -51,6 +51,95 @@ def grab_props(src_element):
             if x.Definition.Name not in EXCLUDE_PARAMS]
 
 
+def compare_view_filters(view1, view2):
+    output.print_md("### View Filters")
+
+    filters1 = set(view1.GetFilters())
+    filters2 = set(view2.GetFilters())
+
+    filter_names1 = {view1.Document.GetElement(fid).Name: fid for fid in filters1}
+    filter_names2 = {view2.Document.GetElement(fid).Name: fid for fid in filters2}
+
+    shared_filters = set(filter_names1.keys()).intersection(set(filter_names2.keys()))
+    only_in_1 = set(filter_names1.keys()) - set(filter_names2.keys())
+    only_in_2 = set(filter_names2.keys()) - set(filter_names1.keys())
+
+    if only_in_1 or only_in_2:
+        rows = [[n, ""] for n in sorted(only_in_1)]
+        rows.extend([["", n] for n in sorted(only_in_2)])
+        output.print_table(
+            rows,
+            columns=["Only in Source View", "Only in Target View"],
+            title="Different Filter Assignments",
+        )
+
+    for fname in sorted(shared_filters):
+        fid1 = filter_names1[fname]
+        fid2 = filter_names2[fname]
+
+        ov1 = view1.GetFilterOverrides(fid1)
+        ov2 = view2.GetFilterOverrides(fid2)
+
+        differences = []
+
+        # Compare properties of OverrideGraphicSettings
+        # Colors
+        c1 = ov1.ProjectionLineColor
+        c2 = ov2.ProjectionLineColor
+        if c1.IsValid and c2.IsValid:
+            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
+                differences.append("ProjectionLineColor")
+        elif c1.IsValid != c2.IsValid:
+            differences.append("ProjectionLineColor")
+
+        c1 = ov1.SurfaceForegroundPatternColor
+        c2 = ov2.SurfaceForegroundPatternColor
+        if c1.IsValid and c2.IsValid:
+            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
+                differences.append("SurfaceColor")
+        elif c1.IsValid != c2.IsValid:
+            differences.append("SurfaceColor")
+
+        c1 = ov1.CutLineColor
+        c2 = ov2.CutLineColor
+        if c1.IsValid and c2.IsValid:
+            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
+                differences.append("CutLineColor")
+        elif c1.IsValid != c2.IsValid:
+            differences.append("CutLineColor")
+
+        c1 = ov1.CutBackgroundPatternColor
+        c2 = ov2.CutBackgroundPatternColor
+        if c1.IsValid and c2.IsValid:
+            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
+                differences.append("CutBackgroundPatternColor")
+        elif c1.IsValid != c2.IsValid:
+            differences.append("CutBackgroundPatternColor")
+
+        # Not checking pattern or linestyle overrides because I'm lazy
+
+        # Other appearance stuff
+        if ov1.Transparency != ov2.Transparency:
+            differences.append("Transparency")
+        if ov1.Halftone != ov2.Halftone:
+            differences.append("Halftone")
+
+        # More general stuff
+        if view1.GetIsFilterEnabled(fid1) != view2.GetIsFilterEnabled(fid2):
+            differences.append("Enabled Status")
+
+        if view1.GetFilterVisibility(fid1) != view2.GetFilterVisibility(fid2):
+            differences.append("Vsibility Status")
+
+        if differences:
+            output.print_md(
+                ":warning: **Filter '{}' has different overrides:** {}"
+                .format(fname, ", ".join(differences)))
+        else:
+            output.print_md(
+                ":white_heavy_check_mark: Filter '{}' overrides match.".format(fname))
+
+
 def compare_props(src_element, tgt_element):
     output.print_md("### Instance Properties")
     src_type = revit.query.get_type(src_element)
@@ -105,6 +194,10 @@ def compare_props(src_element, tgt_element):
                 columns=['Source Element Type', 'Target Element Type'],
                 title='Unique Type Properties'
                 )
+
+    # If both are views, compare filters
+    if isinstance(src_element, DB.View) and isinstance(tgt_element, DB.View):
+        compare_view_filters(src_element, tgt_element)
 
 
 # main
