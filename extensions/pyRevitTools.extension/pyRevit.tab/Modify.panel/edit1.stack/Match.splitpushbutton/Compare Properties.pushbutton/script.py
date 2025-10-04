@@ -1,5 +1,5 @@
 """Compare instance and type properties between two elements."""
-#pylint: disable=import-error,invalid-name,broad-except
+# pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
@@ -106,12 +106,16 @@ def compare_props(src_element, tgt_element):
                 title='Unique Type Properties'
                 )
 
+
 # main
 # try use selected elements
 selected_elements = revit.get_selection().elements
-if len(selected_elements) == 1 and forms.alert("Use selected %s?" % ("view"
-        if isinstance(selected_elements[0], DB.View) else "element"),
-                                               yes=True, no=True):
+if len(selected_elements) == 1 and forms.alert(
+    "Use selected %s?"
+    % ("view" if isinstance(selected_elements[0], DB.View) else "element"),
+    yes=True,
+    no=True,
+):
     source_element = selected_elements[0]
     target_type = "Views" if isinstance(source_element, DB.View)\
         else "Elements"
@@ -121,24 +125,35 @@ else:
     # some are not selectable in graphical views
     target_type = \
         forms.CommandSwitchWindow.show(
-            ["Elements", "Views"],
+            ["Elements", "Views", "View Templates"],
             message="Pick type of targets:")
 
     # determine source element
     if target_type == "Elements":
-        with forms.WarningBar(title="Pick source object:"):
-            source_element = revit.pick_element()
+        with forms.WarningBar(title="Pick source element:"):
+            source_element = revit.pick_element(message="Pick source element:")
     elif target_type == "Views":
         source_element = \
             forms.select_views(title="Select Source View", multiple=False)
+    elif target_type == "View Templates":
+        source_element = \
+            forms.select_viewtemplates(title="Select Source View Template", multiple=False)
 
 # grab parameters from source element
 if source_element:
     target_element = None
+
+    def exclude_source(el):
+        return el.Id != source_element.Id
+
     if target_type == "Elements":
-        target_element = revit.pick_element(message="Pick target element:")
+        with forms.WarningBar(title="Pick target object:"):
+            target_element = revit.pick_element(message="Pick target element:")
     elif target_type == "Views":
         target_element = \
-            forms.select_views(title="Select Target View", multiple=False)
+            forms.select_views(title="Select Target View", multiple=False, filterfunc=exclude_source)
+    elif target_type == "View Templates":
+        target_element = \
+            forms.select_viewtemplates(title="Select Target View Template", multiple=False, filterfunc=exclude_source)
     if target_element:
         compare_props(source_element, target_element)
