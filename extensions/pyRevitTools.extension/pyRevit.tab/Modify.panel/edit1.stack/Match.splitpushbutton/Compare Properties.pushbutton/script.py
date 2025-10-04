@@ -83,53 +83,58 @@ def compare_view_filters(view1, view2):
         differences = []
 
         # Compare properties of OverrideGraphicSettings
-        # Colors
-        c1 = ov1.ProjectionLineColor
-        c2 = ov2.ProjectionLineColor
-        if c1.IsValid and c2.IsValid:
-            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
-                differences.append("ProjectionLineColor")
-        elif c1.IsValid != c2.IsValid:
-            differences.append("ProjectionLineColor")
+        ov_attrs = [
+            # Colors
+            "ProjectionLineColor",
+            "SurfaceForegroundPatternColor",
+            "SurfaceBackgroundPatternColor",
+            "CutLineColor",
+            "CutForegroundPatternColor",
+            "CutBackgroundPatternColor",
 
-        c1 = ov1.SurfaceForegroundPatternColor
-        c2 = ov2.SurfaceForegroundPatternColor
-        if c1.IsValid and c2.IsValid:
-            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
-                differences.append("SurfaceColor")
-        elif c1.IsValid != c2.IsValid:
-            differences.append("SurfaceColor")
+            # Pattern IDs
+            "SurfaceForegroundPatternId",
+            "SurfaceBackgroundPatternId",
+            "CutForegroundPatternId",
+            "CutBackgroundPatternId",
+            "ProjectionLinePatternId",
+            "CutLinePatternId",
 
-        c1 = ov1.CutLineColor
-        c2 = ov2.CutLineColor
-        if c1.IsValid and c2.IsValid:
-            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
-                differences.append("CutLineColor")
-        elif c1.IsValid != c2.IsValid:
-            differences.append("CutLineColor")
+            # Line weights
+            "ProjectionLineWeight",
+            "CutLineWeight",
 
-        c1 = ov1.CutBackgroundPatternColor
-        c2 = ov2.CutBackgroundPatternColor
-        if c1.IsValid and c2.IsValid:
-            if c1.Red != c2.Red or c1.Green != c2.Green or c1.Blue != c2.Blue:
-                differences.append("CutBackgroundPatternColor")
-        elif c1.IsValid != c2.IsValid:
-            differences.append("CutBackgroundPatternColor")
+            # Visibility flags
+            "IsSurfaceForegroundPatternVisible",
+            "IsSurfaceBackgroundPatternVisible",
+            "IsCutForegroundPatternVisible",
+            "IsCutBackgroundPatternVisible",
 
-        # Not checking pattern or linestyle overrides because I'm lazy
+            # Other
+            "Transparency",
+            "Halftone",
+        ]
 
-        # Other appearance stuff
-        if ov1.Transparency != ov2.Transparency:
-            differences.append("Transparency")
-        if ov1.Halftone != ov2.Halftone:
-            differences.append("Halftone")
+        for attr in ov_attrs:
+            val1 = getattr(ov1, attr)
+            val2 = getattr(ov2, attr)
+
+            if isinstance(val1, DB.Color):
+                if val1.IsValid and val2.IsValid:
+                    if val1.Red != val2.Red or val1.Green != val2.Green or val1.Blue != val2.Blue:
+                        differences.append(attr)
+                elif val1.IsValid != val2.IsValid:
+                    differences.append(attr)
+            else:
+                if val1 != val2:
+                    differences.append(attr)
 
         # More general stuff
         if view1.GetIsFilterEnabled(fid1) != view2.GetIsFilterEnabled(fid2):
             differences.append("Enabled Status")
 
         if view1.GetFilterVisibility(fid1) != view2.GetFilterVisibility(fid2):
-            differences.append("Vsibility Status")
+            differences.append("Visibility Status")
 
         if differences:
             output.print_md(
