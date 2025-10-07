@@ -549,14 +549,46 @@ class PyRevitOutputWindow(object):
         """Helper method for print_table() method
 
         Return html <thead><tr><th> row for the table header
+        
         Args:
             columns (list[str]): list of column names
             table_uid (str): a unique ID for this table's CSS classes
+            border_style (str): CSS border style string for table cells
         
+        Returns:
+            str: HTML string containing the table header row
+            
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            
+            # Basic usage - called internally by print_table()
+            columns = ["Name", "Age", "City"]
+            table_uid = 1
+            border_style = "border: 1px solid black;"
+            header_html = output.table_html_header(
+                columns, table_uid, border_style)
+            # Returns: "<thead><tr style='border: 1px solid black;'>" \
+            #          "<th class='head_title-1-0' align='left'>Name</th>" \
+            #          "<th class='head_title-1-1' align='left'>Age</th>" \
+            #          "<th class='head_title-1-2' align='left'>City</th>" \
+            #          "</tr></thead>"
+            
+            # Without border style
+            header_html = output.table_html_header(
+                columns, table_uid, "")
+            # Returns: "<thead><tr>" \
+            #          "<th class='head_title-1-0' align='left'>Name</th>" \
+            #          "<th class='head_title-1-1' align='left'>Age</th>" \
+            #          "<th class='head_title-1-2' align='left'>City</th>" \
+            #          "</tr></thead>"
+            ```
         """
         html_head = "<thead><tr {}>".format(border_style)
         for i, c in enumerate(columns):
-            html_head += "<th class='head_title-{}-{}' align='left'>{}</th>".format(table_uid, i, c)
+            html_head += \
+                "<th class='head_title-{}-{}' align='left'>{}</th>".format(
+                    table_uid, i, c)
             # pyRevit original print_table uses align='left'.
             # This is now overridden by CSS if specified
         html_head += "</tr></thead>"
@@ -565,25 +597,59 @@ class PyRevitOutputWindow(object):
 
 
     def table_check_input_lists(self, 
-                            table_data,
-                            columns,
-                            formats,
-                            input_kwargs):
+                                table_data,
+                                columns,
+                                formats,
+                                input_kwargs):
         """Helper method for print_table() method
         
         Check that the table_data is present and is a list
         Check that table_data rows are of the same length
-        Check that all print_table() kwargs of type list are of the right length
+        Check that all print_table() kwargs of type list are of correct length
 
         Args:
-            table_data(iterable[Any]]): The whole table data 
-            columns (list[str]): columns
-            formats (list[str]): formats
-            input_kwargs (iterable[Any]]): list of arg lists
+            table_data (list[list[Any]]): The whole table data as 2D list
+            columns (list[str]): list of column names
+            formats (list[str]): list of format strings for each column
+            input_kwargs (list[list[Any]]): list of additional argument lists
         
-        Return:
-            True if input lists are OK to proceed to build the table
-            False if not, with a relevant warning message
+        Returns:
+            tuple: (bool, str) - (True/False, message) indicating result
+            
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            
+            # Valid table data
+            table_data = [["John", 25, "NYC"], ["Jane", 30, "LA"]]
+            columns = ["Name", "Age", "City"]
+            formats = ["", "{} years", ""]
+            input_kwargs = [["left", "center", "right"], 
+                           ["100px", "80px", "120px"]]
+            
+            is_valid, message = output.table_check_input_lists(
+                table_data, columns, formats, input_kwargs)
+            # Returns: (True, "Inputs OK")
+            
+            # Invalid - mismatched column count
+            table_data = [["John", 25], ["Jane", 30, "LA"]]  # Inconsistent
+            is_valid, message = output.table_check_input_lists(
+                table_data, columns, formats, input_kwargs)
+            # Returns: (False, "Not all rows of table_data are of "
+            #           "equal length")
+            
+            # Invalid - wrong number of columns
+            columns = ["Name", "Age"]  # Only 2 columns but data has 3
+            is_valid, message = output.table_check_input_lists(
+                table_data, columns, formats, input_kwargs)
+            # Returns: (False, "Column head list length not equal "
+            #           "to data row")
+            
+            # Invalid - empty table data
+            is_valid, message = output.table_check_input_lists(
+                [], columns, formats, input_kwargs)
+            # Returns: (False, "No table_data list")
+            ```
         """
   
         # First check positional and named keyword args
@@ -607,24 +673,24 @@ class PyRevitOutputWindow(object):
         
         # Next check **kwargs
         # Loop through the lists and return if not a list or len not equal
-        for l in input_kwargs:
-            if not l: # No kwarg is OK beacause they are optional
+        for kwarg_list in input_kwargs:
+            if not kwarg_list: # No kwarg is OK beacause they are optional
                 continue
-            if not isinstance(l, list):
-                return False, "One of the print_table kwargs that should be a list is not a list ({})".format(l)
-            if len(l) != len_data_row:
+            if not isinstance(kwarg_list, list):
+                return False, "One of the print_table kwargs that should be a list is not a list ({})".format(kwarg_list)
+            if len(kwarg_list) != len_data_row:
                 return False, "print_table kwarg list length problem (should match {} columns)".format(len_data_row)
 
         return True, "Inputs OK"
 
 
     def print_table(self,
-                table_data,
-                columns=None,
-                formats=None,
-                title='',
-                last_line_style='',
-                **kwargs):
+                    table_data,
+                    columns=None,
+                    formats=None,
+                    title='',
+                    last_line_style='',
+                    **kwargs):
         """Print provided data in a HTML table in output window.
            The same window can output several tables, each with their own formatting options.
 
