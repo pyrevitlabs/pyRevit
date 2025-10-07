@@ -478,6 +478,17 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     def show_dialog(self):
         self.ShowDialog()
 
+class SheetSetList(object):
+    """List of sheets from a named Revit Sheet Set."""
+    def __init__(self, view_sheetset):
+        self.doc = view_sheetset.Document
+        self.name = view_sheetset.Name
+        self.sheetset = view_sheetset
+
+    def get_sheets(self, doc):
+        if doc == self.doc:
+            return list(self.sheetset.Views)
+        return []
 
 class ScheduleSheetList(object):
     def __init__(self, view_shedule):
@@ -784,13 +795,19 @@ class PrintSheetsWindow(forms.WPFWindow):
             self.combine_cb.IsChecked = False
 
     def _setup_sheet_list(self):
-        sheet_indices  = self._get_sheet_index_list()
-        sheet_indices.append(
-            AllSheetsList()
-            )
-        sheet_indices.append(
-            UnlistedSheetsList()
-            )
+        sheet_indices = self._get_sheet_index_list()
+        try:
+            cl = DB.FilteredElementCollector(self.selected_doc)
+            sheetsets = cl.OfClass(framework.get_type(DB.ViewSheetSet)) \
+                        .WhereElementIsNotElementType() \
+                        .ToElements()
+            for ss in sheetsets:
+                sheet_indices.append(SheetSetList(ss))
+        except Exception as e:
+            logger.warning("Could not load sheet sets: {}".format(e))
+        sheet_indices.append(AllSheetsList())
+        sheet_indices.append(UnlistedSheetsList())
+
         self.schedules_cb.ItemsSource = sheet_indices
         self.schedules_cb.SelectedIndex = 0
         if self.schedules_cb.ItemsSource:
