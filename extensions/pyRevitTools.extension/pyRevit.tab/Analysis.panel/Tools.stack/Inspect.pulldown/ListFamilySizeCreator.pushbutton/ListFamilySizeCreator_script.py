@@ -3,6 +3,7 @@
 import os
 import math
 import tempfile
+from collections import defaultdict
 from pyrevit import revit, forms, script, DB, HOST_APP
 
 output = script.get_output()
@@ -14,6 +15,7 @@ if not os.path.exists(temp_dir):
     os.mkdir(temp_dir)
 save_as_options = DB.SaveAsOptions()
 save_as_options.OverwriteExistingFile = True
+
 
 def convert_size(size_bytes):
     if not size_bytes:
@@ -75,7 +77,7 @@ def print_sorted(families, group_by):
                 key=lambda fam_item: fam_item.get(sort_by),
                 reverse=False
             )
-        
+
         for fam_item in sorted_families:
             group_by_value = fam_item[group_by]
             if group_by_value not in families_grouped:
@@ -86,7 +88,7 @@ def print_sorted(families, group_by):
         if group_by in ["Creator", "Category"]:
             output.print_md("---")
             output.print_md("## {}: {}".format(group_by, group_value))
-        
+
         # Prepare table data
         table_data = []
         for fam_item in families_grouped[group_value]:
@@ -100,19 +102,21 @@ def print_sorted(families, group_by):
                 else:
                     row.append(str(value))
             table_data.append(row)
-        
+
         # Print table using output.print_table()
         output.print_table(
             table_data,
             columns=fields_sorted
         )
-        
+
         print_totals(families_grouped[group_value])
+
 
 # main logic
 # ask use to choose sort option
-sort_by = forms.CommandSwitchWindow.show(FIELDS,
-     message='Sorting options:',
+sort_by = forms.CommandSwitchWindow.show(
+    FIELDS,
+    message="Sorting options:",
 )
 if not sort_by:
     script.exit()
@@ -131,12 +135,6 @@ all_family_instances = DB.FilteredElementCollector(revit.doc)\
                         .ToElements()
 
 # Create a dictionary to count instances per family
-family_instance_counts = {}
-for instance in all_family_instances:
-    try:
-        if instance.Symbol:
-            family_name = instance.Symbol.Family.Name
-            family_instance_counts[family_name] = \
 family_instance_counts = defaultdict(int)
 for instance in all_family_instances:
     try:
@@ -172,10 +170,10 @@ with forms.ProgressBar(title="List family sizes", cancellable=True) as pb:
                                                                   fam.Id).Creator
                 if fam_path and os.path.exists(fam_path):
                     fam_size = os.path.getsize(fam_path)
-                
+
                 # Get instance count for this family
                 fam_count = family_instance_counts.get(fam.Name, 0)
-                
+
                 all_family_items.append({"Size": fam_size,
                                          "Creator": fam_creator,
                                          "Category": fam_category,

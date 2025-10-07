@@ -14,9 +14,12 @@ from rpw.ui.forms import (
 from pyrevit import script, DB, HOST_APP, revit
 from pyrevit.forms import alert, ProgressBar
 from pyrevit.revit.db.create import FamilyLoaderOptionsHandler
+from pyrevit.compat import get_elementid_value_func
 
 output = script.get_output()
 logger = script.get_logger()
+
+get_elementid_value = get_elementid_value_func()
 
 
 def rename_element_type_if_needed(element_type, old_font, new_font_name):
@@ -35,7 +38,7 @@ def rename_element_type_if_needed(element_type, old_font, new_font_name):
         # Use case-insensitive replace
         new_name = current_name  # fallback value
         try:
-            new_name = re.sub(re.escape(old_font), new_font, current_name, flags=re.IGNORECASE)
+            new_name = re.sub(re.escape(old_font), new_font_name, current_name, flags=re.IGNORECASE)
             if new_name != current_name:
                 DB.Element.Name.SetValue(element_type, new_name)
                 logger.debug("Renamed type from '{}' to '{}'".format(current_name, new_name))
@@ -60,26 +63,16 @@ def update_nested_generic_annotations(host_family_doc, font_name):
     found_in_any_nested = False
 
     # Find nested families of category "Generic Annotation"
-    if HOST_APP.is_newer_than(2024):
-        nested_families = [
-            f
-            for f in DB.FilteredElementCollector(host_family_doc)
-            .OfClass(DB.Family)
-            .ToElements()
-            if f.FamilyCategory
-            and f.FamilyCategory.Id.Value
-            == int(DB.BuiltInCategory.OST_GenericAnnotation)
-        ]
-    else:
-        nested_families = [
-            f
-            for f in DB.FilteredElementCollector(host_family_doc)
-            .OfClass(DB.Family)
-            .ToElements()
-            if f.FamilyCategory
-            and f.FamilyCategory.Id.IntegerValue
-            == int(DB.BuiltInCategory.OST_GenericAnnotation)
-        ]
+    nested_families = [
+        f
+        for f in DB.FilteredElementCollector(host_family_doc)
+        .OfClass(DB.Family)
+        .ToElements()
+        if f.FamilyCategory
+        and get_elementid_value(f.FamilyCategory.Id)
+        == int(DB.BuiltInCategory.OST_GenericAnnotation)
+    ]
+
     for nested_family in nested_families:
         if not nested_family.IsEditable:
             continue
@@ -162,7 +155,7 @@ def process_family_document(family_doc, new_font_name):
                 .OfClass(DB.ElementType)
                 .ToElements()
             )
-            
+
             for element_type in element_types:
                 try:
                     param = element_type.get_Parameter(bip)
@@ -195,7 +188,7 @@ def process_family_document(family_doc, new_font_name):
         if nested_found:
             found = True
             result.extend(nested_results)
-    
+
     return result, found
 
 

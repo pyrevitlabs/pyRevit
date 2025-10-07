@@ -21,7 +21,12 @@ output wrapper.
 
 from __future__ import print_function
 import os.path as op
-import itertools
+import sys
+from pyrevit.compat import PY2, PY3
+if PY2:
+    from itertools import izip_longest as zip_longest
+elif PY3:
+    from itertools import zip_longest
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import framework
@@ -543,6 +548,8 @@ class PyRevitOutputWindow(object):
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
         html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
+        if PY3:
+            sys.stdout.flush()
 
 
     def table_html_header(self, columns, table_uid, border_style):
