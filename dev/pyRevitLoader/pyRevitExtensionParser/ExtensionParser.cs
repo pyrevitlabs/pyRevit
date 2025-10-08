@@ -25,31 +25,81 @@ namespace pyRevitExtensionParser
 
                 foreach (var extDir in Directory.GetDirectories(root, "*.extension"))
                 {
-                    var extName = Path.GetFileNameWithoutExtension(extDir);
-                    var children = ParseComponents(extDir, extName);
-
-                    var bundlePath = Path.Combine(extDir, "bundle.yaml");
-                    ParsedBundle parsedBundle = File.Exists(bundlePath)
-                        ? BundleYamlParser.Parse(bundlePath)
-                        : null;
-
-                    var parsedExtension = new ParsedExtension
-                    {
-                        Name = extName,
-                        Directory = extDir,
-                        Children = children,
-                        LayoutOrder = parsedBundle?.LayoutOrder,
-                        Titles = parsedBundle?.Titles,
-                        Tooltips = parsedBundle?.Tooltips,
-                        MinRevitVersion = parsedBundle?.MinRevitVersion,
-                        Engine = parsedBundle?.Engine
-                    };
-
-                    ReorderByLayout(parsedExtension);
-
-                    yield return parsedExtension;
+                    yield return ParseExtension(extDir);
                 }
             }
+        }
+
+        /// <summary>
+        /// Parses a specific extension from the given extension path
+        /// </summary>
+        /// <param name="extensionPath">The full path to the .extension directory</param>
+        /// <returns>A single ParsedExtension if the path is valid and contains an extension, otherwise empty</returns>
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath)
+        {
+            if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
+                yield break;
+
+            // Ensure the directory has .extension suffix
+            if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+                yield break;
+
+            yield return ParseExtension(extensionPath);
+        }
+
+        /// <summary>
+        /// Parses specific extensions from the given extension paths
+        /// </summary>
+        /// <param name="extensionPaths">The full paths to the .extension directories</param>
+        /// <returns>ParsedExtensions for valid paths that contain extensions</returns>
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(IEnumerable<string> extensionPaths)
+        {
+            if (extensionPaths == null)
+                yield break;
+
+            foreach (var extensionPath in extensionPaths)
+            {
+                if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
+                    continue;
+
+                // Ensure the directory has .extension suffix
+                if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                yield return ParseExtension(extensionPath);
+            }
+        }
+
+        /// <summary>
+        /// Parses a single extension from the given extension directory path
+        /// </summary>
+        /// <param name="extDir">The path to the .extension directory</param>
+        /// <returns>A ParsedExtension object</returns>
+        private static ParsedExtension ParseExtension(string extDir)
+        {
+            var extName = Path.GetFileNameWithoutExtension(extDir);
+            var children = ParseComponents(extDir, extName);
+
+            var bundlePath = Path.Combine(extDir, "bundle.yaml");
+            ParsedBundle parsedBundle = File.Exists(bundlePath)
+                ? BundleYamlParser.Parse(bundlePath)
+                : null;
+
+            var parsedExtension = new ParsedExtension
+            {
+                Name = extName,
+                Directory = extDir,
+                Children = children,
+                LayoutOrder = parsedBundle?.LayoutOrder,
+                Titles = parsedBundle?.Titles,
+                Tooltips = parsedBundle?.Tooltips,
+                MinRevitVersion = parsedBundle?.MinRevitVersion,
+                Engine = parsedBundle?.Engine
+            };
+
+            ReorderByLayout(parsedExtension);
+
+            return parsedExtension;
         }
 
         /// <summary>
@@ -212,7 +262,7 @@ namespace pyRevitExtensionParser
                     Name = namePart,
                     DisplayName = displayName,
                     ScriptPath = scriptPath,
-                    Tooltip = doc ?? $"Command: {namePart}", // Set Tooltip from bundle -> __doc__ -> fallback
+                    Tooltip = doc ?? "",
                     UniqueId = SanitizeClassName(fullPath.ToLowerInvariant()),
                     Type = componentType,
                     Children = children,
