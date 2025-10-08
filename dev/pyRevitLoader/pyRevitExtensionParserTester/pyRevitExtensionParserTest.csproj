@@ -18,6 +18,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ParsedBundleTests.cs" />
+    <Compile Include="ParsedComponentTests.cs" />
     <Compile Include="ParserBasicTests.cs" />
     <Compile Include="DiagnosticTests.cs" />
   </ItemGroup>

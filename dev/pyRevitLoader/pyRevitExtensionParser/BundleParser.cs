@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParser
 {
