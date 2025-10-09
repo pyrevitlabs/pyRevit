@@ -87,7 +87,8 @@ def get_load_stat(cad, is_link):
     try:
         exfs = cad_type.GetExternalFileReference()
         status = exfs.GetLinkedFileStatus().ToString()
-    except:
+    except Exception:
+        # Fallback for cloud-based CAD links (ACC/ADC)
         exfs = cad_type.GetExternalResourceReferences()
         # exfs is a dictionary: {ExternalResourceType: ExternalResourceReference}
         # Get the first ExternalResourceReference if there is one
