@@ -84,14 +84,29 @@ def get_load_stat(cad, is_link):
     
     if not is_link:
         return ":warning: IMPORTED" # Not an external reference
-    exfs = cad_type.GetExternalFileReference()
-    status = exfs.GetLinkedFileStatus().ToString()
+    try:
+        exfs = cad_type.GetExternalFileReference()
+        status = exfs.GetLinkedFileStatus().ToString()
+    except:
+        exfs = cad_type.GetExternalResourceReferences()
+        # exfs is a dictionary: {ExternalResourceType: ExternalResourceReference}
+        # Get the first ExternalResourceReference if there is one
+        ext_ref = next(iter(exfs.Values)) if exfs.Count > 0 else None
+        status = ext_ref.GetResourceVersionStatus().ToString() if ext_ref else None
+
+    if not exfs:
+        return ":warning: IMPORTED" # Not an external reference
+    
     if status == "Loaded":
         return ":ballot_box_with_check: Loaded"
     if status == "NotFound":
         return ":cross_mark: NotFound"
     if status == "Unloaded":
         return ":heavy_multiplication_x: Unloaded"
+    if status == "OutOfDate":
+        return ":warning: Outdated on ADC"
+    if  status == "Current":
+        return ":ballot_box_with_check: Current on ADC"
     raise ValueError("Unexpected status {}".format(status))
 
 
