@@ -17,6 +17,25 @@ namespace pyRevitExtensionParser
         public bool HasSlideout { get; set; } = false;
         public string Title { get; set; }
         public string Author { get; set; }
-    }
 
+        /// <summary>
+        /// Collection of icon files associated with this component
+        /// </summary>
+        public ComponentIconCollection Icons { get; set; } = new ComponentIconCollection();
+
+        /// <summary>
+        /// Gets the primary icon for this component (convenience property)
+        /// </summary>
+        public ComponentIcon PrimaryIcon => Icons?.PrimaryIcon;
+
+        /// <summary>
+        /// Whether this component has any icons
+        /// </summary>
+        public bool HasIcons => Icons?.Count > 0;
+
+        /// <summary>
+        /// Whether this component has any valid (existing) icons
+        /// </summary>
+        public bool HasValidIcons => Icons?.HasValidIcons == true;
+    }
 }

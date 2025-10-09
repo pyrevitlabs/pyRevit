@@ -86,8 +86,11 @@ namespace pyRevitExtensionParser
                                 parsed.MinRevitVersion = value;
                                 break;
                             case "title":
+                            case "titles":
                             case "tooltip":
+                            case "tooltips":
                             case "layout":
+                            case "layout_order":
                             case "engine":
                                 // These sections have nested content
                                 break;
@@ -99,7 +102,7 @@ namespace pyRevitExtensionParser
                     if ((raw.StartsWith("  ") && !raw.StartsWith("    ")) || 
                         (raw.StartsWith("\t") && !raw.StartsWith("\t\t")))
                     {
-                        if (currentSection == "layout" && line.StartsWith("-"))
+                        if ((currentSection == "layout" || currentSection == "layout_order") && line.StartsWith("-"))
                         {
                             // Layout list item
                             var item = line.Substring(1).Trim();
@@ -110,7 +113,8 @@ namespace pyRevitExtensionParser
                             }
                             parsed.LayoutOrder.Add(item);
                         }
-                        else if ((currentSection == "title" || currentSection == "tooltip") && line.Contains(":"))
+                        else if ((currentSection == "title" || currentSection == "titles" || 
+                                 currentSection == "tooltip" || currentSection == "tooltips") && line.Contains(":"))
                         {
                             // Language-specific title or tooltip
                             var colonIndex = line.IndexOf(':');
@@ -137,9 +141,9 @@ namespace pyRevitExtensionParser
                             else if (!string.IsNullOrEmpty(value))
                             {
                                 // Single-line value
-                                if (currentSection == "title")
+                                if (currentSection == "title" || currentSection == "titles")
                                     parsed.Titles[currentLanguageKey] = value;
-                                else if (currentSection == "tooltip")
+                                else if (currentSection == "tooltip" || currentSection == "tooltips")
                                     parsed.Tooltips[currentLanguageKey] = value;
                             }
                             else
@@ -189,9 +193,9 @@ namespace pyRevitExtensionParser
 
                 var processedValue = ProcessMultilineValue(content, isLiteral, isFolded);
                 
-                if (section == "title")
+                if (section == "title" || section == "titles")
                     parsed.Titles[languageKey] = processedValue;
-                else if (section == "tooltip")
+                else if (section == "tooltip" || section == "tooltips")
                     parsed.Tooltips[languageKey] = processedValue;
             }
 
