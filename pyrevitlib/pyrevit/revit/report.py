@@ -1,6 +1,6 @@
 """"Utility methods for reporting Revit data uniformly."""
 
-from pyrevit import DB, script, HOST_APP
+from pyrevit import DB, HOST_APP
 from pyrevit.output import PyRevitOutputWindow
 from pyrevit.revit import query
 
