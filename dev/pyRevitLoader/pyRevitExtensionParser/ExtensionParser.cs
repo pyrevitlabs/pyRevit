@@ -103,15 +103,17 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Recursively reorders the given component’s Children in-place
+        /// Recursively reorders the given component's Children in-place
         /// according to its own LayoutOrder.  If LayoutOrder is null or empty,
         /// we skip sorting here but still recurse into children.
         /// </summary>
         private static void ReorderByLayout(ParsedComponent component)
         {
+            if (component?.Children == null)
+                return;
+
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
-
                 var nameIndexMap = component.LayoutOrder
                     .Select((name, index) => new { name, index })
                     .GroupBy(x => x.name)
@@ -119,23 +121,30 @@ namespace pyRevitExtensionParser
 
                 component.Children.Sort((a, b) =>
                 {
-                    int ix = nameIndexMap.TryGetValue(a.DisplayName, out int indexA) ? indexA : int.MaxValue;
-                    int iy = nameIndexMap.TryGetValue(b.DisplayName, out int indexB) ? indexB : int.MaxValue;
+                    int ix = nameIndexMap.TryGetValue(a?.DisplayName ?? "", out int indexA) ? indexA : int.MaxValue;
+                    int iy = nameIndexMap.TryGetValue(b?.DisplayName ?? "", out int indexB) ? indexB : int.MaxValue;
                     return ix.CompareTo(iy);
                 });
 
                 var slideoutIndex = component.LayoutOrder.IndexOf(">>>>>");
 
-                if (slideoutIndex >= 0)
+                if (slideoutIndex >= 0 && slideoutIndex < component.LayoutOrder.Count - 1)
                 {
                     var nextelem = component.LayoutOrder[slideoutIndex + 1];
-                    component.Children.Find(c => c.Name == nextelem).HasSlideout = true;
+                    var nextComponent = component.Children.Find(c => c?.Name == nextelem);
+                    if (nextComponent != null)
+                    {
+                        nextComponent.HasSlideout = true;
+                    }
                 }
             }
 
             foreach (var child in component.Children)
             {
-                ReorderByLayout(child);
+                if (child != null)
+                {
+                    ReorderByLayout(child);
+                }
             }
         }
 
@@ -269,7 +278,8 @@ namespace pyRevitExtensionParser
                     BundleFile = File.Exists(bundleFile) ? bundleFile : null,
                     LayoutOrder = bundleInComponent?.LayoutOrder,
                     Title = title,
-                    Author = author
+                    Author = author,
+                    Icons = ParseIconsForComponent(dir)
                 });
             }
 
@@ -338,6 +348,140 @@ namespace pyRevitExtensionParser
             return null;
         }
 
+        /// <summary>
+        /// Parses and discovers icon files for a component directory
+        /// </summary>
+        /// <param name="componentDirectory">The directory containing the component</param>
+        /// <returns>A collection of discovered icons</returns>
+        private static ComponentIconCollection ParseIconsForComponent(string componentDirectory)
+        {
+            var icons = new ComponentIconCollection();
+
+            if (!Directory.Exists(componentDirectory))
+                return icons;
+
+            try
+            {
+                // Get all files in the component directory
+                var files = Directory.GetFiles(componentDirectory, "*", SearchOption.TopDirectoryOnly);
+
+                foreach (var file in files)
+                {
+                    var extension = Path.GetExtension(file);
+                    var fileName = Path.GetFileName(file).ToLowerInvariant();
+
+                    // Check if this is a supported image file
+                    if (ComponentIconCollection.IsSupportedImageExtension(extension))
+                    {
+                        // Check if the filename suggests it's an icon
+                        if (IsLikelyIconFile(fileName))
+                        {
+                            var icon = new ComponentIcon(file);
+                            icons.Add(icon);
+                        }
+                    }
+                }
+
+                // Sort icons by priority (standard icons first, then by size)
+                icons.Sort(CompareIconsByPriority);
+            }
+            catch (Exception ex)
+            {
+                // Log error if needed, but don't fail the parsing
+                System.Diagnostics.Debug.WriteLine($"Error parsing icons for {componentDirectory}: {ex.Message}");
+            }
+
+            return icons;
+        }
+
+        /// <summary>
+        /// Determines if a filename is likely to be an icon file based on naming conventions
+        /// </summary>
+        /// <param name="fileName">The filename to check (should be lowercase)</param>
+        /// <returns>True if the file is likely an icon</returns>
+        private static bool IsLikelyIconFile(string fileName)
+        {
+            // Common icon file patterns
+            var iconPatterns = new[]
+            {
+                "icon",
+                "button_icon",
+                "cmd_icon",
+                "command_icon"
+            };
+
+            // Check if filename starts with or contains icon-related terms
+            foreach (var pattern in iconPatterns)
+            {
+                if (fileName.StartsWith(pattern) || fileName.Contains(pattern))
+                    return true;
+            }
+
+            // Check for size-specific icons (e.g., icon_16.png, icon32.ico)
+            if (fileName.Contains("icon") && (fileName.Contains("16") || fileName.Contains("32") || fileName.Contains("64")))
+                return true;
+
+            // Check for common icon naming patterns
+            if (fileName.StartsWith("ico_") || fileName.EndsWith("_ico"))
+                return true;
+
+            // For very short filenames that are just the image extension, consider them icons
+            // (this covers cases like "16.png", "32.ico", etc.)
+            var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            if (nameWithoutExtension.Length <= 3 && nameWithoutExtension.All(char.IsDigit))
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Compares icons for sorting by priority
+        /// </summary>
+        /// <param name="icon1">First icon to compare</param>
+        /// <param name="icon2">Second icon to compare</param>
+        /// <returns>Comparison result for sorting</returns>
+        private static int CompareIconsByPriority(ComponentIcon icon1, ComponentIcon icon2)
+        {
+            // Priority order: Standard > Size32 > Size16 > Size64 > Large > Small > Others
+            var priority1 = GetIconTypePriority(icon1.Type);
+            var priority2 = GetIconTypePriority(icon2.Type);
+
+            if (priority1 != priority2)
+                return priority1.CompareTo(priority2);
+
+            // If same priority, prefer smaller file names (shorter names usually indicate primary icons)
+            return icon1.FileName.Length.CompareTo(icon2.FileName.Length);
+        }
+
+        /// <summary>
+        /// Gets the priority value for an icon type (lower values = higher priority)
+        /// </summary>
+        /// <param name="iconType">The icon type</param>
+        /// <returns>Priority value</returns>
+        private static int GetIconTypePriority(IconType iconType)
+        {
+            switch (iconType)
+            {
+                case IconType.Standard:
+                    return 1;
+                case IconType.Size32:
+                    return 2;
+                case IconType.Size16:
+                    return 3;
+                case IconType.Size64:
+                    return 4;
+                case IconType.Large:
+                    return 5;
+                case IconType.Small:
+                    return 6;
+                case IconType.Button:
+                    return 7;
+                case IconType.Command:
+                    return 8;
+                default:
+                    return 9;
+            }
+        }
         public enum CommandComponentType
         {
             Unknown,

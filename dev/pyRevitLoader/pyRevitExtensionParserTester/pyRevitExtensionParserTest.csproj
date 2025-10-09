@@ -18,6 +18,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="PanelButtonAndIconTests.cs" />
+    <Compile Include="IconParsingTests.cs" />
+    <Compile Include="IconFunctionalityTests.cs" />
+    <Compile Include="BundleTooltipFixTest.cs" />
+    <Compile Include="ComponentValidationTests.cs" />
+    <Compile Include="PanelButtonBundleTests.cs" />
     <Compile Include="ParsedBundleTests.cs" />
     <Compile Include="ParsedComponentTests.cs" />
     <Compile Include="ParserBasicTests.cs" />
@@ -30,6 +36,7 @@
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
