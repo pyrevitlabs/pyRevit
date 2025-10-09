@@ -83,17 +83,20 @@ def get_load_stat(cad, is_link):
     cad_type = doc.GetElement(cad.GetTypeId()) # Retreive the type from the instance
     
     if not is_link:
-        return ":warning: IMPORTED" # Not an external reference
+        return ":warning: IMPORTED"
+        
     try:
         exfs = cad_type.GetExternalFileReference()
+        if not exfs:
+            return ":warning: IMPORTED"
         status = exfs.GetLinkedFileStatus().ToString()
     except Exception:
         # Fallback for cloud-based CAD links (ACC/ADC)
         exfs = cad_type.GetExternalResourceReferences()
-        # exfs is a dictionary: {ExternalResourceType: ExternalResourceReference}
-        # Get the first ExternalResourceReference if there is one
         ext_ref = next(iter(exfs.Values)) if exfs.Count > 0 else None
-        status = ext_ref.GetResourceVersionStatus().ToString() if ext_ref else None
+        if not ext_ref:
+            return ":warning: IMPORTED"
+        status = ext_ref.GetResourceVersionStatus().ToString()
 
     if not exfs:
         return ":warning: IMPORTED" # Not an external reference
