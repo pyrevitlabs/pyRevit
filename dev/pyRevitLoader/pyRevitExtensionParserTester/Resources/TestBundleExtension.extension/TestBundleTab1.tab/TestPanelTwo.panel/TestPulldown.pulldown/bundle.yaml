@@ -1,3 +1,8 @@
 layout:
   - SubButton2
   - SubButton1
+tooltip:
+  en_us: This is a test tooltip for the pulldown button
+title:
+  en_us: Test Pulldown
+author: Test Author
