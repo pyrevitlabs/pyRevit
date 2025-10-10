@@ -9,6 +9,11 @@ namespace pyRevitExtensionParser
 {
     public static class ExtensionParser
     {
+        /// <summary>
+        /// Default locale used for localization fallback
+        /// </summary>
+        public static string DefaultLocale { get; set; } = "en_us";
+
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
         {
             PyRevitConfig config = PyRevitConfig.Load();
@@ -252,9 +257,9 @@ namespace pyRevitExtensionParser
                 // Override script values with bundle values (bundle takes precedence)
                 if (bundleInComponent != null)
                 {
-                    // Use en_us as default locale, fallback to first available, then to script values
-                    var bundleTitle = GetLocalizedValue(bundleInComponent.Titles, "en_us");
-                    var bundleTooltip = GetLocalizedValue(bundleInComponent.Tooltips, "en_us");
+                    // Use default locale for initial title/tooltip assignment
+                    var bundleTitle = GetLocalizedValue(bundleInComponent.Titles);
+                    var bundleTooltip = GetLocalizedValue(bundleInComponent.Tooltips);
                     
                     if (!string.IsNullOrEmpty(bundleTitle))
                         title = bundleTitle;
@@ -279,7 +284,9 @@ namespace pyRevitExtensionParser
                     LayoutOrder = bundleInComponent?.LayoutOrder,
                     Title = title,
                     Author = author,
-                    Icons = ParseIconsForComponent(dir)
+                    Icons = ParseIconsForComponent(dir),
+                    LocalizedTitles = bundleInComponent?.Titles,
+                    LocalizedTooltips = bundleInComponent?.Tooltips
                 });
             }
 
@@ -287,20 +294,24 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Gets a localized value from a dictionary, falling back to en_us, then to the first available value
+        /// Gets a localized value from a dictionary, falling back to the default locale, then to the first available value
         /// </summary>
-        private static string GetLocalizedValue(Dictionary<string, string> localizedValues, string preferredLocale = "en_us")
+        private static string GetLocalizedValue(Dictionary<string, string> localizedValues, string preferredLocale = null)
         {
             if (localizedValues == null || localizedValues.Count == 0)
                 return null;
+
+            // Use default locale if no preferred locale specified
+            if (string.IsNullOrEmpty(preferredLocale))
+                preferredLocale = DefaultLocale;
 
             // Try preferred locale first
             if (localizedValues.TryGetValue(preferredLocale, out string preferredValue))
                 return preferredValue;
 
-            // Fallback to en_us if different preferred locale was specified
-            if (preferredLocale != "en_us" && localizedValues.TryGetValue("en_us", out string enUsValue))
-                return enUsValue;
+            // Fallback to default locale if different preferred locale was specified
+            if (preferredLocale != DefaultLocale && localizedValues.TryGetValue(DefaultLocale, out string defaultValue))
+                return defaultValue;
 
             // Fallback to first available value
             return localizedValues.Values.FirstOrDefault();

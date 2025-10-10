@@ -40,15 +40,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             switch (component.Type)
             {
                 case CommandComponentType.Tab:
-                    try { _uiApp.CreateRibbonTab(component.DisplayName); } catch { }
+                    // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+                    var tabText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+                    try { _uiApp.CreateRibbonTab(tabText); } catch { }
                     foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                        RecursivelyBuildUI(child, component, null, component.DisplayName, assemblyInfo);
+                        RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
                     break;
 
                 case CommandComponentType.Panel:
+                    // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+                    var panelText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
                     var panel = _uiApp.GetRibbonPanels(tabName)
-                        .FirstOrDefault(p => p.Name == component.DisplayName)
-                        ?? _uiApp.CreateRibbonPanel(tabName, component.DisplayName);
+                        .FirstOrDefault(p => p.Name == panelText)
+                        ?? _uiApp.CreateRibbonPanel(tabName, panelText);
                     foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
                     break;
@@ -121,7 +125,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 case CommandComponentType.SplitButton:
                 case CommandComponentType.SplitPushButton:
-                    var splitData = new SplitButtonData(component.UniqueId, component.DisplayName);
+                    // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+                    var splitButtonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+                    var splitData = new SplitButtonData(component.UniqueId, splitButtonText);
                     var splitBtn = parentPanel.AddItem(splitData) as SplitButton;
                     if (splitBtn != null)
                     {
@@ -186,7 +192,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 else if (child.Type == CommandComponentType.PullDown)
                 {
-                    var pdData = new PulldownButtonData(child.UniqueId, child.DisplayName);
+                    // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+                    var pulldownText = !string.IsNullOrEmpty(child.Title) ? child.Title : child.DisplayName;
+                    var pdData = new PulldownButtonData(child.UniqueId, pulldownText);
                     itemDataList.Add(pdData);
                     originalItems.Add(child);
                 }
@@ -241,7 +249,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             ExtensionAssemblyInfo assemblyInfo,
             bool addToPanel)
         {
-            var pdData = new PulldownButtonData(component.UniqueId, component.DisplayName);
+            // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+            var pulldownText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+            var pdData = new PulldownButtonData(component.UniqueId, pulldownText);
             if (!addToPanel) return pdData;
 
             var pdBtn = parentPanel.AddItem(pdData) as PulldownButton;
@@ -265,9 +275,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         private PushButtonData CreatePushButton(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
         {
+            // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+            var buttonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+            
             return new PushButtonData(
                 component.UniqueId,
-                component.DisplayName,
+                buttonText,
                 assemblyInfo.Location,
                 component.UniqueId);
         }
