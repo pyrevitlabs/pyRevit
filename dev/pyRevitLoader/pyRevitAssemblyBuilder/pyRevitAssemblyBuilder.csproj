@@ -13,5 +13,12 @@
         <UseRoslyn>true</UseRoslyn>
         <LangVersion>10.0</LangVersion>
         <UseILPack>true</UseILPack>
+        <UseWPF>true</UseWPF>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+        <Reference Include="WindowsBase" />
+        <Reference Include="PresentationCore" />
+        <Reference Include="PresentationFramework" />
+    </ItemGroup>
 </Project>
