@@ -53,7 +53,7 @@
         </DataTemplate>
 
         <ItemsPanelTemplate x:Key="ItemsPanelTemplate">
-            <StackPanel />
+            <VirtualizingStackPanel />
         </ItemsPanelTemplate>
     </Window.Resources>
     <DockPanel Margin="10">
@@ -130,7 +130,10 @@
                       HorizontalContentAlignment="Stretch"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ItemTemplate="{DynamicResource ItemContainerTemplate}"
-                      ItemsPanel="{DynamicResource ItemsPanelTemplate}" />
+                      ItemsPanel="{DynamicResource ItemsPanelTemplate}"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Standard"
+                      ScrollViewer.CanContentScroll="True"/>
             <GridSplitter x:Name="infoSplitter" Grid.Column="1" VerticalAlignment="Stretch"  HorizontalAlignment="Stretch" ResizeDirection="Columns" Visibility="Collapsed" />
             <ScrollViewer x:Name="infoPanel" Grid.Column="2" Visibility="Collapsed">
                 <TextBlock x:Name="infoData" Margin="10,0,0,0" TextWrapping="Wrap" />

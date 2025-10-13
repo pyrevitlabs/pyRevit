@@ -191,7 +191,7 @@ Check the list of [Currently Open](https://github.com/pyrevitlabs/pyRevit/issues
 
 [Support on OpenCollective](https://opencollective.com/pyrevitlabs)
 
-[Support on Patreon](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
+[Support Guidelines](https://www.notion.so/Support-on-Patreon-cdf92ba547154f7a85d32b526dc5e59b)
 
 [Supporters](https://www.notion.so/Supporters-4f3350243ba24dcd8228df6262723629)
 
@@ -207,6 +207,6 @@ Made with [contrib.rocks](https://contrib.rocks)
 
 **</>** with 🖤 in [Portland](https://en.m.wikipedia.org/wiki/Portland,_Oregon), Oregon
 
-Copyright © 2014-2024 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
+Copyright © 2014-2025 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
 
 No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher.

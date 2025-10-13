@@ -3,30 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Security.Principal;
-using System.Text;
-using System.Text.RegularExpressions;
-
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.Configurations;
-using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
-namespace pyRevitLabs.PyRevit {
-    public class pyRevitInvalidPyRevitCloneException : pyRevitInvalidGitCloneException {
-        public pyRevitInvalidPyRevitCloneException() { }
+namespace pyRevitLabs.PyRevit
+{
+    public class pyRevitInvalidPyRevitCloneException : pyRevitInvalidGitCloneException
+    {
+        public pyRevitInvalidPyRevitCloneException()
+        {
+        }
 
-        public pyRevitInvalidPyRevitCloneException(string invalidClonePath) : base(invalidClonePath) { }
+        public pyRevitInvalidPyRevitCloneException(string invalidClonePath) : base(invalidClonePath)
+        {
+        }
 
-        public override string Message {
-            get {
-                return string.Format("Path \"{0}\" is not a valid git pyRevit clone.", Path);
-            }
+        public override string Message
+        {
+            get { return string.Format("Path \"{0}\" is not a valid git pyRevit clone.", Path); }
         }
     }
 
-    public static class PyRevitClones {
+    public static class PyRevitClones
+    {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // managing clones ===========================================================================================
@@ -35,7 +36,8 @@ namespace pyRevitLabs.PyRevit {
 
         // register a clone in a configs
         // @handled @logs
-        public static void RegisterClone(string cloneName, string repoPath, bool forceUpdate = false) {
+        public static void RegisterClone(string cloneName, string repoPath, bool forceUpdate = false)
+        {
             var normalPath = repoPath.NormalizeAsPath();
             logger.Debug("Registering clone \"{0}\"", normalPath);
 
@@ -46,23 +48,27 @@ namespace pyRevitLabs.PyRevit {
             if (forceUpdate && registeredClones.Contains(clone))
                 registeredClones.Remove(clone);
 
-            if (!registeredClones.Contains(clone)) {
+            if (!registeredClones.Contains(clone))
+            {
                 registeredClones.Add(clone);
                 SaveRegisteredClones(registeredClones);
             }
             else
                 throw new PyRevitException(
                     string.Format("Clone with repo path \"{0}\" already exists.", clone.ClonePath)
-                    );
+                );
         }
 
         // renames a clone in a configs
         // @handled @logs
-        public static void RenameClone(string cloneName, string newName) {
+        public static void RenameClone(string cloneName, string newName)
+        {
             logger.Debug("Renaming clone \"{0}\" to \"{1}\"", cloneName, newName);
             var renamedClones = new List<PyRevitClone>();
-            foreach (var clone in GetRegisteredClones()) {
-                if (clone.Name == cloneName) {
+            foreach (var clone in GetRegisteredClones())
+            {
+                if (clone.Name == cloneName)
+                {
                     clone.Rename(newName);
                     logger.Debug("Renamed clone \"{0}\" to \"{1}\"", cloneName, clone.Name);
                 }
@@ -75,7 +81,8 @@ namespace pyRevitLabs.PyRevit {
 
         // unregister a clone from configs
         // @handled @logs
-        public static void UnregisterClone(PyRevitClone clone) {
+        public static void UnregisterClone(PyRevitClone clone)
+        {
             logger.Debug("Unregistering clone \"{0}\"", clone);
 
             // remove the clone path from list
@@ -86,7 +93,8 @@ namespace pyRevitLabs.PyRevit {
 
         // unregister all clone from configs
         // @handled @logs
-        public static void UnregisterAllClones() {
+        public static void UnregisterAllClones()
+        {
             logger.Debug("Unregistering all clones...");
 
             foreach (var clone in GetRegisteredClones())
@@ -95,25 +103,33 @@ namespace pyRevitLabs.PyRevit {
 
         // return list of registered clones
         // @handled @logs
-        public static List<PyRevitClone> GetRegisteredClones() {
+        public static List<PyRevitClone> GetRegisteredClones()
+        {
             var validatedClones = new List<PyRevitClone>();
 
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
-            
+
             // verify all registered clones, protect against tampering
-            foreach (var cloneKeyValue in cfg.Environment.Clones) {
+            foreach (var cloneKeyValue in cfg.Environment.Clones)
+            {
                 var clonePath = cloneKeyValue.Value.NormalizeAsPath();
-                if (CommonUtils.VerifyPath(clonePath)) {
-                    try {
+                if (CommonUtils.VerifyPath(clonePath))
+                {
+                    try
+                    {
                         var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
-                        if (clone.IsValid && !validatedClones.Contains(clone)) {
+                        if (clone.IsValid && !validatedClones.Contains(clone))
+                        {
                             logger.Debug("Verified clone \"{@CloneName}={@ClonePath}\"", clone.Name, clone.ClonePath);
                             validatedClones.Add(clone);
                         }
                     }
-                    catch {
-                        logger.Debug("Error occured when processing registered clone \"{@CloneName}\" at \"{@ClonePath}\"", cloneKeyValue.Key, clonePath);
+                    catch
+                    {
+                        logger.Debug(
+                            "Error occured when processing registered clone \"{@CloneName}\" at \"{@ClonePath}\"",
+                            cloneKeyValue.Key, clonePath);
                     }
                 }
             }
@@ -126,7 +142,8 @@ namespace pyRevitLabs.PyRevit {
 
         // return requested registered clone
         // @handled @logs
-        public static PyRevitClone GetRegisteredClone(string cloneNameOrRepoPath) {
+        public static PyRevitClone GetRegisteredClone(string cloneNameOrRepoPath)
+        {
             foreach (var clone in GetRegisteredClones())
                 if (clone.Matches(cloneNameOrRepoPath))
                     return clone;
@@ -134,22 +151,26 @@ namespace pyRevitLabs.PyRevit {
             throw new PyRevitException(string.Format("Can not find clone \"{0}\"", cloneNameOrRepoPath));
         }
 
-        public static void CreateImageFromClone(PyRevitClone clone, IEnumerable<string> paths, string destPath) {
+        public static void CreateImageFromClone(PyRevitClone clone, IEnumerable<string> paths, string destPath)
+        {
             // create paths
             var imagePath = CommonUtils.EnsureFileExtension(destPath, GithubAPI.ArchiveFileExtension);
             var targetDir = Path.Combine(Path.GetDirectoryName(imagePath), Path.GetFileNameWithoutExtension(imagePath));
             CommonUtils.EnsurePath(targetDir);
 
             // copy paths from clone to temp directory
-            foreach (var cloneItem in paths) {
+            foreach (var cloneItem in paths)
+            {
                 var srcItem = Path.Combine(clone.ClonePath, cloneItem);
                 var destItem = Path.Combine(targetDir, cloneItem);
-                if (File.Exists(srcItem)) {
+                if (File.Exists(srcItem))
+                {
                     // then copy and overwrite
                     File.Copy(srcItem, destItem, overwrite: true);
                 }
                 // otherwise it must be a directory
-                else {
+                else
+                {
                     // remove existing first
                     if (CommonUtils.VerifyPath(destItem))
                         CommonUtils.DeleteDirectory(destItem);
@@ -165,7 +186,7 @@ namespace pyRevitLabs.PyRevit {
                 imagePath,
                 compressionLevel: CompressionLevel.Optimal,
                 includeBaseDirectory: true
-                );
+            );
 
             // delete temp path
             CommonUtils.DeleteDirectory(targetDir);
@@ -173,18 +194,20 @@ namespace pyRevitLabs.PyRevit {
 
         // managing clones ===========================================================================================
         // check at least one pyRevit clone is available
-        public static bool IsAtLeastOneClones() {
+        public static bool IsAtLeastOneClones()
+        {
             return GetRegisteredClones().Count > 0;
         }
 
         // install pyRevit by cloning from git repo
         // @handled @logs
         public static void DeployFromRepo(string cloneName,
-                                          string deploymentName = null,
-                                          string branchName = null,
-                                          string repoUrl = null,
-                                          string destPath = null,
-                                          GitInstallerCredentials credentials = null) {
+            string deploymentName = null,
+            string branchName = null,
+            string repoUrl = null,
+            string destPath = null,
+            GitInstallerCredentials credentials = null)
+        {
             string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoGitPath;
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
@@ -197,7 +220,8 @@ namespace pyRevitLabs.PyRevit {
             CommonUtils.EnsurePath(destPath);
 
             // check existing destination path
-            if (CommonUtils.VerifyPath(destPath)) {
+            if (CommonUtils.VerifyPath(destPath))
+            {
                 logger.Debug("Destination path already exists {0}", destPath);
                 destPath = Path.Combine(destPath, cloneName);
                 logger.Debug("Using subpath {0}", destPath);
@@ -207,32 +231,39 @@ namespace pyRevitLabs.PyRevit {
 
             // start the clone process
             LibGit2Sharp.Repository repo = null;
-            if (deploymentName != null) {
+            if (deploymentName != null)
+            {
                 // TODO: Add core checkout option. Figure out how to checkout certain folders in libgit2sharp
                 throw new NotImplementedException("Deployment with git clones not implemented yet.");
             }
-            else {
+            else
+            {
                 repo = GitInstaller.Clone(repoSourcePath, repoBranch, destPath, credentials);
             }
 
             // Check installation
-            if (repo != null) {
+            if (repo != null)
+            {
                 // make sure to delete the repo if error occured after cloning
                 var clonedPath = repo.Info.WorkingDirectory;
-                try {
+                try
+                {
                     PyRevitClone.VerifyCloneValidity(clonedPath);
                     logger.Debug("Clone successful \"{0}\"", clonedPath);
                     RegisterClone(cloneName, clonedPath);
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     logger.Debug(string.Format("Exception occured after clone complete. Deleting clone \"{0}\" | {1}",
-                                               clonedPath, ex.Message));
-                    try {
+                        clonedPath, ex.Message));
+                    try
+                    {
                         CommonUtils.DeleteDirectory(clonedPath);
                     }
-                    catch (Exception delEx) {
+                    catch (Exception delEx)
+                    {
                         logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
-                                                   clonedPath, delEx.Message));
+                            clonedPath, delEx.Message));
                     }
 
                     // cleanup completed, now baloon up the exception
@@ -241,16 +272,19 @@ namespace pyRevitLabs.PyRevit {
             }
             else
                 throw new PyRevitException(string.Format("Error installing pyRevit. Null repo error on \"{0}\"",
-                                                         repoUrl));
+                    repoUrl));
         }
 
         public static void DeployFromImage(string cloneName,
-                                           string deploymentName = null,
-                                           string branchName = null,
-                                           string imagePath = null,
-                                           string destPath = null) {
+            string deploymentName = null,
+            string branchName = null,
+            string imagePath = null,
+            string destPath = null)
+        {
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
-            string imageSource = imagePath != null ? imagePath : GithubAPI.GetBranchArchiveUrl(PyRevitLabsConsts.OriginalRepoId, repoBranch);
+            string imageSource = imagePath != null
+                ? imagePath
+                : GithubAPI.GetBranchArchiveUrl(PyRevitLabsConsts.OriginalRepoId, repoBranch);
             string imageFilePath = null;
 
             // verify image is zip
@@ -264,7 +298,8 @@ namespace pyRevitLabs.PyRevit {
                 destPath = Path.Combine(PyRevitLabsConsts.PyRevitPath, PyRevitConsts.DefaultCopyInstallName);
 
             // check existing destination path
-            if (CommonUtils.VerifyPath(destPath)) {
+            if (CommonUtils.VerifyPath(destPath))
+            {
                 destPath = destPath.NormalizeAsPath();
                 logger.Debug("Destination path already exists {0}", destPath);
                 destPath = Path.Combine(destPath, cloneName);
@@ -277,39 +312,47 @@ namespace pyRevitLabs.PyRevit {
 
             // process source
             // decide to download if source is a url
-            if (imageSource.IsValidHttpUrl()) {
-                try {
-                    var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), Path.GetFileName(imageSource));
+            if (imageSource.IsValidHttpUrl())
+            {
+                try
+                {
+                    var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"),
+                        Path.GetFileName(imageSource));
                     logger.Info("Downloading package \"{0}\"", imageSource);
                     logger.Debug("Downloading package \"{0}\" to \"{1}\"", imageSource, pkgDest);
                     imageFilePath =
                         CommonUtils.DownloadFile(imageSource, pkgDest);
                     logger.Debug("Downloaded to \"{0}\"", imageFilePath);
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     throw new PyRevitException(
                         string.Format("Error downloading repo image file \"{0}\" | {1}", imageSource, ex.Message)
-                        );
+                    );
                 }
             }
             // otherwise check if the source is a file and exists
-            else if (CommonUtils.VerifyFile(imageSource)) {
+            else if (CommonUtils.VerifyFile(imageSource))
+            {
                 imageFilePath = imageSource;
             }
             // otherwise the source format is unknown
-            else {
+            else
+            {
                 throw new PyRevitException(string.Format("Unknown source \"{0}\"", imageSource));
             }
 
             // now extract the file
-            if (imageFilePath != null) {
+            if (imageFilePath != null)
+            {
                 var stagedImage = Path.Combine(
                     Environment.GetEnvironmentVariable("TEMP"),
                     Path.GetFileNameWithoutExtension(imageFilePath)
-                    );
+                );
 
                 // delete existing
-                if (CommonUtils.VerifyPath(stagedImage)) {
+                if (CommonUtils.VerifyPath(stagedImage))
+                {
                     logger.Debug("Deleting existing temp staging path \"{0}\"", stagedImage);
                     CommonUtils.DeleteDirectory(stagedImage);
                 }
@@ -317,56 +360,67 @@ namespace pyRevitLabs.PyRevit {
                 // unpack image
                 logger.Info("Preparing package for deployment...");
 
-                try {
+                try
+                {
                     logger.Debug("Staging package to \"{0}\"", stagedImage);
                     ZipFile.ExtractToDirectory(imageFilePath, stagedImage);
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     throw new PyRevitException(
                         string.Format("Error unpacking \"{0}\" | {1}", imageFilePath, ex.Message)
-                        );
+                    );
                 }
 
                 // make a pyrevit clone and handle deployment
-                try {
+                try
+                {
                     var clone = new PyRevitClone(stagedImage);
 
                     // deployment: copy the needed directories
                     logger.Info("Deploying to \"{0}\"", destPath);
 
-                    if (deploymentName != null) {
+                    if (deploymentName != null)
+                    {
                         // deploy the requested deployment
                         // throws exceptions if deployment does not exist or on copy error
                         Deploy(clone.ClonePath, deploymentName, destPath);
                     }
-                    else {
+                    else
+                    {
                         logger.Debug("Deploying complete clone from image...");
                         CommonUtils.CopyDirectory(clone.ClonePath, destPath);
                     }
 
                     // cleanup temp files
                     logger.Debug("Cleaning up temp files after clone from image...");
-                    try {
+                    try
+                    {
                         CommonUtils.DeleteDirectory(stagedImage);
                     }
-                    catch (Exception delEx) {
+                    catch (Exception delEx)
+                    {
                         logger.Error(string.Format("Error cleaning up temp staging files \"{0}\" | {1}",
-                                                   destPath, delEx.Message));
+                            destPath, delEx.Message));
                     }
 
                     // record image deployment settings
-                    try {
+                    try
+                    {
                         RecordDeploymentArgs(cloneName, deploymentName, branchName, imageSource, destPath);
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         logger.Debug(string.Format("Exception occured after clone from image complete. " +
                                                    "Deleting clone \"{0}\" | {1}", destPath, ex.Message));
-                        try {
+                        try
+                        {
                             CommonUtils.DeleteDirectory(destPath);
                         }
-                        catch (Exception delEx) {
+                        catch (Exception delEx)
+                        {
                             logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
-                                                       destPath, delEx.Message));
+                                destPath, delEx.Message));
                         }
 
                         // cleanup completed, now baloon up the exception
@@ -378,33 +432,39 @@ namespace pyRevitLabs.PyRevit {
 
                     logger.Info("Package deployed and registered.");
                 }
-                catch (PyRevitException ex) {
+                catch (PyRevitException ex)
+                {
                     logger.Error("Can not find a valid clone inside extracted package. | {0}", ex.Message);
                 }
             }
             else
                 throw new PyRevitException(
                     string.Format("Unknown error occured getting package from \"{0}\"", imageSource)
-                    );
+                );
         }
 
         // test clone validity and register
         // @handled @logs
-        private static void VerifyAndRegisterClone(string cloneName, string clonePath) {
-            try {
+        private static void VerifyAndRegisterClone(string cloneName, string clonePath)
+        {
+            try
+            {
                 PyRevitClone.VerifyCloneValidity(clonePath);
                 logger.Debug("Clone successful \"{0}\"", clonePath);
                 RegisterClone(cloneName, clonePath);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 logger.Debug(string.Format("Exception occured after clone complete. Deleting clone \"{0}\" | {1}",
-                                           clonePath, ex.Message));
-                try {
+                    clonePath, ex.Message));
+                try
+                {
                     CommonUtils.DeleteDirectory(clonePath);
                 }
-                catch (Exception delEx) {
+                catch (Exception delEx)
+                {
                     logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
-                                               clonePath, delEx.Message));
+                        clonePath, delEx.Message));
                 }
 
                 // cleanup completed, now baloon up the exception
@@ -414,13 +474,16 @@ namespace pyRevitLabs.PyRevit {
 
         // private helper to deploy destination location by name
         // @handled
-        private static void Deploy(string fromPath, string deploymentName, string destPath) {
+        private static void Deploy(string fromPath, string deploymentName, string destPath)
+        {
             if (!PyRevitClone.VerifyHasDeployments(fromPath))
                 throw new PyRevitException("There are no deployments configured.");
 
-            foreach (var dep in PyRevitClone.GetConfiguredDeployments(fromPath)) {
+            foreach (var dep in PyRevitClone.GetConfiguredDeployments(fromPath))
+            {
                 // compare lowercase deployment names
-                if (dep.Name.ToLower() == deploymentName.ToLower()) {
+                if (dep.Name.ToLower() == deploymentName.ToLower())
+                {
                     logger.Debug("Found deployment \"{0}\"", deploymentName);
                     Deploy(fromPath, dep, destPath);
                     return;
@@ -429,24 +492,28 @@ namespace pyRevitLabs.PyRevit {
 
             // means no deployment were found with given name
             throw new PyRevitException(string.Format("Can not find deployment \"{0}\" in \"{1}\"",
-                                                        deploymentName, fromPath));
+                deploymentName, fromPath));
         }
 
         // private helper to deploy destination location by deployment
         // @handled
-        private static void Deploy(string imagePath, PyRevitDeployment deployment, string destPath) {
+        private static void Deploy(string imagePath, PyRevitDeployment deployment, string destPath)
+        {
             logger.Debug("Deploying from \"{0}\"", deployment.Name);
-            foreach (var depPath in deployment.Paths) {
+            foreach (var depPath in deployment.Paths)
+            {
                 var depSrcPath = Path.Combine(imagePath, depPath);
                 var depDestPath = Path.Combine(destPath, depPath);
 
                 // if source is a file
-                if (File.Exists(depSrcPath)) {
+                if (File.Exists(depSrcPath))
+                {
                     // then copy and overwrite
                     File.Copy(depSrcPath, depDestPath, overwrite: true);
                 }
                 // otherwise it must be a directory
-                else {
+                else
+                {
                     // remove existing first
                     if (CommonUtils.VerifyPath(depDestPath))
                         CommonUtils.DeleteDirectory(depDestPath);
@@ -459,28 +526,32 @@ namespace pyRevitLabs.PyRevit {
 
         // record source image and deploy configs at clone path for later updates
         private static void RecordDeploymentArgs(string cloneName,
-                                                 string deploymentName,
-                                                 string branchName,
-                                                 string imagePath,
-                                                 string clonePath) {
+            string deploymentName,
+            string branchName,
+            string imagePath,
+            string clonePath)
+        {
             var cloneMemoryFilePath = Path.Combine(clonePath, PyRevitConsts.DeployFromImageConfigsFilename);
             logger.Debug(string.Format("Recording deploy parameters for image clone \"{0}\" to \"{1}\"",
-                                       cloneName, cloneMemoryFilePath));
+                cloneName, cloneMemoryFilePath));
 
-            try {
+            try
+            {
                 var f = File.CreateText(cloneMemoryFilePath);
                 f.WriteLine(imagePath);
                 f.WriteLine(branchName);
                 f.WriteLine(deploymentName);
                 f.Close();
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw new PyRevitException(string.Format("Error writing deployment arguments to \"{0}\" | {1}",
-                                                         cloneMemoryFilePath, ex.Message));
+                    cloneMemoryFilePath, ex.Message));
             }
         }
 
-        private static void ReDeployClone(PyRevitClone clone, GitInstallerCredentials credentials) {
+        private static void ReDeployClone(PyRevitClone clone, GitInstallerCredentials credentials)
+        {
             // grab clone arguments from inside of clone
             var cloneName = clone.Name;
             var clonePath = clone.ClonePath;
@@ -489,7 +560,7 @@ namespace pyRevitLabs.PyRevit {
 
             // delete existing clone
             Delete(clone);
-            
+
             // re-deploy
             DeployFromImage(
                 cloneName: cloneName,
@@ -497,12 +568,13 @@ namespace pyRevitLabs.PyRevit {
                 branchName: cloneDeployArgs.BranchName,
                 imagePath: cloneDeployArgs.Url,
                 destPath: clonePath
-                );
+            );
         }
 
         // uninstall primary or specified clone, has option for clearing configs
         // @handled @logs
-        public static void Delete(PyRevitClone clone, bool clearConfigs = false) {
+        public static void Delete(PyRevitClone clone, bool clearConfigs = false)
+        {
             logger.Debug("Unregistering clone \"{0}\"", clone);
             UnregisterClone(clone);
 
@@ -515,7 +587,8 @@ namespace pyRevitLabs.PyRevit {
 
         // uninstall all registered clones
         // @handled @logs
-        public static void DeleteAllClones(bool clearConfigs = false) {
+        public static void DeleteAllClones(bool clearConfigs = false)
+        {
             foreach (var clone in GetRegisteredClones())
                 Delete(clone, clearConfigs: false);
 
@@ -525,15 +598,18 @@ namespace pyRevitLabs.PyRevit {
 
         // force update given or all registered clones
         // @handled @logs
-        public static void Update(PyRevitClone clone, GitInstallerCredentials credentials) {
+        public static void Update(PyRevitClone clone, GitInstallerCredentials credentials)
+        {
             // current user config
             logger.Debug("Updating pyRevit clone \"{0}\"", clone.Name);
-            if (clone.IsRepoDeploy) {
+            if (clone.IsRepoDeploy)
+            {
                 var res = GitInstaller.ForcedUpdate(clone.ClonePath, credentials);
                 if (res <= UpdateStatus.Conflicts)
                     throw new PyRevitException(string.Format("Error updating clone \"{0}\"", clone.Name));
             }
-            else {
+            else
+            {
                 // re-deploying is how the no-git clones get updated
                 ReDeployClone(clone, credentials);
             }
@@ -541,14 +617,16 @@ namespace pyRevitLabs.PyRevit {
 
         // force update given or all registered clones
         // @handled @logs
-        public static void UpdateAllClones(GitInstallerCredentials credentials) {
+        public static void UpdateAllClones(GitInstallerCredentials credentials)
+        {
             logger.Debug("Updating all pyRevit clones");
             foreach (var clone in GetRegisteredClones())
                 Update(clone, credentials);
         }
 
         // updates the config value for registered clones
-        public static void SaveRegisteredClones(IEnumerable<PyRevitClone> clonesList) {
+        public static void SaveRegisteredClones(IEnumerable<PyRevitClone> clonesList)
+        {
             var cfg = PyRevitConfigs.GetConfigFile();
             cfg.SaveSection(
                 ConfigurationService.DefaultConfigurationName,

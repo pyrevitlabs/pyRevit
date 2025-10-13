@@ -187,7 +187,58 @@
             "website": "https://github.com/alexdaversa/pyRevit-Autosave",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "true",
+            "name": "pyByggstyrning",
+            "description": "Tools for model based construction.",
+            "author": "Jonatan Jacobsson",
+            "author_profile": "https://github.com/jonatanjacobsson",
+            "url": "https://github.com/byggstyrning/pyByggstyrning.extension.git",
+            "website": "https://www.byggstyrning.se",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "true",
+            "name": "Quickly",
+            "description": "Quick Custom Tools for Design and BIM Cooordination",
+            "author": "Tay Othman",
+            "author_profile": "https://www.linkedin.com/in/tayothman",
+            "url": "https://github.com/tay0thman/Quickly.git",
+            "website": "http://tayothman.com",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "true",
+            "name": "revit-mcp-python",
+            "description": "MCP to allow for interaction between Revit, pyRevit and Claude MCP protocol. Uses the pyRevit routes module to handle the communication.",
+            "author": "Juan D. Rodriguez / Jean-Marc Couffin",
+            "author_profile": "https://www.linkedin.com/in/juan-david-rodriguez-3abbb5218/ https://www.linkedin.com/in/jmcouffin/",
+            "url": "https://github.com/revit-mcp/revit-mcp-python.git",
+            "website": "",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "False",
+            "name": "Revitesse",
+            "description": "A set of useful tools for eliminating redundancy.",
+            "author": "Ramy Maher",
+            "author_profile": "https://de.linkedin.com/in/ramyamaher",
+            "url": "https://github.com/ramyamaher/Revitesse.git",
+            "website": "https://revitesse.com/",
+            "image": "",
+            "dependencies": []
         }
-        
     ]
 }

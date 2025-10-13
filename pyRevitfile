@@ -1,21 +1,21 @@
 [engines]
 
-[engines.IPY340PR]
+[engines.IPY342]
 kernel = 'IronPython 3'
-version = 340
+version = 342
 runtime = true
-path = 'IPY340PR'
+path = 'IPY342'
 assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'IronPython 3 Engine'
 
 [engines.DEFAULT]
-kernel = 'IronPython'
+kernel = 'IronPython 2'
 version = 2712
 runtime = true
 path = 'IPY2712PR'
 assembly = 'pyRevitLoader.dll'
-description = 'Custom pyRevit IronPython Engine'
+description = 'Custom pyRevit IronPython 2 Engine'
 
 [engines.CPY3123]
 kernel = 'CPython'

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pyrevit import script, revit, DB, DOCS
-from pyrevit.forms import alert
+
 from pyrevit.preflight import PreflightTestCase
 
 from System.Windows import Window # Used for cancel button
@@ -66,7 +66,7 @@ def get_user_input():
         RadioButton("model", "in this project", True, GroupName="grp"), # GroupName implemented in class through kwargs
         RadioButton("active_view", "in only the active view", False, GroupName="grp"),
         Separator(),
-        Button("CANCEL", on_click=ButtonClass.cancel_clicked),
+        Button("CANCEL", on_click=cancel_clicked),
         Button("OK"),
     ]
 
@@ -83,13 +83,34 @@ def get_load_stat(cad, is_link):
     cad_type = doc.GetElement(cad.GetTypeId()) # Retreive the type from the instance
     
     if not is_link:
+        return ":warning: IMPORTED"
+        
+    try:
+        exfs = cad_type.GetExternalFileReference()
+        if not exfs:
+            return ":warning: IMPORTED"
+        status = exfs.GetLinkedFileStatus().ToString()
+    except Exception:
+        # Fallback for cloud-based CAD links (ACC/ADC)
+        exfs = cad_type.GetExternalResourceReferences()
+        ext_ref = next(iter(exfs.Values)) if exfs.Count > 0 else None
+        if not ext_ref:
+            return ":warning: IMPORTED"
+        status = ext_ref.GetResourceVersionStatus().ToString()
+
+    if not exfs:
         return ":warning: IMPORTED" # Not an external reference
-    exfs = cad_type.GetExternalFileReference()
-    status = exfs.GetLinkedFileStatus().ToString()
+    
+    if status == "Loaded":
+        return ":ballot_box_with_check: Loaded"
     if status == "NotFound":
         return ":cross_mark: NotFound"
     if status == "Unloaded":
         return ":heavy_multiplication_x: Unloaded"
+    if status == "OutOfDate":
+        return ":warning: Outdated on ADC"
+    if  status == "Current":
+        return ":ballot_box_with_check: Current on ADC"
     raise ValueError("Unexpected status {}".format(status))
 
 
@@ -104,32 +125,36 @@ def check_model(doc, output):
     
     table_data = [] # store array for table formatted output
     row_head = ["No", "Select/Zoom", "DWG instance", "Loaded status", "Workplane or single view", "Duplicate", "Workset", "Creator user", "Location site name"] # output table first and last row
+    row_no_cad = ["-", "-", "No CAD instances found", "-", "-", "-", "-", "-", "-"] # output table row for when no CAD found
     cad_instances = collect_cadinstances(coll_mode)
-    for count, cad in enumerate(cad_instances, start=1):
-        cad_id = cad.Id
-        cad_is_link = cad.IsLinked
-        cad_name = cad.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
-
-        table_row = [
-            count,
-            output.linkify(cad_id, title="Select"),
-            cad_name,
-            get_load_stat(cad, cad.IsLinked), # loaded status
-        ]
-
-        # if the instance has an owner view, it was placed on the active view only (bad, so give warning and show the view name)
-        # if the instance has no owner view, it should have a level or workplane (good)
-        cad_own_view_id = cad.OwnerViewId
-        if cad_own_view_id == DB.ElementId.InvalidElementId:
-            table_row.append(doc.GetElement(cad.LevelId).Name)
-        else:
-            cad_own_view_name = doc.GetElement(cad_own_view_id).Name
-            table_row.append(":warning: view '{}'".format(cad_own_view_name))
-        table_row.append(":warning:" if cad_name in [row[2] for row in table_data] else "-") # If the name is already in table_data, it is a duplicat (bad)
-        table_row.append(revit.query.get_element_workset(cad).Name) # cad instance workset
-        table_row.append(DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc, cad.Id).Creator) # ID of the user
-        table_row.append(get_cad_site(cad)) # Extract site name from location
-        table_data.append(table_row)
+    if not cad_instances:
+        table_data.append(row_no_cad)
+    else:
+        for count, cad in enumerate(cad_instances, start=1):
+            cad_id = cad.Id
+            cad_is_link = cad.IsLinked
+            cad_name = cad.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
+    
+            table_row = [
+                count,
+                output.linkify(cad_id, title="Select"),
+                cad_name,
+                get_load_stat(cad, cad.IsLinked), # loaded status
+            ]
+    
+            # if the instance has an owner view, it was placed on the active view only (bad, so give warning and show the view name)
+            # if the instance has no owner view, it should have a level or workplane (good)
+            cad_own_view_id = cad.OwnerViewId
+            if cad_own_view_id == DB.ElementId.InvalidElementId:
+                table_row.append(doc.GetElement(cad.LevelId).Name)
+            else:
+                cad_own_view_name = doc.GetElement(cad_own_view_id).Name
+                table_row.append(":warning: view '{}'".format(cad_own_view_name))
+            table_row.append(":warning:" if cad_name in [row[2] for row in table_data] else "-") # If the name is already in table_data, it is a duplicat (bad)
+            table_row.append(revit.query.get_element_workset(cad).Name) # cad instance workset
+            table_row.append(DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc, cad.Id).Creator) # ID of the user
+            table_row.append(get_cad_site(cad)) # Extract site name from location
+            table_data.append(table_row)
     table_data.append(row_head)  
     output.print_md("## Preflight audit of imported and linked CAD")
     output.print_table(table_data=table_data,
@@ -140,7 +165,7 @@ def check_model(doc, output):
     
     # Summary output section:
     link_to_view = output.linkify(ac_view.Id, title="Show the view")
-    print("{} CAD instances found.".format(len(cad_instances)))
+    print("{} CAD instances found.".format(len(cad_instances or [])))
     if coll_mode: # if active view only
         summary_msg = "the active view ('{}') {}".format(ac_view.Name, link_to_view)
     else:

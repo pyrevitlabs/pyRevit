@@ -3,7 +3,24 @@
     <Import Project="../Directory.Build.targets" />
     
     <PropertyGroup>
-        <DeployDestinationFiles>$(PyRevitBinDir)\$(AssemblyName).dll</DeployDestinationFiles>
+        <Configurations>Debug IPY2712PR;Debug IPY342</Configurations>
+        <Configurations>$(Configurations);Release IPY2712PR;Release IPY342</Configurations>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Configuration.Contains('IPY2712PR'))">
+        <IronPythonVersion>IPY2712PR</IronPythonVersion>
+        <IronPythonPrefix>pyRevitLabs.</IronPythonPrefix>
+        <DefineConstants>$(DefineConstants);IPY2712PR</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Configuration.Contains('IPY342'))">
+        <IronPythonVersion>IPY342</IronPythonVersion>
+        <IronPythonPrefix></IronPythonPrefix>
+        <DefineConstants>$(DefineConstants);IPY342</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DeployDestinationFiles>$(PyRevitEnginesDir)\$(IronPythonVersion)\$(AssemblyName).dll</DeployDestinationFiles>
     </PropertyGroup>
     
     <ItemGroup>
@@ -17,14 +34,13 @@
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Web" />
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Net.Http" />
         
-        <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLoader.dll" />
-        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.dll" />
-        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Modules.dll" />
-        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.SQLite.dll" />
-        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Wpf.dll" />
-        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Wpf.dll" />
-        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Dynamic.dll" />
-        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Scripting.dll" />
+        <Reference Include="pyRevitLoader" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLoader.dll" />
+        <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.dll" />
+        <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.Modules.dll" />
+        <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.SQLite.dll" />
+        <Reference Include="IronPython.Wpf" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.Wpf.dll" />
+        <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Dynamic.dll" />
+        <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Scripting.dll" />
 
         <Reference Include="pyRevitLabs.Common" HintPath="$(PyRevitBinDir)\pyRevitLabs.Common.dll" />
         <Reference Include="pyRevitLabs.CommonWPF" HintPath="$(PyRevitBinDir)\pyRevitLabs.CommonWPF.dll" />
@@ -42,7 +58,7 @@
     </ItemGroup>
 
     <Target Name="Deploy" AfterTargets="AfterBuild">
-        <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(DeployDestinationFiles)"/>
-        <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(DeployDestinationFiles)'))" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
+        <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
     </Target>
 </Project>

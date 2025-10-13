@@ -2,6 +2,7 @@ title:
   fr_fr: Synchroniser
   en_us: Synchronize
   de_de: Synchronisieren
+  ru: Синхронизация
 tooltip: 
   fr_fr: >-
     Remplace le bouton de synchronisation
@@ -23,4 +24,18 @@ tooltip:
     1) Close them and call it a day (Ansichten werden und bleiben geschlossen)
     2) Close them but reopen them right after (Ansichten werden geschlossen und nach dem synchronisieren wieder geöffnet)
     3) Don't touch my views (Ansichten bleiben beim Synchronisieren geöffnet)
+  ru: >-
+    Заменяет кнопку синхронизации
+    
+    Shift+Клик: включает или отключает закрытие неактивных окон и активацию стартового вида
+    
+    
+    Доступны следующие опции:
+
+    "Close them and call it a day" – виды будут закрыты.
+
+    "Close them but reopen them right after" – виды будут закрыты, но после синхронизации снова откроются.
+
+    "Don't touch my views" – виды при синхронизации останутся открытыми.
+
 author: Aniket Dikshit, Jean-Marc Couffin

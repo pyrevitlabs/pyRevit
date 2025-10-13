@@ -2,6 +2,7 @@
 """Helper functions to query info and elements from Revit."""
 # pylint: disable=W0703,C0103,too-many-lines
 from collections import namedtuple
+from os.path import basename, splitext
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -96,10 +97,8 @@ def get_name(element, title_on_sheet=False):
 def get_type(element):
     """Get element type.
 
-
     Args:
         element (DB.Element): source element
-
 
     Returns:
         (DB.ElementType): type object of given element
@@ -730,42 +729,20 @@ def get_worksets_names(doc=None):
     return ", ".join(w.Name for w in worksets_collection)
 
 
-def get_warnings_info(doc=None):
+def get_critical_warnings_count(warnings, critical_warnings_template):
     """
-
-    Returns the number of warnings in the document
-
+    Counts the number of critical warnings from a list of warnings based on a template.
 
     Args:
-        document (Document): A Revit document.
-
-
-    Returns:
-        tuple (int, list, list):
-        Number of warnings for document,
-        all the warnings in the document,
-        and a list of GUIDs for all the warnings in the document.
-    """
-    doc = doc or DOCS.doc
-    all_warnings = doc.GetWarnings()
-    if not all_warnings:
-        return 0, [], []
-    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in all_warnings]
-    return len(all_warnings), all_warnings, warnings_guid
-
-
-def get_critical_warnings_number(warnings_guid, critical_warnings_template):
-    """
-
-    Returns the number of critical warnings from a list of warnings GUIDs against a list of critical warnings GUIDs.
-
-    Parameters:
-    warnings_guid (list): A list of warning GUIDs.
-
+        warnings (list): A list of warning objects. Each warning object should have a method
+                         `GetFailureDefinitionId` that returns an object with a `Guid` attribute.
+        critical_warnings_template (list): A list of string representations of GUIDs that are
+                                           considered critical warnings.
 
     Returns:
-    int: The number of critical warnings in the list.
+        int: The count of critical warnings.
     """
+    warnings_guid = [warning.GetFailureDefinitionId().Guid for warning in warnings]
     return sum(
         1
         for warning_guid in warnings_guid
@@ -812,6 +789,46 @@ def get_defined_sharedparams():
     return pp_list
 
 
+def iter_project_parameters(doc=None):
+    """
+    Generator that yields project parameters from the given Revit document one at a time.
+
+    Args:
+        doc (Document, optional): The Revit document from which to retrieve the project parameters.
+                                  If not provided, defaults to `DOCS.doc`.
+
+    Yields:
+        ProjectParameter: Individual ProjectParameter objects representing the project parameters in the document.
+    """
+    doc = doc or DOCS.doc
+
+    # Build shared params dictionary more explicitly to avoid IronPython issues
+    shared_params = {}
+    try:
+        defined_shared_params = get_defined_sharedparams()
+        for param in defined_shared_params:
+            shared_params[param.Name] = param
+    except Exception:
+        # If shared params can't be loaded, continue with empty dict
+        pass
+
+    if doc and not doc.IsFamilyDocument:
+        param_bindings = doc.ParameterBindings
+        pb_iterator = param_bindings.ForwardIterator()
+        pb_iterator.Reset()
+        while pb_iterator.MoveNext():
+            key = pb_iterator.Key
+            binding = param_bindings[key]
+            param_ext_def = shared_params.get(key.Name, None)
+
+            msp = db.ProjectParameter(
+                key,
+                binding,
+                param_ext_def=param_ext_def,
+            )
+            yield msp
+
+
 def get_project_parameters(doc=None):
     """
     Retrieves the project parameters from the given Revit document.
@@ -823,22 +840,7 @@ def get_project_parameters(doc=None):
     Returns:
         list: A list of ProjectParameter objects representing the project parameters in the document.
     """
-    doc = doc or DOCS.doc
-    shared_params = {x.Name: x for x in get_defined_sharedparams()}
-
-    pp_list = []
-    if doc and not doc.IsFamilyDocument:
-        param_bindings = doc.ParameterBindings
-        pb_iterator = param_bindings.ForwardIterator()
-        pb_iterator.Reset()
-        while pb_iterator.MoveNext():
-            msp = db.ProjectParameter(
-                pb_iterator.Key,
-                param_bindings[pb_iterator.Key],
-                param_ext_def=shared_params.get(pb_iterator.Key.Name, None),
-            )
-            pp_list.append(msp)
-    return pp_list
+    return list(iter_project_parameters(doc))
 
 
 def get_project_parameter_id(param_name, doc=None):
@@ -857,7 +859,7 @@ def get_project_parameter_id(param_name, doc=None):
         PyRevitException: If the parameter with the specified name is not found.
     """
     doc = doc or DOCS.doc
-    for project_param in get_project_parameters(doc):
+    for project_param in iter_project_parameters(doc):
         if project_param.name == param_name:
             return project_param.param_id
     raise PyRevitException("Parameter not found: {}".format(param_name))
@@ -874,8 +876,7 @@ def get_project_parameter(param_id_or_name, doc=None):
     Returns:
         ProjectParameter: The matching project parameter if found, otherwise None.
     """
-    pp_list = get_project_parameters(doc or DOCS.doc)
-    for msp in pp_list:
+    for msp in iter_project_parameters(doc or DOCS.doc):
         if msp == param_id_or_name:
             return msp
     return None
@@ -892,7 +893,7 @@ def model_has_parameter(param_id_or_name, doc=None):
     Returns:
         bool: True if the parameter exists in the model, False otherwise.
     """
-    return get_project_parameter(param_id_or_name, doc=doc)
+    return get_project_parameter(param_id_or_name, doc=doc) is not None
 
 
 def get_global_parameters(doc=None):
@@ -1038,6 +1039,29 @@ def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     return sheets
 
 
+def get_document_clean_name(doc=None):
+    """
+    Return the name of the given document without the file path or file
+    extension.
+
+    Args:
+        doc (DB.Document, optional): The Revit document to retrieve links from. If None, the default document
+            (DOCS.doc) is used. Defaults to None.
+
+    Returns:
+        str: The name of the given document without the file path or file
+        extension.
+    """
+    document_name = db.ProjectInfo(doc or DOCS.doc).path
+    if not document_name:
+        return "File Not Saved"
+    if document_name.startswith("BIM 360://"):
+        path = document_name.split("://", 1)[1]
+    else:
+        path = document_name
+    return splitext(basename(path))[0]
+
+
 def get_links(linktype=None, doc=None):
     """
     Retrieves external file references (links) from a Revit document.
@@ -1121,6 +1145,77 @@ def get_linked_model_doc(linked_model):
         for open_doc in DOCS.docs:
             if open_doc.Title == lmodel.name:
                 return open_doc
+
+
+def get_linked_model_types(doc, rvt_links_instances):
+    """
+    Retrieves the types of linked Revit models.
+    Args:
+        doc (Document): The Revit document. Defaults to None.
+        rvt_links_instances (list): A list of Revit link instances.
+    Returns:
+        list: A list of linked model types.
+    """
+    return [doc.GetElement(rvtlink.GetTypeId()) for rvtlink in rvt_links_instances]
+
+
+def get_linked_model_instances(doc=None):
+    """
+    Returns a list of all rvt_links instances in a document
+
+    Args:
+        doc (Document): A Revit document.
+
+    Returns:
+        list: A list of Revit link instances.
+    """
+    return (
+        DB.FilteredElementCollector(doc or DOCS.doc)
+        .OfCategory(DB.BuiltInCategory.OST_RvtLinks)
+        .WhereElementIsNotElementType()
+    )
+
+
+def get_rvt_link_status(doc=None):
+    """
+    Retrieves the status of linked Revit models in the given document.
+
+    Args:
+        doc (Document, optional): The Revit document to query. If None, the current document is used.
+
+    Returns:
+        list: A list of statuses for each linked Revit model type.
+    """
+    doc = doc or DOCS.doc
+    rvtlinks_instances = get_linked_model_instances(doc)
+    rvtlinks_types = get_linked_model_types(doc, rvtlinks_instances)
+    return [rvtlinktype.GetLinkedFileStatus() for rvtlinktype in rvtlinks_types]
+
+
+def get_rvt_link_doc_name(rvtlink_instance):
+    """
+    Retrieves the name of the Revit link document from the given Revit link instance.
+
+    Args:
+        rvtlink_instance: The Revit link instance from which to extract the document name.
+
+    Returns:
+        str: The name of the Revit link document, without the file extension and any directory paths.
+    """
+    return get_name(rvtlink_instance).split("\\")[0].split(".rvt")[0]
+
+
+def get_rvt_link_instance_name(rvtlink_instance=None):
+    """
+    Retrieves the name of a Revit link instance.
+
+    Args:
+        rvtlink_instance: The Revit link instance object.
+
+    Returns:
+        str: The name of the Revit link instance, extracted from the full name.
+    """
+    return get_name(rvtlink_instance).split(" : ")[1]
 
 
 def find_first_legend(doc=None):
@@ -1293,7 +1388,7 @@ def is_schedule(view):
         isintkeynote = view.IsInternalKeynoteSchedule
         iskeynotelegend = (
             view.Definition.CategoryId
-            == get_category(DB.BuiltInCategory.OST_KeynoteTags).Id
+            == get_category(DB.BuiltInCategory.OST_KeynoteTags, view.Document).Id
         )
 
         return not (isrevsched or isintkeynote or iskeynotelegend)
@@ -1414,6 +1509,24 @@ def get_schedules_on_sheet(viewsheet, doc=None):
         if x.OwnerViewId == viewsheet.Id
         and not doc.GetElement(x.ScheduleId).IsTitleblockRevisionSchedule
     ]
+
+
+def get_schedules_instances(doc=None):
+    """
+    Retrieves all schedule instances placed on sheets.
+
+    Args:
+        doc (Document, optional): The Revit document to search within. If not provided,
+                                  the default document (DOCS.doc) will be used.
+
+    Returns:
+        List[ScheduleSheetInstance]: A list of ScheduleSheetInstance elements.
+    """
+    return (
+        DB.FilteredElementCollector(doc or DOCS.doc)
+        .OfClass(DB.ScheduleSheetInstance)
+        .ToElements()
+    )
 
 
 def is_sheet_empty(viewsheet):
@@ -3008,20 +3121,28 @@ def is_cropable_view(view):
     )
 
 
-def get_view_filters(view):
+def get_view_filters(view, ordered=True):
     """
     Retrieves the filters applied to a given Revit view.
 
     Args:
         view (Autodesk.Revit.DB.View): The Revit view from which to retrieve the filters.
+        ordered (bool, optional): If True, returns filters in their proper order using GetOrderedFilters().
+                                 If False, returns filters in arbitrary order using GetFilters().
+                                 Defaults to True.
 
     Returns:
         list[Autodesk.Revit.DB.Element]: A list of filter elements applied to the view.
     """
     view_filters = []
-    for filter_id in view.GetFilters():
-        filter_element = view.Document.GetElement(filter_id)
-        view_filters.append(filter_element)
+    if ordered:
+        for filter_id in view.GetOrderedFilters():
+            filter_element = view.Document.GetElement(filter_id)
+            view_filters.append(filter_element)
+    else:
+        for filter_id in view.GetFilters():
+            filter_element = view.Document.GetElement(filter_id)
+            view_filters.append(filter_element)
     return view_filters
 
 
@@ -3076,3 +3197,37 @@ def get_geometry(element, include_invisible=False, compute_references=False):
         get_elementid_value = get_elementid_value_func()
         mlogger.debug("element %s has no geometry", get_elementid_value(element.Id))
         return
+
+
+def get_array_group_ids(doc=None):
+    """
+    Collects and returns the IDs of all array groups in the given document.
+
+    Args:
+        document (DB.Document): The Revit document to search for array groups.
+
+    Returns:
+        list: A list of element IDs representing the array groups.
+    """
+    array_list = DB.FilteredElementCollector(doc or DOCS.doc).OfCategory(
+        DB.BuiltInCategory.OST_IOSArrays
+    )
+    arrays_groups = []
+    for ar in array_list:
+        arrays_groups.extend(ar.GetOriginalMemberIds())
+        arrays_groups.extend(ar.GetCopiedMemberIds())
+    return set(arrays_groups)
+
+
+def get_array_group_ids_types(doc=None):
+    """
+    Retrieves the unique types of array groups in the given Revit document.
+
+    Args:
+        doc: The Revit document from which to collect array group types.
+
+    Returns:
+        A set of unique array group type IDs present in the document.
+    """
+    arrays_groups = get_array_group_ids(doc or DOCS.doc)
+    return {doc.GetElement(ar).GetTypeId() for ar in arrays_groups}

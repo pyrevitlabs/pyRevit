@@ -1,6 +1,6 @@
-
 """Shows the preferences window for pyRevit"""
-#pylint: disable=E0401,W0703,W0613,C0111,C0103
+
+# pylint: disable=E0401,W0703,W0613,C0111,C0103
 import os
 import os.path as op
 import re
@@ -27,6 +27,18 @@ import pyrevitcore_globals
 
 
 logger = script.get_logger()
+available_revit_versions = [
+    "2026",
+    "2025",
+    "2024",
+    "2023",
+    "2022",
+    "2021",
+    "2020",
+    "2019",
+    "2018",
+    "2017",
+]
 
 
 class EnvVariable(object):
@@ -45,15 +57,12 @@ class EnvVariable(object):
     def Value(self):
         # if its the hook, get a list of hooks and display in human-readable
         if self.Id == envvars.HOOKS_ENVVAR:
-            return coreutils.join_strings(
-                [x.UniqueId for x in hooks.get_event_hooks()]
-            )
+            return coreutils.join_strings([x.UniqueId for x in hooks.get_event_hooks()])
         else:
             return self._value
 
     def __repr__(self):
-        return '<EnvVariable Name: {} Value: {}>' \
-                .format(self.Id, self._value)
+        return "<EnvVariable Name: {} Value: {}>".format(self.Id, self._value)
 
 
 class PyRevitEngineConfig(object):
@@ -62,9 +71,19 @@ class PyRevitEngineConfig(object):
 
     @property
     def name(self):
-        return '{} ({}): {}'.format(self.engine.KernelName,
-                                    self.engine.Version,
-                                    self.engine.Description)
+        return "{} ({}): {}".format(
+            self.engine.KernelName, self.engine.Version, self.engine.Description
+        )
+
+
+class RevitVersionCB:
+    """Represents a Revit version Checkbox for binding with XAML."""
+
+    def __init__(self, version, is_checked=False, is_enabled=False):
+        self.Content = "Revit {}".format(version)  # Display name in the UI
+        self.Version = version  # YEAR version (e.g., '2024')
+        self.IsChecked = is_checked  # Whether the checkbox is checked
+        self.IsEnabled = is_enabled  # Whether the checkbox is enabled
 
 
 class SettingsWindow(forms.WPFWindow):
@@ -76,8 +95,10 @@ class SettingsWindow(forms.WPFWindow):
         try:
             self._setup_core_options()
         except Exception as setup_params_err:
-            logger.error('Error setting up a parameter. Please update '
-                         'pyRevit again. | {}'.format(setup_params_err))
+            logger.error(
+                "Error setting up a parameter. Please update "
+                "pyRevit again. | {}".format(setup_params_err)
+            )
 
         self.reload_requested = False
         self.textchange_timer = None
@@ -86,23 +107,16 @@ class SettingsWindow(forms.WPFWindow):
         self._setup_env_vars_list()
 
         # check boxes for each version of Revit
-        # this could be automated but it pushes me to verify and test
-        # before actually adding a new Revit version to the list
-        self._addinfiles_cboxes = {
-            '2017': self.revit2017_cb,
-            '2018': self.revit2018_cb,
-            '2019': self.revit2019_cb,
-            '2020': self.revit2020_cb,
-            '2021': self.revit2021_cb,
-            '2022': self.revit2022_cb,
-            '2023': self.revit2023_cb,
-            '2024': self.revit2024_cb,
-            '2025': self.revit2025_cb,
-            }
+        self.supported_revit_versions_CB = [
+            RevitVersionCB(rvt_ver, is_checked=False, is_enabled=False)
+            for rvt_ver in available_revit_versions
+        ]
+        # Bind the SupportedVersions to the XAML's DataContext
+        self.DataContext = self
 
-        self.set_image_source(self.lognone, 'lognone.png')
-        self.set_image_source(self.logverbose, 'logverbose.png')
-        self.set_image_source(self.logdebug, 'logdebug.png')
+        self.set_image_source(self.lognone, "lognone.png")
+        self.set_image_source(self.logverbose, "logverbose.png")
+        self.set_image_source(self.logdebug, "logdebug.png")
 
         self._setup_uiux()
         self._setup_routes()
@@ -139,8 +153,7 @@ class SettingsWindow(forms.WPFWindow):
 
         self.startup_log_timeout.Text = str(user_config.startuplog_timeout)
         self.requiredhostbuild_tb.Text = str(user_config.required_host_build)
-        self.minhostdrivefreespace_tb.Text = \
-            str(user_config.min_host_drivefreespace)
+        self.minhostdrivefreespace_tb.Text = str(user_config.min_host_drivefreespace)
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
 
@@ -148,7 +161,7 @@ class SettingsWindow(forms.WPFWindow):
         """Sets up the list of available engines."""
         attachment = user_config.get_current_attachment()
         if not attachment or not attachment.Clone:
-            logger.debug('Error determining current attached clone.')
+            logger.debug("Error determining current attached clone.")
             self.disable_element(self.availableEngines)
             return
 
@@ -158,13 +171,11 @@ class SettingsWindow(forms.WPFWindow):
     def _setup_runtime_engines(self, attachment):
         """Sets up the list of available runtime engines."""
         engine_cfgs = [
-            PyRevitEngineConfig(x) 
+            PyRevitEngineConfig(x)
             for x in attachment.Clone.GetEngines(NETCORE)
             if x.Runtime
         ]
-        engine_cfgs = sorted(
-            engine_cfgs, key=lambda x: x.engine.Version, reverse=True
-        )
+        engine_cfgs = sorted(engine_cfgs, key=lambda x: x.engine.Version, reverse=True)
 
         # add engines to ui
         self.availableEngines.ItemsSource = engine_cfgs
@@ -172,16 +183,17 @@ class SettingsWindow(forms.WPFWindow):
         # now select the current runtime engine
         self.availableEngines.SelectedItem = next(
             (
-                cfg for cfg in engine_cfgs 
+                cfg
+                for cfg in engine_cfgs
                 if cfg.engine.Version == int(EXEC_PARAMS.engine_ver)
             ),
-            None
+            None,
         )
 
         # if addin-file is not writable, lock changing of the engine
         if attachment.IsReadOnly():
             self.availableEngines.IsEnabled = False
-    
+
     def _setup_cpython_engines(self, attachment):
         """Sets up the list of available cpython engines."""
         cengine_cfgs = [
@@ -195,31 +207,34 @@ class SettingsWindow(forms.WPFWindow):
         # now select the current cpython engine
         self.active_cpyengine = user_config.get_active_cpython_engine()
         if not self.active_cpyengine:
-            logger.debug('Failed getting active cpython engine.')
+            logger.debug("Failed getting active cpython engine.")
             self.cpythonEngines.IsEnabled = False
             return
         self.cpythonEngines.SelectedItem = next(
-            cfg for cfg in cengine_cfgs
+            cfg
+            for cfg in cengine_cfgs
             if cfg.engine.Version == self.active_cpyengine.Version
         )
 
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list"""
-        self.extfolders_lb.ItemsSource = \
-            user_config.get_thirdparty_ext_root_dirs(include_default=False)
+        self.extfolders_lb.ItemsSource = user_config.get_thirdparty_ext_root_dirs(
+            include_default=False
+        )
 
     def _setup_env_vars_list(self):
         """Reads the pyRevit environment variables and updates the list"""
-        env_vars_list = \
-            [EnvVariable(k, v)
-             for k, v in sorted(envvars.get_pyrevit_env_vars().items())]
+        env_vars_list = [
+            EnvVariable(k, v) for k, v in sorted(envvars.get_pyrevit_env_vars().items())
+        ]
 
         self.envvars_lb.ItemsSource = env_vars_list
 
     def _setup_uiux(self):
         applocale = applocales.get_current_applocale()
-        sorted_applocales = \
-            sorted(applocales.APP_LOCALES, key=lambda x: str(x.lang_type))
+        sorted_applocales = sorted(
+            applocales.APP_LOCALES, key=lambda x: str(x.lang_type)
+        )
         self.applocales_cb.ItemsSource = [str(x) for x in sorted_applocales]
         self.applocales_cb.SelectedItem = str(applocale)
 
@@ -249,24 +264,29 @@ class SettingsWindow(forms.WPFWindow):
         self.loadtooltipex_cb.IsChecked = user_config.tooltip_debug_info
 
     def _get_event_telemetry_checkboxes(self):
-        return list([x for x in self.event_telemetry_sp.Children
-                     if isinstance(x, Controls.CheckBox)])
+        return list(
+            [
+                x
+                for x in self.event_telemetry_sp.Children
+                if isinstance(x, Controls.CheckBox)
+            ]
+        )
 
     def _setup_event_telemetry_checkboxes(self):
         supportedEvents = EventUtils.GetSupportedEventTypes()
         for event_type in coreutils.get_enum_values(EventType):
             # verify event type is supported in telemetry system
             # grab the two parts of the event type name
-            api_name, api_event = str(event_type).split('_')
+            api_name, api_event = str(event_type).split("_")
 
             # figure out the namespace
-            api_namespace = 'Autodesk.Revit.ApplicationServices.'
-            if api_name in ['UIApplication', 'AddInCommandBinding']:
-                api_namespace = 'Autodesk.Revit.UI.'
+            api_namespace = "Autodesk.Revit.ApplicationServices."
+            if api_name in ["UIApplication", "AddInCommandBinding"]:
+                api_namespace = "Autodesk.Revit.UI."
 
             # figure out the ui title
             api_title = api_event
-            api_obj = api_name + '.' + api_event
+            api_obj = api_name + "." + api_event
 
             cbox = Controls.CheckBox()
             cbox.Margin = Windows.Thickness(0, 10, 0, 0)
@@ -275,51 +295,83 @@ class SettingsWindow(forms.WPFWindow):
             tblock = Controls.TextBlock()
             tblock.Margin = Windows.Thickness(0, 2, 0, 0)
             # if event does not have interesting telemetry data, hide from user
-            if event_type in [EventType.AddInCommandBinding_BeforeExecuted,
-                              EventType.AddInCommandBinding_CanExecute,
-                              EventType.AddInCommandBinding_Executed,
-                              EventType.Application_JournalUpdated]:
+            if event_type in [
+                EventType.AddInCommandBinding_BeforeExecuted,
+                EventType.AddInCommandBinding_CanExecute,
+                EventType.AddInCommandBinding_Executed,
+                EventType.Application_JournalUpdated,
+            ]:
                 cbox.IsEnabled = False
                 cbox.Visibility = Windows.Visibility.Collapsed
 
             # if the event type is not supported in running revit, inform user
             elif event_type not in supportedEvents:
                 cbox.IsEnabled = False
-                tblock.Inlines.Add(Documents.Run(
-                    "{}\n".format(' '.join(
-                        coreutils.split_words(str(api_title))
-                    ))))
-                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.NotSupport")))
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        "{}\n".format(" ".join(coreutils.split_words(str(api_title))))
+                    )
+                )
+                tblock.Inlines.Add(
+                    Documents.Run(self.get_locale_string("Events.NotSupport"))
+                )
 
             # if event is JournalCommandExecuted, create better user interface
             elif event_type == EventType.Application_JournalCommandExecuted:
-                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.CommandExecuted")))
-                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.CommandExecuted.EventType")))
                 tblock.Inlines.Add(
-                    Documents.Run(self.get_locale_string("Events.CommandExecuted.TracksExecution")))
+                    Documents.Run(self.get_locale_string("Events.CommandExecuted"))
+                )
                 tblock.Inlines.Add(
-                    Documents.Run(self.get_locale_string("Events.CommandExecuted.BuiltinCommands")))
+                    Documents.Run(
+                        self.get_locale_string("Events.CommandExecuted.EventType")
+                    )
+                )
                 tblock.Inlines.Add(
-                    Documents.Run(self.get_locale_string("Events.CommandExecuted.ThirdPartyCommands")))
+                    Documents.Run(
+                        self.get_locale_string("Events.CommandExecuted.TracksExecution")
+                    )
+                )
                 tblock.Inlines.Add(
-                    Documents.Run(self.get_locale_string("Events.CommandExecuted.pyRevitCommands")))
+                    Documents.Run(
+                        self.get_locale_string("Events.CommandExecuted.BuiltinCommands")
+                    )
+                )
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        self.get_locale_string(
+                            "Events.CommandExecuted.ThirdPartyCommands"
+                        )
+                    )
+                )
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        self.get_locale_string("Events.CommandExecuted.pyRevitCommands")
+                    )
+                )
 
             # otherwise prepare the option for the event type
             elif event_type in supportedEvents:
-                tblock.Inlines.Add(Documents.Run(
-                    "{}\n".format(' '.join(
-                        coreutils.split_words(str(api_title))
-                    ))))
-                tblock.Inlines.Add(Documents.Run(self.get_locale_string("Events.TypeEvent")))
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        "{}\n".format(" ".join(coreutils.split_words(str(api_title))))
+                    )
+                )
+                tblock.Inlines.Add(
+                    Documents.Run(self.get_locale_string("Events.TypeEvent"))
+                )
                 hyperlink = Documents.Hyperlink(Documents.Run(api_obj + "\n"))
-                hyperlink.NavigateUri = \
-                    System.Uri(apidocs.make_event_uri(api_namespace + api_obj))
+                hyperlink.NavigateUri = System.Uri(
+                    apidocs.make_event_uri(api_namespace + api_obj)
+                )
                 hyperlink.Click += self.handle_url_click
                 tblock.Inlines.Add(hyperlink)
-                tblock.Inlines.Add(Documents.Run(
-                    self.get_locale_string("Events.pyRevitHook").format(
-                        EventUtils.GetEventName(event_type)
-                    )))
+                tblock.Inlines.Add(
+                    Documents.Run(
+                        self.get_locale_string("Events.pyRevitHook").format(
+                            EventUtils.GetEventName(event_type)
+                        )
+                    )
+                )
             cbox.Content = tblock
             self.event_telemetry_sp.Children.Add(cbox)
 
@@ -329,102 +381,77 @@ class SettingsWindow(forms.WPFWindow):
         active_server = routes.get_active_server()
         if active_server:
             self.update_status_lights(
-                {
-                    "status": "pass",
-                    "message": str(active_server)
-                },
+                {"status": "pass", "message": str(active_server)},
                 self.routesserver_statusbox,
-                self.routesserver_statusmsg
+                self.routesserver_statusmsg,
             )
             # setup example
             self.show_element(self.routes_exampleblock)
-            self.routes_example.Text = \
-                "GET http://{}:{}/routes/status".format(
-                    coreutils.get_my_ip(),
-                    user_config.routes_port
-                )
+            self.routes_example.Text = "GET http://{}:{}/routes/status".format(
+                coreutils.get_my_ip(), user_config.routes_port
+            )
 
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""
         self._setup_event_telemetry_checkboxes()
 
-        self.telemetry_timestamp_cb.IsChecked = \
-            telemetry.get_telemetry_utc_timestamp()
+        self.telemetry_timestamp_cb.IsChecked = telemetry.get_telemetry_utc_timestamp()
         self.telemetry_cb.IsChecked = telemetry.get_telemetry_state()
-        self.cur_telemetryfile_tb.Text = \
-            telemetry.get_telemetry_file_path()
+        self.cur_telemetryfile_tb.Text = telemetry.get_telemetry_file_path()
         self.cur_telemetryfile_tb.IsReadOnly = True
-        self.telemetryfile_tb.Text = \
-            telemetry.get_telemetry_file_dir()
-        self.telemetry_hooks_cb.IsChecked = \
-            telemetry.get_telemetry_include_hooks()
+        self.telemetryfile_tb.Text = telemetry.get_telemetry_file_dir()
+        self.telemetry_hooks_cb.IsChecked = telemetry.get_telemetry_include_hooks()
 
-        self.telemetryserver_tb.Text = \
-            telemetry.get_telemetry_server_url()
+        self.telemetryserver_tb.Text = telemetry.get_telemetry_server_url()
 
         self.apptelemetry_cb.IsChecked = telemetry.get_apptelemetry_state()
-        self.apptelemetryserver_tb.Text = \
-            telemetry.get_apptelemetry_server_url()
+        self.apptelemetryserver_tb.Text = telemetry.get_apptelemetry_server_url()
         event_flags = telemetry.get_apptelemetry_event_flags()
         for event_checkbox, event_type in zip(
-                self._get_event_telemetry_checkboxes(),
-                telemetry.get_apptelemetry_event_types()):
-            event_checkbox.IsChecked = \
-                telemetry.get_apptelemetry_event_state(event_flags, event_type)
-
-    def _make_product_name(self, product, note):
-        return '_{} | {}({}) {}'.format(
-            product.Name,
-            product.BuildNumber,
-            product.BuildTarget,
-            note
+            self._get_event_telemetry_checkboxes(),
+            telemetry.get_apptelemetry_event_types(),
+        ):
+            event_checkbox.IsChecked = telemetry.get_apptelemetry_event_state(
+                event_flags, event_type
             )
 
     def _setup_addinfiles(self):
         """Gets the installed Revit versions and sets up the ui"""
-        installed_revits = \
-            {str(x.ProductYear):x
-             for x in TargetApps.Revit.RevitProduct.ListInstalledProducts()}
-        attachments = \
-            {str(x.Product.ProductYear):x
-             for x in PyRevit.PyRevitAttachments.GetAttachments()}
+        installed_revits = {
+            str(x.ProductYear): x
+            for x in TargetApps.Revit.RevitProduct.ListInstalledProducts()
+        }
+        attachments = {
+            str(x.Product.ProductYear): x
+            for x in PyRevit.PyRevitAttachments.GetAttachments()
+        }
 
-        for rvt_ver, checkbox in self._addinfiles_cboxes.items():
-            if rvt_ver in attachments:
-                if rvt_ver != HOST_APP.version:
-                    checkbox.Content = \
-                        self._make_product_name(
-                            attachments[rvt_ver].Product,
-                            ''
-                            )
-                else:
-                    checkbox.Content = \
-                        self._make_product_name(
-                            attachments[rvt_ver].Product,
-                            self.get_locale_string("RevitAttachment.Current")
-                            )
-
-                checkbox.IsChecked = True
-                if attachments[rvt_ver].AttachmentType == \
-                        PyRevit.PyRevitAttachmentType.AllUsers:
-                    checkbox.IsEnabled = False
-                    checkbox.Content += self.get_locale_string("RevitAttachment.AllUsers")
-                else:
-                    checkbox.IsEnabled = True
-            else:
-                if rvt_ver in installed_revits:
-                    checkbox.Content = \
-                        self._make_product_name(
-                            installed_revits[rvt_ver],
-                            self.get_locale_string("RevitAttachment.NotAttached")
-                            )
-                    checkbox.IsEnabled = True
-                    checkbox.IsChecked = False
-                else:
-                    checkbox.Content = \
-                        self.get_locale_string("RevitAttachment.NotInstalled").format(rvt_ver)
-                    checkbox.IsEnabled = False
-                    checkbox.IsChecked = False
+        for checkbox in self.supported_revit_versions_CB:
+            # checkbox.IsEnabled and checkbox.IsChecked are False by default
+            if checkbox.Version not in installed_revits:
+                checkbox.Content += self.get_locale_string(
+                    "RevitAttachment.NotInstalled"
+                )
+                continue
+            product = installed_revits[checkbox.Version]
+            checkbox.Content += " | {} | {}({}) ".format(
+                product.Name, product.BuildNumber, product.BuildTarget
+            )
+            checkbox.IsEnabled = True
+            if checkbox.Version not in attachments:
+                checkbox.Content += self.get_locale_string(
+                    "RevitAttachment.NotAttached"
+                )
+                continue
+            checkbox.IsChecked = True
+            if checkbox.Version == HOST_APP.version:
+                checkbox.Content += self.get_locale_string("RevitAttachment.Current")
+            if (
+                attachments[checkbox.Version].AttachmentType
+                == PyRevit.PyRevitAttachmentType.AllUsers
+            ):
+                checkbox.Content += self.get_locale_string("RevitAttachment.AllUsers")
+                checkbox.IsEnabled = False
 
     def is_same_version_as_running(self, version):
         return str(version) == EXEC_PARAMS.engine_ver
@@ -436,8 +463,7 @@ class SettingsWindow(forms.WPFWindow):
         if attachment:
             # if attachment is for all users dont attempt at making changes
             # user probably does not have write access and this fails
-            if attachment.AttachmentType == \
-                    PyRevit.PyRevitAttachmentType.AllUsers:
+            if attachment.AttachmentType == PyRevit.PyRevitAttachmentType.AllUsers:
                 return
 
             # notify use to restart if engine has changed
@@ -447,26 +473,23 @@ class SettingsWindow(forms.WPFWindow):
                     forms.alert(self.get_locale_string("Engines.WasChanged"))
                 # configure the engine on this version
                 PyRevit.PyRevitAttachments.Attach(
-                    int(HOST_APP.version),
-                    attachment.Clone,
-                    new_engine,
-                    False
-                    )
+                    int(HOST_APP.version), attachment.Clone, new_engine, False
+                )
 
                 # now setup the attachments for other versions
-                for rvt_ver, checkbox in self._addinfiles_cboxes.items():
+                for checkbox in self.supported_revit_versions_CB:
                     if checkbox.IsEnabled:
                         if checkbox.IsChecked:
                             PyRevit.PyRevitAttachments.Attach(
-                                int(rvt_ver),
+                                int(checkbox.Version),
                                 attachment.Clone,
                                 new_engine,
-                                False
-                                )
+                                False,
+                            )
                         else:
-                            PyRevit.PyRevitAttachments.Detach(int(rvt_ver))
+                            PyRevit.PyRevitAttachments.Detach(int(checkbox.Version))
         else:
-            logger.error('Error determining current attached clone.')
+            logger.error("Error determining current attached clone.")
 
     def resetreportinglevel(self, sender, args):
         """Callback method for resetting logging levels to defaults"""
@@ -545,69 +568,57 @@ class SettingsWindow(forms.WPFWindow):
     def update_status_lights(self, status, serverbox, servermsg):
         """Update given status light by given status"""
         if status and status["status"] == "pass":
-            serverbox.Background = self.Resources['pyRevitAccentBrush']
+            serverbox.Background = self.Resources["pyRevitAccentBrush"]
             custom_msg = status.get("message", None)
             servermsg.Text = ""
             if custom_msg:
                 servermsg.Text = custom_msg
             else:
                 for check, check_status in status["checks"].items():
-                    servermsg.Text += \
-                        u'\u2713 {} ({})'.format(
-                            check,
-                            check_status["version"]
-                            )
+                    servermsg.Text += "\u2713 {} ({})".format(
+                        check, check_status["version"]
+                    )
             return
-        serverbox.Background = self.Resources['pyRevitDarkBrush']
+        serverbox.Background = self.Resources["pyRevitDarkBrush"]
         servermsg.Text = self.get_locale_string("Telemetry.Status")
 
     def telemetryserver_changed(self, sender, args):
         """Reset telemetry server status light"""
         self.validate_telemetry_url(self.telemetryserver_tb)
         self.update_status_lights(
-            None,
-            self.telemetryserver_statusbox,
-            self.telemetryserver_statusmsg
-            )
+            None, self.telemetryserver_statusbox, self.telemetryserver_statusmsg
+        )
 
     def apptelemetryserver_changed(self, sender, args):
         """Reset app telemetry server status light"""
         self.validate_telemetry_url(self.apptelemetryserver_tb)
         self.update_status_lights(
-            None,
-            self.apptelemetryserver_statusbox,
-            self.apptelemetryserver_statusmsg
+            None, self.apptelemetryserver_statusbox, self.apptelemetryserver_statusmsg
         )
 
     def update_telemetry_status(self, status):
         """Update telemetry server status light"""
         self.update_status_lights(
-            status,
-            self.telemetryserver_statusbox,
-            self.telemetryserver_statusmsg
-            )
+            status, self.telemetryserver_statusbox, self.telemetryserver_statusmsg
+        )
 
     def update_apptelemetry_status(self, status):
         """Update app telemetry server status light"""
         self.update_status_lights(
-            status,
-            self.apptelemetryserver_statusbox,
-            self.apptelemetryserver_statusmsg
-            )
+            status, self.apptelemetryserver_statusbox, self.apptelemetryserver_statusmsg
+        )
 
     def update_all_telemetry_status_lights(self):
         """Check the status of all telemetry servers and update status lights"""
         # test telemetry server status
-        server_stat = \
-            telemetry.get_status_from_url(
-                telemetry.get_telemetry_server_url()
-                )
+        server_stat = telemetry.get_status_from_url(
+            telemetry.get_telemetry_server_url()
+        )
         self.dispatch(self.update_telemetry_status, server_stat)
         # test telemetry app-server status
-        appserver_status = \
-            telemetry.get_status_from_url(
-                telemetry.get_apptelemetry_server_url()
-            )
+        appserver_status = telemetry.get_status_from_url(
+            telemetry.get_apptelemetry_server_url()
+        )
         self.dispatch(self.update_apptelemetry_status, appserver_status)
 
     def update_telemetry_status_lights(self, sender, args):
@@ -630,7 +641,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def pick_stylesheet(self, sender, args):
         """Callback method for picking custom style sheet file"""
-        new_stylesheet = forms.pick_file(file_ext='css')
+        new_stylesheet = forms.pick_file(file_ext="css")
         if new_stylesheet:
             self.cur_stylesheet_tb.Text = os.path.normpath(new_stylesheet)
 
@@ -643,13 +654,11 @@ class SettingsWindow(forms.WPFWindow):
         # update theme settings
         self.tab_theme.SortDocTabs = self.sortdocs_cb.IsChecked
         if self.project_tabstyle_cb.SelectedItem:
-            tabs.update_tabstyle(
-                self.tab_theme, self.project_tabstyle_cb.SelectedItem
-                )
+            tabs.update_tabstyle(self.tab_theme, self.project_tabstyle_cb.SelectedItem)
         if self.family_tabstyle_cb.SelectedItem:
             tabs.update_family_tabstyle(
                 self.tab_theme, self.family_tabstyle_cb.SelectedItem
-                )
+            )
         # refresh previews
         self.update_tab_previews()
 
@@ -663,20 +672,20 @@ class SettingsWindow(forms.WPFWindow):
         color = self.prompt_for_color()
         if color:
             tabs.add_tab_orderrule(self.tab_theme, color)
-            self.doc_ordercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabOrderRules)
+            self.doc_ordercolor_lb.ItemsSource = list(self.tab_theme.TabOrderRules)
             self.update_tab_previews()
 
     def remove_ordercolor(self, sender, args):
         selected_ordercolor_idx = self.doc_ordercolor_lb.SelectedIndex
         if selected_ordercolor_idx >= 0:
             tabs.remove_tab_orderrule(self.tab_theme, selected_ordercolor_idx)
-            self.doc_ordercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabOrderRules)
+            self.doc_ordercolor_lb.ItemsSource = list(self.tab_theme.TabOrderRules)
             new_count = len(self.tab_theme.TabOrderRules)
-            new_index = \
-                selected_ordercolor_idx \
-                    if selected_ordercolor_idx < new_count else (new_count - 1)
+            new_index = (
+                selected_ordercolor_idx
+                if selected_ordercolor_idx < new_count
+                else (new_count - 1)
+            )
             self.doc_ordercolor_lb.SelectedIndex = new_index
             self.update_tab_previews()
 
@@ -693,45 +702,36 @@ class SettingsWindow(forms.WPFWindow):
     def doc_ordercolor_changecolor(self, sender, args):
         selected_ordercolor_idx = self.doc_ordercolor_lb.SelectedIndex
         if selected_ordercolor_idx >= 0:
-            rule_color = \
-                tabs.get_tab_orderrule(self.tab_theme, selected_ordercolor_idx)
+            rule_color = tabs.get_tab_orderrule(self.tab_theme, selected_ordercolor_idx)
             new_color = self.prompt_for_color(rule_color)
             if new_color:
                 tabs.update_tab_orderrule(
-                    self.tab_theme,
-                    selected_ordercolor_idx,
-                    new_color
-                    )
-            self.doc_ordercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabOrderRules)
+                    self.tab_theme, selected_ordercolor_idx, new_color
+                )
+            self.doc_ordercolor_lb.ItemsSource = list(self.tab_theme.TabOrderRules)
             self.update_tab_previews()
 
     def add_filtercolor(self, sender, args):
         color = self.prompt_for_color()
         if color:
             tabs.add_tab_filterrule(
-                self.tab_theme,
-                color,
-                "Project %s" % self.filtercolor_counter
-                )
-            self.doc_filtercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabFilterRules)
+                self.tab_theme, color, "Project %s" % self.filtercolor_counter
+            )
+            self.doc_filtercolor_lb.ItemsSource = list(self.tab_theme.TabFilterRules)
             self.filtercolor_counter += 1
             self.update_tab_previews()
 
     def remove_filtercolor(self, sender, args):
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
         if selected_filtercolor_idx >= 0:
-            tabs.remove_tab_filterrule(
-                self.tab_theme,
-                selected_filtercolor_idx
-                )
-            self.doc_filtercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabFilterRules)
+            tabs.remove_tab_filterrule(self.tab_theme, selected_filtercolor_idx)
+            self.doc_filtercolor_lb.ItemsSource = list(self.tab_theme.TabFilterRules)
             new_count = len(self.tab_theme.TabFilterRules)
-            new_index = \
-                selected_filtercolor_idx \
-                    if selected_filtercolor_idx < new_count else (new_count - 1)
+            new_index = (
+                selected_filtercolor_idx
+                if selected_filtercolor_idx < new_count
+                else (new_count - 1)
+            )
             self.doc_filtercolor_lb.SelectedIndex = new_index
             # updateing filter text will trigger a preview
             self.filtercolor_filter_tb.Text = ""
@@ -739,9 +739,9 @@ class SettingsWindow(forms.WPFWindow):
     def selected_filtercolor_changed(self, sender, args):
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
         if selected_filtercolor_idx >= 0:
-            _, rule_title_filter = \
-                tabs.get_tab_filterrule(self.tab_theme,
-                                         selected_filtercolor_idx)
+            _, rule_title_filter = tabs.get_tab_filterrule(
+                self.tab_theme, selected_filtercolor_idx
+            )
             self.filtercolor_filter_tb.Text = rule_title_filter
 
     def filtercolor_filter_changed(self, sender, args):
@@ -753,8 +753,8 @@ class SettingsWindow(forms.WPFWindow):
                 tabs.update_tab_filterrule(
                     self.tab_theme,
                     selected_filtercolor_idx,
-                    title_filter=self.filtercolor_filter_tb.Text
-                    )
+                    title_filter=self.filtercolor_filter_tb.Text,
+                )
                 self.update_tab_previews()
             except Exception:
                 self.show_element(self.filtercolor_filter_warn)
@@ -762,18 +762,15 @@ class SettingsWindow(forms.WPFWindow):
     def doc_filtercolor_changecolor(self, sender, args):
         selected_filtercolor_idx = self.doc_filtercolor_lb.SelectedIndex
         if selected_filtercolor_idx >= 0:
-            rule_color, _ = \
-                tabs.get_tab_filterrule(self.tab_theme,
-                                         selected_filtercolor_idx)
+            rule_color, _ = tabs.get_tab_filterrule(
+                self.tab_theme, selected_filtercolor_idx
+            )
             color = self.prompt_for_color(rule_color)
             if color:
                 tabs.update_tab_filterrule(
-                    self.tab_theme,
-                    selected_filtercolor_idx,
-                    color=color
-                    )
-            self.doc_filtercolor_lb.ItemsSource = \
-                list(self.tab_theme.TabFilterRules)
+                    self.tab_theme, selected_filtercolor_idx, color=color
+                )
+            self.doc_filtercolor_lb.ItemsSource = list(self.tab_theme.TabFilterRules)
             self.update_tab_previews()
 
     # tab previews
@@ -844,7 +841,7 @@ class SettingsWindow(forms.WPFWindow):
             min_freespace = int(self.minhostdrivefreespace_tb.Text)
             user_config.min_host_drivefreespace = min_freespace
         except ValueError:
-            logger.error('Minimum free space value must be an integer.')
+            logger.error("Minimum free space value must be an integer.")
             user_config.min_host_drivefreespace = 0
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
@@ -854,8 +851,10 @@ class SettingsWindow(forms.WPFWindow):
         engine_cfg = self.cpythonEngines.SelectedItem
         if engine_cfg:
             user_config.set_active_cpython_engine(engine_cfg.engine)
-            if self.active_cpyengine.Version != engine_cfg.engine.Version \
-                    and not self.reload_requested:
+            if (
+                self.active_cpyengine.Version != engine_cfg.engine.Version
+                and not self.reload_requested
+            ):
                 forms.alert(self.get_locale_string("Engines.CPython.WasChanged"))
 
     def _save_user_extensions_list(self):
@@ -874,10 +873,12 @@ class SettingsWindow(forms.WPFWindow):
             for applocale in applocales.APP_LOCALES:
                 if str(applocale) == self.applocales_cb.SelectedItem:
                     user_config.user_locale = applocale.locale_code
-                    if current_applocale != applocale \
-                            and not self.reload_requested:
+                    if current_applocale != applocale and not self.reload_requested:
                         request_reload = forms.alert(
-                            self.get_locale_string("UI-UX.LangChanged"), yes=True, no=True)
+                            self.get_locale_string("UI-UX.LangChanged"),
+                            yes=True,
+                            no=True,
+                        )
         # colorize docs
         user_config.colorize_docs = self.colordocs_cb.IsChecked
 
@@ -893,10 +894,13 @@ class SettingsWindow(forms.WPFWindow):
         elif user_config.output_stylesheet != default_stylesheet:
             user_config.output_stylesheet = None
         # pyrevit gui settings
-        if self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info \
-                and not self.reload_requested:
+        if (
+            self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info
+            and not self.reload_requested
+        ):
             request_reload = forms.alert(
-                self.get_locale_string("UI-UX.NeedReload"), yes=True, no=True)
+                self.get_locale_string("UI-UX.NeedReload"), yes=True, no=True
+            )
         user_config.tooltip_debug_info = self.loadtooltipex_cb.IsChecked
 
         return request_reload
@@ -908,14 +912,18 @@ class SettingsWindow(forms.WPFWindow):
         if self.routes_cb.IsChecked:
             if not user_config.routes_server:
                 request_reload = forms.alert(
-                    self.get_locale_string("Routes.Changed"), yes=True, no=True)
+                    self.get_locale_string("Routes.Changed"), yes=True, no=True
+                )
         else:
             routes.deactivate_server()
 
-        if user_config.load_core_api != self.coreapi_cb.IsChecked \
-                and not request_reload:
+        if (
+            user_config.load_core_api != self.coreapi_cb.IsChecked
+            and not request_reload
+        ):
             request_reload = forms.alert(
-                self.get_locale_string("Routes.RestChanged"), yes=True, no=True)
+                self.get_locale_string("Routes.RestChanged"), yes=True, no=True
+            )
 
         # save configs
         user_config.routes_server = self.routes_cb.IsChecked
@@ -926,8 +934,7 @@ class SettingsWindow(forms.WPFWindow):
     def _save_telemetry(self):
         # set telemetry configs
         # pyrevit telemetry
-        telemetry.set_telemetry_utc_timestamp(
-            self.telemetry_timestamp_cb.IsChecked)
+        telemetry.set_telemetry_utc_timestamp(self.telemetry_timestamp_cb.IsChecked)
         telemetry.set_telemetry_state(self.telemetry_cb.IsChecked)
         telemetry.set_telemetry_file_dir(self.telemetryfile_tb.Text)
         telemetry.set_telemetry_server_url(self.telemetryserver_tb.Text)
@@ -938,39 +945,37 @@ class SettingsWindow(forms.WPFWindow):
 
         event_flags = telemetry.get_apptelemetry_event_flags()
         for event_checkbox, event_type in zip(
-                self._get_event_telemetry_checkboxes(),
-                telemetry.get_apptelemetry_event_types()):
+            self._get_event_telemetry_checkboxes(),
+            telemetry.get_apptelemetry_event_types(),
+        ):
             if event_checkbox.IsChecked:
                 event_flags = telemetry.set_apptelemetry_event_state(
-                    event_flags,
-                    event_type
-                    )
+                    event_flags, event_type
+                )
             else:
                 event_flags = telemetry.unset_apptelemetry_event_state(
-                    event_flags,
-                    event_type
-                    )
+                    event_flags, event_type
+                )
         telemetry.set_apptelemetry_event_flags(event_flags)
         telemetry.setup_telemetry()
 
     def _reload(self):
-        from pyrevit.loader.sessionmgr import execute_command #pylint: disable=import-outside-toplevel
+        from pyrevit.loader.sessionmgr import (
+            execute_command,
+        )  # pylint: disable=import-outside-toplevel
+
         execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
     def save_settings(self, sender, args):
         """Callback method for saving pyRevit settings"""
-        self.reload_requested = \
-            self._save_core_options() or self.reload_requested
-        self.reload_requested = \
-            self._save_engines() or self.reload_requested
-        self.reload_requested = \
+        self.reload_requested = self._save_core_options() or self.reload_requested
+        self.reload_requested = self._save_engines() or self.reload_requested
+        self.reload_requested = (
             self._save_user_extensions_list() or self.reload_requested
-        self.reload_requested = \
-            self._save_uiux() or self.reload_requested
-        self.reload_requested = \
-            self._save_routes() or self.reload_requested
-        self.reload_requested = \
-            self._save_telemetry() or self.reload_requested
+        )
+        self.reload_requested = self._save_uiux() or self.reload_requested
+        self.reload_requested = self._save_routes() or self.reload_requested
+        self.reload_requested = self._save_telemetry() or self.reload_requested
 
         # save all new values into config file
         user_config.save_changes()
@@ -994,14 +999,15 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     if not user_config.user_can_config:
         return False
 
+
 # handles tool click in Revit interface:
 # if Shift-Click on the tool, opens the pyRevit config file in
 # windows explorer
 # otherwise, will show the Settings user interface
-if __name__ == '__main__':
-    if __shiftclick__:  #pylint: disable=E0602
+if __name__ == "__main__":
+    if __shiftclick__:  # pylint: disable=E0602
         script.show_file_in_explorer(user_config.config_file)
     elif user_config.is_readonly:
-        forms.alert('pyRevit settings are set by your admin.', exitscript=True)
+        forms.alert("pyRevit settings are set by your admin.", exitscript=True)
     else:
-        SettingsWindow('SettingsWindow.xaml').show_dialog()
+        SettingsWindow("SettingsWindow.xaml").show_dialog()
