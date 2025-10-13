@@ -83,15 +83,34 @@ def get_load_stat(cad, is_link):
     cad_type = doc.GetElement(cad.GetTypeId()) # Retreive the type from the instance
     
     if not is_link:
+        return ":warning: IMPORTED"
+        
+    try:
+        exfs = cad_type.GetExternalFileReference()
+        if not exfs:
+            return ":warning: IMPORTED"
+        status = exfs.GetLinkedFileStatus().ToString()
+    except Exception:
+        # Fallback for cloud-based CAD links (ACC/ADC)
+        exfs = cad_type.GetExternalResourceReferences()
+        ext_ref = next(iter(exfs.Values)) if exfs.Count > 0 else None
+        if not ext_ref:
+            return ":warning: IMPORTED"
+        status = ext_ref.GetResourceVersionStatus().ToString()
+
+    if not exfs:
         return ":warning: IMPORTED" # Not an external reference
-    exfs = cad_type.GetExternalFileReference()
-    status = exfs.GetLinkedFileStatus().ToString()
+    
     if status == "Loaded":
         return ":ballot_box_with_check: Loaded"
     if status == "NotFound":
         return ":cross_mark: NotFound"
     if status == "Unloaded":
         return ":heavy_multiplication_x: Unloaded"
+    if status == "OutOfDate":
+        return ":warning: Outdated on ADC"
+    if  status == "Current":
+        return ":ballot_box_with_check: Current on ADC"
     raise ValueError("Unexpected status {}".format(status))
 
 
