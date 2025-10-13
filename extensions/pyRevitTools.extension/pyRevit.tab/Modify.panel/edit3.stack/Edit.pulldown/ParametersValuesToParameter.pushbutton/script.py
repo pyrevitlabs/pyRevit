@@ -149,8 +149,8 @@ def get_parameter_value(element, parameter_name):
     return ""
 
 
-def create_parameter_value(element, parameter_names):
-    """Create combined parameter value from multiple parameters."""
+def create_parameter_value(element, parameter_names, separator="-", space_option="beforeafter"):
+    """Create combined parameter value from multiple parameters with separators and spacing options."""
     if not parameter_names:
         return ""
 
@@ -158,10 +158,21 @@ def create_parameter_value(element, parameter_names):
         get_parameter_value(element, param_name) for param_name in parameter_names
     ]
 
-    if len(values) == 1:
-        return values[0]
-    else:
-        return "-".join(values)
+    # Split the separator string by spaces
+    separators = separator.split() if separator.strip() else ["-"]
+
+    # Combine values with cycling separators
+    combined = values[0]
+    for i, val in enumerate(values[1:], start=1):
+        sep = separators[(i-1) % len(separators)]  # loop through separators
+        # Apply spacing based on space_option
+        if space_option == "none": combined += sep + val
+        elif space_option == "before": combined += " " + sep + val
+        elif space_option == "after": combined += sep + " " + val
+        elif space_option == "beforeafter": combined += " " + sep + " " + val
+        else: combined += " " + sep + " " + val  # fallback default
+
+    return combined
 
 
 class Params2ParamWindow(forms.WPFWindow):
@@ -189,6 +200,11 @@ class Params2ParamWindow(forms.WPFWindow):
             self.categoryComboBox = self.FindName("categoryComboBox")
             self.sourceParametersListBox = self.FindName("sourceParametersListBox")
             self.targetParametersListBox = self.FindName("targetParametersListBox")
+            self.separatorTextBox = self.FindName("separatorTextBox")
+            
+            # Set default separator
+            if self.separatorTextBox:
+                self.separatorTextBox.Text = "-"
 
             # Set localized text for UI elements
             self.set_localized_texts()
@@ -290,12 +306,21 @@ class Params2ParamWindow(forms.WPFWindow):
             all_param_names.update(get_parameter_names(elem))
         self.parameter_names = sorted(all_param_names)
 
-        # Populate parameter lists
-        param_list = List[str]()
-        param_list.AddRange(self.parameter_names)
+        # Populate source parameter list (all parameters)
+        source_param_list = List[str]()
+        source_param_list.AddRange(self.parameter_names)
+        self.sourceParametersListBox.ItemsSource = source_param_list
 
-        self.sourceParametersListBox.ItemsSource = param_list
-        self.targetParametersListBox.ItemsSource = param_list
+        # Populate target parameter list (only writable string parameters)
+        target_param_names = set()
+        for elem in self.elements[:min(5, len(self.elements))]:  # sample first 5 elements
+            for p in elem.Parameters:
+                if p.Definition and p.StorageType == DB.StorageType.String and not p.IsReadOnly:
+                    target_param_names.add(p.Definition.Name)
+
+        target_param_list = List[str]()
+        target_param_list.AddRange(sorted(target_param_names))
+        self.targetParametersListBox.ItemsSource = target_param_list
 
     def execute_button_click(self, sender, args):  # noqa
         """Handle execute button click."""
@@ -338,8 +363,18 @@ class Params2ParamWindow(forms.WPFWindow):
                         failed_count += 1
                         continue
 
-                    # Create combined value from source parameters
-                    param_value = create_parameter_value(element, source_parameters)
+                    # Create combined value from source parameters with user-defined separators
+                    separator = "-"
+                    if hasattr(self, "separatorTextBox") and self.separatorTextBox.Text.strip():
+                        separator = self.separatorTextBox.Text.strip()
+
+                    space_option = "beforeafter"  # default
+                    if hasattr(self, "spaceNoneRadio") and self.spaceNoneRadio.IsChecked: space_option = "none"
+                    elif hasattr(self, "spaceBeforeRadio") and self.spaceBeforeRadio.IsChecked: space_option = "before"
+                    elif hasattr(self, "spaceAfterRadio") and self.spaceAfterRadio.IsChecked: space_option = "after"
+                    elif hasattr(self, "spaceBeforeAfterRadio") and self.spaceBeforeAfterRadio.IsChecked: space_option = "beforeafter"
+                    
+                    param_value = create_parameter_value(element, source_parameters, separator, space_option)
 
                     # Set the value based on storage type
                     if target_param.StorageType == DB.StorageType.String:
