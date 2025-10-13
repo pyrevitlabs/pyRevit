@@ -16,7 +16,7 @@ from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit import versionmgr
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
@@ -145,37 +145,69 @@ class ContentButton(GenericUICommand):
             cmp_path=cmp_path,
             needs_script=False
             )
+
+        # Initialize content paths
+        self.content = None
+        self.content_alt = None
+
+        # Try to get content file from metadata first
+        if self.meta:
+            content_from_meta = self.meta.get(exts.MDATA_CONTENT, None)
+            if content_from_meta:
+                self.script_file = self._resolve_content_path(content_from_meta)
+
+            alt_content_from_meta = self.meta.get(exts.MDATA_CONTENT_ALT, None)
+            if alt_content_from_meta:
+                self.config_script_file = self._resolve_content_path(
+                    alt_content_from_meta
+                )
+
+        # Fall back to naming convention if not found in metadata
         # find content file
-        self.script_file = \
-            self.find_bundle_file([
-                exts.CONTENT_VERSION_POSTFIX.format(
-                    version=HOST_APP.version
-                    ),
-                ])
         if not self.script_file:
             self.script_file = \
                 self.find_bundle_file([
-                    exts.CONTENT_POSTFIX,
+                    exts.CONTENT_VERSION_POSTFIX.format(
+                        version=HOST_APP.version
+                        ),
                     ])
+            if not self.script_file:
+                self.script_file = \
+                    self.find_bundle_file([
+                        exts.CONTENT_POSTFIX,
+                        ])
         # requires at least one bundles
         if self.directory and not self.script_file:
             mlogger.error('Command %s: Does not have content file.', self)
             self.script_file = ''
 
         # find alternative content file
-        self.config_script_file = \
-            self.find_bundle_file([
-                exts.ALT_CONTENT_VERSION_POSTFIX.format(
-                    version=HOST_APP.version
-                    ),
-                ])
         if not self.config_script_file:
             self.config_script_file = \
                 self.find_bundle_file([
-                    exts.ALT_CONTENT_POSTFIX,
+                    exts.ALT_CONTENT_VERSION_POSTFIX.format(
+                        version=HOST_APP.version
+                        ),
                     ])
+            if not self.config_script_file:
+                self.config_script_file = \
+                    self.find_bundle_file([
+                        exts.ALT_CONTENT_POSTFIX,
+                        ])
         if not self.config_script_file:
             self.config_script_file = self.script_file
+
+    def _resolve_content_path(self, path):
+        # Check if it's an absolute path
+        if op.isabs(path):
+            return path if op.exists(path) else None
+
+        # Treat as relative to bundle directory
+        if self.directory:
+            bundle_path = op.join(self.directory, path)
+            return bundle_path if op.exists(bundle_path) else None
+
+        return None
 
 
 class URLButton(GenericUICommand):
