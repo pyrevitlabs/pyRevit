@@ -1,7 +1,7 @@
 ﻿using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Attributes;
 
-namespace pyRevitLabs.Configurations;
+namespace pyRevitLabs.Configurations.Sections;
 
 public enum LogLevels
 {

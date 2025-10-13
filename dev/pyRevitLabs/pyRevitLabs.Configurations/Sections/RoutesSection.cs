@@ -1,6 +1,6 @@
 ﻿using pyRevitLabs.Configurations.Attributes;
 
-namespace pyRevitLabs.Configurations;
+namespace pyRevitLabs.Configurations.Sections;
 
 [SectionName("routes")]
 public sealed record RoutesSection
