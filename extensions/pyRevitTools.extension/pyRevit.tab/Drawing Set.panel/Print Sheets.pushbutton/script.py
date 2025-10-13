@@ -109,10 +109,11 @@ class ViewSheetListItem(forms.Reactive):
         else:
             self._tblock_type = None
         self.name = self._sheet.Name
-        self.number = self._sheet.SheetNumber
+        self.number = self._sheet.SheetNumber if hasattr(self._sheet, 'SheetNumber') else ''
         self.issue_date = \
             self._sheet.Parameter[
-                DB.BuiltInParameter.SHEET_ISSUE_DATE].AsString()
+                DB.BuiltInParameter.SHEET_ISSUE_DATE].AsString() if self._sheet.Parameter[
+                DB.BuiltInParameter.SHEET_ISSUE_DATE] else ''
         self.printable = self._sheet.CanBePrinted
 
         self._print_index = 0
@@ -128,7 +129,7 @@ class ViewSheetListItem(forms.Reactive):
         per_sheet_revisions = \
             rev_settings.RevisionNumbering == DB.RevisionNumbering.PerSheet \
             if rev_settings else False
-        cur_rev = revit.query.get_current_sheet_revision(self._sheet)
+        cur_rev = revit.query.get_current_sheet_revision(self._sheet) if hasattr(self._sheet, 'GetCurrentRevision') else ''
         self.revision = UNSET_REVISION
         if cur_rev:
             on_sheet = self._sheet if per_sheet_revisions else None
