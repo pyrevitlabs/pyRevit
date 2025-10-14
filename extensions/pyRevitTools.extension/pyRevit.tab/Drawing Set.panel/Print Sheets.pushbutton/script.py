@@ -38,9 +38,6 @@ from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
 
-# get document
-doc = revit.doc
-uidoc = revit.uidoc
 
 get_elementid_value = get_elementid_value_func()
 
@@ -72,6 +69,10 @@ class PrintUtils:
     """Utility functions for printing and exporting sheets."""
 
     @staticmethod
+    def get_doc():
+        return revit.doc
+
+    @staticmethod
     def can_print():
         app = __revit__.Application
         rvt_year = int(app.VersionNumber)
@@ -95,6 +96,7 @@ class PrintUtils:
         if not os.path.exists(dp):
             os.makedirs(dp)
         return dp
+        
 
     @staticmethod
     def open_dir(dp):
@@ -123,7 +125,7 @@ class PrintUtils:
         return opts
 
     @staticmethod
-    def export_sheet_pdf(dir_path, sheet, opt, doc, uidoc, filename):
+    def export_sheet_pdf(dir_path, sheet, opt, doc, filename):
         pdf_doc_name = filename.replace(".pdf", "")
         opt.FileName = pdf_doc_name
         export_sheet = List[DB.ElementId]()
@@ -132,7 +134,7 @@ class PrintUtils:
         return True
 
     @staticmethod
-    def export_sheet_dwg(dir_path, sheet, opt, doc, uidoc, filename):
+    def export_sheet_dwg(dir_path, sheet, opt, doc, filename):
         dwg_doc_name = filename.replace(".pdf", "")
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
@@ -215,6 +217,8 @@ class ViewSheetListItem(forms.Reactive):
                 date=cur_rev.RevisionDate,
                 is_set=True
             )
+
+        
 
     @property
     def revit_sheet(self):
@@ -668,6 +672,7 @@ class UnlistedSheetsList(object):
                  .ToElements()
 
 
+
 class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
@@ -1045,6 +1050,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         dirPath = PrintUtils.get_dir() + "\\" + PrintUtils.get_folder("_PRINT")
         PrintUtils.ensure_dir(dirPath)
         PrintUtils.open_dir(dirPath)
+        doc = PrintUtils.get_doc()
 
 
         with revit.Transaction('Reload Keynote File',
@@ -1089,7 +1095,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
                                             try:
                                                 optspdf = PrintUtils.pdf_opts()
-                                                PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, uidoc, sheet.print_filename)
+                                                PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
                                             except Exception as e:
@@ -1097,7 +1103,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
                                             try:
                                                 optsdwg = PrintUtils.dwg_opts()
-                                                PrintUtils.export_sheet_dwg(dirPath,sheet.revit_sheet,optsdwg,doc,uidoc, sheet.print_filename)
+                                                PrintUtils.export_sheet_dwg(dirPath,sheet.revit_sheet,optsdwg,doc, sheet.print_filename)
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
                                             except Exception as e:
@@ -1133,7 +1139,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                                     print_filepath):
 
                                             optspdf = PrintUtils.pdf_opts()
-                                            PrintUtils.export_sheet_pdf(dirPath,sheet.revit_sheet,optspdf,doc,uidoc, sheet.print_filename)
+                                            PrintUtils.export_sheet_pdf(dirPath,sheet.revit_sheet,optspdf,doc, sheet.print_filename)
 
                                             pb1.update_progress(pbCount1, pbTotal1)
                                             pbCount1 += 1
@@ -1161,6 +1167,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         dirPath = PrintUtils.get_dir() + "\\" + PrintUtils.get_folder("_PRINT")
         PrintUtils.ensure_dir(dirPath)
         PrintUtils.open_dir(dirPath)
+        doc = PrintUtils.get_doc()
 
         for sheet in target_sheets:
             if sheet.printable:
@@ -1170,12 +1177,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if self._verify_print_filename(sheet.name, print_filepath):
 
                     optspdf = PrintUtils.pdf_opts()
-                    PrintUtils.export_sheet_pdf(dirPath,sheet.revit_sheet,optspdf,doc,uidoc, sheet.print_filename)
+                    PrintUtils.export_sheet_pdf(dirPath,sheet.revit_sheet,optspdf,doc, sheet.print_filename)
 
 
                     if self.export_dwg.IsChecked:
                         optsdwg = PrintUtils.dwg_opts()
-                        PrintUtils.export_sheet_dwg(dirPath,sheet.revit_sheet,optsdwg,doc,uidoc, sheet.print_filename)
+                        PrintUtils.export_sheet_dwg(dirPath,sheet.revit_sheet,optsdwg,doc, sheet.print_filename)
             else:
                 logger.debug(
                     'Linked sheet %s is not printable. Skipping print.',
