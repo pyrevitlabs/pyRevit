@@ -193,6 +193,8 @@ def get_parameter_names(element):
 
 def get_parameter_value(element, parameter_name):
     """Safely get parameter value as string."""
+    if parameter_name in ["Type Name", "Nom du type", "Type"]:
+        return DB.Element.Name.GetValue(element)
     param = element.LookupParameter(parameter_name)
     if param:
         value = param.AsValueString()
@@ -212,8 +214,12 @@ def create_parameter_value(element, parameter_names, separator="-",
         for param_name in parameter_names
     ]
 
-    # Split the separator string by spaces
-    separators = separator.split() if separator.strip() else ["-"]
+    # Handle separator - if it contains spaces, split by spaces for cycling
+    # Otherwise, use the separator as-is
+    if " " in separator.strip():
+        separators = separator.split()
+    else:
+        separators = [separator.strip()] if separator.strip() else ["-"]
 
     # Combine values with cycling separators
     combined = values[0]
@@ -238,6 +244,7 @@ def create_parameter_value(element, parameter_names, separator="-",
 
 
 class Params2ParamWindow(forms.WPFWindow):
+    """Main window class for the ParametersValuesToParameter tool."""
     def __init__(self):
         try:
             # find the path of ui.xaml
@@ -267,6 +274,12 @@ class Params2ParamWindow(forms.WPFWindow):
                 "targetParametersListBox"
             )
             self.separatorTextBox = self.FindName("separatorTextBox")
+
+            # Initialize radio buttons for spacing options
+            self.spaceNoneRadio = self.FindName("spaceNoneRadio")
+            self.spaceBeforeRadio = self.FindName("spaceBeforeRadio")
+            self.spaceAfterRadio = self.FindName("spaceAfterRadio")
+            self.spaceBeforeAfterRadio = self.FindName("spaceBeforeAfterRadio")
 
             # Set default separator
             if self.separatorTextBox:
@@ -355,43 +368,53 @@ class Params2ParamWindow(forms.WPFWindow):
 
     def category_selection_changed(self, sender, args):  # noqa
         """Handle category selection change."""
-        if self.categoryComboBox.SelectedItem is None:
-            return
+        try:
+            if self.categoryComboBox.SelectedItem is None:
+                return
 
-        selected_category = self.categoryComboBox.SelectedItem.Name
+            selected_category = self.categoryComboBox.SelectedItem.Name
 
-        # Get elements for selected category
-        self.elements = get_elements_by_category(
-            selected_category, self.category_mapping, self.texts
-        )
+            # Get elements for selected category
+            self.elements = get_elements_by_category(
+                selected_category, self.category_mapping, self.texts
+            )
 
-        if not self.elements:
-            self.sourceParametersListBox.ItemsSource = None
-            self.targetParametersListBox.ItemsSource = None
-            return
+            if not self.elements:
+                if self.sourceParametersListBox:
+                    self.sourceParametersListBox.ItemsSource = None
+                if self.targetParametersListBox:
+                    self.targetParametersListBox.ItemsSource = None
+                return
 
-        # Get parameter names from all elements to ensure completeness
-        all_param_names = set()
-        for elem in self.elements[:min(5, len(self.elements))]:  # Sample 5
-            all_param_names.update(get_parameter_names(elem))
-        self.parameter_names = sorted(all_param_names)
+            # Get parameter names from all elements to ensure completeness
+            all_param_names = set()
+            for elem in self.elements[:min(5, len(self.elements))]:  # Sample 5
+                all_param_names.update(get_parameter_names(elem))
+            self.parameter_names = sorted(all_param_names)
 
-        # Populate source parameter list (all parameters)
-        source_param_list = List[str]()
-        source_param_list.AddRange(self.parameter_names)
-        self.sourceParametersListBox.ItemsSource = source_param_list
+            # Populate source parameter list (all parameters)
+            if self.sourceParametersListBox:
+                source_param_list = List[str]()
+                source_param_list.AddRange(self.parameter_names)
+                self.sourceParametersListBox.ItemsSource = source_param_list
 
-        # Populate target parameter list (only writable string parameters)
-        target_param_names = set()
-        for elem in self.elements[:min(5, len(self.elements))]:  # sample 5
-            for p in elem.Parameters:
-                if (p.Definition and p.StorageType == DB.StorageType.String and
-                        not p.IsReadOnly):
-                    target_param_names.add(p.Definition.Name)
+            # Populate target parameter list (only writable string parameters)
+            target_param_names = set()
+            for elem in self.elements[:min(5, len(self.elements))]:  # sample 5
+                for p in elem.Parameters:
+                    if (p.Definition and p.StorageType == DB.StorageType.String and
+                            not p.IsReadOnly):
+                        target_param_names.add(p.Definition.Name)
 
-        target_param_list = List[str]()
-        target_param_list.AddRange(sorted(target_param_names))
-        self.targetParametersListBox.ItemsSource = target_param_list
+            if self.targetParametersListBox:
+                target_param_list = List[str]()
+                target_param_list.AddRange(sorted(target_param_names))
+                self.targetParametersListBox.ItemsSource = target_param_list
+                
+        except Exception as e:
+            # Silently handle UI update errors to prevent crashes
+            # This can happen when the window is being closed or UI is being updated
+            pass
 
     def execute_button_click(self, sender, args):  # noqa
         """Handle execute button click."""
@@ -438,25 +461,33 @@ class Params2ParamWindow(forms.WPFWindow):
                         failed_count += 1
                         continue
 
-                    # Create combined value from source parameters with separators
+                    # Combined value from source parameters with separators
                     separator = "-"
-                    if (hasattr(self, "separatorTextBox") and
-                            self.separatorTextBox.Text.strip()):
-                        separator = self.separatorTextBox.Text.strip()
+                    try:
+                        if (self.separatorTextBox and
+                                self.separatorTextBox.Text.strip()):
+                            separator = self.separatorTextBox.Text.strip()
+                    except (AttributeError, Exception):
+                        # If separator textbox is not available, use default
+                        pass
 
                     space_option = "beforeafter"  # default
-                    if (hasattr(self, "spaceNoneRadio") and
-                            self.spaceNoneRadio.IsChecked):
-                        space_option = "none"
-                    elif (hasattr(self, "spaceBeforeRadio") and
-                          self.spaceBeforeRadio.IsChecked):
-                        space_option = "before"
-                    elif (hasattr(self, "spaceAfterRadio") and
-                          self.spaceAfterRadio.IsChecked):
-                        space_option = "after"
-                    elif (hasattr(self, "spaceBeforeAfterRadio") and
-                          self.spaceBeforeAfterRadio.IsChecked):
-                        space_option = "beforeafter"
+                    try:
+                        if (self.spaceNoneRadio and
+                                self.spaceNoneRadio.IsChecked):
+                            space_option = "none"
+                        elif (self.spaceBeforeRadio and
+                                self.spaceBeforeRadio.IsChecked):
+                            space_option = "before"
+                        elif (self.spaceAfterRadio and
+                                self.spaceAfterRadio.IsChecked):
+                            space_option = "after"
+                        elif (self.spaceBeforeAfterRadio and
+                                self.spaceBeforeAfterRadio.IsChecked):
+                            space_option = "beforeafter"
+                    except (AttributeError, Exception):
+                        # If radio buttons are not available, use default
+                        pass
 
                     param_value = create_parameter_value(
                         element, source_parameters, separator, space_option
@@ -474,7 +505,8 @@ class Params2ParamWindow(forms.WPFWindow):
                                 failed_count += 1
                                 continue
                         else:
-                            failed_count += 1  # Cannot concatenate into numeric
+                            # Cannot concatenate into numeric parameter
+                            failed_count += 1
                             continue
                     else:
                         # For other types, skip
