@@ -179,8 +179,10 @@
                 <GroupBox Header="Sheet Printing" Grid.Column="1" Margin="0,10,5,0" Padding="8">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Left">
-                            <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,0,-20" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Combine Into One PDF</CheckBox>
-                            <CheckBox x:Name="export_dwg" DockPanel.Dock="Right" Margin="200,0,0,10" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Export DWG</CheckBox>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,50,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Combine Into One PDF</CheckBox>
+                            <CheckBox x:Name="export_dwg" DockPanel.Dock="Right" Margin="0,0,0,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Export DWG</CheckBox>
+                            </StackPanel>
                             <DockPanel x:Name="namingformat_dp" Margin="0,5,0,0" Height="24" >
                                 <TextBlock Text="Naming Format" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <Button Content="Edit Formats" DockPanel.Dock="Right" Width="100" BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Click="edit_formats"/>
