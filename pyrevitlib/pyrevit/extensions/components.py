@@ -158,7 +158,8 @@ class ContentButton(GenericUICommand):
                 if resolved_path:
                     self.script_file = resolved_path
                 else:
-                    mlogger.error('Content file specified in metadata not found: %s', content_from_meta)
+                    mlogger.error('Content file specified in metadata not found: %s',
+                                 content_from_meta)
 
             alt_content_from_meta = self.meta.get(exts.MDATA_CONTENT_ALT, None)
             if alt_content_from_meta:
@@ -166,7 +167,8 @@ class ContentButton(GenericUICommand):
                 if resolved_alt_path:
                     self.config_script_file = resolved_alt_path
                 else:
-                    mlogger.error('Alternative content file specified in metadata not found: %s', alt_content_from_meta)
+                    mlogger.error('Alternative content file specified in metadata not found: %s',
+                                 alt_content_from_meta)
 
         # Fall back to naming convention if not found in metadata
         # find content file
@@ -208,20 +210,32 @@ class ContentButton(GenericUICommand):
         if op.isabs(path):
             if op.exists(path):
                 if not path.lower().endswith(exts.CONTENT_FILE_FORMAT):
-                    mlogger.error('Content file must be a Revit family (.rfa): %s', path)
+                    mlogger.error('Content file must be a Revit family (.rfa): %s',
+                                 path)
                     return None
                 return path
-            return None
+            else:
+                mlogger.error('Content file specified in metadata not found: %s',
+                             path)
+                return None
         
         # Treat as relative to bundle directory
         if self.directory:
-            bundle_path = op.join(self.directory, path)
+            # Normalize the path to handle .. and . properly
+            bundle_path = op.normpath(op.join(self.directory, path))
             if op.exists(bundle_path):
                 if not bundle_path.lower().endswith(exts.CONTENT_FILE_FORMAT):
-                    mlogger.error('Content file must be a Revit family (.rfa): %s', bundle_path)
+                    mlogger.error('Content file must be a Revit family (.rfa): %s',
+                                 bundle_path)
                     return None
                 return bundle_path
+            else:
+                mlogger.error('Content file specified in metadata not found: %s (resolved to: %s)',
+                             path, bundle_path)
+                return None
         
+        mlogger.error('Content file specified in metadata not found: %s (no bundle directory)',
+                     path)
         return None
 
 
