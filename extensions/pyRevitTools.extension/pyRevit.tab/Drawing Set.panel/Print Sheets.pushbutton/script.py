@@ -1099,6 +1099,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
                                             except Exception as e:
+                                                pbCount1 += 1
                                                 logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
 
                                             try:
