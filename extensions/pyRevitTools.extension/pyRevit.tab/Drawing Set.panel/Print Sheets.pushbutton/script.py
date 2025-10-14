@@ -1112,10 +1112,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 logger.error('Failed to export DWG for sheet %s: %s', sheet.number, e)
                                             
                                     else:
+                                        pbCount1 += 2
                                         logger.debug(
                                             'Sheet %s does not have a valid file name.',
                                             sheet.number)
                                 else:
+                                    pbCount1 += 2
                                     logger.debug('Sheet %s is not printable. Skipping print.',
                                                 sheet.number)
                 else :
@@ -1150,10 +1152,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
 
                                     else:
+                                        pbCount1 += 1
                                         logger.debug(
                                             'Sheet %s does not have a valid file name.',
                                             sheet.number)
                                 else:
+                                    pbCount1 += 1
                                     logger.debug('Sheet %s is not printable. Skipping print.',
                                                 sheet.number)
 
@@ -1198,10 +1202,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                                         logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
 
                             else:
+                                pbCount1 += 1
                                 logger.debug(
                                     'Sheet %s does not have a valid file name.',
                                     sheet.number)
                         else:
+                            pbCount1 += 1
                             logger.debug('Sheet %s is not printable. Skipping print.',
                                         sheet.number)
                                     
