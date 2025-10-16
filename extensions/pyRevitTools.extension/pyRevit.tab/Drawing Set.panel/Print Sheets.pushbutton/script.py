@@ -73,13 +73,13 @@ class PrintUtils:
         return revit.doc
 
     @staticmethod
-    def can_print():
+    def version_check_2022():
         app = __revit__.Application
         rvt_year = int(app.VersionNumber)
-        if rvt_year < 2022:
-            forms.alert("Only available in Revit 2022 or later.", title="Script cancelled")
-            script.exit()
-        return True
+        if rvt_year > 2021:
+            return True
+        else:
+            return False
 
     @staticmethod
     def get_dir():
@@ -1046,11 +1046,16 @@ class PrintSheetsWindow(forms.WPFWindow):
         per_sheet_psettings = self.selected_print_setting.allows_variable_paper
 
         # make sure you can print, construct print path and make directory
-        PrintUtils.can_print()
         dirPath = PrintUtils.get_dir() + "\\" + PrintUtils.get_folder("_PRINT")
         PrintUtils.ensure_dir(dirPath)
-        PrintUtils.open_dir(dirPath)
         doc = PrintUtils.get_doc()
+
+        if PrintUtils.version_check_2022() or self.export_dwg.IsChecked:
+            # If Revit 2022+ OR DWG export is checked
+            PrintUtils.open_dir(dirPath)
+        else:
+            # Otherwise, do nothing (or return)
+            return
 
 
         with revit.Transaction('Reload Keynote File',
@@ -1092,12 +1097,19 @@ class PrintSheetsWindow(forms.WPFWindow):
 
                                         if self._verify_print_filename(sheet.name,
                                                                     print_filepath):
-
+                                            
                                             try:
-                                                optspdf = PrintUtils.pdf_opts()
-                                                PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                                if PrintUtils.version_check_2022():
+                                                    #if Revit 2022+
+                                                    optspdf = PrintUtils.pdf_opts()
+                                                    PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                                else:
+                                                    #if older than Revit 2022
+                                                    print_mgr.SubmitPrint(sheet.revit_sheet)
+
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
+
                                             except Exception as e:
                                                 pbCount1 += 1
                                                 logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
@@ -1107,6 +1119,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 PrintUtils.export_sheet_dwg(dirPath,sheet.revit_sheet,optsdwg,doc, sheet.print_filename)
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
+
                                             except Exception as e:
                                                 pbCount1 += 1
                                                 logger.error('Failed to export DWG for sheet %s: %s', sheet.number, e)
@@ -1143,10 +1156,17 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                                     print_filepath):
 
                                             try:
-                                                optspdf = PrintUtils.pdf_opts()
-                                                PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                                if PrintUtils.version_check_2022():
+                                                    #if Revit 2022+
+                                                    optspdf = PrintUtils.pdf_opts()
+                                                    PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                                else:
+                                                    #if older than Revit 2022
+                                                    print_mgr.SubmitPrint(sheet.revit_sheet)
+
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
+
                                             except Exception as e:
                                                 pbCount1 += 1
                                                 logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
@@ -1169,11 +1189,17 @@ class PrintSheetsWindow(forms.WPFWindow):
         print_mgr.PrintRange = DB.PrintRange.Current
 
         # make sure you can print, construct print path and make directory
-        PrintUtils.can_print()
+        PrintUtils.version_check()
         dirPath = PrintUtils.get_dir() + "\\" + PrintUtils.get_folder("_PRINT")
         PrintUtils.ensure_dir(dirPath)
-        PrintUtils.open_dir(dirPath)
         doc = target_doc
+
+        if PrintUtils.version_check_2022():
+            #if Revit 2022+
+            PrintUtils.open_dir(dirPath)
+        else:
+            #if older than Revit 2022
+            return
 
         if target_sheets:
             with forms.ProgressBar(step=1, title='Exporting Linked PDFs... ' + '{value} of {max_value}', cancellable=True) as pb1:
@@ -1193,14 +1219,20 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                             print_filepath):
                                     
                                     try:
-                                        optspdf = PrintUtils.pdf_opts()
-                                        PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                        if PrintUtils.version_check_2022():
+                                            #if Revit 2022+
+                                            optspdf = PrintUtils.pdf_opts()
+                                            PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
+                                        else:
+                                            #if older than Revit 2022
+                                            print_mgr.SubmitPrint(sheet.revit_sheet)
+
                                         pb1.update_progress(pbCount1, pbTotal1)
                                         pbCount1 += 1
+
                                     except Exception as e:
                                         pbCount1 += 1
                                         logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
-
                             else:
                                 pbCount1 += 1
                                 logger.debug(
