@@ -9,7 +9,6 @@ from pyrevit.compat import PY2
 
 # try loading pyrevitlabs
 clr.AddReference('Nett')
-clr.AddReference('MadMilkman.Ini')
 clr.AddReference('OpenMcdf')
 clr.AddReference('YamlDotNet')
 clr.AddReference('pyRevitLabs.NLog')
@@ -38,8 +37,11 @@ clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 clr.AddReference('pyRevitLabs.PyRevit')
 clr.AddReference('PythonStubsBuilder')
+
+# configurations
+clr.AddReference('pyRevitLabs.Configurations')
+
 import Nett
-import MadMilkman.Ini
 import OpenMcdf
 import YamlDotNet as libyaml
 import pyRevitLabs.MahAppsMetro
@@ -53,6 +55,9 @@ from pyRevitLabs import DeffrelDB
 from pyRevitLabs import TargetApps
 from pyRevitLabs import PyRevit
 from PythonStubs import PythonStubsBuilder
+
+from pyRevitLabs import Configurations
+from pyRevitLabs.Configurations import ConfigurationService
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger

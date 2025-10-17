@@ -165,7 +165,7 @@ def get_config(section=None):
             it will default to the command name plus the 'config' suffix.
 
     Returns:
-        (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
+        (pyrevit.coreutils.configparser.ConfigSection):
             Config section parser object
     """
     from pyrevit.userconfig import user_config

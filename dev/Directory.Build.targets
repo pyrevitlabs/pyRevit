@@ -2,7 +2,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <NetFolder Condition="'$(TargetFramework)' == 'net48'">netfx</NetFolder>
-        <NetFolder Condition="'$(TargetFramework)' == 'net8.0-windows'">netcore</NetFolder>
+        <NetFolder Condition="'$(TargetFramework.StartsWith(net8.0))'">netcore</NetFolder>
     </PropertyGroup>
 
     <PropertyGroup>
