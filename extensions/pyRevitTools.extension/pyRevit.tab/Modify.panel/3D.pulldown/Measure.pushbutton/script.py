@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""3D Measure Tool for Revit using DirectContext3D
-Allows measuring distances between two points with visual aids and history tracking.
-"""
+from collections import deque
 from pyrevit import revit, forms, script, traceback
 from pyrevit import UI, DB
 from Autodesk.Revit.Exceptions import InvalidOperationException
@@ -20,8 +18,8 @@ measure_window = None
 measure_handler_event = None
 delete_all_visual_aids_handler_event = None
 dc3d_server = None
-measurement_history = []
-MAX_HISTORY = 5  # Configurable: maximum number of measurements to keep in history
+MAX_HISTORY = 5
+measurement_history = deque(maxlen=MAX_HISTORY)
 
 # Visual aid configuration
 CUBE_SIZE = 0.3  # in feet (cube side length)
@@ -29,7 +27,7 @@ LINE_COLOR_X = DB.ColorWithTransparency(255, 0, 0, 0)  # Red
 LINE_COLOR_Y = DB.ColorWithTransparency(0, 255, 0, 0)  # Green
 LINE_COLOR_Z = DB.ColorWithTransparency(0, 0, 255, 0)  # Blue
 LINE_COLOR_DIAG = DB.ColorWithTransparency(200, 200, 0, 0)  # Dark Yellow
-CUBE_COLOR = DB.ColorWithTransparency(255, 165, 0, 0)  # Orange
+CUBE_COLOR = DB.ColorWithTransparency(255, 165, 0, 50)  # Orange
 
 
 def calculate_distances(point1, point2):
@@ -58,14 +56,14 @@ def calculate_distances(point1, point2):
 
 def format_distance(value_in_feet):
     converted_value = DB.UnitUtils.ConvertFromInternalUnits(value_in_feet, length_unit)
-    return "{:.3f} {}".format(converted_value, unit_label)
+    return "{:.2f} {}".format(converted_value, unit_label)
 
 
 def format_point(point):
     x = DB.UnitUtils.ConvertFromInternalUnits(point.X, length_unit)
     y = DB.UnitUtils.ConvertFromInternalUnits(point.Y, length_unit)
     z = DB.UnitUtils.ConvertFromInternalUnits(point.Z, length_unit)
-    return "({:.3f}, {:.3f}, {:.3f}) {}".format(x, y, z, unit_label)
+    return "({:.2f}, {:.2f}, {:.2f}) {}".format(x, y, z, unit_label)
 
 
 def create_cube_mesh(center, size, color):
@@ -129,8 +127,6 @@ def create_measurement_meshes(point1, point2):
 
 def delete_all_visual_aids():
     """Delete all visual aids by clearing the DC3D server meshes."""
-    global dc3d_server
-
     if dc3d_server:
         dc3d_server.meshes = []
         uidoc.RefreshActiveView()
@@ -139,8 +135,6 @@ def delete_all_visual_aids():
 
 def perform_measurement():
     """Perform the measurement workflow: pick points, create aids, update UI."""
-    global measurement_history, dc3d_server
-
     try:
         with forms.WarningBar(title="Pick first point"):
             point1 = revit.pick_elementpoint(world=True)
@@ -156,7 +150,7 @@ def perform_measurement():
 
         # Add to existing meshes (don't replace)
         if dc3d_server:
-            existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
+            existing_meshes = dc3d_server.meshes or []
             dc3d_server.meshes = existing_meshes + new_meshes
             uidoc.RefreshActiveView()
 
@@ -182,10 +176,6 @@ def perform_measurement():
             format_distance(diagonal),
         )
         measurement_history.append(history_entry)
-
-        # Keep only last MAX_HISTORY measurements
-        if len(measurement_history) > MAX_HISTORY:
-            measurement_history = measurement_history[-MAX_HISTORY:]
 
         # Update history display
         history_text = "\n".join(measurement_history)
@@ -280,8 +270,6 @@ def main():
     delete_all_visual_aids_handler_event = UI.ExternalEvent.Create(delete_handler)
 
     measure_window = MeasureWindow("measure3d.xaml")
-
-    perform_measurement()
 
 
 if __name__ == "__main__":

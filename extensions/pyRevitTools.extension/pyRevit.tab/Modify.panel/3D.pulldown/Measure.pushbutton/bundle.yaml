@@ -9,5 +9,7 @@ tooltip:
   en_us: Measure distances between two points with visual aids and measurement history
   de_de: Abstände zwischen zwei Punkten messen mit visuellen Hilfslinien und Messhistorie
 author: wurschdhaud
+context:
+  - doc-project
 engine:
   persistent: True
