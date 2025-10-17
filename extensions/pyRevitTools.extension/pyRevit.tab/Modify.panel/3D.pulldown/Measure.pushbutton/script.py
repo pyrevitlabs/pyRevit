@@ -45,12 +45,6 @@ def calculate_distances(point1, point2):
     dz = abs(point2.Z - point1.Z)
     diagonal = point1.DistanceTo(point2)
 
-    logger.debug(
-        "Calculated distances - dx: {}, dy: {}, dz: {}, diagonal: {}".format(
-            dx, dy, dz, diagonal
-        )
-    )
-
     return dx, dy, dz, diagonal
 
 
@@ -130,7 +124,6 @@ def delete_all_visual_aids():
     if dc3d_server:
         dc3d_server.meshes = []
         uidoc.RefreshActiveView()
-        logger.info("Cleared all visual aids")
 
 
 def perform_measurement():
@@ -222,7 +215,6 @@ class MeasureWindow(forms.WPFWindow):
         self.Closed += self.window_closed
 
         self.Show()
-        logger.debug("Measure window opened")
 
     def window_closed(self, sender, args):
         """Handle window close event - cleanup DC3D server."""
@@ -232,19 +224,16 @@ class MeasureWindow(forms.WPFWindow):
                 dc3d_server.remove_server()
                 dc3d_server = None
                 uidoc.RefreshActiveView()
-                logger.debug("DC3D server removed on window close")
         except Exception as ex:
             logger.error("Error closing window: {}".format(ex))
 
     def delete_click(self, sender, e):
         """Handle delete button click."""
         delete_all_visual_aids_handler_event.Raise()
-        logger.debug("Delete visual aids event raised")
 
     def measure_click(self, sender, e):
         """Handle measure again button click."""
         measure_handler_event.Raise()
-        logger.debug("Measure event raised")
 
 
 def main():
