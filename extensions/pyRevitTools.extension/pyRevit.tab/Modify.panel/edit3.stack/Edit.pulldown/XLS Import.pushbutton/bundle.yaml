@@ -6,15 +6,15 @@ title:
 
 tooltip:
   en_us: >-
-    Imports instance parameter values from a previously exported Excel file.
+    Imports element parameter values from a previously exported Excel file.
     The file must contain valid element IDs and parameter values in project units.
     Read-only and unsupported parameters will be skipped. User-modifiable status is ignored.
   de_de: >-
-    Importiert Instanzparameter aus einer zuvor exportierten Excel-Datei.
+    Importiert Elementparameter aus einer zuvor exportierten Excel-Datei.
     Die Datei muss gültige Element-IDs und Parameterwerte in Projekteinheiten enthalten.
     Schreibgeschützte und nicht unterstützte Parameter werden übersprungen. Der Benutzer-Bearbeitbarkeitsstatus wird ignoriert.
   fr_fr: >-
-    Importe les valeurs des paramètres d'instance à partir d'un fichier Excel précédemment exporté.
+    Importe les valeurs des paramètres à partir d'un fichier Excel précédemment exporté.
     Le fichier doit contenir des IDs d'éléments valides et des valeurs de paramètres dans les unités du projet.
     Les paramètres en lecture seule et non pris en charge seront ignorés. Le statut modifiable par l'utilisateur est ignoré.
   ru: >-

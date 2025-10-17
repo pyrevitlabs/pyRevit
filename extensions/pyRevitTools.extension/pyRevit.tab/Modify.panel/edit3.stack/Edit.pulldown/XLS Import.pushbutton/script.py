@@ -19,13 +19,10 @@ unit_postfix_pattern = re.compile(r"\s*\[.*\]$")
 
 
 def main():
-    # 1. Ask for file path
     file_path = forms.pick_file(file_ext="xlsx", restore_dir=True)
     if not file_path or not os.path.exists(file_path):
-        logger.warning("No valid file selected.")
         return
 
-    # 2. Open workbook using xlrd
     try:
         workbook = xlrd.open_workbook(file_path)
         sheet = workbook.sheet_by_name("Export")
@@ -33,7 +30,6 @@ def main():
         logger.error("Failed to open Excel file: {}".format(e))
         return
 
-    # 3. Read header row
     headers = sheet.row_values(0)
     if not headers or headers[0] != "ElementId":
         logger.error("First column must be 'ElementId'.")
@@ -41,7 +37,6 @@ def main():
 
     param_names = headers[1:]
 
-    # 4. Start transaction
     with revit.Transaction("Import Parameters from Excel"):
         for row_idx in range(1, sheet.nrows):
             row = sheet.row_values(row_idx)
@@ -76,7 +71,6 @@ def main():
                         )
                         continue
 
-                    # Try to convert and set value
                     try:
                         storage_type = param.StorageType
                         if storage_type == DB.StorageType.String:
@@ -114,7 +108,6 @@ def main():
                                         )
                                     )
                             else:
-                                print("hi3")
                                 param.Set(float(new_val))
                         elif storage_type == DB.StorageType.ElementId:
                             logger.info(
