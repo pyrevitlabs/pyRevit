@@ -30,7 +30,7 @@ def reorient(view):
         options = DB.Options()
         options.ComputeReferences = True
         options.IncludeNonVisibleObjects = True
-        options.DetailLevel = DB.ViewDetailLevel.Fine
+        options.DetailLevel = curview.DetailLevel
 
         geom_elem = element.get_Geometry(options)
 

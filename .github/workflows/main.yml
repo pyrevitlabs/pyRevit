@@ -52,7 +52,7 @@ jobs:
           submodules: recursive
 
       - name: Prepare Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
@@ -63,12 +63,12 @@ jobs:
 
       # needed for MahApps XamlColorSchemeGenerator
       - name: Prepare .NET 3.1
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 3.1.x
 
       - name: Prepare .NET 8.0
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
 
@@ -78,6 +78,35 @@ jobs:
       - name: Prepare git
         if: (github.repository == env.MainRepo)
         uses: fregante/setup-git-user@v2
+      
+      - name: Download/Install Inno Setup
+        run: |
+          echo "Checking pre-installation..."
+        
+          set "ISCC_PATH=%programfiles(x86)%\Inno Setup 6\ISCC.exe"
+        
+          if exist "%ISCC_PATH%" (
+            echo ::warning::Inno Setup is already installed
+            exit /b 0
+          )
+        
+          echo "Downloading Inno Setup..."
+
+          set "_url_=https://jrsoftware.org/download.php/is.exe?site=1"
+          set "_file_=innosetup.exe"
+
+          curl -L -o "%tmp%\%_file_%" "%_url_%"
+        
+          echo "Installing Inno Setup..."
+          "%tmp%\%_file_%" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
+        
+          if not exist "%ISCC_PATH%" (
+            echo "::error::Inno Setup installation failed"
+            exit 1
+          )
+        
+          echo ::warning::Inno Setup installed successfully!
+        shell: cmd
 
       - name: Check Build Environment
         if: (github.repository == env.MainRepo)
@@ -87,16 +116,6 @@ jobs:
         if: (github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set year
-
-      # - name: Update Certificate
-      #   if: (github.repository == env.MainRepo)
-      #   env:
-      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
-      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-      #   run: |
-      #     pipenv run pyrevit sign addcert
 
       # WIP only
       - name: Update Build Info (WIP)
@@ -131,29 +150,6 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: release/version
-
-      # - name: Sign Products
-      #   if: (github.repository == env.MainRepo)
-      #   env:
-      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
-      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-      #   run: |
-      #     pipenv run pyrevit sign products
-
-      # - name: Sign Installers
-      #   if: (github.repository == env.MainRepo)
-      #   env:
-      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
-      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-      #   run: |
-      #     pipenv run pyrevit sign installers
-
-      # default retention period is 90 days
-      # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)

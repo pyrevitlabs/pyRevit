@@ -2,6 +2,7 @@ title:
   fr_fr: Illustrer Profondeur de Vue
   en_us: Show View Range
   de_de: Ansichtsbereich anzeigen
+  ru: Секущий диапазон
 tooltip:
   fr_fr: Outil pour illustrer la profondeur de vue des vues en plan dans une vue 3D à l'aide de plans colorés. Ouvrir une vue 3D et sélectionner les vues en plan à illustrer dans le navigateur de projet.
   en_us: Tool to illustrate the view range of plan views in a 3D view using colored planes. Open a 3D view and select the plan views to illustrate in the project browser.
@@ -13,7 +14,15 @@ tooltip:
     Die Oberkante (Top Plane), die Schnittebene (Cut Plane), 
     die Unterkane (Bottom Plane) und die Ebene der Ansichtstiefe 
     (View Depth) werden nun grafisch in der 3D Ansicht als 
-    Fläche eingeblendet. Zudem werden im Dialog die Höhen angezeigt. 
+    Fläche eingeblendet. Zudem werden im Dialog die Höhen angezeigt.
+  ru: >-
+    Откройте 3D-вид, в котором границы области вида плана будут временно показаны цветными поверхностями.
+
+    После запуска скрипта необходимо выбрать в диспетчере проекта вид (например, план этажа).
+
+    В 3D-виде будут графически отображены: верхняя граница (Top Plane), секущая плоскость (Cut Plane), нижняя граница (Bottom Plane) и плоскость глубины вида (View Depth).
+
+    Кроме того, в диалоге будут показаны их отметки (высоты).
 author: Tamás Déri
 min_revit_version: 2023
 engine:

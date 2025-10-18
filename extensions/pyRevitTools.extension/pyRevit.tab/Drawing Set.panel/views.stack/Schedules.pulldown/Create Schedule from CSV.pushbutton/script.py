@@ -16,16 +16,18 @@ import csv
 import codecs
 import os.path as op
 from collections import defaultdict
-from System import Int64
 
 from pyrevit import PyRevitException
 from pyrevit import forms
 from pyrevit import coreutils
 from pyrevit import revit, DB, HOST_APP
 from pyrevit import script
+from pyrevit.compat import get_elementid_from_value_func
 
 
 logger = script.get_logger()
+
+get_elementid_from_value = get_elementid_from_value_func()
 
 
 def safe_delete_keysched(doc, keysched):
@@ -67,10 +69,7 @@ def create_schedule_records(schedule, fields, records):
                     elif p.StorageType == DB.StorageType.String:
                         p.Set(record_data[idx])
                     elif p.StorageType == DB.StorageType.ElementId:
-                        if HOST_APP.is_newer_than(2025):
-                            p.Set(DB.ElementId(Int64(record_data[idx])))
-                        else:
-                            p.Set(DB.ElementId(int(record_data[idx])))
+                        p.Set(get_elementid_from_value(record_data[idx]))
 
 
 def has_matching_fields(keysched_def, fields):
