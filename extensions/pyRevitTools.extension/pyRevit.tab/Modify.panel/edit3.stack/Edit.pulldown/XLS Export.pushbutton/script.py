@@ -19,7 +19,7 @@ project_units = doc.GetUnits()
 
 my_config = script.get_config("xlseximport")
 SCOPE = my_config.get_option("scope", "document")
-EXPORTUNIT = my_config.get_option("exportunit", "ValueString")
+EXPORTUNIT = my_config.get_option("exportunit", "Project Unit")
 
 unit_postfix_pattern = re.compile(r"\[.*\]")
 

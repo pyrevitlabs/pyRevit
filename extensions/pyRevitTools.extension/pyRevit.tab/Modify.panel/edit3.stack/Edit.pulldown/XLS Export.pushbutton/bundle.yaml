@@ -5,22 +5,44 @@ title:
   ru: Экспорт параметров в Excel
 
 tooltip:
-  en_us: >-
+  en_us: |
     Exports element parameters of selected families or types to an Excel file.
-    You can choose which parameters to include. Parameter values are converted
-    into project units for later reimport. Read-only, usermodifiable and unsupported parameters are marked.
-  de_de: >-
-    Exportiert Elementparameter ausgewählter Familien oder Typen in eine Excel-Datei.
-    Sie können auswählen, welche Parameter exportiert werden sollen. Werte messbarer Parameter
-    werden in die im Projekt eingestellten Einheiten konvertiert. Schreibgeschützte, 
-    nicht bearbeitbare und nicht unterstützte Parameter werden gekennzeichnet.
-  fr_fr: >-
-    Exporte les paramètres des familles ou types sélectionnés dans un fichier Excel.
-    Vous pouvez choisir les paramètres à inclure. Les valeurs sont converties selon les unités du projet
-    pour permettre une réimportation. Les paramètres en lecture seule, non modifiables et non pris en charge sont signalés.
-  ru: >-
-    Экспортирует параметры экземпляров выбранных семейств или типов в файл Excel.
-    Можно выбрать, какие параметры экспортировать. Значения параметров преобразуются
-    в проектные единицы для последующего импорта. Только для чтения, не редактируемые и неподдерживаемые параметры отмечаются.
+    You can choose which parameters to include. Parameter values are converted into project units for later reimport. 
+    Read-only and unsupported parameters are marked and locked.
 
+    Options for configurations are:
+    - exportscope: document, current view, schedule
+    - exportunit: internal, ValueString, project units
+
+  de_de: |
+    Exportiert Elementparameter ausgewählter Familien oder Typen in eine Excel-Datei.
+    Sie können auswählen, welche Parameter exportiert werden sollen. Parameterwerte werden
+    für den späteren Reimport in die im Projekt eingestellten Einheiten konvertiert.
+    Schreibgeschützte und nicht unterstützte Parameter werden gekennzeichnet und gesperrt.
+
+    Konfigurationsoptionen:
+    - exportscope: Dokument, aktuelle Ansicht, Bauteilliste
+    - exportunit: intern, ValueString, Projekteinheiten
+
+  fr_fr: |
+    Exporte les paramètres des familles ou types sélectionnés dans un fichier Excel.
+    Vous pouvez choisir les paramètres à inclure. Les valeurs des paramètres sont converties
+    selon les unités du projet pour permettre une réimportation ultérieure. 
+    Les paramètres en lecture seule ou non pris en charge sont signalés et verrouillés.
+
+    Options de configuration :
+    - exportscope : document, vue actuelle, nomenclature
+    - exportunit : interne, ValueString, unités du projet
+
+  ru: |
+    Экспортирует параметры элементов выбранных семейств или типов в файл Excel.
+    Вы можете выбрать, какие параметры включать. Значения параметров преобразуются
+    в проектные единицы для последующего повторного импорта. Параметры, доступные только для чтения,
+    а также неподдерживаемые параметры помечаются и блокируются.
+
+    Параметры конфигурации:
+    - exportscope: документ, текущий вид, спецификация
+    - exportunit: внутренние, ValueString, проектные единицы
+
+author: wurschdhaud
 min_revit_version: 2022

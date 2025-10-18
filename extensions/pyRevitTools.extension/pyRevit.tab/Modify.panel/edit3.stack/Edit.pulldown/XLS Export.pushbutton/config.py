@@ -2,7 +2,7 @@ from pyrevit import script, forms
 
 my_config = script.get_config("xlseximport")
 
-exportunit = my_config.get_option("exportunit", "ValueString")
+exportunit = my_config.get_option("exportunit", "Project Unit")
 scope = my_config.get_option("scope", "document")
 
 opts = [
