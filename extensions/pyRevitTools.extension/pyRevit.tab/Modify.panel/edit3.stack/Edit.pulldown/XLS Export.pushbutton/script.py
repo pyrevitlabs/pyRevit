@@ -29,38 +29,42 @@ ParamDef = namedtuple(
 )
 
 
-def select_types(instances):
-    type_instance_map = {}
+def select_types(elements):
+    """Group elements by category/family/type and allow user to select groups."""
+    type_element_map = {}
     label_map = {}
 
-    for el in instances:
+    for el in elements:
         if not el.Category or el.Category.IsTagCategory:
             continue
 
         try:
             category = el.Category.Name
-            family = (
-                el.Symbol.Family.Name
-                if hasattr(el, "Symbol") and el.Symbol
-                else "NoFamily"
-            )
-            type_name = el.Name if hasattr(el, "Name") else "NoType"
+
+            if hasattr(el, "Symbol") and el.Symbol:
+                family = el.Symbol.Family.Name
+                type_name = el.Symbol.Name
+            elif hasattr(el, "FamilyName"):
+                family = el.FamilyName
+                type_name = el.Name if hasattr(el, "Name") else "NoType"
+            else:
+                family = "NoFamily"
+                type_name = el.Name if hasattr(el, "Name") else "NoType"
 
             key = (category, family, type_name)
-            if key not in type_instance_map:
-                type_instance_map[key] = []
-            type_instance_map[key].append(el)
-        except Exception as e:
-            logger.warning("Skipping element {}: {}".format(el.Id, e))
+            if key not in type_element_map:
+                type_element_map[key] = []
+            type_element_map[key].append(el)
+        except Exception:
             continue
 
     all_labels = []
     category_groups = {}
 
-    for key, instances in type_instance_map.items():
+    for key, element_list in type_element_map.items():
         category, family, type_name = key
-        count = len(instances)
-        label = "[{} : {}] {} ({} instances)".format(category, family, type_name, count)
+        count = len(element_list)
+        label = "[{} : {}] {} ({} elements)".format(category, family, type_name, count)
 
         label_map[label] = key
         all_labels.append(label)
@@ -75,83 +79,39 @@ def select_types(instances):
 
     selected_labels = forms.SelectFromList.show(
         grouped_selection,
-        title="Select Types to Export Instances Of",
+        title="Select Element Types to Export",
         group_selector_title="Filter by Category:",
         multiselect=True,
     )
 
     if not selected_labels:
-        raise ValueError("No Instances selected")
+        raise ValueError("No elements selected")
 
     selected_keys = [label_map[label] for label in selected_labels]
 
     src_elements = []
     for key in selected_keys:
-        src_elements.extend(type_instance_map[key])
+        src_elements.extend(type_element_map[key])
 
     return src_elements
 
 
-def select_schedule():
-    """Select a schedule from the project."""
-    all_schedules = (
-        DB.FilteredElementCollector(doc).OfClass(DB.ViewSchedule).ToElements()
-    )
-
-    valid_schedules = []
-    for schedule in all_schedules:
-        try:
-            if (
-                hasattr(schedule.Definition, "IsInternalKeynoteSchedule")
-                and schedule.Definition.IsInternalKeynoteSchedule
-            ):
-                continue
-            if (
-                hasattr(schedule.Definition, "IsRevisionSchedule")
-                and schedule.Definition.IsRevisionSchedule
-            ):
-                continue
-            if schedule.ViewType == DB.ViewType.Schedule:
-                valid_schedules.append(schedule)
-        except Exception as e:
-            logger.debug("Skipping schedule {}: {}".format(schedule.Name, e))
-            continue
-
-    if not valid_schedules:
-        raise ValueError("No valid schedules found in project")
-
-    schedule_dict = {}
-    for schedule in valid_schedules:
-        try:
-            category_name = schedule.Definition.CategoryId
-            if category_name and category_name != DB.ElementId.InvalidElementId:
-                cat = DB.Category.GetCategory(doc, schedule.Definition.CategoryId)
-                if cat:
-                    category_name = cat.Name
-                else:
-                    category_name = "Unknown"
-            else:
-                category_name = "Multi-Category"
-
-            label = "{} ({})".format(schedule.Name, category_name)
-            schedule_dict[label] = schedule
-        except Exception as e:
-            logger.warning("Error processing schedule {}: {}".format(schedule.Name, e))
-            continue
-
-    if not schedule_dict:
-        raise ValueError("No valid schedules could be processed")
-
-    selected_label = forms.SelectFromList.show(
-        sorted(schedule_dict.keys()),
-        title="Select Schedule to Export",
-        multiselect=False,
-    )
-
-    if not selected_label:
-        raise ValueError("No schedule selected")
-
-    return schedule_dict[selected_label]
+def schedule_filter(schedule):
+    """Filter out internal and revision schedules."""
+    try:
+        if (
+            hasattr(schedule.Definition, "IsInternalKeynoteSchedule")
+            and schedule.Definition.IsInternalKeynoteSchedule
+        ):
+            return False
+        if (
+            hasattr(schedule.Definition, "IsRevisionSchedule")
+            and schedule.Definition.IsRevisionSchedule
+        ):
+            return False
+        return True
+    except Exception:
+        return False
 
 
 def get_schedule_elements_and_params(schedule):
@@ -244,7 +204,7 @@ def select_parameters(src_elements):
         title="Select Parameters to Export",
     )
     if not selected_params:
-        raise ValueError("No Parameter selected")
+        return None
 
     return selected_params
 
@@ -260,6 +220,8 @@ def export_xls(src_elements, selected_params):
     worksheet = workbook.add_worksheet("Export")
 
     bold = workbook.add_format({"bold": True})
+    unlocked = workbook.add_format({"locked": False})
+    locked = workbook.add_format({"locked": True})
 
     worksheet.freeze_panes(1, 0)
     worksheet.write(0, 0, "ElementId", bold)
@@ -297,35 +259,28 @@ def export_xls(src_elements, selected_params):
     max_widths = [len("ElementId")] + [len(p.name) for p in valid_params]
 
     for row_idx, el in enumerate(src_elements, start=1):
-        worksheet.write(row_idx, 0, str(get_elementid_value(el.Id)))
+        worksheet.write(row_idx, 0, str(get_elementid_value(el.Id)), locked)
 
         for col_idx, param in enumerate(valid_params):
             param_name = param.name
             param_val = el.LookupParameter(param_name)
             val = "<does not exist>"
-
+            cell_format = locked
             if param_val:
                 val = ""
                 if param_val.HasValue:
                     try:
                         if param_val.StorageType == DB.StorageType.Double:
                             forge_type_id = param.definition.GetDataType()
-                            if (
-                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
-                                and EXPORTUNIT == "ValueString"
-                            ):
-                                val = param_val.AsValueString()
-                            elif (
-                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
-                                and EXPORTUNIT == "Project Unit"
-                            ):
-                                unit_type_id = param_val.GetUnitTypeId()
-                                val = param_val.AsDouble()
-                                val = DB.UnitUtils.ConvertFromInternalUnits(
-                                    val, unit_type_id
-                                )
-                            else:
-                                val = param_val.AsDouble()
+                            val = param_val.AsDouble()
+                            if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
+                                if EXPORTUNIT == "ValueString":
+                                    val = param_val.AsValueString()
+                                elif EXPORTUNIT == "Project Unit":
+                                    unit_type_id = param_val.GetUnitTypeId()
+                                    val = DB.UnitUtils.ConvertFromInternalUnits(
+                                        param_val.AsDouble(), unit_type_id
+                                    )
                         elif param_val.StorageType == DB.StorageType.String:
                             val = param_val.AsString()
                         elif param_val.StorageType == DB.StorageType.Integer:
@@ -342,15 +297,20 @@ def export_xls(src_elements, selected_params):
                         )
                         val = "<Error>"
 
-            worksheet.write(row_idx, col_idx + 1, val)
+                # Cell is unlocked only if parameter exists, has value, and is not read-only
+                if not param.isreadonly:
+                    cell_format = unlocked
+            # If param doesn't exist or has no value, cell remains locked
+
+            worksheet.write(row_idx, col_idx + 1, val, cell_format)
             if len(str(val)) > max_widths[col_idx + 1]:
                 max_widths[col_idx + 1] = min(len(str(val)), 50)
 
     for col_idx, width in enumerate(max_widths):
-        worksheet.set_column(col_idx, col_idx, width + 2)
+        worksheet.set_column(col_idx, col_idx, width + 3)
 
     worksheet.autofilter(0, 0, len(src_elements), len(valid_params))
-
+    worksheet.protect()
     workbook.close()
     logger.info("Exported {} elements to {}".format(len(src_elements), file_path))
 
@@ -358,26 +318,31 @@ def export_xls(src_elements, selected_params):
 def main():
     try:
         if SCOPE == "schedule":
-            schedule = select_schedule()
+            schedule = forms.select_schedules(
+                title="Select Schedule to Export",
+                multiple=False,
+                filterfunc=schedule_filter,
+            )
+            if not schedule:
+                return
             src_elements, selected_params = get_schedule_elements_and_params(schedule)
 
-        elif SCOPE == "document":
-            elements = revit.query.get_all_elements(doc)
-            src_elements = select_types(elements)
-            selected_params = select_parameters(src_elements)
-
-        elif SCOPE == "current view":
-            elements = revit.query.get_all_elements_in_view(active_view)
-            src_elements = select_types(elements)
-            selected_params = select_parameters(src_elements)
-
-        elif SCOPE == "selection":
-            elements = revit.get_selection()
-            if not elements:
-                elements = revit.pick_elements(message="Pick Elements to Export")
+        else:
+            if SCOPE == "document":
+                elements = revit.query.get_all_elements(doc)
+            elif SCOPE == "current view":
+                elements = revit.query.get_all_elements_in_view(active_view)
+            elif SCOPE == "selection":
+                elements = revit.get_selection()
+                if not elements:
+                    elements = revit.pick_elements(message="Pick Elements to Export")
 
             src_elements = select_types(elements)
+            if not src_elements:
+                return
             selected_params = select_parameters(src_elements)
+            if not select_parameters:
+                return
 
         export_xls(src_elements, selected_params)
 

@@ -10,7 +10,7 @@ opts = [
     "Project Unit",
     "Internal",
 ]
-result_format = forms.ask_for_one_item(opts, default=scope, prompt="Select Export Format")
+result_format = forms.ask_for_one_item(opts, default=exportunit, prompt="Select Export Format")
 
 if result_format:
     my_config.set_option("exportunit", result_format)

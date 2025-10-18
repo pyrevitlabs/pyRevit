@@ -10,6 +10,7 @@ get_elementid_from_value = get_elementid_from_value_func()
 
 logger = script.get_logger()
 doc = revit.doc
+project_units = doc.GetUnits()
 
 script.get_output().close_others()
 my_config = script.get_config("xlseximport")
@@ -79,10 +80,8 @@ def main():
                             param.Set(int(float(new_val)))
                         elif storage_type == DB.StorageType.Double:
                             forge_type_id = param.Definition.GetDataType()
-                            if (
-                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
-                                and exportunit == "ValueString"
-                            ):
+                            measureable = DB.UnitUtils.IsMeasurableSpec(forge_type_id)
+                            if measureable and exportunit == "ValueString":
                                 try:
                                     param.SetValueString(str(new_val))
                                 except Exception as e:
@@ -91,12 +90,9 @@ def main():
                                             param_name, e
                                         )
                                     )
-                            elif (
-                                DB.UnitUtils.IsMeasurableSpec(forge_type_id)
-                                and exportunit == "Project Unit"
-                            ):
+                            elif measureable and exportunit == "Project Unit":
                                 try:
-                                    unit_type_id = doc.GetUnits().GetFormatOptions(forge_type_id).GetUnitTypeId()
+                                    unit_type_id = project_units.GetFormatOptions(forge_type_id).GetUnitTypeId()
                                     new_val = DB.UnitUtils.ConvertToInternalUnits(
                                         float(new_val), unit_type_id
                                     )
