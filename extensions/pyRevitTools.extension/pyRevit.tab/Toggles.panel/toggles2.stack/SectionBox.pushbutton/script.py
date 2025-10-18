@@ -81,7 +81,3 @@ def toggle_sectionbox_active():
 if scope == "Active State":
     with revit.Transaction("Toggle Section Box Active"):
         toggle_sectionbox_active()
-
-from pyrevit import forms
-el = revit.pick_element()
-forms.select_parameters(el, exclude_readonly=False)
