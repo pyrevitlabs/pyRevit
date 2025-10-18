@@ -23,10 +23,7 @@ EXPORTUNIT = my_config.get_option("exportunit", "ValueString")
 
 unit_postfix_pattern = re.compile(r"\[.*\]")
 
-ParamDef = namedtuple(
-    "ParamDef",
-    ["name", "istype", "definition", "isreadonly", "storagetype"],
-)
+ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
 
 
 def select_types(elements):
@@ -165,6 +162,7 @@ def get_schedule_elements_and_params(schedule):
                         istype=False,
                         definition=param.Definition,
                         isreadonly=param.IsReadOnly,
+                        isunit=DB.UnitUtils.IsMeasurableSpec(param.Definition.GetDataType()),
                         storagetype=param.StorageType,
                     )
                 break
@@ -191,6 +189,7 @@ def select_parameters(src_elements):
                         istype=False,
                         definition=p.Definition,
                         isreadonly=p.IsReadOnly,
+                        isunit=DB.UnitUtils.IsMeasurableSpec(p.Definition.GetDataType()),
                         storagetype=p.StorageType,
                     )
 
@@ -310,7 +309,20 @@ def export_xls(src_elements, selected_params):
         worksheet.set_column(col_idx, col_idx, width + 3)
 
     worksheet.autofilter(0, 0, len(src_elements), len(valid_params))
-    worksheet.protect()
+    worksheet.protect(
+        "",
+        {
+            "autofilter": True,
+            "sort": True,
+            "format_cells": True,
+            "format_columns": True,
+            "format_rows": True,
+            "delete_columns": True,
+            "delete_rows": True,
+            "select_locked_cells": True,
+            "select_unlocked_cells": True,
+        },
+    )
     workbook.close()
     logger.info("Exported {} elements to {}".format(len(src_elements), file_path))
 
