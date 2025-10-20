@@ -10,8 +10,8 @@ logger = script.get_logger()
 # Document variables
 doc = revit.doc
 uidoc = revit.uidoc
-distance_unit = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Distance).GetUnitTypeId()
-unit_label = DB.LabelUtils.GetLabelForUnit(distance_unit)
+length_unit = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length).GetUnitTypeId()
+unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
 
 # Global variables
 measure_window = None
@@ -51,16 +51,16 @@ def calculate_distances(point1, point2):
 def format_distance(value_in_feet):
     return DB.UnitFormatUtils.Format(
         doc.GetUnits(),
-        DB.SpecTypeId.Distance,
+        DB.SpecTypeId.Length,
         value_in_feet,
         False,
     )
 
 
 def format_point(point):
-    x = DB.UnitUtils.ConvertFromInternalUnits(point.X, distance_unit)
-    y = DB.UnitUtils.ConvertFromInternalUnits(point.Y, distance_unit)
-    z = DB.UnitUtils.ConvertFromInternalUnits(point.Z, distance_unit)
+    x = DB.UnitUtils.ConvertFromInternalUnits(point.X, length_unit)
+    y = DB.UnitUtils.ConvertFromInternalUnits(point.Y, length_unit)
+    z = DB.UnitUtils.ConvertFromInternalUnits(point.Z, length_unit)
     return "({:.2f}, {:.2f}, {:.2f})".format(x, y, z)
 
 
