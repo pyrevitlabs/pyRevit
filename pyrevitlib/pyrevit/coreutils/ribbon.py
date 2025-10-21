@@ -781,6 +781,17 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
                 _StackPanel = System.Windows.Controls.StackPanel()
                 _video = System.Windows.Controls.MediaElement()
                 _video.Source = Uri(tooltip_video)
+                _video.LoadedBehavior = System.Windows.Controls.MediaState.Manual
+                _video.UnloadedBehavior = System.Windows.Controls.MediaState.Manual
+
+                def on_media_ended(sender, args):
+                    sender.Position = System.TimeSpan.Zero
+                    sender.Play()
+                _video.MediaEnded += on_media_ended
+
+                def on_loaded(sender, args):
+                    sender.Play()
+                _video.Loaded += on_loaded
                 _StackPanel.Children.Add(_video)
                 adwindows_obj.ToolTip.ExpandedContent = _StackPanel
                 adwindows_obj.ResolveToolTip()
