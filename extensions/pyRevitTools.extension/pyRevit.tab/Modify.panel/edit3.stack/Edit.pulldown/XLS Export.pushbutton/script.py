@@ -8,9 +8,11 @@ from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
 
-itemplate = forms.utils.load_ctrl_template(
-    os.path.join(forms.XAML_FILES_DIR, "ParameterItemStyle.xaml")
-)
+para_item_xml = os.path.join(forms.XAML_FILES_DIR, "ParameterItemStyle.xaml")
+para_itemplate = forms.utils.load_ctrl_template(para_item_xml)
+ele_item_xml = script.get_bundle_file("ElementItemStyle.xaml")
+ele_itemplate = forms.utils.load_ctrl_template(ele_item_xml)
+
 script.get_output().close_others()
 logger = script.get_logger()
 doc = revit.doc
@@ -23,22 +25,34 @@ EXPORTUNIT = my_config.get_option("exportunit", "Project Unit")
 
 unit_postfix_pattern = re.compile(r"\[.*\]")
 
-ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
+ParamDef = namedtuple(
+    "ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"]
+)
+ElementDef = namedtuple(
+    "ElementDef",
+    [
+        "label",  # Display label for UI
+        "category",  # Category name
+        "family",  # Family name (or "NoFamily")
+        "type_name",  # Type name
+        "is_type",  # True if element type, False if instance
+        "element_label",  # Description like "type(s)" or "instance(s)"
+        "elements",  # List of actual Revit elements
+        "count",  # Number of elements in this group
+    ],
+)
 
 
-def select_elements(elements):
-    """Group elements by category/family/type and allow user to select groups."""
+def create_element_definitions(elements):
+
     type_element_map = {}
-    label_map = {}
 
     for el in elements:
         if not el.Category or el.Category.IsTagCategory:
             continue
-
         try:
             category = el.Category.Name
             is_type = DB.ElementIsElementTypeFilter().PassesFilter(el)
-
             family = "NoFamily"
             type_name = "NoType"
             element_label = "unknown"
@@ -46,62 +60,87 @@ def select_elements(elements):
             if is_type:
                 type_name = getattr(el, "Name", "Unnamed Type")
                 element_label = "type(s)"
-
             else:
                 if isinstance(el, DB.FamilyInstance):
                     family = el.Symbol.Family.Name
-                    type_name = el.Symbol.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
+                    type_name = el.Symbol.get_Parameter(
+                        DB.BuiltInParameter.SYMBOL_NAME_PARAM
+                    ).AsString()
                     element_label = "family instance(s)"
                 else:
                     type_name = getattr(el, "Name", "Unnamed Instance")
                     element_label = "instance(s)"
 
-            key = (category, family, type_name, element_label)
+            key = (category, family, type_name, is_type, element_label)
             if key not in type_element_map:
                 type_element_map[key] = []
             type_element_map[key].append(el)
 
         except Exception as ex:
-            logger.debug("Skipped element ID {}: {}".format(
-                get_elementid_value(el.Id), str(ex)
-            ))
+            logger.debug(
+                "Skipped element ID {}: {}".format(get_elementid_value(el.Id), str(ex))
+            )
             continue
 
-    all_labels = []
-    category_groups = {}
-
+    element_defs = []
     for key, element_list in type_element_map.items():
-        category, family, type_name, element_label = key
+        category, family, type_name, is_type, element_label = key
         count = len(element_list)
-        label = "[{} : {}] {} ({} {})".format(category, family, type_name, count, element_label)
+        label = "[{} : {}] {}".format(
+            category, family, type_name
+        )
 
-        label_map[label] = key
-        all_labels.append(label)
+        element_def = ElementDef(
+            label=label,
+            category=category,
+            family=family,
+            type_name=type_name,
+            is_type=is_type,
+            element_label=element_label,
+            elements=element_list,
+            count=count,
+        )
+        element_defs.append(element_def)
 
-        if category not in category_groups:
-            category_groups[category] = []
-        category_groups[category].append(label)
+    return element_defs
 
-    grouped_selection = {"<<All>>": sorted(all_labels)}
-    for cat, labels in category_groups.items():
-        grouped_selection[cat] = sorted(labels)
 
-    selected_labels = forms.SelectFromList.show(
-        grouped_selection,
+def select_elements(elements):
+
+    element_defs = create_element_definitions(elements)
+
+    if not element_defs:
+        logger.warning("No valid elements found to select from")
+
+    element_defs = sorted(element_defs, key=lambda x: x.label)
+
+    category_groups = {}
+    for elem_def in element_defs:
+        cat = elem_def.category
+        if cat not in category_groups:
+            category_groups[cat] = []
+        category_groups[cat].append(elem_def)
+
+    grouped_selection = {"<<All>>": element_defs}
+    for cat in sorted(category_groups.keys()):
+        grouped_selection[cat] = category_groups[cat]
+
+    context = grouped_selection
+
+    selected_defs = forms.SelectFromList.show(
+        context,
         title="Select Elements to Export",
-        group_selector_title="Filter by Category:",
+        width=500,
         multiselect=True,
+        item_template=ele_itemplate,
     )
 
-    if not selected_labels:
+    if not selected_defs:
         script.exit()
 
-    selected_keys = [label_map[label] for label in selected_labels]
-
     src_elements = []
-    for key in selected_keys:
-        src_elements.extend(type_element_map[key])
-
+    for elem_def in selected_defs:
+        src_elements.extend(elem_def.elements)
     return src_elements
 
 
@@ -174,7 +213,9 @@ def get_schedule_elements_and_params(schedule):
                         istype=False,
                         definition=param.Definition,
                         isreadonly=param.IsReadOnly,
-                        isunit=DB.UnitUtils.IsMeasurableSpec(param.Definition.GetDataType()),
+                        isunit=DB.UnitUtils.IsMeasurableSpec(
+                            param.Definition.GetDataType()
+                        ),
                         storagetype=param.StorageType,
                     )
                 break
@@ -201,7 +242,9 @@ def select_parameters(src_elements):
                         istype=False,
                         definition=p.Definition,
                         isreadonly=p.IsReadOnly,
-                        isunit=DB.UnitUtils.IsMeasurableSpec(p.Definition.GetDataType()),
+                        isunit=DB.UnitUtils.IsMeasurableSpec(
+                            p.Definition.GetDataType()
+                        ),
                         storagetype=p.StorageType,
                     )
 
@@ -211,7 +254,7 @@ def select_parameters(src_elements):
         param_defs,
         width=450,
         multiselect=True,
-        item_template=itemplate,
+        item_template=para_itemplate,
         title="Select Parameters to Export",
     )
     if not selected_params:
