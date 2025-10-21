@@ -26,7 +26,7 @@ unit_postfix_pattern = re.compile(r"\[.*\]")
 ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
 
 
-def select_types(elements):
+def select_elements(elements):
     """Group elements by category/family/type and allow user to select groups."""
     type_element_map = {}
     label_map = {}
@@ -38,30 +38,37 @@ def select_types(elements):
         try:
             category = el.Category.Name
 
-            if hasattr(el, "Symbol") and el.Symbol:
+            if isinstance(el, DB.FamilyInstance):
                 family = el.Symbol.Family.Name
-                type_name = el.Symbol.Name
-            elif hasattr(el, "FamilyName"):
-                family = el.FamilyName
-                type_name = el.Name if hasattr(el, "Name") else "NoType"
+                type_name = el.Symbol.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
+                element_label = "instance(s)"
+            elif isinstance(el, DB.FamilySymbol):
+                family = el.Family.Name
+                type_name = el.Name
+                element_label = "familysymbol(s)"
             else:
-                family = "NoFamily"
+                family = el.FamilyName if hasattr(el, "FamilyName") else "NoFamily"
                 type_name = el.Name if hasattr(el, "Name") else "NoType"
+                element_label = "other(s)"
 
-            key = (category, family, type_name)
+            key = (category, family, type_name, element_label)
             if key not in type_element_map:
                 type_element_map[key] = []
             type_element_map[key].append(el)
-        except Exception:
+            
+        except Exception as ex:
+            logger.debug("Skipped element ID {}: {}".format(
+                get_elementid_value(el.Id), str(ex)
+            ))
             continue
 
     all_labels = []
     category_groups = {}
 
     for key, element_list in type_element_map.items():
-        category, family, type_name = key
+        category, family, type_name, element_label = key
         count = len(element_list)
-        label = "[{} : {}] {} ({} elements)".format(category, family, type_name, count)
+        label = "[{} : {}] {} ({} {})".format(category, family, type_name, count, element_label)
 
         label_map[label] = key
         all_labels.append(label)
@@ -349,7 +356,7 @@ def main():
                 if not elements:
                     elements = revit.pick_elements(message="Pick Elements to Export")
 
-            src_elements = select_types(elements)
+            src_elements = select_elements(elements)
             if not src_elements:
                 return
             selected_params = select_parameters(src_elements)
