@@ -37,25 +37,30 @@ def select_elements(elements):
 
         try:
             category = el.Category.Name
+            is_type = DB.ElementIsElementTypeFilter().PassesFilter(el)
 
-            if isinstance(el, DB.FamilyInstance):
-                family = el.Symbol.Family.Name
-                type_name = el.Symbol.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
-                element_label = "instance(s)"
-            elif isinstance(el, DB.FamilySymbol):
-                family = el.Family.Name
-                type_name = el.Name
-                element_label = "familysymbol(s)"
+            family = "NoFamily"
+            type_name = "NoType"
+            element_label = "unknown"
+
+            if is_type:
+                type_name = getattr(el, "Name", "Unnamed Type")
+                element_label = "type(s)"
+
             else:
-                family = el.FamilyName if hasattr(el, "FamilyName") else "NoFamily"
-                type_name = el.Name if hasattr(el, "Name") else "NoType"
-                element_label = "other(s)"
+                if isinstance(el, DB.FamilyInstance):
+                    family = el.Symbol.Family.Name
+                    type_name = el.Symbol.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
+                    element_label = "family instance(s)"
+                else:
+                    type_name = getattr(el, "Name", "Unnamed Instance")
+                    element_label = "instance(s)"
 
             key = (category, family, type_name, element_label)
             if key not in type_element_map:
                 type_element_map[key] = []
             type_element_map[key].append(el)
-            
+
         except Exception as ex:
             logger.debug("Skipped element ID {}: {}".format(
                 get_elementid_value(el.Id), str(ex)
@@ -83,13 +88,13 @@ def select_elements(elements):
 
     selected_labels = forms.SelectFromList.show(
         grouped_selection,
-        title="Select Element Types to Export",
+        title="Select Elements to Export",
         group_selector_title="Filter by Category:",
         multiselect=True,
     )
 
     if not selected_labels:
-        raise ValueError("No elements selected")
+        script.exit()
 
     selected_keys = [label_map[label] for label in selected_labels]
 
@@ -210,7 +215,7 @@ def select_parameters(src_elements):
         title="Select Parameters to Export",
     )
     if not selected_params:
-        return None
+        script.exit()
 
     return selected_params
 
@@ -357,11 +362,7 @@ def main():
                     elements = revit.pick_elements(message="Pick Elements to Export")
 
             src_elements = select_elements(elements)
-            if not src_elements:
-                return
             selected_params = select_parameters(src_elements)
-            if not select_parameters:
-                return
 
         export_xls(src_elements, selected_params)
 
