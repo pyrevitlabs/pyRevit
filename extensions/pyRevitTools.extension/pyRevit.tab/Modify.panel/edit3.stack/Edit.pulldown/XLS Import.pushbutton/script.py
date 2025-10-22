@@ -13,8 +13,6 @@ doc = revit.doc
 project_units = doc.GetUnits()
 
 script.get_output().close_others()
-my_config = script.get_config("xlseximport")
-exportunit = my_config.get_option("exportunit", "Project Unit")
 
 unit_postfix_pattern = re.compile(r"\s*\[.*\]$")
 
@@ -53,8 +51,7 @@ def main():
                     if new_val in (None, ""):
                         continue
 
-                    if exportunit == "Project Unit":
-                        param_name = unit_postfix_pattern.sub("", param_name).strip()
+                    param_name = unit_postfix_pattern.sub("", param_name).strip()
                     param = el.LookupParameter(param_name)
                     if not param:
                         logger.info(
@@ -80,19 +77,11 @@ def main():
                             param.Set(int(float(new_val)))
                         elif storage_type == DB.StorageType.Double:
                             forge_type_id = param.Definition.GetDataType()
-                            measureable = DB.UnitUtils.IsMeasurableSpec(forge_type_id)
-                            if measureable and exportunit == "ValueString":
+                            if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
                                 try:
-                                    param.SetValueString(str(new_val))
-                                except Exception as e:
-                                    logger.error(
-                                        "Failed SetValueString for '{}': {}".format(
-                                            param_name, e
-                                        )
-                                    )
-                            elif measureable and exportunit == "Project Unit":
-                                try:
-                                    unit_type_id = project_units.GetFormatOptions(forge_type_id).GetUnitTypeId()
+                                    unit_type_id = project_units.GetFormatOptions(
+                                        forge_type_id
+                                    ).GetUnitTypeId()
                                     new_val = DB.UnitUtils.ConvertToInternalUnits(
                                         float(new_val), unit_type_id
                                     )

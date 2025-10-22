@@ -19,10 +19,6 @@ doc = revit.doc
 active_view = revit.active_view
 project_units = doc.GetUnits()
 
-my_config = script.get_config("xlseximport")
-SCOPE = my_config.get_option("scope", "document")
-EXPORTUNIT = my_config.get_option("exportunit", "Project Unit")
-
 unit_postfix_pattern = re.compile(r"\[.*\]")
 
 ParamDef = namedtuple(
@@ -86,9 +82,7 @@ def create_element_definitions(elements):
     for key, element_list in type_element_map.items():
         category, family, type_name, is_type, element_label = key
         count = len(element_list)
-        label = "[{} : {}] {}".format(
-            category, family, type_name
-        )
+        label = "[{} : {}] {}".format(category, family, type_name)
 
         element_def = ElementDef(
             label=label,
@@ -298,15 +292,14 @@ def export_xls(src_elements, selected_params):
         if param.isreadonly:
             header_format = workbook.add_format({"bold": True, "bg_color": "#FF3131"})
 
-        if EXPORTUNIT == "Project Unit":
-            forge_type_id = param.definition.GetDataType()
-            if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
-                symbol_type_id = project_units.GetFormatOptions(
-                    forge_type_id
-                ).GetSymbolTypeId()
-                if not symbol_type_id.Empty():
-                    symbol = DB.LabelUtils.GetLabelForSymbol(symbol_type_id)
-                    postfix = " [" + symbol + "]"
+        forge_type_id = param.definition.GetDataType()
+        if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
+            symbol_type_id = project_units.GetFormatOptions(
+                forge_type_id
+            ).GetSymbolTypeId()
+            if not symbol_type_id.Empty():
+                symbol = DB.LabelUtils.GetLabelForSymbol(symbol_type_id)
+                postfix = " [" + symbol + "]"
 
         worksheet.write(0, col_idx + 1, param.name + postfix, header_format)
 
@@ -328,13 +321,10 @@ def export_xls(src_elements, selected_params):
                             forge_type_id = param.definition.GetDataType()
                             val = param_val.AsDouble()
                             if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
-                                if EXPORTUNIT == "ValueString":
-                                    val = param_val.AsValueString()
-                                elif EXPORTUNIT == "Project Unit":
-                                    unit_type_id = param_val.GetUnitTypeId()
-                                    val = DB.UnitUtils.ConvertFromInternalUnits(
-                                        param_val.AsDouble(), unit_type_id
-                                    )
+                                unit_type_id = param_val.GetUnitTypeId()
+                                val = DB.UnitUtils.ConvertFromInternalUnits(
+                                    param_val.AsDouble(), unit_type_id
+                                )
                         elif param_val.StorageType == DB.StorageType.String:
                             val = param_val.AsString()
                         elif param_val.StorageType == DB.StorageType.Integer:
@@ -382,9 +372,9 @@ def export_xls(src_elements, selected_params):
     logger.info("Exported {} elements to {}".format(len(src_elements), file_path))
 
 
-def main():
+def main(advanced=False):
     try:
-        if SCOPE == "schedule":
+        if not advanced:
             schedule = forms.select_schedules(
                 title="Select Schedule to Export",
                 multiple=False,
@@ -395,14 +385,46 @@ def main():
             src_elements, selected_params = get_schedule_elements_and_params(schedule)
 
         else:
-            if SCOPE == "document":
+            opts = [
+                "Schedule",
+                "Document - all",
+                "Document - types",
+                "Document - instances",
+                "Current View",
+                "Selection",
+            ]
+            selection = forms.SelectFromList.show(
+                opts, title="Select Export Scope"
+            )
+            if not selection:
+                return
+            if selection == "Schedule":
+                schedule = forms.select_schedules(
+                    title="Select Schedule to Export",
+                    multiple=False,
+                    filterfunc=schedule_filter,
+                )
+                if not schedule:
+                    return
+                src_elements, selected_params = get_schedule_elements_and_params(
+                    schedule
+                )
+            elif "Document" in selection:
                 elements = revit.query.get_all_elements(doc)
-            elif SCOPE == "current view":
+                if selection == "Document - types":
+                    type_filter = DB.ElementIsElementTypeFilter()
+                    elements = [el for el in elements if type_filter.PassesFilter(el)]
+
+                elif selection == "Document - instances":
+                    type_filter = DB.ElementIsElementTypeFilter(True)
+                    elements = [el for el in elements if type_filter.PassesFilter(el)]
+            elif selection == "Current View":
                 elements = revit.query.get_all_elements_in_view(active_view)
-            elif SCOPE == "selection":
+            elif selection == "Selection":
                 elements = revit.get_selection()
                 if not elements:
-                    elements = revit.pick_elements(message="Pick Elements to Export")
+                    with forms.WarningBar(title="Pick Elements to Export"):
+                        elements = revit.pick_elements(message="Pick Elements to Export")
 
             src_elements = select_elements(elements)
             selected_params = select_parameters(src_elements)
