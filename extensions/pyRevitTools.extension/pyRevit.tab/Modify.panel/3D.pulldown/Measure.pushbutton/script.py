@@ -2,6 +2,7 @@
 from collections import deque
 from pyrevit import revit, forms, script, traceback
 from pyrevit import UI, DB
+from pyrevit.framework import System, Input
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
 # Configure logger
@@ -10,8 +11,13 @@ logger = script.get_logger()
 # Document variables
 doc = revit.doc
 uidoc = revit.uidoc
-length_unit = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length).GetUnitTypeId()
-unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
+length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
+length_unit = length_format_options.GetUnitTypeId()
+length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
+length_unit_symbol = length_format_options.GetSymbolTypeId()
+length_unit_symbol_label = None
+if not length_unit_symbol.Empty():
+    length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
 
 # Global variables
 measure_window = None
@@ -86,12 +92,23 @@ def create_line_mesh(start, end, color):
     return mesh
 
 
+def create_and_show_point_mesh(point1):
+    """Immediatly show the first selected point"""
+    global dc3d_server
+    new_meshes = []
+    new_meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
+    if dc3d_server:
+        existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
+        dc3d_server.meshes = existing_meshes + new_meshes
+        uidoc.RefreshActiveView()
+
+
 def create_measurement_meshes(point1, point2):
     """Create all visual aid meshes for a measurement."""
     meshes = []
 
     # Create cubes at measurement points
-    meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
+    # Mesh for point1 already immediatly created and shown on selection
     meshes.append(create_cube_mesh(point2, CUBE_SIZE, CUBE_COLOR))
 
     # Determine the work plane (use the lowest Z for X and Y lines)
@@ -137,6 +154,7 @@ def perform_measurement():
             point1 = revit.pick_elementpoint(world=True)
             if not point1:
                 return
+            create_and_show_point_mesh(point1)
 
         with forms.WarningBar(title="Pick second point"):
             point2 = revit.pick_elementpoint(world=True)
@@ -215,10 +233,20 @@ class MeasureWindow(forms.WPFWindow):
         self.diagonal_text.Text = "Diagonal: -"
         self.history_text.Text = "No measurements yet"
 
+        if not length_unit_symbol_label:
+            self.project_unit_text.Visibility = System.Windows.Visibility.Visible
+            self.project_unit_text.Text = (
+                "Length Units (adjust in Project Units): " + length_unit_label
+            )
+
         # Handle window close event
         self.Closed += self.window_closed
 
         self.Show()
+
+    def Window_PreviewKeyDown(sender, e):
+        if e.Key == Input.Key.Escape:
+            e.Handled = True
 
     def window_closed(self, sender, args):
         """Handle window close event - cleanup DC3D server."""
