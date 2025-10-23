@@ -1,0 +1,27 @@
+title:
+  ru: Навигатор Секущей Коробки
+  fr_fr: Navigateur de Boîte de Coupe
+  en_us: SectionBox Navigator
+  de_de: Schnittbox-Navigator
+tooltip:
+  ru: |
+    Модальное окно для управления секущими коробками в 3D видах.
+    Быстрое перемещение границ по уровням, точная настройка, расширение/сжатие.
+    Предварительный просмотр изменений при наведении курсора.
+  fr_fr: |
+    Fenêtre modale pour gérer les boîtes de coupe dans les vues 3D.
+    Alignement rapide sur les niveaux, ajustements précis, expansion/réduction.
+    Aperçu des modifications au survol de la souris.
+  en_us: |
+    Modeless window for section box navigation in 3D views.
+    Quickly snap boundaries to levels, nudge precisely, expand/shrink uniformly.
+    Real-time preview on hover shows changes before applying.
+  de_de: |
+    Abgelöstes Fenster zur Navigation von Schnittboxen in 3D-Ansichten.
+    Schnelles Ausrichten an Ebenen, präzises Verschieben, gleichmäßiges Erweitern/Verkleinern.
+    Echtzeitvorschau beim Überfahren zeigt Änderungen vor dem Anwenden.
+author: wurschdhaud
+context:
+  - active-3d-view
+engine:
+  persistent: true
