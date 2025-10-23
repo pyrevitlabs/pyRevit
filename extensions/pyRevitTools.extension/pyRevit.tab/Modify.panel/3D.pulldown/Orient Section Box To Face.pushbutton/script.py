@@ -29,24 +29,14 @@ def orientsectionbox(view):
             element = instance
             transform = DB.Transform.Identity
 
-        # Get geometry
-        options = DB.Options()
-        options.ComputeReferences = True
-        options.IncludeNonVisibleObjects = True
-        options.DetailLevel = curview.DetailLevel
+        geom_objs = revit.query.get_geometry(
+            element,
+            include_invisible=True,
+            compute_references=True,
+            detail_level=curview.DetailLevel
+        )
 
-        geom_elem = element.get_Geometry(options)
-
-        def extract_solids(geom_element):
-            solids = []
-            for geom_obj in geom_element:
-                if isinstance(geom_obj, DB.Solid) and geom_obj.Faces.Size > 0:
-                    solids.append(geom_obj)
-                elif isinstance(geom_obj, DB.GeometryInstance):
-                    solids.extend(extract_solids(geom_obj.GetInstanceGeometry()))
-            return solids
-
-        solids = extract_solids(geom_elem)
+        solids = [g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0]
 
         # Find face that contains the picked point
         target_face = None

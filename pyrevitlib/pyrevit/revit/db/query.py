@@ -3162,7 +3162,7 @@ def get_element_workset(element):
         return workset_table.GetWorkset(element.WorksetId)
 
 
-def get_geometry(element, include_invisible=False, compute_references=False):
+def get_geometry(element, include_invisible=False, compute_references=False, detail_level=DB.ViewDetailLevel.Medium):
     """
     Retrieves the geometry of a given Revit element.
 
@@ -3170,6 +3170,7 @@ def get_geometry(element, include_invisible=False, compute_references=False):
         element (DB.Element): The Revit element from which to retrieve geometry.
         include_invisible (bool, optional): If True, includes non-visible objects in the geometry. Defaults to False.
         compute_references (bool, optional): If True, computes references for the geometry objects. Defaults to False.
+        detail_level (DB.ViewDetailLevel, optional): The detail level used for geometry extraction. Defaults to medium.
 
     Returns:
         list: A list of geometry objects associated with the element. If the element has no geometry, returns None.
@@ -3184,6 +3185,7 @@ def get_geometry(element, include_invisible=False, compute_references=False):
     geom_opts = DB.Options()
     geom_opts.IncludeNonVisibleObjects = include_invisible
     geom_opts.ComputeReferences = compute_references
+    geom_opts.DetailLevel = detail_level
     geom_objs = []
     try:
         for gobj in element.Geometry[geom_opts]:
