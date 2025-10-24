@@ -1,11 +1,12 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Section Box Navigator" Height="780" Width="320" 
+        Title="Section Box Navigator" Height="870" Width="320" 
         ShowInTaskbar="False" Topmost="True"
         WindowStartupLocation="CenterScreen" 
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
     <Grid Margin="15">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -18,6 +19,7 @@
         <!-- Status Information -->
         <GroupBox Header="Current Status" Grid.Row="0" Margin="0,0,0,10">
             <StackPanel Margin="5">
+                <TextBlock x:Name="project_unit_text" Text="" Visibility="Collapsed" Foreground="Red" FontWeight="Bold" Margin="0,5,0,2"/>
                 <TextBlock x:Name="txtTopLevel" Text="Top: Loading..." Margin="0,2"/>
                 <TextBlock x:Name="txtTopPosition" Text="Position: ..." Margin="0,2"/>
                 <TextBlock x:Name="txtBottomLevel" Text="Bottom: Loading..." Margin="0,2"/>
@@ -110,7 +112,7 @@
         </GroupBox>
 
         <!-- Expansion Controls -->
-        <GroupBox Header="Expande/Shrink Controls" Grid.Row="3" Margin="0,0,0,10">
+        <GroupBox Header="Expand/Shrink Controls" Grid.Row="3" Margin="0,0,0,10">
             <StackPanel Margin="5">
                 <Grid Margin="0,5">
                     <Grid.ColumnDefinitions>
@@ -147,10 +149,14 @@
             </StackPanel>
         </GroupBox>
 
-        <!-- Preview Toggle -->
-        <GroupBox Header="Preview" Grid.Row="4" Margin="0,0,0,10">
-            <CheckBox x:Name="chkPreview" Content="Show preview on hover" 
-                      Margin="5" IsChecked="True"/>
+        <!-- Preview/Autoupdate Toggle -->
+        <GroupBox Header="Settings" Grid.Row="4" Margin="0,0,0,10">
+            <StackPanel>
+                <CheckBox x:Name="chkPreview" Content="Show preview on hover" 
+                        Margin="5" IsChecked="True"/>
+                <CheckBox x:Name="chkAutoupdate" Content="Autoupdate UI on Events" 
+                        Margin="5" IsChecked="True"/>
+            </StackPanel>
         </GroupBox>
 
         <!-- Action Buttons -->
@@ -161,13 +167,19 @@
                         MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
                 <Button x:Name="btnHideBox" Content="(Un-)Hide Box" 
                         Height="35" Margin="2" Click="btn_hide_box_click"/>
-                <Button x:Name="btnAlignBox" Content="Align Box" 
-                        Height="35" Margin="2" Click="btn_align_box_click"/>
+                <Button x:Name="btnAlignBoxToFace" Content="Align Box" 
+                        Height="35" Margin="2" Click="btn_align_box_to_face_click"/>
             </UniformGrid>
         </GroupBox>
 
+        <!-- 2D View alignment-->
+        <GroupBox Header="View alignment" Grid.Row="6" Margin="0,0,0,10">
+            <Button x:Name="btnAlignToView" Content="Align with 2D View" 
+                    Height="35" Margin="2" Click="btn_align_box_to_view_click"/>
+        </GroupBox>
+
         <!-- Refresh Button -->
-        <Button Content="Refresh" Grid.Row="6" 
+        <Button Content="Refresh" Grid.Row="7" 
                 Height="30" Margin="0" VerticalAlignment="Bottom"
                 Click="btn_refresh_click"/>
     </Grid>

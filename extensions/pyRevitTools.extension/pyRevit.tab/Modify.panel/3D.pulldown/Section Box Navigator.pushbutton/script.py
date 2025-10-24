@@ -2,10 +2,12 @@
 # type: ignore
 """Section Box Navigator - Modeless window for section box navigation."""
 import pickle
-from pyrevit import revit, script, forms, DB, UI, traceback
+from pyrevit import revit, script, forms
 from pyrevit.framework import System, List, Math
 from pyrevit.revit import events
 from pyrevit.compat import get_elementid_value_func
+from pyrevit import DB, UI
+from pyrevit import traceback
 
 get_elementid_value = get_elementid_value_func()
 
@@ -23,10 +25,21 @@ output.close_others()
 
 datafile = script.get_document_data_file("SectionBox", "pym")
 
-length_format = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
-length_unit = length_format.GetUnitTypeId()
+length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
+length_unit = length_format_options.GetUnitTypeId()
 length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
+length_unit_symbol = length_format_options.GetSymbolTypeId()
+length_unit_symbol_label = None
+if not length_unit_symbol.Empty():
+    length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
 ufu = DB.UnitFormatUtils
+
+DEFAULT_NUDGE_VALUE_MM = 500.0
+default_nudge_value = DB.UnitUtils.Convert(
+    DEFAULT_NUDGE_VALUE_MM, DB.UnitTypeId.Millimeters, length_unit
+)
+
+DEFAULT_EXTEND = 50.0  # in case no cropview is applied
 
 # --------------------
 # Helper Functions
@@ -59,6 +72,8 @@ def get_next_level_below(z_coordinate, all_levels, tolerance=1e-5):
 
 def get_section_box_info(view):
     """Get section box information from the current view."""
+    if not isinstance(view, DB.View3D):
+        return
     if not view.IsSectionBoxActive:
         with open(datafile, "rb") as f:
             view_boxes = pickle.load(f)
@@ -95,6 +110,123 @@ def create_preview_mesh(section_box, color):
         return None
 
 
+def show_preview_mesh(box, preview_server):
+    color = DB.ColorWithTransparency(100, 150, 255, 150)
+    mesh = create_preview_mesh(box, color)
+    if mesh:
+        preview_server.meshes = [mesh]
+        uidoc.RefreshActiveView()
+
+
+def is_2d_view(view):
+    """Check if a view is a 2D view (plan, elevation, section)."""
+    # TODO: support for section
+    view_type = view.ViewType
+    return view_type in [
+        DB.ViewType.FloorPlan,
+        DB.ViewType.CeilingPlan,
+        # DB.ViewType.Section,
+    ]
+
+
+def get_view_range_and_crop(view):
+    """Extract view range and crop box information from a 2D view."""
+    # Get view range (top and bottom)
+    view_range = view.GetViewRange()
+    top_level_id = view_range.GetLevelId(DB.PlanViewPlane.TopClipPlane)
+    top_offset = view_range.GetOffset(DB.PlanViewPlane.TopClipPlane)
+    bottom_level_id = view_range.GetLevelId(DB.PlanViewPlane.BottomClipPlane)
+    bottom_offset = view_range.GetOffset(DB.PlanViewPlane.BottomClipPlane)
+
+    top_level = doc.GetElement(top_level_id)
+    bottom_level = doc.GetElement(bottom_level_id)
+
+    top_elevation = top_level.Elevation + top_offset if top_level else None
+    bottom_elevation = bottom_level.Elevation + bottom_offset if bottom_level else None
+
+    # Get crop box if active
+    crop_box = None
+    if view.CropBoxActive:
+        crop_box = view.CropBox
+
+    return {
+        "top_elevation": top_elevation,
+        "bottom_elevation": bottom_elevation,
+        "crop_box": crop_box,
+        "view": view,
+    }
+
+
+def make_xy_transform_only(crop_transform):
+    """Return a transform with only the XY rotation of crop_transform."""
+    origin = crop_transform.Origin
+
+    # Zero out the Z part of the origin (keep the same XY position)
+    origin_no_z = DB.XYZ(origin.X, origin.Y, 0)
+
+    # Get XY axes from crop box
+    x_axis = crop_transform.BasisX
+    y_axis = crop_transform.BasisY
+
+    # Force them to lie flat in the XY plane (remove any Z component)
+    x_axis_flat = DB.XYZ(x_axis.X, x_axis.Y, 0).Normalize()
+    y_axis_flat = DB.XYZ(y_axis.X, y_axis.Y, 0).Normalize()
+
+    # Z is now world up
+    z_axis_world = DB.XYZ(0, 0, 1)
+
+    # Build the new transform
+    t = DB.Transform.Identity
+    t.Origin = origin_no_z
+    t.BasisX = x_axis_flat
+    t.BasisY = y_axis_flat
+    t.BasisZ = z_axis_world
+
+    return t
+
+
+def create_adjusted_box(
+    info, min_x=0, max_x=0, min_y=0, max_y=0, min_z=0, max_z=0, new_transform=None
+):
+    """
+    Create a new bounding box with adjustments applied.
+
+    Args:
+        info: Section box info dictionary from get_section_box_info()
+        min_x, max_x, min_y, max_y, min_z, max_z: Adjustments to apply
+        new_transform: Optional new transform (if None, uses existing)
+
+    Returns:
+        DB.BoundingBoxXYZ or None if invalid dimensions
+    """
+    min_point = info["min_point"]
+    max_point = info["max_point"]
+    transform = new_transform if new_transform else info["transform"]
+
+    new_min = DB.XYZ(
+        min_point.X + min_x,
+        min_point.Y + min_y,
+        min_point.Z + min_z,
+    )
+
+    new_max = DB.XYZ(
+        max_point.X + max_x,
+        max_point.Y + max_y,
+        max_point.Z + max_z,
+    )
+
+    # Validate dimensions
+    if new_max.X <= new_min.X or new_max.Y <= new_min.Y or new_max.Z <= new_min.Z:
+        return None
+
+    new_box = DB.BoundingBoxXYZ()
+    new_box.Min = new_min
+    new_box.Max = new_max
+    new_box.Transform = transform
+
+    return new_box
+
+
 # --------------------
 # Event Handler
 # --------------------
@@ -123,28 +255,24 @@ class HelperEventHandler(UI.IExternalEventHandler):
 
 
 @events.handle("doc-changed")
-def on_document_changed(sender, args):
-    """Handle document changed events to detect section box changes."""
+@events.handle("view-activated")
+def on_view_or_doc_changed(sender, args):
+    """Handle document changes and view switches to update section box info."""
+    global form
+    if not form.chkAutoupdate.IsChecked:
+        return
     try:
-        # Check if any view was modified
-        modified_element_ids = args.GetModifiedElementIds()
-
-        for elem_id in modified_element_ids:
-            elem = doc.GetElement(elem_id)
-            if isinstance(elem, DB.View):
-                # Check if it's the active view
-                if elem.Id == doc.ActiveView.Id:
-                    # Trigger update in the form if it exists
-                    if hasattr(on_document_changed, "form_instance"):
-                        form = on_document_changed.form_instance
-                        if form:
-                            try:
-                                form.Dispatcher.Invoke(System.Action(form.update_info))
-                            except Exception:
-                                pass
-                    break
-    except Exception:
-        pass
+        # Trigger update in the form if it exists
+        if hasattr(on_view_or_doc_changed, "form_instance"):
+            form = on_view_or_doc_changed.form_instance
+            if form:
+                try:
+                    form.Dispatcher.Invoke(System.Action(form.update_info))
+                    logger.info("Form updated due to view or document change.")
+                except Exception as e:
+                    logger.warning("Failed to update form: {}".format(str(e)))
+    except Exception as e:
+        logger.error("Error in event handler: {}".format(str(e)))
 
 
 # --------------------
@@ -179,10 +307,17 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.pending_action = None
 
         # Register this form instance for the event handler
-        on_document_changed.form_instance = self
+        on_view_or_doc_changed.form_instance = self
 
-        self.txtNudgeUnit.Text = length_unit_label
-        self.txtExpandUnit.Text = length_unit_label
+        if not length_unit_symbol_label:
+            self.project_unit_text.Visibility = System.Windows.Visibility.Visible
+            self.project_unit_text.Text = (
+                "Length Label (adjust in Project Units): " + length_unit_label
+            )
+        self.txtNudgeAmount.Text = str(round(default_nudge_value, 3))
+        self.txtNudgeUnit.Text = length_unit_symbol_label
+        self.txtExpandAmount.Text = str(round(default_nudge_value, 3))
+        self.txtExpandUnit.Text = length_unit_symbol_label
         # Initial update
         self.update_info()
 
@@ -203,7 +338,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
             self.current_view = doc.ActiveView
 
-            if not self.current_view.IsSectionBoxActive:
+            if (
+                not isinstance(self.current_view, DB.View3D)
+                or not self.current_view.IsSectionBoxActive
+            ):
                 self.txtTopLevel.Text = "Top: No section box active"
                 self.txtTopPosition.Text = ""
                 self.txtBottomLevel.Text = "Bottom: No section box active"
@@ -276,10 +414,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_toggle()
             elif action_type == "hide":
                 self.do_hide()
-            elif action_type == "align":
-                self.do_align()
+            elif action_type == "align_to_face":
+                self.do_align_to_face()
             elif action_type == "expand_shrink":
                 self.do_expand_shrink(params)
+            elif action_type == "align_to_view":
+                self.do_align_to_view(params)
 
             # Update info after action
             self.Dispatcher.Invoke(System.Action(self.update_info))
@@ -310,7 +450,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             bottom_distance = bottom_level.Elevation - info["transformed_min"].Z
 
         self.adjust_section_box(
-            top_distance, bottom_distance, adjust_top, adjust_bottom
+            min_z_change=bottom_distance if adjust_bottom else 0,
+            max_z_change=top_distance if adjust_top else 0,
+            min_x_change=0,
+            max_x_change=0,
+            min_y_change=0,
+            max_y_change=0,
         )
 
     def do_nudge(self, params):
@@ -319,55 +464,84 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         adjust_top = params.get("adjust_top", False)
         adjust_bottom = params.get("adjust_bottom", False)
 
-        self.adjust_section_box(distance_mm, distance_mm, adjust_top, adjust_bottom)
+        self.adjust_section_box(
+            min_z_change=distance_mm if adjust_bottom else 0,
+            max_z_change=distance_mm if adjust_top else 0,
+            min_x_change=0,
+            max_x_change=0,
+            min_y_change=0,
+            max_y_change=0,
+        )
 
     def do_expand_shrink(self, params):
         """Expand or shrink the section box in all directions."""
         amount = params.get("amount", 0)
         is_expand = params.get("is_expand", True)
 
-        info = get_section_box_info(self.current_view)
-        if not info:
-            return
-
-        # Get current box dimensions
-        min_point = info["min_point"]
-        max_point = info["max_point"]
-        transform = info["transform"]
-
         # Calculate the adjustment (negative for shrink)
         adjustment = amount if is_expand else -amount
 
-        # Expand/shrink in all three local directions
-        # X direction (left/right)
-        new_min_x = min_point.X - adjustment
-        new_max_x = max_point.X + adjustment
+        self.adjust_section_box(
+            min_x_change=-adjustment,
+            max_x_change=adjustment,
+            min_y_change=-adjustment,
+            max_y_change=adjustment,
+            min_z_change=-adjustment,
+            max_z_change=adjustment,
+        )
 
-        # Y direction (front/back)
-        new_min_y = min_point.Y - adjustment
-        new_max_y = max_point.Y + adjustment
-
-        # Z direction (up/down)
-        new_min_z = min_point.Z - adjustment
-        new_max_z = max_point.Z + adjustment
-
-        # Validate dimensions
-        if new_max_x <= new_min_x or new_max_y <= new_min_y or new_max_z <= new_min_z:
-            forms.alert("Section box would become invalid (too small).", title="Error")
+    def do_align_to_view(self, params):
+        """Align section box to a 2D view's range and crop."""
+        view_data = params.get("view_data")
+        if not view_data:
             return
 
-        # Create new box
-        new_box = DB.BoundingBoxXYZ()
-        new_box.Min = DB.XYZ(new_min_x, new_min_y, new_min_z)
-        new_box.Max = DB.XYZ(new_max_x, new_max_y, new_max_z)
-        new_box.Transform = transform
+        top_elevation = view_data["top_elevation"]
+        bottom_elevation = view_data["bottom_elevation"]
+        crop_box = view_data["crop_box"]
 
-        with revit.Transaction("Expand/Shrink Section Box"):
-            self.current_view.SetSectionBox(new_box)
+        if top_elevation is None or bottom_elevation is None:
+            forms.alert("Could not get view range information.", title="Error")
+            return
+
+        new_box = DB.BoundingBoxXYZ()
+        if crop_box:
+            xy_transform = make_xy_transform_only(crop_box.Transform)
+
+            new_box = DB.BoundingBoxXYZ()
+            new_box.Min = DB.XYZ(crop_box.Min.X, crop_box.Min.Y, bottom_elevation)
+            new_box.Max = DB.XYZ(crop_box.Max.X, crop_box.Max.Y, top_elevation)
+            new_box.Transform = xy_transform
+        else:
+            # fallback box
+            new_box = DB.BoundingBoxXYZ()
+            new_box.Min = DB.XYZ(-DEFAULT_EXTEND, -DEFAULT_EXTEND, bottom_elevation)
+            new_box.Max = DB.XYZ(DEFAULT_EXTEND, DEFAULT_EXTEND, top_elevation)
+
+        # Show preview, ask for apply
+        show_preview_mesh(new_box, self.preview_server)
+        result = forms.alert(
+            "Apply section box from view '{}'?".format(view_data["view"].Name),
+            title="Confirm Section Box",
+            ok=True,
+            cancel=True,
+        )
+
+        # Hide preview
+        if self.preview_server:
+            self.preview_server.meshes = []
+            uidoc.RefreshActiveView()
+
+        # Apply if confirmed
+        if result:
+            with revit.Transaction("Align to View"):
+                self.current_view.SetSectionBox(new_box)
 
     def do_toggle(self):
         """Toggle section box."""
         self.current_view = doc.ActiveView
+        if not isinstance(self.current_view, DB.View3D):
+            return
         current_view_id_value = get_elementid_value(self.current_view.Id)
         sectionbox_active_state = self.current_view.IsSectionBoxActive
 
@@ -402,6 +576,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def do_hide(self):
         """Hide or Unhide section box."""
         self.current_view = doc.ActiveView
+        if not isinstance(self.current_view, DB.View3D):
+            return
         with revit.Transaction("Toggle SB visbility"):
             self.current_view.EnableRevealHiddenMode()
             view_elements = (
@@ -421,9 +597,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 DB.TemporaryViewMode.RevealHiddenElements
             )
 
-    def do_align(self):
+    def do_align_to_face(self):
         """Align to face"""
         self.current_view = doc.ActiveView
+        if not isinstance(self.current_view, DB.View3D):
+            return
         try:
             world_normal = None
 
@@ -516,40 +694,32 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             logger.error("Error: {}".format(str(ex)))
 
     def adjust_section_box(
-        self, distance_top, distance_bottom, adjust_top=True, adjust_bottom=False
+        self,
+        min_x_change=0,
+        max_x_change=0,
+        min_y_change=0,
+        max_y_change=0,
+        min_z_change=0,
+        max_z_change=0,
     ):
-        """Adjust the section box."""
+        """Unified method to adjust the section box in any direction."""
         info = get_section_box_info(self.current_view)
         if not info:
             return False
 
-        transform = info["transform"]
-        min_point = info["min_point"]
-        max_point = info["max_point"]
-
-        # Create new points
-        new_min_point = DB.XYZ(
-            min_point.X,
-            min_point.Y,
-            min_point.Z + distance_bottom if adjust_bottom else min_point.Z,
+        new_box = create_adjusted_box(
+            info,
+            min_x_change,
+            max_x_change,
+            min_y_change,
+            max_y_change,
+            min_z_change,
+            max_z_change,
         )
 
-        new_max_point = DB.XYZ(
-            max_point.X,
-            max_point.Y,
-            max_point.Z + distance_top if adjust_top else max_point.Z,
-        )
-
-        # Validate
-        if new_max_point.Z <= new_min_point.Z:
+        if not new_box:
             forms.alert("Invalid section box dimensions.", title="Error")
             return False
-
-        # Create new box
-        new_box = DB.BoundingBoxXYZ()
-        new_box.Min = new_min_point
-        new_box.Max = new_max_point
-        new_box.Transform = transform
 
         with revit.Transaction("Adjust Section Box"):
             self.current_view.SetSectionBox(new_box)
@@ -566,89 +736,49 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not info:
                 return
 
-            transform = info["transform"]
-            min_point = info["min_point"]
-            max_point = info["max_point"]
-
-            # Initialize preview points
-            preview_min = min_point
-            preview_max = max_point
+            preview_box = None
 
             if preview_type == "nudge":
-                # Handle nudge preview
                 distance_top = params.get("distance_top", 0)
                 distance_bottom = params.get("distance_bottom", 0)
                 adjust_top = params.get("adjust_top", False)
                 adjust_bottom = params.get("adjust_bottom", False)
 
-                preview_min = DB.XYZ(
-                    min_point.X,
-                    min_point.Y,
-                    min_point.Z + distance_bottom if adjust_bottom else min_point.Z,
-                )
-
-                preview_max = DB.XYZ(
-                    max_point.X,
-                    max_point.Y,
-                    max_point.Z + distance_top if adjust_top else max_point.Z,
+                preview_box = create_adjusted_box(
+                    info,
+                    min_z=distance_bottom if adjust_bottom else 0,
+                    max_z=distance_top if adjust_top else 0,
                 )
 
             elif preview_type == "level":
-                # Handle level-based preview
                 distance_top = params.get("distance_top", 0)
                 distance_bottom = params.get("distance_bottom", 0)
                 adjust_top = params.get("adjust_top", False)
                 adjust_bottom = params.get("adjust_bottom", False)
 
-                preview_min = DB.XYZ(
-                    min_point.X,
-                    min_point.Y,
-                    min_point.Z + distance_bottom if adjust_bottom else min_point.Z,
-                )
-
-                preview_max = DB.XYZ(
-                    max_point.X,
-                    max_point.Y,
-                    max_point.Z + distance_top if adjust_top else max_point.Z,
+                preview_box = create_adjusted_box(
+                    info,
+                    min_z=distance_bottom if adjust_bottom else 0,
+                    max_z=distance_top if adjust_top else 0,
                 )
 
             elif preview_type == "expand_shrink":
-                # Handle expand/shrink preview
                 adjustment = params.get("adjustment", 0)
 
-                preview_min = DB.XYZ(
-                    min_point.X - adjustment,
-                    min_point.Y - adjustment,
-                    min_point.Z - adjustment,
+                preview_box = create_adjusted_box(
+                    info,
+                    min_x=-adjustment,
+                    max_x=adjustment,
+                    min_y=-adjustment,
+                    max_y=adjustment,
+                    min_z=-adjustment,
+                    max_z=adjustment,
                 )
 
-                preview_max = DB.XYZ(
-                    max_point.X + adjustment,
-                    max_point.Y + adjustment,
-                    max_point.Z + adjustment,
-                )
-
-            # Validate preview box dimensions
-            if (
-                preview_max.X <= preview_min.X
-                or preview_max.Y <= preview_min.Y
-                or preview_max.Z <= preview_min.Z
-            ):
+            if not preview_box:
                 return
 
-            # Create preview box
-            preview_box = DB.BoundingBoxXYZ()
-            preview_box.Min = preview_min
-            preview_box.Max = preview_max
-            preview_box.Transform = transform
-
-            # Create mesh with semi-transparent color
-            color = DB.ColorWithTransparency(100, 150, 255, 150)
-            mesh = create_preview_mesh(preview_box, color)
-
-            if mesh:
-                self.preview_server.meshes = [mesh]
-                uidoc.RefreshActiveView()
+            show_preview_mesh(preview_box, self.preview_server)
 
         except Exception:
             logger.error("Error showing preview: {}".format(traceback.format_exc()))
@@ -892,6 +1022,33 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except ValueError:
             forms.alert("Invalid expansion amount", title="Error")
 
+    def btn_align_box_to_view_click(self, sender, e):
+        """Align section box to a selected 2D view."""
+        # Select a 2D view
+        selected_view = forms.select_views(
+            multiple=False,
+            filterfunc=is_2d_view,
+            title="Select 2D View for Section Box",
+        )
+
+        if not selected_view:
+            return
+
+        # Get view range and crop information
+        view_data = get_view_range_and_crop(selected_view)
+
+        if not view_data:
+            forms.alert("Could not extract view information.", title="Error")
+            return
+
+        # Queue the action to be executed in Revit context
+        self.pending_action = {
+            "action": "align_to_view",
+            "view_data": view_data,
+        }
+        self.event_handler.parameters = self.pending_action
+        self.ext_event.Raise()
+
     def btn_preview_nudge_enter(self, sender, e):
         """Show preview when hovering over nudge buttons."""
         if not self.chkPreview.IsChecked:
@@ -1055,7 +1212,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.hide_preview()
 
     def btn_toggle_box_click(self, sender, e):
-        """Toggle section box - to be implemented by user."""
+        """Toggle section box."""
         self.pending_action = {
             "action": "toggle",
         }
@@ -1063,17 +1220,17 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.ext_event.Raise()
 
     def btn_hide_box_click(self, sender, e):
-        """Toggle section box - to be implemented by user."""
+        """Hide/unhide section box."""
         self.pending_action = {
             "action": "hide",
         }
         self.event_handler.parameters = self.pending_action
         self.ext_event.Raise()
 
-    def btn_align_box_click(self, sender, e):
-        """Toggle section box - to be implemented by user."""
+    def btn_align_box_to_face_click(self, sender, e):
+        """Align section box to face."""
         self.pending_action = {
-            "action": "align",
+            "action": "align_to_face",
         }
         self.event_handler.parameters = self.pending_action
         self.ext_event.Raise()
@@ -1090,7 +1247,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             events.stop_events()
 
             # Clear form instance reference
-            on_document_changed.form_instance = None
+            on_view_or_doc_changed.form_instance = None
 
             # Remove DC3D server
             if self.preview_server:
@@ -1116,7 +1273,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 if __name__ == "__main__":
     try:
         # Check if section box is active
-        if not active_view.IsSectionBoxActive:
+        if not isinstance(active_view, DB.View3D) or not active_view.IsSectionBoxActive:
             try:
                 with open(datafile, "rb") as f:
                     view_boxes = pickle.load(f)
@@ -1124,7 +1281,7 @@ if __name__ == "__main__":
                 restored_bbox = revit.deserialize(bbox_data)
             except Exception:
                 forms.alert(
-                    "The current view does not have an active section box.",
+                    "The current view isn't 3D or doesn't have an active section box.",
                     title="No Section Box",
                     exitscript=True,
                 )
@@ -1140,5 +1297,5 @@ if __name__ == "__main__":
         form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
 
     except Exception as e:
-        logger.error("Error launching form: {}".format(e))
+        logger.error("Error launching form: {}\n{}".format(e, traceback.format_exc()))
         forms.alert("An error occurred: {}".format(str(e)), title="Error")
