@@ -36,6 +36,7 @@ class ConfigurationManager:
     """Manages texture folder configuration and persistence."""
     
     def __init__(self, config):
+        """Initialize ConfigurationManager with pyRevit config object."""
         self.config = config
         self.logger = script.get_logger()
     
@@ -52,7 +53,7 @@ class ConfigurationManager:
             # Clear texture index cache when folders change
             self._clear_texture_cache()
             return True
-        except Exception as error:
+        except (OSError, IOError, ValueError) as error:
             self.logger.error("Failed to save config: {}".format(error))
             return False
     
@@ -63,7 +64,7 @@ class ConfigurationManager:
                 self.config.remove_option(CACHE_KEY_TEXTURE_INDEX)
                 script.save_config()
                 self.logger.info("Cleared texture index cache")
-        except Exception as e:
+        except (OSError, IOError, ValueError) as e:
             self.logger.warning("Failed to clear texture cache: {}".format(e))
     
     def show_configuration_dialog(self):
@@ -146,6 +147,7 @@ class TextureIndexer:
     """Handles texture indexing and path resolution."""
     
     def __init__(self, logger, config):
+        """Initialize TextureIndexer with logger and config objects."""
         self.logger = logger
         self.config = config
         self.index = collections.defaultdict(list)
@@ -230,12 +232,10 @@ class TextureIndexer:
                             self.index[filename.lower()].append(join(dirpath, filename))
                             file_count += 1
                     
-                    pb.update_progress(i + 1, len(valid_roots), 
-                                     "Indexed {} files from {}".format(file_count, basename(root)))
+                    pb.update_progress(i + 1, len(valid_roots))
                 except (OSError, IOError) as error:
                     self.logger.warning("Failed to index {}: {}".format(root, error))
-                    pb.update_progress(i + 1, len(valid_roots), 
-                                     "Failed to index {}".format(basename(root)))
+                    pb.update_progress(i + 1, len(valid_roots))
         
         self.logger.info("Indexed {} unique texture names".format(len(self.index)))
         
@@ -247,7 +247,7 @@ class TextureIndexer:
             }
             self.config.set_option(CACHE_KEY_TEXTURE_INDEX, cache_data)
             script.save_config()
-        except Exception as e:
+        except (OSError, IOError, ValueError) as e:
             self.logger.warning("Failed to cache texture index: {}".format(e))
         
         return self.index
@@ -274,6 +274,7 @@ class AssetProcessor:
     """Handles Revit appearance asset processing and texture relinking."""
     
     def __init__(self, doc, logger):
+        """Initialize AssetProcessor with Revit document and logger."""
         self.doc = doc
         self.logger = logger
     
@@ -298,7 +299,7 @@ class AssetProcessor:
             self.logger.info("Found {} appearance assets to check".format(len(assets)))
             return assets
         
-        except Exception as error:
+        except (OSError, IOError, ValueError, AttributeError) as error:
             self.logger.error("Failed to collect materials: {}".format(error))
             self.logger.error(traceback.format_exc())
             return []
@@ -381,7 +382,7 @@ class AssetProcessor:
             else:
                 self.logger.warning("Failed to start edit scope for asset: {}".format(
                     getattr(asset_element, 'Name', 'Unknown')))
-        except Exception as error:
+        except (OSError, IOError, ValueError, AttributeError) as error:
             self.logger.error("Asset edit failed for {}: {}".format(
                 getattr(asset_element, 'Name', 'Unknown'), error))
         finally:
@@ -398,6 +399,7 @@ class TextureRelinker:
     """Main controller class for texture relinking operations."""
     
     def __init__(self, doc, config):
+        """Initialize TextureRelinker with Revit document and config."""
         self.doc = doc
         self.config_manager = ConfigurationManager(config)
         self.indexer = TextureIndexer(logger, config)
@@ -439,8 +441,7 @@ class TextureRelinker:
                         asset_element, self.indexer, unresolved)
                     
                     # Update progress every 10 assets or at the end
-                    pb.update_progress(i + 1, len(assets), 
-                                     "Processing asset {}/{}".format(i + 1, len(assets)))
+                    pb.update_progress(i + 1, len(assets))
         
         self.logger.info("Transaction committed successfully")
 
