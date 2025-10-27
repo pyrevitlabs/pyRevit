@@ -28,6 +28,8 @@ TRANSACTION_NAME = "Relink material textures"
 LOG_SEPARATOR_LENGTH = 60
 LOG_SEPARATOR_CHAR = "="
 CONFIG_KEY_TEXTURE_FOLDERS = 'texture_folders'
+CACHE_KEY_TEXTURE_INDEX = 'texture_index_cache'
+CACHE_KEY_FOLDER_VALIDATION = 'folder_validation_cache'
 
 
 class ConfigurationManager:
@@ -47,10 +49,22 @@ class ConfigurationManager:
         try:
             self.config.texture_folders = folders
             script.save_config()
+            # Clear texture index cache when folders change
+            self._clear_texture_cache()
             return True
         except Exception as error:
             self.logger.error("Failed to save config: {}".format(error))
             return False
+    
+    def _clear_texture_cache(self):
+        """Clear the texture index cache."""
+        try:
+            if self.config.has_option(CACHE_KEY_TEXTURE_INDEX):
+                self.config.remove_option(CACHE_KEY_TEXTURE_INDEX)
+                script.save_config()
+                self.logger.info("Cleared texture index cache")
+        except Exception as e:
+            self.logger.warning("Failed to clear texture cache: {}".format(e))
     
     def show_configuration_dialog(self):
         """Launch the configuration dialog using native pyRevit forms."""
@@ -131,9 +145,11 @@ class ConfigurationManager:
 class TextureIndexer:
     """Handles texture indexing and path resolution."""
     
-    def __init__(self, logger):
+    def __init__(self, logger, config):
         self.logger = logger
+        self.config = config
         self.index = collections.defaultdict(list)
+        self.folder_cache = {}
     
     def get_project_directory(self, doc):
         """Get project directory if available."""
@@ -167,22 +183,41 @@ class TextureIndexer:
     
     def _is_valid_directory(self, path):
         """Validate that a directory exists and is accessible."""
-        if not path or not isdir(path):
+        if not path:
+            return False
+        
+        # Check cache first
+        if path in self.folder_cache:
+            return self.folder_cache[path]
+        
+        if not isdir(path):
+            self.folder_cache[path] = False
             return False
         
         try:
             # Test read access by listing directory contents
             listdir(path)
+            self.folder_cache[path] = True
             return True
         except (OSError, PermissionError) as e:
             self.logger.warning("Cannot access directory {}: {}".format(path, e))
+            self.folder_cache[path] = False
             return False
     
     def build_index(self, roots):
         """Map filename to full paths for fast lookup."""
-        self.index = collections.defaultdict(list)
         valid_roots = self.unique_existing_paths(roots)
         
+        # Check if we can use cached index
+        cached_roots = self.config.get_option(CACHE_KEY_TEXTURE_INDEX, {}).get('roots', [])
+        if (cached_roots == valid_roots and 
+            self.config.get_option(CACHE_KEY_TEXTURE_INDEX, {}).get('index')):
+            self.logger.info("Using cached texture index")
+            cached_data = self.config.get_option(CACHE_KEY_TEXTURE_INDEX, {})
+            self.index = collections.defaultdict(list, cached_data.get('index', {}))
+            return self.index
+        
+        self.index = collections.defaultdict(list)
         self.logger.info("Building texture index from {} folder(s)...".format(len(valid_roots)))
         
         with ProgressBar(title="Building Texture Index", steps=5) as pb:
@@ -203,6 +238,18 @@ class TextureIndexer:
                                      "Failed to index {}".format(basename(root)))
         
         self.logger.info("Indexed {} unique texture names".format(len(self.index)))
+        
+        # Cache the index for future use
+        try:
+            cache_data = {
+                'roots': valid_roots,
+                'index': dict(self.index)
+            }
+            self.config.set_option(CACHE_KEY_TEXTURE_INDEX, cache_data)
+            script.save_config()
+        except Exception as e:
+            self.logger.warning("Failed to cache texture index: {}".format(e))
+        
         return self.index
     
     def find_texture(self, name, roots):
@@ -353,7 +400,7 @@ class TextureRelinker:
     def __init__(self, doc, config):
         self.doc = doc
         self.config_manager = ConfigurationManager(config)
-        self.indexer = TextureIndexer(logger)
+        self.indexer = TextureIndexer(logger, config)
         self.processor = AssetProcessor(doc, logger)
         self.logger = logger
     
