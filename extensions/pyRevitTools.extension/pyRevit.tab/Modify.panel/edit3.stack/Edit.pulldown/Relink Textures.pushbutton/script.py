@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from os import walk
+from os import walk, listdir
 from os.path import dirname, join, isdir, isfile, basename
 import traceback
 import collections
@@ -70,11 +70,13 @@ class ConfigurationManager:
             
             if choice == "Add Folder":
                 folder = forms.pick_folder()
-                if folder and folder not in current_folders:
+                if folder and self._is_valid_folder(folder) and folder not in current_folders:
                     current_folders.append(folder)
                     self.logger.info("Added folder: {}".format(folder))
                 elif folder in current_folders:
                     forms.alert("This folder is already in the list.", title="Duplicate Folder")
+                elif folder and not self._is_valid_folder(folder):
+                    forms.alert("Cannot access the selected folder. Please choose a different folder.", title="Invalid Folder")
             
             elif choice == "Remove Folder":
                 if not current_folders:
@@ -111,6 +113,18 @@ class ConfigurationManager:
                         title="Configuration Saved"
                     )
                 break
+    
+    def _is_valid_folder(self, folder_path):
+        """Validate that a folder exists and is accessible."""
+        if not folder_path or not isdir(folder_path):
+            return False
+        
+        try:
+            # Test read access
+            listdir(folder_path)
+            return True
+        except (OSError, PermissionError):
+            return False
 
 
 class TextureIndexer:
@@ -146,9 +160,22 @@ class TextureIndexer:
             if not path or path in seen:
                 continue
             seen.add(path)
-            if isdir(path):
+            if self._is_valid_directory(path):
                 result.append(path)
         return result
+    
+    def _is_valid_directory(self, path):
+        """Validate that a directory exists and is accessible."""
+        if not path or not isdir(path):
+            return False
+        
+        try:
+            # Test read access by listing directory contents
+            listdir(path)
+            return True
+        except (OSError, PermissionError) as e:
+            self.logger.warning("Cannot access directory {}: {}".format(path, e))
+            return False
     
     def build_index(self, roots):
         """Map filename to full paths for fast lookup."""
@@ -282,7 +309,8 @@ class AssetProcessor:
     
     def process_single_asset(self, asset_element, indexer, unresolved):
         """Process a single appearance asset element."""
-        if not isinstance(asset_element, DB.AppearanceAssetElement):
+        if not asset_element or not isinstance(asset_element, DB.AppearanceAssetElement):
+            self.logger.warning("Invalid asset element provided for processing")
             return 0
         
         fixed_count = 0
@@ -291,8 +319,12 @@ class AssetProcessor:
         try:
             scope = AppearanceAssetEditScope(self.doc)
             editable = scope.Start(asset_element.Id)
-            fixed_count = self.relink_asset_textures(editable, indexer, unresolved)
-            scope.Commit(True)
+            if editable:
+                fixed_count = self.relink_asset_textures(editable, indexer, unresolved)
+                scope.Commit(True)
+            else:
+                self.logger.warning("Failed to start edit scope for asset: {}".format(
+                    getattr(asset_element, 'Name', 'Unknown')))
         except Exception as error:
             self.logger.error("Asset edit failed for {}: {}".format(
                 getattr(asset_element, 'Name', 'Unknown'), error))
