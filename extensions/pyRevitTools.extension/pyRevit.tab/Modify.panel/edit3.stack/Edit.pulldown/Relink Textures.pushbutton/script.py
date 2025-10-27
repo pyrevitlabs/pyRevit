@@ -7,6 +7,7 @@ import collections
 
 from pyrevit import HOST_APP, forms, script, revit, EXEC_PARAMS
 from pyrevit import DB
+from pyrevit.forms import ProgressBar
 
 from Autodesk.Revit.DB.Visual import (
     AppearanceAssetEditScope, 
@@ -184,14 +185,22 @@ class TextureIndexer:
         
         self.logger.info("Building texture index from {} folder(s)...".format(len(valid_roots)))
         
-        for root in valid_roots:
-            self.logger.info("  Indexing: {}".format(root))
-            try:
-                for dirpath, _, files in walk(root):
-                    for filename in files:
-                        self.index[filename.lower()].append(join(dirpath, filename))
-            except (OSError, IOError) as error:
-                self.logger.warning("Failed to index {}: {}".format(root, error))
+        with ProgressBar(title="Building Texture Index", steps=5) as pb:
+            for i, root in enumerate(valid_roots):
+                self.logger.info("  Indexing: {}".format(root))
+                try:
+                    file_count = 0
+                    for dirpath, _, files in walk(root):
+                        for filename in files:
+                            self.index[filename.lower()].append(join(dirpath, filename))
+                            file_count += 1
+                    
+                    pb.update_progress(i + 1, len(valid_roots), 
+                                     "Indexed {} files from {}".format(file_count, basename(root)))
+                except (OSError, IOError) as error:
+                    self.logger.warning("Failed to index {}: {}".format(root, error))
+                    pb.update_progress(i + 1, len(valid_roots), 
+                                     "Failed to index {}".format(basename(root)))
         
         self.logger.info("Indexed {} unique texture names".format(len(self.index)))
         return self.index
@@ -376,10 +385,15 @@ class TextureRelinker:
         unresolved = set()
 
         with revit.Transaction(TRANSACTION_NAME):
-            for asset_element in assets:
-                examined += 1
-                fixed_count += self.processor.process_single_asset(
-                    asset_element, self.indexer, unresolved)
+            with ProgressBar(title="Relinking Textures", steps=10) as pb:
+                for i, asset_element in enumerate(assets):
+                    examined += 1
+                    fixed_count += self.processor.process_single_asset(
+                        asset_element, self.indexer, unresolved)
+                    
+                    # Update progress every 10 assets or at the end
+                    pb.update_progress(i + 1, len(assets), 
+                                     "Processing asset {}/{}".format(i + 1, len(assets)))
         
         self.logger.info("Transaction committed successfully")
 
