@@ -1,26 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Relink material textures for Revit via pyRevit."""
 
-__title__ = "Relink\nTextures"
-__author__ = "SwichTools"
-
-# Standard library imports
-import os
+# Standard library imports - importing only what's needed
+from os import walk  # For directory traversal
+from os.path import dirname, join, isdir, isfile, basename
 import json
 import traceback
 import collections
 
 # pyRevit imports
-from pyrevit import forms, script
+from pyrevit import forms, script, revit, EXEC_PARAMS
+from pyrevit import DB
 
-# Revit API imports
-from Autodesk.Revit.DB import (
-    FilteredElementCollector, 
-    Material, 
-    AppearanceAssetElement,
-    ElementId, 
-    Transaction
-)
+# Revit API Visual imports (can't be simplified further)
 from Autodesk.Revit.DB.Visual import (
     AppearanceAssetEditScope, 
     UnifiedBitmap, 
@@ -33,33 +24,24 @@ doc = __revit__.ActiveUIDocument.Document
 logger = script.get_logger()
 output = script.get_output()
 
-# Configuration file path
-CONFIG_FILE = os.path.join(
-    os.getenv('APPDATA'),
-    'pyRevit_TextureRelink_Config.json'
-)
+# Get script configuration
+config = script.get_config()
 
 
 def load_roots():
-    """Load saved folder paths from config file."""
-    if os.path.isfile(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r') as f:
-                data = json.load(f)
-                return data.get('folders', [])
-        except Exception as e:
-            logger.warning("Failed to load config: {}".format(e))
-    return []
+    """Load saved folder paths from config."""
+    folders = config.get_option('texture_folders', [])
+    return folders if isinstance(folders, list) else []
 
 
 def save_roots(folders):
-    """Save folder paths to config file."""
+    """Save folder paths to config."""
     try:
-        with open(CONFIG_FILE, 'w') as f:
-            json.dump({'folders': folders}, f, indent=2)
+        config.texture_folders = folders
+        script.save_config()
         return True
-    except Exception as e:
-        logger.error("Failed to save config: {}".format(e))
+    except Exception as error:
+        logger.error("Failed to save config: {}".format(error))
         return False
 
 
@@ -70,7 +52,7 @@ def run_config():
     while True:
         # Build display of current folders
         if current_folders:
-            folder_list = "\n".join("  • {}".format(f) for f in current_folders)
+            folder_list = "\n".join("  • {}".format(folder) for folder in current_folders)
             message = "Current search folders:\n\n{}\n\nWhat would you like to do?".format(folder_list)
         else:
             message = "No search folders configured yet.\n\nWhat would you like to do?"
@@ -84,12 +66,11 @@ def run_config():
         
         if choice == "Add Folder":
             folder = forms.pick_folder()
-            if folder:
-                if folder not in current_folders:
-                    current_folders.append(folder)
-                    logger.info("Added folder: {}".format(folder))
-                else:
-                    forms.alert("This folder is already in the list.", title="Duplicate Folder")
+            if folder and folder not in current_folders:
+                current_folders.append(folder)
+                logger.info("Added folder: {}".format(folder))
+            elif folder in current_folders:
+                forms.alert("This folder is already in the list.", title="Duplicate Folder")
         
         elif choice == "Remove Folder":
             if not current_folders:
@@ -134,10 +115,9 @@ def get_roots():
     
     # Auto-add project directory if document is saved
     if doc.PathName:
-        proj_dir = os.path.dirname(doc.PathName)
-        if proj_dir and os.path.isdir(proj_dir):
-            if proj_dir not in roots:
-                roots.append(proj_dir)
+        proj_dir = dirname(doc.PathName)
+        if proj_dir and isdir(proj_dir) and proj_dir not in roots:
+            roots.append(proj_dir)
     
     return roots
 
@@ -145,14 +125,14 @@ def get_roots():
 def unique_existing_paths(paths):
     """Return unique, existing directory paths."""
     seen = set()
-    out = []
-    for p in paths:
-        if not p or p in seen:
+    result = []
+    for path in paths:
+        if not path or path in seen:
             continue
-        seen.add(p)
-        if os.path.isdir(p):
-            out.append(p)
-    return out
+        seen.add(path)
+        if isdir(path):
+            result.append(path)
+    return result
 
 
 def build_name_index(roots):
@@ -165,11 +145,11 @@ def build_name_index(roots):
     for root in valid_roots:
         logger.info("  Indexing: {}".format(root))
         try:
-            for r, _, files in os.walk(root):
-                for f in files:
-                    index[f.lower()].append(os.path.join(r, f))
-        except Exception as e:
-            logger.warning("Failed to index {}: {}".format(root, e))
+            for dirpath, _, files in walk(root):
+                for filename in files:
+                    index[filename.lower()].append(join(dirpath, filename))
+        except (OSError, IOError) as error:
+            logger.warning("Failed to index {}: {}".format(root, error))
     
     logger.info("Indexed {} unique texture names".format(len(index)))
     return index
@@ -182,8 +162,8 @@ def resolve_by_name(name, roots, index):
     
     # Try direct path in each root first
     for root in unique_existing_paths(roots):
-        direct = os.path.join(root, name)
-        if os.path.isfile(direct):
+        direct = join(root, name)
+        if isfile(direct):
             return direct
     
     # Fall back to index lookup
@@ -201,24 +181,24 @@ def relink_asset(asset, roots, index, unresolved):
     
     try:
         size = asset.Size
-    except:
+    except AttributeError:
         return 0
 
-    for i in range(size):
+    for idx in range(size):
         try:
-            ap = asset[i]
-        except:
+            asset_prop = asset[idx]
+        except IndexError:
             continue
         
         try:
-            con_count = ap.NumberOfConnectedProperties
-        except:
+            conn_count = asset_prop.NumberOfConnectedProperties
+        except AttributeError:
             continue
 
-        for c in range(con_count):
+        for conn_idx in range(conn_count):
             try:
-                connected = ap.GetConnectedProperty(c)
-            except:
+                connected = asset_prop.GetConnectedProperty(conn_idx)
+            except (IndexError, AttributeError):
                 continue
                 
             if not isinstance(connected, Asset):
@@ -227,37 +207,90 @@ def relink_asset(asset, roots, index, unresolved):
             # Look for bitmap path property
             try:
                 path_prop = connected.FindByName(UnifiedBitmap.UnifiedbitmapBitmap)
-            except:
+            except AttributeError:
                 continue
                 
             if isinstance(path_prop, AssetPropertyString):
-                cur = path_prop.Value
+                current_path = path_prop.Value
                 
                 # Check if current path exists
-                if cur and os.path.isfile(cur):
-                    pass  # Path is valid, skip
-                else:
-                    # Try to resolve the texture
-                    name = os.path.basename(cur) if cur else None
-                    if name:
-                        hit = resolve_by_name(name, roots, index)
-                        if hit and (not cur or hit.lower() != cur.lower()):
-                            try:
-                                path_prop.Value = hit
-                                count += 1
-                                logger.debug("Relinked: {} -> {}".format(name, hit))
-                            except Exception as e:
-                                logger.warning("Failed to set path for {}: {}".format(name, e))
-                        else:
-                            unresolved.add(name)
+                if current_path and isfile(current_path):
+                    continue  # Path is valid, skip
+                
+                # Try to resolve the texture
+                name = basename(current_path) if current_path else None
+                if name:
+                    hit = resolve_by_name(name, roots, index)
+                    if hit and (not current_path or hit.lower() != current_path.lower()):
+                        try:
+                            path_prop.Value = hit
+                            count += 1
+                            logger.debug("Relinked: {} -> {}".format(name, hit))
+                        except Exception as error:
+                            logger.warning("Failed to set path for {}: {}".format(name, error))
+                    else:
+                        unresolved.add(name)
 
             # Recursively check nested assets
             try:
                 count += relink_asset(connected, roots, index, unresolved)
-            except:
-                pass
+            except Exception:
+                pass  # Silently ignore nested asset errors
     
     return count
+
+
+def collect_appearance_assets():
+    """Collect all appearance assets from materials in the document."""
+    try:
+        materials = DB.FilteredElementCollector(doc).OfClass(DB.Material).ToElements()
+        asset_ids = set()
+        
+        for material in materials:
+            if hasattr(material, "AppearanceAssetId"):
+                asset_id = material.AppearanceAssetId
+                if asset_id and asset_id != DB.ElementId.InvalidElementId:
+                    asset_ids.add(asset_id)
+        
+        assets = []
+        for asset_id in asset_ids:
+            element = doc.GetElement(asset_id)
+            if element:
+                assets.append(element)
+        
+        logger.info("Found {} appearance assets to check".format(len(assets)))
+        return assets
+    
+    except Exception as error:
+        logger.error("Failed to collect materials: {}".format(error))
+        logger.error(traceback.format_exc())
+        return []
+
+
+def process_single_asset(asset_element, roots, name_index, unresolved):
+    """Process a single appearance asset element."""
+    if not isinstance(asset_element, DB.AppearanceAssetElement):
+        return 0
+    
+    fixed_count = 0
+    scope = None
+    
+    try:
+        scope = AppearanceAssetEditScope(doc)
+        editable = scope.Start(asset_element.Id)
+        fixed_count = relink_asset(editable, roots, name_index, unresolved)
+        scope.Commit(True)
+    except Exception as error:
+        logger.error("Asset edit failed for {}: {}".format(
+            getattr(asset_element, 'Name', 'Unknown'), error))
+    finally:
+        if scope:
+            try:
+                scope.Dispose()
+            except Exception:
+                pass  # Silently ignore disposal errors
+    
+    return fixed_count
 
 
 def run_relink():
@@ -277,25 +310,8 @@ def run_relink():
     logger.info("Search folders: {}".format(roots))
     
     # Collect all materials with appearance assets
-    try:
-        mats = FilteredElementCollector(doc).OfClass(Material).ToElements()
-        asset_ids = set()
-        
-        for m in mats:
-            if hasattr(m, "AppearanceAssetId"):
-                aid = m.AppearanceAssetId
-                if aid and aid != ElementId.InvalidElementId:
-                    asset_ids.add(aid)
-        
-        assets = []
-        for aid in asset_ids:
-            elem = doc.GetElement(aid)
-            if elem:
-                assets.append(elem)
-        
-        logger.info("Found {} appearance assets to check".format(len(assets)))
-    except Exception as e:
-        logger.error("Failed to collect materials: {}".format(e))
+    assets = collect_appearance_assets()
+    if not assets:
         forms.alert("Failed to collect materials. See output for details.", title="Error")
         return
 
@@ -306,50 +322,13 @@ def run_relink():
     examined = 0
     unresolved = set()
 
-    # Start transaction
-    t = Transaction(doc, "Relink material textures")
-    
-    try:
-        t.Start()
-        
-        for a_elem in assets:
-            if not isinstance(a_elem, AppearanceAssetElement):
-                continue
-            
+    # Use pyRevit transaction context manager
+    with revit.Transaction("Relink material textures"):
+        for asset_element in assets:
             examined += 1
-            scope = None
-            
-            try:
-                scope = AppearanceAssetEditScope(doc)
-                editable = scope.Start(a_elem.Id)
-                fixed_count += relink_asset(editable, roots, name_index, unresolved)
-                scope.Commit(True)
-            except Exception as ex:
-                logger.error("Asset edit failed for {}: {}".format(a_elem.Name, ex))
-            finally:
-                if scope:
-                    try:
-                        scope.Dispose()
-                    except:
-                        pass
-        
-        t.Commit()
-        logger.info("Transaction committed successfully")
-        
-    except Exception as e:
-        logger.error("Relink transaction failed: {}".format(e))
-        logger.error(traceback.format_exc())
-        
-        try:
-            t.RollBack()
-        except:
-            pass
-        
-        forms.alert(
-            "Relink failed. See output panel for details.",
-            title="Relink Textures"
-        )
-        return
+            fixed_count += process_single_asset(asset_element, roots, name_index, unresolved)
+    
+    logger.info("Transaction committed successfully")
 
     # Show results
     msg = "Appearance assets examined: {}\nTextures relinked: {}".format(examined, fixed_count)
@@ -367,35 +346,30 @@ def run_relink():
     forms.alert(msg, title="Relink Complete")
 
 
-# Main execution - pyRevit will run this automatically
-try:
-    # Check if SHIFT is pressed for quick-config
-    shift_click = False
+# Main execution
+if __name__ == '__main__':
     try:
-        shift_click = __shiftclick__
-    except:
-        pass
-    
-    if shift_click:
-        run_config()
-    else:
-        # Show main menu
-        choice = forms.alert(
-            "Texture Relink Tool\n\nWhat would you like to do?",
-            title="Relink Material Textures",
-            options=["Relink Textures Now", "Configure Search Folders", "Cancel"]
-        )
-        
-        if choice == "Relink Textures Now":
-            run_relink()
-        elif choice == "Configure Search Folders":
+        # Check if we're in config mode (SHIFT+click or right-click)
+        if EXEC_PARAMS.config_mode:
             run_config()
-
-except Exception as e:
-    # Catch-all error handler
-    logger.error("Script error: {}".format(e))
-    logger.error(traceback.format_exc())
-    forms.alert(
-        "Script error occurred:\n\n{}".format(str(e)),
-        title="Error"
-    )
+        else:
+            # Show main menu
+            choice = forms.alert(
+                "Texture Relink Tool\n\nWhat would you like to do?",
+                title="Relink Material Textures",
+                options=["Relink Textures Now", "Configure Search Folders", "Cancel"]
+            )
+            
+            if choice == "Relink Textures Now":
+                run_relink()
+            elif choice == "Configure Search Folders":
+                run_config()
+    
+    except Exception as error:
+        # Catch-all error handler with specific exception
+        logger.error("Script error: {}".format(error))
+        logger.error(traceback.format_exc())
+        forms.alert(
+            "Script error occurred:\n\n{}".format(str(error)),
+            title="Error"
+        )
