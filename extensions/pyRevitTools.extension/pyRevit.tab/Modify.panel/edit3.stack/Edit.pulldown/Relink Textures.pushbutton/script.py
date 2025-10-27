@@ -22,6 +22,12 @@ output = script.get_output()
 # Get script configuration
 config = script.get_config()
 
+# Constants
+TRANSACTION_NAME = "Relink material textures"
+LOG_SEPARATOR_LENGTH = 60
+LOG_SEPARATOR_CHAR = "="
+CONFIG_KEY_TEXTURE_FOLDERS = 'texture_folders'
+
 
 class ConfigurationManager:
     """Manages texture folder configuration and persistence."""
@@ -32,7 +38,7 @@ class ConfigurationManager:
     
     def load_folders(self):
         """Load saved folder paths from config."""
-        folders = self.config.get_option('texture_folders', [])
+        folders = self.config.get_option(CONFIG_KEY_TEXTURE_FOLDERS, [])
         return folders if isinstance(folders, list) else []
     
     def save_folders(self, folders):
@@ -322,7 +328,7 @@ class TextureRelinker:
             )
             return
         
-        self.logger.info("=" * 60)
+        self.logger.info(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
         self.logger.info("Starting texture relink process...")
         self.logger.info("Search folders: {}".format(roots))
         
@@ -337,7 +343,7 @@ class TextureRelinker:
         examined = 0
         unresolved = set()
 
-        with revit.Transaction("Relink material textures"):
+        with revit.Transaction(TRANSACTION_NAME):
             for asset_element in assets:
                 examined += 1
                 fixed_count += self.processor.process_single_asset(
@@ -350,14 +356,14 @@ class TextureRelinker:
         
         if unresolved:
             msg += "\n\nUnresolved textures: {} (see output panel for list)".format(len(unresolved))
-            self.logger.warning("=" * 60)
+            self.logger.warning(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
             self.logger.warning("UNRESOLVED TEXTURE NAMES:")
-            self.logger.warning("=" * 60)
+            self.logger.warning(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
             for name in sorted(unresolved):
                 self.logger.warning("  • {}".format(name))
-            self.logger.warning("=" * 60)
+            self.logger.warning(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
         
-        self.logger.info("=" * 60)
+        self.logger.info(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
         forms.alert(msg, title="Relink Complete")
     
     def run_configuration(self):
