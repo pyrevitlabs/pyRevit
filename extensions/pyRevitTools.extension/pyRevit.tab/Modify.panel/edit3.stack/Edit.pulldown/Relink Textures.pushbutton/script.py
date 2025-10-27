@@ -67,7 +67,6 @@ class ConfigurationManager:
                 folder = forms.pick_folder()
                 if folder and self._is_valid_folder(folder) and folder not in current_folders:
                     current_folders.append(folder)
-                    self.logger.info("Added folder: {}".format(folder))
                 elif folder in current_folders:
                     forms.alert("This folder is already in the list.", title="Duplicate Folder")
                 elif folder and not self._is_valid_folder(folder):
@@ -85,7 +84,6 @@ class ConfigurationManager:
                     )
                     if folder_to_remove:
                         current_folders.remove(folder_to_remove)
-                        self.logger.info("Removed folder: {}".format(folder_to_remove))
             
             elif choice == "Clear All":
                 if current_folders:
@@ -97,7 +95,6 @@ class ConfigurationManager:
                     )
                     if confirm:
                         current_folders = []
-                        self.logger.info("Cleared all folders")
                 else:
                     forms.alert("No folders to clear.", title="Clear All")
             
@@ -189,24 +186,17 @@ class TextureIndexer:
         self.index = collections.defaultdict(list)
         valid_roots = self.unique_existing_paths(roots)
         
-        self.logger.info("Building texture index from {} folder(s)...".format(len(valid_roots)))
-        
         with ProgressBar(title="Building Texture Index", steps=5) as pb:
             for i, root in enumerate(valid_roots):
-                self.logger.info("  Indexing: {}".format(root))
                 try:
-                    file_count = 0
                     for dirpath, _, files in walk(root):
                         for filename in files:
                             self.index[filename.lower()].append(join(dirpath, filename))
-                            file_count += 1
                     
                     pb.update_progress(i + 1, len(valid_roots))
                 except (OSError, IOError) as error:
                     self.logger.warning("Failed to index {}: {}".format(root, error))
                     pb.update_progress(i + 1, len(valid_roots))
-        
-        self.logger.info("Indexed {} unique texture names".format(len(self.index)))
         return self.index
     
     def find_texture(self, name, roots):
@@ -253,7 +243,6 @@ class AssetProcessor:
                 if element:
                     assets.append(element)
             
-            self.logger.info("Found {} appearance assets to check".format(len(assets)))
             return assets
         
         except (OSError, IOError, ValueError, AttributeError) as error:
@@ -308,7 +297,6 @@ class AssetProcessor:
                             try:
                                 path_prop.Value = hit
                                 count += 1
-                                self.logger.debug("Relinked: {} -> {}".format(name, hit))
                             except Exception as error:
                                 self.logger.warning("Failed to set path for {}: {}".format(name, error))
                         else:
@@ -375,7 +363,6 @@ class TextureRelinker:
             )
             return
         
-        self.logger.info(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
         self.logger.info("Starting texture relink process...")
         self.logger.info("Search folders: {}".format(roots))
         
@@ -402,19 +389,14 @@ class TextureRelinker:
         
         self.logger.info("Transaction committed successfully")
 
-        # Show results
         msg = "Appearance assets examined: {}\nTextures relinked: {}".format(examined, fixed_count)
         
         if unresolved:
             msg += "\n\nUnresolved textures: {} (see output panel for list)".format(len(unresolved))
-            self.logger.warning(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
             self.logger.warning("UNRESOLVED TEXTURE NAMES:")
-            self.logger.warning(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
             for name in sorted(unresolved):
                 self.logger.warning("  • {}".format(name))
-            self.logger.warning(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
         
-        self.logger.info(LOG_SEPARATOR_CHAR * LOG_SEPARATOR_LENGTH)
         forms.alert(msg, title="Relink Complete")
     
     def run_configuration(self):
@@ -435,7 +417,6 @@ class TextureRelinker:
             self.run_configuration()
 
 
-# Main execution
 if __name__ == '__main__':
     try:
         relinker = TextureRelinker(doc, config)
