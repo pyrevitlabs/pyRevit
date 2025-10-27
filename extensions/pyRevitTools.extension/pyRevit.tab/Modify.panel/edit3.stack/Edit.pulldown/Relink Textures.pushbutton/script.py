@@ -9,13 +9,6 @@ from pyrevit import HOST_APP, forms, script, revit, EXEC_PARAMS
 from pyrevit import DB
 from pyrevit.forms import ProgressBar
 
-from Autodesk.Revit.DB.Visual import (
-    AppearanceAssetEditScope, 
-    UnifiedBitmap, 
-    Asset, 
-    AssetPropertyString
-)
-
 doc = HOST_APP.doc
 logger = script.get_logger()
 output = script.get_output()
@@ -330,15 +323,15 @@ class AssetProcessor:
                 except (IndexError, AttributeError):
                     continue
                     
-                if not isinstance(connected, Asset):
+                if not isinstance(connected, DB.Visual.Asset):
                     continue
 
                 try:
-                    path_prop = connected.FindByName(UnifiedBitmap.UnifiedbitmapBitmap)
+                    path_prop = connected.FindByName(DB.Visual.UnifiedBitmap.Bitmap)
                 except AttributeError:
                     continue
                     
-                if isinstance(path_prop, AssetPropertyString):
+                if isinstance(path_prop, DB.Visual.AssetPropertyString):
                     current_path = path_prop.Value
                     
                     if current_path and isfile(current_path):
@@ -374,7 +367,7 @@ class AssetProcessor:
         scope = None
         
         try:
-            scope = AppearanceAssetEditScope(self.doc)
+            scope = DB.Visual.AppearanceAssetEditScope(self.doc)
             editable = scope.Start(asset_element.Id)
             if editable:
                 fixed_count = self.relink_asset_textures(editable, indexer, unresolved)
