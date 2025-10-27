@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # type: ignore
 """Section Box Navigator - Modeless window for section box navigation."""
-import pickle
 from pyrevit import revit, script, forms
 from pyrevit.framework import System, List, Math
 from pyrevit.revit import events
@@ -23,7 +22,7 @@ logger = script.get_logger()
 output = script.get_output()
 output.close_others()
 
-datafile = script.get_document_data_file("SectionBox", "pym")
+sb_form = None
 
 length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
 length_unit = length_format_options.GetUnitTypeId()
@@ -38,8 +37,7 @@ DEFAULT_NUDGE_VALUE_MM = 500.0
 default_nudge_value = DB.UnitUtils.Convert(
     DEFAULT_NUDGE_VALUE_MM, DB.UnitTypeId.Millimeters, length_unit
 )
-
-DEFAULT_EXTEND = 50.0  # in case no cropview is applied
+DATAFILENAME = "SectionBox"
 
 # --------------------
 # Helper Functions
@@ -75,8 +73,7 @@ def get_section_box_info(view):
     if not isinstance(view, DB.View3D):
         return
     if not view.IsSectionBoxActive:
-        with open(datafile, "rb") as f:
-            view_boxes = pickle.load(f)
+        view_boxes = script.load_data(DATAFILENAME)
         bbox_data = view_boxes[get_elementid_value(view.Id)]
         section_box = revit.deserialize(bbox_data)
     else:
@@ -120,41 +117,62 @@ def show_preview_mesh(box, preview_server):
 
 def is_2d_view(view):
     """Check if a view is a 2D view (plan, elevation, section)."""
-    # TODO: support for section
     view_type = view.ViewType
     return view_type in [
         DB.ViewType.FloorPlan,
         DB.ViewType.CeilingPlan,
-        # DB.ViewType.Section,
+        DB.ViewType.Section,
+        DB.ViewType.Elevation,
     ]
 
 
 def get_view_range_and_crop(view):
     """Extract view range and crop box information from a 2D view."""
-    # Get view range (top and bottom)
-    view_range = view.GetViewRange()
-    top_level_id = view_range.GetLevelId(DB.PlanViewPlane.TopClipPlane)
-    top_offset = view_range.GetOffset(DB.PlanViewPlane.TopClipPlane)
-    bottom_level_id = view_range.GetLevelId(DB.PlanViewPlane.BottomClipPlane)
-    bottom_offset = view_range.GetOffset(DB.PlanViewPlane.BottomClipPlane)
+    view_type = view.ViewType
 
-    top_level = doc.GetElement(top_level_id)
-    bottom_level = doc.GetElement(bottom_level_id)
+    # For floor/ceiling plans, use view range
+    if view_type in [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]:
+        view_range = view.GetViewRange()
+        top_level_id = view_range.GetLevelId(DB.PlanViewPlane.TopClipPlane)
+        top_offset = view_range.GetOffset(DB.PlanViewPlane.TopClipPlane)
+        bottom_level_id = view_range.GetLevelId(DB.PlanViewPlane.BottomClipPlane)
+        bottom_offset = view_range.GetOffset(DB.PlanViewPlane.BottomClipPlane)
 
-    top_elevation = top_level.Elevation + top_offset if top_level else None
-    bottom_elevation = bottom_level.Elevation + bottom_offset if bottom_level else None
+        top_level = doc.GetElement(top_level_id)
+        bottom_level = doc.GetElement(bottom_level_id)
 
-    # Get crop box if active
-    crop_box = None
-    if view.CropBoxActive:
+        top_elevation = top_level.Elevation + top_offset if top_level else None
+        bottom_elevation = (
+            bottom_level.Elevation + bottom_offset if bottom_level else None
+        )
+
+        # Get crop box if active
+        crop_box = None
+        if view.CropBoxActive:
+            crop_box = view.CropBox
+
+        return {
+            "top_elevation": top_elevation,
+            "bottom_elevation": bottom_elevation,
+            "crop_box": crop_box,
+            "view": view,
+            "is_section": False,
+        }
+
+    # For sections and elevations, just use the crop box directly
+    elif view_type in [DB.ViewType.Section, DB.ViewType.Elevation]:
+        if not view.CropBoxActive:
+            return None
+
         crop_box = view.CropBox
 
-    return {
-        "top_elevation": top_elevation,
-        "bottom_elevation": bottom_elevation,
-        "crop_box": crop_box,
-        "view": view,
-    }
+        return {
+            "crop_box": crop_box,
+            "view": view,
+            "is_section": True,
+        }
+
+    return None
 
 
 def make_xy_transform_only(crop_transform):
@@ -257,22 +275,13 @@ class HelperEventHandler(UI.IExternalEventHandler):
 @events.handle("doc-changed")
 @events.handle("view-activated")
 def on_view_or_doc_changed(sender, args):
-    """Handle document changes and view switches to update section box info."""
-    global form
-    if not form.chkAutoupdate.IsChecked:
-        return
     try:
-        # Trigger update in the form if it exists
-        if hasattr(on_view_or_doc_changed, "form_instance"):
-            form = on_view_or_doc_changed.form_instance
-            if form:
-                try:
-                    form.Dispatcher.Invoke(System.Action(form.update_info))
-                    logger.info("Form updated due to view or document change.")
-                except Exception as e:
-                    logger.warning("Failed to update form: {}".format(str(e)))
+        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
+            return
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
+        logger.info("Form updated due to view or document change.")
     except Exception as e:
-        logger.error("Error in event handler: {}".format(str(e)))
+        logger.warning("Failed to update form: {}".format(e))
 
 
 # --------------------
@@ -306,9 +315,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.ext_event = UI.ExternalEvent.Create(self.event_handler)
         self.pending_action = None
 
-        # Register this form instance for the event handler
-        on_view_or_doc_changed.form_instance = self
-
         if not length_unit_symbol_label:
             self.project_unit_text.Visibility = System.Windows.Visibility.Visible
             self.project_unit_text.Text = (
@@ -318,20 +324,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.txtNudgeUnit.Text = length_unit_symbol_label
         self.txtExpandAmount.Text = str(round(default_nudge_value, 3))
         self.txtExpandUnit.Text = length_unit_symbol_label
-        # Initial update
+
         self.update_info()
 
         # Event subscriptions
         self.Closed += self.form_closed
 
         self.Show()
-
-    def on_view_changed(self):
-        """Callback when view changes - kept for compatibility."""
-        try:
-            self.Dispatcher.Invoke(System.Action(self.update_info))
-        except Exception:
-            pass
 
     def update_info(self):
         """Update the information display."""
@@ -496,29 +495,45 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if not view_data:
             return
 
-        top_elevation = view_data["top_elevation"]
-        bottom_elevation = view_data["bottom_elevation"]
-        crop_box = view_data["crop_box"]
+        top_elevation = view_data.get("top_elevation", None)
+        bottom_elevation = view_data.get("bottom_elevation", None)
+        crop_box = view_data.get("crop_box", None)
+        is_section = view_data.get("is_section", False)
 
-        if top_elevation is None or bottom_elevation is None:
+        if not is_section and (top_elevation is None or bottom_elevation is None):
             forms.alert("Could not get view range information.", title="Error")
             return
 
         new_box = DB.BoundingBoxXYZ()
-        if crop_box:
-            xy_transform = make_xy_transform_only(crop_box.Transform)
 
-            new_box = DB.BoundingBoxXYZ()
+        if is_section:
+            if not crop_box:
+                forms.alert("Could not get crop box from section.", title="Error")
+                return
+            new_box = crop_box
+
+        elif crop_box:
+            # For floor plans, use the existing logic
+            xy_transform = make_xy_transform_only(crop_box.Transform)
             new_box.Min = DB.XYZ(crop_box.Min.X, crop_box.Min.Y, bottom_elevation)
             new_box.Max = DB.XYZ(crop_box.Max.X, crop_box.Max.Y, top_elevation)
             new_box.Transform = xy_transform
         else:
-            # fallback box
-            new_box = DB.BoundingBoxXYZ()
-            new_box.Min = DB.XYZ(-DEFAULT_EXTEND, -DEFAULT_EXTEND, bottom_elevation)
-            new_box.Max = DB.XYZ(DEFAULT_EXTEND, DEFAULT_EXTEND, top_elevation)
+            # Fallback box
+            source_view = view_data.get("view", None)
+            elements = revit.query.get_all_elements_in_view(source_view)
+            if not elements:
+                forms.alert("No cropbox or elements found to extend scopebox to")
+                return
+            boxes = [el.get_BoundingBox(source_view) for el in elements]
+            min_x = min(b.Min.X for b in boxes if b)
+            min_y = min(b.Min.Y for b in boxes if b)
+            max_x = max(b.Max.X for b in boxes if b)
+            max_y = max(b.Max.Y for b in boxes if b)
+            new_box.Min = DB.XYZ(min_x, min_y, bottom_elevation)
+            new_box.Max = DB.XYZ(max_x, max_y, top_elevation)
 
-        # Show preview, ask for apply
+        # Show preview and ask for confirmation
         show_preview_mesh(new_box, self.preview_server)
         result = forms.alert(
             "Apply section box from view '{}'?".format(view_data["view"].Name),
@@ -546,8 +561,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         sectionbox_active_state = self.current_view.IsSectionBoxActive
 
         try:
-            with open(datafile, "rb") as f:
-                view_boxes = pickle.load(f)
+            view_boxes = script.load_data(DATAFILENAME)
         except Exception:
             view_boxes = {}
 
@@ -557,8 +571,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     sectionbox = self.current_view.GetSectionBox()
                     if sectionbox:
                         view_boxes[current_view_id_value] = revit.serialize(sectionbox)
-                        with open(datafile, "wb") as f:
-                            pickle.dump(view_boxes, f)
+                        script.store_data(DATAFILENAME, view_boxes)
                     self.current_view.IsSectionBoxActive = False
                 except Exception as ex:
                     logger.error("Error saving section box: {}".format(ex))
@@ -624,23 +637,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 transform = DB.Transform.Identity
 
             # Get geometry
-            options = DB.Options()
-            options.ComputeReferences = True
-            options.IncludeNonVisibleObjects = True
-            options.DetailLevel = self.current_view.DetailLevel
+            geom_objs = revit.query.get_geometry(
+                element,
+                include_invisible=True,
+                compute_references=True,
+                detail_level=self.current_view.DetailLevel
+                )
 
-            geom_elem = element.get_Geometry(options)
-
-            def extract_solids(geom_element):
-                solids = []
-                for geom_obj in geom_element:
-                    if isinstance(geom_obj, DB.Solid) and geom_obj.Faces.Size > 0:
-                        solids.append(geom_obj)
-                    elif isinstance(geom_obj, DB.GeometryInstance):
-                        solids.extend(extract_solids(geom_obj.GetInstanceGeometry()))
-                return solids
-
-            solids = extract_solids(geom_elem)
+            solids = [g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0]
 
             # Find face that contains the picked point
             target_face = None
@@ -1246,8 +1250,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             # Unregister event handlers
             events.stop_events()
 
-            # Clear form instance reference
-            on_view_or_doc_changed.form_instance = None
+            # Cleanup form - shouldn't be necessary?
+            global sb_form
+            sb_form = None
 
             # Remove DC3D server
             if self.preview_server:
@@ -1275,8 +1280,7 @@ if __name__ == "__main__":
         # Check if section box is active
         if not isinstance(active_view, DB.View3D) or not active_view.IsSectionBoxActive:
             try:
-                with open(datafile, "rb") as f:
-                    view_boxes = pickle.load(f)
+                view_boxes = script.load_data(DATAFILENAME)
                 bbox_data = view_boxes[get_elementid_value(active_view.Id)]
                 restored_bbox = revit.deserialize(bbox_data)
             except Exception:
@@ -1293,8 +1297,7 @@ if __name__ == "__main__":
             with revit.Transaction("Restore SectionBox"):
                 active_view.SetSectionBox(restored_bbox)
 
-        # Launch the form
-        form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
+        sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
 
     except Exception as e:
         logger.error("Error launching form: {}\n{}".format(e, traceback.format_exc()))
