@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Standard library imports - importing only what's needed
-from os import walk  # For directory traversal
+from os import walk
 from os.path import dirname, join, isdir, isfile, basename
-import json
 import traceback
 import collections
 
-# pyRevit imports
-from pyrevit import forms, script, revit, EXEC_PARAMS
+from pyrevit import HOST_APP, forms, script, revit, EXEC_PARAMS
 from pyrevit import DB
 
-# Revit API Visual imports (can't be simplified further)
 from Autodesk.Revit.DB.Visual import (
     AppearanceAssetEditScope, 
     UnifiedBitmap, 
@@ -19,8 +15,7 @@ from Autodesk.Revit.DB.Visual import (
     AssetPropertyString
 )
 
-# Document and logger
-doc = __revit__.ActiveUIDocument.Document
+doc = HOST_APP.doc
 logger = script.get_logger()
 output = script.get_output()
 
@@ -50,14 +45,12 @@ def run_config():
     current_folders = load_roots()
     
     while True:
-        # Build display of current folders
         if current_folders:
             folder_list = "\n".join("  • {}".format(folder) for folder in current_folders)
             message = "Current search folders:\n\n{}\n\nWhat would you like to do?".format(folder_list)
         else:
             message = "No search folders configured yet.\n\nWhat would you like to do?"
         
-        # Show options
         choice = forms.alert(
             message,
             title="Manage Texture Search Folders",
@@ -113,7 +106,6 @@ def get_roots():
     """Get all root folders including project directory."""
     roots = load_roots()
     
-    # Auto-add project directory if document is saved
     if doc.PathName:
         proj_dir = dirname(doc.PathName)
         if proj_dir and isdir(proj_dir) and proj_dir not in roots:
@@ -160,13 +152,11 @@ def resolve_by_name(name, roots, index):
     if not name:
         return None
     
-    # Try direct path in each root first
     for root in unique_existing_paths(roots):
         direct = join(root, name)
         if isfile(direct):
             return direct
     
-    # Fall back to index lookup
     hits = index.get(name.lower())
     if hits:
         hits.sort()
@@ -204,7 +194,6 @@ def relink_asset(asset, roots, index, unresolved):
             if not isinstance(connected, Asset):
                 continue
 
-            # Look for bitmap path property
             try:
                 path_prop = connected.FindByName(UnifiedBitmap.UnifiedbitmapBitmap)
             except AttributeError:
@@ -213,11 +202,9 @@ def relink_asset(asset, roots, index, unresolved):
             if isinstance(path_prop, AssetPropertyString):
                 current_path = path_prop.Value
                 
-                # Check if current path exists
                 if current_path and isfile(current_path):
-                    continue  # Path is valid, skip
+                    continue
                 
-                # Try to resolve the texture
                 name = basename(current_path) if current_path else None
                 if name:
                     hit = resolve_by_name(name, roots, index)
@@ -231,11 +218,10 @@ def relink_asset(asset, roots, index, unresolved):
                     else:
                         unresolved.add(name)
 
-            # Recursively check nested assets
             try:
                 count += relink_asset(connected, roots, index, unresolved)
             except Exception:
-                pass  # Silently ignore nested asset errors
+                pass
     
     return count
 
@@ -288,7 +274,7 @@ def process_single_asset(asset_element, roots, name_index, unresolved):
             try:
                 scope.Dispose()
             except Exception:
-                pass  # Silently ignore disposal errors
+                pass
     
     return fixed_count
 
@@ -309,20 +295,17 @@ def run_relink():
     logger.info("Starting texture relink process...")
     logger.info("Search folders: {}".format(roots))
     
-    # Collect all materials with appearance assets
     assets = collect_appearance_assets()
     if not assets:
         forms.alert("Failed to collect materials. See output for details.", title="Error")
         return
 
-    # Build texture index
     name_index = build_name_index(roots)
 
     fixed_count = 0
     examined = 0
     unresolved = set()
 
-    # Use pyRevit transaction context manager
     with revit.Transaction("Relink material textures"):
         for asset_element in assets:
             examined += 1
@@ -349,11 +332,9 @@ def run_relink():
 # Main execution
 if __name__ == '__main__':
     try:
-        # Check if we're in config mode (SHIFT+click or right-click)
         if EXEC_PARAMS.config_mode:
             run_config()
         else:
-            # Show main menu
             choice = forms.alert(
                 "Texture Relink Tool\n\nWhat would you like to do?",
                 title="Relink Material Textures",
@@ -366,7 +347,6 @@ if __name__ == '__main__':
                 run_config()
     
     except Exception as error:
-        # Catch-all error handler with specific exception
         logger.error("Script error: {}".format(error))
         logger.error(traceback.format_exc())
         forms.alert(
