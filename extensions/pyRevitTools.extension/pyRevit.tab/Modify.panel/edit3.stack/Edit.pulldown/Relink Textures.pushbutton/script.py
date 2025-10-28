@@ -7,7 +7,6 @@ import collections
 
 from pyrevit import HOST_APP, forms, script, revit, EXEC_PARAMS
 from pyrevit import DB
-from pyrevit.forms import ProgressBar
 
 doc = HOST_APP.doc
 logger = script.get_logger()
@@ -127,16 +126,17 @@ class TextureIndexer:
         self.index = collections.defaultdict(list)
         valid_roots = self.unique_existing_paths(roots)
         
-        with ProgressBar(title="Building Texture Index", steps=5) as pb:
-            for i, root in enumerate(valid_roots):
-                try:
-                    for dirpath, _, files in walk(root):
-                        for filename in files:
-                            self.index[filename.lower()].append(join(dirpath, filename))                    
-                    pb.update_progress(i + 1, len(valid_roots))
-                except (OSError, IOError) as error:
-                    logger.warning("Failed to index {}: {}".format(root, error))
-                    pb.update_progress(i + 1, len(valid_roots))
+        output.log_info("Indexing {} folder(s)...".format(len(valid_roots)))
+        
+        for i, root in enumerate(valid_roots):
+            try:
+                for dirpath, _, files in walk(root):
+                    for filename in files:
+                        self.index[filename.lower()].append(join(dirpath, filename))                    
+            except (OSError, IOError) as error:
+                logger.warning("Failed to index {}: {}".format(root, error))
+        
+        output.log_info("Index complete. Found {} texture files.".format(len(self.index)))
         return self.index
     
     def find_texture(self, name, roots):
@@ -304,21 +304,19 @@ class TextureRelinker:
         examined = 0
         unresolved = set()
 
-        with revit.Transaction("Relink material textures"):
-            with ProgressBar(title="Relinking Textures", steps=10) as pb:
-                for i, asset_element in enumerate(assets):
-                    examined += 1
-                    fixed_count += self.processor.process_single_asset(
-                        asset_element, self.indexer, roots, unresolved)
-                    
-                    # Update progress every 10 assets or at the end
-                    if (i + 1) % 10 == 0 or i == len(assets) - 1:
-                        pb.update_progress(i + 1, len(assets))
+        output.log_info("Relinking {} appearance assets...".format(len(assets)))
         
-        msg = "Appearance assets examined: {}\nTextures relinked: {}".format(examined, fixed_count)
+        with revit.Transaction("Relink material textures"):
+            for i, asset_element in enumerate(assets):
+                examined += 1
+                fixed_count += self.processor.process_single_asset(
+                    asset_element, self.indexer, roots, unresolved)
+                
+        # Display results in output window
+        output.log_info("Relink complete. {} textures relinked.".format(fixed_count))
         
         if unresolved:
-            msg += "\n\nUnresolved textures: {} (see output panel for list)".format(len(unresolved))
+            logger.warning("Unresolved textures: {} (see list below)".format(len(unresolved)))
             logger.warning("UNRESOLVED TEXTURE NAMES:")
             for name in sorted(unresolved):
                 logger.warning("  • {}".format(name))
@@ -331,11 +329,11 @@ class TextureRelinker:
             # Build folder list display
             if current_folders:
                 folder_list = "\n".join("  • {}".format(folder) for folder in current_folders)
-                message = "Current search folders:\n\n{}\n\nWhat would you like to do?".format(folder_list)
+                message = "The whole process will take a while depending on the number of textures and folders.\n\nCurrent search folders:\n\n{}\n\nWhat would you like to do?".format(folder_list)
                 options = ["Add Folder", "Remove Folder", "Clear All", "Relink Textures Now", "Cancel"]
             else:
                 message = "No search folders configured yet.\n\nWhat would you like to do?"
-                options = ["Add Folder", "Relink Textures Now", "Cancel"]
+                options = ["Add Folder", "Cancel"]
             
             choice = forms.alert(
                 message,
@@ -372,15 +370,8 @@ class TextureRelinker:
                     forms.alert("No folders to clear.", title="Clear All")
             
             elif choice == "Relink Textures Now":
-                if not current_folders:
-                    forms.alert(
-                        "No search folders configured.\n\n"
-                        "Please add at least one folder to search for textures.",
-                        title="Configuration Needed"
-                    )
-                else:
-                    self.run_relink()
-                    break
+                self.run_relink()
+                break
             
             else:  # Cancel or None (X button)
                 break
