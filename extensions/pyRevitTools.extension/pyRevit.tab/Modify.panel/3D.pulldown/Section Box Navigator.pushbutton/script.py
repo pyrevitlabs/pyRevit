@@ -181,10 +181,8 @@ def make_xy_transform_only(crop_transform):
     """Return a transform with only the XY rotation of crop_transform."""
     origin = crop_transform.Origin
 
-    # Zero out the Z part of the origin (keep the same XY position)
     origin_no_z = DB.XYZ(origin.X, origin.Y, 0)
 
-    # Get XY axes from crop box
     x_axis = crop_transform.BasisX
     y_axis = crop_transform.BasisY
 
@@ -192,10 +190,8 @@ def make_xy_transform_only(crop_transform):
     x_axis_flat = DB.XYZ(x_axis.X, x_axis.Y, 0).Normalize()
     y_axis_flat = DB.XYZ(y_axis.X, y_axis.Y, 0).Normalize()
 
-    # Z is now world up
     z_axis_world = DB.XYZ(0, 0, 1)
 
-    # Build the new transform
     t = DB.Transform.Identity
     t.Origin = origin_no_z
     t.BasisX = x_axis_flat
@@ -235,7 +231,7 @@ def create_adjusted_box(
         max_point.Z + max_z,
     )
 
-    # Validate dimensions
+    # Validate dimesions
     if new_max.X <= new_min.X or new_max.Y <= new_min.Y or new_max.Z <= new_min.Z:
         return None
 
@@ -320,7 +316,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if not length_unit_symbol_label:
             self.project_unit_text.Visibility = System.Windows.Visibility.Visible
             self.project_unit_text.Text = (
-                "Length Label (adjust in Project Units): " + length_unit_label
+                "Length Label (adjust in Project Units): \n" + length_unit_label
             )
         self.txtNudgeAmount.Text = str(round(default_nudge_value, 3))
         self.txtNudgeUnit.Text = length_unit_symbol_label
@@ -802,8 +798,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             show_preview_mesh(preview_box, self.preview_server)
 
-        except Exception:
-            logger.error("Error showing preview: {}".format(traceback.format_exc()))
+        except Exception as e:
+            logger.error("Error showing preview: {}".format(e))
 
     def hide_preview(self):
         """Hide the preview."""
@@ -811,8 +807,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             try:
                 self.preview_server.meshes = []
                 uidoc.RefreshActiveView()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error hiding preview: {}".format(e))
 
     # Button Handlers
 
@@ -953,7 +949,16 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def btn_nudge_top_up_click(self, sender, e):
         """Nudge top up."""
         try:
-            distance = float(self.txtNudgeAmount.Text)
+            distance_text = self.txtNudgeAmount.Text.strip()
+            if not distance_text:
+                forms.alert("Please enter a nudge amount", title="Input Required")
+                return
+                
+            distance = float(distance_text)
+            if distance <= 0:
+                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                return
+                
             distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
@@ -964,13 +969,25 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Invalid nudge amount", title="Error")
+            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
+        except Exception as e:
+            logger.error("Error in nudge top up: {}".format(e))
+            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
 
     def btn_nudge_top_down_click(self, sender, e):
         """Nudge top down."""
         try:
-            distance = -float(self.txtNudgeAmount.Text)
-            distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
+            distance_text = self.txtNudgeAmount.Text.strip()
+            if not distance_text:
+                forms.alert("Please enter a nudge amount", title="Input Required")
+                return
+                
+            distance = float(distance_text)
+            if distance <= 0:
+                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                return
+                
+            distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
                 "distance": distance,
@@ -980,12 +997,24 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Invalid nudge amount", title="Error")
+            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
+        except Exception as e:
+            logger.error("Error in nudge top down: {}".format(e))
+            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
 
     def btn_nudge_bottom_up_click(self, sender, e):
         """Nudge bottom up."""
         try:
-            distance = float(self.txtNudgeAmount.Text)
+            distance_text = self.txtNudgeAmount.Text.strip()
+            if not distance_text:
+                forms.alert("Please enter a nudge amount", title="Input Required")
+                return
+                
+            distance = float(distance_text)
+            if distance <= 0:
+                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                return
+                
             distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
@@ -996,13 +1025,25 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Invalid nudge amount", title="Error")
+            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
+        except Exception as e:
+            logger.error("Error in nudge bottom up: {}".format(e))
+            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
 
     def btn_nudge_bottom_down_click(self, sender, e):
         """Nudge bottom down."""
         try:
-            distance = -float(self.txtNudgeAmount.Text)
-            distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
+            distance_text = self.txtNudgeAmount.Text.strip()
+            if not distance_text:
+                forms.alert("Please enter a nudge amount", title="Input Required")
+                return
+                
+            distance = float(distance_text)
+            if distance <= 0:
+                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                return
+                
+            distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
                 "distance": distance,
@@ -1012,12 +1053,24 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Invalid nudge amount", title="Error")
+            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
+        except Exception as e:
+            logger.error("Error in nudge bottom down: {}".format(e))
+            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
 
     def btn_expansion_top_up_click(self, sender, e):
         """Expand the section box."""
         try:
-            amount = float(self.txtExpandAmount.Text)
+            amount_text = self.txtExpandAmount.Text.strip()
+            if not amount_text:
+                forms.alert("Please enter an expansion amount", title="Input Required")
+                return
+                
+            amount = float(amount_text)
+            if amount <= 0:
+                forms.alert("Expansion amount must be greater than 0", title="Invalid Input")
+                return
+                
             amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
             self.pending_action = {
                 "action": "expand_shrink",
@@ -1027,12 +1080,24 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Invalid expansion amount", title="Error")
+            forms.alert("Please enter a valid number for expansion amount", title="Invalid Input")
+        except Exception as e:
+            logger.error("Error in expansion: {}".format(e))
+            forms.alert("An error occurred while expanding: {}".format(str(e)), title="Error")
 
     def btn_expansion_top_down_click(self, sender, e):
         """Shrink the section box."""
         try:
-            amount = float(self.txtExpandAmount.Text)
+            amount_text = self.txtExpandAmount.Text.strip()
+            if not amount_text:
+                forms.alert("Please enter a shrink amount", title="Input Required")
+                return
+                
+            amount = float(amount_text)
+            if amount <= 0:
+                forms.alert("Shrink amount must be greater than 0", title="Invalid Input")
+                return
+                
             amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
             self.pending_action = {
                 "action": "expand_shrink",
@@ -1042,7 +1107,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Invalid expansion amount", title="Error")
+            forms.alert("Please enter a valid number for shrink amount", title="Invalid Input")
+        except Exception as e:
+            logger.error("Error in shrink: {}".format(e))
+            forms.alert("An error occurred while shrinking: {}".format(str(e)), title="Error")
 
     def btn_align_box_to_view_click(self, sender, e):
         """Align section box to a selected 2D view."""
@@ -1094,8 +1162,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "adjust_bottom": adjust_bottom,
             }
             self.show_preview("nudge", params)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error in nudge preview: {}".format(e))
 
     def btn_preview_level_box_enter(self, sender, e):
         """Show preview when hovering over level buttons."""
@@ -1188,8 +1256,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 }
                 self.show_preview("level", params)
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error in level preview: {}".format(e))
 
     def btn_preview_expansion_enter(self, sender, e):
         """Show preview when hovering over expansion buttons."""
@@ -1211,8 +1279,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             }
             self.show_preview("expand_shrink", params)
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error in expansion preview: {}".format(e))
 
     def btn_preview_enter(self, sender, e):
         """Show preview when hovering over buttons."""
@@ -1226,8 +1294,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "adjust_bottom": 0,
             }
             self.show_preview("nudge", params)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error in general preview: {}".format(e))
 
     def btn_preview_leave(self, sender, e):
         """Hide preview when leaving buttons."""
@@ -1280,14 +1348,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if self.preview_server:
                 try:
                     self.preview_server.remove_server()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Error removing DC3D server: {}".format(e))
 
             # Refresh view
             try:
                 uidoc.RefreshActiveView()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error refreshing view: {}".format(e))
 
         except Exception:
             logger.error("Error during cleanup: {}".format(traceback.format_exc()))
@@ -1305,19 +1373,21 @@ if __name__ == "__main__":
                 view_boxes = script.load_data(DATAFILENAME)
                 bbox_data = view_boxes[get_elementid_value(active_view.Id)]
                 restored_bbox = revit.deserialize(bbox_data)
+                
+                # Ask user if they want to restore
+                if forms.alert(
+                    "Stored SectionBox for this view found! Restore?",
+                    cancel=True,
+                    title="Restore Section Box"
+                ):
+                    with revit.Transaction("Restore SectionBox"):
+                        active_view.SetSectionBox(restored_bbox)
             except Exception:
                 forms.alert(
                     "The current view isn't 3D or doesn't have an active section box.",
                     title="No Section Box",
                     exitscript=True,
                 )
-            forms.alert(
-                "Stored SectionBox for this view found! Restore?",
-                cancel=True,
-                exitscript=True,
-            )
-            with revit.Transaction("Restore SectionBox"):
-                active_view.SetSectionBox(restored_bbox)
 
         sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
 
