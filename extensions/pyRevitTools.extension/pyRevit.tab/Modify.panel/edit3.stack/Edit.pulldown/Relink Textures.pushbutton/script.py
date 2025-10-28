@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from os import walk, listdir
-from os.path import dirname, join, isdir, isfile, basename
+import os
+import glob
+from os.path import join, isdir, isfile, basename
 import traceback
 import collections
 
@@ -122,21 +123,33 @@ class TextureIndexer:
     
     
     def build_index(self, roots):
-        """Map filename to full paths for fast lookup."""
+        """Map filename to full paths for fast lookup using glob."""
         self.index = collections.defaultdict(list)
         valid_roots = self.unique_existing_paths(roots)
         
+        # Common texture file extensions
+        texture_extensions = ['*.jpg', '*.jpeg', '*.png', '*.bmp', '*.tga', '*.tiff', '*.dds']
+        
+        # Directories to skip for performance
+        skip_dirs = {'.git', '.svn', 'node_modules', '__pycache__', 'temp', 'cache', '.pyc'}
+        
         output.log_info("Indexing {} folder(s)...".format(len(valid_roots)))
         
-        for i, root in enumerate(valid_roots):
+        for root in valid_roots:
             try:
-                for dirpath, _, files in walk(root):
-                    for filename in files:
-                        self.index[filename.lower()].append(join(dirpath, filename))                    
+                for pattern in texture_extensions:
+                    # Use glob with recursive search
+                    search_pattern = join(root, '**', pattern)
+                    for filepath in glob.glob(search_pattern):
+                        # Check if path contains any skip directories
+                        path_parts = filepath.split(os.sep)
+                        if not any(skip_dir in path_parts for skip_dir in skip_dirs):
+                            filename = basename(filepath)
+                            self.index[filename.lower()].append(filepath)
             except (OSError, IOError) as error:
                 logger.warning("Failed to index {}: {}".format(root, error))
         
-        output.log_info("Index complete. Found {} texture files.".format(len(self.index)))
+        output.log_info("Index complete. Found {} unique texture files.".format(len(self.index)))
         return self.index
     
     def find_texture(self, name, roots):
