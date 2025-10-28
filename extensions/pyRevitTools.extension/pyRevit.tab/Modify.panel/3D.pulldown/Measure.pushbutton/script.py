@@ -94,12 +94,15 @@ def create_line_mesh(start, end, color):
 def create_and_show_point_mesh(point1):
     """Immediately show the first selected point"""
     global dc3d_server
-    new_meshes = []
-    new_meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
-    if dc3d_server:
-        existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
-        dc3d_server.meshes = existing_meshes + new_meshes
-        uidoc.RefreshActiveView()
+    try:
+        new_meshes = []
+        new_meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
+        if dc3d_server:
+            existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
+            dc3d_server.meshes = existing_meshes + new_meshes
+            uidoc.RefreshActiveView()
+    except Exception as ex:
+        logger.error("Error creating point mesh: {}".format(ex))
 
 
 def create_measurement_meshes(point1, point2):
@@ -141,13 +144,37 @@ def create_measurement_meshes(point1, point2):
 
 def delete_all_visual_aids():
     """Delete all visual aids by clearing the DC3D server meshes."""
-    if dc3d_server:
-        dc3d_server.meshes = []
-        uidoc.RefreshActiveView()
+    try:
+        if dc3d_server:
+            dc3d_server.meshes = []
+            uidoc.RefreshActiveView()
+    except Exception as ex:
+        logger.error("Error deleting visual aids: {}".format(ex))
+        forms.alert(
+            "Error occurred while deleting visual aids.",
+            title="Delete Error"
+        )
+
+
+def validate_3d_view():
+    """Validate that the active view is a 3D view."""
+    active_view = uidoc.ActiveView
+    if not isinstance(active_view, DB.View3D):
+        forms.alert(
+            "Please activate a 3D view before using the 3D Measure tool.",
+            title="3D View Required",
+            exitscript=True
+        )
+        return False
+    return True
 
 
 def perform_measurement():
     """Perform the measurement workflow: pick points, create aids, update UI."""
+    # Add 3D view validation
+    if not validate_3d_view():
+        return
+    
     try:
         with forms.WarningBar(title="Pick first point"):
             point1 = revit.pick_elementpoint(world=True)
@@ -195,9 +222,17 @@ def perform_measurement():
         history_text = "\n".join(measurement_history)
         measure_window.history_text.Text = history_text
 
+    except InvalidOperationException as ex:
+        logger.error("InvalidOperationException during measurement: {}".format(ex))
+        forms.alert(
+            "Measurement cancelled due to invalid operation. Please try again.",
+            title="Measurement Error"
+        )
     except Exception as ex:
-        logger.error(
-            "Error during measurement: {}\n{}".format(ex, traceback.format_exc())
+        logger.error("Error during measurement: {}\n{}".format(ex, traceback.format_exc()))
+        forms.alert(
+            "An unexpected error occurred during measurement. Check the log for details.",
+            title="Measurement Error"
         )
 
 
