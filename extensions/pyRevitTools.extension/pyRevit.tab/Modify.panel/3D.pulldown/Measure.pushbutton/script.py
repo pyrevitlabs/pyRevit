@@ -35,6 +35,7 @@ LINE_COLOR_Z = DB.ColorWithTransparency(0, 0, 255, 0)  # Blue
 LINE_COLOR_DIAG = DB.ColorWithTransparency(200, 200, 0, 0)  # Dark Yellow
 CUBE_COLOR = DB.ColorWithTransparency(255, 165, 0, 50)  # Orange
 
+WINDOW_POSITION = "measure_window_pos"
 
 def calculate_distances(point1, point2):
     """Calculate dx, dy, dz and diagonal distance between two points.
@@ -242,6 +243,14 @@ class MeasureWindow(forms.WPFWindow):
         # Handle window close event
         self.Closed += self.window_closed
 
+        try:
+            pos = script.load_data(WINDOW_POSITION, this_project=False)
+            self.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual
+            self.Left = pos.get('Left', 200)
+            self.Top = pos.get('Top', 150)
+        except Exception:
+            self.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+
         self.Show()
 
     def Window_PreviewKeyDown(sender, e):
@@ -251,6 +260,8 @@ class MeasureWindow(forms.WPFWindow):
     def window_closed(self, sender, args):
         """Handle window close event - cleanup DC3D server."""
         global dc3d_server
+        new_pos = {'Left': self.Left, 'Top': self.Top}
+        script.store_data(WINDOW_POSITION, new_pos, this_project=False)
         try:
             if dc3d_server:
                 dc3d_server.remove_server()
