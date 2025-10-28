@@ -56,6 +56,11 @@ def add_handler(event_name, handler_func):
             create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
         HOST_APP.uiapp.ViewActivated += event_handler
 
+    elif event_name == 'selection-changed' and HOST_APP.is_newer_than(2022):
+        event_handler = \
+            create_handler(handler_func, UI.Events.SelectionChangedEventArgs)
+        HOST_APP.uiapp.SelectionChanged += event_handler
+
     return event_handler
 
 
@@ -71,6 +76,9 @@ def remove_handler(event_name, event_handler):
 
     elif event_name == 'view-activated':
         HOST_APP.uiapp.ViewActivated -= event_handler
+
+    elif event_name == 'selection-changed' and HOST_APP.is_newer_than(2022):
+        HOST_APP.uiapp.SelectionChanged -= event_handler
 
 
 def register_handler(event_name, handler_func, handler_group_id):
