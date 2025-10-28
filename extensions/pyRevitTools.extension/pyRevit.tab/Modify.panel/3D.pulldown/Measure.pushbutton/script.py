@@ -92,7 +92,7 @@ def create_line_mesh(start, end, color):
 
 
 def create_and_show_point_mesh(point1):
-    """Immediatly show the first selected point"""
+    """Immediately show the first selected point"""
     global dc3d_server
     new_meshes = []
     new_meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
@@ -107,7 +107,7 @@ def create_measurement_meshes(point1, point2):
     meshes = []
 
     # Create cubes at measurement points
-    # Mesh for point1 already immediatly created and shown on selection
+    # Mesh for point1 already immediately created and shown on selection
     meshes.append(create_cube_mesh(point2, CUBE_SIZE, CUBE_COLOR))
 
     # Determine the work plane (use the lowest Z for X and Y lines)
