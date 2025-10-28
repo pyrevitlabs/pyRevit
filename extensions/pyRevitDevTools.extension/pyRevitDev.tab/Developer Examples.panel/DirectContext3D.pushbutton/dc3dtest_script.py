@@ -3,7 +3,6 @@
 from __future__ import print_function
 
 import traceback
-import os
 from pyrevit import script, forms, revit, DB
 
 doc = revit.doc
@@ -111,10 +110,7 @@ class UI(forms.WPFWindow):
             self.server.meshes = [mesh]
             uidoc.RefreshActiveView()
             forms.alert(
-                "STL loaded successfully!",
-                sub_msg="Loaded: {0}\nTriangles: {1}".format(
-                    os.path.basename(stl_path), len(mesh.triangles)
-                ),
+                "STL loaded successfully!"
             )
         else:
             forms.alert(

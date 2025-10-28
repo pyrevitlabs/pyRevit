@@ -1,7 +1,7 @@
 """Read and Write STL Binary and ASCII Files."""
 
 import struct
-import os
+import os.path as op
 
 
 class STLMesh(object):
@@ -29,7 +29,7 @@ def load(filepath):
     Returns:
         STLMesh object containing the mesh data
     """
-    if not os.path.exists(filepath):
+    if not op.exists(filepath):
         raise IOError("File not found: {0}".format(filepath))
 
     # Try to determine if file is binary or ASCII
