@@ -4,6 +4,7 @@ from os import walk
 from os.path import join, isdir, isfile, basename
 import traceback
 import collections
+import fnmatch
 
 from pyrevit import HOST_APP, forms, script, revit, EXEC_PARAMS
 from pyrevit import DB
@@ -126,13 +127,40 @@ class TextureIndexer:
         self.index = collections.defaultdict(list)
         valid_roots = self.unique_existing_paths(roots)
         
+        # Define common texture file extensions
+        texture_extensions = ('*.jpg', '*.jpeg', '*.png', '*.bmp', '*.tga', '*.tiff', '*.tif', '*.dds')
+        
+        # Directories to skip for faster traversal
+        skip_dirs = {
+            # Version control
+            '.git', '.svn', '.hg',
+            # Build/cache
+            'node_modules', '__pycache__', '.pyc',
+            # System files
+            '.DS_Store', 'Thumbs.db', 'Desktop.ini',
+            # Windows system
+            '$RECYCLE.BIN', 'System Volume Information',
+            # Revit specific
+            'backup', 'Backup'
+        }
+        
         output.log_info("Indexing {} folder(s)...".format(len(valid_roots)))
         
         for i, root in enumerate(valid_roots):
             try:
-                for dirpath, _, files in walk(root):
-                    for filename in files:
-                        self.index[filename.lower()].append(join(dirpath, filename))                    
+                for dirpath, dirs, files in walk(root):
+                    # Remove directories we want to skip (including all hidden folders)
+                    dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
+                    
+                    # Filter files by texture extensions using fnmatch
+                    texture_files = []
+                    for pattern in texture_extensions:
+                        texture_files.extend(fnmatch.filter(files, pattern))
+                    
+                    # Add texture files to index
+                    for filename in texture_files:
+                        self.index[filename.lower()].append(join(dirpath, filename))
+                        
             except (OSError, IOError) as error:
                 logger.warning("Failed to index {}: {}".format(root, error))
         
