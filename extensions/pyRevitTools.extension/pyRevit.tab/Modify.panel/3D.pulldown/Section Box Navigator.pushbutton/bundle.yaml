@@ -1,6 +1,6 @@
 title:
   ru: Навигатор Секущей Коробки
-  fr_fr: Navigateur de Boîte de Coupe
+  fr_fr: Navigateur de Zone de Coupe
   en_us: SectionBox Navigator
   de_de: Schnittbox-Navigator
 tooltip:
@@ -9,7 +9,7 @@ tooltip:
     Быстрое перемещение границ по уровням, точная настройка, расширение/сжатие.
     Предварительный просмотр изменений при наведении курсора.
   fr_fr: |
-    Fenêtre modale pour gérer les boîtes de coupe dans les vues 3D.
+    Fenêtre modale pour gérer les zones de coupe dans les vues 3D.
     Alignement rapide sur les niveaux, ajustements précis, expansion/réduction.
     Aperçu des modifications au survol de la souris.
   en_us: |
