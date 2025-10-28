@@ -23,7 +23,6 @@ class ConfigurationManager:
     def __init__(self, config):
         """Initialize ConfigurationManager with pyRevit config object."""
         self.config = config
-        self.logger = script.get_logger()
     
     def load_folders(self):
         """Load saved folder paths from config."""
@@ -37,7 +36,7 @@ class ConfigurationManager:
             script.save_config()
             return True
         except (OSError, IOError, ValueError) as error:
-            self.logger.error("Failed to save config: {}".format(error))
+            logger.error("Failed to save config: {}".format(error))
             return False
     
     def show_configuration_dialog(self):
@@ -59,12 +58,10 @@ class ConfigurationManager:
             
             if choice == "Add Folder":
                 folder = forms.pick_folder()
-                if folder and self._is_valid_folder(folder) and folder not in current_folders:
+                if folder and folder not in current_folders:
                     current_folders.append(folder)
                 elif folder in current_folders:
                     forms.alert("This folder is already in the list.", title="Duplicate Folder")
-                elif folder and not self._is_valid_folder(folder):
-                    forms.alert("Cannot access the selected folder. Please choose a different folder.", title="Invalid Folder")
             
             elif choice == "Remove Folder":
                 if not current_folders:
@@ -100,27 +97,14 @@ class ConfigurationManager:
                     )
                 break
     
-    def _is_valid_folder(self, folder_path):
-        """Validate that a folder exists and is accessible."""
-        if not folder_path or not isdir(folder_path):
-            return False
-        
-        try:
-            # Test read access
-            listdir(folder_path)
-            return True
-        except (OSError, PermissionError):
-            return False
 
 
 class TextureIndexer:
     """Handles texture indexing and path resolution."""
     
-    def __init__(self, logger):
-        """Initialize TextureIndexer with logger object."""
-        self.logger = logger
+    def __init__(self):
+        """Initialize TextureIndexer."""
         self.index = collections.defaultdict(list)
-        self.folder_cache = {}
     
     def get_all_roots(self, config_manager):
         """Get all root folders from configuration only."""
@@ -132,31 +116,11 @@ class TextureIndexer:
         seen = set()
         result = []
         for path in paths:
-            if not path or path in seen:
-                continue
-            seen.add(path)
-            if self._is_valid_directory(path):
+            if path and path not in seen and isdir(path):
+                seen.add(path)
                 result.append(path)
         return result
     
-    def _is_valid_directory(self, path):
-        """Validate that a directory exists and is accessible."""
-        if not path:
-            return False
-        if path in self.folder_cache:
-            return self.folder_cache[path]
-        
-        if not isdir(path):
-            self.folder_cache[path] = False
-            return False
-        
-        try:
-            self.folder_cache[path] = True
-            return True
-        except (OSError, PermissionError) as e:
-            self.logger.warning("Cannot access directory {}: {}".format(path, e))
-            self.folder_cache[path] = False
-            return False
     
     def build_index(self, roots):
         """Map filename to full paths for fast lookup."""
@@ -171,7 +135,7 @@ class TextureIndexer:
                             self.index[filename.lower()].append(join(dirpath, filename))                    
                     pb.update_progress(i + 1, len(valid_roots))
                 except (OSError, IOError) as error:
-                    self.logger.warning("Failed to index {}: {}".format(root, error))
+                    logger.warning("Failed to index {}: {}".format(root, error))
                     pb.update_progress(i + 1, len(valid_roots))
         return self.index
     
@@ -187,7 +151,6 @@ class TextureIndexer:
         
         hits = self.index.get(name.lower())
         if hits:
-            hits.sort()
             return hits[0]
         
         return None
@@ -196,10 +159,9 @@ class TextureIndexer:
 class AssetProcessor:
     """Handles Revit appearance asset processing and texture relinking."""
     
-    def __init__(self, doc, logger):
-        """Initialize AssetProcessor with Revit document and logger."""
+    def __init__(self, doc):
+        """Initialize AssetProcessor with Revit document."""
         self.doc = doc
-        self.logger = logger
     
     def collect_appearance_assets(self):
         """Collect all appearance assets from materials in the document."""
@@ -222,8 +184,7 @@ class AssetProcessor:
             return assets
         
         except (OSError, IOError, ValueError, AttributeError) as error:
-            self.logger.error("Failed to collect materials: {}".format(error))
-            self.logger.error(traceback.format_exc())
+            logger.error("Failed to collect materials: {}".format(error))
             return []
     
     def relink_asset_textures(self, asset, indexer, roots, unresolved):
@@ -274,21 +235,18 @@ class AssetProcessor:
                                 path_prop.Value = hit
                                 count += 1
                             except Exception as error:
-                                self.logger.warning("Failed to set path for {}: {}".format(name, error))
+                                logger.warning("Failed to set path for {}: {}".format(name, error))
                         else:
                             unresolved.add(name)
 
-                try:
-                    count += self.relink_asset_textures(connected, indexer, roots, unresolved)
-                except Exception:
-                    pass
+                count += self.relink_asset_textures(connected, indexer, roots, unresolved)
         
         return count
     
     def process_single_asset(self, asset_element, indexer, roots, unresolved):
         """Process a single appearance asset element."""
         if not asset_element or not isinstance(asset_element, DB.AppearanceAssetElement):
-            self.logger.warning("Invalid asset element provided for processing")
+            logger.warning("Invalid asset element provided for processing")
             return 0
         
         fixed_count = 0
@@ -301,17 +259,14 @@ class AssetProcessor:
                 fixed_count = self.relink_asset_textures(editable, indexer, roots, unresolved)
                 scope.Commit(True)
             else:
-                self.logger.warning("Failed to start edit scope for asset: {}".format(
+                logger.warning("Failed to start edit scope for asset: {}".format(
                     getattr(asset_element, 'Name', 'Unknown')))
         except (OSError, IOError, ValueError, AttributeError) as error:
-            self.logger.error("Asset edit failed for {}: {}".format(
+            logger.error("Asset edit failed for {}: {}".format(
                 getattr(asset_element, 'Name', 'Unknown'), error))
         finally:
             if scope:
-                try:
-                    scope.Dispose()
-                except Exception:
-                    pass
+                scope.Dispose()
         
         return fixed_count
 
@@ -323,9 +278,8 @@ class TextureRelinker:
         """Initialize TextureRelinker with Revit document and config."""
         self.doc = doc
         self.config_manager = ConfigurationManager(config)
-        self.indexer = TextureIndexer(logger)
-        self.processor = AssetProcessor(doc, logger)
-        self.logger = logger
+        self.indexer = TextureIndexer()
+        self.processor = AssetProcessor(doc)
     
     def run_relink(self):
         """Execute the main texture relinking logic."""
@@ -358,86 +312,78 @@ class TextureRelinker:
                         asset_element, self.indexer, roots, unresolved)
                     
                     # Update progress every 10 assets or at the end
-                    pb.update_progress(i + 1, len(assets))
+                    if (i + 1) % 10 == 0 or i == len(assets) - 1:
+                        pb.update_progress(i + 1, len(assets))
         
         msg = "Appearance assets examined: {}\nTextures relinked: {}".format(examined, fixed_count)
         
         if unresolved:
             msg += "\n\nUnresolved textures: {} (see output panel for list)".format(len(unresolved))
-            self.logger.warning("UNRESOLVED TEXTURE NAMES:")
+            logger.warning("UNRESOLVED TEXTURE NAMES:")
             for name in sorted(unresolved):
-                self.logger.warning("  • {}".format(name))
+                logger.warning("  • {}".format(name))
     
     def show_main_menu(self):
         """Show unified main menu dialog with folder management and relink options."""
-        current_folders = self.config_manager.load_folders()
-        
-        # Build folder list display
-        if current_folders:
-            folder_list = "\n".join("  • {}".format(folder) for folder in current_folders)
-            message = "Current search folders:\n\n{}\n\nWhat would you like to do?".format(folder_list)
-            options = ["Add Folder", "Remove Folder", "Clear All", "Relink Textures Now", "Cancel"]
-        else:
-            message = "No search folders configured yet.\n\nWhat would you like to do?"
-            options = ["Add Folder", "Relink Textures Now", "Cancel"]
-        
-        choice = forms.alert(
-            message,
-            title="Texture Relink Tool",
-            options=options
-        )
-        
-        if choice == "Add Folder":
-            folder = forms.pick_folder()
-            if folder and self.config_manager._is_valid_folder(folder) and folder not in current_folders:
-                current_folders.append(folder)
-                self.config_manager.save_folders(current_folders)
-                # Return to main menu
-                self.show_main_menu()
-            elif folder in current_folders:
-                forms.alert("This folder is already in the list.", title="Duplicate Folder")
-                self.show_main_menu()
-            elif folder and not self.config_manager._is_valid_folder(folder):
-                forms.alert("Cannot access the selected folder. Please choose a different folder.", title="Invalid Folder")
-                self.show_main_menu()
-            else:
-                self.show_main_menu()
-        
-        elif choice == "Remove Folder":
-            if not current_folders:
-                forms.alert("No folders to remove.", title="Remove Folder")
-                self.show_main_menu()
-            else:
-                folder_to_remove = forms.SelectFromList.show(
-                    current_folders,
-                    title="Select Folder to Remove",
-                    button_name="Remove",
-                    multiselect=False
-                )
-                if folder_to_remove:
-                    current_folders.remove(folder_to_remove)
-                    self.config_manager.save_folders(current_folders)
-                self.show_main_menu()
-        
-        elif choice == "Clear All":
+        while True:
+            current_folders = self.config_manager.load_folders()
+            
+            # Build folder list display
             if current_folders:
-                self.config_manager.save_folders([])
+                folder_list = "\n".join("  • {}".format(folder) for folder in current_folders)
+                message = "Current search folders:\n\n{}\n\nWhat would you like to do?".format(folder_list)
+                options = ["Add Folder", "Remove Folder", "Clear All", "Relink Textures Now", "Cancel"]
             else:
-                forms.alert("No folders to clear.", title="Clear All")
-            self.show_main_menu()
-        
-        elif choice == "Relink Textures Now":
-            if not current_folders:
-                forms.alert(
-                    "No search folders configured.\n\n"
-                    "Please add at least one folder to search for textures.",
-                    title="Configuration Needed"
-                )
-                self.show_main_menu()
-            else:
-                self.run_relink()
-        
-        # If Cancel or None (X button), just exit
+                message = "No search folders configured yet.\n\nWhat would you like to do?"
+                options = ["Add Folder", "Relink Textures Now", "Cancel"]
+            
+            choice = forms.alert(
+                message,
+                title="Texture Relink Tool",
+                options=options
+            )
+            
+            if choice == "Add Folder":
+                folder = forms.pick_folder()
+                if folder and folder not in current_folders:
+                    current_folders.append(folder)
+                    self.config_manager.save_folders(current_folders)
+                elif folder in current_folders:
+                    forms.alert("This folder is already in the list.", title="Duplicate Folder")
+            
+            elif choice == "Remove Folder":
+                if not current_folders:
+                    forms.alert("No folders to remove.", title="Remove Folder")
+                else:
+                    folder_to_remove = forms.SelectFromList.show(
+                        current_folders,
+                        title="Select Folder to Remove",
+                        button_name="Remove",
+                        multiselect=False
+                    )
+                    if folder_to_remove:
+                        current_folders.remove(folder_to_remove)
+                        self.config_manager.save_folders(current_folders)
+            
+            elif choice == "Clear All":
+                if current_folders:
+                    self.config_manager.save_folders([])
+                else:
+                    forms.alert("No folders to clear.", title="Clear All")
+            
+            elif choice == "Relink Textures Now":
+                if not current_folders:
+                    forms.alert(
+                        "No search folders configured.\n\n"
+                        "Please add at least one folder to search for textures.",
+                        title="Configuration Needed"
+                    )
+                else:
+                    self.run_relink()
+                    break
+            
+            else:  # Cancel or None (X button)
+                break
 
 
 if __name__ == '__main__':
