@@ -2,7 +2,7 @@
 from collections import deque
 from pyrevit import revit, forms, script, traceback
 from pyrevit import UI, DB
-from pyrevit.framework import System, Input
+from pyrevit.framework import System
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
 # Configure logger
@@ -225,7 +225,7 @@ class MeasureWindow(forms.WPFWindow):
     """Modeless WPF window for 3D measurement tool."""
 
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
         self.point1_text.Text = "Point 1: Not selected"
         self.point2_text.Text = "Point 2: Not selected"
         self.dx_text.Text = "ΔX: -"
@@ -260,10 +260,6 @@ class MeasureWindow(forms.WPFWindow):
             self.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
 
         self.Show()
-
-    def Window_PreviewKeyDown(sender, e):
-        if e.Key == Input.Key.Escape:
-            e.Handled = True
 
     def window_closed(self, sender, args):
         """Handle window close event - cleanup DC3D server."""
