@@ -245,6 +245,14 @@ class MeasureWindow(forms.WPFWindow):
 
         try:
             pos = script.load_data(WINDOW_POSITION, this_project=False)
+            all_bounds = [s.WorkingArea for s in System.Windows.Forms.Screen.AllScreens]
+            x, y = pos['Left'], pos['Top']
+            visible = any(
+                (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom)
+                for b in all_bounds
+            )
+            if not visible:
+                raise Exception
             self.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual
             self.Left = pos.get('Left', 200)
             self.Top = pos.get('Top', 150)
