@@ -2,7 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Section Box Navigator" Height="870" Width="320" 
         ShowInTaskbar="False" Topmost="True"
-        WindowStartupLocation="CenterScreen" 
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
     <Grid Margin="15">
         <Grid.RowDefinitions>

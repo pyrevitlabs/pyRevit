@@ -39,6 +39,8 @@ default_nudge_value = DB.UnitUtils.Convert(
 )
 DATAFILENAME = "SectionBox"
 
+WINDOW_POSITION = "sbnavigator_window_pos"
+
 # --------------------
 # Helper Functions
 # --------------------
@@ -329,6 +331,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         # Event subscriptions
         self.Closed += self.form_closed
+
+        try:
+            pos = script.load_data(WINDOW_POSITION, this_project=False)
+            self.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual
+            self.Left = pos.get('Left', 200)
+            self.Top = pos.get('Top', 150)
+        except Exception:
+            self.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
 
         self.Show()
 
@@ -1247,6 +1257,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
         try:
+            # Save window position
+            new_pos = {'Left': self.Left, 'Top': self.Top}
+            script.store_data(WINDOW_POSITION, new_pos, this_project=False)
+
             # Unregister event handlers
             events.stop_events()
 
