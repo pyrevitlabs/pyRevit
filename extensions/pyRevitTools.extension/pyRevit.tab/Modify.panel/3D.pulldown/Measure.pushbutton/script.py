@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 from collections import deque
-from pyrevit import revit, forms, script, traceback
+from pyrevit import HOST_APP, revit, forms, script, traceback
 from pyrevit import UI, DB
 from pyrevit.framework import System
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
-# Configure logger
 logger = script.get_logger()
 
-# Document variables
-doc = revit.doc
+doc = HOST_APP.doc
 uidoc = revit.uidoc
 length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
 length_unit = length_format_options.GetUnitTypeId()
