@@ -137,13 +137,8 @@ class TextureIndexer:
         return None
     
     def get_all_roots(self, doc, config_manager):
-        """Get all root folders including project directory."""
+        """Get all root folders from configuration only."""
         roots = config_manager.load_folders()
-        
-        proj_dir = self.get_project_directory(doc)
-        if proj_dir and proj_dir not in roots:
-            roots.append(proj_dir)
-        
         return roots
     
     def unique_existing_paths(self, paths):
@@ -186,12 +181,23 @@ class TextureIndexer:
         self.index = collections.defaultdict(list)
         valid_roots = self.unique_existing_paths(roots)
         
+
+        output.print_html("<h2>TEXTURE INDEXING DIAGNOSTICS</h2>")
+        output.print_html("<p><strong>Number of root folders to index:</strong> {}</p>".format(len(valid_roots)))
+        for root in valid_roots:
+            output.print_html("<p>  - {}</p>".format(root))
+        output.print_html("<hr>")
+        
         with ProgressBar(title="Building Texture Index", steps=5) as pb:
             for i, root in enumerate(valid_roots):
                 try:
                     for dirpath, _, files in walk(root):
                         for filename in files:
                             self.index[filename.lower()].append(join(dirpath, filename))
+                    
+                    file_count = len(self.index)
+                    output.print_html("<p><strong>Indexed folder:</strong> {}</p>".format(root))
+                    output.print_html("<p>  Total unique filenames so far: {}</p>".format(file_count))
                     
                     pb.update_progress(i + 1, len(valid_roots))
                 except (OSError, IOError) as error:
@@ -250,7 +256,7 @@ class AssetProcessor:
             self.logger.error(traceback.format_exc())
             return []
     
-    def relink_asset_textures(self, asset, indexer, unresolved):
+    def relink_asset_textures(self, asset, indexer, roots, unresolved):
         """Walk connected assets and relink UnifiedBitmap Source paths."""
         count = 0
         
@@ -280,7 +286,7 @@ class AssetProcessor:
                     continue
 
                 try:
-                    path_prop = connected.FindByName(DB.Visual.UnifiedBitmap.Bitmap)
+                    path_prop = connected.FindByName(DB.Visual.UnifiedBitmap.UnifiedbitmapBitmap)
                 except AttributeError:
                     continue
                     
@@ -292,7 +298,7 @@ class AssetProcessor:
                     
                     name = basename(current_path) if current_path else None
                     if name:
-                        hit = indexer.find_texture(name, indexer.get_all_roots(self.doc))
+                        hit = indexer.find_texture(name, roots)
                         if hit and (not current_path or hit.lower() != current_path.lower()):
                             try:
                                 path_prop.Value = hit
@@ -303,13 +309,13 @@ class AssetProcessor:
                             unresolved.add(name)
 
                 try:
-                    count += self.relink_asset_textures(connected, indexer, unresolved)
+                    count += self.relink_asset_textures(connected, indexer, roots, unresolved)
                 except Exception:
                     pass
         
         return count
     
-    def process_single_asset(self, asset_element, indexer, unresolved):
+    def process_single_asset(self, asset_element, indexer, roots, unresolved):
         """Process a single appearance asset element."""
         if not asset_element or not isinstance(asset_element, DB.AppearanceAssetElement):
             self.logger.warning("Invalid asset element provided for processing")
@@ -322,7 +328,7 @@ class AssetProcessor:
             scope = DB.Visual.AppearanceAssetEditScope(self.doc)
             editable = scope.Start(asset_element.Id)
             if editable:
-                fixed_count = self.relink_asset_textures(editable, indexer, unresolved)
+                fixed_count = self.relink_asset_textures(editable, indexer, roots, unresolved)
                 scope.Commit(True)
             else:
                 self.logger.warning("Failed to start edit scope for asset: {}".format(
@@ -382,7 +388,7 @@ class TextureRelinker:
                 for i, asset_element in enumerate(assets):
                     examined += 1
                     fixed_count += self.processor.process_single_asset(
-                        asset_element, self.indexer, unresolved)
+                        asset_element, self.indexer, roots, unresolved)
                     
                     # Update progress every 10 assets or at the end
                     pb.update_progress(i + 1, len(assets))
