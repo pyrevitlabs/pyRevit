@@ -41,7 +41,7 @@
                       ItemsSource="{Binding available_levels}" 
                       SelectedValue="{Binding topplane_level_id, Mode=TwoWay}"
                       DisplayMemberPath="Name" 
-                      SelectedValuePath="IdValue"
+                      SelectedValuePath="Id"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
                       IsEnabled="{Binding can_modify_view}"/>
             
