@@ -268,9 +268,9 @@ class MeasureWindow(forms.WPFWindow):
         self.history_text.Text = "No measurements yet"
 
         if not length_unit_symbol_label:
-            self.show_element(project_unit_text)
+            self.show_element(self.project_unit_text)
             self.project_unit_text.Text = (
-                "Length Units (adjust in Project Units): " + length_unit_label
+                "Length Units (adjust in Project Units): \n" + length_unit_label
             )
             self.Height = self.Height + 20
 
