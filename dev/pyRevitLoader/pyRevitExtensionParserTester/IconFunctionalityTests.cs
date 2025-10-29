@@ -204,6 +204,74 @@ namespace pyRevitExtensionParserTest
             }
         }
 
+        [Test]
+        public void TestDarkIconBasicFunctionality()
+        {
+            TestContext.Out.WriteLine("=== Testing Dark Icon Basic Functionality ===");
+            
+            var tempDir = Path.GetTempPath();
+            var testFiles = new List<string>();
+            
+            try
+            {
+                // Test both light and dark icon creation
+                var lightIconPath = Path.Combine(tempDir, "icon.png");
+                var darkIconPath = Path.Combine(tempDir, "icon.dark.png");
+                
+                CreateSimpleTestIcon(lightIconPath);
+                CreateSimpleTestIcon(darkIconPath);
+                testFiles.Add(lightIconPath);
+                testFiles.Add(darkIconPath);
+                
+                // Test light icon
+                var lightIcon = new ComponentIcon(lightIconPath);
+                TestContext.Out.WriteLine($"Light icon: {lightIcon.FileName}");
+                TestContext.Out.WriteLine($"  Is Dark: {lightIcon.IsDark}");
+                TestContext.Out.WriteLine($"  Type: {lightIcon.Type}");
+                
+                Assert.IsFalse(lightIcon.IsDark, "Light icon should not be marked as dark");
+                Assert.AreEqual(IconType.Standard, lightIcon.Type, "Light icon should be Standard type");
+                
+                // Test dark icon
+                var darkIcon = new ComponentIcon(darkIconPath);
+                TestContext.Out.WriteLine($"Dark icon: {darkIcon.FileName}");
+                TestContext.Out.WriteLine($"  Is Dark: {darkIcon.IsDark}");
+                TestContext.Out.WriteLine($"  Type: {darkIcon.Type}");
+                
+                Assert.IsTrue(darkIcon.IsDark, "Dark icon should be marked as dark");
+                Assert.AreEqual(IconType.DarkStandard, darkIcon.Type, "Dark icon should be DarkStandard type");
+                
+                // Test ComponentIconCollection with both
+                var collection = new ComponentIconCollection();
+                collection.Add(lightIcon);
+                collection.Add(darkIcon);
+                
+                TestContext.Out.WriteLine($"Collection has {collection.Count} icons");
+                TestContext.Out.WriteLine($"Has light icons: {collection.HasLightIcons}");
+                TestContext.Out.WriteLine($"Has dark icons: {collection.HasDarkIcons}");
+                TestContext.Out.WriteLine($"Primary icon: {collection.PrimaryIcon?.FileName}");
+                TestContext.Out.WriteLine($"Primary dark icon: {collection.PrimaryDarkIcon?.FileName}");
+                
+                Assert.AreEqual(2, collection.Count, "Collection should have 2 icons");
+                Assert.IsTrue(collection.HasLightIcons, "Collection should have light icons");
+                Assert.IsTrue(collection.HasDarkIcons, "Collection should have dark icons");
+                Assert.AreEqual(lightIcon, collection.PrimaryIcon, "Primary icon should be the light icon");
+                Assert.AreEqual(darkIcon, collection.PrimaryDarkIcon, "Primary dark icon should be the dark icon");
+                
+                TestContext.Out.WriteLine("? Dark icon basic functionality works");
+                Assert.Pass("Dark icon basic functionality test completed successfully");
+            }
+            finally
+            {
+                // Clean up test files
+                foreach (var file in testFiles)
+                {
+                    if (File.Exists(file))
+                        File.Delete(file);
+                }
+            }
+        }
+
         // Helper method to create a simple test icon file
         private void CreateSimpleTestIcon(string filePath)
         {

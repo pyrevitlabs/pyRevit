@@ -432,6 +432,10 @@ namespace pyRevitExtensionParser
             if (fileName.Contains("icon") && (fileName.Contains("16") || fileName.Contains("32") || fileName.Contains("64")))
                 return true;
 
+            // Check for dark icons specifically (e.g., icon.dark.png, icon_dark.png)
+            if (fileName.Contains("dark") && fileName.Contains("icon"))
+                return true;
+
             // Check for common icon naming patterns
             if (fileName.StartsWith("ico_") || fileName.EndsWith("_ico"))
                 return true;
@@ -454,6 +458,7 @@ namespace pyRevitExtensionParser
         private static int CompareIconsByPriority(ComponentIcon icon1, ComponentIcon icon2)
         {
             // Priority order: Standard > Size32 > Size16 > Size64 > Large > Small > Others
+            // Dark variants have slightly lower priority than their light counterparts
             var priority1 = GetIconTypePriority(icon1.Type);
             var priority2 = GetIconTypePriority(icon2.Type);
 
@@ -475,22 +480,42 @@ namespace pyRevitExtensionParser
             {
                 case IconType.Standard:
                     return 1;
-                case IconType.Size32:
+                case IconType.DarkStandard:
                     return 2;
-                case IconType.Size16:
+                case IconType.Size32:
                     return 3;
-                case IconType.Size64:
+                case IconType.DarkSize32:
                     return 4;
-                case IconType.Large:
+                case IconType.Size16:
                     return 5;
-                case IconType.Small:
+                case IconType.DarkSize16:
                     return 6;
-                case IconType.Button:
+                case IconType.Size64:
                     return 7;
-                case IconType.Command:
+                case IconType.DarkSize64:
                     return 8;
-                default:
+                case IconType.Large:
                     return 9;
+                case IconType.DarkLarge:
+                    return 10;
+                case IconType.Small:
+                    return 11;
+                case IconType.DarkSmall:
+                    return 12;
+                case IconType.Button:
+                    return 13;
+                case IconType.DarkButton:
+                    return 14;
+                case IconType.Command:
+                    return 15;
+                case IconType.DarkCommand:
+                    return 16;
+                case IconType.Other:
+                    return 17;
+                case IconType.DarkOther:
+                    return 18;
+                default:
+                    return 19;
             }
         }
         public enum CommandComponentType
