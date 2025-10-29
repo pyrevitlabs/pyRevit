@@ -24,7 +24,7 @@
             <!-- Header Row -->
             <Rectangle Grid.Row="0" Grid.ColumnSpan="5" Fill="#F5F5F5" />
             <TextBlock Grid.Row="0" Grid.Column="1" Text="Plane" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
-            <TextBlock Grid.Row="0" Grid.Column="2" Text="Elevation in feet" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding unit_label, StringFormat=Elevation ({0})}" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
             <TextBlock Grid.Row="0" Grid.Column="3" Text="Offset From Level" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
             <TextBlock Grid.Row="0" Grid.Column="4" Text="Associated Level" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
             
