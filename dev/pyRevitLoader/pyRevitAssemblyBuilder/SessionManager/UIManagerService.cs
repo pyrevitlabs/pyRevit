@@ -324,22 +324,32 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             try
             {
-                // Get the best icons for large and small sizes
-                var largeIcon = GetBestIconForSize(component, 32) ?? component.PrimaryIcon;
+                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                Console.WriteLine($"Applying icons to PushButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
+                Console.WriteLine($"Component has {component.Icons.Count} total icons, {component.Icons.DarkIcons.Count()} dark icons, {component.Icons.LightIcons.Count()} light icons");
+
+                // Get the best icons for large and small sizes with theme awareness
+                var largeIcon = GetBestIconForSize(component, 32) ?? GetPrimaryIcon(component);
                 var smallIcon = GetBestIconForSize(component, 16) ?? largeIcon;
 
                 if (largeIcon != null)
                 {
                     var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32); // 32x32 for large icons
                     if (largeBitmap != null)
+                    {
                         button.LargeImage = largeBitmap;
+                        Console.WriteLine($"Applied large icon: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                    }
                 }
 
                 if (smallIcon != null)
                 {
                     var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16); // 16x16 for small icons
                     if (smallBitmap != null)
+                    {
                         button.Image = smallBitmap;
+                        Console.WriteLine($"Applied small icon: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                    }
                 }
             }
             catch (Exception ex)
@@ -358,22 +368,31 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             try
             {
-                // Get the best icons for large and small sizes
-                var largeIcon = GetBestIconForSize(component, 32) ?? component.PrimaryIcon;
+                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                Console.WriteLine($"Applying icons to PulldownButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
+
+                // Get the best icons for large and small sizes with theme awareness
+                var largeIcon = GetBestIconForSize(component, 32) ?? GetPrimaryIcon(component);
                 var smallIcon = GetBestIconForSize(component, 16) ?? largeIcon;
 
                 if (largeIcon != null)
                 {
                     var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32); // 32x32 for large icons
                     if (largeBitmap != null)
+                    {
                         button.LargeImage = largeBitmap;
+                        Console.WriteLine($"Applied large icon to pulldown: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                    }
                 }
 
                 if (smallIcon != null)
                 {
                     var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16); // 16x16 for small icons
                     if (smallBitmap != null)
+                    {
                         button.Image = smallBitmap;
+                        Console.WriteLine($"Applied small icon to pulldown: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                    }
                 }
             }
             catch (Exception ex)
@@ -392,22 +411,31 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             try
             {
-                // Get the best icons for large and small sizes
-                var largeIcon = GetBestIconForSize(component, 32) ?? component.PrimaryIcon;
+                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                Console.WriteLine($"Applying icons to SplitButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
+
+                // Get the best icons for large and small sizes with theme awareness
+                var largeIcon = GetBestIconForSize(component, 32) ?? GetPrimaryIcon(component);
                 var smallIcon = GetBestIconForSize(component, 16) ?? largeIcon;
 
                 if (largeIcon != null)
                 {
                     var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32); // 32x32 for large icons
                     if (largeBitmap != null)
+                    {
                         button.LargeImage = largeBitmap;
+                        Console.WriteLine($"Applied large icon to split button: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                    }
                 }
 
                 if (smallIcon != null)
                 {
                     var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16); // 16x16 for small icons
                     if (smallBitmap != null)
+                    {
                         button.Image = smallBitmap;
+                        Console.WriteLine($"Applied small icon to split button: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                    }
                 }
             }
             catch (Exception ex)
@@ -417,19 +445,95 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Gets the best icon for a specific size from the component's icon collection
+        /// Gets the best icon for a specific size from the component's icon collection, considering the current UI theme
         /// </summary>
         private ComponentIcon GetBestIconForSize(ParsedComponent component, int preferredSize)
         {
             if (!component.HasValidIcons)
                 return null;
 
-            // First try to find an icon with the exact size specification
-            var exactSizeIcon = component.Icons.GetBySize(preferredSize);
+            var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+            
+            // First try to find a theme-specific icon with the exact size specification
+            var exactSizeIcon = component.Icons.GetBySize(preferredSize, isDarkTheme);
+            if (exactSizeIcon?.IsValid == true)
+            {
+                Console.WriteLine($"Found theme-specific icon for size {preferredSize}: {exactSizeIcon.FileName} (Dark: {isDarkTheme})");
+                return exactSizeIcon;
+            }
+
+            // Try to find icons with specific size types, theme-aware
+            if (preferredSize <= 16)
+            {
+                var smallIcon = GetIconByTypeWithTheme(component, IconType.Size16, IconType.DarkSize16, isDarkTheme) ?? 
+                               GetIconByTypeWithTheme(component, IconType.Small, IconType.DarkSmall, isDarkTheme);
+                if (smallIcon?.IsValid == true)
+                {
+                    Console.WriteLine($"Found theme-specific small icon: {smallIcon.FileName} (Dark: {isDarkTheme})");
+                    return smallIcon;
+                }
+            }
+            else if (preferredSize <= 32)
+            {
+                var mediumIcon = GetIconByTypeWithTheme(component, IconType.Size32, IconType.DarkSize32, isDarkTheme) ?? 
+                                GetIconByTypeWithTheme(component, IconType.Standard, IconType.DarkStandard, isDarkTheme);
+                if (mediumIcon?.IsValid == true)
+                {
+                    Console.WriteLine($"Found theme-specific medium icon: {mediumIcon.FileName} (Dark: {isDarkTheme})");
+                    return mediumIcon;
+                }
+            }
+            else
+            {
+                var largeIcon = GetIconByTypeWithTheme(component, IconType.Size64, IconType.DarkSize64, isDarkTheme) ?? 
+                               GetIconByTypeWithTheme(component, IconType.Large, IconType.DarkLarge, isDarkTheme);
+                if (largeIcon?.IsValid == true)
+                {
+                    Console.WriteLine($"Found theme-specific large icon: {largeIcon.FileName} (Dark: {isDarkTheme})");
+                    return largeIcon;
+                }
+            }
+
+            // If no theme-specific icon found, fall back to light theme icons or any valid icon
+            Console.WriteLine($"No theme-specific icon found for size {preferredSize}, falling back to light theme or any available icon");
+            
+            // Try the original logic as fallback
+            var fallbackIcon = GetBestIconForSizeFallback(component, preferredSize);
+            if (fallbackIcon?.IsValid == true)
+                return fallbackIcon;
+
+            // Final fallback to any valid icon
+            return component.Icons.FirstOrDefault(i => i.IsValid);
+        }
+
+        /// <summary>
+        /// Gets an icon by type with theme preference
+        /// </summary>
+        private ComponentIcon GetIconByTypeWithTheme(ParsedComponent component, IconType lightType, IconType darkType, bool isDarkTheme)
+        {
+            if (isDarkTheme && component.Icons.HasDarkIcons)
+            {
+                // Try to get the dark version first
+                var darkIcon = component.Icons.GetByType(darkType);
+                if (darkIcon?.IsValid == true)
+                    return darkIcon;
+            }
+            
+            // Fall back to light version
+            return component.Icons.GetByType(lightType);
+        }
+
+        /// <summary>
+        /// Original fallback logic for icon selection
+        /// </summary>
+        private ComponentIcon GetBestIconForSizeFallback(ParsedComponent component, int preferredSize)
+        {
+            // First try to find an icon with the exact size specification (light theme)
+            var exactSizeIcon = component.Icons.GetBySize(preferredSize, false);
             if (exactSizeIcon?.IsValid == true)
                 return exactSizeIcon;
 
-            // Try to find icons with specific size types
+            // Try to find icons with specific size types (light theme only)
             if (preferredSize <= 16)
             {
                 var smallIcon = component.Icons.GetByType(IconType.Size16) ?? 
@@ -452,8 +556,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     return largeIcon;
             }
 
-            // Fall back to any valid icon
-            return component.Icons.FirstOrDefault(i => i.IsValid);
+            return null;
         }
 
         /// <summary>
@@ -580,7 +683,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Enhanced icon application that considers system DPI
+        /// Enhanced icon application that considers system DPI and UI theme
         /// </summary>
         private void ApplyIconToPushButtonWithDpiAwareness(PushButton button, ParsedComponent component)
         {
@@ -590,23 +693,32 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var (smallSize, largeSize) = GetOptimalIconSizes();
+                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
                 
-                // Get the best icons for the calculated sizes
-                var largeIcon = GetBestIconForSize(component, largeSize) ?? component.PrimaryIcon;
+                Console.WriteLine($"Applying DPI-aware icons to PushButton '{component.DisplayName}' - Theme: {(isDarkTheme ? "Dark" : "Light")}, Sizes: {smallSize}x{smallSize}, {largeSize}x{largeSize}");
+                
+                // Get the best icons for the calculated sizes with theme awareness
+                var largeIcon = GetBestIconForSize(component, largeSize) ?? GetPrimaryIcon(component);
                 var smallIcon = GetBestIconForSize(component, smallSize) ?? largeIcon;
 
                 if (largeIcon != null)
                 {
                     var largeBitmap = LoadBitmapSource(largeIcon.FilePath, largeSize);
                     if (largeBitmap != null)
+                    {
                         button.LargeImage = largeBitmap;
+                        Console.WriteLine($"Applied DPI-aware large icon: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                    }
                 }
 
                 if (smallIcon != null)
                 {
                     var smallBitmap = LoadBitmapSource(smallIcon.FilePath, smallSize);
                     if (smallBitmap != null)
+                    {
                         button.Image = smallBitmap;
+                        Console.WriteLine($"Applied DPI-aware small icon: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                    }
                 }
             }
             catch (Exception ex)
@@ -615,6 +727,38 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 // Fallback to standard method
                 ApplyIconToPushButton(button, component);
             }
+        }
+
+        /// <summary>
+        /// Gets the primary icon for a component, considering the current UI theme
+        /// </summary>
+        private ComponentIcon GetPrimaryIcon(ParsedComponent component)
+        {
+            if (!component.HasValidIcons)
+                return null;
+
+            var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+            
+            if (isDarkTheme && component.Icons.HasDarkIcons)
+            {
+                // Try to get the primary dark icon first
+                var primaryDarkIcon = component.Icons.PrimaryDarkIcon;
+                if (primaryDarkIcon?.IsValid == true)
+                {
+                    Console.WriteLine($"Using primary dark icon: {primaryDarkIcon.FileName}");
+                    return primaryDarkIcon;
+                }
+            }
+            
+            // Fall back to primary light icon
+            var primaryIcon = component.Icons.PrimaryIcon;
+            if (primaryIcon?.IsValid == true)
+            {
+                Console.WriteLine($"Using primary light icon: {primaryIcon.FileName} (Dark theme: {isDarkTheme}, Has dark icons: {component.Icons.HasDarkIcons})");
+                return primaryIcon;
+            }
+
+            return null;
         }
 
         #endregion

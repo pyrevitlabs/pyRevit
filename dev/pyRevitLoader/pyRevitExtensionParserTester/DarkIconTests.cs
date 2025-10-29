@@ -4,6 +4,8 @@ using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System;
+using System.Linq;
 
 namespace pyRevitExtensionParserTest
 {
@@ -384,6 +386,213 @@ namespace pyRevitExtensionParserTest
             Assert.AreEqual("icon.dark.png", primaryDarkIcon.FileName, "Primary dark icon should be the dark standard icon");
 
             Assert.Pass("Dark icon priority sorting test completed successfully.");
+        }
+
+        [Test]
+        public void TestThemeAwareIconSelection()
+        {
+            TestContext.Out.WriteLine("=== Testing Theme-Aware Icon Selection ===");
+
+            var tempDir = Path.GetTempPath();
+            var collection = new ComponentIconCollection();
+
+            // Create a comprehensive set of light and dark icons
+            var iconData = new[]
+            {
+                // Standard icons
+                new { Name = "icon.png", IsDark = false, Type = IconType.Standard },
+                new { Name = "icon.dark.png", IsDark = true, Type = IconType.DarkStandard },
+                
+                // Size-specific icons
+                new { Name = "icon_16.png", IsDark = false, Type = IconType.Size16 },
+                new { Name = "icon_16.dark.png", IsDark = true, Type = IconType.DarkSize16 },
+                new { Name = "icon_32.png", IsDark = false, Type = IconType.Size32 },
+                new { Name = "icon_32.dark.png", IsDark = true, Type = IconType.DarkSize32 },
+                
+                // Size variant icons
+                new { Name = "icon_large.png", IsDark = false, Type = IconType.Large },
+                new { Name = "icon_large.dark.png", IsDark = true, Type = IconType.DarkLarge },
+                new { Name = "icon_small.png", IsDark = false, Type = IconType.Small },
+                new { Name = "icon_small.dark.png", IsDark = true, Type = IconType.DarkSmall }
+            };
+
+            foreach (var iconInfo in iconData)
+            {
+                var iconPath = Path.Combine(tempDir, iconInfo.Name);
+                CreateTestIcon(iconPath, 32, 32, iconInfo.IsDark ? Color.Orange : Color.Blue);
+                _createdTestFiles.Add(iconPath);
+
+                var icon = new ComponentIcon(iconPath);
+                collection.Add(icon);
+                
+                TestContext.Out.WriteLine($"Added icon: {iconInfo.Name} (Dark: {icon.IsDark}, Type: {icon.Type})");
+                
+                // Verify the icon properties match expectations
+                Assert.AreEqual(iconInfo.IsDark, icon.IsDark, $"Icon {iconInfo.Name} dark detection mismatch");
+                Assert.AreEqual(iconInfo.Type, icon.Type, $"Icon {iconInfo.Name} type classification mismatch");
+            }
+
+            // Test collection properties
+            TestContext.Out.WriteLine($"Total icons: {collection.Count}");
+            TestContext.Out.WriteLine($"Has dark icons: {collection.HasDarkIcons}");
+            TestContext.Out.WriteLine($"Has light icons: {collection.HasLightIcons}");
+            TestContext.Out.WriteLine($"Light icons count: {collection.LightIcons.Count()}");
+            TestContext.Out.WriteLine($"Dark icons count: {collection.DarkIcons.Count()}");
+
+            // Verify the collection has both light and dark icons
+            Assert.IsTrue(collection.HasDarkIcons, "Collection should have dark icons");
+            Assert.IsTrue(collection.HasLightIcons, "Collection should have light icons");
+            Assert.AreEqual(5, collection.LightIcons.Count(), "Should have 5 light icons");
+            Assert.AreEqual(5, collection.DarkIcons.Count(), "Should have 5 dark icons");
+
+            // Test primary icon selection
+            var primaryIcon = collection.PrimaryIcon;
+            var primaryDarkIcon = collection.PrimaryDarkIcon;
+            
+            TestContext.Out.WriteLine($"Primary icon: {primaryIcon?.FileName} (Type: {primaryIcon?.Type})");
+            TestContext.Out.WriteLine($"Primary dark icon: {primaryDarkIcon?.FileName} (Type: {primaryDarkIcon?.Type})");
+
+            Assert.IsNotNull(primaryIcon, "Should have a primary icon");
+            Assert.IsNotNull(primaryDarkIcon, "Should have a primary dark icon");
+            Assert.AreEqual(IconType.Standard, primaryIcon.Type, "Primary icon should be Standard type");
+            Assert.AreEqual(IconType.DarkStandard, primaryDarkIcon.Type, "Primary dark icon should be DarkStandard type");
+
+            // Test theme-specific size-based icon selection
+            TestContext.Out.WriteLine("\n--- Testing Theme-Specific Size Selection ---");
+            
+            // Test light theme selection (isDark = false)
+            var light16 = collection.GetBySize(16, false);
+            var light32 = collection.GetBySize(32, false);
+            
+            TestContext.Out.WriteLine($"Light 16px icon: {light16?.FileName} (Dark: {light16?.IsDark})");
+            TestContext.Out.WriteLine($"Light 32px icon: {light32?.FileName} (Dark: {light32?.IsDark})");
+
+            Assert.IsNotNull(light16, "Should find light 16px icon");
+            Assert.IsNotNull(light32, "Should find light 32px icon");
+            Assert.IsFalse(light16.IsDark, "Light 16px icon should not be dark");
+            Assert.IsFalse(light32.IsDark, "Light 32px icon should not be dark");
+            Assert.AreEqual(IconType.Size16, light16.Type, "Light 16px icon should be Size16 type");
+            Assert.AreEqual(IconType.Size32, light32.Type, "Light 32px icon should be Size32 type");
+
+            // Test dark theme selection (isDark = true)
+            var dark16 = collection.GetBySize(16, true);
+            var dark32 = collection.GetBySize(32, true);
+            
+            TestContext.Out.WriteLine($"Dark 16px icon: {dark16?.FileName} (Dark: {dark16?.IsDark})");
+            TestContext.Out.WriteLine($"Dark 32px icon: {dark32?.FileName} (Dark: {dark32?.IsDark})");
+
+            Assert.IsNotNull(dark16, "Should find dark 16px icon");
+            Assert.IsNotNull(dark32, "Should find dark 32px icon");
+            Assert.IsTrue(dark16.IsDark, "Dark 16px icon should be dark");
+            Assert.IsTrue(dark32.IsDark, "Dark 32px icon should be dark");
+            Assert.AreEqual(IconType.DarkSize16, dark16.Type, "Dark 16px icon should be DarkSize16 type");
+            Assert.AreEqual(IconType.DarkSize32, dark32.Type, "Dark 32px icon should be DarkSize32 type");
+
+            // Test fallback behavior when theme-specific icons are not available
+            TestContext.Out.WriteLine("\n--- Testing Fallback Behavior ---");
+            
+            // Test dark theme request when no dark 64px icon exists
+            var dark64 = collection.GetBySize(64, true);
+            TestContext.Out.WriteLine($"Dark 64px icon (should be null): {dark64?.FileName}");
+            Assert.IsNull(dark64, "Should not find dark 64px icon as it doesn't exist");
+
+            Assert.Pass("Theme-aware icon selection test completed successfully.");
+        }
+
+        private ParsedComponent CreateMockComponentWithIcons(string tempDir)
+        {
+            var component = new ParsedComponent
+            {
+                Name = "MockComponent",
+                DisplayName = "Mock Component",
+                Type = CommandComponentType.PushButton,
+                Icons = new ComponentIconCollection()
+            };
+
+            // Create a set of test icons
+            var iconFiles = new[]
+            {
+                "icon.png",         // Standard light
+                "icon.dark.png",    // Standard dark
+                "icon_16.png",      // Size16 light
+                "icon_16.dark.png", // Size16 dark
+                "icon_32.png",      // Size32 light
+                "icon_32.dark.png"  // Size32 dark
+            };
+
+            foreach (var iconFile in iconFiles)
+            {
+                var iconPath = Path.Combine(tempDir, iconFile);
+                var isDark = iconFile.Contains("dark");
+                CreateTestIcon(iconPath, 32, 32, isDark ? Color.Orange : Color.Blue);
+                _createdTestFiles.Add(iconPath);
+
+                var icon = new ComponentIcon(iconPath);
+                component.Icons.Add(icon);
+            }
+
+            return component;
+        }
+
+        private void TestIconSelectionScenario(ParsedComponent component, string scenarioName, bool simulateDarkTheme)
+        {
+            TestContext.Out.WriteLine($"\n--- {scenarioName} ---");
+            
+            // Simulate the logic that would be used in UIManager.GetBestIconForSize
+            // Note: We can't actually call UIManager methods in unit tests due to Revit dependencies
+            
+            var isDarkTheme = simulateDarkTheme;
+            TestContext.Out.WriteLine($"Simulated theme: {(isDarkTheme ? "Dark" : "Light")}");
+            
+            // Test size-based selection with theme preference
+            for (int size = 16; size <= 32; size += 16)
+            {
+                var themeSpecificIcon = component.Icons.GetBySize(size, isDarkTheme);
+                var fallbackIcon = component.Icons.GetBySize(size, false); // Light fallback
+                
+                var selectedIcon = themeSpecificIcon ?? fallbackIcon;
+                
+                TestContext.Out.WriteLine($"  Size {size}px: {selectedIcon?.FileName} " +
+                                         $"(Dark: {selectedIcon?.IsDark}, Type: {selectedIcon?.Type})");
+                
+                if (isDarkTheme && component.Icons.HasDarkIcons)
+                {
+                    // In dark theme, should prefer dark icons when available
+                    if (themeSpecificIcon != null)
+                    {
+                        Assert.IsTrue(selectedIcon.IsDark, 
+                            $"In dark theme, should select dark icon for size {size}px when available");
+                    }
+                }
+                else
+                {
+                    // In light theme, should use light icons
+                    if (selectedIcon != null)
+                    {
+                        Assert.IsFalse(selectedIcon.IsDark, 
+                            $"In light theme, should select light icon for size {size}px");
+                    }
+                }
+            }
+            
+            // Test primary icon selection with theme preference
+            var primaryIcon = component.Icons.PrimaryIcon;
+            var primaryDarkIcon = component.Icons.PrimaryDarkIcon;
+            var selectedPrimary = (isDarkTheme && primaryDarkIcon != null) ? primaryDarkIcon : primaryIcon;
+            
+            TestContext.Out.WriteLine($"  Primary: {selectedPrimary?.FileName} " +
+                                     $"(Dark: {selectedPrimary?.IsDark}, Type: {selectedPrimary?.Type})");
+            
+            if (isDarkTheme && primaryDarkIcon != null)
+            {
+                Assert.IsTrue(selectedPrimary.IsDark, "In dark theme, should prefer primary dark icon when available");
+                Assert.AreEqual(IconType.DarkStandard, selectedPrimary.Type, "Primary dark icon should be DarkStandard type");
+            }
+            else if (primaryIcon != null)
+            {
+                Assert.IsFalse(selectedPrimary.IsDark, "Should fall back to light primary icon");
+                Assert.AreEqual(IconType.Standard, selectedPrimary.Type, "Primary light icon should be Standard type");
+            }
         }
 
         // Helper method to create a test icon
