@@ -349,8 +349,7 @@ class Buffer(object):
             index_buffer.Map(index_count)
             vertex_stream_pos = vertex_buffer.GetVertexStreamPositionColored()
             index_stream_pos = index_buffer.GetIndexStreamLine()
-            for edge in edges:
-                edge_index = edges.index(edge)
+            for edge_index, edge in enumerate(edges):
                 first_idx = edge_index * 2
                 vertex_stream_pos.AddVertex(
                     dc3d.VertexPositionColored(edge.a, edge.color)
@@ -423,7 +422,7 @@ class Buffer(object):
             index_buffer.Map(index_count)
             vertex_stream_pos = vertex_buffer.GetVertexStreamPositionNormalColored()
             index_stream_pos = index_buffer.GetIndexStreamTriangle()
-            for triangle in triangles:
+            for triangle_index, triangle in enumerate(triangles):
                 if display_style == DB.DisplayStyle.HLR:
                     color = DB.ColorWithTransparency(
                         255, 255, 255, triangle.color.GetTransparency()
@@ -431,7 +430,6 @@ class Buffer(object):
                 else:
                     color = triangle.color
                 normal = triangle.normal
-                triangle_index = triangles.index(triangle)
                 first_idx = triangle_index * 3
                 vertex_stream_pos.AddVertex(
                     dc3d.VertexPositionNormalColored(triangle.a, normal, color)
