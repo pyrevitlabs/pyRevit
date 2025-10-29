@@ -371,7 +371,7 @@ class Context(object):
                 elif plane == DB.PlanViewPlane.CutPlane:
                     # For Cut Plane, show the level name as read-only text
                     if level_id and level_id != DB.ElementId.InvalidElementId:
-                        level = self.active_view.Document.GetElement(level_id)
+                        level = self.source_view.Document.GetElement(level_id)
                         self.view_model.cutplane_level_name = (
                             level.Name if level else "Unknown"
                         )
