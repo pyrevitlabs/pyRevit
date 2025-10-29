@@ -291,11 +291,25 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
             var buttonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
             
+            // Ensure the class name matches what the CommandTypeGenerator creates
+            var className = SanitizeClassName(component.UniqueId);
+            
             return new PushButtonData(
                 component.UniqueId,
                 buttonText,
                 assemblyInfo.Location,
-                component.UniqueId);
+                className);
+        }
+
+        /// <summary>
+        /// Sanitizes a class name to match the CommandTypeGenerator logic
+        /// </summary>
+        private static string SanitizeClassName(string name)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in name)
+                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+            return sb.ToString();
         }
 
         #region Icon Management
