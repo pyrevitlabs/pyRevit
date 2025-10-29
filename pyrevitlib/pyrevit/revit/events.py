@@ -56,6 +56,14 @@ def add_handler(event_name, handler_func):
             create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
         HOST_APP.uiapp.ViewActivated += event_handler
 
+    elif event_name == 'selection-changed':
+        if HOST_APP.is_older_than(2023):
+            mlogger.error("Not available in this Revit Version")
+            return
+        event_handler = \
+            create_handler(handler_func, UI.Events.SelectionChangedEventArgs)
+        HOST_APP.uiapp.SelectionChanged += event_handler
+
     return event_handler
 
 
@@ -71,6 +79,12 @@ def remove_handler(event_name, event_handler):
 
     elif event_name == 'view-activated':
         HOST_APP.uiapp.ViewActivated -= event_handler
+
+    elif event_name == 'selection-changed':
+        if HOST_APP.is_older_than(2023):
+            mlogger.error("Not available in this Revit Version")
+            return
+        HOST_APP.uiapp.SelectionChanged -= event_handler
 
 
 def register_handler(event_name, handler_func, handler_group_id):
