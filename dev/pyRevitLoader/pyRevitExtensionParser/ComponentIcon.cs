@@ -36,6 +36,11 @@ namespace pyRevitExtensionParser
         public IconType Type { get; set; }
 
         /// <summary>
+        /// Whether this is a dark theme variant of the icon
+        /// </summary>
+        public bool IsDark { get; set; }
+
+        /// <summary>
         /// Size specification if present in filename (e.g., 16, 32, 64)
         /// </summary>
         public int? SizeSpecification { get; set; }
@@ -54,32 +59,79 @@ namespace pyRevitExtensionParser
                 FileSize = fileInfo.Length;
             }
             
+            IsDark = DetectDarkIcon();
             Type = DetermineIconType();
             SizeSpecification = ExtractSizeFromFilename();
+        }
+
+        /// <summary>
+        /// Detects if this icon is a dark theme variant based on filename patterns
+        /// </summary>
+        private bool DetectDarkIcon()
+        {
+            var fileName = FileName.ToLowerInvariant();
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            
+            // Common dark icon patterns - check various positions and separators
+            return fileName.Contains(".dark.") ||           // icon.dark.png
+                   fileName.Contains("_dark.") ||          // icon_dark.png
+                   fileName.Contains("-dark.") ||          // icon-dark.png
+                   fileName.Contains("_dark_") ||          // icon_dark_theme.png
+                   fileName.Contains("-dark-") ||          // icon-dark-theme.png
+                   fileNameWithoutExtension.EndsWith("_dark") ||    // icon_dark.png
+                   fileNameWithoutExtension.EndsWith("-dark") ||    // icon-dark.png
+                   fileNameWithoutExtension.EndsWith(".dark") ||    // icon.dark.png
+                   (fileNameWithoutExtension.Contains("_dark") && !fileNameWithoutExtension.StartsWith("dark")) ||  // icon_dark_theme but not dark_icon
+                   (fileNameWithoutExtension.Contains("-dark") && !fileNameWithoutExtension.StartsWith("dark"));    // icon-dark-theme but not dark-icon
         }
 
         private IconType DetermineIconType()
         {
             var fileName = FileName.ToLowerInvariant();
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
             
-            if (fileName.Contains("large"))
-                return IconType.Large;
-            if (fileName.Contains("small"))
-                return IconType.Small;
-            if (fileName.Contains("_16") || fileName.EndsWith("16.png") || fileName.EndsWith("16.ico"))
-                return IconType.Size16;
-            if (fileName.Contains("_32") || fileName.EndsWith("32.png") || fileName.EndsWith("32.ico"))
-                return IconType.Size32;
-            if (fileName.Contains("_64") || fileName.EndsWith("64.png") || fileName.EndsWith("64.ico"))
-                return IconType.Size64;
-            if (fileName.StartsWith("icon.") || fileName == "icon" + Extension)
-                return IconType.Standard;
-            if (fileName.Contains("button"))
-                return IconType.Button;
-            if (fileName.Contains("cmd"))
-                return IconType.Command;
+            // Remove dark indicators for type detection to get base type
+            var baseFileName = fileName
+                .Replace(".dark.", ".")
+                .Replace("_dark.", ".")
+                .Replace("-dark.", ".")
+                .Replace("_dark_", "_")
+                .Replace("-dark-", "-")
+                .Replace(".dark" + Extension.ToLowerInvariant(), Extension.ToLowerInvariant())
+                .Replace("_dark" + Extension.ToLowerInvariant(), Extension.ToLowerInvariant())
+                .Replace("-dark" + Extension.ToLowerInvariant(), Extension.ToLowerInvariant());
             
-            return IconType.Standard;
+            // Also handle dark indicators in the middle of filenames
+            var baseFileNameWithoutExt = Path.GetFileNameWithoutExtension(baseFileName);
+            if (fileNameWithoutExtension.Contains("_dark") && !fileNameWithoutExtension.StartsWith("dark"))
+            {
+                baseFileNameWithoutExt = fileNameWithoutExtension.Replace("_dark", "");
+                baseFileName = baseFileNameWithoutExt + Extension.ToLowerInvariant();
+            }
+            else if (fileNameWithoutExtension.Contains("-dark") && !fileNameWithoutExtension.StartsWith("dark"))
+            {
+                baseFileNameWithoutExt = fileNameWithoutExtension.Replace("-dark", "");
+                baseFileName = baseFileNameWithoutExt + Extension.ToLowerInvariant();
+            }
+            
+            if (baseFileName.Contains("large"))
+                return IsDark ? IconType.DarkLarge : IconType.Large;
+            if (baseFileName.Contains("small"))
+                return IsDark ? IconType.DarkSmall : IconType.Small;
+            if (baseFileName.Contains("_16") || baseFileName.EndsWith("16.png") || baseFileName.EndsWith("16.ico"))
+                return IsDark ? IconType.DarkSize16 : IconType.Size16;
+            if (baseFileName.Contains("_32") || baseFileName.EndsWith("32.png") || baseFileName.EndsWith("32.ico"))
+                return IsDark ? IconType.DarkSize32 : IconType.Size32;
+            if (baseFileName.Contains("_64") || baseFileName.EndsWith("64.png") || baseFileName.EndsWith("64.ico"))
+                return IsDark ? IconType.DarkSize64 : IconType.Size64;
+            if (baseFileName.StartsWith("icon.") || baseFileName == "icon" + Extension.ToLowerInvariant())
+                return IsDark ? IconType.DarkStandard : IconType.Standard;
+            if (baseFileName.Contains("button"))
+                return IsDark ? IconType.DarkButton : IconType.Button;
+            if (baseFileName.Contains("cmd"))
+                return IsDark ? IconType.DarkCommand : IconType.Command;
+            
+            return IsDark ? IconType.DarkOther : IconType.Standard;
         }
 
         private int? ExtractSizeFromFilename()
@@ -103,7 +155,8 @@ namespace pyRevitExtensionParser
 
         public override string ToString()
         {
-            return $"{FileName} ({Type}, {FileSize} bytes)";
+            var darkIndicator = IsDark ? " [Dark]" : "";
+            return $"{FileName} ({Type}{darkIndicator}, {FileSize} bytes)";
         }
     }
 
@@ -118,9 +171,19 @@ namespace pyRevitExtensionParser
         Standard,
         
         /// <summary>
+        /// Dark theme variant of standard icon
+        /// </summary>
+        DarkStandard,
+        
+        /// <summary>
         /// Small size variant
         /// </summary>
         Small,
+        
+        /// <summary>
+        /// Dark theme variant of small icon
+        /// </summary>
+        DarkSmall,
         
         /// <summary>
         /// Large size variant
@@ -128,9 +191,19 @@ namespace pyRevitExtensionParser
         Large,
         
         /// <summary>
+        /// Dark theme variant of large icon
+        /// </summary>
+        DarkLarge,
+        
+        /// <summary>
         /// 16x16 pixel icon
         /// </summary>
         Size16,
+        
+        /// <summary>
+        /// Dark theme variant of 16x16 pixel icon
+        /// </summary>
+        DarkSize16,
         
         /// <summary>
         /// 32x32 pixel icon
@@ -138,9 +211,19 @@ namespace pyRevitExtensionParser
         Size32,
         
         /// <summary>
+        /// Dark theme variant of 32x32 pixel icon
+        /// </summary>
+        DarkSize32,
+        
+        /// <summary>
         /// 64x64 pixel icon
         /// </summary>
         Size64,
+        
+        /// <summary>
+        /// Dark theme variant of 64x64 pixel icon
+        /// </summary>
+        DarkSize64,
         
         /// <summary>
         /// Button-specific icon
@@ -148,14 +231,29 @@ namespace pyRevitExtensionParser
         Button,
         
         /// <summary>
+        /// Dark theme variant of button-specific icon
+        /// </summary>
+        DarkButton,
+        
+        /// <summary>
         /// Command-specific icon
         /// </summary>
         Command,
         
         /// <summary>
+        /// Dark theme variant of command-specific icon
+        /// </summary>
+        DarkCommand,
+        
+        /// <summary>
         /// Other/unknown icon type
         /// </summary>
-        Other
+        Other,
+        
+        /// <summary>
+        /// Dark theme variant of other/unknown icon type
+        /// </summary>
+        DarkOther
     }
 
     /// <summary>
@@ -171,6 +269,13 @@ namespace pyRevitExtensionParser
             this.FirstOrDefault();
 
         /// <summary>
+        /// Gets the primary dark icon (dark standard type first, then first available dark icon)
+        /// </summary>
+        public ComponentIcon PrimaryDarkIcon =>
+            this.FirstOrDefault(i => i.Type == IconType.DarkStandard) ??
+            this.FirstOrDefault(i => i.IsDark);
+
+        /// <summary>
         /// Gets icon by type
         /// </summary>
         public ComponentIcon GetByType(IconType type) => 
@@ -183,15 +288,43 @@ namespace pyRevitExtensionParser
             this.FirstOrDefault(i => i.SizeSpecification == size);
 
         /// <summary>
+        /// Gets icon by size specification and theme
+        /// </summary>
+        public ComponentIcon GetBySize(int size, bool isDark) =>
+            this.FirstOrDefault(i => i.SizeSpecification == size && i.IsDark == isDark);
+
+        /// <summary>
         /// Gets all icons of a specific file extension
         /// </summary>
         public IEnumerable<ComponentIcon> GetByExtension(string extension) => 
             this.Where(i => string.Equals(i.Extension, extension, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
+        /// Gets all light theme icons
+        /// </summary>
+        public IEnumerable<ComponentIcon> LightIcons =>
+            this.Where(i => !i.IsDark);
+
+        /// <summary>
+        /// Gets all dark theme icons
+        /// </summary>
+        public IEnumerable<ComponentIcon> DarkIcons =>
+            this.Where(i => i.IsDark);
+
+        /// <summary>
         /// Whether this collection has any valid icons
         /// </summary>
         public bool HasValidIcons => this.Any(i => i.IsValid);
+
+        /// <summary>
+        /// Whether this collection has any dark theme icons
+        /// </summary>
+        public bool HasDarkIcons => this.Any(i => i.IsDark);
+
+        /// <summary>
+        /// Whether this collection has any light theme icons
+        /// </summary>
+        public bool HasLightIcons => this.Any(i => !i.IsDark);
 
         /// <summary>
         /// Gets supported image file extensions
