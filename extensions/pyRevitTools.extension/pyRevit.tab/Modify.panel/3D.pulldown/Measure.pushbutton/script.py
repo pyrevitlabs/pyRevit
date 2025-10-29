@@ -20,7 +20,6 @@ if not length_unit_symbol.Empty():
 # Global variables
 measure_window = None
 measure_handler_event = None
-delete_all_visual_aids_handler_event = None
 dc3d_server = None
 MAX_HISTORY = 5
 measurement_history = deque(maxlen=MAX_HISTORY)
@@ -142,20 +141,6 @@ def create_measurement_meshes(point1, point2):
     return meshes
 
 
-def delete_all_visual_aids():
-    """Delete all visual aids by clearing the DC3D server meshes."""
-    try:
-        if dc3d_server:
-            dc3d_server.meshes = []
-            uidoc.RefreshActiveView()
-    except Exception as ex:
-        logger.error("Error deleting visual aids: {}".format(ex))
-        forms.alert(
-            "Error occurred while deleting visual aids.",
-            title="Delete Error"
-        )
-
-
 def validate_3d_view():
     """Validate that the active view is a 3D view."""
     active_view = uidoc.ActiveView
@@ -222,6 +207,9 @@ def perform_measurement():
         history_text = "\n".join(measurement_history)
         measure_window.history_text.Text = history_text
 
+        # Automatically start the next measurement
+        measure_handler_event.Raise()
+
     except InvalidOperationException as ex:
         logger.error("InvalidOperationException during measurement: {}".format(ex))
         forms.alert(
@@ -258,7 +246,7 @@ class MeasureWindow(forms.WPFWindow):
     """Modeless WPF window for 3D measurement tool."""
 
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
+        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=True)
         self.point1_text.Text = "Point 1: Not selected"
         self.point2_text.Text = "Point 2: Not selected"
         self.dx_text.Text = "ΔX: -"
@@ -294,32 +282,41 @@ class MeasureWindow(forms.WPFWindow):
             self.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
 
         self.Show()
+        
+        # Automatically start the first measurement
+        measure_handler_event.Raise()
 
     def window_closed(self, sender, args):
-        """Handle window close event - cleanup DC3D server."""
+        """Handle window close event - copy history to clipboard, cleanup DC3D server and visual aids."""
         global dc3d_server
         new_pos = {'Left': self.Left, 'Top': self.Top}
         script.store_data(WINDOW_POSITION, new_pos, this_project=False)
+        
+        # Copy measurement history to clipboard before cleanup
         try:
+            if measurement_history:
+                history_text = "\n".join(measurement_history)
+                script.clipboard_copy(history_text)
+                logger.info("Measurement history copied to clipboard")
+            else:
+                logger.info("No measurements to copy to clipboard")
+        except Exception as ex:
+            logger.error("Error copying to clipboard: {}".format(ex))
+        
+        try:
+            # Delete all visual aids
             if dc3d_server:
+                dc3d_server.meshes = []
+                uidoc.RefreshActiveView()
                 dc3d_server.remove_server()
                 dc3d_server = None
-                uidoc.RefreshActiveView()
         except Exception as ex:
             logger.error("Error closing window: {}".format(ex))
-
-    def delete_click(self, sender, e):
-        """Handle delete button click."""
-        delete_all_visual_aids_handler_event.Raise()
-
-    def measure_click(self, sender, e):
-        """Handle measure again button click."""
-        measure_handler_event.Raise()
 
 
 def main():
     """Main entry point for the tool."""
-    global measure_window, measure_handler_event, delete_all_visual_aids_handler_event
+    global measure_window, measure_handler_event
     global dc3d_server
 
     dc3d_server = revit.dc3dserver.Server(
@@ -335,9 +332,6 @@ def main():
 
     measure_handler = SimpleEventHandler(perform_measurement)
     measure_handler_event = UI.ExternalEvent.Create(measure_handler)
-
-    delete_handler = SimpleEventHandler(delete_all_visual_aids)
-    delete_all_visual_aids_handler_event = UI.ExternalEvent.Create(delete_handler)
 
     measure_window = MeasureWindow("measure3d.xaml")
 
