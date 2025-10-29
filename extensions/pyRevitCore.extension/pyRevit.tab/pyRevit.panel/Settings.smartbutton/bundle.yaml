@@ -38,3 +38,5 @@ tooltip:
 
     Zeigt die Konfigurationsdatei im Explorer an. 
 context: zero-doc
+engine:
+  clean: true

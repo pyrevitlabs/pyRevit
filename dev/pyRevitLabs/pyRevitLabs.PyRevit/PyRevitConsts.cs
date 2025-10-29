@@ -42,7 +42,7 @@ namespace pyRevitLabs.PyRevit {
         public const string ReleaseDirName = "release";
         public const string SitePackagesDirName = "site-packages";
         public const string PyRevitfileFilename = "PyRevitfile";
-        
+
         public const string NetFxFolder = "netfx";
         public const string NetCoreFolder = "netcore";
 
@@ -85,6 +85,12 @@ namespace pyRevitLabs.PyRevit {
         public const int ConfigsMinDriveSpaceDefault = 0;
         public const string ConfigsLoadBetaKey = "loadbeta";
         public const bool ConfigsLoadBetaDefault = false;
+        public const string ConfigsCloseOtherOutputsKey = "closeotheroutputs";
+        public const bool ConfigsCloseOtherOutputsDefault = false;
+        public const string ConfigsCloseOutputModeKey = "closeoutputmode";
+        public const string ConfigsCloseOutputModeDefault = "currentcommand";
+        public const string ConfigsCloseOutputModeCurrentCommand = "currentcommand";
+        public const string ConfigsCloseOutputModeCloseAll = "closeall";
         public const string ConfigsCPythonEngineKey = "cpyengine";
         public const int ConfigsCPythonEngineDefault = 0;
         public const string ConfigsLocaleKey = "user_locale";
@@ -179,7 +185,7 @@ namespace pyRevitLabs.PyRevit {
         public static string FindConfigFileInDirectory(string sourcePath) {
             var configMatcher = new Regex(ConfigsFileRegexPattern, RegexOptions.IgnoreCase);
             // capture exceptions that might occur getting the files under sourcePath
-            // 
+            //
             try {
                 if (CommonUtils.VerifyPath(sourcePath))
                     foreach (string subFile in Directory.GetFiles(sourcePath))

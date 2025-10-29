@@ -552,8 +552,83 @@ class PyRevitOutputWindow(object):
             sys.stdout.flush()
 
 
+    def print_table(self, table_data, columns=None, formats=None,
+                    title='', last_line_style=''):
+        """Print provided data in a table in output window.
+
+        Args:
+            table_data (list[iterable[Any]]): 2D array of data
+            title (str): table title
+            columns (list[str]): list of column names
+            formats (list[str]): column data formats
+            last_line_style (str): css style of last row
+
+        Examples:
+            ```python
+            data = [
+            ['row1', 'data', 'data', 80 ],
+            ['row2', 'data', 'data', 45 ],
+            ]
+            output.print_table(
+            table_data=data,
+            title="Example Table",
+            columns=["Row Name", "Column 1", "Column 2", "Percentage"],
+            formats=['', '', '', '{}%'],
+            last_line_style='color:red;'
+            )
+            ```
+        """
+        if not columns:
+            columns = []
+        if not formats:
+            formats = []
+
+        if last_line_style:
+            self.add_style('tr:last-child {{ {style} }}'
+                           .format(style=last_line_style))
+
+        zipper = zip_longest #pylint: disable=E1101
+        adjust_base_col = '|'
+        adjust_extra_col = ':---|'
+        base_col = '|'
+        extra_col = '{data}|'
+
+        # find max column count
+        max_col = max([len(x) for x in table_data])
+
+        header = ''
+        if columns:
+            header = base_col
+            for idx, col_name in zipper(range(max_col), columns, fillvalue=''): #pylint: disable=W0612
+                header += extra_col.format(data=col_name)
+
+            header += '\n'
+
+        justifier = adjust_base_col
+        for idx in range(max_col):
+            justifier += adjust_extra_col
+
+        justifier += '\n'
+
+        rows = ''
+        for entry in table_data:
+            row = base_col
+            for idx, attrib, attr_format \
+                    in zipper(range(max_col), entry, formats, fillvalue=''):
+                if attr_format:
+                    value = attr_format.format(attrib)
+                else:
+                    value = attrib
+                row += extra_col.format(data=value)
+            rows += row + '\n'
+
+        table = header + justifier + rows
+        self.print_md('### {title}'.format(title=title))
+        self.print_md(table)
+
+
     def table_html_header(self, columns, table_uid, border_style):
-        """Helper method for print_table() method
+        """Helper method for print_html_table() method
 
         Return html <thead><tr><th> row for the table header
         
@@ -569,7 +644,7 @@ class PyRevitOutputWindow(object):
             ```python
             output = pyrevit.output.get_output()
             
-            # Basic usage - called internally by print_table()
+            # Basic usage - called internally by print_html_table()
             columns = ["Name", "Age", "City"]
             table_uid = 1
             border_style = "border: 1px solid black;"
@@ -608,11 +683,11 @@ class PyRevitOutputWindow(object):
                                 columns,
                                 formats,
                                 input_kwargs):
-        """Helper method for print_table() method
+        """Helper method for print_html_table() method
         
         Check that the table_data is present and is a list
         Check that table_data rows are of the same length
-        Check that all print_table() kwargs of type list are of correct length
+        Check that all print_html_table() kwargs of type list are of correct length
 
         Args:
             table_data (list[list[Any]]): The whole table data as 2D list
@@ -684,14 +759,14 @@ class PyRevitOutputWindow(object):
             if not kwarg_list: # No kwarg is OK beacause they are optional
                 continue
             if not isinstance(kwarg_list, list):
-                return False, "One of the print_table kwargs that should be a list is not a list ({})".format(kwarg_list)
+                return False, "One of the print_html_table kwargs that should be a list is not a list ({})".format(kwarg_list)
             if len(kwarg_list) != len_data_row:
-                return False, "print_table kwarg list length problem (should match {} columns)".format(len_data_row)
+                return False, "print_html_table kwarg list length problem (should match {} columns)".format(len_data_row)
 
         return True, "Inputs OK"
 
 
-    def print_table(self,
+    def print_html_table(self,
                     table_data,
                     columns=None,
                     formats=None,
@@ -722,7 +797,7 @@ class PyRevitOutputWindow(object):
             ['row1', 'data', 'data', 80 ],
             ['row2', 'data', 'data', 45 ],
             ]
-            output.print_table(
+            output.print_html_table(
             table_data=data,
             title="Example Table",
             columns=["Row Name", "Column 1", "Column 2", "Percentage"],

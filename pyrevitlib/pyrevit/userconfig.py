@@ -50,8 +50,7 @@ from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
-
-
+# pylint: disable=C0103,C0413,W0703
 DEFAULT_CSV_SEPARATOR = ','
 
 
@@ -301,6 +300,52 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsLoadBetaKey,
             value=state
         )
+
+    @property
+    def output_close_others(self):
+        """Whether to close other output windows."""
+        return self.core.get_option(
+            CONSTS.ConfigsCloseOtherOutputsKey,
+            default_value=CONSTS.ConfigsCloseOtherOutputsDefault,
+        )
+
+    @output_close_others.setter
+    def output_close_others(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsCloseOtherOutputsKey,
+            value=state
+        )
+
+    @property
+    def output_close_mode_enum(self):
+        """Output window closing mode as enum (CurrentCommand | CloseAll)."""
+        value = self.core.get_option(
+            CONSTS.ConfigsCloseOutputModeKey,
+            default_value=CONSTS.ConfigsCloseOutputModeDefault,
+        )
+        if not value:
+            value = CONSTS.ConfigsCloseOutputModeDefault
+
+        value_lc = str(value).lower()
+
+        if value_lc == str(CONSTS.ConfigsCloseOutputModeCloseAll).lower():
+            return PyRevit.OutputCloseMode.CloseAll
+        else:
+            return PyRevit.OutputCloseMode.CurrentCommand
+
+    @output_close_mode_enum.setter
+    def output_close_mode_enum(self, mode):
+        """Store string in INI, mapped from enum."""
+        if mode == PyRevit.OutputCloseMode.CloseAll:
+            self.core.set_option(
+                CONSTS.ConfigsCloseOutputModeKey,
+                value=CONSTS.ConfigsCloseOutputModeCloseAll
+            )
+        else:
+            self.core.set_option(
+                CONSTS.ConfigsCloseOutputModeKey,
+                value=CONSTS.ConfigsCloseOutputModeCurrentCommand
+            )
 
     @property
     def cpython_engine_version(self):
