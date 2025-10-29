@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
 from collections import deque
-from pyrevit import revit, forms, script, traceback
+from pyrevit import HOST_APP, revit, forms, script, traceback
 from pyrevit import UI, DB
+from pyrevit.framework import System
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
-# Configure logger
 logger = script.get_logger()
 
-# Document variables
-doc = revit.doc
+doc = HOST_APP.doc
 uidoc = revit.uidoc
-length_unit = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length).GetUnitTypeId()
-unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
+length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
+length_unit = length_format_options.GetUnitTypeId()
+length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
+length_unit_symbol = length_format_options.GetSymbolTypeId()
+length_unit_symbol_label = None
+if not length_unit_symbol.Empty():
+    length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
 
 # Global variables
 measure_window = None
 measure_handler_event = None
-delete_all_visual_aids_handler_event = None
 dc3d_server = None
 MAX_HISTORY = 5
 measurement_history = deque(maxlen=MAX_HISTORY)
@@ -29,6 +32,7 @@ LINE_COLOR_Z = DB.ColorWithTransparency(0, 0, 255, 0)  # Blue
 LINE_COLOR_DIAG = DB.ColorWithTransparency(200, 200, 0, 0)  # Dark Yellow
 CUBE_COLOR = DB.ColorWithTransparency(255, 165, 0, 50)  # Orange
 
+WINDOW_POSITION = "measure_window_pos"
 
 def calculate_distances(point1, point2):
     """Calculate dx, dy, dz and diagonal distance between two points.
@@ -86,12 +90,26 @@ def create_line_mesh(start, end, color):
     return mesh
 
 
+def create_and_show_point_mesh(point1):
+    """Immediately show the first selected point"""
+    global dc3d_server
+    try:
+        new_meshes = []
+        new_meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
+        if dc3d_server:
+            existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
+            dc3d_server.meshes = existing_meshes + new_meshes
+            uidoc.RefreshActiveView()
+    except Exception as ex:
+        logger.error("Error creating point mesh: {}".format(ex))
+
+
 def create_measurement_meshes(point1, point2):
     """Create all visual aid meshes for a measurement."""
     meshes = []
 
     # Create cubes at measurement points
-    meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
+    # Mesh for point1 already immediately created and shown on selection
     meshes.append(create_cube_mesh(point2, CUBE_SIZE, CUBE_COLOR))
 
     # Determine the work plane (use the lowest Z for X and Y lines)
@@ -123,20 +141,31 @@ def create_measurement_meshes(point1, point2):
     return meshes
 
 
-def delete_all_visual_aids():
-    """Delete all visual aids by clearing the DC3D server meshes."""
-    if dc3d_server:
-        dc3d_server.meshes = []
-        uidoc.RefreshActiveView()
+def validate_3d_view():
+    """Validate that the active view is a 3D view."""
+    active_view = uidoc.ActiveView
+    if not isinstance(active_view, DB.View3D):
+        forms.alert(
+            "Please activate a 3D view before using the 3D Measure tool.",
+            title="3D View Required",
+            exitscript=True
+        )
+        return False
+    return True
 
 
 def perform_measurement():
     """Perform the measurement workflow: pick points, create aids, update UI."""
+    # Add 3D view validation
+    if not validate_3d_view():
+        return
+    
     try:
         with forms.WarningBar(title="Pick first point"):
             point1 = revit.pick_elementpoint(world=True)
             if not point1:
                 return
+            create_and_show_point_mesh(point1)
 
         with forms.WarningBar(title="Pick second point"):
             point2 = revit.pick_elementpoint(world=True)
@@ -178,9 +207,20 @@ def perform_measurement():
         history_text = "\n".join(measurement_history)
         measure_window.history_text.Text = history_text
 
+        # Automatically start the next measurement
+        measure_handler_event.Raise()
+
+    except InvalidOperationException as ex:
+        logger.error("InvalidOperationException during measurement: {}".format(ex))
+        forms.alert(
+            "Measurement cancelled due to invalid operation. Please try again.",
+            title="Measurement Error"
+        )
     except Exception as ex:
-        logger.error(
-            "Error during measurement: {}\n{}".format(ex, traceback.format_exc())
+        logger.error("Error during measurement: {}\n{}".format(ex, traceback.format_exc()))
+        forms.alert(
+            "An unexpected error occurred during measurement. Check the log for details.",
+            title="Measurement Error"
         )
 
 
@@ -206,7 +246,7 @@ class MeasureWindow(forms.WPFWindow):
     """Modeless WPF window for 3D measurement tool."""
 
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=True)
         self.point1_text.Text = "Point 1: Not selected"
         self.point2_text.Text = "Point 2: Not selected"
         self.dx_text.Text = "ΔX: -"
@@ -215,34 +255,68 @@ class MeasureWindow(forms.WPFWindow):
         self.diagonal_text.Text = "Diagonal: -"
         self.history_text.Text = "No measurements yet"
 
+        if not length_unit_symbol_label:
+            self.show_element(self.project_unit_text)
+            self.project_unit_text.Text = (
+                "Length Units (adjust in Project Units): \n" + length_unit_label
+            )
+            self.Height = self.Height + 20
+
         # Handle window close event
         self.Closed += self.window_closed
 
+        try:
+            pos = script.load_data(WINDOW_POSITION, this_project=False)
+            all_bounds = [s.WorkingArea for s in System.Windows.Forms.Screen.AllScreens]
+            x, y = pos['Left'], pos['Top']
+            visible = any(
+                (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom)
+                for b in all_bounds
+            )
+            if not visible:
+                raise Exception
+            self.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual
+            self.Left = pos.get('Left', 200)
+            self.Top = pos.get('Top', 150)
+        except Exception:
+            self.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+
         self.Show()
+        
+        # Automatically start the first measurement
+        measure_handler_event.Raise()
 
     def window_closed(self, sender, args):
-        """Handle window close event - cleanup DC3D server."""
+        """Handle window close event - copy history to clipboard, cleanup DC3D server and visual aids."""
         global dc3d_server
+        new_pos = {'Left': self.Left, 'Top': self.Top}
+        script.store_data(WINDOW_POSITION, new_pos, this_project=False)
+        
+        # Copy measurement history to clipboard before cleanup
         try:
+            if measurement_history:
+                history_text = "\n".join(measurement_history)
+                script.clipboard_copy(history_text)
+                logger.info("Measurement history copied to clipboard")
+            else:
+                logger.info("No measurements to copy to clipboard")
+        except Exception as ex:
+            logger.error("Error copying to clipboard: {}".format(ex))
+        
+        try:
+            # Delete all visual aids
             if dc3d_server:
+                dc3d_server.meshes = []
+                uidoc.RefreshActiveView()
                 dc3d_server.remove_server()
                 dc3d_server = None
-                uidoc.RefreshActiveView()
         except Exception as ex:
             logger.error("Error closing window: {}".format(ex))
-
-    def delete_click(self, sender, e):
-        """Handle delete button click."""
-        delete_all_visual_aids_handler_event.Raise()
-
-    def measure_click(self, sender, e):
-        """Handle measure again button click."""
-        measure_handler_event.Raise()
 
 
 def main():
     """Main entry point for the tool."""
-    global measure_window, measure_handler_event, delete_all_visual_aids_handler_event
+    global measure_window, measure_handler_event
     global dc3d_server
 
     dc3d_server = revit.dc3dserver.Server(
@@ -258,9 +332,6 @@ def main():
 
     measure_handler = SimpleEventHandler(perform_measurement)
     measure_handler_event = UI.ExternalEvent.Create(measure_handler)
-
-    delete_handler = SimpleEventHandler(delete_all_visual_aids)
-    delete_all_visual_aids_handler_event = UI.ExternalEvent.Create(delete_handler)
 
     measure_window = MeasureWindow("measure3d.xaml")
 
