@@ -268,10 +268,11 @@ class MeasureWindow(forms.WPFWindow):
         self.history_text.Text = "No measurements yet"
 
         if not length_unit_symbol_label:
-            self.project_unit_text.Visibility = System.Windows.Visibility.Visible
+            self.show_element(project_unit_text)
             self.project_unit_text.Text = (
                 "Length Units (adjust in Project Units): " + length_unit_label
             )
+            self.Height = self.Height + 20
 
         # Handle window close event
         self.Closed += self.window_closed
