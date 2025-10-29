@@ -14,6 +14,7 @@ using System.Diagnostics;
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
 using pyRevitLabs.Emojis;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public struct ScriptConsoleDebugger {
@@ -171,7 +172,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
         private UIApplication _uiApp;
 
-        private List<ScriptConsoleDebugger> _supportedDebuggers = 
+        private List<ScriptConsoleDebugger> _supportedDebuggers =
             new List<ScriptConsoleDebugger> {
                 new ScriptConsoleDebugger() {
                     Name = "Pdb (IronPython|CPython)",
@@ -376,6 +377,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return ScriptConsoleConfigs.DOCTYPE + head.OuterHtml + ActiveDocument.Body.OuterHtml;
         }
 
+        private void ApplyCloseOthersConfig()
+        {
+            if (PyRevitConfigs.GetCloseOtherOutputs())
+            {
+                var mode = PyRevitConfigs.GetCloseOutputMode();
+                this.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    CloseOtherOutputs(filterByCommandId: mode == OutputCloseMode.CurrentCommand);
+                }));
+            }
+        }
+
+        public void CloseOtherOutputs(bool filterByCommandId = true) {
+            try {
+                var filterId = filterByCommandId ? this.OutputId : null;
+                ScriptConsoleManager.CloseActiveOutputWindows(excludeOutputWindow: this, filterOutputWindowId: filterId);
+            }
+            catch {
+            }
+        }
+
         private void SetupDefaultPage(string styleSheetFilePath = null) {
             string cssFilePath;
             if (styleSheetFilePath != null)
@@ -448,7 +470,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public System.Windows.Forms.HtmlElement ComposeEntry(string contents, string HtmlElementType) {
             WaitReadyBrowser();
-            
+
             // order is important
             // "<"      --->    &lt;
             contents = ScriptConsoleConfigs.EscapeForHtml(contents);
@@ -552,7 +574,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     dbgMode = true;
                 }
             }
-            
+
             // if no debugger, find other patterns
             if (!dbgMode &&
                     new string[] { "select", "file" }.All(x => lastLine.Contains(x)))
@@ -782,6 +804,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void Window_Loaded(object sender, System.EventArgs e) {
             var outputWindow = (ScriptConsole)sender;
             ScriptConsoleManager.AppendToOutputWindowList(this);
+            ApplyCloseOthersConfig();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {

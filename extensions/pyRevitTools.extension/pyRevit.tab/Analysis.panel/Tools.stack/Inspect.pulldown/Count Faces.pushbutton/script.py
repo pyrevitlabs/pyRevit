@@ -1,6 +1,7 @@
 from pyrevit import revit, script, DB
 
 doc = revit.doc
+logger = script.get_logger()
 output = script.get_output()
 output.close_others()
 
@@ -10,16 +11,6 @@ elements = (
     .WhereElementIsNotElementType()
     .ToElements()
 )
-
-# Setup options for each detail level
-opt_coarse = DB.Options()
-opt_coarse.DetailLevel = DB.ViewDetailLevel.Coarse
-
-opt_medium = DB.Options()
-opt_medium.DetailLevel = DB.ViewDetailLevel.Medium
-
-opt_fine = DB.Options()
-opt_fine.DetailLevel = DB.ViewDetailLevel.Fine
 
 # Storage
 processed_types = {}  # typeId: {name, coarse, medium, fine}
@@ -40,38 +31,23 @@ for element in elements:
         # Process each detail level
         counts = {}
         for level_name, opt in [
-            ("coarse", opt_coarse),
-            ("medium", opt_medium),
-            ("fine", opt_fine),
+            ("coarse", DB.ViewDetailLevel.Coarse),
+            ("medium", DB.ViewDetailLevel.Medium),
+            ("fine", DB.ViewDetailLevel.Fine),
         ]:
-            total_triangles = []
-            geometry_set = element.get_Geometry(opt)
-
             try:
-                for geometry in geometry_set:
-                    if isinstance(geometry, DB.Solid) and geometry.Faces.Size > 0:
-                        nbrtriangle = sum(
-                            [
-                                f.Triangulate().NumTriangles
-                                for f in geometry.Faces
-                                if f.Triangulate() is not None
-                            ]
-                        )
-                        total_triangles.append(nbrtriangle)
-                    elif isinstance(geometry, DB.GeometryInstance):
-                        for instObj in geometry.SymbolGeometry:
-                            if isinstance(instObj, DB.Solid) and instObj.Faces.Size > 0:
-                                nbrtriangle = sum(
-                                    [
-                                        f.Triangulate().NumTriangles
-                                        for f in instObj.Faces
-                                        if f.Triangulate() is not None
-                                    ]
-                                )
-                                total_triangles.append(nbrtriangle)
+                geom_objs = revit.query.get_geometry(element, detail_level=opt)
 
-                geometry_set.Dispose()
-                counts[level_name] = sum(total_triangles)
+                # Filter for solids and count triangles
+                total_triangles = 0
+                for geom in geom_objs:
+                    if isinstance(geom, DB.Solid) and geom.Faces.Size > 0:
+                        for face in geom.Faces:
+                            mesh = face.Triangulate()
+                            if mesh is not None:
+                                total_triangles += mesh.NumTriangles
+
+                counts[level_name] = total_triangles
             except Exception:
                 counts[level_name] = 0
 
@@ -98,6 +74,9 @@ if table_data:
     grand_fine = sum([row[3] for row in table_data])
 
     table_data.append(["Grand Total", grand_coarse, grand_medium, grand_fine])
+else:
+    logger.error("No families with solid geometry found")
+    script.exit()
 
 # Sort by fine detail count (or change to coarse/medium as needed)
 table_data_sorted = sorted(table_data[:-1], key=lambda x: x[3]) + [table_data[-1]]
