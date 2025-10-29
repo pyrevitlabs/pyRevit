@@ -315,7 +315,7 @@ class Context(object):
         """Populate the list of available levels in the project"""
         try:
             # Get all levels in the project
-            level_collector = DB.FilteredElementCollector(doc).OfClass(DB.Level)
+            level_collector = DB.FilteredElementCollector(self.source_view.Document).OfClass(DB.Level)
             levels = list(level_collector)
 
             # Sort levels by elevation
