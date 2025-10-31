@@ -26,6 +26,15 @@ def _build(name: str, sln: str, config: str = "Release", framework: str = None, 
 
     # clean
     slnpath = op.abspath(sln)
+    slndir = op.dirname(slnpath)
+    # For project files, look for global.json in parent directories too
+    # Use the directory containing global.json if found, otherwise use project dir
+    potential_global_json = op.join(slndir, "global.json")
+    if not op.exists(potential_global_json):
+        parent_dir = op.dirname(slndir)
+        potential_global_json = op.join(parent_dir, "global.json")
+        if op.exists(potential_global_json):
+            slndir = parent_dir
     logger.debug("building %s solution: %s, configuration: %s", name, slnpath, config)
     # clean, restore, build
     if publish_dir is None:
@@ -38,6 +47,7 @@ def _build(name: str, sln: str, config: str = "Release", framework: str = None, 
                 "-c",
                 f"{config}",
             ],
+            cwd=slndir,
             dump_stdout=print_output
         )
     else:
@@ -54,6 +64,7 @@ def _build(name: str, sln: str, config: str = "Release", framework: str = None, 
                 "-o",
                 f"{publish_dir}",
             ],
+            cwd=slndir,
             dump_stdout=print_output
         )
 
