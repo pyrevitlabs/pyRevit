@@ -45,6 +45,7 @@ namespace pyRevitLabs.PyRevit {
 
         public const string NetFxFolder = "netfx";
         public const string NetCoreFolder = "netcore";
+        public const string Net10Folder = "net10";
 
         // clones
         public const string DeployFromImageConfigsFilename = ".pyrevitargs";

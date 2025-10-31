@@ -324,6 +324,7 @@ namespace pyRevitLabs.PyRevit
             logger.Debug("Finding engines in \"{0}\"", clonePath);
             return FindEngines(false, FindEnginesDirectory(PyRevitConsts.NetFxFolder, clonePath))
                 .Union(FindEngines(true, FindEnginesDirectory(PyRevitConsts.NetCoreFolder, clonePath)))
+                .Union(FindEngines(true, FindEnginesDirectory(PyRevitConsts.Net10Folder, clonePath)))
                 .ToList();
         }
 
@@ -334,8 +335,12 @@ namespace pyRevitLabs.PyRevit
                 return GetConfiguredEngines(clonePath).Where(e => e.IsNetCore == isNetCore).ToList();
             }
             logger.Debug("Finding engines in \"{0}\"", clonePath);
-            var dir = isNetCore ? PyRevitConsts.NetCoreFolder : PyRevitConsts.NetFxFolder;
-            return FindEngines(isNetCore, FindEnginesDirectory(dir, clonePath));
+            if (!isNetCore)
+                return FindEngines(false, FindEnginesDirectory(PyRevitConsts.NetFxFolder, clonePath));
+            // For modern Revit, search both netcore and net10
+            return FindEngines(true, FindEnginesDirectory(PyRevitConsts.NetCoreFolder, clonePath))
+                    .Union(FindEngines(true, FindEnginesDirectory(PyRevitConsts.Net10Folder, clonePath)))
+                    .ToList();
         }
 
         public static PyRevitEngine GetConfiguredEngine(string clonePath, string engineId)

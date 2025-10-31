@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>pyRevitLoader</AssemblyName>
+    <RootNamespace>pyRevitLoader</RootNamespace>
+
+    <DefineConstants>$(DefineConstants);PYREVITLABS_ENGINE</DefineConstants>
+    <IronPythonVersion>IPY2712PR</IronPythonVersion>
+    <IronPythonStdLib>python_2712pr_lib.zip</IronPythonStdLib>
+    <Version>2.7.12</Version>
+  </PropertyGroup>
+</Project>
+

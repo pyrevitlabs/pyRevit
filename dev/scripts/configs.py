@@ -13,15 +13,18 @@ VERSION_RANGE = 2017, 2021
 BINPATH = op.join(ROOT, "bin")
 BINPATH_NETFX = op.join(BINPATH, "netfx")
 BINPATH_NETCORE = op.join(BINPATH, "netcore")
+BINPATH_NET10 = op.join(BINPATH, "net10")
 
 LIBSPATH_NETFX = op.join(ROOT, "dev", "libs", "netfx")
 LIBSPATH_NETCORE = op.join(ROOT, "dev", "libs", "netcore")
 
 ENGINES2PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY2712PR")
 ENGINES2PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY2712PR")
+ENGINES2PATH_NET10 = op.join(ROOT, "bin", "net10", "engines", "IPY2712PR")
 
 ENGINES3PATH_NETFX = op.join(ROOT, "bin", "netfx", "engines", "IPY340PR")
 ENGINES3PATH_NETCORE = op.join(ROOT, "bin", "netcore", "engines", "IPY340PR")
+ENGINES3PATH_NET10 = op.join(ROOT, "bin", "net10", "engines", "IPY340PR")
 
 # root path for non-deployable source files
 DEVPATH = op.join(ROOT, "dev")

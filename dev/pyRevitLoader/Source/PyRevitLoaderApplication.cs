@@ -17,13 +17,21 @@ namespace PyRevitLoader
     class PyRevitLoaderApplication : IExternalApplication
     {
         public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
+        private static string SelectedEngineDir = null;
 
         // Hook into Revit to allow starting a command.
         Result IExternalApplication.OnStartup(UIControlledApplication application)
         {
-            LoadAssembliesInFolder(LoaderPath);
-            // We need to also looad dlls from two folders up
-            var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
+            // Decide engine folder by Revit version and load assemblies from there
+            var revVersion = uiControlledApplication.ControlledApplication.VersionNumber;
+            var targetEngineDir = ResolveEngineFolder(revVersion);
+
+            // Always load selected engine dir first so its assemblies win binding
+            LoadAssembliesInFolder(targetEngineDir);
+            SelectedEngineDir = targetEngineDir;
+
+            // Also load common folder (bin/<tfm>) for any shared dlls
+            var commonFolder = Path.GetDirectoryName(targetEngineDir);
             LoadAssembliesInFolder(commonFolder);
 
             try
@@ -53,6 +61,24 @@ namespace PyRevitLoader
             }
         }
 
+        private static string ResolveEngineFolder(string revitVersion)
+        {
+            // LoaderPath currently points to bin/<tfm>/engines/<ipyFolder>
+            var currentEngineDir = LoaderPath;
+            var enginesDir = Path.GetDirectoryName(currentEngineDir); // .../engines
+            var binTfmDir = Path.GetDirectoryName(enginesDir); // .../bin/<tfm>
+            var binRoot = Path.GetDirectoryName(binTfmDir); // .../bin
+            var ipyFolderName = new DirectoryInfo(currentEngineDir).Name;
+
+            int ver;
+            if (!int.TryParse(revitVersion, out ver))
+                return currentEngineDir;
+
+            var tfm = ver >= 2027 ? "net10" : (ver >= 2025 ? "netcore" : "netfx");
+            var candidate = Path.Combine(binRoot, tfm, "engines", ipyFolderName);
+            return Directory.Exists(candidate) ? candidate : currentEngineDir;
+        }
+
         private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
         {
             // we need a UIApplication object to assign as `__revit__` in python...
@@ -79,7 +105,9 @@ namespace PyRevitLoader
 
         private static string GetStartupScriptPath()
         {
-            var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            // Use the selected engine dir (bin/<tfm>/engines/<ipy>),
+            // and then one level up for the dll directory hosting the startup script.
+            var loaderDir = SelectedEngineDir ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dllDir = Path.GetDirectoryName(loaderDir);
             return Path.Combine(dllDir, string.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
         }
