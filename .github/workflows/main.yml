@@ -192,7 +192,7 @@ jobs:
           timestamp-digest: SHA256
       
       - name: Upload Installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pyrevit-installers
           path: |
