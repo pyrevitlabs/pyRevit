@@ -153,7 +153,7 @@ jobs:
       
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v0.5.9
+        uses: azure/trusted-signing-action@v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -175,7 +175,7 @@ jobs:
 
       - name: Sign files with Trusted Signing (installers)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v0.5.9
+        uses: azure/trusted-signing-action@v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -192,7 +192,7 @@ jobs:
           timestamp-digest: SHA256
       
       - name: Upload Installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pyrevit-installers
           path: |
