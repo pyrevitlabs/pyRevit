@@ -119,7 +119,7 @@ class PrintUtils:
 
     @staticmethod
     def export_sheet_pdf(dir_path, sheet, opt, doc, filename):
-        pdf_doc_name = filename.replace(".pdf", "")
+        pdf_doc_name = op.splitext(filename)[0]
         opt.FileName = pdf_doc_name
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
@@ -128,7 +128,8 @@ class PrintUtils:
 
     @staticmethod
     def export_sheet_dwg(dir_path, sheet, opt, doc, filename):
-        dwg_doc_name = filename.replace(".pdf", "")
+        base_name = op.splitext(filename)[0]
+        dwg_doc_name = base_name + ".dwg"
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
         doc.Export(dir_path, dwg_doc_name, export_sheet, opt)
@@ -1041,7 +1042,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         # make sure you can print, construct print path and make directory
         dirPath = os.path.join(PrintUtils.get_dir(), PrintUtils.get_folder("_PRINT"))
         PrintUtils.ensure_dir(dirPath)
-        doc = PrintUtils.get_doc()
+        doc = self.selected_doc
 
         if IS_REVIT_2022_OR_NEWER or self.export_dwg.IsChecked:
             PrintUtils.open_dir(dirPath)
@@ -1051,7 +1052,7 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         with revit.Transaction('Reload Keynote File',
                                doc=self.selected_doc):
-            DB.KeynoteTable.GetKeynoteTable(revit.doc).Reload(None)
+            DB.KeynoteTable.GetKeynoteTable(self.selected_doc).Reload(None)
 
         with revit.DryTransaction('Set Printer Settings',
                                   doc=self.selected_doc):
