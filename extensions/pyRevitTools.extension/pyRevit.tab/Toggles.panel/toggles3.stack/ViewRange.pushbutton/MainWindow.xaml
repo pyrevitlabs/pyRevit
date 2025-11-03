@@ -1,37 +1,109 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="View Range" Height="230" Width="400" ResizeMode="NoResize">
-        <StackPanel Margin="10">
-            <TextBlock Text="{Binding message}" Margin="0,0,0,10" FontSize="14" Height="50"/>
-            <Separator/>
-            <Grid >
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="20" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Rectangle Grid.Row="0" Grid.ColumnSpan="3" Fill="GhostWhite" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="Plane" FontWeight="Bold"/>
-                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding unit_label, StringFormat=Elevation ({0})}" FontWeight="Bold"/>
-                <Rectangle Grid.Row="1" Grid.Column="0" Width="5" Height="20" Fill="{Binding topplane_brush}" RadiusX="3" RadiusY="3"/>
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="Top Plane"/>
-                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding topplane_elevation}" FontWeight="Bold"/>
-                <Rectangle Grid.Row="2" Grid.Column="0" Width="5" Height="20" Fill="{Binding cutplane_brush}" RadiusX="3" RadiusY="3"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="Cut Plane"/>
-                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding cutplane_elevation}" FontWeight="Bold"/>
-                <Rectangle Grid.Row="3" Grid.Column="0" Width="5" Height="20" Fill="{Binding bottomplane_brush}" RadiusX="3" RadiusY="3"/>
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="Bottom Plane"/>
-                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding bottomplane_elevation}" FontWeight="Bold"/>
-                <Rectangle Grid.Row="4" Grid.Column="0" Width="5" Height="20" Fill="{Binding viewdepth_brush}" RadiusX="3" RadiusY="3"/>
-                <TextBlock Grid.Row="4" Grid.Column="1" Text="View Depth"/>
-                <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding viewdepth_elevation}" FontWeight="Bold"/>
-            </Grid>
+        Title="View Range Editor" Height="380" Width="720" ResizeMode="CanResize">
+    <StackPanel Margin="10">
+        <TextBlock Text="{Binding message}" Margin="0,0,0,10" FontSize="14" Height="40" TextWrapping="Wrap"/>
+        <Separator/>
+        
+        <Grid x:Name="grid_main" Margin="0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="180"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="35" />
+                <RowDefinition Height="35" />
+                <RowDefinition Height="35" />
+                <RowDefinition Height="35" />
+            </Grid.RowDefinitions>
+            
+            <!-- Header Row -->
+            <Rectangle Grid.Row="0" Grid.ColumnSpan="5" Fill="#F5F5F5" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Plane" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding unit_label, StringFormat=Elevation ({0})}" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0" TextWrapping="Wrap"/>
+            <TextBlock Grid.Row="0" Grid.Column="3" Text="Offset From Level" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0" TextWrapping="Wrap"/>
+            <TextBlock Grid.Row="0" Grid.Column="4" Text="Associated Level" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0" TextWrapping="Wrap"/>
+            
+            <!-- Top Plane Row -->
+            <Rectangle Grid.Row="1" Grid.Column="0" Width="5" Height="20" Fill="{Binding topplane_brush}" RadiusX="3" RadiusY="3"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="Top Plane" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding topplane_elevation}" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBox Grid.Row="1" Grid.Column="3" x:Name="topplane_input" 
+                     Text="{Binding topplane_new_value, UpdateSourceTrigger=PropertyChanged}" 
+                     Width="100" Height="25" Margin="5,0"
+                     HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
+                     IsEnabled="{Binding can_modify_view}"/>
+            <ComboBox Grid.Row="1" Grid.Column="4" x:Name="topplane_level_combo" 
+                      ItemsSource="{Binding available_levels}" 
+                      SelectedValue="{Binding topplane_level_id, Mode=TwoWay}"
+                      DisplayMemberPath="Name" 
+                      SelectedValuePath="IdValue"
+                      Height="25" Margin="5,0" VerticalContentAlignment="Center"
+                      IsEnabled="{Binding can_modify_view}"/>
+            
+            <!-- Cut Plane Row -->
+            <Rectangle Grid.Row="2" Grid.Column="0" Width="5" Height="20" Fill="{Binding cutplane_brush}" RadiusX="3" RadiusY="3"/>
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="Cut Plane" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding cutplane_elevation}" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBox Grid.Row="2" Grid.Column="3" x:Name="cutplane_input" 
+                     Text="{Binding cutplane_new_value, UpdateSourceTrigger=PropertyChanged}" 
+                     Width="100" Height="25" Margin="5,0"
+                     HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
+                     IsEnabled="{Binding can_modify_view}"/>
+            <TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding cutplane_level_name}" 
+                       VerticalAlignment="Center" Margin="5,0" 
+                       Background="#E8E8E8" Padding="8,5" FontStyle="Italic" TextAlignment="Center"/>
+            
+            <!-- Bottom Plane Row -->
+            <Rectangle Grid.Row="3" Grid.Column="0" Width="5" Height="20" Fill="{Binding bottomplane_brush}" RadiusX="3" RadiusY="3"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="Bottom Plane" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding bottomplane_elevation}" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBox Grid.Row="3" Grid.Column="3" x:Name="bottomplane_input" 
+                     Text="{Binding bottomplane_new_value, UpdateSourceTrigger=PropertyChanged}" 
+                     Width="100" Height="25" Margin="5,0"
+                     HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
+                     IsEnabled="{Binding can_modify_view}"/>
+            <ComboBox Grid.Row="3" Grid.Column="4" x:Name="bottomplane_level_combo" 
+                      ItemsSource="{Binding available_levels}" 
+                      SelectedValue="{Binding bottomplane_level_id, Mode=TwoWay}"
+                      DisplayMemberPath="Name" 
+                      SelectedValuePath="IdValue"
+                      Height="25" Margin="5,0" VerticalContentAlignment="Center"
+                      IsEnabled="{Binding can_modify_view}"/>
+            
+            <!-- View Depth Row -->
+            <Rectangle Grid.Row="4" Grid.Column="0" Width="5" Height="20" Fill="{Binding viewdepth_brush}" RadiusX="3" RadiusY="3"/>
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="View Depth" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding viewdepth_elevation}" VerticalAlignment="Center" Margin="5,0"/>
+            <TextBox Grid.Row="4" Grid.Column="3" x:Name="viewdepth_input" 
+                     Text="{Binding viewdepth_new_value, UpdateSourceTrigger=PropertyChanged}" 
+                     Width="100" Height="25" Margin="5,0"
+                     HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
+                     IsEnabled="{Binding can_modify_view}"/>
+            <ComboBox Grid.Row="4" Grid.Column="4" x:Name="viewdepth_level_combo" 
+                      ItemsSource="{Binding available_levels}" 
+                      SelectedValue="{Binding viewdepth_level_id, Mode=TwoWay}"
+                      DisplayMemberPath="Name" 
+                      SelectedValuePath="IdValue"
+                      Height="25" Margin="5,0" VerticalContentAlignment="Center"
+                      IsEnabled="{Binding can_modify_view}"/>
+        </Grid>
+        
+        <Separator Margin="0,10"/>
+        
+        <!-- Buttons -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
+            <Button Content="Apply Changes" Width="120" Height="30" Margin="5" Click="apply_changes_click" 
+                    IsEnabled="{Binding can_modify_view}"/>
+            <Button Content="Reset to Original" Width="130" Height="30" Margin="5" Click="reset_values_click"/>
         </StackPanel>
+        
+        <!-- Warning/Status Messages -->
+        <TextBlock x:Name="warning" Text="{Binding warning_message}" Foreground="Red" 
+                   TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,5" FontSize="11"/>
+    </StackPanel>
 </Window>
