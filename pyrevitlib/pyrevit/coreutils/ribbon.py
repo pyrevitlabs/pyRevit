@@ -781,6 +781,17 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
                 _StackPanel = System.Windows.Controls.StackPanel()
                 _video = System.Windows.Controls.MediaElement()
                 _video.Source = Uri(tooltip_video)
+                _video.LoadedBehavior = System.Windows.Controls.MediaState.Manual
+                _video.UnloadedBehavior = System.Windows.Controls.MediaState.Manual
+
+                def on_media_ended(sender, args):
+                    sender.Position = System.TimeSpan.Zero
+                    sender.Play()
+                _video.MediaEnded += on_media_ended
+
+                def on_loaded(sender, args):
+                    sender.Play()
+                _video.Loaded += on_loaded
                 _StackPanel.Children.Add(_video)
                 adwindows_obj.ToolTip.ExpandedContent = _StackPanel
                 adwindows_obj.ResolveToolTip()
@@ -1459,7 +1470,10 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                                  tooltip='', tooltip_ext='', tooltip_media='',
                                  ctxhelpurl=None,
                                  avail_class_name=None,
-                                 update_if_exists=False):
+                                 update_if_exists=False,
+                                 ui_title=None):
+        if ui_title:
+            self.button(button_name).set_title(ui_title)
         self.create_push_button(button_name=button_name,
                                 asm_location=asm_location,
                                 class_name=class_name,
@@ -1472,6 +1486,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                                 update_if_exists=update_if_exists,
                                 ui_title=None)
         self.set_dlglauncher(self.button(button_name))
+
 
 
 class _PyRevitRibbonTab(GenericPyRevitUIContainer):

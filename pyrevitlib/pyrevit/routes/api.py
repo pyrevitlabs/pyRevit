@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Builtin routes API.
 
 This module also provides the API object to be used by third-party

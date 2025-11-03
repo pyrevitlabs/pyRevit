@@ -20,6 +20,12 @@
         <Border x:Name="IsReadOnly" Background="{DynamicResource pyRevitAccentBrush}" Height="16" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
             <TextBlock Text="Read-Only" Foreground="White" FontSize="10"/>
         </Border>
+        <Border x:Name="IsUnit" Background="DarkKhaki" Height="16" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" CornerRadius="4">
+            <TextBlock Text="Unit" Foreground="White" FontSize="10"/>
+        </Border>
+        <Border x:Name="Storagetype" Background="PowderBlue" Height="16" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Visible" CornerRadius="4">
+            <TextBlock Text="{Binding storagetype}" Foreground="LightSlateGray" FontSize="10"/>
+        </Border>
     </WrapPanel>
     <ControlTemplate.Triggers>
         <DataTrigger Binding="{Binding Path=istype}" Value="True">
@@ -27,6 +33,9 @@
         </DataTrigger>
         <DataTrigger Binding="{Binding Path=isreadonly}" Value="True">
             <Setter TargetName="IsReadOnly" Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Path=isunit}" Value="True">
+            <Setter TargetName="IsUnit" Property="Visibility" Value="Visible"/>
         </DataTrigger>
     </ControlTemplate.Triggers>
 </ControlTemplate>

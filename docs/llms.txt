@@ -1,4 +1,4 @@
-# https://docs.pyrevitlabs.io/ llms.txt
+# https://docs.pyrevitlabs.io/llms.txt
 
 - [pyRevit Development Tools](https://docs.pyrevitlabs.io/): pyRevit is a development environment for Autodesk Revit automation.
 - [pyRevit Output Window](https://docs.pyrevitlabs.io/reference/pyrevit/output/): Access and utilize the output window in pyRevit commands.

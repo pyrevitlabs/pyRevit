@@ -157,6 +157,16 @@ class SettingsWindow(forms.WPFWindow):
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
 
+        self.minimize_consoles_cb.IsChecked = user_config.output_close_others
+
+        mode = user_config.output_close_mode_enum
+        if mode == PyRevit.OutputCloseMode.CurrentCommand:
+            self.closewindows_current_rb.IsChecked = True
+            self.closewindows_close_all_rb.IsChecked = False
+        else:
+            self.closewindows_current_rb.IsChecked = False
+            self.closewindows_close_all_rb.IsChecked = True
+
     def _setup_engines(self):
         """Sets up the list of available engines."""
         attachment = user_config.get_current_attachment()
@@ -845,6 +855,12 @@ class SettingsWindow(forms.WPFWindow):
             user_config.min_host_drivefreespace = 0
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
+
+        user_config.output_close_others = self.minimize_consoles_cb.IsChecked
+        if self.closewindows_current_rb.IsChecked:
+            user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CurrentCommand
+        else:
+            user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CloseAll
 
     def _save_engines(self):
         # set active cpython engine

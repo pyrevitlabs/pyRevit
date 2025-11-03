@@ -46,13 +46,13 @@ jobs:
           echo "commit: ${{ github.sha }}"
 
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Prepare Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
@@ -63,12 +63,12 @@ jobs:
 
       # needed for MahApps XamlColorSchemeGenerator
       - name: Prepare .NET 3.1
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 3.1.x
 
       - name: Prepare .NET 8.0
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
 
@@ -78,7 +78,7 @@ jobs:
       - name: Prepare git
         if: (github.repository == env.MainRepo)
         uses: fregante/setup-git-user@v2
-
+      
       - name: Check Build Environment
         if: (github.repository == env.MainRepo)
         run: pipenv run pyrevit check
@@ -87,16 +87,6 @@ jobs:
         if: (github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set year
-
-      # - name: Update Certificate
-      #   if: (github.repository == env.MainRepo)
-      #   env:
-      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
-      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-      #   run: |
-      #     pipenv run pyrevit sign addcert
 
       # WIP only
       - name: Update Build Info (WIP)
@@ -131,33 +121,10 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: release/version
-
-      # - name: Sign Products
-      #   if: (github.repository == env.MainRepo)
-      #   env:
-      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
-      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-      #   run: |
-      #     pipenv run pyrevit sign products
-
-      # - name: Sign Installers
-      #   if: (github.repository == env.MainRepo)
-      #   env:
-      #     CERTIFICATE: ${{ secrets.CERTIFICATE }}
-      #     CERTIFICATEPASSWORD: ${{ secrets.PASSWORD }}
-      #     CERTIFICATESHA1: "${{ secrets.CERTIFICATESHA1 }}"
-      #     CERTIFICATENAME: "${{ secrets.CERTIFICATENAME }}"
-      #   run: |
-      #     pipenv run pyrevit sign installers
-
-      # default retention period is 90 days
-      # https://github.com/marketplace/actions/upload-a-build-artifact#retention-period
       
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v0.5.1
+        uses: azure/trusted-signing-action@v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -179,7 +146,7 @@ jobs:
 
       - name: Sign files with Trusted Signing (installers)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v0.5.1
+        uses: azure/trusted-signing-action@v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -196,7 +163,7 @@ jobs:
           timestamp-digest: SHA256
       
       - name: Upload Installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pyrevit-installers
           path: |
