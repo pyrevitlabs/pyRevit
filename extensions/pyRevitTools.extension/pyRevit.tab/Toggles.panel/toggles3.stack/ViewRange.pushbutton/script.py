@@ -21,6 +21,9 @@ PLANES = OrderedDict([
     (DB.PlanViewPlane.ViewDepthPlane, ([255, 127, 0], "View Depth Plane", "viewdepth")),
 ])
 
+get_elementid_value = get_elementid_value_func()
+INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
+
 
 class SimpleEventHandler(UI.IExternalEventHandler):
     def __init__(self, do_this):
@@ -315,8 +318,7 @@ class Context(object):
                 def __init__(self, name, element_id, elevation=None, is_special=False):
                     self.Name = name
                     self.Id = element_id
-                    get_elementid_value = get_elementid_value_func()
-                    self.IdValue = get_elementid_value(element_id) if element_id else -1
+                    self.IdValue = get_elementid_value(element_id) if element_id else INVALID_ID_VALUE
                     self.Elevation = elevation
                     self.IsSpecial = is_special
 
@@ -353,10 +355,9 @@ class Context(object):
 
                 if plane == DB.PlanViewPlane.TopClipPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
-                        get_elementid_value = get_elementid_value_func()
                         stored_selections["top"] = get_elementid_value(level_id)
                     else:
-                        stored_selections["top"] = -1
+                        stored_selections["top"] = INVALID_ID_VALUE
 
                 elif plane == DB.PlanViewPlane.CutPlane:
                     # For Cut Plane, show the level name as read-only text
@@ -370,17 +371,15 @@ class Context(object):
 
                 elif plane == DB.PlanViewPlane.BottomClipPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
-                        get_elementid_value = get_elementid_value_func()
                         stored_selections["bottom"] = get_elementid_value(level_id)
                     else:
-                        stored_selections["bottom"] = -1
+                        stored_selections["bottom"] = INVALID_ID_VALUE
 
                 elif plane == DB.PlanViewPlane.ViewDepthPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
-                        get_elementid_value = get_elementid_value_func()
                         stored_selections["viewdepth"] = get_elementid_value(level_id)
                     else:
-                        stored_selections["viewdepth"] = -1
+                        stored_selections["viewdepth"] = INVALID_ID_VALUE
 
             # Force update the view model properties (reset first to force binding refresh)
             self.view_model.topplane_level_id = None
@@ -388,9 +387,9 @@ class Context(object):
             self.view_model.viewdepth_level_id = None
 
             # Then set the actual values
-            self.view_model.topplane_level_id = stored_selections.get("top", -1)
-            self.view_model.bottomplane_level_id = stored_selections.get("bottom", -1)
-            self.view_model.viewdepth_level_id = stored_selections.get("viewdepth", -1)
+            self.view_model.topplane_level_id = stored_selections.get("top", INVALID_ID_VALUE)
+            self.view_model.bottomplane_level_id = stored_selections.get("bottom", INVALID_ID_VALUE)
+            self.view_model.viewdepth_level_id = stored_selections.get("viewdepth", INVALID_ID_VALUE)
 
         except Exception as e:
             self.view_model.warning_message = (
@@ -586,9 +585,9 @@ class MainViewModel(forms.Reactive):
 
         # Initialize level-related properties - use INTEGER values for WPF binding
         self._available_levels = []
-        self._topplane_level_id = -1
-        self._bottomplane_level_id = -1
-        self._viewdepth_level_id = -1
+        self._topplane_level_id = INVALID_ID_VALUE
+        self._bottomplane_level_id = INVALID_ID_VALUE
+        self._viewdepth_level_id = INVALID_ID_VALUE
         self._cutplane_level_name = "Unknown"
 
         self.unit_label = ""
@@ -764,7 +763,7 @@ class MainWindow(forms.WPFWindow):
             viewdepth_id_int = self.DataContext.viewdepth_level_id
 
             # Top Plane
-            if top_id_int == -1:
+            if top_id_int == INVALID_ID_VALUE:
                 new_levels[DB.PlanViewPlane.TopClipPlane] = (
                     DB.ElementId.InvalidElementId
                 )
@@ -772,7 +771,7 @@ class MainWindow(forms.WPFWindow):
                 new_levels[DB.PlanViewPlane.TopClipPlane] = DB.ElementId(top_id_int)
 
             # Bottom Plane
-            if bottom_id_int == -1:
+            if bottom_id_int == INVALID_ID_VALUE:
                 new_levels[DB.PlanViewPlane.BottomClipPlane] = (
                     DB.ElementId.InvalidElementId
                 )
@@ -782,7 +781,7 @@ class MainWindow(forms.WPFWindow):
                 )
 
             # View Depth
-            if viewdepth_id_int == -1:
+            if viewdepth_id_int == INVALID_ID_VALUE:
                 new_levels[DB.PlanViewPlane.ViewDepthPlane] = (
                     DB.ElementId.InvalidElementId
                 )
@@ -815,12 +814,11 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            get_elementid_value = get_elementid_value_func()
                             self.DataContext.topplane_level_id = (
                                 get_elementid_value(original_level_id)
                             )
                         else:
-                            self.DataContext.topplane_level_id = -1
+                            self.DataContext.topplane_level_id = INVALID_ID_VALUE
 
                     elif plane == DB.PlanViewPlane.CutPlane:
                         # For Cut Plane, show the original level name as read-only text
@@ -849,24 +847,22 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            get_elementid_value = get_elementid_value_func()
                             self.DataContext.bottomplane_level_id = (
                                 get_elementid_value(original_level_id)
                             )
                         else:
-                            self.DataContext.bottomplane_level_id = -1
+                            self.DataContext.bottomplane_level_id = INVALID_ID_VALUE
 
                     elif plane == DB.PlanViewPlane.ViewDepthPlane:
                         if (
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            get_elementid_value = get_elementid_value_func()
                             self.DataContext.viewdepth_level_id = (
                                 get_elementid_value(original_level_id)
                             )
                         else:
-                            self.DataContext.viewdepth_level_id = -1
+                            self.DataContext.viewdepth_level_id = INVALID_ID_VALUE
             else:
                 # Fallback: Reset level selections to current view range levels if no original data
                 if hasattr(context, "source_view") and context.source_view:
