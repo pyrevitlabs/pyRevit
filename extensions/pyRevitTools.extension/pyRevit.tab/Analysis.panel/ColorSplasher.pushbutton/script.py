@@ -127,8 +127,32 @@ class ApplyColors(UI.IExternalEventHandler):
             if not view:
                 return
             solid_fill_id = solid_fill_pattern_id()
+
+            # Get current category and parameter selection
+            sel_cat = wndw._categories.SelectedItem["Value"]
+            if sel_cat == 0:
+                return
+
+            # Find which parameter is currently checked
+            checked_param = None
+            for indx in range(wndw._list_box1.Items.Count):
+                if wndw._list_box1.GetItemChecked(indx):
+                    checked_param = wndw._list_box1.Items[indx]["Value"]
+                    break
+
+            if checked_param is None:
+                return
+
+            # Refresh element-to-value mappings to reflect current parameter values
+            refreshed_values = get_range_values(sel_cat, checked_param, view)
+
+            # Create a mapping of value strings to user-selected colors
+            color_map = {}
+            for indx in range(wndw.list_box2.Items.Count):
+                item = wndw.list_box2.Items[indx]["Value"]
+                color_map[item.value] = (item.n1, item.n2, item.n3)
+
             with revit.Transaction("Apply colors to elements"):
-                sel_cat = wndw._categories.SelectedItem["Value"]
                 get_elementid_value = get_elementid_value_func()
                 if get_elementid_value(sel_cat.cat.Id) in (
                     int(DB.BuiltInCategory.OST_Rooms),
@@ -137,7 +161,12 @@ class ApplyColors(UI.IExternalEventHandler):
                 ):
                     # In case of rooms, spaces and areas. Check Color scheme is applied and if not
                     if version > 2021:
-                        if wndw.crt_view.GetColorFillSchemeId(sel_cat.cat.Id).ToString() == "-1":
+                        if (
+                            wndw.crt_view.GetColorFillSchemeId(
+                                sel_cat.cat.Id
+                            ).ToString()
+                            == "-1"
+                        ):
                             color_schemes = (
                                 DB.FilteredElementCollector(new_doc)
                                 .OfClass(DB.ColorFillScheme)
@@ -156,21 +185,20 @@ class ApplyColors(UI.IExternalEventHandler):
                 else:
                     wndw._txt_block5.Visible = False
 
-                for indx in range(wndw.list_box2.Items.Count):
-                    ogs = DB.OverrideGraphicSettings()
-                    color = DB.Color(
-                        wndw.list_box2.Items[indx]["Value"].n1,
-                        wndw.list_box2.Items[indx]["Value"].n2,
-                        wndw.list_box2.Items[indx]["Value"].n3,
-                    )
-                    ogs.SetProjectionLineColor(color)
-                    ogs.SetSurfaceForegroundPatternColor(color)
-                    ogs.SetCutForegroundPatternColor(color)
-                    if solid_fill_id is not None:
-                        ogs.SetSurfaceForegroundPatternId(solid_fill_id)
-                        ogs.SetCutForegroundPatternId(solid_fill_id)
-                    for idt in wndw.list_box2.Items[indx]["Value"].ele_id:
-                        view.SetElementOverrides(idt, ogs)
+                # Apply colors using refreshed element IDs but preserved color choices
+                for val_info in refreshed_values:
+                    if val_info.value in color_map:
+                        ogs = DB.OverrideGraphicSettings()
+                        r, g, b = color_map[val_info.value]
+                        color = DB.Color(r, g, b)
+                        ogs.SetProjectionLineColor(color)
+                        ogs.SetSurfaceForegroundPatternColor(color)
+                        ogs.SetCutForegroundPatternColor(color)
+                        if solid_fill_id is not None:
+                            ogs.SetSurfaceForegroundPatternId(solid_fill_id)
+                            ogs.SetCutForegroundPatternId(solid_fill_id)
+                        for idt in val_info.ele_id:
+                            view.SetElementOverrides(idt, ogs)
         except Exception:
             external_event_trace()
 
@@ -665,6 +693,7 @@ class FormCats(Forms.Form):
     def InitializeComponent(self):
         self._spr_top = Forms.Label()
         self._categories = Forms.ComboBox()
+        self._search_box = Forms.TextBox()
         self._list_box1 = Forms.CheckedListBox()
         self.list_box2 = Forms.ListBox()
         self._button_set_colors = Forms.Button()
@@ -678,8 +707,11 @@ class FormCats(Forms.Form):
         self._txt_block3 = Forms.Label()
         self._txt_block4 = Forms.Label()
         self._txt_block5 = Forms.Label()
+        self._search_label = Forms.Label()
         self.tooltips = Forms.ToolTip()
         self.SuspendLayout()
+        self._filtered_parameters = []
+        self._all_parameters = []
         # Separator Top
         self._spr_top.Anchor = (
             Forms.AnchorStyles.Top | Forms.AnchorStyles.Left | Forms.AnchorStyles.Right
@@ -724,6 +756,25 @@ class FormCats(Forms.Form):
         self.tooltips.SetToolTip(
             self._txt_block3, "Select a parameter to color elements based on its value."
         )
+        # Search Label
+        self._search_label.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._search_label.Location = Drawing.Point(12, 77)
+        self._search_label.Name = "searchLabel"
+        self._search_label.Size = Drawing.Size(120, 16)
+        self._search_label.Text = "Search:"
+        self._search_label.Font = Drawing.Font(self.Font.FontFamily, 8)
+        # Search TextBox
+        self._search_box.Anchor = (
+            Forms.AnchorStyles.Top | Forms.AnchorStyles.Left | Forms.AnchorStyles.Right
+        )
+        self._search_box.Location = Drawing.Point(12, 95)
+        self._search_box.Name = "searchBox"
+        self._search_box.Size = Drawing.Size(310, 20)
+        self._search_box.Text = ""
+        self._search_box.TextChanged += self.on_search_text_changed
+        self.tooltips.SetToolTip(
+            self._search_box, "Type to search and filter parameters."
+        )
         # checkedListBox1
         self._list_box1.Anchor = (
             Forms.AnchorStyles.Top | Forms.AnchorStyles.Left | Forms.AnchorStyles.Right
@@ -731,17 +782,17 @@ class FormCats(Forms.Form):
         self._list_box1.FormattingEnabled = True
         self._list_box1.CheckOnClick = True
         self._list_box1.HorizontalScrollbar = True
-        self._list_box1.Location = Drawing.Point(12, 80)
+        self._list_box1.Location = Drawing.Point(12, 122)
         self._list_box1.Name = "checkedListBox1"
         self._list_box1.DisplayMember = "Key"
-        self._list_box1.Size = Drawing.Size(310, 158)
+        self._list_box1.Size = Drawing.Size(310, 116)
         self._list_box1.ItemCheck += self.check_item
         self.tooltips.SetToolTip(
             self._list_box1, "Select a parameter to color elements based on its value."
         )
         # TextBlock4
         self._txt_block4.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
-        self._txt_block4.Location = Drawing.Point(12, 238)
+        self._txt_block4.Location = Drawing.Point(12, 240)
         self._txt_block4.Name = "txtBlock4"
         self._txt_block4.Size = Drawing.Size(120, 23)
         self._txt_block4.Text = "Values:"
@@ -766,7 +817,7 @@ class FormCats(Forms.Form):
         )
         self.list_box2.FormattingEnabled = True
         self.list_box2.HorizontalScrollbar = True
-        self.list_box2.Location = Drawing.Point(12, 262)
+        self.list_box2.Location = Drawing.Point(12, 265)
         self.list_box2.Name = "listBox2"
         self.list_box2.DisplayMember = "Key"
         self.list_box2.DrawMode = Forms.DrawMode.OwnerDrawFixed
@@ -776,7 +827,7 @@ class FormCats(Forms.Form):
         )
         g = self.list_box2.CreateGraphics()
         self.list_box2.ItemHeight = int(g.MeasureString("Sample", self.new_fnt).Height)
-        self.list_box2.Size = Drawing.Size(310, 280)
+        self.list_box2.Size = Drawing.Size(310, 277)
         self.tooltips.SetToolTip(
             self.list_box2, "Reassign colors by clicking on their value."
         )
@@ -902,6 +953,8 @@ class FormCats(Forms.Form):
         self.Controls.Add(self._categories)
         self.Controls.Add(self._txt_block2)
         self.Controls.Add(self._txt_block3)
+        self.Controls.Add(self._search_label)
+        self.Controls.Add(self._search_box)
         self.Controls.Add(self._txt_block4)
         self.Controls.Add(self._txt_block5)
         self.Controls.Add(self._list_box1)
@@ -1015,6 +1068,7 @@ class FormCats(Forms.Form):
                     clr_dlg.Color.R, clr_dlg.Color.G, clr_dlg.Color.B
                 )
             self.list_box2.SelectedIndex = -1
+            self.list_box2.Refresh()
 
     def colour_item(self, sender, e):
         try:
@@ -1094,14 +1148,50 @@ class FormCats(Forms.Form):
             names_par = [x.name for x in sel_cat.par]
             for key_, value_ in zip(names_par, sel_cat.par):
                 self._table_data_2.Rows.Add(key_, value_)
+            self._all_parameters = [
+                (key_, value_) for key_, value_ in zip(names_par, sel_cat.par)
+            ]
             self._list_box1.DataSource = self._table_data_2
             self._list_box1.DisplayMember = "Key"
+            self._search_box.Text = ""
             for indx in range(self._list_box1.Items.Count):
                 self._list_box1.SetItemChecked(indx, False)
             self.list_box2.DataSource = self._table_data_3
         else:
+            self._all_parameters = []
             self._list_box1.DataSource = self._table_data_2
             self.list_box2.DataSource = self._table_data_3
+
+    def on_search_text_changed(self, sender, e):
+        """Filter parameters based on search text"""
+        search_text = self._search_box.Text.lower()
+
+        # Create new filtered data table
+        filtered_table = DataTable("Data")
+        filtered_table.Columns.Add("Key", System.String)
+        filtered_table.Columns.Add("Value", System.Object)
+
+        # Filter parameters based on search text
+        if len(self._all_parameters) > 0:
+            for key_, value_ in self._all_parameters:
+                if search_text == "" or search_text in key_.lower():
+                    filtered_table.Rows.Add(key_, value_)
+
+        # Store current checked state
+        checked_items = [
+            self._list_box1.Items[i]["Value"]
+            for i in range(self._list_box1.CheckedIndices.Count)
+        ]
+
+        # Update data source
+        self._list_box1.DataSource = filtered_table
+        self._list_box1.DisplayMember = "Key"
+
+        # Restore checked state for items that are still visible
+        for indx in range(self._list_box1.Items.Count):
+            item_value = self._list_box1.Items[indx]["Value"]
+            if item_value in checked_items:
+                self._list_box1.SetItemChecked(indx, True)
 
 
 class FormSaveLoadScheme(Forms.Form):
@@ -1489,12 +1579,10 @@ def get_used_categories_parameters(cat_exc, acti_view):
                 if par.Definition.BuiltInParameter not in (
                     DB.BuiltInParameter.ELEM_CATEGORY_PARAM,
                     DB.BuiltInParameter.ELEM_CATEGORY_PARAM_MT,
-                    ):
+                ):
                     list_parameters.append(ParameterInfo(1, par))
         # Sort and add
-        list_parameters = sorted(
-        list_parameters, key=lambda x: x.name.upper()
-        )
+        list_parameters = sorted(list_parameters, key=lambda x: x.name.upper())
         list_cat.append(CategoryInfo(ele.Category, list_parameters))
     list_cat = sorted(list_cat, key=lambda x: x.name)
     return list_cat
