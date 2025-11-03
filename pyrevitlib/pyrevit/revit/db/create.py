@@ -378,7 +378,7 @@ def create_text_type(name,
     spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_UNDERLINE]\
         .Set(1 if underline else 0)
     spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_WIDTH_SCALE]\
-        .Set(width_factor if width_factor != 1.0 else 1.0)
+        .Set(width_factor)
     return spec_tnote_type
 
 
