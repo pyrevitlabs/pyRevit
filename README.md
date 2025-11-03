@@ -205,7 +205,7 @@ Made with [contrib.rocks](https://contrib.rocks)
 
 ---
 
-**</>** with 🖤 in [Portland](https://en.m.wikipedia.org/wiki/Portland,_Oregon), Oregon
+Made with 🖤 in [Portland](https://en.m.wikipedia.org/wiki/Portland,_Oregon), Oregon
 
 Copyright © 2014-2025 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
 
