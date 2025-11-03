@@ -1,17 +1,13 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import print_function
-from pyrevit import script, forms, revit, HOST_APP
+from pyrevit import script, forms, revit, HOST_APP, DB, UI
+from pyrevit.revit import events
+from pyrevit.framework import EventHandler, Convert, List, Color, SolidColorBrush
 import traceback
-
-from Autodesk.Revit import DB, UI
 from Autodesk.Revit.Exceptions import InvalidOperationException
 from Autodesk.Revit.UI.Events import ViewActivatedEventArgs, SelectionChangedEventArgs
 from Autodesk.Revit.DB.Events import DocumentChangedEventArgs
-
-from System import EventHandler, Convert
-from System.Windows.Media import Color, SolidColorBrush
-from System.Collections.Generic import List
 
 doc = revit.doc
 uidoc = revit.uidoc
@@ -406,7 +402,15 @@ class Context(object):
             )
 
     def context_changed(self):
-        server.uidoc = UI.UIDocument(self.active_view.Document)
+        # Clear original data dictionaries when view changes to prevent stale data in Reset
+        self.original_offset_data = {}
+        self.original_level_data = {}
+        
+        # Fix document reference - check validity and use source_view if available
+        if self.active_view and self.active_view.IsValidObject:
+            server.uidoc = UI.UIDocument(self.active_view.Document)
+        elif self.source_view and self.source_view.IsValidObject:
+            server.uidoc = UI.UIDocument(self.source_view.Document)
 
         # Reset all elevation and input values
         for _, _, prefix in PLANES.values():
@@ -739,13 +743,14 @@ class MainWindow(forms.WPFWindow):
     def __init__(self):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
         self.Closed += self.window_closed
-        subscribe()
+        # Events are now handled via @events.handle decorators
         server.add_server()
 
     def window_closed(self, sender, args):
         server.remove_server()
         refresh_event.Raise()
-        unsubscribe_event.Raise()
+        # Stop all registered events using the events API
+        events.stop_events()
 
     def apply_changes_click(self, sender, e):
         try:
@@ -827,12 +832,16 @@ class MainWindow(forms.WPFWindow):
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
                             try:
-                                level = context.active_view.Document.GetElement(
-                                    original_level_id
-                                )
-                                self.DataContext.cutplane_level_name = (
-                                    level.Name if level else "Unknown"
-                                )
+                                # Use source_view.Document instead of active_view.Document
+                                if context.source_view and context.source_view.IsValidObject:
+                                    level = context.source_view.Document.GetElement(
+                                        original_level_id
+                                    )
+                                    self.DataContext.cutplane_level_name = (
+                                        level.Name if level else "Unknown"
+                                    )
+                                else:
+                                    self.DataContext.cutplane_level_name = "Unknown"
                             except Exception:
                                 self.DataContext.cutplane_level_name = "Unknown"
                         else:
@@ -872,31 +881,8 @@ class MainWindow(forms.WPFWindow):
             )
 
 
-def subscribe():
-    try:
-        ui_app = UI.UIApplication(HOST_APP.app)
-        ui_app.ViewActivated += EventHandler[ViewActivatedEventArgs](view_activated)
-        ui_app.SelectionChanged += EventHandler[SelectionChangedEventArgs](
-            selection_changed
-        )
-        ui_app.Application.DocumentChanged += EventHandler[DocumentChangedEventArgs](
-            doc_changed
-        )
-    except Exception:
-        print(traceback.format_exc())
-
-
-def unsubscribe(uiapp):
-    try:
-        uiapp.ViewActivated -= EventHandler[ViewActivatedEventArgs](view_activated)
-        uiapp.SelectionChanged -= EventHandler[SelectionChangedEventArgs](
-            selection_changed
-        )
-        uiapp.Application.DocumentChanged -= EventHandler[DocumentChangedEventArgs](
-            doc_changed
-        )
-    except Exception:
-        print(traceback.format_exc())
+# Event handlers are now registered via @events.handle decorators below
+# Old manual subscribe/unsubscribe functions removed in favor of events API
 
 
 def refresh_active_view(uiapp):
@@ -911,6 +897,7 @@ def refresh_active_view(uiapp):
         print(traceback.format_exc())
 
 
+@events.handle("view-activated")
 def view_activated(sender, args):
     try:
         context.active_view = args.CurrentActiveView
@@ -918,6 +905,7 @@ def view_activated(sender, args):
         print(traceback.format_exc())
 
 
+@events.handle("selection-changed")
 def selection_changed(sender, args):
     if not args.GetDocument().ActiveView.ViewType == DB.ViewType.ProjectBrowser:
         return
@@ -935,6 +923,7 @@ def selection_changed(sender, args):
         print(traceback.format_exc())
 
 
+@events.handle("doc-changed")
 def doc_changed(sender, args):
     try:
         affected_ids = list(args.GetModifiedElementIds()) + list(
@@ -1016,7 +1005,6 @@ def get_color_from_plane(plane):
 
 # Initialize
 server = revit.dc3dserver.Server(register=False)
-unsubscribe_event = UI.ExternalEvent.Create(SimpleEventHandler(unsubscribe))
 refresh_event = UI.ExternalEvent.Create(SimpleEventHandler(refresh_active_view))
 update_view_range_handler = UpdateViewRangeEventHandler()
 update_view_range_event = UI.ExternalEvent.Create(update_view_range_handler)
