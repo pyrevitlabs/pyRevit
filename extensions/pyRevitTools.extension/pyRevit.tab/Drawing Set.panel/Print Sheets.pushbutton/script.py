@@ -28,7 +28,6 @@ import os, datetime, locale
 from collections import namedtuple
 
 from pyrevit import HOST_APP
-from pyrevit import USER_DESKTOP
 from pyrevit import framework
 from pyrevit.framework import Windows, Drawing, ObjectModel, Forms, List
 from pyrevit.framework import clr
@@ -89,7 +88,6 @@ class PrintUtils:
         if not os.path.exists(dp):
             os.makedirs(dp)
         return dp
-        
 
     @staticmethod
     def open_dir(dp):
@@ -1089,29 +1087,23 @@ class PrintSheetsWindow(forms.WPFWindow):
 
                                         if self._verify_print_filename(sheet.name,
                                                                     print_filepath):
-                                            
                                             try:
+                                                pb1.update_progress(pbCount1, pbTotal1)
+                                                pbCount1 += 1
                                                 if IS_REVIT_2022_OR_NEWER:
                                                     optspdf = PrintUtils.pdf_opts()
                                                     PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                                 else:
                                                     print_mgr.SubmitPrint(sheet.revit_sheet)
-
-                                                pb1.update_progress(pbCount1, pbTotal1)
-                                                pbCount1 += 1
-
                                             except Exception as e:
-                                                pbCount1 += 1
                                                 logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
 
                                             try:
-                                                optsdwg = PrintUtils.dwg_opts()
-                                                PrintUtils.export_sheet_dwg(dirPath,sheet.revit_sheet,optsdwg,doc, sheet.print_filename)
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
-
+                                                optsdwg = PrintUtils.dwg_opts()
+                                                PrintUtils.export_sheet_dwg(dirPath,sheet.revit_sheet,optsdwg,doc, sheet.print_filename)
                                             except Exception as e:
-                                                pbCount1 += 1
                                                 logger.error('Failed to export DWG for sheet %s: %s', sheet.number, e)
                                             
                                     else:
@@ -1123,7 +1115,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                     pbCount1 += 2
                                     logger.debug('Sheet %s is not printable. Skipping print.',
                                                 sheet.number)
-                else :
+                else:
                     with forms.ProgressBar(step=1, title='Exporting PDFs... ' + '{value} of {max_value}', cancellable=True) as pb1:
                         
                         pbTotal1 = len(target_sheets)
@@ -1144,19 +1136,15 @@ class PrintSheetsWindow(forms.WPFWindow):
 
                                         if self._verify_print_filename(sheet.name,
                                                                     print_filepath):
-
                                             try:
+                                                pb1.update_progress(pbCount1, pbTotal1)
+                                                pbCount1 += 1
                                                 if IS_REVIT_2022_OR_NEWER:
                                                     optspdf = PrintUtils.pdf_opts()
                                                     PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                                 else:
                                                     print_mgr.SubmitPrint(sheet.revit_sheet)
-
-                                                pb1.update_progress(pbCount1, pbTotal1)
-                                                pbCount1 += 1
-
                                             except Exception as e:
-                                                pbCount1 += 1
                                                 logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
 
                                     else:
@@ -1202,19 +1190,15 @@ class PrintSheetsWindow(forms.WPFWindow):
 
                                 if self._verify_print_filename(sheet.name,
                                                             print_filepath):
-                                    
                                     try:
+                                        pb1.update_progress(pbCount1, pbTotal1)
+                                        pbCount1 += 1
                                         if IS_REVIT_2022_OR_NEWER:
                                             optspdf = PrintUtils.pdf_opts()
                                             PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                         else:
                                             print_mgr.SubmitPrint(sheet.revit_sheet)
-
-                                        pb1.update_progress(pbCount1, pbTotal1)
-                                        pbCount1 += 1
-
                                     except Exception as e:
-                                        pbCount1 += 1
                                         logger.error('Failed to export PDF for sheet %s: %s', sheet.number, e)
                             else:
                                 pbCount1 += 1
@@ -1281,7 +1265,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         sortable_date = ""
 
         # Try to detect user's locale
-        user_locale = (locale.getdefaultlocale() or ["en_GB"])[0]
+        locale_tuple = locale.getdefaultlocale()
+        user_locale = (locale_tuple[0] if locale_tuple and locale_tuple[0] else "en_GB")
         dayfirst = not user_locale.startswith("en_US")
 
         # Try several common patterns
