@@ -12,7 +12,7 @@ from pyrevit.compat import get_elementid_value_func
 #pylint: disable=W0703,C0302,C0103
 __all__ = ('BaseWrapper', 'ElementWrapper',
            'ExternalRef', 'ProjectParameter', 'ProjectInfo',
-           'XYZPoint')
+           'XYZPoint', 'get_parameter_data_type', 'is_yesno_parameter')
 
 
 class BaseWrapper(object):
@@ -214,6 +214,71 @@ class ProjectParameter(BaseWrapper):
             return 'Instance'
         elif isinstance(self.param_binding, DB.TypeBinding):
             return 'Type'
+
+
+def get_parameter_data_type(definition):
+    """Get parameter data type with version compatibility.
+    
+    Safely retrieves parameter data type, handling both old (ParameterType) 
+    and new (GetDataType) API versions.
+    
+    Args:
+        definition: Parameter definition object (InternalDefinition, 
+                   ExternalDefinition, SharedParameterDefinition, etc.)
+    
+    Returns:
+        ForgeTypeId for Revit 2022+, ParameterType enum for older versions, 
+        or None on error
+    """
+    try:
+        if HOST_APP.is_newer_than(2022, or_equal=True):
+            return definition.GetDataType()
+        else:
+            # Try GetDataType first (works in some 2021 versions)
+            try:
+                return definition.GetDataType()
+            except (AttributeError, Exception):
+                # Fallback to ParameterType for older versions
+                return definition.ParameterType
+    except Exception:
+        # Final fallback
+        try:
+            return definition.GetDataType()
+        except Exception:
+            return None
+
+
+def is_yesno_parameter(definition):
+    """Check if parameter is Yes/No (boolean) type.
+    
+    Version-aware check for Yes/No parameters using appropriate API 
+    (SpecTypeId.Boolean.YesNo for 2022+, ParameterType.YesNo for older).
+    
+    Args:
+        definition: Parameter definition object
+    
+    Returns:
+        bool: True if parameter is Yes/No type, False otherwise
+    """
+    try:
+        data_type = get_parameter_data_type(definition)
+        if data_type is None:
+            return False
+        
+        if HOST_APP.is_newer_than(2022, or_equal=True):
+            # New API: compare with SpecTypeId
+            if hasattr(DB.SpecTypeId, 'Boolean') and hasattr(DB.SpecTypeId.Boolean, 'YesNo'):
+                return (data_type == DB.SpecTypeId.Boolean.YesNo)
+            # Fallback: check TypeId string
+            if hasattr(data_type, 'TypeId'):
+                return ('bool' in data_type.TypeId.lower() and 'yesno' in data_type.TypeId.lower())
+        else:
+            # Old API: use ParameterType enum
+            if hasattr(DB.ParameterType, 'YesNo'):
+                return (data_type == DB.ParameterType.YesNo)
+        return False
+    except Exception:
+        return False
 
 
 class ProjectInfo(BaseWrapper):
