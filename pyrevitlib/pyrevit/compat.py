@@ -75,7 +75,7 @@ def get_elementid_value_func():
         ```python
         get_elementid_value = get_elementid_value_func()
         sheet_revids = {get_elementid_value(x) for x in self.revit_sheet.GetAllRevisionIds()}
-        add_sheet_revids = {get_elementid_value(x) x in self.revit_sheet.GetAdditionalRevisionIds()}
+        add_sheet_revids = {get_elementid_value(x) for x in self.revit_sheet.GetAdditionalRevisionIds()}
         ```
     """
     attr = "Value" if _get_revit_version() > 2023 else "IntegerValue"
