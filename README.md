@@ -205,8 +205,6 @@ Made with [contrib.rocks](https://contrib.rocks)
 
 ---
 
-Made with 🖤 in [Portland](https://en.m.wikipedia.org/wiki/Portland,_Oregon), Oregon
-
 Copyright © 2014-2025 by Ehsan Iran-Nejad (pyrevitlabs.io) - All Rights Reserved
 
 No part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher.
