@@ -3,7 +3,8 @@ import os
 import re
 from collections import namedtuple
 
-from pyrevit import script, forms, coreutils, revit, traceback, DB
+from pyrevit import script, forms, coreutils, revit, traceback, DB, HOST_APP
+from pyrevit.revit import get_parameter_data_type, is_yesno_parameter
 from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
@@ -19,7 +20,7 @@ doc = revit.doc
 active_view = revit.active_view
 project_units = doc.GetUnits()
 
-unit_postfix_pattern = re.compile(r"\[.*\]")
+unit_postfix_pattern = re.compile(r"\s*\[.*\]$")
 
 ParamDef = namedtuple(
     "ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"]
@@ -40,7 +41,7 @@ ElementDef = namedtuple(
 
 
 def create_element_definitions(elements):
-
+    """Create element definitions for the given elements."""
     type_element_map = {}
 
     for el in elements:
@@ -100,7 +101,7 @@ def create_element_definitions(elements):
 
 
 def select_elements(elements):
-
+    """Select elements from the given elements."""
     element_defs = create_element_definitions(elements)
 
     if not element_defs:
@@ -139,7 +140,7 @@ def select_elements(elements):
 
 
 def schedule_filter(schedule):
-    """Filter out internal and revision schedules."""
+    """Filter out internal and revision schedules. Returns True if the schedule is valid, False otherwise."""
     try:
         if (
             hasattr(schedule.Definition, "IsInternalKeynoteSchedule")
@@ -157,7 +158,7 @@ def schedule_filter(schedule):
 
 
 def get_schedule_elements_and_params(schedule):
-    """Get elements and parameters from a schedule."""
+    """Get elements and parameters from a schedule. Returns a tuple of elements and parameters."""
     schedule_def = schedule.Definition
 
     visible_fields = []
@@ -202,14 +203,13 @@ def get_schedule_elements_and_params(schedule):
             if param and param.StorageType != non_storage_type:
                 def_name = param.Definition.Name
                 if def_name not in param_defs_dict:
+                    param_data_type = get_parameter_data_type(param.Definition)
                     param_defs_dict[def_name] = ParamDef(
                         name=def_name,
                         istype=False,
                         definition=param.Definition,
                         isreadonly=param.IsReadOnly,
-                        isunit=DB.UnitUtils.IsMeasurableSpec(
-                            param.Definition.GetDataType()
-                        ),
+                        isunit=DB.UnitUtils.IsMeasurableSpec(param_data_type) if param_data_type else False,
                         storagetype=param.StorageType,
                     )
                 break
@@ -223,6 +223,7 @@ def get_schedule_elements_and_params(schedule):
 
 
 def select_parameters(src_elements):
+    """Select parameters from the given elements. Returns a list of parameters."""
     param_defs_dict = {}
     non_storage_type = coreutils.get_enum_none(DB.StorageType)
 
@@ -231,14 +232,13 @@ def select_parameters(src_elements):
             if p.StorageType != non_storage_type:
                 def_name = p.Definition.Name
                 if def_name not in param_defs_dict:
+                    param_data_type = get_parameter_data_type(p.Definition)
                     param_defs_dict[def_name] = ParamDef(
                         name=def_name,
                         istype=False,
                         definition=p.Definition,
                         isreadonly=p.IsReadOnly,
-                        isunit=DB.UnitUtils.IsMeasurableSpec(
-                            p.Definition.GetDataType()
-                        ),
+                        isunit=DB.UnitUtils.IsMeasurableSpec(param_data_type) if param_data_type else False,
                         storagetype=p.StorageType,
                     )
 
@@ -258,6 +258,7 @@ def select_parameters(src_elements):
 
 
 def export_xls(src_elements, selected_params):
+    """Export the given elements and parameters to an Excel file."""
     default_name = "Export_{}.xlsx".format(
         doc.Title.replace(".rvt", "").replace(" ", "_")
     )
@@ -278,7 +279,7 @@ def export_xls(src_elements, selected_params):
     for param in selected_params:
         if unit_postfix_pattern.search(param.name):
             logger.warning(
-                "Dropping {} from export. [] is not supported.".format(param.name)
+                "Dropping {} from export. Parameter name already contains brackets.".format(param.name)
             )
             continue
         valid_params.append(param)
@@ -292,8 +293,8 @@ def export_xls(src_elements, selected_params):
         if param.isreadonly:
             header_format = workbook.add_format({"bold": True, "bg_color": "#FF3131"})
 
-        forge_type_id = param.definition.GetDataType()
-        if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
+        forge_type_id = get_parameter_data_type(param.definition)
+        if forge_type_id and DB.UnitUtils.IsMeasurableSpec(forge_type_id):
             symbol_type_id = project_units.GetFormatOptions(
                 forge_type_id
             ).GetSymbolTypeId()
@@ -318,9 +319,9 @@ def export_xls(src_elements, selected_params):
                 if param_val.HasValue:
                     try:
                         if param_val.StorageType == DB.StorageType.Double:
-                            forge_type_id = param.definition.GetDataType()
+                            forge_type_id = get_parameter_data_type(param.definition)
                             val = param_val.AsDouble()
-                            if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
+                            if forge_type_id and DB.UnitUtils.IsMeasurableSpec(forge_type_id):
                                 unit_type_id = param_val.GetUnitTypeId()
                                 val = DB.UnitUtils.ConvertFromInternalUnits(
                                     param_val.AsDouble(), unit_type_id
@@ -328,7 +329,11 @@ def export_xls(src_elements, selected_params):
                         elif param_val.StorageType == DB.StorageType.String:
                             val = param_val.AsString()
                         elif param_val.StorageType == DB.StorageType.Integer:
-                            val = str(param_val.AsInteger())
+                            # Check if this is a Yes/No parameter using helper function
+                            if is_yesno_parameter(param.definition):
+                                val = "Yes" if param_val.AsInteger() else "No"
+                            else:
+                                val = str(param_val.AsInteger())
                         elif param_val.StorageType == DB.StorageType.ElementId:
                             val = param_val.AsValueString()
                         else:
@@ -409,25 +414,26 @@ def main(advanced=False):
                 src_elements, selected_params = get_schedule_elements_and_params(
                     schedule
                 )
-            elif "Document" in selection:
-                elements = revit.query.get_all_elements(doc)
-                if selection == "Document - types":
-                    type_filter = DB.ElementIsElementTypeFilter()
-                    elements = [el for el in elements if type_filter.PassesFilter(el)]
+            else:
+                if "Document" in selection:
+                    elements = revit.query.get_all_elements(doc)
+                    if selection == "Document - types":
+                        type_filter = DB.ElementIsElementTypeFilter()
+                        elements = [el for el in elements if type_filter.PassesFilter(el)]
 
-                elif selection == "Document - instances":
-                    type_filter = DB.ElementIsElementTypeFilter(True)
-                    elements = [el for el in elements if type_filter.PassesFilter(el)]
-            elif selection == "Current View":
-                elements = revit.query.get_all_elements_in_view(active_view)
-            elif selection == "Selection":
-                elements = revit.get_selection()
-                if not elements:
-                    with forms.WarningBar(title="Pick Elements to Export"):
-                        elements = revit.pick_elements(message="Pick Elements to Export")
+                    elif selection == "Document - instances":
+                        type_filter = DB.ElementIsElementTypeFilter(True)
+                        elements = [el for el in elements if type_filter.PassesFilter(el)]
+                elif selection == "Current View":
+                    elements = revit.query.get_all_elements_in_view(active_view)
+                elif selection == "Selection":
+                    elements = revit.get_selection()
+                    if not elements:
+                        with forms.WarningBar(title="Pick Elements to Export"):
+                            elements = revit.pick_elements(message="Pick Elements to Export")
 
-            src_elements = select_elements(elements)
-            selected_params = select_parameters(src_elements)
+                src_elements = select_elements(elements)
+                selected_params = select_parameters(src_elements)
 
         export_xls(src_elements, selected_params)
 

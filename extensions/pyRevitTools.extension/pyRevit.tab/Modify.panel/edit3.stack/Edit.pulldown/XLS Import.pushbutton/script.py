@@ -2,8 +2,9 @@ import os
 import xlrd
 import re
 
-from pyrevit import script, forms, revit
+from pyrevit import script, forms, revit, HOST_APP
 from pyrevit import DB
+from pyrevit.revit import get_parameter_data_type, is_yesno_parameter
 from pyrevit.compat import get_elementid_from_value_func
 
 get_elementid_from_value = get_elementid_from_value_func()
@@ -74,10 +75,28 @@ def main():
                         if storage_type == DB.StorageType.String:
                             param.Set(str(new_val))
                         elif storage_type == DB.StorageType.Integer:
-                            param.Set(int(float(new_val)))
+                            try:
+                                if is_yesno_parameter(param.Definition):
+                                    # Handle Yes/No as string or numeric
+                                    try:
+                                        # Check if it's a string-like type
+                                        str_val = str(new_val).strip().lower()
+                                        int_val = 1 if str_val in ("yes", "1", "true") else 0
+                                    except (AttributeError, TypeError):
+                                        # Not a string, treat as numeric
+                                        int_val = int(float(new_val))
+                                    param.Set(int_val)
+                                else:
+                                    param.Set(int(float(new_val)))
+                            except (ValueError, TypeError) as e:
+                                logger.warning(
+                                    "Invalid integer value '{}' for parameter '{}' on element {}: {}".format(
+                                        new_val, param_name, el_id_val, e
+                                    )
+                                )
                         elif storage_type == DB.StorageType.Double:
-                            forge_type_id = param.Definition.GetDataType()
-                            if DB.UnitUtils.IsMeasurableSpec(forge_type_id):
+                            forge_type_id = get_parameter_data_type(param.Definition)
+                            if forge_type_id and DB.UnitUtils.IsMeasurableSpec(forge_type_id):
                                 try:
                                     unit_type_id = project_units.GetFormatOptions(
                                         forge_type_id
@@ -88,7 +107,7 @@ def main():
                                     param.Set(new_val)
                                 except Exception as e:
                                     logger.error(
-                                        "Failed Set converted value for '{}': {}".format(
+                                        "Failed to set converted value for '{}': {}".format(
                                             param_name, e
                                         )
                                     )
@@ -100,6 +119,7 @@ def main():
                                     param_name
                                 )
                             )
+
                         else:
                             logger.warning(
                                 "Unknown storage type for parameter '{}'.".format(
