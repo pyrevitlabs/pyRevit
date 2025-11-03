@@ -1,32 +1,25 @@
 # -*- coding: UTF-8 -*-
 
-from __future__ import print_function
 from pyrevit import script, forms, revit, HOST_APP, DB, UI
 from pyrevit.revit import events
-from pyrevit.framework import EventHandler, Convert, List, Color, SolidColorBrush
+from pyrevit.framework import Convert, List, Color, SolidColorBrush
+from pyrevit.compat import get_elementid_value_func
 import traceback
 from Autodesk.Revit.Exceptions import InvalidOperationException
-from Autodesk.Revit.UI.Events import ViewActivatedEventArgs, SelectionChangedEventArgs
-from Autodesk.Revit.DB.Events import DocumentChangedEventArgs
+from collections import OrderedDict
 
-doc = revit.doc
-uidoc = revit.uidoc
+
+doc = HOST_APP.doc
+uidoc = HOST_APP.uidoc
 logger = script.get_logger()
 output = script.get_output()
 
-PLANES = {
-    DB.PlanViewPlane.TopClipPlane: ([0, 255, 0], "Top Clip Plane", "topplane"),
-    DB.PlanViewPlane.CutPlane: ([255, 0, 0], "Cut Plane", "cutplane"),
-    DB.PlanViewPlane.BottomClipPlane: ([0, 0, 255], "Bottom Clip Plane", "bottomplane"),
-    DB.PlanViewPlane.ViewDepthPlane: ([255, 127, 0], "View Depth Plane", "viewdepth"),
-}
-
-PLANE_ORDER = [
-    DB.PlanViewPlane.TopClipPlane,
-    DB.PlanViewPlane.CutPlane,
-    DB.PlanViewPlane.BottomClipPlane,
-    DB.PlanViewPlane.ViewDepthPlane,
-]
+PLANES = OrderedDict([
+    (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
+    (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
+    (DB.PlanViewPlane.BottomClipPlane, ([0, 0, 255], "Bottom Clip Plane", "bottomplane")),
+    (DB.PlanViewPlane.ViewDepthPlane, ([255, 127, 0], "View Depth Plane", "viewdepth")),
+])
 
 
 class SimpleEventHandler(UI.IExternalEventHandler):
@@ -322,8 +315,8 @@ class Context(object):
                 def __init__(self, name, element_id, elevation=None, is_special=False):
                     self.Name = name
                     self.Id = element_id
-                    # Store integer ID for WPF binding (WPF can't compare ElementId properly)
-                    self.IdValue = element_id.IntegerValue if element_id else -1
+                    get_elementid_value = get_elementid_value_func()
+                    self.IdValue = get_elementid_value(element_id) if element_id else -1
                     self.Elevation = elevation
                     self.IsSpecial = is_special
 
@@ -360,7 +353,8 @@ class Context(object):
 
                 if plane == DB.PlanViewPlane.TopClipPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
-                        stored_selections["top"] = level_id.IntegerValue
+                        get_elementid_value = get_elementid_value_func()
+                        stored_selections["top"] = get_elementid_value(level_id)
                     else:
                         stored_selections["top"] = -1
 
@@ -376,13 +370,15 @@ class Context(object):
 
                 elif plane == DB.PlanViewPlane.BottomClipPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
-                        stored_selections["bottom"] = level_id.IntegerValue
+                        get_elementid_value = get_elementid_value_func()
+                        stored_selections["bottom"] = get_elementid_value(level_id)
                     else:
                         stored_selections["bottom"] = -1
 
                 elif plane == DB.PlanViewPlane.ViewDepthPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
-                        stored_selections["viewdepth"] = level_id.IntegerValue
+                        get_elementid_value = get_elementid_value_func()
+                        stored_selections["viewdepth"] = get_elementid_value(level_id)
                     else:
                         stored_selections["viewdepth"] = -1
 
@@ -405,7 +401,7 @@ class Context(object):
         # Clear original data dictionaries when view changes to prevent stale data in Reset
         self.original_offset_data = {}
         self.original_level_data = {}
-        
+
         # Fix document reference - check validity and use source_view if available
         if self.active_view and self.active_view.IsValidObject:
             server.uidoc = UI.UIDocument(self.active_view.Document)
@@ -444,8 +440,8 @@ class Context(object):
                 if not self._levels_populated:
                     self._populate_available_levels()
 
-                for plane in PLANE_ORDER:
-                    color_rgb, name, prefix = PLANES[plane]
+                for plane in PLANES:
+                    _, _, prefix = PLANES[plane]
                     level_id = view_range.GetLevelId(plane)
 
                     # Check if this plane is set to Unlimited
@@ -498,7 +494,7 @@ class Context(object):
                     triangles.extend(create_triangles(cut_plane_vertices, color))
 
                 # Set all view model properties
-                for plane in PLANE_ORDER:
+                for plane in PLANES:
                     _, _, prefix = PLANES[plane]
                     setattr(
                         self.view_model,
@@ -819,8 +815,9 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
+                            get_elementid_value = get_elementid_value_func()
                             self.DataContext.topplane_level_id = (
-                                original_level_id.IntegerValue
+                                get_elementid_value(original_level_id)
                             )
                         else:
                             self.DataContext.topplane_level_id = -1
@@ -852,8 +849,9 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
+                            get_elementid_value = get_elementid_value_func()
                             self.DataContext.bottomplane_level_id = (
-                                original_level_id.IntegerValue
+                                get_elementid_value(original_level_id)
                             )
                         else:
                             self.DataContext.bottomplane_level_id = -1
@@ -863,8 +861,9 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
+                            get_elementid_value = get_elementid_value_func()
                             self.DataContext.viewdepth_level_id = (
-                                original_level_id.IntegerValue
+                                get_elementid_value(original_level_id)
                             )
                         else:
                             self.DataContext.viewdepth_level_id = -1
