@@ -76,7 +76,7 @@ class PrintUtils:
 
     @staticmethod
     def get_dir():
-        return os.path.expanduser("~/Desktop\\pyRevit Print Folder")
+        return os.path.join(os.path.expanduser("~"), "Desktop", "pyRevit Print Folder")
 
     @staticmethod
     def get_folder(task="_PDF"):
@@ -1009,7 +1009,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 forms.alert(str(e) +
                             '\nSet printer correctly in Print settings.')
                 script.exit()
-            print_filepath = op.join(r'C:\\', 'Ordered Sheet Set.pdf')
+            print_filepath = op.join('C:', 'Ordered Sheet Set.pdf')
             print_mgr.PrintToFile = True
             print_mgr.PrintToFileName = print_filepath
 
@@ -1039,7 +1039,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         per_sheet_psettings = self.selected_print_setting.allows_variable_paper
 
         # make sure you can print, construct print path and make directory
-        dirPath = PrintUtils.get_dir() + "\\" + PrintUtils.get_folder("_PRINT")
+        dirPath = os.path.join(PrintUtils.get_dir(), PrintUtils.get_folder("_PRINT"))
         PrintUtils.ensure_dir(dirPath)
         doc = PrintUtils.get_doc()
 
@@ -1078,7 +1078,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                             else:
                                 if sheet.printable:
                                     if sheet.print_filename:
-                                        print_filepath = op.join(dirPath + "\\" + sheet.print_filename)
+                                        print_filepath = op.join(dirPath, sheet.print_filename)
                                         print_mgr.PrintToFileName = print_filepath
 
                                         # set the per-sheet print settings if required
@@ -1133,7 +1133,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                             else:
                                 if sheet.printable:
                                     if sheet.print_filename:
-                                        print_filepath = op.join(dirPath + "\\" + sheet.print_filename)
+                                        print_filepath = op.join(dirPath, sheet.print_filename)
 
                                         print_mgr.PrintToFileName = print_filepath
 
@@ -1175,9 +1175,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         print_mgr.SelectNewPrintDriver(self.selected_printer)
         print_mgr.PrintRange = DB.PrintRange.Current
 
-        # make sure you can print, construct print path and make directory
-        PrintUtils.version_check()
-        dirPath = PrintUtils.get_dir() + "\\" + PrintUtils.get_folder("_PRINT")
+
+        dirPath = os.path.join(PrintUtils.get_dir(), PrintUtils.get_folder("_PRINT"))
         PrintUtils.ensure_dir(dirPath)
         doc = target_doc
 
@@ -1197,7 +1196,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                     else:
                         if sheet.printable:
                             if sheet.print_filename:
-                                print_filepath = op.join(dirPath + "\\" + sheet.print_filename)
+                                print_filepath = op.join(dirPath, sheet.print_filename)
                                 print_mgr.PrintToFileName = print_filepath
 
                                 if self._verify_print_filename(sheet.name,
