@@ -26,13 +26,27 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     {
                         var currentTheme = currentThemeProperty.GetValue(null);
                         
-                        // Check if the theme is Dark (enum value 1)
-                        var darkThemeValue = 1; // UITheme.Dark = 1
-                        var currentThemeValue = Convert.ToInt32(currentTheme);
-                        
-                        var isDark = currentThemeValue == darkThemeValue;
-                        Console.WriteLine($"Revit theme detected via UIThemeManager: {(isDark ? "Dark" : "Light")}");
-                        return isDark;
+                        // Get the UITheme enum type to compare against
+                        var uiThemeType = Type.GetType("Autodesk.Revit.UI.UITheme, RevitAPIUI");
+                        if (uiThemeType != null)
+                        {
+                            // Get the Dark enum value
+                            var darkThemeValue = Enum.Parse(uiThemeType, "Dark");
+                            
+                            // Compare the current theme with Dark theme
+                            var isDark = currentTheme.Equals(darkThemeValue);
+                            
+                            Console.WriteLine($"Revit theme detected: {currentTheme} -> isDark: {isDark}");
+                            return isDark;
+                        }
+                        else
+                        {
+                            // Fallback: try string comparison if we can't get the enum type
+                            var themeString = currentTheme.ToString();
+                            var isDark = themeString.Contains("Dark");
+                            Console.WriteLine($"Revit theme detected via string: {themeString} -> isDark: {isDark}");
+                            return isDark;
+                        }
                     }
                 }
                 

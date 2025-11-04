@@ -95,7 +95,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var panelBtn = parentPanel.AddItem(panelBtnData) as PushButton;
                     if (panelBtn != null)
                     {
-                        ApplyIconToPushButton(panelBtn, component);
+                        ApplyIconToPushButtonThemeAware(panelBtn, component);
                         if (!string.IsNullOrEmpty(component.Tooltip))
                             panelBtn.ToolTip = component.Tooltip;
                         ModifyToPanelButton(tabName, parentPanel, panelBtn);
@@ -107,7 +107,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var btn = parentPanel.AddItem(pbData) as PushButton;
                     if (btn != null)
                     {
-                        ApplyIconToPushButton(btn, component);
+                        ApplyIconToPushButtonThemeAware(btn, component);
                         if (!string.IsNullOrEmpty(component.Tooltip))
                             btn.ToolTip = component.Tooltip;
                     }
@@ -126,7 +126,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (splitBtn != null)
                     {
                         // Apply icon to split button
-                        ApplyIconToSplitButton(splitBtn, component);
+                        ApplyIconToSplitButtonThemeAware(splitBtn, component);
                         
                         // Assign tooltip to the split button itself
                         if (!string.IsNullOrEmpty(component.Tooltip))
@@ -139,7 +139,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                 var subBtn = splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                                 if (subBtn != null)
                                 {
-                                    ApplyIconToPushButton(subBtn, sub);
+                                    ApplyIconToPushButtonThemeAware(subBtn, sub);
                                     if (!string.IsNullOrEmpty(sub.Tooltip))
                                         subBtn.ToolTip = sub.Tooltip;
                                 }
@@ -219,7 +219,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         // Apply icons and tooltips to push buttons in stack
                         if (ribbonItem is PushButton pushBtn)
                         {
-                            ApplyIconToPushButton(pushBtn, origComponent);
+                            ApplyIconToPushButtonThemeAware(pushBtn, origComponent);
                             if (!string.IsNullOrEmpty(origComponent.Tooltip))
                                 pushBtn.ToolTip = origComponent.Tooltip;
                         }
@@ -227,7 +227,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         if (ribbonItem is PulldownButton pdBtn)
                         {
                             // Apply icon and tooltip to the pulldown button itself in stack
-                            ApplyIconToPulldownButton(pdBtn, origComponent);
+                            ApplyIconToPulldownButtonThemeAware(pdBtn, origComponent);
                             if (!string.IsNullOrEmpty(origComponent.Tooltip))
                                 pdBtn.ToolTip = origComponent.Tooltip;
 
@@ -238,7 +238,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                                     if (subBtn != null)
                                     {
-                                        ApplyIconToPushButton(subBtn, sub);
+                                        ApplyIconToPushButtonThemeAware(subBtn, sub);
                                         if (!string.IsNullOrEmpty(sub.Tooltip))
                                             subBtn.ToolTip = sub.Tooltip;
                                     }
@@ -266,7 +266,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (pdBtn == null) return null;
 
             // Apply icon and tooltip to the pulldown button itself
-            ApplyIconToPulldownButton(pdBtn, component);
+            ApplyIconToPulldownButtonThemeAware(pdBtn, component);
             if (!string.IsNullOrEmpty(component.Tooltip))
                 pdBtn.ToolTip = component.Tooltip;
 
@@ -277,7 +277,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                     if (subBtn != null)
                     {
-                        ApplyIconToPushButton(subBtn, sub);
+                        ApplyIconToPushButtonThemeAware(subBtn, sub);
                         if (!string.IsNullOrEmpty(sub.Tooltip))
                             subBtn.ToolTip = sub.Tooltip;
                     }
@@ -315,9 +315,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         #region Icon Management
 
         /// <summary>
-        /// Applies icons from the component to a PushButton
+        /// Applies icons from the component to a PushButton with theme awareness (primary method)
         /// </summary>
-        private void ApplyIconToPushButton(PushButton button, ParsedComponent component)
+        private void ApplyIconToPushButtonThemeAware(PushButton button, ParsedComponent component)
         {
             if (!component.HasValidIcons)
                 return;
@@ -325,43 +325,43 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                Console.WriteLine($"Applying icons to PushButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
+                Console.WriteLine($"Applying theme-aware icons to PushButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
                 Console.WriteLine($"Component has {component.Icons.Count} total icons, {component.Icons.DarkIcons.Count()} dark icons, {component.Icons.LightIcons.Count()} light icons");
 
                 // Get the best icons for large and small sizes with theme awareness
-                var largeIcon = GetBestIconForSize(component, 32) ?? GetPrimaryIcon(component);
-                var smallIcon = GetBestIconForSize(component, 16) ?? largeIcon;
+                var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
+                var smallIcon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
 
                 if (largeIcon != null)
                 {
-                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32); // 32x32 for large icons
+                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32);
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied large icon: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                        Console.WriteLine($"Applied large icon: {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
 
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16); // 16x16 for small icons
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16);
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied small icon: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                        Console.WriteLine($"Applied small icon: {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to apply icon to PushButton {component.DisplayName}: {ex.Message}");
+                Console.WriteLine($"Failed to apply theme-aware icon to PushButton {component.DisplayName}: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Applies icons from the component to a PulldownButton
+        /// Applies icons from the component to a PulldownButton with theme awareness
         /// </summary>
-        private void ApplyIconToPulldownButton(PulldownButton button, ParsedComponent component)
+        private void ApplyIconToPulldownButtonThemeAware(PulldownButton button, ParsedComponent component)
         {
             if (!component.HasValidIcons)
                 return;
@@ -369,42 +369,42 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                Console.WriteLine($"Applying icons to PulldownButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
+                Console.WriteLine($"Applying theme-aware icons to PulldownButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
 
                 // Get the best icons for large and small sizes with theme awareness
-                var largeIcon = GetBestIconForSize(component, 32) ?? GetPrimaryIcon(component);
-                var smallIcon = GetBestIconForSize(component, 16) ?? largeIcon;
+                var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
+                var smallIcon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
 
                 if (largeIcon != null)
                 {
-                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32); // 32x32 for large icons
+                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32);
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied large icon to pulldown: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                        Console.WriteLine($"Applied large icon to pulldown: {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
 
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16); // 16x16 for small icons
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16);
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied small icon to pulldown: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                        Console.WriteLine($"Applied small icon to pulldown: {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to apply icon to PulldownButton {component.DisplayName}: {ex.Message}");
+                Console.WriteLine($"Failed to apply theme-aware icon to PulldownButton {component.DisplayName}: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Applies icons from the component to a SplitButton
+        /// Applies icons from the component to a SplitButton with theme awareness
         /// </summary>
-        private void ApplyIconToSplitButton(SplitButton button, ParsedComponent component)
+        private void ApplyIconToSplitButtonThemeAware(SplitButton button, ParsedComponent component)
         {
             if (!component.HasValidIcons)
                 return;
@@ -412,148 +412,152 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                Console.WriteLine($"Applying icons to SplitButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
+                Console.WriteLine($"Applying theme-aware icons to SplitButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
 
                 // Get the best icons for large and small sizes with theme awareness
-                var largeIcon = GetBestIconForSize(component, 32) ?? GetPrimaryIcon(component);
-                var smallIcon = GetBestIconForSize(component, 16) ?? largeIcon;
+                var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
+                var smallIcon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
 
                 if (largeIcon != null)
                 {
-                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32); // 32x32 for large icons
+                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32);
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied large icon to split button: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                        Console.WriteLine($"Applied large icon to split button: {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
 
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16); // 16x16 for small icons
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16);
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied small icon to split button: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                        Console.WriteLine($"Applied small icon to split button: {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to apply icon to SplitButton {component.DisplayName}: {ex.Message}");
+                Console.WriteLine($"Failed to apply theme-aware icon to SplitButton {component.DisplayName}: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Gets the best icon for a specific size from the component's icon collection, considering the current UI theme
+        /// Gets the best icon for a specific size with theme preference - IMPROVED LOGIC
         /// </summary>
-        private ComponentIcon GetBestIconForSize(ParsedComponent component, int preferredSize)
+        private ComponentIcon GetBestIconForSizeWithTheme(ParsedComponent component, int preferredSize, bool isDarkTheme)
         {
             if (!component.HasValidIcons)
                 return null;
 
-            var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-            
-            // First try to find a theme-specific icon with the exact size specification
-            var exactSizeIcon = component.Icons.GetBySize(preferredSize, isDarkTheme);
-            if (exactSizeIcon?.IsValid == true)
+            // Step 1: Try to find exact size match with theme preference
+            var exactSizeThemeIcon = component.Icons.GetBySize(preferredSize, isDarkTheme);
+            if (exactSizeThemeIcon?.IsValid == true)
             {
-                Console.WriteLine($"Found theme-specific icon for size {preferredSize}: {exactSizeIcon.FileName} (Dark: {isDarkTheme})");
-                return exactSizeIcon;
+                Console.WriteLine($"Found exact size+theme icon for size {preferredSize}: {exactSizeThemeIcon.FileName} (Dark: {isDarkTheme})");
+                return exactSizeThemeIcon;
             }
 
-            // Try to find icons with specific size types, theme-aware
+            // Step 2: Try to find icon type based on size with theme preference
+            ComponentIcon typeBasedIcon = null;
             if (preferredSize <= 16)
             {
-                var smallIcon = GetIconByTypeWithTheme(component, IconType.Size16, IconType.DarkSize16, isDarkTheme) ?? 
+                typeBasedIcon = GetIconByTypeWithTheme(component, IconType.Size16, IconType.DarkSize16, isDarkTheme) ?? 
                                GetIconByTypeWithTheme(component, IconType.Small, IconType.DarkSmall, isDarkTheme);
-                if (smallIcon?.IsValid == true)
-                {
-                    Console.WriteLine($"Found theme-specific small icon: {smallIcon.FileName} (Dark: {isDarkTheme})");
-                    return smallIcon;
-                }
             }
             else if (preferredSize <= 32)
             {
-                var mediumIcon = GetIconByTypeWithTheme(component, IconType.Size32, IconType.DarkSize32, isDarkTheme) ?? 
-                                GetIconByTypeWithTheme(component, IconType.Standard, IconType.DarkStandard, isDarkTheme);
-                if (mediumIcon?.IsValid == true)
-                {
-                    Console.WriteLine($"Found theme-specific medium icon: {mediumIcon.FileName} (Dark: {isDarkTheme})");
-                    return mediumIcon;
-                }
+                typeBasedIcon = GetIconByTypeWithTheme(component, IconType.Size32, IconType.DarkSize32, isDarkTheme) ?? 
+                               GetIconByTypeWithTheme(component, IconType.Standard, IconType.DarkStandard, isDarkTheme);
             }
             else
             {
-                var largeIcon = GetIconByTypeWithTheme(component, IconType.Size64, IconType.DarkSize64, isDarkTheme) ?? 
+                typeBasedIcon = GetIconByTypeWithTheme(component, IconType.Size64, IconType.DarkSize64, isDarkTheme) ?? 
                                GetIconByTypeWithTheme(component, IconType.Large, IconType.DarkLarge, isDarkTheme);
-                if (largeIcon?.IsValid == true)
-                {
-                    Console.WriteLine($"Found theme-specific large icon: {largeIcon.FileName} (Dark: {isDarkTheme})");
-                    return largeIcon;
-                }
+            }
+            
+            if (typeBasedIcon?.IsValid == true)
+            {
+                Console.WriteLine($"Found type-based theme icon for size {preferredSize}: {typeBasedIcon.FileName} (Dark: {isDarkTheme})");
+                return typeBasedIcon;
             }
 
-            // If no theme-specific icon found, fall back to light theme icons or any valid icon
-            Console.WriteLine($"No theme-specific icon found for size {preferredSize}, falling back to light theme or any available icon");
-            
-            // Try the original logic as fallback
-            var fallbackIcon = GetBestIconForSizeFallback(component, preferredSize);
-            if (fallbackIcon?.IsValid == true)
-                return fallbackIcon;
+            // Step 3: Fallback to primary icon with theme preference
+            var primaryIcon = GetPrimaryIconWithTheme(component, isDarkTheme);
+            if (primaryIcon?.IsValid == true)
+            {
+                Console.WriteLine($"Fallback to primary theme icon for size {preferredSize}: {primaryIcon.FileName} (Dark: {isDarkTheme})");
+                return primaryIcon;
+            }
 
-            // Final fallback to any valid icon
-            return component.Icons.FirstOrDefault(i => i.IsValid);
+            // Step 4: Final fallback - use any valid icon
+            var fallbackIcon = component.Icons.FirstOrDefault(i => i.IsValid);
+            if (fallbackIcon != null)
+            {
+                Console.WriteLine($"Final fallback icon for size {preferredSize}: {fallbackIcon.FileName} (Dark: {fallbackIcon.IsDark})");
+            }
+            return fallbackIcon;
         }
 
         /// <summary>
-        /// Gets an icon by type with theme preference
+        /// Gets an icon by type with theme preference - IMPROVED
         /// </summary>
         private ComponentIcon GetIconByTypeWithTheme(ParsedComponent component, IconType lightType, IconType darkType, bool isDarkTheme)
         {
-            if (isDarkTheme && component.Icons.HasDarkIcons)
+            if (isDarkTheme)
             {
-                // Try to get the dark version first
+                // In dark theme, prefer dark icons
                 var darkIcon = component.Icons.GetByType(darkType);
                 if (darkIcon?.IsValid == true)
+                {
+                    Console.WriteLine($"Found dark icon of type {darkType}: {darkIcon.FileName}");
                     return darkIcon;
+                }
+                
+                // If no dark icon of this type, log it but continue to light fallback
+                Console.WriteLine($"No dark icon found for type {darkType}, falling back to light type {lightType}");
             }
             
-            // Fall back to light version
-            return component.Icons.GetByType(lightType);
+            // Use light icon (either because we're in light theme, or as fallback in dark theme)
+            var lightIcon = component.Icons.GetByType(lightType);
+            if (lightIcon?.IsValid == true)
+            {
+                Console.WriteLine($"Using light icon of type {lightType}: {lightIcon.FileName} (requested dark: {isDarkTheme})");
+                return lightIcon;
+            }
+            
+            return null;
         }
 
         /// <summary>
-        /// Original fallback logic for icon selection
+        /// Gets the primary icon for a component with theme preference - IMPROVED
         /// </summary>
-        private ComponentIcon GetBestIconForSizeFallback(ParsedComponent component, int preferredSize)
+        private ComponentIcon GetPrimaryIconWithTheme(ParsedComponent component, bool isDarkTheme)
         {
-            // First try to find an icon with the exact size specification (light theme)
-            var exactSizeIcon = component.Icons.GetBySize(preferredSize, false);
-            if (exactSizeIcon?.IsValid == true)
-                return exactSizeIcon;
+            if (!component.HasValidIcons)
+                return null;
 
-            // Try to find icons with specific size types (light theme only)
-            if (preferredSize <= 16)
+            if (isDarkTheme)
             {
-                var smallIcon = component.Icons.GetByType(IconType.Size16) ?? 
-                               component.Icons.GetByType(IconType.Small);
-                if (smallIcon?.IsValid == true)
-                    return smallIcon;
+                // In dark theme, prefer primary dark icon
+                var primaryDarkIcon = component.Icons.PrimaryDarkIcon;
+                if (primaryDarkIcon?.IsValid == true)
+                {
+                    Console.WriteLine($"Using primary dark icon: {primaryDarkIcon.FileName}");
+                    return primaryDarkIcon;
+                }
+                
+                Console.WriteLine($"No primary dark icon found, falling back to light primary (Dark theme: {isDarkTheme}, Has dark icons: {component.Icons.HasDarkIcons})");
             }
-            else if (preferredSize <= 32)
+            
+            // Use primary light icon (either because we're in light theme, or as fallback)
+            var primaryIcon = component.Icons.PrimaryIcon;
+            if (primaryIcon?.IsValid == true)
             {
-                var mediumIcon = component.Icons.GetByType(IconType.Size32) ?? 
-                                component.Icons.GetByType(IconType.Standard);
-                if (mediumIcon?.IsValid == true)
-                    return mediumIcon;
-            }
-            else
-            {
-                var largeIcon = component.Icons.GetByType(IconType.Size64) ?? 
-                               component.Icons.GetByType(IconType.Large);
-                if (largeIcon?.IsValid == true)
-                    return largeIcon;
+                Console.WriteLine($"Using primary light icon: {primaryIcon.FileName} (requested dark: {isDarkTheme})");
+                return primaryIcon;
             }
 
             return null;
@@ -638,7 +642,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 using (var context = visual.RenderOpen())
                 {
                     // Draw the source image scaled to fit the target size
-                    context.DrawImage(source, new System.Windows.Rect(0, 0, width, height));
+                    context.DrawImage(source, new Rect(0, 0, width, height));
                 }
 
                 targetBitmap.Render(visual);
@@ -698,8 +702,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 Console.WriteLine($"Applying DPI-aware icons to PushButton '{component.DisplayName}' - Theme: {(isDarkTheme ? "Dark" : "Light")}, Sizes: {smallSize}x{smallSize}, {largeSize}x{largeSize}");
                 
                 // Get the best icons for the calculated sizes with theme awareness
-                var largeIcon = GetBestIconForSize(component, largeSize) ?? GetPrimaryIcon(component);
-                var smallIcon = GetBestIconForSize(component, smallSize) ?? largeIcon;
+                var largeIcon = GetBestIconForSizeWithTheme(component, largeSize, isDarkTheme);
+                var smallIcon = GetBestIconForSizeWithTheme(component, smallSize, isDarkTheme);
 
                 if (largeIcon != null)
                 {
@@ -725,40 +729,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 Console.WriteLine($"Failed to apply DPI-aware icon to PushButton {component.DisplayName}: {ex.Message}");
                 // Fallback to standard method
-                ApplyIconToPushButton(button, component);
+                ApplyIconToPushButtonThemeAware(button, component);
             }
-        }
-
-        /// <summary>
-        /// Gets the primary icon for a component, considering the current UI theme
-        /// </summary>
-        private ComponentIcon GetPrimaryIcon(ParsedComponent component)
-        {
-            if (!component.HasValidIcons)
-                return null;
-
-            var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-            
-            if (isDarkTheme && component.Icons.HasDarkIcons)
-            {
-                // Try to get the primary dark icon first
-                var primaryDarkIcon = component.Icons.PrimaryDarkIcon;
-                if (primaryDarkIcon?.IsValid == true)
-                {
-                    Console.WriteLine($"Using primary dark icon: {primaryDarkIcon.FileName}");
-                    return primaryDarkIcon;
-                }
-            }
-            
-            // Fall back to primary light icon
-            var primaryIcon = component.Icons.PrimaryIcon;
-            if (primaryIcon?.IsValid == true)
-            {
-                Console.WriteLine($"Using primary light icon: {primaryIcon.FileName} (Dark theme: {isDarkTheme}, Has dark icons: {component.Icons.HasDarkIcons})");
-                return primaryIcon;
-            }
-
-            return null;
         }
 
         #endregion
