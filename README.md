@@ -74,7 +74,7 @@
 
 pyRevit helps you quickly sketch out your automation and addon ideas, in whichever language that you are most comfortable with, inside the Revit environment and using its APIs. It also ships with an extensive set of powerful tools that showcase its capabilities as a development environment. Download and install pyRevit, launch Revit, and note the new pyRevit tab that includes these tools. pyRevit also ships with a handy CLI utility for customized configuration and deployment of your tools, and a telemetry server to monitor pyRevit usage across your teams.
 
-&nbsp;
+
 
 ### pyRevit can help you
 
@@ -84,7 +84,7 @@ pyRevit helps you quickly sketch out your automation and addon ideas, in whichev
 - **Distribute your tools** (pyRevit, [Dynamo](https://dynamobim.org/), or [Grasshopper](https://www.rhino3d.com/inside)) easily to your teams using a unified interface
 - **Share your tools** with the community
 
-&nbsp;
+
 
 # Getting Started
 

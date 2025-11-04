@@ -12,9 +12,7 @@ window. Thus the startup script is isolated and can not hurt the load process.
 All errors will be printed to the dedicated output window similar to the way
 errors are printed from pyRevit commands.
 """
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-#pylint: disable=unused-import,wrong-import-position,unused-argument
-#pylint: disable=missing-docstring
+
 import sys
 import time
 import os.path as op
