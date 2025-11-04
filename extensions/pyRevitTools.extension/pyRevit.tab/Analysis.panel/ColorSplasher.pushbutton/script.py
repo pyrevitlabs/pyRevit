@@ -1178,10 +1178,9 @@ class FormCats(Forms.Form):
                     filtered_table.Rows.Add(key_, value_)
 
         # Store current checked state
-                # Store current checked state
         checked_items = [
-            self._list_box1.Items[self._list_box1.  CheckedIndices.Item(i)]["Value"]
-            for i in range(self._list_box1.CheckedIndices.Count)
+            self._list_box1.Items[indx]["Value"]
+            for indx in self._list_box1.CheckedIndices
         ]
 
         # Update data source
