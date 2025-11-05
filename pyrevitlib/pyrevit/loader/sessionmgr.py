@@ -248,6 +248,67 @@ def _new_session():
         uimaker.reflow_pyrevit_ui()
 
 
+def _new_session_csharp():
+    """Create a new session using the C# SessionManagerService."""
+    try:
+        # Check if the new loader should be used
+        if not user_config.new_loader:
+            mlogger.debug('New loader disabled. Using Python session creation.')
+            _new_session()
+            return
+        
+        # Determine build strategy based on configuration
+        build_strategy = "Roslyn" if user_config.use_roslyn_loader else "ILPack"
+        mlogger.info('Using %s build strategy for C# session manager', build_strategy)
+        
+        # Find the PyRevitLoaderApplication type from loaded assemblies
+        loaded_assemblies = framework.AppDomain.CurrentDomain.GetAssemblies()
+        loader_app_type = None
+        
+        for assembly in loaded_assemblies:
+            try:
+                assembly_name = assembly.GetName().Name
+                if assembly_name.startswith('pyRevitLoader'):
+                    loader_app_type = assembly.GetType('PyRevitLoader.PyRevitLoaderApplication')
+                    if loader_app_type:
+                        mlogger.debug('Found PyRevitLoaderApplication in assembly: %s', assembly.Location)
+                        break
+            except Exception:
+                # Some assemblies might not have accessible location/name
+                continue
+        
+        if not loader_app_type:
+            mlogger.error('PyRevitLoaderApplication not found in loaded assemblies')
+            mlogger.info('Falling back to Python session creation...')
+            _new_session()
+            return
+        
+        # Get the LoadSession method
+        load_session_method = loader_app_type.GetMethod('LoadSession')
+        if not load_session_method:
+            mlogger.error('LoadSession method not found in PyRevitLoaderApplication')
+            mlogger.info('Falling back to Python session creation...')
+            _new_session()
+            return
+        
+        # Call the LoadSession method (no parameters needed)
+        mlogger.info('Loading session using C# LoadSession method...')
+        result = load_session_method.Invoke(None, None)
+        
+        # Check if the result indicates success (Result.Succeeded = 0)
+        if hasattr(result, 'value__') and result.value__ == 0:
+            mlogger.info('C# session loading completed successfully')
+        else:
+            mlogger.error('C# session loading returned failure result')
+            mlogger.info('Falling back to Python session creation...')
+            _new_session()
+        
+    except Exception as cs_ex:
+        mlogger.error('Error in C# session creation: %s', cs_ex)
+        mlogger.info('Falling back to Python session creation...')
+        _new_session()
+
+
 def load_session():
     """Handles loading/reloading of the pyRevit addin and extensions.
 
@@ -287,8 +348,11 @@ def load_session():
 
     # create a new session
     if not user_config.new_loader:
+        mlogger.info('Creating new pyRevit session with pyRevitLoader.py...')
         _new_session()
-    # other cases are carried out by the pyRevitAssemblyMaker.dll
+    else:
+        mlogger.info('Creating new Session with pyRevitAssemblyMaker.dll...')
+        _new_session_csharp()
 
     # perform post-load tasks
     _perform_onsessionloadcomplete_ops()

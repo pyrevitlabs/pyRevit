@@ -83,12 +83,19 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             string outputPath = Path.Combine(outputDir, fileName);
 
-            if (_buildStrategy == AssemblyBuildStrategy.Roslyn)
-                BuildWithRoslyn(extension, outputPath);
-            else
-                BuildWithILPack(extension, outputPath);
+            try
+            {
+                if (_buildStrategy == AssemblyBuildStrategy.Roslyn)
+                    BuildWithRoslyn(extension, outputPath);
+                else
+                    BuildWithILPack(extension, outputPath);
 
-            return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading: false);
+                return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading: false);
+            }
+            catch (Exception ex)
+            {
+                throw; // Re-throw the original exception
+            }
         }
 
         private void BuildWithRoslyn(ParsedExtension extension, string outputPath)
@@ -106,6 +113,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             using var fs = new FileStream(outputPath, FileMode.Create);
             var result = compilation.Emit(fs);
+            
             if (!result.Success)
             {
                 HandleCompilationErrors(result.Diagnostics);
@@ -169,13 +177,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
         private static void HandleCompilationErrors(IEnumerable<Diagnostic> diagnostics)
         {
-            Console.WriteLine("=== Diagnostics ===");
-            foreach (var d in diagnostics)
-            {
-                Console.WriteLine($"{d.Severity} {d.Id}: {d.GetMessage()}");
-                if (d.Location != Location.None)
-                    Console.WriteLine($"Location: {d.Location.GetLineSpan()}");
-            }
+            // Compilation errors will be handled by the calling method
+            // This method is kept for potential future error handling
         }
 
         // TODO: Implement a proper hashing module
@@ -190,7 +193,15 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         {
             if (!File.Exists(info.Location))
                 throw new FileNotFoundException("Assembly not found", info.Location);
-            Assembly.LoadFrom(info.Location);
+                
+            try
+            {
+                Assembly.LoadFrom(info.Location);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }
