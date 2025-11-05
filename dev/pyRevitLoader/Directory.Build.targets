@@ -65,10 +65,28 @@
                                      $(TargetDir)\**\System.*.dll"
                             Condition="'$(IsTestProject)' != 'true'"/>
         </ItemGroup>
+        
+        <!-- Default deployment to single version -->
         <Copy SourceFiles="@(AllFilesToCopy)" 
-                DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
+                DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" 
+                Condition="'$(DeployToAllVersions)' != 'true'" />
         <Message Importance="high" 
-                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))"
+                Condition="'$(DeployToAllVersions)' != 'true'" />
+        
+        <!-- Multi-version deployment for shared components -->
+        <Copy SourceFiles="@(AllFilesToCopy)" 
+                DestinationFolder="$(PyRevitEnginesDir)\IPY342" 
+                Condition="'$(DeployToAllVersions)' == 'true'" />
+        <Message Importance="high" 
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY342'))"
+                Condition="'$(DeployToAllVersions)' == 'true'" />
+        <Copy SourceFiles="@(AllFilesToCopy)" 
+                DestinationFolder="$(PyRevitEnginesDir)\IPY2712PR" 
+                Condition="'$(DeployToAllVersions)' == 'true'" />
+        <Message Importance="high" 
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY2712PR'))"
+                Condition="'$(DeployToAllVersions)' == 'true'" />
     </Target>
 
 </Project>
