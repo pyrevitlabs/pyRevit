@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <Compile Include="BundleParser.cs" />
+      <Compile Include="CommandAvailability.cs" />
       <Compile Include="ComponentIcon.cs" />
       <Compile Include="ParsedComponent.cs" />
       <Compile Include="ParsedExtension.cs" />

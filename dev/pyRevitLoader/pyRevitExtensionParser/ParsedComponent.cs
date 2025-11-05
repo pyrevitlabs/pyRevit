@@ -18,6 +18,12 @@ namespace pyRevitExtensionParser
         public bool HasSlideout { get; set; } = false;
         public string Title { get; set; }
         public string Author { get; set; }
+        public string Context { get; set; }
+
+        /// <summary>
+        /// Parsed availability information for this component
+        /// </summary>
+        public CommandAvailability Availability => CommandAvailability.FromContext(Context);
 
         /// <summary>
         /// Collection of icon files associated with this component

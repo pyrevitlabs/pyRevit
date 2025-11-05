@@ -99,6 +99,7 @@ namespace pyRevitExtensionParser
                 Titles = parsedBundle?.Titles,
                 Tooltips = parsedBundle?.Tooltips,
                 MinRevitVersion = parsedBundle?.MinRevitVersion,
+                Context = parsedBundle?.Context,
                 Engine = parsedBundle?.Engine
             };
 
@@ -284,6 +285,7 @@ namespace pyRevitExtensionParser
                     LayoutOrder = bundleInComponent?.LayoutOrder,
                     Title = title,
                     Author = author,
+                    Context = bundleInComponent?.Context,
                     Icons = ParseIconsForComponent(dir),
                     LocalizedTitles = bundleInComponent?.Titles,
                     LocalizedTooltips = bundleInComponent?.Tooltips
