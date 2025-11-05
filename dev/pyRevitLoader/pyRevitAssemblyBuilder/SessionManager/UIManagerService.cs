@@ -252,7 +252,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                                     if (subBtn != null)
                                     {
-                                        ApplyIconToPushButtonThemeAware(subBtn, sub);
+                                        ApplyIconToPulldownSubButtonThemeAware(subBtn, sub);
                                         if (!string.IsNullOrEmpty(sub.Tooltip))
                                             subBtn.ToolTip = sub.Tooltip;
                                     }
@@ -291,7 +291,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                     if (subBtn != null)
                     {
-                        ApplyIconToPushButtonThemeAware(subBtn, sub);
+                        ApplyIconToPulldownSubButtonThemeAware(subBtn, sub);
                         if (!string.IsNullOrEmpty(sub.Tooltip))
                             subBtn.ToolTip = sub.Tooltip;
                     }
@@ -374,6 +374,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         /// <summary>
         /// Applies icons from the component to a PulldownButton with theme awareness
+        /// Uses fixed 16x16 size for pulldown button icons to ensure consistent appearance
         /// </summary>
         private void ApplyIconToPulldownButtonThemeAware(PulldownButton button, ParsedComponent component)
         {
@@ -385,33 +386,79 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
                 Console.WriteLine($"Applying theme-aware icons to PulldownButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
 
-                // Get the best icons for large and small sizes with theme awareness
+                // For pulldown buttons, use fixed 16x16 size for consistent appearance
+                // This ensures pulldown icons remain at the expected size regardless of DPI scaling
+                const int pulldownIconSize = 16;
+                
+                // Get the best icons for pulldown buttons with fixed 16x16 size
+                var smallIcon = GetBestIconForSizeWithTheme(component, pulldownIconSize, isDarkTheme);
+                // For the main pulldown button, also get a larger icon for LargeImage property
                 var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
-                var smallIcon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
 
+                // Set the large image (32x32) for the main pulldown button
                 if (largeIcon != null)
                 {
                     var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32);
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied large icon to pulldown: {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
+                        Console.WriteLine($"Applied pulldown large icon (32x32): {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
 
+                // Set the small image (16x16) for the main pulldown button
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16);
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, pulldownIconSize);
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied small icon to pulldown: {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
+                        Console.WriteLine($"Applied pulldown small icon (16x16): {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to apply theme-aware icon to PulldownButton {component.DisplayName}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Applies icons from the component to a PushButton within a pulldown with theme awareness
+        /// Uses fixed 16x16 size for consistency with pulldown button appearance
+        /// </summary>
+        private void ApplyIconToPulldownSubButtonThemeAware(PushButton button, ParsedComponent component)
+        {
+            if (!component.HasValidIcons)
+                return;
+
+            try
+            {
+                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                Console.WriteLine($"Applying theme-aware icons to pulldown sub-button '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
+
+                // For pulldown sub-buttons, use fixed 16x16 size for consistency with pulldown appearance
+                const int pulldownSubButtonIconSize = 16;
+                
+                // Get the best icon for pulldown sub-buttons with fixed 16x16 size
+                var smallIcon = GetBestIconForSizeWithTheme(component, pulldownSubButtonIconSize, isDarkTheme);
+
+                if (smallIcon != null)
+                {
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, pulldownSubButtonIconSize);
+                    if (smallBitmap != null)
+                    {
+                        // For pulldown sub-buttons, set both properties to ensure visibility
+                        // Some Revit contexts require both Image and LargeImage to be set
+                        button.Image = smallBitmap;
+                        button.LargeImage = smallBitmap;
+                        Console.WriteLine($"Applied pulldown sub-button icon (16x16): {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to apply theme-aware icon to pulldown sub-button {component.DisplayName}: {ex.Message}");
             }
         }
 
