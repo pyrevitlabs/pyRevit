@@ -140,7 +140,8 @@ namespace pyRevitExtensionParser
                             }
                             else if (!string.IsNullOrEmpty(value))
                             {
-                                // Single-line value
+                                // Single-line value - strip quotes if present
+                                value = StripQuotes(value);
                                 if (currentSection == "title" || currentSection == "titles")
                                     parsed.Titles[currentLanguageKey] = value;
                                 else if (currentSection == "tooltip" || currentSection == "tooltips")
@@ -183,6 +184,26 @@ namespace pyRevitExtensionParser
                 }
 
                 return parsed;
+            }
+
+            private static string StripQuotes(string value)
+            {
+                if (string.IsNullOrEmpty(value))
+                    return value;
+                
+                // Handle single quotes
+                if (value.StartsWith("'") && value.EndsWith("'") && value.Length >= 2)
+                {
+                    return value.Substring(1, value.Length - 2);
+                }
+                
+                // Handle double quotes
+                if (value.StartsWith("\"") && value.EndsWith("\"") && value.Length >= 2)
+                {
+                    return value.Substring(1, value.Length - 2);
+                }
+                
+                return value;
             }
 
             private static void FinishMultilineValue(ParsedBundle parsed, string section, string languageKey,
