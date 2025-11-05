@@ -294,11 +294,20 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Ensure the class name matches what the CommandTypeGenerator creates
             var className = SanitizeClassName(component.UniqueId);
             
-            return new PushButtonData(
+            var pushButtonData = new PushButtonData(
                 component.UniqueId,
                 buttonText,
                 assemblyInfo.Location,
                 className);
+
+            // Set availability class if context is defined
+            if (!string.IsNullOrEmpty(component.Context))
+            {
+                var availabilityClassName = className + "_avail";
+                pushButtonData.AvailabilityClassName = availabilityClassName;
+            }
+
+            return pushButtonData;
         }
 
         /// <summary>

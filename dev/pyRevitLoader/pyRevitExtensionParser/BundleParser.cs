@@ -12,6 +12,7 @@ namespace pyRevitExtensionParser
             public Dictionary<string, string> Tooltips { get; set; } = new Dictionary<string, string>();
             public string Author { get; set; }
             public string MinRevitVersion { get; set; }
+            public string Context { get; set; }
             public EngineConfig Engine { get; set; } = new EngineConfig();
         }
 
@@ -84,6 +85,9 @@ namespace pyRevitExtensionParser
                                 break;
                             case "min_revit_version":
                                 parsed.MinRevitVersion = value;
+                                break;
+                            case "context":
+                                parsed.Context = value;
                                 break;
                             case "title":
                             case "titles":

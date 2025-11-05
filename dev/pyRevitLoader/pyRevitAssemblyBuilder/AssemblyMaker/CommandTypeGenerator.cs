@@ -42,6 +42,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 string extName = extension.Name;
                 string ctrlId = $"CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
                 string engineCfgs = "{\"clean\": false, \"persistent\": false, \"full_frame\": false}";
+                
+                // Get context from component, default to "(zero-doc)" if not specified
+                string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
 
                 // — Command class —
                 sb.AppendLine("[Regeneration(RegenerationOption.Manual)]");
@@ -60,7 +63,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 sb.AppendLine($"        \"{Escape(extName)}\",");
                 sb.AppendLine($"        \"{cmd.UniqueId}\",");
                 sb.AppendLine($"        \"{Escape(ctrlId)}\",");
-                sb.AppendLine($"        \"(zero-doc)\",");
+                sb.AppendLine($"        \"{context}\",");
                 sb.AppendLine($"        \"{Escape(engineCfgs)}\"");
                 sb.AppendLine("    )");
                 sb.AppendLine("    {");
@@ -71,7 +74,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // — Availability class —
                 sb.AppendLine($"public class {safeClassName}_avail : ScriptCommandExtendedAvail");
                 sb.AppendLine("{");
-                sb.AppendLine($"    public {safeClassName}_avail() : base(\"(zero-doc)\")");
+                sb.AppendLine($"    public {safeClassName}_avail() : base(\"{context}\")");
                 sb.AppendLine("    {");
                 sb.AppendLine("    }");
                 sb.AppendLine("}");
@@ -193,6 +196,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 Path.Combine(extension.Directory, "..", "..", "pyrevitlib"),
                 Path.Combine(extension.Directory, "..", "..", "site-packages")
             });
+            
+            // Get context from component, default to "(zero-doc)" if not specified
+            string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
+            
             string[] args = {
                 scriptPath,
                 configPath,
@@ -205,7 +212,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 extension.Name,
                 cmd.UniqueId,
                 $"CustomCtrl_%{extension.Name}%{Path.GetFileName(Path.GetDirectoryName(cmd.ScriptPath))}%{cmd.Name}",
-                "(zero-doc)",
+                context,
                 "{\"clean\":false,\"persistent\":false,\"full_frame\":false}"
             };
             foreach (var a in args) il.Emit(OpCodes.Ldstr, a);
@@ -227,6 +234,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 TypeAttributes.Public | TypeAttributes.Class,
                 _extendedAvailType);
 
+            // Get context from component, default to "(zero-doc)" if not specified
+            string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
+
             // Parameterless ctor for ExtendedAvail
             var ctor = atb.DefineConstructor(
                 MethodAttributes.Public,
@@ -235,7 +245,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             var il = ctor.GetILGenerator();
 
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldstr, "(zero-doc)");
+            il.Emit(OpCodes.Ldstr, context);
             il.Emit(OpCodes.Call, _extendedAvailCtor);
             il.Emit(OpCodes.Ret);
 

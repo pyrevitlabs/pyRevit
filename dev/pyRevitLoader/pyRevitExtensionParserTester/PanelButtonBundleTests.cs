@@ -462,6 +462,130 @@ min_revit_ver: 2019
             }
         }
 
+        [Test]
+        public void TestPanelButtonWithContextAvailability()
+        {
+            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var panelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "Debug Dialog Config.panelbutton");
+            var bundlePath = Path.Combine(panelButtonPath, "bundle.yaml");
+            
+            var bundleContent = @"title:
+  en_us: Test Zero-Doc Command
+tooltip:
+  en_us: This command should be available when no document is open
+author: Context Test Framework
+context: zero-doc
+min_revit_version: 2019
+";
+
+            try
+            {
+                File.WriteAllText(bundlePath, bundleContent);
+                _createdTestFiles.Add(bundlePath);
+                
+                // Re-parse extensions
+                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
+                
+                TestContext.Out.WriteLine("=== Testing Panel Button With Context Availability ===");
+                
+                foreach (var extension in extensions)
+                {
+                    var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
+                    if (panelButton != null)
+                    {
+                        TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
+                        TestContext.Out.WriteLine($"Context: {panelButton.Context ?? "None"}");
+                        TestContext.Out.WriteLine($"Availability Type: {panelButton.Availability.ContextType}");
+                        TestContext.Out.WriteLine($"Is Zero-Doc Available: {panelButton.Availability.IsZeroDocAvailable}");
+                        TestContext.Out.WriteLine($"Requires Selection: {panelButton.Availability.RequiresSelection}");
+                        
+                        // Verify context was parsed correctly
+                        Assert.IsNotNull(panelButton.Context);
+                        Assert.AreEqual("zero-doc", panelButton.Context);
+                        Assert.AreEqual(AvailabilityContext.ZeroDoc, panelButton.Availability.ContextType);
+                        Assert.IsTrue(panelButton.Availability.IsZeroDocAvailable);
+                        Assert.IsFalse(panelButton.Availability.RequiresSelection);
+                        
+                        // Test completed successfully
+                        return;
+                    }
+                }
+                
+                Assert.Fail("Panel button not found after adding context bundle");
+            }
+            catch (NUnit.Framework.SuccessException)
+            {
+                // Re-throw success exceptions
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Test failed with exception: {ex.Message}");
+            }
+        }
+
+        [Test]
+        public void TestPanelButtonWithSelectionContext()
+        {
+            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var panelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "Debug Dialog Config.panelbutton");
+            var bundlePath = Path.Combine(panelButtonPath, "bundle.yaml");
+            
+            var bundleContent = @"title:
+  en_us: Test Selection Command
+tooltip:
+  en_us: This command requires element selection
+author: Context Test Framework
+context: selection
+min_revit_version: 2019
+";
+
+            try
+            {
+                File.WriteAllText(bundlePath, bundleContent);
+                _createdTestFiles.Add(bundlePath);
+                
+                // Re-parse extensions
+                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
+                
+                TestContext.Out.WriteLine("=== Testing Panel Button With Selection Context ===");
+                
+                foreach (var extension in extensions)
+                {
+                    var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
+                    if (panelButton != null)
+                    {
+                        TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
+                        TestContext.Out.WriteLine($"Context: {panelButton.Context ?? "None"}");
+                        TestContext.Out.WriteLine($"Availability Type: {panelButton.Availability.ContextType}");
+                        TestContext.Out.WriteLine($"Is Zero-Doc Available: {panelButton.Availability.IsZeroDocAvailable}");
+                        TestContext.Out.WriteLine($"Requires Selection: {panelButton.Availability.RequiresSelection}");
+                        
+                        // Verify context was parsed correctly
+                        Assert.IsNotNull(panelButton.Context);
+                        Assert.AreEqual("selection", panelButton.Context);
+                        Assert.AreEqual(AvailabilityContext.Selection, panelButton.Availability.ContextType);
+                        Assert.IsFalse(panelButton.Availability.IsZeroDocAvailable);
+                        Assert.IsTrue(panelButton.Availability.RequiresSelection);
+                        
+                        // Test completed successfully
+                        return;
+                    }
+                }
+                
+                Assert.Fail("Panel button not found after adding selection context bundle");
+            }
+            catch (NUnit.Framework.SuccessException)
+            {
+                // Re-throw success exceptions
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Test failed with exception: {ex.Message}");
+            }
+        }
+
         // Helper method to find components recursively
         private ParsedComponent FindComponentRecursively(ParsedComponent parent, string componentName)
         {
