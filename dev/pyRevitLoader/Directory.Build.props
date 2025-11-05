@@ -4,7 +4,7 @@
         <UseRevit>true</UseRevit>
         <UseWpf>true</UseWpf>
         <UseWindowsForms>true</UseWindowsForms>
-        <UseAssemblyBuilder>true</UseAssemblyBuilder>
+        <UseAssemblyBuilder Condition="'$(MSBuildProjectName)' != 'pyRevitLoader.2712PR' AND '$(MSBuildProjectName)' != 'pyRevitLoader.342'">true</UseAssemblyBuilder>
         <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     </PropertyGroup>
