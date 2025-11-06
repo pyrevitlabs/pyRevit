@@ -496,7 +496,9 @@ class CreateFilters(UI.IExternalEventHandler):
                 # Redirect to template if one exists
                 template_id = view.ViewTemplateId
                 if template_id != DB.ElementId.InvalidElementId:
-                    view = new_doc.GetElement(template_id)
+                    template_view = new_doc.GetElement(template_id)
+                    if template_view:
+                        view = template_view
 
                 dict_filters = {}
                 for filt_id in view.GetFilters():
@@ -631,6 +633,7 @@ class CreateFilters(UI.IExternalEventHandler):
 
     def GetName(self):
         return "Create Filters"
+
 
 
 class ValuesInfo:
