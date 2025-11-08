@@ -25,7 +25,7 @@ slope_unit_label = DB.LabelUtils.GetLabelForUnit(slope_unit)
 slope_unit_symbol = slope_format_options.GetSymbolTypeId()
 slope_unit_symbol_label = None
 if not slope_unit_symbol.Empty():
-    lslope_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(slope_unit_symbol)
+    slope_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(slope_unit_symbol)
 
 # Global variables
 measure_window = None
@@ -295,6 +295,12 @@ class MeasureWindow(forms.WPFWindow):
             self.show_element(self.project_unit_text)
             self.project_unit_text.Text = (
                 "Length Units (adjust in Project Units): \n" + length_unit_label
+            )
+            self.Height = self.Height + 20
+        if not slope_unit_symbol_label:
+            self.show_element(self.project_unit_text)
+            self.project_unit_text.Text = self.project_unit_text.Text + (
+                "\nSlope Units (adjust in Project Units): \n" + slope_unit_label
             )
             self.Height = self.Height + 20
 
