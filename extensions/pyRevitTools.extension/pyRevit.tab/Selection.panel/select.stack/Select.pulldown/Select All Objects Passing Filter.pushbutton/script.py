@@ -11,7 +11,7 @@ exclude_nested = my_config.get_option("exclude_nested", True)
 only_current_view = my_config.get_option("only_current_view", True)
 reverse_filter = my_config.get_option("reverse_filter", False)
 
-filters = list(DB.FilteredElementCollector(doc).OfClass(DB.ParameterFilterElement))
+filters = list(revit.query.get_elements_by_class(DB.ParameterFilterElement, doc=doc))
 
 if not filters:
     forms.alert("No Filters found", exitscript=True)
@@ -56,4 +56,5 @@ for el in filtered_elements:
     if exclude_nested and isinstance(el, DB.FamilyInstance) and el.SuperComponent:
         continue
     element_ids.append(el.Id)
-uidoc.Selection.SetElementIds(List[DB.ElementId](element_ids))
+
+revit.get_selection().set_to(element_ids)
