@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import deque
-from pyrevit import HOST_APP, revit, forms, script, traceback
+from math import pi, atan, sqrt
+from pyrevit import HOST_APP, revit, forms, script
 from pyrevit import UI, DB
 from pyrevit.framework import System
 from Autodesk.Revit.Exceptions import InvalidOperationException
@@ -9,6 +10,7 @@ logger = script.get_logger()
 
 doc = HOST_APP.doc
 uidoc = revit.uidoc
+# Length
 length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
 length_unit = length_format_options.GetUnitTypeId()
 length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
@@ -16,6 +18,14 @@ length_unit_symbol = length_format_options.GetSymbolTypeId()
 length_unit_symbol_label = None
 if not length_unit_symbol.Empty():
     length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
+# Slope
+slope_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Slope)
+slope_unit = slope_format_options.GetUnitTypeId()
+slope_unit_label = DB.LabelUtils.GetLabelForUnit(slope_unit)
+slope_unit_symbol = slope_format_options.GetSymbolTypeId()
+slope_unit_symbol_label = None
+if not slope_unit_symbol.Empty():
+    lslope_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(slope_unit_symbol)
 
 # Global variables
 measure_window = None
@@ -34,29 +44,46 @@ CUBE_COLOR = DB.ColorWithTransparency(255, 165, 0, 50)  # Orange
 
 WINDOW_POSITION = "measure_window_pos"
 
+
 def calculate_distances(point1, point2):
-    """Calculate dx, dy, dz and diagonal distance between two points.
+    """Calculate dx, dy, dz, diagonal distance, and slope angle between two points.
 
     Args:
         point1 (DB.XYZ): First point
         point2 (DB.XYZ): Second point
 
     Returns:
-        tuple: (dx, dy, dz, diagonal) all in internal units (feet)
+        tuple: (dx, dy, dz, diagonal, slope) all in internal units (feet, rad)
     """
     dx = abs(point2.X - point1.X)
     dy = abs(point2.Y - point1.Y)
     dz = abs(point2.Z - point1.Z)
     diagonal = point1.DistanceTo(point2)
 
-    return dx, dy, dz, diagonal
+    horizontal = sqrt(dx ** 2 + dy ** 2)
+
+    if horizontal == 0:
+        slope = pi / 2.0  # 90 degrees (vertical)
+    else:
+        slope = atan(dz / horizontal)
+
+    return dx, dy, dz, diagonal, slope
 
 
-def format_distance(value_in_feet):
+def format_distance(value_internal):
     return DB.UnitFormatUtils.Format(
         doc.GetUnits(),
         DB.SpecTypeId.Length,
-        value_in_feet,
+        value_internal,
+        False,
+    )
+
+
+def format_slope(value_internal):
+    return DB.UnitFormatUtils.Format(
+        doc.GetUnits(),
+        DB.SpecTypeId.Slope,
+        value_internal,
         False,
     )
 
@@ -148,7 +175,7 @@ def validate_3d_view():
         forms.alert(
             "Please activate a 3D view before using the 3D Measure tool.",
             title="3D View Required",
-            exitscript=True
+            exitscript=True,
         )
         return False
     return True
@@ -159,7 +186,7 @@ def perform_measurement():
     # Add 3D view validation
     if not validate_3d_view():
         return
-    
+
     try:
         with forms.WarningBar(title="Pick first point"):
             point1 = revit.pick_elementpoint(world=True)
@@ -180,26 +207,32 @@ def perform_measurement():
             dc3d_server.meshes = existing_meshes + new_meshes
             uidoc.RefreshActiveView()
 
-        dx, dy, dz, diagonal = calculate_distances(point1, point2)
+        dx, dy, dz, diagonal, slope = calculate_distances(point1, point2)
 
         measure_window.point1_text.Text = "Point 1: {}".format(format_point(point1))
         measure_window.point2_text.Text = "Point 2: {}".format(format_point(point2))
-        measure_window.dx_text.Text = "ΔX: {}".format(format_distance(dx))
-        measure_window.dy_text.Text = "ΔY: {}".format(format_distance(dy))
-        measure_window.dz_text.Text = "ΔZ: {}".format(format_distance(dz))
+        measure_window.dx_text.Text = "ΔX: {:>15}".format(format_distance(dx))
+        measure_window.dy_text.Text = "ΔY: {:>15}".format(format_distance(dy))
+        measure_window.dz_text.Text = "ΔZ: {:>15}".format(format_distance(dz))
         measure_window.diagonal_text.Text = "Diagonal: {}".format(
             format_distance(diagonal)
         )
+        measure_window.slope_text.Text = "Slope: {}".format(format_slope(slope))
 
         # Add to history
-        history_entry = "Measurement {}:\n  P1: {}\n  P2: {}\n  ΔX: {}\n  ΔY: {}\n  ΔZ: {}\n  Diagonal: {}\n".format(
-            len(measurement_history) + 1,
-            format_point(point1),
-            format_point(point2),
-            format_distance(dx),
-            format_distance(dy),
-            format_distance(dz),
-            format_distance(diagonal),
+        history_entry = (
+            "Measurement {}:\n  P1: {}\n  P2: {}\n  "
+            "ΔX: {:>15}\n  ΔY: {:>15}\n  ΔZ: {:>15}\n  "
+            "Diagonal: {}\n  Slope: {}".format(
+                len(measurement_history) + 1,
+                format_point(point1),
+                format_point(point2),
+                format_distance(dx),
+                format_distance(dy),
+                format_distance(dz),
+                format_distance(diagonal),
+                format_slope(slope),
+            )
         )
         measurement_history.append(history_entry)
 
@@ -214,13 +247,15 @@ def perform_measurement():
         logger.error("InvalidOperationException during measurement: {}".format(ex))
         forms.alert(
             "Measurement cancelled due to invalid operation. Please try again.",
-            title="Measurement Error"
+            title="Measurement Error",
         )
     except Exception as ex:
-        logger.error("Error during measurement: {}\n{}".format(ex, traceback.format_exc()))
+        logger.exception(
+            "Error during measurement: {}".format(ex)
+        )
         forms.alert(
             "An unexpected error occurred during measurement. Check the log for details.",
-            title="Measurement Error"
+            title="Measurement Error",
         )
 
 
@@ -253,6 +288,7 @@ class MeasureWindow(forms.WPFWindow):
         self.dy_text.Text = "ΔY: -"
         self.dz_text.Text = "ΔZ: -"
         self.diagonal_text.Text = "Diagonal: -"
+        self.slope_text.Text = "Slope: -"
         self.history_text.Text = "No measurements yet"
 
         if not length_unit_symbol_label:
@@ -268,41 +304,40 @@ class MeasureWindow(forms.WPFWindow):
         try:
             pos = script.load_data(WINDOW_POSITION, this_project=False)
             all_bounds = [s.WorkingArea for s in System.Windows.Forms.Screen.AllScreens]
-            x, y = pos['Left'], pos['Top']
+            x, y = pos["Left"], pos["Top"]
             visible = any(
-                (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom)
-                for b in all_bounds
+                (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom) for b in all_bounds
             )
             if not visible:
                 raise Exception
             self.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual
-            self.Left = pos.get('Left', 200)
-            self.Top = pos.get('Top', 150)
+            self.Left = pos.get("Left", 200)
+            self.Top = pos.get("Top", 150)
         except Exception:
-            self.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+            self.WindowStartupLocation = (
+                System.Windows.WindowStartupLocation.CenterScreen
+            )
 
         self.Show()
-        
+
         # Automatically start the first measurement
         measure_handler_event.Raise()
 
     def window_closed(self, sender, args):
         """Handle window close event - copy history to clipboard, cleanup DC3D server and visual aids."""
         global dc3d_server
-        new_pos = {'Left': self.Left, 'Top': self.Top}
+        new_pos = {"Left": self.Left, "Top": self.Top}
         script.store_data(WINDOW_POSITION, new_pos, this_project=False)
-        
+
         # Copy measurement history to clipboard before cleanup
         try:
             if measurement_history:
                 history_text = "\n".join(measurement_history)
                 script.clipboard_copy(history_text)
-                logger.info("Measurement history copied to clipboard")
-            else:
-                logger.info("No measurements to copy to clipboard")
+                forms.toast("Measurements copied to Clipboard!", title="Measure 3D")
         except Exception as ex:
             logger.error("Error copying to clipboard: {}".format(ex))
-        
+
         try:
             # Delete all visual aids
             if dc3d_server:

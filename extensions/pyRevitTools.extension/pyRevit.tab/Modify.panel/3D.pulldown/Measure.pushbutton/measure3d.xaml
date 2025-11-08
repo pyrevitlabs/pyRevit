@@ -18,10 +18,11 @@
                 
                 <Separator Margin="0,5"/>
                 
-                <TextBlock x:Name="dx_text" Text="ΔX: -" Margin="0,5,0,2" TextAlignment="Right" FontWeight="SemiBold"/>
-                <TextBlock x:Name="dy_text" Text="ΔY: -" Margin="0,2" TextAlignment="Right" FontWeight="SemiBold"/>
-                <TextBlock x:Name="dz_text" Text="ΔZ: -" Margin="0,2" TextAlignment="Right" FontWeight="SemiBold"/>
-                <TextBlock x:Name="diagonal_text" Text="Diagonal: -" Margin="0,2" TextAlignment="Right" FontWeight="Bold" FontSize="14"/>
+                <TextBlock x:Name="dx_text" Margin="0,5,0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
+                <TextBlock x:Name="dy_text" Margin="0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
+                <TextBlock x:Name="dz_text" Margin="0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
+                <TextBlock x:Name="diagonal_text" Margin="0,2" TextAlignment="Right" FontWeight="Bold" FontSize="14"/>
+                <TextBlock x:Name="slope_text" Margin="0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
                 <TextBlock x:Name="project_unit_text" Text="" Visibility="Collapsed" Foreground="Red" FontWeight="Bold" Margin="0,5,0,2"/>
             </StackPanel>
         </GroupBox>
