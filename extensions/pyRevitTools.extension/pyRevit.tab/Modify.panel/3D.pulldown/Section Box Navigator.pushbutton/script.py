@@ -685,6 +685,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def do_grid_move(self, params, tolerance=TOLERANCE):
         """Move section box side to next grid line."""
         direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
+        do_not_apply = params.get("do_not_apply", False)
 
         info = get_section_box_info(self.current_view)
         if not info:
@@ -765,6 +766,22 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 # Moving min Y face
                 min_y_change = local_move_vector.Y
 
+        if do_not_apply:
+            info = get_section_box_info(self.current_view)
+            if not info:
+                return False
+
+            new_box = create_adjusted_box(
+                info,
+                min_x_change,
+                max_x_change,
+                min_y_change,
+                max_y_change,
+                0,
+                0,
+            )
+            return new_box
+
         self.adjust_section_box(
             min_x_change=min_x_change,
             max_x_change=max_x_change,
@@ -778,6 +795,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Nudge section box horizontally by amount in cardinal direction."""
         direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
         distance = params.get("distance", 0)
+        do_not_apply = params.get("do_not_apply", False)
 
         info = get_section_box_info(self.current_view)
         if not info:
@@ -830,6 +848,22 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             else:
                 # Moving min Y face
                 min_y_change = local_movement.Y
+
+        if do_not_apply:
+            info = get_section_box_info(self.current_view)
+            if not info:
+                return False
+
+            new_box = create_adjusted_box(
+                info,
+                min_x_change,
+                max_x_change,
+                min_y_change,
+                max_y_change,
+                0,
+                0,
+            )
+            return new_box
 
         self.adjust_section_box(
             min_x_change=min_x_change,
@@ -1131,6 +1165,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     min_z=-adjustment,
                     max_z=adjustment,
                 )
+
+            elif preview_type == "box":
+                preview_box = params.get("box")
 
             if not preview_box:
                 return
@@ -1658,6 +1695,55 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception as ex:
             logger.warning("Error in expansion preview: {}".format(ex))
 
+    def btn_preview_grid_enter(self, sender, e):
+        """Show preview when hovering over buttons."""
+        if not self.chkPreview.IsChecked:
+            return
+        try:
+            is_grid_mode = self.rbGrid.IsChecked
+
+            if is_grid_mode:
+                # Grid mode - move to next grid
+                params = {
+                    "direction": sender.Tag,
+                    "do_not_apply": True,
+                }
+                box = self.do_grid_move(params)
+            else:
+                # Nudge mode - move by amount
+                try:
+                    distance_text = self.txtGridNudgeAmount.Text.strip()
+                    if not distance_text:
+                        forms.alert("Please enter a nudge amount", title="Input Required")
+                        return
+
+                    distance = float(distance_text)
+                    if distance <= 0:
+                        forms.alert(
+                            "Nudge amount must be greater than 0", title="Invalid Input"
+                        )
+                        return
+
+                    distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
+
+                    params = {
+                        "direction": sender.Tag,
+                        "distance": distance,
+                        "do_not_apply": True,
+                    }
+                    box = self.do_grid_nudge(params)
+
+                except ValueError:
+                    forms.alert("Please enter a valid number", title="Invalid Input")
+                    return
+
+            params = {
+                "box": box,
+            }
+            self.show_preview("box", params)
+        except Exception as ex:
+            logger.warning("Error in general preview: {}".format(ex))
+
     def btn_preview_enter(self, sender, e):
         """Show preview when hovering over buttons."""
         if not self.chkPreview.IsChecked:
@@ -1711,35 +1797,35 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_grid_west_out_click(self, sender, e):
         """Move west side outward (west direction)."""
-        self._handle_grid_move("west-out")
+        self._handle_grid_move(sender.Tag)
 
     def btn_grid_west_in_click(self, sender, e):
         """Move west side inward (east direction)."""
-        self._handle_grid_move("west-in")
+        self._handle_grid_move(sender.Tag)
 
     def btn_grid_north_out_click(self, sender, e):
         """Move north side outward (north direction)."""
-        self._handle_grid_move("north-out")
+        self._handle_grid_move(sender.Tag)
 
     def btn_grid_north_in_click(self, sender, e):
         """Move north side inward (south direction)."""
-        self._handle_grid_move("north-in")
+        self._handle_grid_move(sender.Tag)
 
     def btn_grid_south_out_click(self, sender, e):
         """Move south side outward (south direction)."""
-        self._handle_grid_move("south-out")
+        self._handle_grid_move(sender.Tag)
 
     def btn_grid_south_in_click(self, sender, e):
         """Move south side inward (north direction)."""
-        self._handle_grid_move("south-in")
+        self._handle_grid_move(sender.Tag)
 
     def btn_grid_east_out_click(self, sender, e):
         """Move east side outward (east direction)."""
-        self._handle_grid_move("east-out")
+        self._handle_grid_move(sender.Tag)
 
     def btn_grid_east_in_click(self, sender, e):
         """Move east side inward (west direction)."""
-        self._handle_grid_move("east-in")
+        self._handle_grid_move(sender.Tag)
 
     def _handle_grid_move(self, direction):
         """Helper to handle grid movement."""
