@@ -168,13 +168,12 @@ def get_section_box_face_info(info):
     return faces
 
 
-def get_cardinal_direction(direction_name, use_project_north=False):
+def get_cardinal_direction(direction_name):
     """
     Get the world direction vector for a cardinal direction.
 
     Args:
         direction_name: 'north', 'south', 'east', 'west'
-        use_project_north: If True, use project north, else use internal coordinates
 
     Returns:
         XYZ vector in world coordinates
@@ -187,23 +186,7 @@ def get_cardinal_direction(direction_name, use_project_north=False):
         "west": DB.XYZ(-1, 0, 0),  # -X
     }
 
-    vector = internal_vectors[direction_name]
-
-    if use_project_north:
-        # Get project location for angle to true north
-        project_location = doc.ActiveProjectLocation
-        project_position = project_location.GetProjectPosition(DB.XYZ.Zero)
-        angle = project_position.Angle
-
-        # Rotate vector by angle
-        cos_a = Math.Cos(angle)
-        sin_a = Math.Sin(angle)
-        rotated = DB.XYZ(
-            vector.X * cos_a - vector.Y * sin_a, vector.X * sin_a + vector.Y * cos_a, 0
-        )
-        return rotated.Normalize()
-
-    return vector
+    return internal_vectors[direction_name]
 
 
 def select_best_face_for_direction(faces, direction_vector):
@@ -702,7 +685,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def do_grid_move(self, params, tolerance=TOLERANCE):
         """Move section box side to next grid line."""
         direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
-        use_project_north = params.get("use_project_north", False)
 
         info = get_section_box_info(self.current_view)
         if not info:
@@ -714,7 +696,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         modifier = parts[1] if len(parts) > 1 else "out"  # 'in' or 'out'
 
         # Get cardinal direction vector - this represents which FACE we want to move
-        face_direction = get_cardinal_direction(cardinal_dir, use_project_north)
+        face_direction = get_cardinal_direction(cardinal_dir)
 
         # Get faces and select the face we want to move (always based on cardinal_dir)
         faces = get_section_box_face_info(info)
@@ -795,7 +777,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def do_grid_nudge(self, params):
         """Nudge section box horizontally by amount in cardinal direction."""
         direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
-        use_project_north = params.get("use_project_north", False)
         distance = params.get("distance", 0)
 
         info = get_section_box_info(self.current_view)
@@ -808,7 +789,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         modifier = parts[1] if len(parts) > 1 else "out"  # 'in' or 'out'
 
         # Get the cardinal direction - this represents which FACE we want to move
-        face_direction = get_cardinal_direction(cardinal_dir, use_project_north)
+        face_direction = get_cardinal_direction(cardinal_dir)
 
         # Determine the actual movement direction:
         # "-out": move away from center (same as face direction)
@@ -1762,7 +1743,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def _handle_grid_move(self, direction):
         """Helper to handle grid movement."""
-        use_project_north = self.rbProjectNorth.IsChecked
         is_grid_mode = self.rbGrid.IsChecked
 
         if is_grid_mode:
@@ -1770,7 +1750,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.pending_action = {
                 "action": "grid_move",
                 "direction": direction,
-                "use_project_north": use_project_north,
             }
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
@@ -1794,7 +1773,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.pending_action = {
                     "action": "grid_nudge",
                     "direction": direction,
-                    "use_project_north": use_project_north,
                     "distance": distance,
                 }
                 self.event_handler.parameters = self.pending_action

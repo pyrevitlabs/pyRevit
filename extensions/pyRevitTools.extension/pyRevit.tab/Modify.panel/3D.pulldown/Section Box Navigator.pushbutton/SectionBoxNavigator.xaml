@@ -208,14 +208,6 @@
                                Text="mm" VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </Grid>
 
-                <!-- Coordinate System Radio Buttons -->
-                <TextBlock Text="Coordinate System:" Margin="0,5,0,2" FontWeight="Bold"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <RadioButton x:Name="rbInternalNorth" Content="Internal" 
-                                 GroupName="CoordinateSystem" IsChecked="True" Margin="0,0,15,0"/>
-                    <RadioButton x:Name="rbProjectNorth" Content="Project" 
-                                 GroupName="CoordinateSystem" Margin="0,0,0,0"/>
-                </StackPanel>
             </StackPanel>
         </GroupBox>
 
