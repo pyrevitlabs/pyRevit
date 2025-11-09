@@ -1,14 +1,30 @@
 # -*- coding: utf-8 -*-
 # type: ignore
 """Section Box Navigator - Modeless window for section box navigation."""
-import clr
 
 from pyrevit import revit, script, forms
-from pyrevit.framework import System, List, Math
+from pyrevit.framework import System
 from pyrevit.revit import events
 from pyrevit.compat import get_elementid_value_func
 from pyrevit import DB, UI
 from pyrevit import traceback
+
+from sectionbox_navigation import (
+    get_all_levels,
+    get_all_grids,
+    get_cardinal_direction,
+    get_next_level_above,
+    get_next_level_below,
+    find_next_grid_in_direction,
+)
+from sectionbox_utils import is_2d_view, get_view_range_and_crop
+from sectionbox_actions import toggle, hide, align_to_face
+from sectionbox_geometry import (
+    get_section_box_info,
+    get_section_box_face_info,
+    select_best_face_for_direction,
+    make_xy_transform_only,
+)
 
 get_elementid_value = get_elementid_value_func()
 
@@ -48,226 +64,6 @@ WINDOW_POSITION = "sbnavigator_window_pos"
 # --------------------
 
 
-def get_all_levels():
-    """Get all levels sorted by elevation."""
-    return sorted(
-        list(DB.FilteredElementCollector(doc).OfClass(DB.Level).ToElements()),
-        key=lambda x: x.Elevation,
-    )
-
-
-def get_all_grids():
-    """Get all grid lines in the model."""
-    return list(
-        DB.FilteredElementCollector(doc)
-        .OfClass(DB.Grid)
-        .WhereElementIsNotElementType()
-        .ToElements()
-    )
-
-
-def get_grid_line(grid):
-    """Get the curve from a grid element."""
-    return grid.Curve
-
-
-def get_next_level_above(z_coordinate, all_levels, tolerance=TOLERANCE):
-    """Get the next level above the given Z coordinate."""
-    for level in all_levels:
-        if level.Elevation > z_coordinate + tolerance:
-            return level, level.Elevation
-    return None, None
-
-
-def get_next_level_below(z_coordinate, all_levels, tolerance=TOLERANCE):
-    """Get the next level below the given Z coordinate."""
-    for level in reversed(all_levels):
-        if level.Elevation < z_coordinate - tolerance:
-            return level, level.Elevation
-    return None, None
-
-
-def get_section_box_info(view):
-    """Get section box information from the current view."""
-    if not isinstance(view, DB.View3D):
-        return
-    if not view.IsSectionBoxActive:
-        view_boxes = script.load_data(DATAFILENAME)
-        bbox_data = view_boxes[get_elementid_value(view.Id)]
-        section_box = revit.deserialize(bbox_data)
-    else:
-        section_box = view.GetSectionBox()
-    transform = section_box.Transform
-    min_point = section_box.Min
-    max_point = section_box.Max
-
-    transformed_min = transform.OfPoint(min_point)
-    transformed_max = transform.OfPoint(max_point)
-
-    return {
-        "box": section_box,
-        "transform": transform,
-        "min_point": min_point,
-        "max_point": max_point,
-        "transformed_min": transformed_min,
-        "transformed_max": transformed_max,
-    }
-
-
-def get_section_box_face_info(info):
-    """
-    Get information about the 4 vertical faces of the section box.
-    Returns dict with keys: 'north', 'south', 'east', 'west'
-    Each containing: center_point, normal, and face identifier
-    """
-    box = info["box"]
-    transform = info["transform"]
-
-    # Get the 8 corners of the box in world coordinates
-    min_pt = box.Min
-    max_pt = box.Max
-
-    # Calculate face centers in local coordinates, then transform to world
-    # For vertical faces, we use the middle Z coordinate
-    mid_z = (min_pt.Z + max_pt.Z) / 2.0
-
-    faces = {}
-
-    # Define faces in local coordinate system
-    # Each face: center point, outward normal
-    local_faces = {
-        "north": {
-            "center": DB.XYZ((min_pt.X + max_pt.X) / 2.0, max_pt.Y, mid_z),
-            "normal": DB.XYZ(0, 1, 0),  # +Y
-        },
-        "south": {
-            "center": DB.XYZ((min_pt.X + max_pt.X) / 2.0, min_pt.Y, mid_z),
-            "normal": DB.XYZ(0, -1, 0),  # -Y
-        },
-        "east": {
-            "center": DB.XYZ(max_pt.X, (min_pt.Y + max_pt.Y) / 2.0, mid_z),
-            "normal": DB.XYZ(1, 0, 0),  # +X
-        },
-        "west": {
-            "center": DB.XYZ(min_pt.X, (min_pt.Y + max_pt.Y) / 2.0, mid_z),
-            "normal": DB.XYZ(-1, 0, 0),  # -X
-        },
-    }
-
-    # Transform to world coordinates
-    for key, face_data in local_faces.items():
-        world_center = transform.OfPoint(face_data["center"])
-        world_normal = transform.OfVector(face_data["normal"]).Normalize()
-
-        faces[key] = {
-            "center": world_center,
-            "normal": world_normal,
-            "local_center": face_data["center"],
-        }
-
-    return faces
-
-
-def get_cardinal_direction(direction_name):
-    """
-    Get the world direction vector for a cardinal direction.
-
-    Args:
-        direction_name: 'north', 'south', 'east', 'west'
-
-    Returns:
-        XYZ vector in world coordinates
-    """
-    # Base vectors in internal coordinates
-    internal_vectors = {
-        "north": DB.XYZ(0, 1, 0),  # +Y
-        "south": DB.XYZ(0, -1, 0),  # -Y
-        "east": DB.XYZ(1, 0, 0),  # +X
-        "west": DB.XYZ(-1, 0, 0),  # -X
-    }
-
-    return internal_vectors[direction_name]
-
-
-def select_best_face_for_direction(faces, direction_vector):
-    """
-    Select the face whose normal is most parallel to the given direction.
-
-    Args:
-        faces: Dict of face info from get_section_box_face_info
-        direction_vector: XYZ vector indicating desired direction
-
-    Returns:
-        Tuple of (face_key, face_info)
-    """
-    best_face = None
-    best_dot = -1.0
-
-    for key, face_info in faces.items():
-        dot = face_info["normal"].DotProduct(direction_vector)
-        if dot > best_dot:
-            best_dot = dot
-            best_face = (key, face_info)
-
-    return best_face
-
-
-def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance=TOLERANCE):
-    """
-    Find the next grid line from start_point in the given direction (in XY plane).
-    """
-
-    best_grid = None
-    best_intersection = None
-    min_distance = float("inf")
-
-    # Flatten direction to XY
-    direction_vector = DB.XYZ(direction_vector.X, direction_vector.Y, 0).Normalize()
-    start_point_flat = DB.XYZ(start_point.X, start_point.Y, 0)
-
-    # Create a 2D ray in XY plane
-    ray = DB.Line.CreateUnbound(start_point_flat, direction_vector)
-
-    for grid in grids:
-        curve = get_grid_line(grid)
-        if not isinstance(curve, DB.Line):
-            continue
-
-        # Flatten grid line to XY
-        p1, p2 = curve.GetEndPoint(0), curve.GetEndPoint(1)
-        grid_line = DB.Line.CreateBound(
-            DB.XYZ(p1.X, p1.Y, 0),
-            DB.XYZ(p2.X, p2.Y, 0)
-        )
-
-        # weird ironpython stuff:
-        # https://forums.autodesk.com/t5/revit-api-forum/find-intersection-point-between-curves-using-cpython3/td-p/12413340
-        # Try intersection
-        result = clr.Reference[DB.IntersectionResultArray]()
-        intersection_result = grid_line.Intersect(ray, result)
-
-        if intersection_result != DB.SetComparisonResult.Overlap:
-            continue
-
-        if result.Value.Size == 0:
-            continue
-
-        intersection = result.Value.Item[0].XYZPoint
-        to_intersection = intersection - start_point_flat
-
-        distance_along_ray = to_intersection.DotProduct(direction_vector)
-        if distance_along_ray < tolerance:
-            continue
-
-        distance = to_intersection.GetLength()
-        if distance < min_distance:
-            min_distance = distance
-            best_grid = grid
-            best_intersection = DB.XYZ(intersection.X, intersection.Y, start_point.Z)
-
-    return best_grid, best_intersection
-
-
 def create_preview_mesh(section_box, color):
     """Create a mesh for DC3D preview."""
     try:
@@ -286,90 +82,6 @@ def show_preview_mesh(box, preview_server):
     if mesh:
         preview_server.meshes = [mesh]
         uidoc.RefreshActiveView()
-
-
-def is_2d_view(view):
-    """Check if a view is a 2D view (plan, elevation, section)."""
-    view_type = view.ViewType
-    return view_type in [
-        DB.ViewType.FloorPlan,
-        DB.ViewType.CeilingPlan,
-        DB.ViewType.Section,
-        DB.ViewType.Elevation,
-    ]
-
-
-def get_view_range_and_crop(view):
-    """Extract view range and crop box information from a 2D view."""
-    view_type = view.ViewType
-
-    # For floor/ceiling plans, use view range
-    if view_type in [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]:
-        view_range = view.GetViewRange()
-        top_level_id = view_range.GetLevelId(DB.PlanViewPlane.TopClipPlane)
-        top_offset = view_range.GetOffset(DB.PlanViewPlane.TopClipPlane)
-        bottom_level_id = view_range.GetLevelId(DB.PlanViewPlane.BottomClipPlane)
-        bottom_offset = view_range.GetOffset(DB.PlanViewPlane.BottomClipPlane)
-
-        top_level = doc.GetElement(top_level_id)
-        bottom_level = doc.GetElement(bottom_level_id)
-
-        top_elevation = top_level.Elevation + top_offset if top_level else None
-        bottom_elevation = (
-            bottom_level.Elevation + bottom_offset if bottom_level else None
-        )
-
-        # Get crop box if active
-        crop_box = None
-        if view.CropBoxActive:
-            crop_box = view.CropBox
-
-        return {
-            "top_elevation": top_elevation,
-            "bottom_elevation": bottom_elevation,
-            "crop_box": crop_box,
-            "view": view,
-            "is_section": False,
-        }
-
-    # For sections and elevations, just use the crop box directly
-    elif view_type in [DB.ViewType.Section, DB.ViewType.Elevation]:
-        if not view.CropBoxActive:
-            return None
-
-        crop_box = view.CropBox
-
-        return {
-            "crop_box": crop_box,
-            "view": view,
-            "is_section": True,
-        }
-
-    return None
-
-
-def make_xy_transform_only(crop_transform):
-    """Return a transform with only the XY rotation of crop_transform."""
-    origin = crop_transform.Origin
-
-    origin_no_z = DB.XYZ(origin.X, origin.Y, 0)
-
-    x_axis = crop_transform.BasisX
-    y_axis = crop_transform.BasisY
-
-    # Force them to lie flat in the XY plane (remove any Z component)
-    x_axis_flat = DB.XYZ(x_axis.X, x_axis.Y, 0).Normalize()
-    y_axis_flat = DB.XYZ(y_axis.X, y_axis.Y, 0).Normalize()
-
-    z_axis_world = DB.XYZ(0, 0, 1)
-
-    t = DB.Transform.Identity
-    t.Origin = origin_no_z
-    t.BasisX = x_axis_flat
-    t.BasisY = y_axis_flat
-    t.BasisZ = z_axis_world
-
-    return t
 
 
 def create_adjusted_box(
@@ -465,8 +177,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
 
         self.current_view = doc.ActiveView
-        self.all_levels = get_all_levels()
-        self.all_grids = get_all_grids()
+        self.all_levels = get_all_levels(doc)
+        self.all_grids = get_all_grids(doc)
         self.preview_server = None
         self.preview_box = None
 
@@ -536,7 +248,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.txtBottomPosition.Text = ""
                 return
 
-            info = get_section_box_info(self.current_view)
+            info = get_section_box_info(self.current_view, DATAFILENAME)
             if not info:
                 return
 
@@ -545,10 +257,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             # Get levels
             top_level, top_level_elevation = get_next_level_above(
-                transformed_max.Z, self.all_levels
+                transformed_max.Z, self.all_levels, TOLERANCE
             )
             bottom_level, bottom_level_elevation = get_next_level_below(
-                transformed_min.Z, self.all_levels
+                transformed_min.Z, self.all_levels, TOLERANCE
             )
 
             if top_level_elevation:
@@ -624,7 +336,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         top_level = params.get("top_level")
         bottom_level = params.get("bottom_level")
 
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
@@ -682,12 +394,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             max_z_change=adjustment,
         )
 
-    def do_grid_move(self, params, tolerance=TOLERANCE):
+    def do_grid_move(self, params):
         """Move section box side to next grid line."""
         direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
         do_not_apply = params.get("do_not_apply", False)
 
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
@@ -710,25 +422,28 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         # Determine the search direction:
         # "-out": search away from center (same as face direction)
         # "-in": search toward center (opposite of face direction)
-        search_direction = face_direction if modifier == "out" else face_direction.Negate()
+        search_direction = (
+            face_direction if modifier == "out" else face_direction.Negate()
+        )
 
         # Find next grid in the search direction
         grid, intersection = find_next_grid_in_direction(
-            face_info["center"], search_direction, self.all_grids
+            face_info["center"], search_direction, self.all_grids, TOLERANCE
         )
 
         if not grid:
-            forms.alert(
-                "No grid found in {} direction.".format(direction_name.upper()),
-                title="No Grid Found",
-            )
+            if not do_not_apply:
+                forms.alert(
+                    "No grid found in {} direction.".format(direction_name.upper()),
+                    title="No Grid Found",
+                )
             return
 
         # Calculate how far to move
         move_vector = intersection - face_info["center"]
         move_distance = move_vector.DotProduct(search_direction)
 
-        if abs(move_distance) < tolerance:
+        if abs(move_distance) < TOLERANCE:
             forms.alert("Already at grid line.", title="Info")
             return
 
@@ -767,7 +482,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 min_y_change = local_move_vector.Y
 
         if do_not_apply:
-            info = get_section_box_info(self.current_view)
+            info = get_section_box_info(self.current_view, DATAFILENAME)
             if not info:
                 return False
 
@@ -797,7 +512,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         distance = params.get("distance", 0)
         do_not_apply = params.get("do_not_apply", False)
 
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
@@ -812,7 +527,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         # Determine the actual movement direction:
         # "-out": move away from center (same as face direction)
         # "-in": move toward center (opposite of face direction)
-        movement_direction = face_direction if modifier == "out" else face_direction.Negate()
+        movement_direction = (
+            face_direction if modifier == "out" else face_direction.Negate()
+        )
 
         # Transform to local coordinates
         transform = info["transform"]
@@ -821,7 +538,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         # Get which face we're moving in local coordinates
         local_face_direction = inverse_transform.OfVector(face_direction)
         # Get the movement direction in local coordinates
-        local_movement = inverse_transform.OfVector(movement_direction).Multiply(distance)
+        local_movement = inverse_transform.OfVector(movement_direction).Multiply(
+            distance
+        )
 
         min_x_change = 0
         max_x_change = 0
@@ -850,7 +569,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 min_y_change = local_movement.Y
 
         if do_not_apply:
-            info = get_section_box_info(self.current_view)
+            info = get_section_box_info(self.current_view, DATAFILENAME)
             if not info:
                 return False
 
@@ -939,150 +658,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def do_toggle(self):
         """Toggle section box."""
-        self.current_view = doc.ActiveView
-        if not isinstance(self.current_view, DB.View3D):
-            return
-        current_view_id_value = get_elementid_value(self.current_view.Id)
-        sectionbox_active_state = self.current_view.IsSectionBoxActive
-
-        try:
-            view_boxes = script.load_data(DATAFILENAME)
-        except Exception:
-            view_boxes = {}
-
-        with revit.Transaction("Toggle SectionBox"):
-            if sectionbox_active_state:
-                try:
-                    sectionbox = self.current_view.GetSectionBox()
-                    if sectionbox:
-                        view_boxes[current_view_id_value] = revit.serialize(sectionbox)
-                        script.store_data(DATAFILENAME, view_boxes)
-                    self.current_view.IsSectionBoxActive = False
-                except Exception as ex:
-                    logger.error("Error saving section box: {}".format(ex))
-            else:
-                try:
-                    if current_view_id_value in view_boxes:
-                        bbox_data = view_boxes[current_view_id_value]
-                        restored_bbox = revit.deserialize(bbox_data)
-                        self.current_view.SetSectionBox(restored_bbox)
-                except Exception as ex:
-                    logger.error(
-                        "No saved section box found or failed to load: {}".format(ex)
-                    )
+        toggle(doc, DATAFILENAME)
 
     def do_hide(self):
         """Hide or Unhide section box."""
-        self.current_view = doc.ActiveView
-        if not isinstance(self.current_view, DB.View3D):
-            return
-        with revit.Transaction("Toggle SB visbility"):
-            self.current_view.EnableRevealHiddenMode()
-            view_elements = (
-                DB.FilteredElementCollector(revit.doc, self.current_view.Id)
-                .OfCategory(DB.BuiltInCategory.OST_SectionBox)
-                .ToElements()
-            )
-            for sec_box in [
-                x for x in view_elements if x.CanBeHidden(self.current_view)
-            ]:
-                if sec_box.IsHidden(self.current_view):
-                    self.current_view.UnhideElements(List[DB.ElementId]([sec_box.Id]))
-                else:
-                    self.current_view.HideElements(List[DB.ElementId]([sec_box.Id]))
-
-            self.current_view.DisableTemporaryViewMode(
-                DB.TemporaryViewMode.RevealHiddenElements
-            )
+        hide(doc)
 
     def do_align_to_face(self):
         """Align to face"""
-        self.current_view = doc.ActiveView
-        if not isinstance(self.current_view, DB.View3D):
-            return
-        try:
-            world_normal = None
-
-            with forms.WarningBar(title="Pick a face on a solid object"):
-                reference = uidoc.Selection.PickObject(
-                    UI.Selection.ObjectType.PointOnElement,
-                    "Pick a face on a solid object",
-                )
-
-            instance = doc.GetElement(reference.ElementId)
-            picked_point = reference.GlobalPoint
-
-            if isinstance(instance, DB.RevitLinkInstance):
-                linked_doc = instance.GetLinkDocument()
-                linked_element_id = reference.LinkedElementId
-                element = linked_doc.GetElement(linked_element_id)
-                transform = instance.GetTransform()
-            else:
-                element = instance
-                transform = DB.Transform.Identity
-
-            # Get geometry
-            geom_objs = revit.query.get_geometry(
-                element,
-                include_invisible=True,
-                compute_references=True,
-                detail_level=self.current_view.DetailLevel,
-            )
-
-            solids = [
-                g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0
-            ]
-
-            # Find face that contains the picked point
-            target_face = None
-            for solid in solids:
-                for face in solid.Faces:
-                    try:
-                        result = face.Project(picked_point)
-                        if result and result.XYZPoint.DistanceTo(picked_point) < 1e-6:
-                            target_face = face
-                            break
-                    except Exception:
-                        continue
-                if target_face:
-                    break
-
-            if not target_face:
-                forms.alert(
-                    "Couldn't find a face at the picked point.", exitscript=True
-                )
-
-            local_normal = target_face.ComputeNormal(DB.UV(0.5, 0.5)).Normalize()
-            world_normal = transform.OfVector(local_normal).Normalize()
-
-            # --- Orient section box ---
-            box = self.current_view.GetSectionBox()
-            box_normal = box.Transform.BasisX.Normalize()
-            angle = world_normal.AngleTo(box_normal)
-
-            # Choose rotation axis - Z axis in world coordinates
-            axis = DB.XYZ(0, 0, 1.0)
-            origin = DB.XYZ(
-                box.Min.X + (box.Max.X - box.Min.X) / 2,
-                box.Min.Y + (box.Max.Y - box.Min.Y) / 2,
-                box.Min.Z,
-            )
-
-            if world_normal.Y * box_normal.X < 0:
-                rotate = DB.Transform.CreateRotationAtPoint(
-                    axis, Math.PI / 2 - angle, origin
-                )
-            else:
-                rotate = DB.Transform.CreateRotationAtPoint(axis, angle, origin)
-
-            box.Transform = box.Transform.Multiply(rotate)
-
-            with revit.Transaction("Orient Section Box to Face"):
-                self.current_view.SetSectionBox(box)
-                uidoc.RefreshActiveView()
-
-        except Exception as ex:
-            logger.error("Error: {}".format(str(ex)))
+        align_to_face(doc, uidoc)
 
     def adjust_section_box(
         self,
@@ -1094,7 +678,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         max_z_change=0,
     ):
         """Unified method to adjust the section box in any direction."""
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return False
 
@@ -1123,7 +707,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         try:
-            info = get_section_box_info(self.current_view)
+            info = get_section_box_info(self.current_view, DATAFILENAME)
             if not info:
                 return
 
@@ -1190,11 +774,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_top_up_click(self, sender, e):
         """Move top up to next level."""
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
-        next_level, _ = get_next_level_above(info["transformed_max"].Z, self.all_levels)
+        next_level, _ = get_next_level_above(
+            info["transformed_max"].Z, self.all_levels, TOLERANCE
+        )
         if not next_level:
             forms.alert("No level found above", title="Error")
             return
@@ -1209,11 +795,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_top_down_click(self, sender, e):
         """Move top down to next level."""
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
-        next_level, _ = get_next_level_below(info["transformed_max"].Z, self.all_levels)
+        next_level, _ = get_next_level_below(
+            info["transformed_max"].Z, self.all_levels, TOLERANCE
+        )
         if not next_level:
             forms.alert("No level found below", title="Error")
             return
@@ -1232,11 +820,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_bottom_up_click(self, sender, e):
         """Move bottom up to next level."""
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
-        next_level, _ = get_next_level_above(info["transformed_min"].Z, self.all_levels)
+        next_level, _ = get_next_level_above(
+            info["transformed_min"].Z, self.all_levels, TOLERANCE
+        )
         if not next_level:
             forms.alert("No level found above", title="Error")
             return
@@ -1255,11 +845,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_bottom_down_click(self, sender, e):
         """Move bottom down to next level."""
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
-        next_level, _ = get_next_level_below(info["transformed_min"].Z, self.all_levels)
+        next_level, _ = get_next_level_below(
+            info["transformed_min"].Z, self.all_levels, TOLERANCE
+        )
         if not next_level:
             forms.alert("No level found below", title="Error")
             return
@@ -1274,13 +866,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_box_up_click(self, sender, e):
         """Move entire box up to next levels."""
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
-        next_top, _ = get_next_level_above(info["transformed_max"].Z, self.all_levels)
+        next_top, _ = get_next_level_above(
+            info["transformed_max"].Z, self.all_levels, TOLERANCE
+        )
         next_bottom, _ = get_next_level_above(
-            info["transformed_min"].Z, self.all_levels
+            info["transformed_min"].Z, self.all_levels, TOLERANCE
         )
 
         if not next_top or not next_bottom:
@@ -1297,13 +891,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_box_down_click(self, sender, e):
         """Move entire box down to next levels."""
-        info = get_section_box_info(self.current_view)
+        info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
             return
 
-        next_top, _ = get_next_level_below(info["transformed_max"].Z, self.all_levels)
+        next_top, _ = get_next_level_below(
+            info["transformed_max"].Z, self.all_levels, TOLERANCE
+        )
         next_bottom, _ = get_next_level_below(
-            info["transformed_min"].Z, self.all_levels
+            info["transformed_min"].Z, self.all_levels, TOLERANCE
         )
 
         if not next_top or not next_bottom:
@@ -1538,7 +1134,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         # Get view range and crop information
-        view_data = get_view_range_and_crop(selected_view)
+        view_data = get_view_range_and_crop(selected_view, doc)
 
         if not view_data:
             forms.alert("Could not extract view information.", title="Error")
@@ -1584,7 +1180,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         try:
-            info = get_section_box_info(self.current_view)
+            info = get_section_box_info(self.current_view, DATAFILENAME)
             if not info:
                 return
 
@@ -1605,10 +1201,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 # Box up or down - move both
                 if is_up:
                     next_top, _ = get_next_level_above(
-                        info["transformed_max"].Z, self.all_levels
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
                     )
                     next_bottom, _ = get_next_level_above(
-                        info["transformed_min"].Z, self.all_levels
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
                     )
                     if next_top and next_bottom:
                         distance_top = next_top.Elevation - info["transformed_max"].Z
@@ -1619,10 +1215,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         adjust_bottom = True
                 else:
                     next_top, _ = get_next_level_below(
-                        info["transformed_max"].Z, self.all_levels
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
                     )
                     next_bottom, _ = get_next_level_below(
-                        info["transformed_min"].Z, self.all_levels
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
                     )
                     if next_top and next_bottom:
                         distance_top = next_top.Elevation - info["transformed_max"].Z
@@ -1635,11 +1231,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 # Top up or down
                 if is_up:
                     next_level, _ = get_next_level_above(
-                        info["transformed_max"].Z, self.all_levels
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
                     )
                 else:
                     next_level, _ = get_next_level_below(
-                        info["transformed_max"].Z, self.all_levels
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
                     )
 
                 if next_level:
@@ -1649,11 +1245,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 # Bottom up or down
                 if is_up:
                     next_level, _ = get_next_level_above(
-                        info["transformed_min"].Z, self.all_levels
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
                     )
                 else:
                     next_level, _ = get_next_level_below(
-                        info["transformed_min"].Z, self.all_levels
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
                     )
 
                 if next_level:
@@ -1714,7 +1310,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 try:
                     distance_text = self.txtGridNudgeAmount.Text.strip()
                     if not distance_text:
-                        forms.alert("Please enter a nudge amount", title="Input Required")
+                        forms.alert(
+                            "Please enter a nudge amount", title="Input Required"
+                        )
                         return
 
                     distance = float(distance_text)
@@ -1724,7 +1322,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
                         return
 
-                    distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
+                    distance = DB.UnitUtils.ConvertToInternalUnits(
+                        distance, length_unit
+                    )
 
                     params = {
                         "direction": sender.Tag,
@@ -1736,13 +1336,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 except ValueError:
                     forms.alert("Please enter a valid number", title="Invalid Input")
                     return
-
-            params = {
-                "box": box,
-            }
-            self.show_preview("box", params)
+            if box:
+                params = {
+                    "box": box,
+                }
+                self.show_preview("box", params)
         except Exception as ex:
-            logger.warning("Error in general preview: {}".format(ex))
+            logger.warning("Error in general preview grid: {}".format(ex))
 
     def btn_preview_enter(self, sender, e):
         """Show preview when hovering over buttons."""
@@ -1789,8 +1389,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_refresh_click(self, sender, e):
         """Manually refresh the information."""
-        self.all_levels = get_all_levels()
-        self.all_grids = get_all_grids()
+        self.all_levels = get_all_levels(doc)
+        self.all_grids = get_all_grids(doc)
         self.update_info()
 
     # Grid Navigation Button Handlers
