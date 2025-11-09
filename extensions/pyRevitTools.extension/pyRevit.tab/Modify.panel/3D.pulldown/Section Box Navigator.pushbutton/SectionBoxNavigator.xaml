@@ -1,10 +1,11 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Section Box Navigator" Height="870" Width="320" 
+        Title="Section Box Navigator" Height="1050" Width="320" 
         ShowInTaskbar="False" Topmost="True"
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
     <Grid Margin="15">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -148,8 +149,78 @@
             </StackPanel>
         </GroupBox>
 
+        <!-- Grid Navigation Controls -->
+        <GroupBox Header="Grid Navigation" Grid.Row="4" Margin="0,0,0,10">
+            <StackPanel Margin="5">
+                <!-- Direction Buttons in Grid Layout -->
+                <Grid Margin="0,0,0,5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Top Row: W, N, S, E outward buttons -->
+                    <Button Content="← W" Grid.Row="0" Grid.Column="0" 
+                            Height="30" Margin="1" Click="btn_grid_west_out_click"/>
+                    <Button Content="↑ N" Grid.Row="0" Grid.Column="1" 
+                            Height="30" Margin="1" Click="btn_grid_north_out_click"/>
+                    <Button Content="↓ S" Grid.Row="0" Grid.Column="2" 
+                            Height="30" Margin="1" Click="btn_grid_south_out_click"/>
+                    <Button Content="→ E" Grid.Row="0" Grid.Column="3" 
+                            Height="30" Margin="1" Click="btn_grid_east_out_click"/>
+
+                    <!-- Bottom Row: W, N, S, E inward buttons -->
+                    <Button Content="→ W" Grid.Row="1" Grid.Column="0" 
+                            Height="30" Margin="1" Click="btn_grid_west_in_click"/>
+                    <Button Content="↓ N" Grid.Row="1" Grid.Column="1" 
+                            Height="30" Margin="1" Click="btn_grid_north_in_click"/>
+                    <Button Content="↑ S" Grid.Row="1" Grid.Column="2" 
+                            Height="30" Margin="1" Click="btn_grid_south_in_click"/>
+                    <Button Content="← E" Grid.Row="1" Grid.Column="3" 
+                            Height="30" Margin="1" Click="btn_grid_east_in_click"/>
+                </Grid>
+
+                <!-- Mode Selection Radio Buttons -->
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,5" HorizontalAlignment="Center">
+                    <RadioButton x:Name="rbGrid" Content="Grid" 
+                                 GroupName="GridNudgeMode" IsChecked="True" Margin="0,0,15,0"/>
+                    <RadioButton x:Name="rbNudge" Content="Nudge" 
+                                 GroupName="GridNudgeMode" Margin="0,0,0,0"/>
+                </StackPanel>
+
+                <!-- Nudge Amount Input (for Nudge mode) -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Amount:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBox x:Name="txtGridNudgeAmount" Grid.Column="1" 
+                             Text="500" Height="25" VerticalContentAlignment="Center"/>
+                    <TextBlock x:Name="txtGridNudgeUnit" Grid.Column="2" 
+                               Text="mm" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </Grid>
+
+                <!-- Coordinate System Radio Buttons -->
+                <TextBlock Text="Coordinate System:" Margin="0,5,0,2" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <RadioButton x:Name="rbInternalNorth" Content="Internal" 
+                                 GroupName="CoordinateSystem" IsChecked="True" Margin="0,0,15,0"/>
+                    <RadioButton x:Name="rbProjectNorth" Content="Project" 
+                                 GroupName="CoordinateSystem" Margin="0,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+
         <!-- Preview/Autoupdate Toggle -->
-        <GroupBox Header="Settings" Grid.Row="4" Margin="0,0,0,10">
+        <GroupBox Header="Settings" Grid.Row="5" Margin="0,0,0,10">
             <StackPanel>
                 <CheckBox x:Name="chkPreview" Content="Show preview on hover" 
                         Margin="5" IsChecked="True"/>
@@ -159,7 +230,7 @@
         </GroupBox>
 
         <!-- Action Buttons -->
-        <GroupBox Header="Actions" Grid.Row="5" Margin="0,0,0,10">
+        <GroupBox Header="Actions" Grid.Row="6" Margin="0,0,0,10">
             <UniformGrid Columns="3" Margin="0,0,0,2" HorizontalAlignment="Stretch">
                 <Button x:Name="btnToggleBox" Content="Toggle Box" 
                         Height="35" Margin="2" Click="btn_toggle_box_click"
@@ -172,13 +243,13 @@
         </GroupBox>
 
         <!-- 2D View alignment-->
-        <GroupBox Header="View alignment" Grid.Row="6" Margin="0,0,0,10">
+        <GroupBox Header="View alignment" Grid.Row="7" Margin="0,0,0,10">
             <Button x:Name="btnAlignToView" Content="Align with 2D View" 
                     Height="35" Margin="2" Click="btn_align_box_to_view_click"/>
         </GroupBox>
 
         <!-- Refresh Button -->
-        <Button Content="Refresh" Grid.Row="7" 
+        <Button Content="Refresh" Grid.Row="8" 
                 Height="30" Margin="0" VerticalAlignment="Bottom"
                 Click="btn_refresh_click"/>
     </Grid>

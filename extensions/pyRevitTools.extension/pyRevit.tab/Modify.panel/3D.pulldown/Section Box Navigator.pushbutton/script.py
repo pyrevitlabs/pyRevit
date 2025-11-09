@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # type: ignore
 """Section Box Navigator - Modeless window for section box navigation."""
+import clr
+
 from pyrevit import revit, script, forms
 from pyrevit.framework import System, List, Math
 from pyrevit.revit import events
@@ -37,8 +39,8 @@ DEFAULT_NUDGE_VALUE_MM = 500.0
 default_nudge_value = DB.UnitUtils.Convert(
     DEFAULT_NUDGE_VALUE_MM, DB.UnitTypeId.Millimeters, length_unit
 )
+TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
-
 WINDOW_POSITION = "sbnavigator_window_pos"
 
 # --------------------
@@ -54,7 +56,22 @@ def get_all_levels():
     )
 
 
-def get_next_level_above(z_coordinate, all_levels, tolerance=1e-5):
+def get_all_grids():
+    """Get all grid lines in the model."""
+    return list(
+        DB.FilteredElementCollector(doc)
+        .OfClass(DB.Grid)
+        .WhereElementIsNotElementType()
+        .ToElements()
+    )
+
+
+def get_grid_line(grid):
+    """Get the curve from a grid element."""
+    return grid.Curve
+
+
+def get_next_level_above(z_coordinate, all_levels, tolerance=TOLERANCE):
     """Get the next level above the given Z coordinate."""
     for level in all_levels:
         if level.Elevation > z_coordinate + tolerance:
@@ -62,7 +79,7 @@ def get_next_level_above(z_coordinate, all_levels, tolerance=1e-5):
     return None, None
 
 
-def get_next_level_below(z_coordinate, all_levels, tolerance=1e-5):
+def get_next_level_below(z_coordinate, all_levels, tolerance=TOLERANCE):
     """Get the next level below the given Z coordinate."""
     for level in reversed(all_levels):
         if level.Elevation < z_coordinate - tolerance:
@@ -95,6 +112,177 @@ def get_section_box_info(view):
         "transformed_min": transformed_min,
         "transformed_max": transformed_max,
     }
+
+
+def get_section_box_face_info(info):
+    """
+    Get information about the 4 vertical faces of the section box.
+    Returns dict with keys: 'north', 'south', 'east', 'west'
+    Each containing: center_point, normal, and face identifier
+    """
+    box = info["box"]
+    transform = info["transform"]
+
+    # Get the 8 corners of the box in world coordinates
+    min_pt = box.Min
+    max_pt = box.Max
+
+    # Calculate face centers in local coordinates, then transform to world
+    # For vertical faces, we use the middle Z coordinate
+    mid_z = (min_pt.Z + max_pt.Z) / 2.0
+
+    faces = {}
+
+    # Define faces in local coordinate system
+    # Each face: center point, outward normal
+    local_faces = {
+        "north": {
+            "center": DB.XYZ((min_pt.X + max_pt.X) / 2.0, max_pt.Y, mid_z),
+            "normal": DB.XYZ(0, 1, 0),  # +Y
+        },
+        "south": {
+            "center": DB.XYZ((min_pt.X + max_pt.X) / 2.0, min_pt.Y, mid_z),
+            "normal": DB.XYZ(0, -1, 0),  # -Y
+        },
+        "east": {
+            "center": DB.XYZ(max_pt.X, (min_pt.Y + max_pt.Y) / 2.0, mid_z),
+            "normal": DB.XYZ(1, 0, 0),  # +X
+        },
+        "west": {
+            "center": DB.XYZ(min_pt.X, (min_pt.Y + max_pt.Y) / 2.0, mid_z),
+            "normal": DB.XYZ(-1, 0, 0),  # -X
+        },
+    }
+
+    # Transform to world coordinates
+    for key, face_data in local_faces.items():
+        world_center = transform.OfPoint(face_data["center"])
+        world_normal = transform.OfVector(face_data["normal"]).Normalize()
+
+        faces[key] = {
+            "center": world_center,
+            "normal": world_normal,
+            "local_center": face_data["center"],
+        }
+
+    return faces
+
+
+def get_cardinal_direction(direction_name, use_project_north=False):
+    """
+    Get the world direction vector for a cardinal direction.
+
+    Args:
+        direction_name: 'north', 'south', 'east', 'west'
+        use_project_north: If True, use project north, else use internal coordinates
+
+    Returns:
+        XYZ vector in world coordinates
+    """
+    # Base vectors in internal coordinates
+    internal_vectors = {
+        "north": DB.XYZ(0, 1, 0),  # +Y
+        "south": DB.XYZ(0, -1, 0),  # -Y
+        "east": DB.XYZ(1, 0, 0),  # +X
+        "west": DB.XYZ(-1, 0, 0),  # -X
+    }
+
+    vector = internal_vectors[direction_name]
+
+    if use_project_north:
+        # Get project location for angle to true north
+        project_location = doc.ActiveProjectLocation
+        project_position = project_location.GetProjectPosition(DB.XYZ.Zero)
+        angle = project_position.Angle
+
+        # Rotate vector by angle
+        cos_a = Math.Cos(angle)
+        sin_a = Math.Sin(angle)
+        rotated = DB.XYZ(
+            vector.X * cos_a - vector.Y * sin_a, vector.X * sin_a + vector.Y * cos_a, 0
+        )
+        return rotated.Normalize()
+
+    return vector
+
+
+def select_best_face_for_direction(faces, direction_vector):
+    """
+    Select the face whose normal is most parallel to the given direction.
+
+    Args:
+        faces: Dict of face info from get_section_box_face_info
+        direction_vector: XYZ vector indicating desired direction
+
+    Returns:
+        Tuple of (face_key, face_info)
+    """
+    best_face = None
+    best_dot = -1.0
+
+    for key, face_info in faces.items():
+        dot = face_info["normal"].DotProduct(direction_vector)
+        if dot > best_dot:
+            best_dot = dot
+            best_face = (key, face_info)
+
+    return best_face
+
+
+def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance=TOLERANCE):
+    """
+    Find the next grid line from start_point in the given direction (in XY plane).
+    """
+
+    best_grid = None
+    best_intersection = None
+    min_distance = float("inf")
+
+    # Flatten direction to XY
+    direction_vector = DB.XYZ(direction_vector.X, direction_vector.Y, 0).Normalize()
+    start_point_flat = DB.XYZ(start_point.X, start_point.Y, 0)
+
+    # Create a 2D ray in XY plane
+    ray = DB.Line.CreateUnbound(start_point_flat, direction_vector)
+
+    for grid in grids:
+        curve = get_grid_line(grid)
+        if not isinstance(curve, DB.Line):
+            continue
+
+        # Flatten grid line to XY
+        p1, p2 = curve.GetEndPoint(0), curve.GetEndPoint(1)
+        grid_line = DB.Line.CreateBound(
+            DB.XYZ(p1.X, p1.Y, 0),
+            DB.XYZ(p2.X, p2.Y, 0)
+        )
+
+        # weird ironpython stuff:
+        # https://forums.autodesk.com/t5/revit-api-forum/find-intersection-point-between-curves-using-cpython3/td-p/12413340
+        # Try intersection
+        result = clr.Reference[DB.IntersectionResultArray]()
+        intersection_result = grid_line.Intersect(ray, result)
+
+        if intersection_result != DB.SetComparisonResult.Overlap:
+            continue
+
+        if result.Value.Size == 0:
+            continue
+
+        intersection = result.Value.Item[0].XYZPoint
+        to_intersection = intersection - start_point_flat
+
+        distance_along_ray = to_intersection.DotProduct(direction_vector)
+        if distance_along_ray < tolerance:
+            continue
+
+        distance = to_intersection.GetLength()
+        if distance < min_distance:
+            min_distance = distance
+            best_grid = grid
+            best_intersection = DB.XYZ(intersection.X, intersection.Y, start_point.Z)
+
+    return best_grid, best_intersection
 
 
 def create_preview_mesh(section_box, color):
@@ -278,8 +466,8 @@ def on_view_or_doc_changed(sender, args):
             return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
         logger.info("Form updated due to view or document change.")
-    except Exception as e:
-        logger.warning("Failed to update form: {}".format(e))
+    except Exception as ex:
+        logger.warning("Failed to update form: {}".format(ex))
 
 
 # --------------------
@@ -295,6 +483,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.current_view = doc.ActiveView
         self.all_levels = get_all_levels()
+        self.all_grids = get_all_grids()
         self.preview_server = None
         self.preview_box = None
 
@@ -322,6 +511,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.txtNudgeUnit.Text = length_unit_symbol_label
         self.txtExpandAmount.Text = str(round(default_nudge_value, 3))
         self.txtExpandUnit.Text = length_unit_symbol_label
+        self.txtGridNudgeAmount.Text = str(round(default_nudge_value, 3))
+        self.txtGridNudgeUnit.Text = length_unit_symbol_label
 
         self.update_info()
 
@@ -331,18 +522,19 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
             pos = script.load_data(WINDOW_POSITION, this_project=False)
             all_bounds = [s.WorkingArea for s in System.Windows.Forms.Screen.AllScreens]
-            x, y = pos['Left'], pos['Top']
+            x, y = pos["Left"], pos["Top"]
             visible = any(
-                (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom)
-                for b in all_bounds
+                (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom) for b in all_bounds
             )
             if not visible:
                 raise Exception
             self.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual
-            self.Left = pos.get('Left', 200)
-            self.Top = pos.get('Top', 150)
+            self.Left = pos.get("Left", 200)
+            self.Top = pos.get("Top", 150)
         except Exception:
-            self.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+            self.WindowStartupLocation = (
+                System.Windows.WindowStartupLocation.CenterScreen
+            )
 
         self.Show()
 
@@ -433,12 +625,16 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_expand_shrink(params)
             elif action_type == "align_to_view":
                 self.do_align_to_view(params)
+            elif action_type == "grid_move":
+                self.do_grid_move(params)
+            elif action_type == "grid_nudge":
+                self.do_grid_nudge(params)
 
             # Update info after action
             self.Dispatcher.Invoke(System.Action(self.update_info))
 
-        except Exception as e:
-            logger.error("Error executing action: {}".format(e))
+        except Exception as ex:
+            logger.error("Error executing action: {}".format(ex))
 
     def do_move_to_level(self, params):
         """Move section box to level."""
@@ -501,6 +697,166 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             max_y_change=adjustment,
             min_z_change=-adjustment,
             max_z_change=adjustment,
+        )
+
+    def do_grid_move(self, params, tolerance=TOLERANCE):
+        """Move section box side to next grid line."""
+        direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
+        use_project_north = params.get("use_project_north", False)
+
+        info = get_section_box_info(self.current_view)
+        if not info:
+            return
+
+        # Parse direction into cardinal direction and in/out modifier
+        parts = direction_name.split("-")
+        cardinal_dir = parts[0]  # 'north', 'south', 'east', 'west'
+        modifier = parts[1] if len(parts) > 1 else "out"  # 'in' or 'out'
+
+        # Get cardinal direction vector - this represents which FACE we want to move
+        face_direction = get_cardinal_direction(cardinal_dir, use_project_north)
+
+        # Get faces and select the face we want to move (always based on cardinal_dir)
+        faces = get_section_box_face_info(info)
+        _, face_info = select_best_face_for_direction(faces, face_direction)
+
+        if not face_info:
+            forms.alert("Could not determine face to move.", title="Error")
+            return
+
+        # Determine the search direction:
+        # "-out": search away from center (same as face direction)
+        # "-in": search toward center (opposite of face direction)
+        search_direction = face_direction if modifier == "out" else face_direction.Negate()
+
+        # Find next grid in the search direction
+        grid, intersection = find_next_grid_in_direction(
+            face_info["center"], search_direction, self.all_grids
+        )
+
+        if not grid:
+            forms.alert(
+                "No grid found in {} direction.".format(direction_name.upper()),
+                title="No Grid Found",
+            )
+            return
+
+        # Calculate how far to move
+        move_vector = intersection - face_info["center"]
+        move_distance = move_vector.DotProduct(search_direction)
+
+        if abs(move_distance) < tolerance:
+            forms.alert("Already at grid line.", title="Info")
+            return
+
+        # Convert to local coordinates
+        transform = info["transform"]
+        inverse_transform = transform.Inverse
+
+        local_move_vector = inverse_transform.OfVector(move_vector)
+        local_face_direction = inverse_transform.OfVector(face_direction)
+
+        # Determine which axis the face is on (not the movement!)
+        abs_x = abs(local_face_direction.X)
+        abs_y = abs(local_face_direction.Y)
+
+        min_x_change = 0
+        max_x_change = 0
+        min_y_change = 0
+        max_y_change = 0
+
+        # Determine which side to move based on which face we selected
+        if abs_x > abs_y:
+            # Face is on X axis
+            if local_face_direction.X > 0:
+                # Moving max X face
+                max_x_change = local_move_vector.X
+            else:
+                # Moving min X face
+                min_x_change = local_move_vector.X
+        else:
+            # Face is on Y axis
+            if local_face_direction.Y > 0:
+                # Moving max Y face
+                max_y_change = local_move_vector.Y
+            else:
+                # Moving min Y face
+                min_y_change = local_move_vector.Y
+
+        self.adjust_section_box(
+            min_x_change=min_x_change,
+            max_x_change=max_x_change,
+            min_y_change=min_y_change,
+            max_y_change=max_y_change,
+            min_z_change=0,
+            max_z_change=0,
+        )
+
+    def do_grid_nudge(self, params):
+        """Nudge section box horizontally by amount in cardinal direction."""
+        direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
+        use_project_north = params.get("use_project_north", False)
+        distance = params.get("distance", 0)
+
+        info = get_section_box_info(self.current_view)
+        if not info:
+            return
+
+        # Parse direction into cardinal direction and in/out modifier
+        parts = direction_name.split("-")
+        cardinal_dir = parts[0]  # 'north', 'south', 'east', 'west'
+        modifier = parts[1] if len(parts) > 1 else "out"  # 'in' or 'out'
+
+        # Get the cardinal direction - this represents which FACE we want to move
+        face_direction = get_cardinal_direction(cardinal_dir, use_project_north)
+
+        # Determine the actual movement direction:
+        # "-out": move away from center (same as face direction)
+        # "-in": move toward center (opposite of face direction)
+        movement_direction = face_direction if modifier == "out" else face_direction.Negate()
+
+        # Transform to local coordinates
+        transform = info["transform"]
+        inverse_transform = transform.Inverse
+
+        # Get which face we're moving in local coordinates
+        local_face_direction = inverse_transform.OfVector(face_direction)
+        # Get the movement direction in local coordinates
+        local_movement = inverse_transform.OfVector(movement_direction).Multiply(distance)
+
+        min_x_change = 0
+        max_x_change = 0
+        min_y_change = 0
+        max_y_change = 0
+
+        # Determine which axis the face is on
+        abs_x = abs(local_face_direction.X)
+        abs_y = abs(local_face_direction.Y)
+
+        if abs_x > abs_y:
+            # Face is on X axis
+            if local_face_direction.X > 0:
+                # Moving max X face
+                max_x_change = local_movement.X
+            else:
+                # Moving min X face
+                min_x_change = local_movement.X
+        else:
+            # Face is on Y axis
+            if local_face_direction.Y > 0:
+                # Moving max Y face
+                max_y_change = local_movement.Y
+            else:
+                # Moving min Y face
+                min_y_change = local_movement.Y
+
+        self.adjust_section_box(
+            min_x_change=min_x_change,
+            max_x_change=max_x_change,
+            min_y_change=min_y_change,
+            max_y_change=max_y_change,
+            min_z_change=0,
+            max_z_change=0,
         )
 
     def do_align_to_view(self, params):
@@ -655,10 +1011,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 element,
                 include_invisible=True,
                 compute_references=True,
-                detail_level=self.current_view.DetailLevel
-                )
+                detail_level=self.current_view.DetailLevel,
+            )
 
-            solids = [g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0]
+            solids = [
+                g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0
+            ]
 
             # Find face that contains the picked point
             target_face = None
@@ -798,8 +1156,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             show_preview_mesh(preview_box, self.preview_server)
 
-        except Exception as e:
-            logger.error("Error showing preview: {}".format(e))
+        except Exception as ex:
+            logger.error("Error showing preview: {}".format(ex))
 
     def hide_preview(self):
         """Hide the preview."""
@@ -807,8 +1165,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             try:
                 self.preview_server.meshes = []
                 uidoc.RefreshActiveView()
-            except Exception as e:
-                logger.warning("Error hiding preview: {}".format(e))
+            except Exception as ex:
+                logger.warning("Error hiding preview: {}".format(ex))
 
     # Button Handlers
 
@@ -953,12 +1311,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not distance_text:
                 forms.alert("Please enter a nudge amount", title="Input Required")
                 return
-                
+
             distance = float(distance_text)
             if distance <= 0:
-                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                forms.alert(
+                    "Nudge amount must be greater than 0", title="Invalid Input"
+                )
                 return
-                
+
             distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
@@ -969,10 +1329,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
-        except Exception as e:
-            logger.error("Error in nudge top up: {}".format(e))
-            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
+            forms.alert(
+                "Please enter a valid number for nudge amount", title="Invalid Input"
+            )
+        except Exception as ex:
+            logger.error("Error in nudge top up: {}".format(ex))
+            forms.alert(
+                "An error occurred while nudging: {}".format(str(e)), title="Error"
+            )
 
     def btn_nudge_top_down_click(self, sender, e):
         """Nudge top down."""
@@ -981,12 +1345,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not distance_text:
                 forms.alert("Please enter a nudge amount", title="Input Required")
                 return
-                
+
             distance = float(distance_text)
             if distance <= 0:
-                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                forms.alert(
+                    "Nudge amount must be greater than 0", title="Invalid Input"
+                )
                 return
-                
+
             distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
@@ -997,10 +1363,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
-        except Exception as e:
-            logger.error("Error in nudge top down: {}".format(e))
-            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
+            forms.alert(
+                "Please enter a valid number for nudge amount", title="Invalid Input"
+            )
+        except Exception as ex:
+            logger.error("Error in nudge top down: {}".format(ex))
+            forms.alert(
+                "An error occurred while nudging: {}".format(str(e)), title="Error"
+            )
 
     def btn_nudge_bottom_up_click(self, sender, e):
         """Nudge bottom up."""
@@ -1009,12 +1379,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not distance_text:
                 forms.alert("Please enter a nudge amount", title="Input Required")
                 return
-                
+
             distance = float(distance_text)
             if distance <= 0:
-                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                forms.alert(
+                    "Nudge amount must be greater than 0", title="Invalid Input"
+                )
                 return
-                
+
             distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
@@ -1025,10 +1397,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
-        except Exception as e:
-            logger.error("Error in nudge bottom up: {}".format(e))
-            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
+            forms.alert(
+                "Please enter a valid number for nudge amount", title="Invalid Input"
+            )
+        except Exception as ex:
+            logger.error("Error in nudge bottom up: {}".format(ex))
+            forms.alert(
+                "An error occurred while nudging: {}".format(str(e)), title="Error"
+            )
 
     def btn_nudge_bottom_down_click(self, sender, e):
         """Nudge bottom down."""
@@ -1037,12 +1413,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not distance_text:
                 forms.alert("Please enter a nudge amount", title="Input Required")
                 return
-                
+
             distance = float(distance_text)
             if distance <= 0:
-                forms.alert("Nudge amount must be greater than 0", title="Invalid Input")
+                forms.alert(
+                    "Nudge amount must be greater than 0", title="Invalid Input"
+                )
                 return
-                
+
             distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
                 "action": "nudge",
@@ -1053,10 +1431,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Please enter a valid number for nudge amount", title="Invalid Input")
-        except Exception as e:
-            logger.error("Error in nudge bottom down: {}".format(e))
-            forms.alert("An error occurred while nudging: {}".format(str(e)), title="Error")
+            forms.alert(
+                "Please enter a valid number for nudge amount", title="Invalid Input"
+            )
+        except Exception as ex:
+            logger.error("Error in nudge bottom down: {}".format(ex))
+            forms.alert(
+                "An error occurred while nudging: {}".format(str(e)), title="Error"
+            )
 
     def btn_expansion_top_up_click(self, sender, e):
         """Expand the section box."""
@@ -1065,12 +1447,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not amount_text:
                 forms.alert("Please enter an expansion amount", title="Input Required")
                 return
-                
+
             amount = float(amount_text)
             if amount <= 0:
-                forms.alert("Expansion amount must be greater than 0", title="Invalid Input")
+                forms.alert(
+                    "Expansion amount must be greater than 0", title="Invalid Input"
+                )
                 return
-                
+
             amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
             self.pending_action = {
                 "action": "expand_shrink",
@@ -1080,10 +1464,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Please enter a valid number for expansion amount", title="Invalid Input")
-        except Exception as e:
-            logger.error("Error in expansion: {}".format(e))
-            forms.alert("An error occurred while expanding: {}".format(str(e)), title="Error")
+            forms.alert(
+                "Please enter a valid number for expansion amount",
+                title="Invalid Input",
+            )
+        except Exception as ex:
+            logger.error("Error in expansion: {}".format(ex))
+            forms.alert(
+                "An error occurred while expanding: {}".format(str(e)), title="Error"
+            )
 
     def btn_expansion_top_down_click(self, sender, e):
         """Shrink the section box."""
@@ -1092,12 +1481,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not amount_text:
                 forms.alert("Please enter a shrink amount", title="Input Required")
                 return
-                
+
             amount = float(amount_text)
             if amount <= 0:
-                forms.alert("Shrink amount must be greater than 0", title="Invalid Input")
+                forms.alert(
+                    "Shrink amount must be greater than 0", title="Invalid Input"
+                )
                 return
-                
+
             amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
             self.pending_action = {
                 "action": "expand_shrink",
@@ -1107,10 +1498,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert("Please enter a valid number for shrink amount", title="Invalid Input")
-        except Exception as e:
-            logger.error("Error in shrink: {}".format(e))
-            forms.alert("An error occurred while shrinking: {}".format(str(e)), title="Error")
+            forms.alert(
+                "Please enter a valid number for shrink amount", title="Invalid Input"
+            )
+        except Exception as ex:
+            logger.error("Error in shrink: {}".format(ex))
+            forms.alert(
+                "An error occurred while shrinking: {}".format(str(e)), title="Error"
+            )
 
     def btn_align_box_to_view_click(self, sender, e):
         """Align section box to a selected 2D view."""
@@ -1162,8 +1557,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "adjust_bottom": adjust_bottom,
             }
             self.show_preview("nudge", params)
-        except Exception as e:
-            logger.warning("Error in nudge preview: {}".format(e))
+        except Exception as ex:
+            logger.warning("Error in nudge preview: {}".format(ex))
 
     def btn_preview_level_box_enter(self, sender, e):
         """Show preview when hovering over level buttons."""
@@ -1256,8 +1651,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 }
                 self.show_preview("level", params)
 
-        except Exception as e:
-            logger.warning("Error in level preview: {}".format(e))
+        except Exception as ex:
+            logger.warning("Error in level preview: {}".format(ex))
 
     def btn_preview_expansion_enter(self, sender, e):
         """Show preview when hovering over expansion buttons."""
@@ -1279,8 +1674,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             }
             self.show_preview("expand_shrink", params)
 
-        except Exception as e:
-            logger.warning("Error in expansion preview: {}".format(e))
+        except Exception as ex:
+            logger.warning("Error in expansion preview: {}".format(ex))
 
     def btn_preview_enter(self, sender, e):
         """Show preview when hovering over buttons."""
@@ -1294,8 +1689,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "adjust_bottom": 0,
             }
             self.show_preview("nudge", params)
-        except Exception as e:
-            logger.warning("Error in general preview: {}".format(e))
+        except Exception as ex:
+            logger.warning("Error in general preview: {}".format(ex))
 
     def btn_preview_leave(self, sender, e):
         """Hide preview when leaving buttons."""
@@ -1328,13 +1723,96 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def btn_refresh_click(self, sender, e):
         """Manually refresh the information."""
         self.all_levels = get_all_levels()
+        self.all_grids = get_all_grids()
         self.update_info()
+
+    # Grid Navigation Button Handlers
+
+    def btn_grid_west_out_click(self, sender, e):
+        """Move west side outward (west direction)."""
+        self._handle_grid_move("west-out")
+
+    def btn_grid_west_in_click(self, sender, e):
+        """Move west side inward (east direction)."""
+        self._handle_grid_move("west-in")
+
+    def btn_grid_north_out_click(self, sender, e):
+        """Move north side outward (north direction)."""
+        self._handle_grid_move("north-out")
+
+    def btn_grid_north_in_click(self, sender, e):
+        """Move north side inward (south direction)."""
+        self._handle_grid_move("north-in")
+
+    def btn_grid_south_out_click(self, sender, e):
+        """Move south side outward (south direction)."""
+        self._handle_grid_move("south-out")
+
+    def btn_grid_south_in_click(self, sender, e):
+        """Move south side inward (north direction)."""
+        self._handle_grid_move("south-in")
+
+    def btn_grid_east_out_click(self, sender, e):
+        """Move east side outward (east direction)."""
+        self._handle_grid_move("east-out")
+
+    def btn_grid_east_in_click(self, sender, e):
+        """Move east side inward (west direction)."""
+        self._handle_grid_move("east-in")
+
+    def _handle_grid_move(self, direction):
+        """Helper to handle grid movement."""
+        use_project_north = self.rbProjectNorth.IsChecked
+        is_grid_mode = self.rbGrid.IsChecked
+
+        if is_grid_mode:
+            # Grid mode - move to next grid
+            self.pending_action = {
+                "action": "grid_move",
+                "direction": direction,
+                "use_project_north": use_project_north,
+            }
+            self.event_handler.parameters = self.pending_action
+            self.ext_event.Raise()
+        else:
+            # Nudge mode - move by amount
+            try:
+                distance_text = self.txtGridNudgeAmount.Text.strip()
+                if not distance_text:
+                    forms.alert("Please enter a nudge amount", title="Input Required")
+                    return
+
+                distance = float(distance_text)
+                if distance <= 0:
+                    forms.alert(
+                        "Nudge amount must be greater than 0", title="Invalid Input"
+                    )
+                    return
+
+                distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
+
+                self.pending_action = {
+                    "action": "grid_nudge",
+                    "direction": direction,
+                    "use_project_north": use_project_north,
+                    "distance": distance,
+                }
+                self.event_handler.parameters = self.pending_action
+                self.ext_event.Raise()
+
+            except ValueError:
+                forms.alert("Please enter a valid number", title="Invalid Input")
+                return
+            except Exception as ex:
+                logger.error("Error in horizontal nudge: {}".format(ex))
+                forms.alert("An error occurred: {}".format(str(ex)), title="Error")
+                return
 
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
         try:
             # Save window position
-            new_pos = {'Left': self.Left, 'Top': self.Top}
+            new_pos = {"Left": self.Left, "Top": self.Top}
             script.store_data(WINDOW_POSITION, new_pos, this_project=False)
 
             # Unregister event handlers
@@ -1348,14 +1826,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if self.preview_server:
                 try:
                     self.preview_server.remove_server()
-                except Exception as e:
-                    logger.warning("Error removing DC3D server: {}".format(e))
+                except Exception as ex:
+                    logger.warning("Error removing DC3D server: {}".format(ex))
 
             # Refresh view
             try:
                 uidoc.RefreshActiveView()
-            except Exception as e:
-                logger.warning("Error refreshing view: {}".format(e))
+            except Exception as ex:
+                logger.warning("Error refreshing view: {}".format(ex))
 
         except Exception:
             logger.error("Error during cleanup: {}".format(traceback.format_exc()))
@@ -1373,12 +1851,12 @@ if __name__ == "__main__":
                 view_boxes = script.load_data(DATAFILENAME)
                 bbox_data = view_boxes[get_elementid_value(active_view.Id)]
                 restored_bbox = revit.deserialize(bbox_data)
-                
+
                 # Ask user if they want to restore
                 if forms.alert(
                     "Stored SectionBox for this view found! Restore?",
                     cancel=True,
-                    title="Restore Section Box"
+                    title="Restore Section Box",
                 ):
                     with revit.Transaction("Restore SectionBox"):
                         active_view.SetSectionBox(restored_bbox)
@@ -1391,6 +1869,6 @@ if __name__ == "__main__":
 
         sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
 
-    except Exception as e:
-        logger.error("Error launching form: {}\n{}".format(e, traceback.format_exc()))
-        forms.alert("An error occurred: {}".format(str(e)), title="Error")
+    except Exception as ex:
+        logger.exception("Error launching form: {}".format(ex))
+        forms.alert("An error occurred: {}".format(str(ex)), title="Error")
