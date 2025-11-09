@@ -306,10 +306,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
             action_type = params["action"]
 
-            if action_type == "move_to_level":
-                self.do_move_to_level(params)
-            elif action_type == "nudge":
-                self.do_nudge(params)
+            if action_type == "level_move":
+                self.do_level_move(params)
+            elif action_type == "level_nudge":
+                self.do_level_nudge(params)
             elif action_type == "toggle":
                 self.do_toggle()
             elif action_type == "hide":
@@ -331,7 +331,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception as ex:
             logger.error("Error executing action: {}".format(ex))
 
-    def do_move_to_level(self, params):
+    def do_level_move(self, params):
         """Move section box to level."""
         top_level = params.get("top_level")
         bottom_level = params.get("bottom_level")
@@ -362,7 +362,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             max_y_change=0,
         )
 
-    def do_nudge(self, params):
+    def do_level_nudge(self, params):
         """Nudge section box."""
         distance_mm = params.get("distance", 0)
         adjust_top = params.get("adjust_top", False)
@@ -701,7 +701,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         return True
 
-    def show_preview(self, preview_type="nudge", params=None):
+    def show_preview(self, preview_type="level_nudge", params=None):
         """Show preview of adjusted section box."""
         if not self.preview_server or not self.chkPreview.IsChecked:
             return
@@ -713,7 +713,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             preview_box = None
 
-            if preview_type == "nudge":
+            if preview_type == "level_nudge":
                 distance_top = params.get("distance_top", 0)
                 distance_bottom = params.get("distance_bottom", 0)
                 adjust_top = params.get("adjust_top", False)
@@ -786,7 +786,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         self.pending_action = {
-            "action": "move_to_level",
+            "action": "level_move",
             "top_level": next_level,
             "bottom_level": None,
         }
@@ -811,7 +811,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         self.pending_action = {
-            "action": "move_to_level",
+            "action": "level_move",
             "top_level": next_level,
             "bottom_level": None,
         }
@@ -836,7 +836,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         self.pending_action = {
-            "action": "move_to_level",
+            "action": "level_move",
             "top_level": None,
             "bottom_level": next_level,
         }
@@ -857,7 +857,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         self.pending_action = {
-            "action": "move_to_level",
+            "action": "level_move",
             "top_level": None,
             "bottom_level": next_level,
         }
@@ -882,7 +882,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         self.pending_action = {
-            "action": "move_to_level",
+            "action": "level_move",
             "top_level": next_top,
             "bottom_level": next_bottom,
         }
@@ -911,7 +911,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         self.pending_action = {
-            "action": "move_to_level",
+            "action": "level_move",
             "top_level": next_top,
             "bottom_level": next_bottom,
         }
@@ -935,7 +935,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
-                "action": "nudge",
+                "action": "level_nudge",
                 "distance": distance,
                 "adjust_top": True,
                 "adjust_bottom": False,
@@ -969,7 +969,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
-                "action": "nudge",
+                "action": "level_nudge",
                 "distance": distance,
                 "adjust_top": True,
                 "adjust_bottom": False,
@@ -1003,7 +1003,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
-                "action": "nudge",
+                "action": "level_nudge",
                 "distance": distance,
                 "adjust_top": False,
                 "adjust_bottom": True,
@@ -1037,7 +1037,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
             self.pending_action = {
-                "action": "nudge",
+                "action": "level_nudge",
                 "distance": distance,
                 "adjust_top": False,
                 "adjust_bottom": True,
@@ -1170,7 +1170,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "adjust_top": adjust_top,
                 "adjust_bottom": adjust_bottom,
             }
-            self.show_preview("nudge", params)
+            self.show_preview("level_nudge", params)
         except Exception as ex:
             logger.warning("Error in nudge preview: {}".format(ex))
 
@@ -1355,7 +1355,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "adjust_top": 0,
                 "adjust_bottom": 0,
             }
-            self.show_preview("nudge", params)
+            self.show_preview("level_nudge", params)
         except Exception as ex:
             logger.warning("Error in general preview: {}".format(ex))
 

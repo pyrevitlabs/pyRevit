@@ -27,43 +27,70 @@
             </StackPanel>
         </GroupBox>
 
-        <!-- Level Navigation Buttons -->
+        <!-- Level Navigation Controls -->
         <GroupBox Header="Level Navigation" Grid.Row="1" Margin="0,0,0,10">
-            <Grid Margin="5">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <StackPanel Margin="5">
 
-                <!-- Top Controls -->
-                <Button Content="Top ↑" Grid.Row="0" Grid.Column="0" 
-                        Height="30" Margin="2" Click="btn_top_up_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-                <Button Content="Top ↓" Grid.Row="0" Grid.Column="1" 
-                        Height="30" Margin="2" Click="btn_top_down_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                <!-- Navigation Buttons -->
+                <Grid Margin="0,0,0,5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- Bottom Controls -->
-                <Button Content="Bottom ↑" Grid.Row="1" Grid.Column="0" 
-                        Height="30" Margin="2" Click="btn_bottom_up_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-                <Button Content="Bottom ↓" Grid.Row="1" Grid.Column="1" 
-                        Height="30" Margin="2" Click="btn_bottom_down_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                    <!-- Top Controls -->
+                    <Button Content="Top ↑" Grid.Row="0" Grid.Column="0" 
+                            Height="30" Margin="2" Click="btn_top_up_click"
+                            MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                    <Button Content="Top ↓" Grid.Row="0" Grid.Column="1" 
+                            Height="30" Margin="2" Click="btn_top_down_click"
+                            MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
 
-                <!-- Box Navigation -->
-                <Button Content="Box ↑" Grid.Row="2" Grid.Column="0" 
-                        Height="30" Margin="2" Click="btn_box_up_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-                <Button Content="Box ↓" Grid.Row="2" Grid.Column="1" 
-                        Height="30" Margin="2" Click="btn_box_down_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-            </Grid>
+                    <!-- Bottom Controls -->
+                    <Button Content="Bottom ↑" Grid.Row="1" Grid.Column="0" 
+                            Height="30" Margin="2" Click="btn_bottom_up_click"
+                            MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                    <Button Content="Bottom ↓" Grid.Row="1" Grid.Column="1" 
+                            Height="30" Margin="2" Click="btn_bottom_down_click"
+                            MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+
+                    <!-- Box Navigation -->
+                    <Button Content="Box ↑" Grid.Row="2" Grid.Column="0" 
+                            Height="30" Margin="2" Click="btn_box_up_click"
+                            MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                    <Button Content="Box ↓" Grid.Row="2" Grid.Column="1" 
+                            Height="30" Margin="2" Click="btn_box_down_click"
+                            MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                </Grid>
+
+                <!-- Mode Selection Radio Buttons -->
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,5" HorizontalAlignment="Center">
+                    <RadioButton x:Name="rbLevel" Content="Level" 
+                                GroupName="LevelNudgeMode" IsChecked="True" Margin="0,0,15,0"/>
+                    <RadioButton x:Name="rbLevelNudge" Content="Nudge" 
+                                GroupName="LevelNudgeMode" Margin="0,0,0,0"/>
+                </StackPanel>
+
+                <!-- Nudge Amount Input (for Nudge mode) -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Amount:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBox x:Name="txtLevelNudgeAmount" Grid.Column="1" 
+                            Text="500" Height="25" VerticalContentAlignment="Center"/>
+                    <TextBlock x:Name="txtLevelNudgeUnit" Grid.Column="2" 
+                            Text="Loading..." VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </Grid>
+
+            </StackPanel>
         </GroupBox>
 
         <!-- Nudge Controls -->
@@ -207,7 +234,7 @@
                 <StackPanel Orientation="Horizontal" Margin="0,5,0,5" HorizontalAlignment="Center">
                     <RadioButton x:Name="rbGrid" Content="Grid" 
                                  GroupName="GridNudgeMode" IsChecked="True" Margin="0,0,15,0"/>
-                    <RadioButton x:Name="rbNudge" Content="Nudge" 
+                    <RadioButton x:Name="rbGridNudge" Content="Nudge" 
                                  GroupName="GridNudgeMode" Margin="0,0,0,0"/>
                 </StackPanel>
 
