@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using static pyRevitExtensionParser.ExtensionParser;
 
@@ -13,6 +14,11 @@ namespace pyRevitExtensionParser
         public EngineConfig Engine { get; set; }
         public ExtensionConfig Config { get; set; }
         public string GetHash() => Directory.GetHashCode().ToString("X");
+        
+        /// <summary>
+        /// Gets the path to the startup script if it exists
+        /// </summary>
+        public string StartupScript => FindStartupScript();
 
         private static readonly CommandComponentType[] _allowedTypes = new[] {
             CommandComponentType.PushButton,
@@ -39,6 +45,35 @@ namespace pyRevitExtensionParser
                 if (_allowedTypes.Contains(comp.Type))
                     yield return comp;
             }
+        }
+
+        /// <summary>
+        /// Finds the startup script in the extension directory
+        /// Checks for startup files in order: .py, .cs, .vb, .rb
+        /// </summary>
+        /// <returns>Full path to the startup script or null if not found</returns>
+        private string FindStartupScript()
+        {
+            if (string.IsNullOrEmpty(Directory) || !System.IO.Directory.Exists(Directory))
+                return null;
+
+            // Check for startup scripts in order of preference
+            var startupFiles = new[]
+            {
+                "startup.py",   // Python
+                "startup.cs",   // C#
+                "startup.vb",   // VB.NET
+                "startup.rb"    // Ruby
+            };
+
+            foreach (var fileName in startupFiles)
+            {
+                var fullPath = Path.Combine(Directory, fileName);
+                if (File.Exists(fullPath))
+                    return fullPath;
+            }
+
+            return null;
         }
 
     }
