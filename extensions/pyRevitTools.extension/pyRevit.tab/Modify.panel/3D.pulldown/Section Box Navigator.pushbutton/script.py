@@ -320,8 +320,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_align_to_view(params)
             elif action_type == "grid_move":
                 self.do_grid_move(params)
-            elif action_type == "grid_nudge":
-                self.do_grid_nudge(params)
 
             # Update info after action
             self.Dispatcher.Invoke(System.Action(self.update_info))
@@ -492,13 +490,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         )
 
     def do_grid_move(self, params):
-        """Move section box side to next grid line."""
+        """Move section box side to next grid line or by nudge amount."""
         direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
+        is_grid_mode = params.get("is_grid_mode", True)
+        nudge_amount = params.get("nudge_amount", 0)
         do_not_apply = params.get("do_not_apply", False)
 
         info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
-            return
+            return None if do_not_apply else False
 
         # Parse direction into cardinal direction and in/out modifier
         parts = direction_name.split("-")
@@ -508,159 +508,106 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         # Get cardinal direction vector - this represents which FACE we want to move
         face_direction = get_cardinal_direction(cardinal_dir)
 
-        # Get faces and select the face we want to move (always based on cardinal_dir)
-        faces = get_section_box_face_info(info)
-        _, face_info = select_best_face_for_direction(faces, face_direction)
-
-        if not face_info:
-            forms.alert("Could not determine face to move.", title="Error")
-            return
-
-        # Determine the search direction:
-        # "-out": search away from center (same as face direction)
-        # "-in": search toward center (opposite of face direction)
-        search_direction = (
-            face_direction if modifier == "out" else face_direction.Negate()
-        )
-
-        # Find next grid in the search direction
-        grid, intersection = find_next_grid_in_direction(
-            face_info["center"], search_direction, self.all_grids, TOLERANCE
-        )
-
-        if not grid:
-            if not do_not_apply:
-                forms.alert(
-                    "No grid found in {} direction.".format(direction_name.upper()),
-                    title="No Grid Found",
-                )
-            return
-
-        # Calculate how far to move
-        move_vector = intersection - face_info["center"]
-        move_distance = move_vector.DotProduct(search_direction)
-
-        if abs(move_distance) < TOLERANCE:
-            forms.alert("Already at grid line.", title="Info")
-            return
-
-        # Convert to local coordinates
-        transform = info["transform"]
-        inverse_transform = transform.Inverse
-
-        local_move_vector = inverse_transform.OfVector(move_vector)
-        local_face_direction = inverse_transform.OfVector(face_direction)
-
-        # Determine which axis the face is on (not the movement!)
-        abs_x = abs(local_face_direction.X)
-        abs_y = abs(local_face_direction.Y)
-
-        min_x_change = 0
-        max_x_change = 0
-        min_y_change = 0
-        max_y_change = 0
-
-        # Determine which side to move based on which face we selected
-        if abs_x > abs_y:
-            # Face is on X axis
-            if local_face_direction.X > 0:
-                # Moving max X face
-                max_x_change = local_move_vector.X
-            else:
-                # Moving min X face
-                min_x_change = local_move_vector.X
-        else:
-            # Face is on Y axis
-            if local_face_direction.Y > 0:
-                # Moving max Y face
-                max_y_change = local_move_vector.Y
-            else:
-                # Moving min Y face
-                min_y_change = local_move_vector.Y
-
-        if do_not_apply:
-            new_box = create_adjusted_box(
-                info,
-                min_x_change,
-                max_x_change,
-                min_y_change,
-                max_y_change,
-                0,
-                0,
-            )
-            return new_box
-
-        self.adjust_section_box(
-            min_x_change=min_x_change,
-            max_x_change=max_x_change,
-            min_y_change=min_y_change,
-            max_y_change=max_y_change,
-            min_z_change=0,
-            max_z_change=0,
-        )
-
-    def do_grid_nudge(self, params):
-        """Nudge section box horizontally by amount in cardinal direction."""
-        direction_name = params.get("direction")  # 'north-out', 'south-in', etc.
-        distance = params.get("distance", 0)
-        do_not_apply = params.get("do_not_apply", False)
-
-        info = get_section_box_info(self.current_view, DATAFILENAME)
-        if not info:
-            return
-
-        # Parse direction into cardinal direction and in/out modifier
-        parts = direction_name.split("-")
-        cardinal_dir = parts[0]  # 'north', 'south', 'east', 'west'
-        modifier = parts[1] if len(parts) > 1 else "out"  # 'in' or 'out'
-
-        # Get the cardinal direction - this represents which FACE we want to move
-        face_direction = get_cardinal_direction(cardinal_dir)
-
-        # Determine the actual movement direction:
-        # "-out": move away from center (same as face direction)
-        # "-in": move toward center (opposite of face direction)
-        movement_direction = (
-            face_direction if modifier == "out" else face_direction.Negate()
-        )
-
         # Transform to local coordinates
         transform = info["transform"]
         inverse_transform = transform.Inverse
-
-        # Get which face we're moving in local coordinates
         local_face_direction = inverse_transform.OfVector(face_direction)
-        # Get the movement direction in local coordinates
-        local_movement = inverse_transform.OfVector(movement_direction).Multiply(
-            distance
-        )
-
-        min_x_change = 0
-        max_x_change = 0
-        min_y_change = 0
-        max_y_change = 0
 
         # Determine which axis the face is on
         abs_x = abs(local_face_direction.X)
         abs_y = abs(local_face_direction.Y)
 
-        if abs_x > abs_y:
-            # Face is on X axis
-            if local_face_direction.X > 0:
-                # Moving max X face
-                max_x_change = local_movement.X
-            else:
-                # Moving min X face
-                min_x_change = local_movement.X
-        else:
-            # Face is on Y axis
-            if local_face_direction.Y > 0:
-                # Moving max Y face
-                max_y_change = local_movement.Y
-            else:
-                # Moving min Y face
-                min_y_change = local_movement.Y
+        min_x_change = 0
+        max_x_change = 0
+        min_y_change = 0
+        max_y_change = 0
 
+        if is_grid_mode:
+            # Grid mode - snap to next grid line
+            # Get faces and select the face we want to move
+            faces = get_section_box_face_info(info)
+            _, face_info = select_best_face_for_direction(faces, face_direction)
+
+            if not face_info:
+                if not do_not_apply:
+                    forms.alert("Could not determine face to move.", title="Error")
+                return None
+
+            # Determine the search direction:
+            # "-out": search away from center (same as face direction)
+            # "-in": search toward center (opposite of face direction)
+            search_direction = (
+                face_direction if modifier == "out" else face_direction.Negate()
+            )
+
+            # Find next grid in the search direction
+            grid, intersection = find_next_grid_in_direction(
+                face_info["center"], search_direction, self.all_grids, TOLERANCE
+            )
+
+            if not grid:
+                if not do_not_apply:
+                    forms.alert(
+                        "No grid found in {} direction.".format(direction_name.upper()),
+                        title="No Grid Found",
+                    )
+                return None
+
+            # Calculate how far to move
+            move_vector = intersection - face_info["center"]
+            move_distance = move_vector.DotProduct(search_direction)
+
+            if abs(move_distance) < TOLERANCE:
+                if not do_not_apply:
+                    forms.alert("Already at grid line.", title="Info")
+                return None
+
+            # Convert movement to local coordinates
+            local_move_vector = inverse_transform.OfVector(move_vector)
+
+            # Apply movement based on which face we're moving
+            if abs_x > abs_y:
+                # Face is on X axis
+                if local_face_direction.X > 0:
+                    max_x_change = local_move_vector.X
+                else:
+                    min_x_change = local_move_vector.X
+            else:
+                # Face is on Y axis
+                if local_face_direction.Y > 0:
+                    max_y_change = local_move_vector.Y
+                else:
+                    min_y_change = local_move_vector.Y
+
+        else:
+            # Nudge mode - move by specified amount
+            # Determine the actual movement direction:
+            # "-out": move away from center (same as face direction)
+            # "-in": move toward center (opposite of face direction)
+            movement_direction = (
+                face_direction if modifier == "out" else face_direction.Negate()
+            )
+
+            # Get the movement in local coordinates
+            local_movement = inverse_transform.OfVector(movement_direction).Multiply(
+                nudge_amount
+            )
+
+            # Apply movement based on which face we're moving
+            if abs_x > abs_y:
+                # Face is on X axis
+                if local_face_direction.X > 0:
+                    max_x_change = local_movement.X
+                else:
+                    min_x_change = local_movement.X
+            else:
+                # Face is on Y axis
+                if local_face_direction.Y > 0:
+                    max_y_change = local_movement.Y
+                else:
+                    min_y_change = local_movement.Y
+
+        # Create adjusted box if in preview mode
         if do_not_apply:
             new_box = create_adjusted_box(
                 info,
@@ -673,6 +620,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
             return new_box
 
+        # Apply the adjustment
         self.adjust_section_box(
             min_x_change=min_x_change,
             max_x_change=max_x_change,
@@ -1117,10 +1065,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
                     params = {
                         "direction": sender.Tag,
-                        "distance": distance,
+                        "is_grid_mode": False,
+                        "nudge_amount": distance,
                         "do_not_apply": True,
                     }
-                    box = self.do_grid_nudge(params)
+                    box = self.do_grid_move(params)
 
                 except ValueError:
                     forms.alert("Please enter a valid number", title="Invalid Input")
@@ -1219,6 +1168,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.pending_action = {
                 "action": "grid_move",
                 "direction": direction,
+                "is_grid_mode": True,
             }
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
@@ -1240,9 +1190,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
 
                 self.pending_action = {
-                    "action": "grid_nudge",
+                    "action": "grid_move",
                     "direction": direction,
-                    "distance": distance,
+                    "is_grid_mode": False,
+                    "nudge_amount": distance,
                 }
                 self.event_handler.parameters = self.pending_action
                 self.ext_event.Raise()
