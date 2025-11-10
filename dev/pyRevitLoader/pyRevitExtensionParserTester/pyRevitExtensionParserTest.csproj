@@ -33,6 +33,7 @@
     <Compile Include="QuotedValueTests.cs" />
     <Compile Include="QuoteDebuggingTest.cs" />
     <Compile Include="FullIntegrationQuoteTest.cs" />
+    <Compile Include="StartupScriptTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
