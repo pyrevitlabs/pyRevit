@@ -150,15 +150,15 @@ author: Test Author";
                 var bundlePath = Path.Combine(buttonDir, "bundle.yaml");
                 var bundleContent = @"title:
   en_us: English Title
-  fr_fr: Titre Français
+  fr_fr: Titre Franï¿½ais
   de_de: Deutscher Titel
-  es_es: Título Español
+  es_es: Tï¿½tulo Espaï¿½ol
   it_it: Titolo Italiano
 tooltips:
   en_us: English tooltip description
-  fr_fr: Description de l'info-bulle française
+  fr_fr: Description de l'info-bulle franï¿½aise
   de_de: Deutsche Tooltip-Beschreibung
-  es_es: Descripción del tooltip en español
+  es_es: Descripciï¿½n del tooltip en espaï¿½ol
 author: Multilingual Test Author";
                 
                 File.WriteAllText(bundlePath, bundleContent);
@@ -183,18 +183,18 @@ author: Multilingual Test Author";
                 var expectedTitles = new Dictionary<string, string>
                 {
                     ["en_us"] = "English Title",
-                    ["fr_fr"] = "Titre Français", 
+                    ["fr_fr"] = "Titre Franï¿½ais", 
                     ["de_de"] = "Deutscher Titel",
-                    ["es_es"] = "Título Español",
+                    ["es_es"] = "Tï¿½tulo Espaï¿½ol",
                     ["it_it"] = "Titolo Italiano"
                 };
                 
                 var expectedTooltips = new Dictionary<string, string>
                 {
                     ["en_us"] = "English tooltip description",
-                    ["fr_fr"] = "Description de l'info-bulle française",
+                    ["fr_fr"] = "Description de l'info-bulle franï¿½aise",
                     ["de_de"] = "Deutsche Tooltip-Beschreibung", 
-                    ["es_es"] = "Descripción del tooltip en español"
+                    ["es_es"] = "Descripciï¿½n del tooltip en espaï¿½ol"
                 };
                 
                 foreach (var kvp in expectedTitles)
@@ -255,10 +255,10 @@ author: Multilingual Test Author";
                 
                 var bundlePath = Path.Combine(buttonDir, "bundle.yaml");
                 var bundleContent = @"title:
-  fr_fr: Titre Français Only
+  fr_fr: Titre Franï¿½ais Only
   de_de: Nur Deutscher Titel
 tooltip:
-  fr_fr: Info-bulle française
+  fr_fr: Info-bulle franï¿½aise
   de_de: Deutsche Tooltip
 author: Locale Test Author";
                 
@@ -279,7 +279,7 @@ author: Locale Test Author";
                     
                     // Should get first available since en_us is not available
                     var titleWithEnUs = testButton.GetLocalizedTitle();
-                    Assert.IsTrue(titleWithEnUs == "Titre Français Only" || titleWithEnUs == "Nur Deutscher Titel");
+                    Assert.IsTrue(titleWithEnUs == "Titre Franï¿½ais Only" || titleWithEnUs == "Nur Deutscher Titel");
                     
                     TestContext.Out.WriteLine($"Default locale (en_us) fallback title: {titleWithEnUs}");
                     
@@ -294,10 +294,10 @@ author: Locale Test Author";
                     Assert.IsNotNull(testButton);
                     
                     // Should now default to French
-                    Assert.AreEqual("Titre Français Only", testButton.Title);
-                    Assert.AreEqual("Info-bulle française", testButton.Tooltip);
-                    Assert.AreEqual("Titre Français Only", testButton.GetLocalizedTitle());
-                    Assert.AreEqual("Info-bulle française", testButton.GetLocalizedTooltip());
+                    Assert.AreEqual("Titre Franï¿½ais Only", testButton.Title);
+                    Assert.AreEqual("Info-bulle franï¿½aise", testButton.Tooltip);
+                    Assert.AreEqual("Titre Franï¿½ais Only", testButton.GetLocalizedTitle());
+                    Assert.AreEqual("Info-bulle franï¿½aise", testButton.GetLocalizedTooltip());
                     
                     TestContext.Out.WriteLine($"French default locale title: {testButton.Title}");
                     TestContext.Out.WriteLine($"French default locale tooltip: {testButton.Tooltip}");
@@ -320,7 +320,7 @@ author: Locale Test Author";
         }
         
         // Helper method to find components recursively
-        private ParsedComponent FindComponentRecursively(ParsedComponent parent, string componentName)
+        private ParsedComponent? FindComponentRecursively(ParsedComponent? parent, string componentName)
         {
             if (parent == null || string.IsNullOrEmpty(componentName))
                 return null;

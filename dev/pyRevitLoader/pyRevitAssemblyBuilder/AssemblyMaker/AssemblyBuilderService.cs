@@ -92,7 +92,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
                 return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading: false);
             }
-            catch (Exception ex)
+            catch
             {
                 throw; // Re-throw the original exception
             }
@@ -198,7 +198,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             {
                 Assembly.LoadFrom(info.Location);
             }
-            catch (Exception ex)
+            catch
             {
                 throw;
             }
