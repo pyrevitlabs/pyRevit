@@ -177,8 +177,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
 
         self.current_view = doc.ActiveView
-        self.all_levels = get_all_levels(doc)
-        self.all_grids = get_all_grids(doc)
+        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
+        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.preview_server = None
         self.preview_box = None
 
@@ -202,8 +202,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.project_unit_text.Text = (
                 "Length Label (adjust in Project Units): \n" + length_unit_label
             )
-        self.txtNudgeAmount.Text = str(round(default_nudge_value, 3))
-        self.txtNudgeUnit.Text = length_unit_symbol_label
+        self.txtLevelNudgeAmount.Text = str(round(default_nudge_value, 3))
+        self.txtLevelNudgeUnit.Text = length_unit_symbol_label
         self.txtExpandAmount.Text = str(round(default_nudge_value, 3))
         self.txtExpandUnit.Text = length_unit_symbol_label
         self.txtGridNudgeAmount.Text = str(round(default_nudge_value, 3))
@@ -308,8 +308,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             if action_type == "level_move":
                 self.do_level_move(params)
-            elif action_type == "level_nudge":
-                self.do_level_nudge(params)
             elif action_type == "toggle":
                 self.do_toggle()
             elif action_type == "hide":
@@ -332,45 +330,144 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             logger.error("Error executing action: {}".format(ex))
 
     def do_level_move(self, params):
-        """Move section box to level."""
-        top_level = params.get("top_level")
-        bottom_level = params.get("bottom_level")
+        """Move section box to level or by nudge amount."""
+        direction = params.get("direction")  # 'top-up', 'bottom-down', 'box-up', etc.
+        is_level_mode = params.get("is_level_mode", True)
+        nudge_amount = params.get("nudge_amount", 0)
+        do_not_apply = params.get("do_not_apply", False)
 
         info = get_section_box_info(self.current_view, DATAFILENAME)
         if not info:
-            return
+            return None if do_not_apply else False
 
-        adjust_top = top_level is not None
-        adjust_bottom = bottom_level is not None
+        # Parse direction
+        parts = direction.split("-")
+        target = parts[0]  # 'top', 'bottom', or 'box'
+        movement = parts[1]  # 'up' or 'down'
 
-        # Calculate distances
+        adjust_top = False
+        adjust_bottom = False
         top_distance = 0
         bottom_distance = 0
 
-        if adjust_top:
-            top_distance = top_level.Elevation - info["transformed_max"].Z
+        if is_level_mode:
+            # Level mode - snap to next level
+            if target == "box":
+                # Move entire box
+                adjust_top = True
+                adjust_bottom = True
 
-        if adjust_bottom:
-            bottom_distance = bottom_level.Elevation - info["transformed_min"].Z
+                if movement == "up":
+                    next_top, _ = get_next_level_above(
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
+                    )
+                    next_bottom, _ = get_next_level_above(
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
+                    )
+                else:
+                    next_top, _ = get_next_level_below(
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
+                    )
+                    next_bottom, _ = get_next_level_below(
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
+                    )
 
+                if not next_top or not next_bottom:
+                    if not do_not_apply:
+                        forms.alert(
+                            "Cannot find levels in that direction", title="Error"
+                        )
+                    return None
+
+                top_distance = next_top.Elevation - info["transformed_max"].Z
+                bottom_distance = next_bottom.Elevation - info["transformed_min"].Z
+
+                # Validate box dimensions
+                if next_top.Elevation <= next_bottom.Elevation:
+                    if not do_not_apply:
+                        forms.alert("Would create invalid box", title="Error")
+                    return None
+
+            elif target == "top":
+                adjust_top = True
+
+                if movement == "up":
+                    next_level, _ = get_next_level_above(
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
+                    )
+                else:
+                    next_level, _ = get_next_level_below(
+                        info["transformed_max"].Z, self.all_levels, TOLERANCE
+                    )
+
+                if not next_level:
+                    if not do_not_apply:
+                        forms.alert("No level found in that direction", title="Error")
+                    return None
+
+                top_distance = next_level.Elevation - info["transformed_max"].Z
+
+                # Validate won't go below bottom
+                if next_level.Elevation <= info["transformed_min"].Z:
+                    if not do_not_apply:
+                        forms.alert("Would create invalid box", title="Error")
+                    return None
+
+            elif target == "bottom":
+                adjust_bottom = True
+
+                if movement == "up":
+                    next_level, _ = get_next_level_above(
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
+                    )
+                else:
+                    next_level, _ = get_next_level_below(
+                        info["transformed_min"].Z, self.all_levels, TOLERANCE
+                    )
+
+                if not next_level:
+                    if not do_not_apply:
+                        forms.alert("No level found in that direction", title="Error")
+                    return None
+
+                bottom_distance = next_level.Elevation - info["transformed_min"].Z
+
+                # Validate won't go above top
+                if next_level.Elevation >= info["transformed_max"].Z:
+                    if not do_not_apply:
+                        forms.alert("Would create invalid box", title="Error")
+                    return None
+
+        else:
+            # Nudge mode - move by specified amount
+            distance = nudge_amount if movement == "up" else -nudge_amount
+
+            if target == "box":
+                # Move entire box
+                adjust_top = True
+                adjust_bottom = True
+                top_distance = distance
+                bottom_distance = distance
+            elif target == "top":
+                adjust_top = True
+                top_distance = distance
+            elif target == "bottom":
+                adjust_bottom = True
+                bottom_distance = distance
+
+        # Create adjusted box
+        if do_not_apply:
+            new_box = create_adjusted_box(
+                info,
+                min_z=bottom_distance if adjust_bottom else 0,
+                max_z=top_distance if adjust_top else 0,
+            )
+            return new_box
+
+        # Apply the adjustment
         self.adjust_section_box(
             min_z_change=bottom_distance if adjust_bottom else 0,
             max_z_change=top_distance if adjust_top else 0,
-            min_x_change=0,
-            max_x_change=0,
-            min_y_change=0,
-            max_y_change=0,
-        )
-
-    def do_level_nudge(self, params):
-        """Nudge section box."""
-        distance_mm = params.get("distance", 0)
-        adjust_top = params.get("adjust_top", False)
-        adjust_bottom = params.get("adjust_bottom", False)
-
-        self.adjust_section_box(
-            min_z_change=distance_mm if adjust_bottom else 0,
-            max_z_change=distance_mm if adjust_top else 0,
             min_x_change=0,
             max_x_change=0,
             min_y_change=0,
@@ -713,29 +810,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             preview_box = None
 
-            if preview_type == "level_nudge":
-                distance_top = params.get("distance_top", 0)
-                distance_bottom = params.get("distance_bottom", 0)
-                adjust_top = params.get("adjust_top", False)
-                adjust_bottom = params.get("adjust_bottom", False)
-
-                preview_box = create_adjusted_box(
-                    info,
-                    min_z=distance_bottom if adjust_bottom else 0,
-                    max_z=distance_top if adjust_top else 0,
-                )
-
-            elif preview_type == "level":
-                distance_top = params.get("distance_top", 0)
-                distance_bottom = params.get("distance_bottom", 0)
-                adjust_top = params.get("adjust_top", False)
-                adjust_bottom = params.get("adjust_bottom", False)
-
-                preview_box = create_adjusted_box(
-                    info,
-                    min_z=distance_bottom if adjust_bottom else 0,
-                    max_z=distance_top if adjust_top else 0,
-                )
+            if preview_type == "toggle":
+                preview_box = create_adjusted_box(info)
 
             elif preview_type == "expand_shrink":
                 adjustment = params.get("adjustment", 0)
@@ -773,286 +849,75 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     # Button Handlers
 
     def btn_top_up_click(self, sender, e):
-        """Move top up to next level."""
-        info = get_section_box_info(self.current_view, DATAFILENAME)
-        if not info:
-            return
-
-        next_level, _ = get_next_level_above(
-            info["transformed_max"].Z, self.all_levels, TOLERANCE
-        )
-        if not next_level:
-            forms.alert("No level found above", title="Error")
-            return
-
-        self.pending_action = {
-            "action": "level_move",
-            "top_level": next_level,
-            "bottom_level": None,
-        }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        """Move top up."""
+        self._handle_level_move(sender.Tag)
 
     def btn_top_down_click(self, sender, e):
-        """Move top down to next level."""
-        info = get_section_box_info(self.current_view, DATAFILENAME)
-        if not info:
-            return
-
-        next_level, _ = get_next_level_below(
-            info["transformed_max"].Z, self.all_levels, TOLERANCE
-        )
-        if not next_level:
-            forms.alert("No level found below", title="Error")
-            return
-
-        if next_level.Elevation <= info["transformed_min"].Z:
-            forms.alert("Would create invalid box", title="Error")
-            return
-
-        self.pending_action = {
-            "action": "level_move",
-            "top_level": next_level,
-            "bottom_level": None,
-        }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        """Move top down."""
+        self._handle_level_move(sender.Tag)
 
     def btn_bottom_up_click(self, sender, e):
-        """Move bottom up to next level."""
-        info = get_section_box_info(self.current_view, DATAFILENAME)
-        if not info:
-            return
-
-        next_level, _ = get_next_level_above(
-            info["transformed_min"].Z, self.all_levels, TOLERANCE
-        )
-        if not next_level:
-            forms.alert("No level found above", title="Error")
-            return
-
-        if next_level.Elevation >= info["transformed_max"].Z:
-            forms.alert("Would create invalid box", title="Error")
-            return
-
-        self.pending_action = {
-            "action": "level_move",
-            "top_level": None,
-            "bottom_level": next_level,
-        }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        """Move bottom up."""
+        self._handle_level_move(sender.Tag)
 
     def btn_bottom_down_click(self, sender, e):
-        """Move bottom down to next level."""
-        info = get_section_box_info(self.current_view, DATAFILENAME)
-        if not info:
-            return
-
-        next_level, _ = get_next_level_below(
-            info["transformed_min"].Z, self.all_levels, TOLERANCE
-        )
-        if not next_level:
-            forms.alert("No level found below", title="Error")
-            return
-
-        self.pending_action = {
-            "action": "level_move",
-            "top_level": None,
-            "bottom_level": next_level,
-        }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        """Move bottom down."""
+        self._handle_level_move(sender.Tag)
 
     def btn_box_up_click(self, sender, e):
-        """Move entire box up to next levels."""
-        info = get_section_box_info(self.current_view, DATAFILENAME)
-        if not info:
-            return
-
-        next_top, _ = get_next_level_above(
-            info["transformed_max"].Z, self.all_levels, TOLERANCE
-        )
-        next_bottom, _ = get_next_level_above(
-            info["transformed_min"].Z, self.all_levels, TOLERANCE
-        )
-
-        if not next_top or not next_bottom:
-            forms.alert("Cannot find levels above", title="Error")
-            return
-
-        self.pending_action = {
-            "action": "level_move",
-            "top_level": next_top,
-            "bottom_level": next_bottom,
-        }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        """Move entire box up."""
+        self._handle_level_move(sender.Tag)
 
     def btn_box_down_click(self, sender, e):
-        """Move entire box down to next levels."""
-        info = get_section_box_info(self.current_view, DATAFILENAME)
-        if not info:
-            return
+        """Move entire box down."""
+        self._handle_level_move(sender.Tag)
 
-        next_top, _ = get_next_level_below(
-            info["transformed_max"].Z, self.all_levels, TOLERANCE
-        )
-        next_bottom, _ = get_next_level_below(
-            info["transformed_min"].Z, self.all_levels, TOLERANCE
-        )
+    def _handle_level_move(self, direction):
+        """Helper to handle level movement based on mode."""
+        is_level_mode = self.rbLevel.IsChecked
 
-        if not next_top or not next_bottom:
-            forms.alert("Cannot find levels below", title="Error")
-            return
-
-        if next_top.Elevation <= next_bottom.Elevation:
-            forms.alert("Would create invalid box", title="Error")
-            return
-
-        self.pending_action = {
-            "action": "level_move",
-            "top_level": next_top,
-            "bottom_level": next_bottom,
-        }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
-
-    def btn_nudge_top_up_click(self, sender, e):
-        """Nudge top up."""
-        try:
-            distance_text = self.txtNudgeAmount.Text.strip()
-            if not distance_text:
-                forms.alert("Please enter a nudge amount", title="Input Required")
-                return
-
-            distance = float(distance_text)
-            if distance <= 0:
-                forms.alert(
-                    "Nudge amount must be greater than 0", title="Invalid Input"
-                )
-                return
-
-            distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
+        if is_level_mode:
+            # Level mode - move to next level
             self.pending_action = {
-                "action": "level_nudge",
-                "distance": distance,
-                "adjust_top": True,
-                "adjust_bottom": False,
+                "action": "level_move",
+                "direction": direction,
+                "is_level_mode": True,
             }
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
-        except ValueError:
-            forms.alert(
-                "Please enter a valid number for nudge amount", title="Invalid Input"
-            )
-        except Exception as ex:
-            logger.error("Error in nudge top up: {}".format(ex))
-            forms.alert(
-                "An error occurred while nudging: {}".format(str(e)), title="Error"
-            )
+        else:
+            # Nudge mode - move by amount
+            try:
+                distance_text = self.txtLevelNudgeAmount.Text.strip()
+                if not distance_text:
+                    forms.alert("Please enter a nudge amount", title="Input Required")
+                    return
 
-    def btn_nudge_top_down_click(self, sender, e):
-        """Nudge top down."""
-        try:
-            distance_text = self.txtNudgeAmount.Text.strip()
-            if not distance_text:
-                forms.alert("Please enter a nudge amount", title="Input Required")
+                distance = float(distance_text)
+                if distance <= 0:
+                    forms.alert(
+                        "Nudge amount must be greater than 0", title="Invalid Input"
+                    )
+                    return
+
+                distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
+
+                self.pending_action = {
+                    "action": "level_move",
+                    "direction": direction,
+                    "is_level_mode": False,
+                    "nudge_amount": distance,
+                }
+                self.event_handler.parameters = self.pending_action
+                self.ext_event.Raise()
+
+            except ValueError:
+                forms.alert("Please enter a valid number", title="Invalid Input")
                 return
-
-            distance = float(distance_text)
-            if distance <= 0:
-                forms.alert(
-                    "Nudge amount must be greater than 0", title="Invalid Input"
-                )
+            except Exception as ex:
+                logger.error("Error in level nudge: {}".format(ex))
+                forms.alert("An error occurred: {}".format(str(ex)), title="Error")
                 return
-
-            distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
-            self.pending_action = {
-                "action": "level_nudge",
-                "distance": distance,
-                "adjust_top": True,
-                "adjust_bottom": False,
-            }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
-        except ValueError:
-            forms.alert(
-                "Please enter a valid number for nudge amount", title="Invalid Input"
-            )
-        except Exception as ex:
-            logger.error("Error in nudge top down: {}".format(ex))
-            forms.alert(
-                "An error occurred while nudging: {}".format(str(e)), title="Error"
-            )
-
-    def btn_nudge_bottom_up_click(self, sender, e):
-        """Nudge bottom up."""
-        try:
-            distance_text = self.txtNudgeAmount.Text.strip()
-            if not distance_text:
-                forms.alert("Please enter a nudge amount", title="Input Required")
-                return
-
-            distance = float(distance_text)
-            if distance <= 0:
-                forms.alert(
-                    "Nudge amount must be greater than 0", title="Invalid Input"
-                )
-                return
-
-            distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
-            self.pending_action = {
-                "action": "level_nudge",
-                "distance": distance,
-                "adjust_top": False,
-                "adjust_bottom": True,
-            }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
-        except ValueError:
-            forms.alert(
-                "Please enter a valid number for nudge amount", title="Invalid Input"
-            )
-        except Exception as ex:
-            logger.error("Error in nudge bottom up: {}".format(ex))
-            forms.alert(
-                "An error occurred while nudging: {}".format(str(e)), title="Error"
-            )
-
-    def btn_nudge_bottom_down_click(self, sender, e):
-        """Nudge bottom down."""
-        try:
-            distance_text = self.txtNudgeAmount.Text.strip()
-            if not distance_text:
-                forms.alert("Please enter a nudge amount", title="Input Required")
-                return
-
-            distance = float(distance_text)
-            if distance <= 0:
-                forms.alert(
-                    "Nudge amount must be greater than 0", title="Invalid Input"
-                )
-                return
-
-            distance = -DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
-            self.pending_action = {
-                "action": "level_nudge",
-                "distance": distance,
-                "adjust_top": False,
-                "adjust_bottom": True,
-            }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
-        except ValueError:
-            forms.alert(
-                "Please enter a valid number for nudge amount", title="Invalid Input"
-            )
-        except Exception as ex:
-            logger.error("Error in nudge bottom down: {}".format(ex))
-            forms.alert(
-                "An error occurred while nudging: {}".format(str(e)), title="Error"
-            )
 
     def btn_expansion_top_up_click(self, sender, e):
         """Expand the section box."""
@@ -1148,122 +1013,54 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.event_handler.parameters = self.pending_action
         self.ext_event.Raise()
 
-    def btn_preview_nudge_enter(self, sender, e):
-        """Show preview when hovering over nudge buttons."""
-        if not self.chkPreview.IsChecked:
-            return
-
-        try:
-            distance = float(self.txtNudgeAmount.Text)
-            distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
-
-            button_content = sender.Content
-            adjust_top = "Top" in button_content
-            adjust_bottom = "Bottom" in button_content
-
-            if "-" in button_content:
-                distance = -distance
-
-            params = {
-                "distance_top": distance,
-                "distance_bottom": distance,
-                "adjust_top": adjust_top,
-                "adjust_bottom": adjust_bottom,
-            }
-            self.show_preview("level_nudge", params)
-        except Exception as ex:
-            logger.warning("Error in nudge preview: {}".format(ex))
-
     def btn_preview_level_box_enter(self, sender, e):
         """Show preview when hovering over level buttons."""
         if not self.chkPreview.IsChecked:
             return
 
         try:
-            info = get_section_box_info(self.current_view, DATAFILENAME)
-            if not info:
-                return
+            is_level_mode = self.rbLevel.IsChecked
+            direction = sender.Tag  # e.g., 'top-up', 'bottom-down', 'box-up'
 
-            button_content = sender.Content
-
-            # Determine which button was hovered
-            is_top = "Top" in button_content
-            is_bottom = "Bottom" in button_content
-            is_box = "Box" in button_content
-            is_up = "↑" in button_content
-
-            distance_top = 0
-            distance_bottom = 0
-            adjust_top = False
-            adjust_bottom = False
-
-            if is_box:
-                # Box up or down - move both
-                if is_up:
-                    next_top, _ = get_next_level_above(
-                        info["transformed_max"].Z, self.all_levels, TOLERANCE
-                    )
-                    next_bottom, _ = get_next_level_above(
-                        info["transformed_min"].Z, self.all_levels, TOLERANCE
-                    )
-                    if next_top and next_bottom:
-                        distance_top = next_top.Elevation - info["transformed_max"].Z
-                        distance_bottom = (
-                            next_bottom.Elevation - info["transformed_min"].Z
-                        )
-                        adjust_top = True
-                        adjust_bottom = True
-                else:
-                    next_top, _ = get_next_level_below(
-                        info["transformed_max"].Z, self.all_levels, TOLERANCE
-                    )
-                    next_bottom, _ = get_next_level_below(
-                        info["transformed_min"].Z, self.all_levels, TOLERANCE
-                    )
-                    if next_top and next_bottom:
-                        distance_top = next_top.Elevation - info["transformed_max"].Z
-                        distance_bottom = (
-                            next_bottom.Elevation - info["transformed_min"].Z
-                        )
-                        adjust_top = True
-                        adjust_bottom = True
-            elif is_top:
-                # Top up or down
-                if is_up:
-                    next_level, _ = get_next_level_above(
-                        info["transformed_max"].Z, self.all_levels, TOLERANCE
-                    )
-                else:
-                    next_level, _ = get_next_level_below(
-                        info["transformed_max"].Z, self.all_levels, TOLERANCE
-                    )
-
-                if next_level:
-                    distance_top = next_level.Elevation - info["transformed_max"].Z
-                    adjust_top = True
-            elif is_bottom:
-                # Bottom up or down
-                if is_up:
-                    next_level, _ = get_next_level_above(
-                        info["transformed_min"].Z, self.all_levels, TOLERANCE
-                    )
-                else:
-                    next_level, _ = get_next_level_below(
-                        info["transformed_min"].Z, self.all_levels, TOLERANCE
-                    )
-
-                if next_level:
-                    distance_bottom = next_level.Elevation - info["transformed_min"].Z
-                    adjust_bottom = True
-
-            if adjust_top or adjust_bottom:
+            if is_level_mode:
+                # Level mode - preview next level
                 params = {
-                    "distance_top": distance_top,
-                    "distance_bottom": distance_bottom,
-                    "adjust_top": adjust_top,
-                    "adjust_bottom": adjust_bottom,
+                    "direction": direction,
+                    "is_level_mode": True,
+                    "do_not_apply": True,
                 }
-                self.show_preview("level", params)
+                box = self.do_level_move(params)
+            else:
+                # Nudge mode - preview nudge
+                try:
+                    distance_text = self.txtLevelNudgeAmount.Text.strip()
+                    if not distance_text:
+                        return
+
+                    distance = float(distance_text)
+                    if distance <= 0:
+                        return
+
+                    distance = DB.UnitUtils.ConvertToInternalUnits(
+                        distance, length_unit
+                    )
+
+                    params = {
+                        "direction": direction,
+                        "is_level_mode": False,
+                        "nudge_amount": distance,
+                        "do_not_apply": True,
+                    }
+                    box = self.do_level_move(params)
+
+                except ValueError:
+                    return
+
+            if box:
+                params = {
+                    "box": box,
+                }
+                self.show_preview("box", params)
 
         except Exception as ex:
             logger.warning("Error in level preview: {}".format(ex))
@@ -1344,18 +1141,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception as ex:
             logger.warning("Error in general preview grid: {}".format(ex))
 
-    def btn_preview_enter(self, sender, e):
+    def btn_preview_toggle_enter(self, sender, e):
         """Show preview when hovering over buttons."""
         if not self.chkPreview.IsChecked:
             return
         try:
-            params = {
-                "distance_top": 0,
-                "distance_bottom": 0,
-                "adjust_top": 0,
-                "adjust_bottom": 0,
-            }
-            self.show_preview("level_nudge", params)
+            self.show_preview("toggle")
         except Exception as ex:
             logger.warning("Error in general preview: {}".format(ex))
 
@@ -1389,8 +1180,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_refresh_click(self, sender, e):
         """Manually refresh the information."""
-        self.all_levels = get_all_levels(doc)
-        self.all_grids = get_all_grids(doc)
+        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
+        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.update_info()
 
     # Grid Navigation Button Handlers

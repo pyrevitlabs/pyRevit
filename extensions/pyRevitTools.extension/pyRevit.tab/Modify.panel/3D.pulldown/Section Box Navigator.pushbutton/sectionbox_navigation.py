@@ -2,22 +2,60 @@ import clr
 from pyrevit import DB
 
 
-def get_all_levels(doc):
-    """Get all levels sorted by elevation."""
-    return sorted(
-        list(DB.FilteredElementCollector(doc).OfClass(DB.Level).ToElements()),
-        key=lambda x: x.Elevation,
-    )
+def get_all_levels(doc, include_linked=False):
+    """Get all levels sorted by elevation (optionally including linked models)."""
+    levels = list(DB.FilteredElementCollector(doc).OfClass(DB.Level).ToElements())
+
+    if include_linked:
+        for link_inst in DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance):
+            link_doc = link_inst.GetLinkDocument()
+            if link_doc:
+                transform = link_inst.GetTotalTransform()
+                for lvl in DB.FilteredElementCollector(link_doc).OfClass(DB.Level):
+                    # Transform the level elevation to host coordinates
+                    # The transform is applied to a point at (0,0,level.Elevation)
+                    pt = transform.OfPoint(DB.XYZ(0, 0, lvl.Elevation))
+                    # Store both the level element and transformed elevation
+                    lvl_host_elev = type('LinkedLevel', (object,), {
+                        'Element': lvl,
+                        'Name': lvl.Name,
+                        'Elevation': pt.Z,
+                        'SourceLink': link_inst
+                    })
+                    levels.append(lvl_host_elev)
+
+    # Sort by elevation (transformed if linked)
+    levels = sorted(levels, key=lambda x: getattr(x, 'Elevation', x.Elevation))
+    return levels
 
 
-def get_all_grids(doc):
-    """Get all grid lines in the model."""
-    return list(
+def get_all_grids(doc, include_linked=False):
+    """Get all grids (optionally including linked models)."""
+    grids = list(
         DB.FilteredElementCollector(doc)
         .OfClass(DB.Grid)
         .WhereElementIsNotElementType()
         .ToElements()
     )
+
+    if include_linked:
+        for link_inst in DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance):
+            link_doc = link_inst.GetLinkDocument()
+            if link_doc:
+                transform = link_inst.GetTotalTransform()
+                for grid in DB.FilteredElementCollector(link_doc).OfClass(DB.Grid):
+                    # Apply transformation to the grid curve geometry
+                    curve = grid.Curve
+                    if curve:
+                        transformed_curve = curve.CreateTransformed(transform)
+                        grid_host = type('LinkedGrid', (object,), {
+                            'Element': grid,
+                            'Curve': transformed_curve,
+                            'SourceLink': link_inst
+                        })
+                        grids.append(grid_host)
+
+    return grids
 
 
 def get_cardinal_direction(direction_name):
