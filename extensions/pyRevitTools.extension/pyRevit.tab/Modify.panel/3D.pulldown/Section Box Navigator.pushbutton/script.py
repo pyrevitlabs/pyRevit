@@ -579,10 +579,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 min_y_change = local_move_vector.Y
 
         if do_not_apply:
-            info = get_section_box_info(self.current_view, DATAFILENAME)
-            if not info:
-                return False
-
             new_box = create_adjusted_box(
                 info,
                 min_x_change,
@@ -666,10 +662,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 min_y_change = local_movement.Y
 
         if do_not_apply:
-            info = get_section_box_info(self.current_view, DATAFILENAME)
-            if not info:
-                return False
-
             new_box = create_adjusted_box(
                 info,
                 min_x_change,
@@ -950,7 +942,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception as ex:
             logger.error("Error in expansion: {}".format(ex))
             forms.alert(
-                "An error occurred while expanding: {}".format(str(e)), title="Error"
+                "An error occurred while expanding: {}".format(str(ex)), title="Error"
             )
 
     def btn_expansion_top_down_click(self, sender, e):
@@ -983,7 +975,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception as ex:
             logger.error("Error in shrink: {}".format(ex))
             forms.alert(
-                "An error occurred while shrinking: {}".format(str(e)), title="Error"
+                "An error occurred while shrinking: {}".format(str(ex)), title="Error"
             )
 
     def btn_align_box_to_view_click(self, sender, e):

@@ -11,7 +11,10 @@ def get_section_box_info(view, datafilename):
         return
     if not view.IsSectionBoxActive:
         view_boxes = script.load_data(datafilename)
-        bbox_data = view_boxes[get_elementid_value(view.Id)]
+        view_id_value = get_elementid_value(view.Id)  
+        if view_id_value not in view_boxes:  
+            return None 
+        bbox_data = view_boxes[view_id_value]
         section_box = revit.deserialize(bbox_data)
     else:
         section_box = view.GetSectionBox()
