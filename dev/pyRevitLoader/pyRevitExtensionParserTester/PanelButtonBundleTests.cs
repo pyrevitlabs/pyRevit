@@ -258,7 +258,7 @@ layout_order:
                 TestContext.Out.WriteLine("=== Testing Panel Button With Complex Bundle ===");
                 
                 // Re-parse extensions with better error handling
-                IEnumerable<ParsedExtension> extensions = null;
+                IEnumerable<ParsedExtension>? extensions = null;
                 try
                 {
                     extensions = ParseInstalledExtensions(new[] { testBundlePath });
@@ -587,7 +587,7 @@ min_revit_version: 2019
         }
 
         // Helper method to find components recursively
-        private ParsedComponent FindComponentRecursively(ParsedComponent parent, string componentName)
+        private ParsedComponent? FindComponentRecursively(ParsedComponent? parent, string componentName)
         {
             if (parent == null || string.IsNullOrEmpty(componentName))
                 return null;

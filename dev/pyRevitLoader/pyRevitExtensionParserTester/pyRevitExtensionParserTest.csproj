@@ -15,6 +15,8 @@
     <UseAssemblyBuilder>false</UseAssemblyBuilder>
     <UseExtensionParser>true</UseExtensionParser>
     <LangVersion>latest</LangVersion>
+	<!-- Suppress NUnit analyzer suggestions for classic assertion model -->
+	<NoWarn>$(NoWarn);NUnit2005;NUnit2006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

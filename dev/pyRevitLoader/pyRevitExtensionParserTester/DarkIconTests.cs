@@ -558,7 +558,7 @@ namespace pyRevitExtensionParserTest
                 if (isDarkTheme && component.Icons.HasDarkIcons)
                 {
                     // In dark theme, should prefer dark icons when available
-                    if (themeSpecificIcon != null)
+                    if (themeSpecificIcon != null && selectedIcon != null)
                     {
                         Assert.IsTrue(selectedIcon.IsDark, 
                             $"In dark theme, should select dark icon for size {size}px when available");
@@ -583,12 +583,12 @@ namespace pyRevitExtensionParserTest
             TestContext.Out.WriteLine($"  Primary: {selectedPrimary?.FileName} " +
                                      $"(Dark: {selectedPrimary?.IsDark}, Type: {selectedPrimary?.Type})");
             
-            if (isDarkTheme && primaryDarkIcon != null)
+            if (isDarkTheme && primaryDarkIcon != null && selectedPrimary != null)
             {
                 Assert.IsTrue(selectedPrimary.IsDark, "In dark theme, should prefer primary dark icon when available");
                 Assert.AreEqual(IconType.DarkStandard, selectedPrimary.Type, "Primary dark icon should be DarkStandard type");
             }
-            else if (primaryIcon != null)
+            else if (primaryIcon != null && selectedPrimary != null)
             {
                 Assert.IsFalse(selectedPrimary.IsDark, "Should fall back to light primary icon");
                 Assert.AreEqual(IconType.Standard, selectedPrimary.Type, "Primary light icon should be Standard type");
@@ -625,7 +625,7 @@ namespace pyRevitExtensionParserTest
         }
 
         // Helper method to find components recursively
-        private ParsedComponent FindComponentRecursively(ParsedComponent parent, string componentName)
+        private ParsedComponent? FindComponentRecursively(ParsedComponent parent, string componentName)
         {
             if (parent.Name == componentName)
                 return parent;

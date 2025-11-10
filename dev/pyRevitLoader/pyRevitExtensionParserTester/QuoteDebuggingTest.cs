@@ -74,13 +74,13 @@ context: zero-doc";
         /// <summary>
         /// Helper method to test GetLocalizedValue behavior (same as in ExtensionParser)
         /// </summary>
-        private static string GetLocalizedValue(System.Collections.Generic.Dictionary<string, string> localizedValues, string preferredLocale = null)
+        private static string? GetLocalizedValue(System.Collections.Generic.Dictionary<string, string> localizedValues, string? preferredLocale = null)
         {
             if (localizedValues == null || localizedValues.Count == 0)
                 return null;
 
             // Try preferred locale first
-            if (!string.IsNullOrEmpty(preferredLocale) && localizedValues.ContainsKey(preferredLocale))
+            if (preferredLocale != null && localizedValues.ContainsKey(preferredLocale))
                 return localizedValues[preferredLocale];
 
             // Try default locale

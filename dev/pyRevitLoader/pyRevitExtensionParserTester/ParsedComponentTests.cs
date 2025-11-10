@@ -127,7 +127,7 @@ namespace pyRevitExtensionParserTest
             }
         }
 
-        private ParsedComponent FindComponentRecursively(ParsedComponent parent, string componentName)
+        private ParsedComponent? FindComponentRecursively(ParsedComponent parent, string componentName)
         {
             if (parent.Name == componentName)
                 return parent;

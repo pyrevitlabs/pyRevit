@@ -234,7 +234,9 @@ namespace pyRevitExtensionParserTest
         // Helper method to create a simple test file
         private void CreateSimpleTestFile(string filePath, string content)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            var directory = Path.GetDirectoryName(filePath);
+            if (directory != null)
+                Directory.CreateDirectory(directory);
             File.WriteAllText(filePath, content);
         }
 
