@@ -143,8 +143,18 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
     ray = DB.Line.CreateUnbound(start_point_flat, direction_vector)
 
     for grid in grids:
-        curve = grid.Curve
-        if not isinstance(curve, DB.Line):
+        try:
+            # Handle both regular Grid and LinkedGrid objects / Exception on multi segment grids
+            if hasattr(grid, 'Curve'):
+                curve = grid.Curve
+            elif hasattr(grid, 'Element'):
+                curve = grid.Element.Curve
+            else:
+                curve = grid.Curve  # Regular DB.Grid
+                
+            if not curve or not isinstance(curve, DB.Line):
+                continue
+        except (AttributeError, Exception):
             continue
 
         # Flatten grid line to XY

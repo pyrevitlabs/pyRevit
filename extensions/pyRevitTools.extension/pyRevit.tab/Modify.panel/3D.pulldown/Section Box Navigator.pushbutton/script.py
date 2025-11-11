@@ -114,7 +114,7 @@ def create_adjusted_box(
         max_point.Z + max_z,
     )
 
-    # Validate dimesions
+    # Validate dimensions
     if new_max.X <= new_min.X or new_max.Y <= new_min.Y or new_max.Z <= new_min.Z:
         return None
 
@@ -1120,6 +1120,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.update_info()
 
+    def chkIncludeLinks_checked(self, sender, e):
+        """Refresh levels and grids when checkbox is toggled."""
+        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
+        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
+        self.update_info()
+
     # Grid Navigation Button Handlers
 
     def btn_grid_west_out_click(self, sender, e):
@@ -1242,7 +1248,10 @@ if __name__ == "__main__":
         if not isinstance(active_view, DB.View3D) or not active_view.IsSectionBoxActive:
             try:
                 view_boxes = script.load_data(DATAFILENAME)
-                bbox_data = view_boxes[get_elementid_value(active_view.Id)]
+                view_id_value = get_elementid_value(active_view.Id)
+                if view_id_value not in view_boxes:
+                    raise KeyError("View not found in stored boxes")
+                bbox_data = view_boxes[view_id_value]
                 restored_bbox = revit.deserialize(bbox_data)
 
                 # Ask user if they want to restore

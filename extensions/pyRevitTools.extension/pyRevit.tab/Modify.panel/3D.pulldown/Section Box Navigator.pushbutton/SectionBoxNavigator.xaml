@@ -237,7 +237,8 @@
                 <CheckBox x:Name="chkAutoupdate" Content="Autoupdate UI on Events" 
                         Margin="5" IsChecked="True"/>
                 <CheckBox x:Name="chkIncludeLinks" Content="Include Linked Levels and Grids" 
-                        Margin="5" IsChecked="False"/>
+                        Margin="5" IsChecked="False"
+                        Checked="chkIncludeLinks_checked" Unchecked="chkIncludeLinks_checked"/>
             </StackPanel>
         </GroupBox>
 
