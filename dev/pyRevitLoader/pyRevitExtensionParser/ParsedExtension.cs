@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParser 
@@ -13,7 +16,61 @@ namespace pyRevitExtensionParser
         public string MinRevitVersion { get; set; }
         public EngineConfig Engine { get; set; }
         public ExtensionConfig Config { get; set; }
-        public string GetHash() => Directory.GetHashCode().ToString("X");
+        
+        /// <summary>
+        /// Calculates a hash based on the modification times of all relevant files in the extension directory.
+        /// This matches the Python implementation in coreutils.calculate_dir_hash()
+        /// </summary>
+        public string GetHash()
+        {
+            if (string.IsNullOrEmpty(Directory) || !System.IO.Directory.Exists(Directory))
+                return Directory?.GetHashCode().ToString("X") ?? "0";
+
+            try
+            {
+                long mtimeSum = 0;
+
+                // Walk through all subdirectories
+                foreach (var dir in System.IO.Directory.GetDirectories(Directory, "*", SearchOption.AllDirectories))
+                {
+                    var dirName = Path.GetFileName(dir);
+                    
+                    // Skip directories with .extension in name (like Python's dir_filter)
+                    if (!dirName.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+                    {
+                        mtimeSum += System.IO.Directory.GetLastWriteTimeUtc(dir).Ticks;
+                    }
+                }
+
+                // Process all files
+                foreach (var file in System.IO.Directory.GetFiles(Directory, "*.*", SearchOption.AllDirectories))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var ext = Path.GetExtension(file).ToLowerInvariant();
+                    
+                    // Include relevant script files (matching Python's file_filter)
+                    if (ext == ".py" || ext == ".cs" || ext == ".vb" || ext == ".rb" || 
+                        ext == ".dyn" || ext == ".gh" || ext == ".ghx" ||
+                        ext == ".xaml" || ext == ".yaml" || ext == ".json")
+                    {
+                        mtimeSum += File.GetLastWriteTimeUtc(file).Ticks;
+                    }
+                }
+
+                // Use MD5 hash like Python's get_str_hash()
+                using (var md5 = MD5.Create())
+                {
+                    var bytes = Encoding.UTF8.GetBytes(mtimeSum.ToString());
+                    var hashBytes = md5.ComputeHash(bytes);
+                    return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+                }
+            }
+            catch
+            {
+                // Fallback to simple hash if directory scanning fails
+                return Directory.GetHashCode().ToString("X");
+            }
+        }
         
         /// <summary>
         /// Gets the path to the startup script if it exists
