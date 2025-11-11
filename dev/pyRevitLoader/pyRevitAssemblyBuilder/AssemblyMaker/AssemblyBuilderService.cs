@@ -83,6 +83,31 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             string outputPath = Path.Combine(outputDir, fileName);
 
+            // Check if assembly file already exists (hash-based caching)
+            if (File.Exists(outputPath))
+            {
+                try
+                {
+                    // Verify the assembly is valid by reading its name
+                    var assemblyName = AssemblyName.GetAssemblyName(outputPath);
+                    
+                    return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading: false);
+                }
+                catch (Exception ex)
+                {
+                    // If file is corrupted or invalid, delete it and rebuild
+                    Console.WriteLine($"Warning: Existing assembly is invalid, rebuilding: {ex.Message}");
+                    try
+                    {
+                        File.Delete(outputPath);
+                    }
+                    catch
+                    {
+                        // Ignore delete errors, build will overwrite
+                    }
+                }
+            }
+
             try
             {
                 if (_buildStrategy == AssemblyBuildStrategy.Roslyn)
