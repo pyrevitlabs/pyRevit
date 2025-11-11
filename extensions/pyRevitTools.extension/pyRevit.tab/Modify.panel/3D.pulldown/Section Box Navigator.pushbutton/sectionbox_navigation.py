@@ -58,25 +58,56 @@ def get_all_grids(doc, include_linked=False):
     return grids
 
 
-def get_cardinal_direction(direction_name):
+def get_cardinal_direction(direction_name, view=None):
     """
     Get the world direction vector for a cardinal direction.
+    If a 3D view is provided, directions are rotated to match the current view orientation.
 
     Args:
-        direction_name: 'north', 'south', 'east', 'west'
+        direction_name (str): 'north', 'south', 'east', 'west'
+        view (DB.View3D, optional): the 3D view whose orientation to use.
 
     Returns:
-        XYZ vector in world coordinates
+        DB.XYZ: direction vector in world coordinates
     """
-    # Base vectors in internal coordinates
+    # Base vectors in internal coordinates (Revit world)
     internal_vectors = {
-        "north": DB.XYZ(0, 1, 0),  # +Y
+        "north": DB.XYZ(0, 1, 0),   # +Y
         "south": DB.XYZ(0, -1, 0),  # -Y
-        "east": DB.XYZ(1, 0, 0),  # +X
-        "west": DB.XYZ(-1, 0, 0),  # -X
+        "east":  DB.XYZ(1, 0, 0),   # +X
+        "west":  DB.XYZ(-1, 0, 0),  # -X
     }
 
-    return internal_vectors[direction_name]
+    base_vec = internal_vectors.get(direction_name.lower())
+    if not base_vec:
+        raise ValueError("Invalid direction: {}".format(direction_name))
+
+    # If no 3D view is passed, behave as before
+    if not view or not isinstance(view, DB.View3D):
+        return base_vec
+
+    # Use the view orientation vectors
+    view_dir = view.ViewDirection.Normalize()
+    up_dir = view.UpDirection.Normalize()
+    right_dir = up_dir.CrossProduct(view_dir).Normalize()
+
+    # Build rotation basis matrix (view -> world)
+    # We'll assume "north" (world +Y) should align with "up" on screen
+    # i.e. we rotate global directions to be relative to current camera
+    # by projecting them onto the view's right/up plane
+    # Compute a transform that maps global X,Y,Z to view basis
+    x_axis = right_dir
+    y_axis = up_dir
+    z_axis = view_dir
+
+    # Decompose base_vec into these basis vectors
+    transformed_vec = (
+        x_axis.Multiply(base_vec.X) +
+        y_axis.Multiply(base_vec.Y) +
+        z_axis.Multiply(base_vec.Z)
+    )
+
+    return transformed_vec
 
 
 def get_next_level_above(z_coordinate, all_levels, tolerance):

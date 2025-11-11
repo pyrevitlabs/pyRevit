@@ -506,7 +506,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         modifier = parts[1] if len(parts) > 1 else "out"  # 'in' or 'out'
 
         # Get cardinal direction vector - this represents which FACE we want to move
-        face_direction = get_cardinal_direction(cardinal_dir)
+        face_direction = get_cardinal_direction(cardinal_dir, self.current_view)
 
         # Transform to local coordinates
         transform = info["transform"]
