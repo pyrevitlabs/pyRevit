@@ -3,6 +3,27 @@
         Title="Section Box Navigator" Height="670" Width="600" 
         ShowInTaskbar="False" Topmost="True"
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="#F0F0F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+    </Window.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -18,9 +39,13 @@
         <!-- Row 0: Controls -->
         
         <!-- Column 0: Level Navigation + View Alignment -->
-        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,5,0">
+        <Grid Grid.Row="0" Grid.Column="0" Margin="0,0,5,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <!-- Level Navigation Controls -->
-            <GroupBox Margin="0,0,0,10">
+            <GroupBox Grid.Row="0" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>🏢</TextBlock>
@@ -90,22 +115,26 @@
             </GroupBox>
 
             <!-- 2D View alignment-->
-            <GroupBox Margin="0,0,0,10">
+            <GroupBox Grid.Row="1" Margin="0,0,0,0">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>📐</TextBlock>
                         <TextBlock FontWeight="Bold" Margin="5,0,0,0">View alignment</TextBlock>
                     </StackPanel>
                 </GroupBox.Header>
-                <Button x:Name="btnAlignToView" Content="Align with 2D View" 
-                        Height="35" Margin="2" Click="btn_align_box_to_view_click"/>
+                <Button x:Name="btnAlignToView" Content="Align 2D View" 
+                        Margin="5" Click="btn_align_box_to_view_click"/>
             </GroupBox>
-        </StackPanel>
+        </Grid>
 
         <!-- Column 1: Grid Navigation + Expand/Shrink -->
-        <StackPanel Grid.Row="0" Grid.Column="1" Margin="5,0,0,0">
+        <Grid Grid.Row="0" Grid.Column="1" Margin="5,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <!-- Grid Navigation -->
-            <GroupBox Margin="0,0,0,10">
+            <GroupBox Grid.Row="0" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>▦</TextBlock>
@@ -189,7 +218,7 @@
             </GroupBox>
 
             <!-- Expansion Controls -->
-            <GroupBox Margin="0,0,0,10">
+            <GroupBox Grid.Row="1" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>⬍</TextBlock>
@@ -229,7 +258,7 @@
                     </Grid>
                 </StackPanel>
             </GroupBox>
-        </StackPanel>
+        </Grid>
 
         <!-- Row 1: Actions (full width) -->
         <GroupBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
@@ -238,19 +267,19 @@
             </GroupBox.Header>
             <UniformGrid Columns="3" Margin="5,0,5,2" HorizontalAlignment="Stretch">
                 <Button x:Name="btnToggleBox" Content="Toggle Box" 
-                        Height="35" Margin="2" Click="btn_toggle_box_click"
+                        Margin="2" Click="btn_toggle_box_click"
                         MouseEnter="btn_preview_toggle_enter" MouseLeave="btn_preview_leave"/>
                 <Button x:Name="btnHideBox" Content="(Un-)Hide Box" 
-                        Height="35" Margin="2" Click="btn_hide_box_click"/>
+                        Margin="2" Click="btn_hide_box_click"/>
                 <Button x:Name="btnAlignBoxToFace" Content="Align Box" 
-                        Height="35" Margin="2" Click="btn_align_box_to_face_click"/>
+                        Margin="2" Click="btn_align_box_to_face_click"/>
             </UniformGrid>
         </GroupBox>
 
         <!-- Row 2: Status Sections -->
         
         <!-- Column 0: Vertical Position Status -->
-        <GroupBox Grid.Row="2" Grid.Column="0" Margin="0,0,5,10" VerticalAlignment="Stretch">
+        <GroupBox Grid.Row="2" Grid.Column="0" Margin="0,0,5,10" VerticalAlignment="Stretch" Background="#F5F5F5">
             <GroupBox.Header>
                 <TextBlock FontWeight="Bold">Vertical Position Status</TextBlock>
             </GroupBox.Header>
@@ -279,7 +308,7 @@
             </Grid.RowDefinitions>
             
             <!-- Grid Navigation Status (top half) -->
-            <GroupBox Grid.Row="0" VerticalAlignment="Stretch">
+            <GroupBox Grid.Row="0" VerticalAlignment="Stretch" Background="#F5F5F5">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>▦</TextBlock>
@@ -296,7 +325,7 @@
             </GroupBox>
 
             <!-- Expand/Shrink + Actions Status (bottom half) -->
-            <GroupBox Grid.Row="2" VerticalAlignment="Stretch">
+            <GroupBox Grid.Row="2" VerticalAlignment="Stretch" Background="#F5F5F5">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>⬍</TextBlock>
