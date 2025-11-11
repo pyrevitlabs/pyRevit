@@ -10,7 +10,10 @@ def get_section_box_info(view, datafilename):
     if not isinstance(view, DB.View3D):
         return
     if not view.IsSectionBoxActive:
-        view_boxes = script.load_data(datafilename)
+        try:
+            view_boxes = script.load_data(datafilename)
+        except Exception:
+            return None
         view_id_value = get_elementid_value(view.Id)  
         if view_id_value not in view_boxes:  
             return None 

@@ -1039,6 +1039,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 # Grid mode - move to next grid
                 params = {
                     "direction": sender.Tag,
+                    "is_grid_mode": True,
                     "do_not_apply": True,
                 }
                 box = self.do_grid_move(params)
@@ -1047,16 +1048,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 try:
                     distance_text = self.txtGridNudgeAmount.Text.strip()
                     if not distance_text:
-                        forms.alert(
-                            "Please enter a nudge amount", title="Input Required"
-                        )
                         return
 
                     distance = float(distance_text)
                     if distance <= 0:
-                        forms.alert(
-                            "Nudge amount must be greater than 0", title="Invalid Input"
-                        )
                         return
 
                     distance = DB.UnitUtils.ConvertToInternalUnits(
