@@ -210,6 +210,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.txtGridNudgeUnit.Text = length_unit_symbol_label
 
         self.update_info()
+        self.update_grid_status()
+        self.update_expand_actions_status()
 
         # Event subscriptions
         self.Closed += self.form_closed
@@ -301,6 +303,91 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception:
             logger.error("Error updating info: {}".format(traceback.format_exc()))
 
+    def show_status_message(self, column, message, message_type="info"):
+        """
+        Display a status message in the appropriate column's status section.
+        
+        Args:
+            column: 1 (Vertical), 2 (Grid), 3 (Expand/Actions)
+            message: Text to display
+            message_type: "info", "error", "warning" (for color coding)
+        """
+        try:
+            # Define color mapping
+            colors = {
+                "error": System.Windows.Media.Brushes.Red,
+                "warning": System.Windows.Media.Brushes.Orange,
+                "info": System.Windows.Media.Brushes.Blue,
+                "success": System.Windows.Media.Brushes.Green,
+            }
+            
+            color = colors.get(message_type.lower(), System.Windows.Media.Brushes.Black)
+            
+            def update_ui():
+                if column == 1:
+                    self.txtVerticalStatus.Text = message
+                    self.txtVerticalStatus.Foreground = color
+                elif column == 2:
+                    self.txtGridStatus.Text = message
+                    self.txtGridStatus.Foreground = color
+                elif column == 3:
+                    self.txtExpandActionsStatus.Text = message
+                    self.txtExpandActionsStatus.Foreground = color
+            
+            self.Dispatcher.Invoke(System.Action(update_ui))
+        except Exception as ex:
+            logger.error("Error showing status message: {}".format(ex))
+
+    def clear_status_message(self, column):
+        """Clear the status message for the specified column."""
+        try:
+            def update_ui():
+                if column == 1:
+                    self.txtVerticalStatus.Text = ""
+                elif column == 2:
+                    self.txtGridStatus.Text = ""
+                elif column == 3:
+                    self.txtExpandActionsStatus.Text = ""
+            
+            self.Dispatcher.Invoke(System.Action(update_ui))
+        except Exception as ex:
+            logger.error("Error clearing status message: {}".format(ex))
+
+    def update_grid_status(self):
+        """Update the grid navigation status display."""
+        try:
+            def update_ui():
+                info = get_section_box_info(self.current_view, DATAFILENAME)
+                if not info:
+                    self.txtGridStatus.Text = "No section box active"
+                    self.txtGridStatus.Foreground = System.Windows.Media.Brushes.Gray
+                    return
+                
+                # Get current grid position info if needed
+                self.txtGridStatus.Text = "..."
+                self.txtGridStatus.Foreground = System.Windows.Media.Brushes.Black
+            
+            self.Dispatcher.Invoke(System.Action(update_ui))
+        except Exception as ex:
+            logger.error("Error updating grid status: {}".format(ex))
+
+    def update_expand_actions_status(self):
+        """Update the expand/shrink and actions status display."""
+        try:
+            def update_ui():
+                info = get_section_box_info(self.current_view, DATAFILENAME)
+                if not info:
+                    self.txtExpandActionsStatus.Text = "No section box active"
+                    self.txtExpandActionsStatus.Foreground = System.Windows.Media.Brushes.Gray
+                    return
+                
+                self.txtExpandActionsStatus.Text = "..."
+                self.txtExpandActionsStatus.Foreground = System.Windows.Media.Brushes.Black
+            
+            self.Dispatcher.Invoke(System.Action(update_ui))
+        except Exception as ex:
+            logger.error("Error updating expand/actions status: {}".format(ex))
+
     def execute_action(self, params):
         """Execute an action in Revit context."""
         try:
@@ -347,6 +434,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         adjust_bottom = False
         top_distance = 0
         bottom_distance = 0
+        
+        # Store level information for status messages
+        next_top_level = None
+        next_bottom_level = None
+        next_level = None
 
         if is_level_mode:
             # Level mode - snap to next level
@@ -356,34 +448,32 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 adjust_bottom = True
 
                 if movement == "up":
-                    next_top, _ = get_next_level_above(
+                    next_top_level, _ = get_next_level_above(
                         info["transformed_max"].Z, self.all_levels, TOLERANCE
                     )
-                    next_bottom, _ = get_next_level_above(
+                    next_bottom_level, _ = get_next_level_above(
                         info["transformed_min"].Z, self.all_levels, TOLERANCE
                     )
                 else:
-                    next_top, _ = get_next_level_below(
+                    next_top_level, _ = get_next_level_below(
                         info["transformed_max"].Z, self.all_levels, TOLERANCE
                     )
-                    next_bottom, _ = get_next_level_below(
+                    next_bottom_level, _ = get_next_level_below(
                         info["transformed_min"].Z, self.all_levels, TOLERANCE
                     )
 
-                if not next_top or not next_bottom:
+                if not next_top_level or not next_bottom_level:
                     if not do_not_apply:
-                        forms.alert(
-                            "Cannot find levels in that direction", title="Error"
-                        )
+                        self.show_status_message(1, "Cannot find levels in that direction", "error")
                     return None
 
-                top_distance = next_top.Elevation - info["transformed_max"].Z
-                bottom_distance = next_bottom.Elevation - info["transformed_min"].Z
+                top_distance = next_top_level.Elevation - info["transformed_max"].Z
+                bottom_distance = next_bottom_level.Elevation - info["transformed_min"].Z
 
                 # Validate box dimensions
-                if next_top.Elevation <= next_bottom.Elevation:
+                if next_top_level.Elevation <= next_bottom_level.Elevation:
                     if not do_not_apply:
-                        forms.alert("Would create invalid box", title="Error")
+                        self.show_status_message(1, "Would create invalid box", "error")
                     return None
 
             elif target == "top":
@@ -400,7 +490,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
                 if not next_level:
                     if not do_not_apply:
-                        forms.alert("No level found in that direction", title="Error")
+                        self.show_status_message(1, "No level found in that direction", "error")
                     return None
 
                 top_distance = next_level.Elevation - info["transformed_max"].Z
@@ -408,7 +498,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 # Validate won't go below bottom
                 if next_level.Elevation <= info["transformed_min"].Z:
                     if not do_not_apply:
-                        forms.alert("Would create invalid box", title="Error")
+                        self.show_status_message(1, "Would create invalid box", "error")
                     return None
 
             elif target == "bottom":
@@ -425,7 +515,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
                 if not next_level:
                     if not do_not_apply:
-                        forms.alert("No level found in that direction", title="Error")
+                        self.show_status_message(1, "No level found in that direction", "error")
                     return None
 
                 bottom_distance = next_level.Elevation - info["transformed_min"].Z
@@ -433,7 +523,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 # Validate won't go above top
                 if next_level.Elevation >= info["transformed_max"].Z:
                     if not do_not_apply:
-                        forms.alert("Would create invalid box", title="Error")
+                        self.show_status_message(1, "Would create invalid box", "error")
                     return None
 
         else:
@@ -463,14 +553,32 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return new_box
 
         # Apply the adjustment
-        self.adjust_section_box(
+        if self.adjust_section_box(
             min_z_change=bottom_distance if adjust_bottom else 0,
             max_z_change=top_distance if adjust_top else 0,
             min_x_change=0,
             max_x_change=0,
             min_y_change=0,
             max_y_change=0,
-        )
+        ):
+            # Success - show informative message
+            if is_level_mode:
+                # Level mode - show which level we moved to
+                if target == "box":
+                    if next_top_level and next_bottom_level:
+                        self.show_status_message(1, "Box moved {}: Top to '{}', Bottom to '{}'".format(
+                            movement, next_top_level.Name, next_bottom_level.Name), "success")
+                elif target == "top":
+                    if next_level:
+                        self.show_status_message(1, "Top moved {} to level '{}'".format(movement, next_level.Name), "success")
+                elif target == "bottom":
+                    if next_level:
+                        self.show_status_message(1, "Bottom moved {} to level '{}'".format(movement, next_level.Name), "success")
+            else:
+                # Nudge mode - show nudge amount
+                nudge_display = ufu.Format(doc.GetUnits(), DB.SpecTypeId.Length, abs(nudge_amount), False)
+                direction_text = "{} {}".format(target, movement)
+                self.show_status_message(1, "Nudged {} by {} {}".format(target, nudge_display, movement), "success")
 
     def do_expand_shrink(self, params):
         """Expand or shrink the section box in all directions."""
@@ -480,14 +588,18 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         # Calculate the adjustment (negative for shrink)
         adjustment = amount if is_expand else -amount
 
-        self.adjust_section_box(
+        if self.adjust_section_box(
             min_x_change=-adjustment,
             max_x_change=adjustment,
             min_y_change=-adjustment,
             max_y_change=adjustment,
             min_z_change=-adjustment,
             max_z_change=adjustment,
-        )
+        ):
+            # Success - show informative message
+            amount_display = ufu.Format(doc.GetUnits(), DB.SpecTypeId.Length, amount, False)
+            operation = "Expanded" if is_expand else "Shrunk"
+            self.show_status_message(3, "{} by {} in all directions".format(operation, amount_display), "success")
 
     def do_grid_move(self, params):
         """Move section box side to next grid line or by nudge amount."""
@@ -530,7 +642,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             if not face_info:
                 if not do_not_apply:
-                    forms.alert("Could not determine face to move.", title="Error")
+                    self.show_status_message(2, "Could not determine face to move.", "error")
                 return None
 
             # Determine the search direction:
@@ -547,10 +659,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             if not grid:
                 if not do_not_apply:
-                    forms.alert(
-                        "No grid found in {} direction.".format(direction_name.upper()),
-                        title="No Grid Found",
-                    )
+                    self.show_status_message(2, "No grid found in {} direction.".format(direction_name.upper()), "error")
                 return None
 
             # Calculate how far to move
@@ -559,7 +668,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             if abs(move_distance) < TOLERANCE:
                 if not do_not_apply:
-                    forms.alert("Already at grid line.", title="Info")
+                    self.show_status_message(2, "Already at grid line.", "info")
                 return None
 
             # Convert movement to local coordinates
@@ -621,14 +730,30 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return new_box
 
         # Apply the adjustment
-        self.adjust_section_box(
+        if self.adjust_section_box(
             min_x_change=min_x_change,
             max_x_change=max_x_change,
             min_y_change=min_y_change,
             max_y_change=max_y_change,
             min_z_change=0,
             max_z_change=0,
-        )
+        ):
+            # Success - show informative message
+            if is_grid_mode:
+                # Get grid name
+                grid_name = "Unknown"
+                if grid:
+                    if hasattr(grid, 'Element'):
+                        grid_name = grid.Element.Name
+                    elif hasattr(grid, 'Name'):
+                        grid_name = grid.Name
+                direction_display = cardinal_dir.upper()
+                self.show_status_message(2, "Moved to grid '{}' in {} direction".format(grid_name, direction_display), "success")
+            else:
+                # Nudge mode
+                nudge_display = ufu.Format(doc.GetUnits(), DB.SpecTypeId.Length, nudge_amount, False)
+                direction_display = cardinal_dir.upper()
+                self.show_status_message(2, "Nudged {} in {} direction".format(nudge_display, direction_display), "success")
 
     def do_align_to_view(self, params):
         """Align section box to a 2D view's range and crop."""
@@ -642,14 +767,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         is_section = view_data.get("is_section", False)
 
         if not is_section and (top_elevation is None or bottom_elevation is None):
-            forms.alert("Could not get view range information.", title="Error")
+            self.show_status_message(1, "Could not get view range information.", "error")
             return
 
         new_box = DB.BoundingBoxXYZ()
 
         if is_section:
             if not crop_box:
-                forms.alert("Could not get crop box from section.", title="Error")
+                self.show_status_message(1, "Could not get crop box from section.", "error")
                 return
             new_box = crop_box
 
@@ -664,7 +789,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             source_view = view_data.get("view", None)
             elements = revit.query.get_all_elements_in_view(source_view)
             if not elements:
-                forms.alert("No cropbox or elements found to extend scopebox to")
+                self.show_status_message(1, "No cropbox or elements found to extend scopebox to", "error")
                 return
             boxes = [el.get_BoundingBox(source_view) for el in elements]
             min_x = min(b.Min.X for b in boxes if b)
@@ -692,18 +817,52 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if result:
             with revit.Transaction("Align to View"):
                 self.current_view.SetSectionBox(new_box)
+            self.show_status_message(1, "Section box aligned to view '{}'".format(view_data["view"].Name), "success")
 
     def do_toggle(self):
         """Toggle section box."""
+        was_active = self.current_view.IsSectionBoxActive
         toggle(doc, DATAFILENAME)
+        # Check new state
+        is_now_active = self.current_view.IsSectionBoxActive
+        if was_active != is_now_active:
+            state = "activated" if is_now_active else "deactivated"
+            self.show_status_message(3, "Section box {}".format(state), "success")
+        else:
+            self.show_status_message(3, "Section box toggle failed", "error")
 
     def do_hide(self):
         """Hide or Unhide section box."""
+        # Get section box element to check if it's hidden
+        view_elements = (
+            DB.FilteredElementCollector(doc, self.current_view.Id)
+            .OfCategory(DB.BuiltInCategory.OST_SectionBox)
+            .ToElements()
+        )
+        was_hidden = False
+        if view_elements:
+            was_hidden = view_elements[0].IsHidden(self.current_view)
+        
         hide(doc)
+        
+        # Check new state
+        if view_elements:
+            is_now_hidden = view_elements[0].IsHidden(self.current_view)
+            if was_hidden != is_now_hidden:
+                state = "hidden" if is_now_hidden else "unhidden"
+                self.show_status_message(3, "Section box {}".format(state), "success")
+            else:
+                self.show_status_message(3, "Section box visibility unchanged", "info")
 
     def do_align_to_face(self):
         """Align to face"""
-        align_to_face(doc, uidoc)
+        try:
+            align_to_face(doc, uidoc)
+            self.show_status_message(3, "Section box aligned to face", "success")
+        except Exception as ex:
+            # User might have cancelled, don't show error for cancellation
+            if "cancelled" not in str(ex).lower() and "cancel" not in str(ex).lower():
+                self.show_status_message(3, "Failed to align to face: {}".format(str(ex)), "error")
 
     def adjust_section_box(
         self,
@@ -730,7 +889,19 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         )
 
         if not new_box:
-            forms.alert("Invalid section box dimensions.", title="Error")
+            # Determine which column to show error in based on what changed
+            # If only Z changed, it's column 1 (vertical)
+            # If X or Y changed, it's column 2 (grid)
+            # If all changed, it's column 3 (expand/shrink)
+            if min_z_change != 0 or max_z_change != 0:
+                if min_x_change == 0 and max_x_change == 0 and min_y_change == 0 and max_y_change == 0:
+                    self.show_status_message(1, "Invalid section box dimensions.", "error")
+                else:
+                    self.show_status_message(3, "Invalid section box dimensions.", "error")
+            elif min_x_change != 0 or max_x_change != 0 or min_y_change != 0 or max_y_change != 0:
+                self.show_status_message(2, "Invalid section box dimensions.", "error")
+            else:
+                self.show_status_message(3, "Invalid section box dimensions.", "error")
             return False
 
         with revit.Transaction("Adjust Section Box"):
@@ -830,14 +1001,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             try:
                 distance_text = self.txtLevelNudgeAmount.Text.strip()
                 if not distance_text:
-                    forms.alert("Please enter a nudge amount", title="Input Required")
+                    self.show_status_message(1, "Please enter a nudge amount", "warning")
                     return
 
                 distance = float(distance_text)
                 if distance <= 0:
-                    forms.alert(
-                        "Nudge amount must be greater than 0", title="Invalid Input"
-                    )
+                    self.show_status_message(1, "Nudge amount must be greater than 0", "warning")
                     return
 
                 distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
@@ -852,11 +1021,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.ext_event.Raise()
 
             except ValueError:
-                forms.alert("Please enter a valid number", title="Invalid Input")
+                self.show_status_message(1, "Please enter a valid number", "warning")
                 return
             except Exception as ex:
                 logger.error("Error in level nudge: {}".format(ex))
-                forms.alert("An error occurred: {}".format(str(ex)), title="Error")
+                self.show_status_message(1, "An error occurred: {}".format(str(ex)), "error")
                 return
 
     def btn_expansion_top_up_click(self, sender, e):
@@ -864,14 +1033,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
             amount_text = self.txtExpandAmount.Text.strip()
             if not amount_text:
-                forms.alert("Please enter an expansion amount", title="Input Required")
+                self.show_status_message(3, "Please enter an expansion amount", "warning")
                 return
 
             amount = float(amount_text)
             if amount <= 0:
-                forms.alert(
-                    "Expansion amount must be greater than 0", title="Invalid Input"
-                )
+                self.show_status_message(3, "Expansion amount must be greater than 0", "warning")
                 return
 
             amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
@@ -883,29 +1050,22 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert(
-                "Please enter a valid number for expansion amount",
-                title="Invalid Input",
-            )
+            self.show_status_message(3, "Please enter a valid number for expansion amount", "warning")
         except Exception as ex:
             logger.error("Error in expansion: {}".format(ex))
-            forms.alert(
-                "An error occurred while expanding: {}".format(str(ex)), title="Error"
-            )
+            self.show_status_message(3, "An error occurred while expanding: {}".format(str(ex)), "error")
 
     def btn_expansion_top_down_click(self, sender, e):
         """Shrink the section box."""
         try:
             amount_text = self.txtExpandAmount.Text.strip()
             if not amount_text:
-                forms.alert("Please enter a shrink amount", title="Input Required")
+                self.show_status_message(3, "Please enter a shrink amount", "warning")
                 return
 
             amount = float(amount_text)
             if amount <= 0:
-                forms.alert(
-                    "Shrink amount must be greater than 0", title="Invalid Input"
-                )
+                self.show_status_message(3, "Shrink amount must be greater than 0", "warning")
                 return
 
             amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
@@ -917,14 +1077,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.event_handler.parameters = self.pending_action
             self.ext_event.Raise()
         except ValueError:
-            forms.alert(
-                "Please enter a valid number for shrink amount", title="Invalid Input"
-            )
+            self.show_status_message(3, "Please enter a valid number for shrink amount", "warning")
         except Exception as ex:
             logger.error("Error in shrink: {}".format(ex))
-            forms.alert(
-                "An error occurred while shrinking: {}".format(str(ex)), title="Error"
-            )
+            self.show_status_message(3, "An error occurred while shrinking: {}".format(str(ex)), "error")
 
     def btn_align_box_to_view_click(self, sender, e):
         """Align section box to a selected 2D view."""
@@ -942,7 +1098,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         view_data = get_view_range_and_crop(selected_view, doc)
 
         if not view_data:
-            forms.alert("Could not extract view information.", title="Error")
+            self.show_status_message(1, "Could not extract view information.", "error")
             return
 
         # Queue the action to be executed in Revit context
@@ -1067,7 +1223,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     box = self.do_grid_move(params)
 
                 except ValueError:
-                    forms.alert("Please enter a valid number", title="Invalid Input")
+                    # Don't show alert in preview mode
                     return
             if box:
                 params = {
@@ -1119,12 +1275,22 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
         self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.update_info()
+        # Only update status if there's no current message (i.e., status is "Ready" or empty)
+        if self.txtGridStatus.Text == "..." or self.txtGridStatus.Text == "-":
+            self.update_grid_status()
+        if self.txtExpandActionsStatus.Text == "..." or self.txtExpandActionsStatus.Text == "-":
+            self.update_expand_actions_status()
 
     def chkIncludeLinks_checked(self, sender, e):
         """Refresh levels and grids when checkbox is toggled."""
         self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
         self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.update_info()
+        # Only update status if there's no current message (i.e., status is "Ready" or empty)
+        if self.txtGridStatus.Text == "..." or self.txtGridStatus.Text == "-":
+            self.update_grid_status()
+        if self.txtExpandActionsStatus.Text == "..." or self.txtExpandActionsStatus.Text == "-":
+            self.update_expand_actions_status()
 
     # Grid Navigation Button Handlers
 
@@ -1178,14 +1344,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             try:
                 distance_text = self.txtGridNudgeAmount.Text.strip()
                 if not distance_text:
-                    forms.alert("Please enter a nudge amount", title="Input Required")
+                    self.show_status_message(2, "Please enter a nudge amount", "warning")
                     return
 
                 distance = float(distance_text)
                 if distance <= 0:
-                    forms.alert(
-                        "Nudge amount must be greater than 0", title="Invalid Input"
-                    )
+                    self.show_status_message(2, "Nudge amount must be greater than 0", "warning")
                     return
 
                 distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
@@ -1200,11 +1364,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.ext_event.Raise()
 
             except ValueError:
-                forms.alert("Please enter a valid number", title="Invalid Input")
+                self.show_status_message(2, "Please enter a valid number", "warning")
                 return
             except Exception as ex:
                 logger.error("Error in horizontal nudge: {}".format(ex))
-                forms.alert("An error occurred: {}".format(str(ex)), title="Error")
+                self.show_status_message(2, "An error occurred: {}".format(str(ex)), "error")
                 return
 
     def form_closed(self, sender, args):
