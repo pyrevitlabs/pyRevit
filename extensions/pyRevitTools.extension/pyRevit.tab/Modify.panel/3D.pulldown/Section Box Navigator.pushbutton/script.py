@@ -906,26 +906,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def do_hide(self):
         """Hide or Unhide section box."""
-        # Get section box element to check if it's hidden
-        view_elements = (
-            DB.FilteredElementCollector(doc, self.current_view.Id)
-            .OfCategory(DB.BuiltInCategory.OST_SectionBox)
-            .ToElements()
-        )
-        was_hidden = False
-        if view_elements:
-            was_hidden = view_elements[0].IsHidden(self.current_view)
-
-        hide(doc)
-
-        # Check new state
-        if view_elements:
-            is_now_hidden = view_elements[0].IsHidden(self.current_view)
-            if was_hidden != is_now_hidden:
-                state = "hidden" if is_now_hidden else "unhidden"
-                self.show_status_message(3, "Section box {}".format(state), "success")
-            else:
-                self.show_status_message(3, "Section box visibility unchanged", "info")
+        try:
+            was_hidden = hide(doc)
+            state = "hidden" if not was_hidden else "unhidden"
+            self.show_status_message(3, "Section box {}".format(state), "success")
+        except Exception:
+            self.show_status_message(3, "Error in Section box visibility", "info")
 
     def do_align_to_face(self):
         """Align to face"""
