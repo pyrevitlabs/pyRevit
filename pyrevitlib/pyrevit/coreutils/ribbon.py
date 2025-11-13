@@ -900,6 +900,42 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
         self.ui_title = self.name
         if not self.itemdata_mode:
             self.ui_title = self._rvtapi_object.ItemText if hasattr(self._rvtapi_object, 'ItemText') else self.name
+        
+        # Store event handler reference to prevent garbage collection
+        self._current_changed_handler = None
+    
+    def reset_highlights(self):
+        """Reset highlight state."""
+        try:
+            if hasattr(AdInternal.Windows, 'HighlightMode'):
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and hasattr(adwindows_obj, 'Highlight'):
+                    adwindows_obj.Highlight = \
+                        coreutils.get_enum_none(AdInternal.Windows.HighlightMode)
+        except Exception:
+            pass  # Highlights are optional, fail silently
+    
+    def highlight_as_new(self):
+        """Highlight as new item."""
+        try:
+            if hasattr(AdInternal.Windows, 'HighlightMode'):
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and hasattr(adwindows_obj, 'Highlight'):
+                    adwindows_obj.Highlight = \
+                        AdInternal.Windows.HighlightMode.New
+        except Exception:
+            pass  # Highlights are optional, fail silently
+    
+    def highlight_as_updated(self):
+        """Highlight as updated item."""
+        try:
+            if hasattr(AdInternal.Windows, 'HighlightMode'):
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and hasattr(adwindows_obj, 'Highlight'):
+                    adwindows_obj.Highlight = \
+                        AdInternal.Windows.HighlightMode.Updated
+        except Exception:
+            pass  # Highlights are optional, fail silently
 
 
 class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
