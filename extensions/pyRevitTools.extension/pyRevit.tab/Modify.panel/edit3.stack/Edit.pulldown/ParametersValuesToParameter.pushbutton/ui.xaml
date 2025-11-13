@@ -65,7 +65,7 @@
 						Insert separators between parameter values separated by spaces.
 					</TextBlock>
 					<TextBox x:Name="separatorTextBox"
-							 Text="-"
+							 Text=""
 							 Height="25"
 							 FontSize="12"/>
 				
