@@ -1,6 +1,7 @@
 """UI maker."""
 import sys
 import imp
+import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import assmutils
@@ -9,10 +10,6 @@ from pyrevit.coreutils import applocales
 from pyrevit.api import UI
 
 from pyrevit.coreutils import ribbon
-
-# For event handlers in IronPython
-from System import EventHandler
-from Autodesk.Revit.UI.Events import ComboBoxCurrentChangedEventArgs
 
 #pylint: disable=W0703,C0302,C0103,C0413
 import pyrevit.extensions as exts
@@ -433,200 +430,173 @@ def _produce_ui_pulldown(ui_maker_params):
         mlogger.error('UI error: %s', err.msg)
         return None
 
-
 def _produce_ui_combobox(ui_maker_params):
     """Create a ComboBox - bare minimum implementation.
 
     Args:
         ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
-    parent_ribbon_panel = ui_maker_params.parent_ui
-    combobox = ui_maker_params.component
+    mlogger.warning('=== COMBOBOX: _produce_ui_combobox CALLED ===')
+    try:
+        parent_ribbon_panel = ui_maker_params.parent_ui
+        combobox = ui_maker_params.component
+        combobox_name = getattr(combobox, 'name', 'unknown')
 
-    mlogger.warning('COMBOBOX: Creating ComboBox: %s', combobox.name)
-    print("=== COMBOBOX: Creating ComboBox: {} ===".format(combobox.name))
-    
-    # Validate parent panel
-    if not parent_ribbon_panel:
-        mlogger.error('COMBOBOX: Parent ribbon panel is None for: %s', combobox.name)
-        print("COMBOBOX ERROR: Parent ribbon panel is None")
-        return None
-        
-    # Log panel info for debugging
-    try:
-        panel_name = getattr(parent_ribbon_panel, 'name', 'unknown')
-        panel_type = str(type(parent_ribbon_panel))
-        mlogger.warning('COMBOBOX: Parent panel: %s (type: %s)', panel_name, panel_type)
-        # Warn if panel name suggests it might be native (common native panel names)
-        native_panel_names = ['Utility', 'Modify', 'Annotate', 'Architecture', 'Structure', 'Systems']
-        if panel_name in native_panel_names:
-            mlogger.error('COMBOBOX: WARNING - Panel "%s" appears to be a native Revit panel! '
-                         'Native panels do not support ComboBoxes. This will fail.', panel_name)
-    except Exception:
-        pass
-    
-    try:
-        # Log current panel items before adding ComboBox (for debugging order issues)
-        # NOTE: Revit's AddItem() always appends to the end, so if the panel already
-        # has items, the ComboBox will appear at the end regardless of layout order.
-        # This is a limitation of Revit's ribbon API - there's no way to insert at
-        # a specific position.
+        mlogger.warning('COMBOBOX: Function called for: %s', combobox_name)
+
+        # Validate inputs first
+        if not combobox:
+            mlogger.error('COMBOBOX: Component is None')
+            return None
+        if not parent_ribbon_panel:
+            mlogger.error('COMBOBOX: Parent UI is None for: %s', combobox_name)
+            return None
+
+        # Panel info
         try:
-            existing_items = parent_ribbon_panel.get_rvtapi_object().GetItems()
-            item_count = len(existing_items)
-            mlogger.warning('COMBOBOX: Panel has %d items before adding ComboBox', item_count)
-            if item_count > 0:
-                mlogger.warning('COMBOBOX: WARNING - Panel already has items. ComboBox will be added at the end (position %d), '
-                               'not at the position specified in layout. This is a Revit API limitation.', item_count)
-            for idx, item in enumerate(existing_items):
-                mlogger.warning('COMBOBOX: Existing item %d: %s (type: %s)', 
-                               idx, getattr(item, 'Name', 'unknown'), type(item).__name__)
+            panel_name = getattr(parent_ribbon_panel, 'name', 'unknown')
+            panel_type = str(type(parent_ribbon_panel))
+            mlogger.warning('COMBOBOX: Parent panel: %s (type: %s)', panel_name, panel_type)
+        except Exception:
+            pass
+
+        # Get panel API object
+        try:
+            panel_rvtapi = parent_ribbon_panel.get_rvtapi_object()
+            if not panel_rvtapi:
+                mlogger.error('COMBOBOX: Panel Revit API object is None for: %s', combobox_name)
+                return None
+        except Exception as panel_err:
+            mlogger.error('COMBOBOX: Could not get panel Revit API object: %s', panel_err)
+            return None
+
+        # Log items before
+        try:
+            existing_items = panel_rvtapi.GetItems()
+            if existing_items:
+                item_count = len(existing_items)
+                mlogger.warning('COMBOBOX: Panel has %d items before adding ComboBox', item_count)
+                for idx, item in enumerate(existing_items):
+                    mlogger.warning(
+                        'COMBOBOX: Existing item %d: %s (type: %s)',
+                        idx, getattr(item, 'Name', 'unknown'), type(item).__name__
+                    )
         except Exception as log_err:
             mlogger.debug('COMBOBOX: Could not log existing items: %s', log_err)
-        
-        # Create or get existing ComboBox using panel's create_combobox method
-        # Note: create_combobox doesn't return the wrapper, so we get it separately
-        mlogger.warning('COMBOBOX: About to create ComboBox: %s', combobox.name)
-        parent_ribbon_panel.create_combobox(combobox.name, update_if_exists=True)
-        combobox_ui = parent_ribbon_panel.ribbon_item(combobox.name)
-        
-        # Log panel items after adding ComboBox
+
+        # Create combobox
+        mlogger.warning('COMBOBOX: About to create ComboBox: %s', combobox_name)
         try:
-            items_after = parent_ribbon_panel.get_rvtapi_object().GetItems()
-            mlogger.warning('COMBOBOX: Panel has %d items after adding ComboBox', len(items_after))
-            for idx, item in enumerate(items_after):
-                mlogger.warning('COMBOBOX: Item %d: %s (type: %s)', 
-                               idx, getattr(item, 'Name', 'unknown'), type(item).__name__)
-        except Exception as log_err:
-            mlogger.debug('COMBOBOX: Could not log items after creation: %s', log_err)
-        
-        if not combobox_ui:
-            mlogger.error('COMBOBOX: Failed to get ComboBox UI item: %s', combobox.name)
-            print("COMBOBOX ERROR: Failed to get ComboBox UI item: {}".format(combobox.name))
+            parent_ribbon_panel.create_combobox(combobox_name, update_if_exists=True)
+        except Exception as create_err:
+            mlogger.error('COMBOBOX: Error calling create_combobox: %s', create_err)
+            import traceback
+            mlogger.error('COMBOBOX: Traceback: %s', traceback.format_exc())
             return None
-        
+
+        combobox_ui = parent_ribbon_panel.ribbon_item(combobox_name)
+        if not combobox_ui:
+            mlogger.error('COMBOBOX: Failed to get ComboBox UI item: %s', combobox_name)
+            return None
+
         # Get the Revit API ComboBox object
-        # This may fail if the panel is native (e.g., "Utility") which doesn't support ComboBoxes
         try:
             combobox_obj = combobox_ui.get_rvtapi_object()
         except Exception as rvtapi_err:
-            mlogger.error('COMBOBOX: get_rvtapi_object() failed for %s (panel may be native): %s', 
-                         combobox.name, rvtapi_err)
-            print("COMBOBOX ERROR: get_rvtapi_object() failed: {}".format(rvtapi_err))
+            mlogger.error(
+                'COMBOBOX: get_rvtapi_object() failed for %s: %s',
+                combobox_name, rvtapi_err
+            )
             return None
-        
+
         if not combobox_obj:
-            mlogger.error('COMBOBOX: get_rvtapi_object() returned None for: %s', combobox.name)
-            print("COMBOBOX ERROR: get_rvtapi_object() returned None")
+            mlogger.error('COMBOBOX: get_rvtapi_object() returned None for: %s', combobox_name)
             return None
-        
-        # Log type for debugging (try GetType() first, fallback to Python type)
+
+        # Log type
         try:
             obj_type = combobox_obj.GetType()
             mlogger.warning('COMBOBOX: rvtapi object type: %s', obj_type)
-            print("COMBOBOX: rvtapi object type: {}".format(obj_type))
         except Exception:
             mlogger.warning('COMBOBOX: rvtapi object type (python): %s', type(combobox_obj))
-            print("COMBOBOX: rvtapi object type (python): {}".format(type(combobox_obj)))
-        
-        # Guard: If we're still in data mode (stack), we cannot attach events yet
+
+        # IMPORTANT: only bail here if it is still ComboBoxData
         if isinstance(combobox_obj, UI.ComboBoxData):
-            mlogger.warning('COMBOBOX: %s is still UI.ComboBoxData (itemdata_mode). '
-                            'Skipping event wiring for now.', combobox.name)
-            print("COMBOBOX WARNING: ComboBox is still ComboBoxData (itemdata_mode) - skipping event wiring")
-            return combobox_ui
-        
-        # Set ItemText (required for ComboBox to display)
-        combobox_obj.ItemText = combobox.ui_title or combobox.name
-        
-        # Clear existing members and add fresh ones (cache fix ensures fresh data)
-        # Note: Revit API doesn't support removing individual members, so we add all
-        # The cache fix ensures we get fresh members from metadata
-        existing_items = combobox_obj.GetItems()
-        if existing_items and len(existing_items) > 0:
-            mlogger.warning('COMBOBOX: %s already has %d members (will add new ones)', 
-                          combobox.name, len(existing_items))
-        
+            mlogger.warning(
+                'COMBOBOX: %s is still UI.ComboBoxData (itemdata_mode). '
+                'Skipping event wiring for now.', combobox_name
+            )
+            return combobox_ui    # <- ONLY in this branch
+
+        # From here on we have a real Autodesk.Revit.UI.ComboBox
+
+        # Set ItemText
+        combobox_obj.ItemText = getattr(combobox, 'ui_title', None) or combobox_name
+
         # Add members from metadata
-        if combobox.members:
+        if hasattr(combobox, 'members') and combobox.members:
             for member in combobox.members:
-                # Handle different member formats
                 if isinstance(member, (list, tuple)) and len(member) >= 2:
                     member_id, member_text = member[0], member[1]
                 elif isinstance(member, dict) or (hasattr(member, 'get') and hasattr(member, 'keys')):
-                    # OrderedDict or dict format (defensive - should be handled in components.py)
                     member_id = member.get('id', member.get('name', ''))
                     member_text = member.get('text', member.get('title', member_id))
                 elif isinstance(member, str):
                     member_id = member_text = member
                 else:
-                    mlogger.warning('COMBOBOX: Skipping invalid member format: %s (type: %s)', member, type(member))
+                    mlogger.warning(
+                        'COMBOBOX: Skipping invalid member format: %s (type: %s)',
+                        member, type(member)
+                    )
                     continue
-                
-                # Create ComboBoxMemberData and add to ComboBox
+
                 member_data = UI.ComboBoxMemberData(member_id, member_text)
                 combobox_obj.AddItem(member_data)
                 mlogger.warning('COMBOBOX: Added member: %s (%s)', member_text, member_id)
-        
-        # Set Current to first item if members exist
+
+        # Set Current to first item
         items = combobox_obj.GetItems()
         if items and len(items) > 0:
             combobox_obj.Current = items[0]
             combobox_obj.ItemText = items[0].ItemText
             mlogger.warning('COMBOBOX: Set current item: %s', items[0].ItemText)
-        
-        # Subscribe to CurrentChanged event to handle selection changes
-        # Remove existing handler if updating to avoid duplicate subscriptions
-        prev_handler = getattr(combobox_ui, '_current_changed_handler', None)
-        if prev_handler:
-            try:
-                combobox_obj.CurrentChanged -= prev_handler
-                mlogger.warning('COMBOBOX: Removed previous CurrentChanged handler: %s', combobox.name)
-            except Exception as ex:
-                mlogger.debug('COMBOBOX: Could not remove previous handler: %s', ex)
-        
-        # Create event handler function (use sender, not captured combobox_obj)
-        # Store handler reference on combobox_ui to prevent garbage collection
-        def on_combobox_changed(sender, args):
-            """Handle ComboBox selection change."""
-            try:
-                # Use sender instead of captured combobox_obj
-                current_item = sender.Current
-                if current_item:
-                    selected_text = current_item.ItemText
-                    selected_id = current_item.Name
-                    mlogger.warning('COMBOBOX: Selection changed: %s (id: %s)', selected_text, selected_id)
-                    # TODO: Execute the corresponding script function based on selected_id
-                    # This would require loading and executing the script module
+
+        # Call __selfinit__ on script (SmartButton pattern)
+        try:
+            combobox_script_file = getattr(combobox, 'script_file', None)
+            combobox_unique_name = getattr(combobox, 'unique_name', None)
+
+            if not combobox_script_file and hasattr(combobox, 'directory') and combobox.directory:
+                script_path = op.join(combobox.directory, 'script.py')
+                if op.exists(script_path):
+                    combobox_script_file = script_path
+                    mlogger.debug('COMBOBOX: Found script.py via directory fallback: %s', script_path)
+
+            if combobox_script_file and combobox_unique_name:
+                current_paths = list(sys.path)
+                combobox_module_paths = getattr(combobox, 'module_paths', [])
+                for search_path in combobox_module_paths:
+                    if search_path not in current_paths:
+                        sys.path.append(search_path)
+
+                imported_script = imp.load_source(combobox_unique_name, combobox_script_file)
+                sys.path = current_paths
+
+                if hasattr(imported_script, '__selfinit__'):
+                    res = imported_script.__selfinit__(combobox, combobox_ui, HOST_APP.uiapp)
+                    if res is False:
+                        combobox_ui.deactivate()
+                    mlogger.warning('COMBOBOX: Ran __selfinit__ for script: %s', combobox_name)
                 else:
-                    mlogger.warning('COMBOBOX: Selection changed, but Current is None')
-            except Exception as event_err:
-                mlogger.error('COMBOBOX: Error in event handler: %s', event_err)
-        
-        # Try simple direct assignment first (like WPF events in ribbon.py)
-        # Store handler reference to prevent garbage collection
-        combobox_ui._current_changed_handler = on_combobox_changed
-        try:
-            combobox_obj.CurrentChanged += combobox_ui._current_changed_handler
-            mlogger.warning('COMBOBOX: Attached CurrentChanged handler (direct): %s', combobox.name)
-        except (TypeError, AttributeError) as direct_err:
-            # If direct assignment fails, try with explicit EventHandler wrapper
-            mlogger.warning('COMBOBOX: Direct assignment failed, trying EventHandler wrapper: %s', direct_err)
-            try:
-                handler = EventHandler[ComboBoxCurrentChangedEventArgs](on_combobox_changed)
-                combobox_ui._current_changed_handler = handler
-                combobox_obj.CurrentChanged += handler
-                mlogger.warning('COMBOBOX: Attached CurrentChanged handler (wrapped): %s', combobox.name)
-            except Exception as wrapped_err:
-                mlogger.error('COMBOBOX: Both direct and wrapped event handler failed: %s', wrapped_err)
-        
-        # Set highlights (may fail if AdWindows object not available, but that's OK)
-        try:
-            _set_highlights(combobox, combobox_ui)
-        except Exception as highlight_err:
-            mlogger.debug('COMBOBOX: Could not set highlights: %s', highlight_err)
-        
-        # Ensure ComboBox is visible and enabled
+                    mlogger.debug('COMBOBOX: Script has no __selfinit__: %s', combobox_script_file)
+            else:
+                mlogger.debug('COMBOBOX: No script metadata available for: %s', combobox_name)
+        except Exception as init_err:
+            mlogger.error('COMBOBOX: Error in __selfinit__: %s', init_err)
+            import traceback
+            mlogger.error('COMBOBOX: Traceback: %s', traceback.format_exc())
+
+        # Ensure visible & enabled
         try:
             if hasattr(combobox_obj, 'Visible'):
                 combobox_obj.Visible = True
@@ -635,34 +605,26 @@ def _produce_ui_combobox(ui_maker_params):
             mlogger.warning('COMBOBOX: Set Visible=True, Enabled=True')
         except Exception as vis_err:
             mlogger.debug('COMBOBOX: Could not set visibility: %s', vis_err)
-        
-        # Activate the ComboBox UI item
+
+        # Activate UI item
         try:
             combobox_ui.activate()
             mlogger.warning('COMBOBOX: Activated ComboBox UI item')
         except Exception as activate_err:
             mlogger.warning('COMBOBOX: Could not activate: %s', activate_err)
-        
-        # Final verification - check if ComboBox is in the panel
-        try:
-            panel_items = parent_ribbon_panel.ribbon_item(combobox.name)
-            if panel_items:
-                mlogger.warning('COMBOBOX: Verified ComboBox exists in panel')
-            else:
-                mlogger.error('COMBOBOX: ComboBox not found in panel after creation!')
-        except Exception as verify_err:
-            mlogger.debug('COMBOBOX: Could not verify panel item: %s', verify_err)
-        
-        mlogger.warning('COMBOBOX: Created successfully: %s', combobox.name)
-        print("=== COMBOBOX: Created successfully: {} ===".format(combobox.name))
+
+        mlogger.warning('COMBOBOX: Created successfully: %s', combobox_name)
         return combobox_ui
+
     except PyRevitException as err:
         mlogger.error('COMBOBOX: UI error creating: %s', err.msg)
+        import traceback
+        mlogger.error('COMBOBOX: Traceback: %s', traceback.format_exc())
         return None
     except Exception as err:
         mlogger.error('COMBOBOX: Error creating: %s', err)
         import traceback
-        mlogger.error('COMBOBOX: %s', traceback.format_exc())
+        mlogger.error('COMBOBOX: Full traceback: %s', traceback.format_exc())
         return None
 
 
