@@ -1484,7 +1484,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             self.ribbon_item(item_name).sync_with_current_item(False)
 
     def create_combobox(self, item_name, update_if_exists=False):
-        """Create a ComboBox in the ribbon panel - bare minimum.
+        """Create a ComboBox in the ribbon panel.
         
         Args:
             item_name (str): Name of the ComboBox
@@ -1494,7 +1494,8 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             if update_if_exists:
                 existing_item = self._get_component(item_name)
                 existing_item.activate()
-                return
+                # Return existing item so caller can update members
+                return existing_item
             else:
                 raise PyRevitUIError('ComboBox already exists and '
                                      'update is not allowed: {}'

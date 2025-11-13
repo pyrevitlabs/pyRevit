@@ -476,6 +476,7 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.CONTENT_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.COMBOBOX_POSTFIX + ')'
         # tnteresting directories
         pat += '|(\\' + exts.COMP_LIBRARY_DIR_NAME + ')'
         pat += '|(\\' + exts.COMP_HOOKS_DIR_NAME + ')'

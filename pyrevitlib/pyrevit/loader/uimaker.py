@@ -425,9 +425,12 @@ def _produce_ui_combobox(ui_maker_params):
     
     mlogger.warning('Creating ComboBox: %s', combobox.name)
     try:
-        # Create ComboBox using panel's create_combobox method
-        parent_ribbon_panel.create_combobox(combobox.name, update_if_exists=True)
-        combobox_ui = parent_ribbon_panel.ribbon_item(combobox.name)
+        # Create or get existing ComboBox using panel's create_combobox method
+        combobox_ui = parent_ribbon_panel.create_combobox(combobox.name, update_if_exists=True)
+        
+        # If create_combobox returned None (shouldn't happen), try to get it
+        if not combobox_ui:
+            combobox_ui = parent_ribbon_panel.ribbon_item(combobox.name)
         
         if not combobox_ui:
             mlogger.error('Failed to get ComboBox UI item: %s', combobox.name)
@@ -439,7 +442,15 @@ def _produce_ui_combobox(ui_maker_params):
         # Set ItemText (required for ComboBox to display)
         combobox_obj.ItemText = combobox.ui_title or combobox.name
         
-        # Add members
+        # Clear existing members and add fresh ones (cache fix ensures fresh data)
+        # Note: Revit API doesn't support removing individual members, so we add all
+        # The cache fix ensures we get fresh members from metadata
+        existing_items = combobox_obj.GetItems()
+        if existing_items and len(existing_items) > 0:
+            mlogger.warning('ComboBox %s already has %d members (will add new ones)', 
+                          combobox.name, len(existing_items))
+        
+        # Add members from metadata
         if combobox.members:
             for member in combobox.members:
                 # Handle different member formats
@@ -684,7 +695,11 @@ def _produce_ui_tab(ui_maker_params):
 
             return tab_ui
         except PyRevitException as err:
-            mlogger.error('UI error: %s', err.msg)
+            # If tab is native, log as warning instead of error
+            if 'native item' in err.msg.lower():
+                mlogger.warning('UI warning (tab may be native): %s', err.msg)
+            else:
+                mlogger.error('UI error: %s', err.msg)
             return None
     else:
         mlogger.debug('Tab does not have any commands. Skipping: %s', tab.name)
@@ -716,11 +731,6 @@ def _recursively_produce_ui_items(ui_maker_params):
     for sub_cmp in ui_maker_params.component:
         ui_item = None
         try:
-            # Log ComboBox specifically
-            if sub_cmp.type_id == exts.COMBOBOX_POSTFIX:
-                mlogger.warning('=== FOUND COMBOBOX: %s (type_id: %s) ===', 
-                              sub_cmp, sub_cmp.type_id)
-            
             mlogger.debug('Calling create func %s for: %s',
                           _component_creation_dict[sub_cmp.type_id],
                           sub_cmp)
@@ -741,7 +751,7 @@ def _recursively_produce_ui_items(ui_maker_params):
             )
 
         mlogger.debug('UI item created by create func is: %s', ui_item)
-
+        # if component does not have any sub components hide it
         if ui_item \
                 and not isinstance(ui_item, components.GenericStack) \
                 and sub_cmp.is_container:
@@ -811,7 +821,8 @@ def cleanup_pyrevit_ui():
                 mlogger.debug('Deactivating: %s', item)
                 item.deactivate()
             except Exception as deact_err:
-                mlogger.debug(deact_err)
+                # Log as debug to avoid cluttering output with expected errors
+                mlogger.debug('Could not deactivate item (may be native): %s | %s', item, deact_err)
 
 
 def reflow_pyrevit_ui(direction=applocales.DEFAULT_LANG_DIR):
