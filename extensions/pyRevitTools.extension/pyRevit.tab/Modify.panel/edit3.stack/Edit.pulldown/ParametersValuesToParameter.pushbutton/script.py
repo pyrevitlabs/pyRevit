@@ -202,7 +202,7 @@ def get_parameter_value(element, parameter_name):
     return ""
 
 
-def create_parameter_value(element, parameter_names, separator="-",
+def create_parameter_value(element, parameter_names, separator="",
                            space_option="beforeafter"):
     """Create combined parameter value from multiple parameters with
     separators and spacing options."""
@@ -219,7 +219,7 @@ def create_parameter_value(element, parameter_names, separator="-",
     if " " in separator.strip():
         separators = separator.split()
     else:
-        separators = [separator.strip()] if separator.strip() else ["-"]
+        separators = [separator.strip()] if separator.strip() else [""]
 
     # Combine values with cycling separators
     combined = values[0]
@@ -283,7 +283,7 @@ class Params2ParamWindow(forms.WPFWindow):
 
             # Set default separator
             if self.separatorTextBox:
-                self.separatorTextBox.Text = "-"
+                self.separatorTextBox.Text = ""
 
             # Set localized text for UI elements
             self.set_localized_texts()
@@ -462,13 +462,11 @@ class Params2ParamWindow(forms.WPFWindow):
                         continue
 
                     # Combined value from source parameters with separators
-                    separator = "-"
+                    separator = ""
                     try:
-                        if (self.separatorTextBox and
-                                self.separatorTextBox.Text.strip()):
+                        if self.separatorTextBox and self.separatorTextBox.Text.strip():
                             separator = self.separatorTextBox.Text.strip()
                     except (AttributeError, Exception):
-                        # If separator textbox is not available, use default
                         pass
 
                     space_option = "beforeafter"  # default
