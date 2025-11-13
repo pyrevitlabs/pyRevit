@@ -442,11 +442,17 @@ def _produce_ui_combobox(ui_maker_params):
         # Add members
         if combobox.members:
             for member in combobox.members:
+                # Handle different member formats
                 if isinstance(member, (list, tuple)) and len(member) >= 2:
                     member_id, member_text = member[0], member[1]
+                elif isinstance(member, dict) or (hasattr(member, 'get') and hasattr(member, 'keys')):
+                    # OrderedDict or dict format (defensive - should be handled in components.py)
+                    member_id = member.get('id', member.get('name', ''))
+                    member_text = member.get('text', member.get('title', member_id))
                 elif isinstance(member, str):
                     member_id = member_text = member
                 else:
+                    mlogger.warning('Skipping invalid ComboBox member format: %s (type: %s)', member, type(member))
                     continue
                 
                 # Create ComboBoxMemberData and add to ComboBox
