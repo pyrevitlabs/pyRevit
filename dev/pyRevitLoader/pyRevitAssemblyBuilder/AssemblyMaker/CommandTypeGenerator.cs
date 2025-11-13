@@ -186,36 +186,45 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             il.Emit(OpCodes.Ldarg_0);
 
-            // Prepare the 13 args
+            // Prepare the 13 args - ensure all values are non-null for Ldstr
             string scriptPath = cmd.ScriptPath ?? string.Empty;
             string configPath = cmd.ScriptPath ?? string.Empty;
+            
+            // Build search paths, handling potential nulls
+            string scriptDir = string.IsNullOrEmpty(cmd.ScriptPath) ? string.Empty : (Path.GetDirectoryName(cmd.ScriptPath) ?? string.Empty);
+            string extensionDir = extension.Directory ?? string.Empty;
             string searchPaths = string.Join(";", new[]
             {
-                Path.GetDirectoryName(cmd.ScriptPath),
-                Path.Combine(extension.Directory, "lib"),
-                Path.Combine(extension.Directory, "..", "..", "pyrevitlib"),
-                Path.Combine(extension.Directory, "..", "..", "site-packages")
-            });
+                scriptDir,
+                Path.Combine(extensionDir, "lib"),
+                Path.Combine(extensionDir, "..", "..", "pyrevitlib"),
+                Path.Combine(extensionDir, "..", "..", "site-packages")
+            }.Where(p => !string.IsNullOrEmpty(p)));
             
             // Get context from component, default to "(zero-doc)" if not specified
             string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
+            
+            // Get bundle name (parent directory of script)
+            string bundleName = string.IsNullOrEmpty(scriptDir) ? string.Empty : (Path.GetFileName(scriptDir) ?? string.Empty);
             
             string[] args = {
                 scriptPath,
                 configPath,
                 searchPaths,
-                "",
-                "",
-                cmd.Tooltip  ?? string.Empty,
-                cmd.Name,
-                Path.GetFileName(Path.GetDirectoryName(cmd.ScriptPath)),
-                extension.Name,
-                cmd.UniqueId,
-                $"CustomCtrl_%{extension.Name}%{Path.GetFileName(Path.GetDirectoryName(cmd.ScriptPath))}%{cmd.Name}",
+                string.Empty,  // arg 4
+                string.Empty,  // arg 5
+                cmd.Tooltip ?? string.Empty,
+                cmd.Name ?? string.Empty,
+                bundleName,
+                extension.Name ?? string.Empty,
+                cmd.UniqueId ?? string.Empty,
+                $"CustomCtrl_%{extension.Name ?? string.Empty}%{bundleName}%{cmd.Name ?? string.Empty}",
                 context,
                 "{\"clean\":false,\"persistent\":false,\"full_frame\":false}"
             };
-            foreach (var a in args) il.Emit(OpCodes.Ldstr, a);
+            
+            // Emit all string arguments - they should all be non-null now
+            foreach (var a in args) il.Emit(OpCodes.Ldstr, a ?? string.Empty);
 
             il.Emit(OpCodes.Call, _scriptCommandCtor);
             il.Emit(OpCodes.Ret);
