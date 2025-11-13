@@ -202,7 +202,7 @@ def get_parameter_value(element, parameter_name):
     return ""
 
 
-def create_parameter_value(element, parameter_names, separator="-",
+def create_parameter_value(element, parameter_names, separator="",
                            space_option="beforeafter"):
     """Create combined parameter value from multiple parameters with
     separators and spacing options."""
