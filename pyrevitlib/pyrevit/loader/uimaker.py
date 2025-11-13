@@ -6,6 +6,7 @@ from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import applocales
+from pyrevit.api import UI
 
 from pyrevit.coreutils import ribbon
 
@@ -413,6 +414,68 @@ def _produce_ui_pulldown(ui_maker_params):
         return None
 
 
+def _produce_ui_combobox(ui_maker_params):
+    """Create a ComboBox - bare minimum implementation.
+    
+    Args:
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item.
+    """
+    parent_ribbon_panel = ui_maker_params.parent_ui
+    combobox = ui_maker_params.component
+    
+    mlogger.warning('Creating ComboBox: %s', combobox.name)
+    try:
+        # Create ComboBox using panel's create_combobox method
+        parent_ribbon_panel.create_combobox(combobox.name, update_if_exists=True)
+        combobox_ui = parent_ribbon_panel.ribbon_item(combobox.name)
+        
+        if not combobox_ui:
+            mlogger.error('Failed to get ComboBox UI item: %s', combobox.name)
+            return None
+        
+        # Get the Revit API ComboBox object
+        combobox_obj = combobox_ui.get_rvtapi_object()
+        
+        # Set ItemText (required for ComboBox to display)
+        combobox_obj.ItemText = combobox.ui_title or combobox.name
+        
+        # Add members
+        if combobox.members:
+            for member in combobox.members:
+                if isinstance(member, (list, tuple)) and len(member) >= 2:
+                    member_id, member_text = member[0], member[1]
+                elif isinstance(member, str):
+                    member_id = member_text = member
+                else:
+                    continue
+                
+                # Create ComboBoxMemberData and add to ComboBox
+                member_data = UI.ComboBoxMemberData(member_id, member_text)
+                combobox_obj.AddItem(member_data)
+                mlogger.warning('Added ComboBox member: %s (%s)', member_text, member_id)
+        
+        # Set Current to first item if members exist
+        items = combobox_obj.GetItems()
+        if items and len(items) > 0:
+            combobox_obj.Current = items[0]
+            combobox_obj.ItemText = items[0].ItemText
+            mlogger.warning('Set ComboBox current item: %s', items[0].ItemText)
+        
+        _set_highlights(combobox, combobox_ui)
+        combobox_ui.activate()
+        
+        mlogger.warning('ComboBox created successfully: %s', combobox.name)
+        return combobox_ui
+    except PyRevitException as err:
+        mlogger.error('UI error creating ComboBox: %s', err.msg)
+        return None
+    except Exception as err:
+        mlogger.error('Error creating ComboBox: %s', err)
+        import traceback
+        mlogger.error(traceback.format_exc())
+        return None
+
+
 def _produce_ui_split(ui_maker_params):
     """Produce a split button.
 
@@ -627,6 +690,7 @@ _component_creation_dict = {
     exts.PANEL_POSTFIX: _produce_ui_panels,
     exts.STACK_BUTTON_POSTFIX: _produce_ui_stacks,
     exts.PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
+    exts.COMBOBOX_POSTFIX: _produce_ui_combobox,
     exts.SPLIT_BUTTON_POSTFIX: _produce_ui_split,
     exts.SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
     exts.PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
@@ -646,6 +710,11 @@ def _recursively_produce_ui_items(ui_maker_params):
     for sub_cmp in ui_maker_params.component:
         ui_item = None
         try:
+            # Log ComboBox specifically
+            if sub_cmp.type_id == exts.COMBOBOX_POSTFIX:
+                mlogger.warning('=== FOUND COMBOBOX: %s (type_id: %s) ===', 
+                              sub_cmp, sub_cmp.type_id)
+            
             mlogger.debug('Calling create func %s for: %s',
                           _component_creation_dict[sub_cmp.type_id],
                           sub_cmp)
@@ -658,7 +727,8 @@ def _recursively_produce_ui_items(ui_maker_params):
             if ui_item:
                 cmp_count += 1
         except KeyError:
-            mlogger.debug('Can not find create function for: %s', sub_cmp)
+            mlogger.warning('Can not find create function for type_id: %s (component: %s)', 
+                          sub_cmp.type_id, sub_cmp)
         except Exception as create_err:
             mlogger.critical(
                 'Error creating item: %s | %s', sub_cmp, create_err

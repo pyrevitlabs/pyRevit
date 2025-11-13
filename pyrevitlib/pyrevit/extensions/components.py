@@ -298,6 +298,31 @@ class PullDownButtonGroup(GenericUICommandGroup):
     type_id = exts.PULLDOWN_BUTTON_POSTFIX
 
 
+class ComboBoxGroup(GenericUICommandGroup):
+    """ComboBox group."""
+    type_id = exts.COMBOBOX_POSTFIX
+    
+    def __init__(self, cmp_path=None):
+        GenericUICommandGroup.__init__(self, cmp_path=cmp_path)
+        self.members = []
+        mlogger.warning('=== ComboBoxGroup created: %s (path: %s) ===', self.name, cmp_path)
+        
+        # Read members from metadata
+        if self.meta:
+            raw_members = self.meta.get('members', [])
+            mlogger.warning('ComboBoxGroup %s metadata members: %s', self.name, raw_members)
+            if isinstance(raw_members, list):
+                # Simple list format: ['Option 1', 'Option 2']
+                self.members = [(m, m) if isinstance(m, str) else m for m in raw_members]
+            elif isinstance(raw_members, dict):
+                # Dict format: {'A': 'Option A'}
+                self.members = [(k, v) for k, v in raw_members.items()]
+        else:
+            mlogger.warning('ComboBoxGroup %s has no metadata', self.name)
+        
+        mlogger.warning('ComboBoxGroup %s final members: %s', self.name, self.members)
+
+
 class SplitPushButtonGroup(GenericUICommandGroup):
     """Split push button group."""
     type_id = exts.SPLITPUSH_BUTTON_POSTFIX

@@ -885,6 +885,23 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
         return self._rvtapi_object.AvailabilityClassName
 
 
+class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
+    """Wrapper for Revit API ComboBox - bare minimum."""
+    
+    def __init__(self, ribbon_combobox):
+        GenericPyRevitUIContainer.__init__(self)
+        
+        self.name = ribbon_combobox.Name
+        self._rvtapi_object = ribbon_combobox
+        
+        # Check if it's ComboBoxData (itemdata_mode) or actual ComboBox
+        self.itemdata_mode = isinstance(self._rvtapi_object, UI.ComboBoxData)
+        
+        self.ui_title = self.name
+        if not self.itemdata_mode:
+            self.ui_title = self._rvtapi_object.ItemText if hasattr(self._rvtapi_object, 'ItemText') else self.name
+
+
 class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
     button = GenericPyRevitUIContainer._get_component
@@ -1465,6 +1482,38 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             self._create_button_group(UI.SplitButtonData, item_name, icon_path,
                                       update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(False)
+
+    def create_combobox(self, item_name, update_if_exists=False):
+        """Create a ComboBox in the ribbon panel - bare minimum.
+        
+        Args:
+            item_name (str): Name of the ComboBox
+            update_if_exists (bool, optional): Update if exists. Defaults to False.
+        """
+        if self.contains(item_name):
+            if update_if_exists:
+                existing_item = self._get_component(item_name)
+                existing_item.activate()
+                return
+            else:
+                raise PyRevitUIError('ComboBox already exists and '
+                                     'update is not allowed: {}'
+                                     .format(item_name))
+        
+        # Create ComboBoxData
+        combobox_data = UI.ComboBoxData(item_name)
+        
+        if not self.itemdata_mode:
+            # Add to panel
+            new_combobox = self.get_rvtapi_object().AddItem(combobox_data)
+            pyrvt_combobox = _PyRevitRibbonComboBox(new_combobox)
+        else:
+            # Create under stack
+            pyrvt_combobox = _PyRevitRibbonComboBox(combobox_data)
+        
+        pyrvt_combobox.set_dirty_flag()
+        self._add_component(pyrvt_combobox)
+        pyrvt_combobox.activate()
 
     def create_panel_push_button(self, button_name, asm_location, class_name,
                                  tooltip='', tooltip_ext='', tooltip_media='',
