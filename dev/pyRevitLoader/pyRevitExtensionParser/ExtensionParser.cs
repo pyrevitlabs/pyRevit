@@ -366,6 +366,8 @@ namespace pyRevitExtensionParser
             if (parts.Length == 2)
             {
                 var value = parts[1].Trim().Trim('\'', '"');
+                // Process escape sequences (e.g., \n, \t, \\)
+                value = System.Text.RegularExpressions.Regex.Unescape(value);
                 return value;
             }
             return null;
