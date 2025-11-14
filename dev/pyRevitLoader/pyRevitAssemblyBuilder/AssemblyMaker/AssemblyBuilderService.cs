@@ -72,7 +72,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
 
-            string hash = GetStableHash(extension.GetHash() + _revitVersion).Substring(0, 16);
+            // Add random seed to force DLL recreation with different internal structure
+            string randomSeed = Guid.NewGuid().ToString("N");
+            string hash = GetStableHash(extension.GetHash() + _revitVersion + randomSeed).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
             string outputDir = Path.Combine(
