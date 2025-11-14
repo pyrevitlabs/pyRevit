@@ -10,7 +10,7 @@ namespace pyRevitExtensionParser
 {
     public class ParsedExtension : ParsedComponent
     {
-        public string Directory { get; set; }
+        public new string Directory { get; set; }
         public Dictionary<string, string> Titles { get; set; }
         public Dictionary<string, string> Tooltips { get; set; }
         public string MinRevitVersion { get; set; }
@@ -102,6 +102,51 @@ namespace pyRevitExtensionParser
                 if (_allowedTypes.Contains(comp.Type))
                     yield return comp;
             }
+        }
+        
+        /// <summary>
+        /// Collects all lib/ folder paths from the component hierarchy (extension -> tab -> panel -> button)
+        /// matching Python's behavior where each component can have its own lib/ folder
+        /// </summary>
+        public List<string> CollectLibraryPaths(ParsedComponent command)
+        {
+            var libPaths = new List<string>();
+            
+            // Start with extension's lib folder
+            var extLib = Path.Combine(this.Directory, "lib");
+            if (System.IO.Directory.Exists(extLib))
+                libPaths.Add(extLib);
+            
+            // Collect lib paths from component hierarchy
+            CollectLibPathsRecursive(this.Children, command, libPaths);
+            
+            return libPaths;
+        }
+        
+        private bool CollectLibPathsRecursive(IEnumerable<ParsedComponent> siblings, ParsedComponent target, List<string> libPaths)
+        {
+            if (siblings == null) return false;
+            
+            foreach (var comp in siblings)
+            {
+                // Check if this component has a lib folder
+                if (!string.IsNullOrEmpty(comp.Directory))
+                {
+                    var compLib = Path.Combine(comp.Directory, "lib");
+                    if (System.IO.Directory.Exists(compLib) && !libPaths.Contains(compLib))
+                        libPaths.Add(compLib);
+                }
+                
+                // If this is our target command, we're done
+                if (comp == target)
+                    return true;
+                
+                // Otherwise, recurse into children
+                if (comp.Children != null && CollectLibPathsRecursive(comp.Children, target, libPaths))
+                    return true;
+            }
+            
+            return false;
         }
 
         /// <summary>

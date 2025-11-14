@@ -67,7 +67,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 #endif
         }
 
-        public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension)
+        public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null)
         {
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
@@ -113,9 +113,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             try
             {
                 if (_buildStrategy == AssemblyBuildStrategy.Roslyn)
-                    BuildWithRoslyn(extension, outputPath);
+                    BuildWithRoslyn(extension, outputPath, libraryExtensions);
                 else
-                    BuildWithILPack(extension, outputPath);
+                    BuildWithILPack(extension, outputPath, libraryExtensions);
 
                 return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading: false);
             }
@@ -125,10 +125,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
         }
 
-        private void BuildWithRoslyn(ParsedExtension extension, string outputPath)
+        private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
         {
             var generator = new RoslynCommandTypeGenerator();
-            string code = generator.GenerateExtensionCode(extension);
+            string code = generator.GenerateExtensionCode(extension, libraryExtensions);
             File.WriteAllText(Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs"), code);
 
             var tree = CSharpSyntaxTree.ParseText(code);
@@ -148,7 +148,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
         }
 
-        private void BuildWithILPack(ParsedExtension extension, string outputPath)
+        private void BuildWithILPack(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
         {
             // Load runtime for dependecy (Probably temparary due to future implementation of env loader in C#)
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -177,7 +177,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 #endif
 
             foreach (var cmd in extension.CollectCommandComponents())
-                generator.DefineCommandType(extension, cmd, moduleBuilder);
+                generator.DefineCommandType(extension, cmd, moduleBuilder, libraryExtensions);
 
 #if NETFRAMEWORK
             asmBuilder.Save(Path.GetFileName(outputPath));

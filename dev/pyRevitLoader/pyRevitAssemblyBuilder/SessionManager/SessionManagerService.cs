@@ -1,4 +1,5 @@
-﻿using pyRevitAssemblyBuilder.AssemblyMaker;
+﻿using System.Linq;
+using pyRevitAssemblyBuilder.AssemblyMaker;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -23,11 +24,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         public void LoadSession()
         {
-            var extensions = _extensionManager.GetInstalledExtensions();
+            // Get all library extensions first - they need to be available to all UI extensions
+            var libraryExtensions = _extensionManager.GetInstalledLibraryExtensions().ToList();
+            
+            // Get UI extensions
+            var uiExtensions = _extensionManager.GetInstalledUIExtensions();
 
-            foreach (var ext in extensions)
+            foreach (var ext in uiExtensions)
             {
-                var assmInfo = _assemblyBuilder.BuildExtensionAssembly(ext);
+                var assmInfo = _assemblyBuilder.BuildExtensionAssembly(ext, libraryExtensions);
                 _assemblyBuilder.LoadAssembly(assmInfo);
                 _uiManager.BuildUI(ext, assmInfo);
                 _hookManager.RegisterHooks(ext);
