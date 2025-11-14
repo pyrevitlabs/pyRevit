@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Autodesk.Revit.Attributes;
 using pyRevitExtensionParser;
+using static pyRevitExtensionParser.ExtensionParser;
 #if !NETFRAMEWORK
 using System.Runtime.Loader;
 #endif
@@ -68,6 +69,13 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 
                 // Get context from component, default to "(zero-doc)" if not specified
                 string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
+                
+                // For URL buttons, pass the hyperlink as an argument
+                string arguments = string.Empty;
+                if (cmd.Type == ExtensionParser.CommandComponentType.UrlButton && !string.IsNullOrEmpty(cmd.Hyperlink))
+                {
+                    arguments = cmd.Hyperlink;
+                }
 
                 // — Command class —
                 sb.AppendLine("[Regeneration(RegenerationOption.Manual)]");
@@ -78,7 +86,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(searchPaths)}\",");
-                sb.AppendLine($"        \"\",");
+                sb.AppendLine($"        @\"{EscapeForVerbatim(arguments)}\",");
                 sb.AppendLine($"        \"\",");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(tooltip)}\",");
                 sb.AppendLine($"        \"{Escape(cmd.Name)}\",");
@@ -251,11 +259,18 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Get bundle name (parent directory of script)
             string bundleName = string.IsNullOrEmpty(scriptDir) ? string.Empty : (Path.GetFileName(scriptDir) ?? string.Empty);
             
+            // For URL buttons, pass the hyperlink as an argument
+            string arguments = string.Empty;
+            if (cmd.Type == CommandComponentType.UrlButton && !string.IsNullOrEmpty(cmd.Hyperlink))
+            {
+                arguments = cmd.Hyperlink;
+            }
+            
             string[] args = {
                 scriptPath,
                 configPath,
                 searchPaths,
-                string.Empty,  // arg 4
+                arguments,  // arg 4 - hyperlink for URL buttons
                 string.Empty,  // arg 5
                 cmd.Tooltip ?? string.Empty,
                 cmd.Name ?? string.Empty,

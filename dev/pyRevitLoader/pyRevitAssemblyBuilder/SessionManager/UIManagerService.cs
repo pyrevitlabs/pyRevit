@@ -125,6 +125,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 case CommandComponentType.PushButton:
                 case CommandComponentType.SmartButton:
+                case CommandComponentType.UrlButton:
                     var pbData = CreatePushButton(component, assemblyInfo);
                     var btn = parentPanel.AddItem(pbData) as PushButton;
                     if (btn != null)
@@ -161,7 +162,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                 // Add separator to split button
                                 try { splitBtn.AddSeparator(); } catch { }
                             }
-                            else if (sub.Type == CommandComponentType.PushButton)
+                            else if (sub.Type == CommandComponentType.PushButton ||
+                                     sub.Type == CommandComponentType.UrlButton)
                             {
                                 var subBtn = splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                                 if (subBtn != null)
@@ -213,7 +215,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
                 if (child.Type == CommandComponentType.PushButton ||
-                    child.Type == CommandComponentType.SmartButton)
+                    child.Type == CommandComponentType.SmartButton ||
+                    child.Type == CommandComponentType.UrlButton)
                 {
                     itemDataList.Add(CreatePushButton(child, assemblyInfo));
                     originalItems.Add(child);
@@ -265,7 +268,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                     // Add separator to pulldown in stack
                                     try { pdBtn.AddSeparator(); } catch { }
                                 }
-                                else if (sub.Type == CommandComponentType.PushButton)
+                                else if (sub.Type == CommandComponentType.PushButton ||
+                                         sub.Type == CommandComponentType.UrlButton)
                                 {
                                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                                     if (subBtn != null)
@@ -309,7 +313,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     // Add separator to pulldown
                     try { pdBtn.AddSeparator(); } catch { }
                 }
-                else if (sub.Type == CommandComponentType.PushButton)
+                else if (sub.Type == CommandComponentType.PushButton ||
+                         sub.Type == CommandComponentType.UrlButton)
                 {
                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                     if (subBtn != null)
