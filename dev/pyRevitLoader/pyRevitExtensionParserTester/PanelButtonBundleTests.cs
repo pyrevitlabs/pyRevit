@@ -629,5 +629,49 @@ min_revit_version: 2019
                 }
             }
         }
+
+        [Test]
+        public void TestButtonTitleWithNewlineEscapeSequence()
+        {
+            // Create a temporary test button with \n in the title
+            var tempDir = Path.Combine(Path.GetTempPath(), "TestNewlineTitle.extension");
+            var tabDir = Path.Combine(tempDir, "TestTab.tab");
+            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
+            var buttonDir = Path.Combine(panelDir, "TestNewlineButton.pushbutton");
+            
+            try
+            {
+                Directory.CreateDirectory(buttonDir);
+                
+                var scriptPath = Path.Combine(buttonDir, "script.py");
+                // Test with \n in the title
+                File.WriteAllText(scriptPath, @"__title__ = 'Generate\nAPI Stubs'
+print('test')");
+                
+                // Parse the extension
+                var extensions = ParseInstalledExtensions(new[] { tempDir });
+                var extension = extensions.FirstOrDefault();
+                
+                Assert.IsNotNull(extension, "Extension should be parsed");
+                
+                var testButton = FindComponentRecursively(extension, "TestNewlineButton");
+                Assert.IsNotNull(testButton, "TestNewlineButton should be found");
+                
+                // Verify that \n is converted to an actual newline
+                Assert.IsNotNull(testButton.Title, "Title should not be null");
+                Assert.That(testButton.Title, Does.Contain("\n"), "Title should contain an actual newline character");
+                Assert.That(testButton.Title, Is.EqualTo("Generate\nAPI Stubs"), "Title should have newline properly parsed");
+                
+                // Verify it's NOT the literal \n string
+                Assert.That(testButton.Title, Does.Not.Contain("\\n"), "Title should not contain literal \\n");
+                
+                TestContext.Out.WriteLine($"Title successfully parsed with newline: '{testButton.Title}'");
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
     }
 }
