@@ -21,7 +21,8 @@ namespace pyRevitExtensionParser
         /// Calculates a hash based on the modification times of all relevant files in the extension directory.
         /// This matches the Python implementation in coreutils.calculate_dir_hash()
         /// </summary>
-        public string GetHash()
+        /// <param name="seed">Optional seed to include in hash calculation. Use empty string for Python, 'ILPack' for ILPack, 'Roslyn' for Roslyn</param>
+        public string GetHash(string seed = "")
         {
             if (string.IsNullOrEmpty(Directory) || !System.IO.Directory.Exists(Directory))
                 return Directory?.GetHashCode().ToString("X") ?? "0";
@@ -58,9 +59,11 @@ namespace pyRevitExtensionParser
                 }
 
                 // Use MD5 hash like Python's get_str_hash()
+                // Include the seed in the hash to differentiate between build strategies
                 using (var md5 = MD5.Create())
                 {
-                    var bytes = Encoding.UTF8.GetBytes(mtimeSum.ToString());
+                    var inputString = mtimeSum.ToString() + seed;
+                    var bytes = Encoding.UTF8.GetBytes(inputString);
                     var hashBytes = md5.ComputeHash(bytes);
                     return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
                 }

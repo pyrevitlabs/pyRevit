@@ -72,9 +72,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
 
-            // Add random seed to force DLL recreation with different internal structure
-            string randomSeed = Guid.NewGuid().ToString("N");
-            string hash = GetStableHash(extension.GetHash() + _revitVersion + randomSeed).Substring(0, 16);
+            // Use build strategy as seed to differentiate DLLs built with different strategies
+            // This ensures DLLs are only regenerated when extension structure changes or build strategy changes
+            string strategySeed = _buildStrategy == AssemblyBuildStrategy.ILPack ? "ILPack" : "Roslyn";
+            string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
             string outputDir = Path.Combine(
