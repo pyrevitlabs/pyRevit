@@ -129,29 +129,60 @@ namespace pyRevitExtensionParser
 
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
-                var nameIndexMap = component.LayoutOrder
-                    .Select((name, index) => new { name, index })
-                    .GroupBy(x => x.name)
-                    .ToDictionary(g => g.Key, g => g.First().index);
-
-                component.Children.Sort((a, b) =>
+                // Build reordered list with separators
+                var reorderedChildren = new List<ParsedComponent>();
+                
+                foreach (var layoutItem in component.LayoutOrder)
                 {
-                    int ix = nameIndexMap.TryGetValue(a?.DisplayName ?? "", out int indexA) ? indexA : int.MaxValue;
-                    int iy = nameIndexMap.TryGetValue(b?.DisplayName ?? "", out int indexB) ? indexB : int.MaxValue;
-                    return ix.CompareTo(iy);
-                });
-
-                var slideoutIndex = component.LayoutOrder.IndexOf(">>>>>");
-
-                if (slideoutIndex >= 0 && slideoutIndex < component.LayoutOrder.Count - 1)
-                {
-                    var nextelem = component.LayoutOrder[slideoutIndex + 1];
-                    var nextComponent = component.Children.Find(c => c?.Name == nextelem);
-                    if (nextComponent != null)
+                    // Check if this is a separator (-----) or slideout (>>>>>)
+                    if (layoutItem.Contains("---"))
                     {
-                        nextComponent.HasSlideout = true;
+                        // Create a separator component
+                        var separator = new ParsedComponent
+                        {
+                            Name = "---",
+                            DisplayName = "---",
+                            Type = CommandComponentType.Separator,
+                            Directory = component.Directory
+                        };
+                        reorderedChildren.Add(separator);
+                    }
+                    else if (layoutItem == ">>>>>")
+                    {
+                        // Mark the next component as having a slideout
+                        // Find next valid component in layout
+                        var currentIndex = component.LayoutOrder.IndexOf(layoutItem);
+                        if (currentIndex >= 0 && currentIndex < component.LayoutOrder.Count - 1)
+                        {
+                            var nextLayoutItem = component.LayoutOrder[currentIndex + 1];
+                            var nextComponent = component.Children.Find(c => c?.DisplayName == nextLayoutItem);
+                            if (nextComponent != null)
+                            {
+                                nextComponent.HasSlideout = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Find matching component by DisplayName
+                        var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
+                        if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
+                        {
+                            reorderedChildren.Add(matchingComponent);
+                        }
                     }
                 }
+                
+                // Add any components not in layout order at the end
+                foreach (var child in component.Children)
+                {
+                    if (child != null && !reorderedChildren.Contains(child))
+                    {
+                        reorderedChildren.Add(child);
+                    }
+                }
+                
+                component.Children = reorderedChildren;
             }
 
             foreach (var child in component.Children)
@@ -548,7 +579,8 @@ namespace pyRevitExtensionParser
             InvokeButton,
             UrlButton,
             ContentButton,
-            NoButton
+            NoButton,
+            Separator
         }
 
         public static class CommandComponentTypeExtensions
