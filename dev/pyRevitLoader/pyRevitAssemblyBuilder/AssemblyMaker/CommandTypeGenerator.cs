@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,7 +19,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
     /// </summary>
     public class RoslynCommandTypeGenerator
     {
-        public string GenerateExtensionCode(ParsedExtension extension)
+        public string GenerateExtensionCode(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine("#nullable disable");
@@ -30,13 +31,35 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             {
                 string safeClassName = SanitizeClassName(cmd.UniqueId);
                 string scriptPath = cmd.ScriptPath;
-                string searchPaths = string.Join(";", new[]
+                
+                // Build search paths matching Python's behavior:
+                // 1. Script's own directory
+                // 2. Component hierarchy lib/ folders (button -> panel -> tab -> extension)
+                // 3. Library extensions
+                // 4. pyrevitlib/
+                // 5. site-packages/
+                var searchPathsList = new System.Collections.Generic.List<string>
                 {
-                    Path.GetDirectoryName(cmd.ScriptPath),
-                    Path.Combine(extension.Directory, "lib"),
-                    Path.Combine(extension.Directory, "..", "..", "pyrevitlib"),
-                    Path.Combine(extension.Directory, "..", "..", "site-packages")
-                });
+                    Path.GetDirectoryName(cmd.ScriptPath)
+                };
+                
+                // Add lib/ folders from component hierarchy (extension -> tab -> panel -> button)
+                searchPathsList.AddRange(extension.CollectLibraryPaths(cmd));
+                
+                // Add all library extension directories
+                if (libraryExtensions != null)
+                {
+                    foreach (var libExt in libraryExtensions)
+                    {
+                        if (!string.IsNullOrEmpty(libExt.Directory))
+                            searchPathsList.Add(libExt.Directory);
+                    }
+                }
+                
+                searchPathsList.Add(Path.Combine(extension.Directory, "..", "..", "pyrevitlib"));
+                searchPathsList.Add(Path.Combine(extension.Directory, "..", "..", "site-packages"));
+                
+                string searchPaths = string.Join(";", searchPathsList);
                 string tooltip = cmd.Tooltip ?? string.Empty;
                 string bundle = Path.GetFileName(Path.GetDirectoryName(cmd.ScriptPath));
                 string extName = extension.Name;
@@ -159,7 +182,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <summary>
         /// Defines both the ScriptCommand-derived class and its matching _avail class.
         /// </summary>
-        public void DefineCommandType(ParsedExtension extension, ParsedComponent cmd, ModuleBuilder moduleBuilder)
+        public void DefineCommandType(ParsedExtension extension, ParsedComponent cmd, ModuleBuilder moduleBuilder, IEnumerable<ParsedExtension> libraryExtensions = null)
         {
             // 1) Generate the ScriptCommand type
             var typeName = SanitizeClassName(cmd.UniqueId);
@@ -190,16 +213,37 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             string scriptPath = cmd.ScriptPath ?? string.Empty;
             string configPath = cmd.ScriptPath ?? string.Empty;
             
-            // Build search paths, handling potential nulls
+            // Build search paths matching Python's behavior:
+            // 1. Script's own directory
+            // 2. Component hierarchy lib/ folders (button -> panel -> tab -> extension)
+            // 3. Library extensions
+            // 4. pyrevitlib/
+            // 5. site-packages/
             string scriptDir = string.IsNullOrEmpty(cmd.ScriptPath) ? string.Empty : (Path.GetDirectoryName(cmd.ScriptPath) ?? string.Empty);
             string extensionDir = extension.Directory ?? string.Empty;
-            string searchPaths = string.Join(";", new[]
+            
+            var searchPathsList = new System.Collections.Generic.List<string>
             {
-                scriptDir,
-                Path.Combine(extensionDir, "lib"),
-                Path.Combine(extensionDir, "..", "..", "pyrevitlib"),
-                Path.Combine(extensionDir, "..", "..", "site-packages")
-            }.Where(p => !string.IsNullOrEmpty(p)));
+                scriptDir
+            };
+            
+            // Add lib/ folders from component hierarchy (extension -> tab -> panel -> button)
+            searchPathsList.AddRange(extension.CollectLibraryPaths(cmd));
+            
+            // Add all library extension directories
+            if (libraryExtensions != null)
+            {
+                foreach (var libExt in libraryExtensions)
+                {
+                    if (!string.IsNullOrEmpty(libExt.Directory))
+                        searchPathsList.Add(libExt.Directory);
+                }
+            }
+            
+            searchPathsList.Add(Path.Combine(extensionDir, "..", "..", "pyrevitlib"));
+            searchPathsList.Add(Path.Combine(extensionDir, "..", "..", "site-packages"));
+            
+            string searchPaths = string.Join(";", searchPathsList.Where(p => !string.IsNullOrEmpty(p)));
             
             // Get context from component, default to "(zero-doc)" if not specified
             string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";

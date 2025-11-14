@@ -28,9 +28,16 @@ namespace pyRevitExtensionParser
                 if (!Directory.Exists(root))
                     continue;
 
+                // Parse .extension directories (UI extensions)
                 foreach (var extDir in Directory.GetDirectories(root, "*.extension"))
                 {
                     yield return ParseExtension(extDir);
+                }
+
+                // Parse .lib directories (Library extensions)
+                foreach (var libDir in Directory.GetDirectories(root, "*.lib"))
+                {
+                    yield return ParseExtension(libDir);
                 }
             }
         }
@@ -38,15 +45,16 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Parses a specific extension from the given extension path
         /// </summary>
-        /// <param name="extensionPath">The full path to the .extension directory</param>
+        /// <param name="extensionPath">The full path to the .extension or .lib directory</param>
         /// <returns>A single ParsedExtension if the path is valid and contains an extension, otherwise empty</returns>
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath)
         {
             if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
                 yield break;
 
-            // Ensure the directory has .extension suffix
-            if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+            // Ensure the directory has .extension or .lib suffix
+            if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase) &&
+                !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                 yield break;
 
             yield return ParseExtension(extensionPath);
@@ -55,7 +63,7 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Parses specific extensions from the given extension paths
         /// </summary>
-        /// <param name="extensionPaths">The full paths to the .extension directories</param>
+        /// <param name="extensionPaths">The full paths to the .extension or .lib directories</param>
         /// <returns>ParsedExtensions for valid paths that contain extensions</returns>
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions(IEnumerable<string> extensionPaths)
         {
@@ -67,8 +75,9 @@ namespace pyRevitExtensionParser
                 if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
                     continue;
 
-                // Ensure the directory has .extension suffix
-                if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+                // Ensure the directory has .extension or .lib suffix
+                if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase) &&
+                    !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 yield return ParseExtension(extensionPath);
@@ -288,7 +297,8 @@ namespace pyRevitExtensionParser
                     Context = bundleInComponent?.Context,
                     Icons = ParseIconsForComponent(dir),
                     LocalizedTitles = bundleInComponent?.Titles,
-                    LocalizedTooltips = bundleInComponent?.Tooltips
+                    LocalizedTooltips = bundleInComponent?.Tooltips,
+                    Directory = dir
                 });
             }
 
