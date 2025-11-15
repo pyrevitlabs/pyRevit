@@ -14,6 +14,7 @@ namespace pyRevitExtensionParser
             public string MinRevitVersion { get; set; }
             public string Context { get; set; }
             public string Hyperlink { get; set; }
+            public string Highlight { get; set; }
             public EngineConfig Engine { get; set; } = new EngineConfig();
         }
 
@@ -92,6 +93,9 @@ namespace pyRevitExtensionParser
                                 break;
                             case "hyperlink":
                                 parsed.Hyperlink = StripQuotes(value);
+                                break;
+                            case "highlight":
+                                parsed.Highlight = value?.ToLowerInvariant();
                                 break;
                             case "title":
                             case "titles":

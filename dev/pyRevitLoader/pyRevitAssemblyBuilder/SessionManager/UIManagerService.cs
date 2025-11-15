@@ -8,6 +8,7 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using Autodesk.Windows;
+using Autodesk.Internal.Windows;
 using RibbonPanel = Autodesk.Revit.UI.RibbonPanel;
 using RibbonButton = Autodesk.Windows.RibbonButton;
 using RibbonItem = Autodesk.Revit.UI.RibbonItem;
@@ -106,6 +107,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         ApplyIconToPushButtonThemeAware(panelBtn, component);
                         if (!string.IsNullOrEmpty(component.Tooltip))
                             panelBtn.ToolTip = component.Tooltip;
+                        ApplyHighlightToButton(panelBtn, component);
                         ModifyToPanelButton(tabName, parentPanel, panelBtn);
                     }
                     break;
@@ -119,6 +121,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         ApplyIconToPushButtonThemeAware(btn, component);
                         if (!string.IsNullOrEmpty(component.Tooltip))
                             btn.ToolTip = component.Tooltip;
+                        ApplyHighlightToButton(btn, component);
                     }
                     break;
 
@@ -140,6 +143,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         // Assign tooltip to the split button itself
                         if (!string.IsNullOrEmpty(component.Tooltip))
                             splitBtn.ToolTip = component.Tooltip;
+                        
+                        // Apply highlight to the split button itself
+                        ApplyHighlightToButton(splitBtn, component);
 
                         foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         {
@@ -157,6 +163,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                     ApplyIconToPushButtonThemeAware(subBtn, sub);
                                     if (!string.IsNullOrEmpty(sub.Tooltip))
                                         subBtn.ToolTip = sub.Tooltip;
+                                    ApplyHighlightToButton(subBtn, sub);
                                 }
                             }
                         }
@@ -238,6 +245,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                             ApplyIconToPushButtonThemeAware(pushBtn, origComponent);
                             if (!string.IsNullOrEmpty(origComponent.Tooltip))
                                 pushBtn.ToolTip = origComponent.Tooltip;
+                            ApplyHighlightToButton(pushBtn, origComponent);
                         }
                         
                         if (ribbonItem is PulldownButton pdBtn)
@@ -246,6 +254,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                             ApplyIconToPulldownButtonThemeAware(pdBtn, origComponent);
                             if (!string.IsNullOrEmpty(origComponent.Tooltip))
                                 pdBtn.ToolTip = origComponent.Tooltip;
+                            
+                            // Apply highlight to the pulldown button itself in stack
+                            ApplyHighlightToButton(pdBtn, origComponent);
 
                             foreach (var sub in origComponent.Children ?? Enumerable.Empty<ParsedComponent>())
                             {
@@ -263,6 +274,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                         ApplyIconToPulldownSubButtonThemeAware(subBtn, sub);
                                         if (!string.IsNullOrEmpty(sub.Tooltip))
                                             subBtn.ToolTip = sub.Tooltip;
+                                        ApplyHighlightToButton(subBtn, sub);
                                     }
                                 }
                             }
@@ -291,6 +303,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             ApplyIconToPulldownButtonThemeAware(pdBtn, component);
             if (!string.IsNullOrEmpty(component.Tooltip))
                 pdBtn.ToolTip = component.Tooltip;
+            
+            // Apply highlight to the pulldown button itself
+            ApplyHighlightToButton(pdBtn, component);
 
             foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
@@ -308,6 +323,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         ApplyIconToPulldownSubButtonThemeAware(subBtn, sub);
                         if (!string.IsNullOrEmpty(sub.Tooltip))
                             subBtn.ToolTip = sub.Tooltip;
+                        ApplyHighlightToButton(subBtn, sub);
                     }
                 }
             }
@@ -815,6 +831,125 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 // Fallback to standard method
                 ApplyIconToPushButtonThemeAware(button, component);
             }
+        }
+
+        #endregion
+
+        #region Highlight Management
+
+        /// <summary>
+        /// Applies highlight to a Revit UI button based on the component's Highlight property
+        /// </summary>
+        private void ApplyHighlightToButton(RibbonItem revitButton, ParsedComponent component)
+        {
+            if (string.IsNullOrEmpty(component.Highlight))
+                return;
+
+            try
+            {
+                // Get the Autodesk.Windows.RibbonButton from the Revit RibbonItem
+                var adwButton = GetAutodeskWindowsButton(revitButton);
+                if (adwButton == null)
+                    return;
+
+                // Apply highlight based on the component's Highlight value
+                // Use reflection to access the Highlight property since it's in Autodesk.Internal namespace
+                var highlightValue = component.Highlight.ToLowerInvariant();
+                var highlightProperty = adwButton.GetType().GetProperty("Highlight");
+                
+                if (highlightProperty != null)
+                {
+                    var highlightModeType = highlightProperty.PropertyType;
+                    object highlightModeValue = null;
+
+                    if (highlightValue == "new")
+                    {
+                        highlightModeValue = Enum.Parse(highlightModeType, "New");
+                        Console.WriteLine($"Applied 'new' highlight to button: {component.DisplayName}");
+                    }
+                    else if (highlightValue == "updated")
+                    {
+                        highlightModeValue = Enum.Parse(highlightModeType, "Updated");
+                        Console.WriteLine($"Applied 'updated' highlight to button: {component.DisplayName}");
+                    }
+
+                    if (highlightModeValue != null)
+                    {
+                        highlightProperty.SetValue(adwButton, highlightModeValue);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to apply highlight to button {component.DisplayName}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Gets the Autodesk.Windows.RibbonButton from a Revit UI RibbonItem
+        /// </summary>
+        private RibbonButton GetAutodeskWindowsButton(RibbonItem revitButton)
+        {
+            if (revitButton == null)
+                return null;
+
+            try
+            {
+                // Search for the button in the Autodesk.Windows.ComponentManager.Ribbon
+                var ribbon = ComponentManager.Ribbon;
+                if (ribbon?.Tabs == null)
+                    return null;
+
+                foreach (var tab in ribbon.Tabs)
+                {
+                    if (tab?.Panels == null)
+                        continue;
+
+                    foreach (var panel in tab.Panels)
+                    {
+                        if (panel?.Source?.Items == null)
+                            continue;
+
+                        var found = FindButtonInItems(panel.Source.Items, revitButton.ItemText);
+                        if (found != null)
+                            return found;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting Autodesk.Windows.RibbonButton: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Recursively searches for a RibbonButton by AutomationName in a collection of ribbon items
+        /// </summary>
+        private RibbonButton FindButtonInItems(System.Collections.IEnumerable items, string automationName)
+        {
+            if (items == null)
+                return null;
+
+            foreach (var item in items)
+            {
+                // Check if this item is the button we're looking for
+                if (item is RibbonButton button && button.AutomationName == automationName)
+                {
+                    return button;
+                }
+                
+                // Check in split buttons
+                if (item is Autodesk.Windows.RibbonSplitButton splitButton && splitButton.Items != null)
+                {
+                    var found = FindButtonInItems(splitButton.Items, automationName);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
         }
 
         #endregion
