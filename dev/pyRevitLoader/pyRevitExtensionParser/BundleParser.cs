@@ -10,6 +10,11 @@ namespace pyRevitExtensionParser
             public List<string> LayoutOrder { get; set; } = new List<string>();
             public Dictionary<string, string> Titles { get; set; } = new Dictionary<string, string>();
             public Dictionary<string, string> Tooltips { get; set; } = new Dictionary<string, string>();
+            /// <summary>
+            /// Maps component names (from layout items) to their custom display titles.
+            /// Used when layout items specify a custom title like: "Component Name[title:Custom Title]"
+            /// </summary>
+            public Dictionary<string, string> LayoutItemTitles { get; set; } = new Dictionary<string, string>();
             public string Author { get; set; }
             public string MinRevitVersion { get; set; }
             public string Context { get; set; }
@@ -146,7 +151,23 @@ namespace pyRevitExtensionParser
                             {
                                 item = item.Substring(1, item.Length - 2);
                             }
-                            parsed.LayoutOrder.Add(item);
+                            
+                            // Check for custom title syntax: "Component[title:Custom Title]"
+                            var componentName = item;
+                            if (item.Contains("[title:") && item.EndsWith("]"))
+                            {
+                                var titleStartIndex = item.IndexOf("[title:");
+                                componentName = item.Substring(0, titleStartIndex);
+                                var titleValue = item.Substring(titleStartIndex + 7, item.Length - titleStartIndex - 8);
+                                
+                                // Unescape \n to newline
+                                titleValue = titleValue.Replace("\\n", "\n");
+                                
+                                // Store the custom title mapping
+                                parsed.LayoutItemTitles[componentName] = titleValue;
+                            }
+                            
+                            parsed.LayoutOrder.Add(componentName);
                         }
                         else if ((currentSection == "title" || currentSection == "titles" || 
                                  currentSection == "tooltip" || currentSection == "tooltips") && line.Contains(":"))

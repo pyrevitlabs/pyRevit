@@ -38,6 +38,7 @@
     <Compile Include="FullIntegrationQuoteTest.cs" />
     <Compile Include="StartupScriptTests.cs" />
     <Compile Include="SeparatorTests.cs" />
+    <Compile Include="DebugPanelCustomTitleTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
