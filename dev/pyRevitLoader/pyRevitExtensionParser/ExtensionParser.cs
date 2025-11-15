@@ -327,6 +327,7 @@ namespace pyRevitExtensionParser
                     Author = author,
                     Context = bundleInComponent?.Context,
                     Hyperlink = bundleInComponent?.Hyperlink,
+                    Highlight = bundleInComponent?.Highlight,
                     Icons = ParseIconsForComponent(dir),
                     LocalizedTitles = bundleInComponent?.Titles,
                     LocalizedTooltips = bundleInComponent?.Tooltips,

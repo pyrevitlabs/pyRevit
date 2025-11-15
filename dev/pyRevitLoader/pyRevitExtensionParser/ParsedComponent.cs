@@ -20,6 +20,7 @@ namespace pyRevitExtensionParser
         public string Author { get; set; }
         public string Context { get; set; }
         public string Hyperlink { get; set; }
+        public string Highlight { get; set; }
         
         /// <summary>
         /// The directory path where this component resides
