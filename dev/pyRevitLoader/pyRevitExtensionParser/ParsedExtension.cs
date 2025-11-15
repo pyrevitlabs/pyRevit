@@ -84,7 +84,8 @@ namespace pyRevitExtensionParser
             CommandComponentType.PushButton,
             CommandComponentType.PanelButton,
             CommandComponentType.SmartButton,
-            CommandComponentType.UrlButton
+            CommandComponentType.UrlButton,
+            CommandComponentType.InvokeButton
         };
 
         public IEnumerable<ParsedComponent> CollectCommandComponents()
@@ -116,9 +117,12 @@ namespace pyRevitExtensionParser
             var libPaths = new List<string>();
             
             // Start with extension's lib folder
-            var extLib = Path.Combine(this.Directory, "lib");
-            if (System.IO.Directory.Exists(extLib))
-                libPaths.Add(extLib);
+            if (!string.IsNullOrEmpty(this.Directory))
+            {
+                var extLib = Path.Combine(this.Directory, "lib");
+                if (System.IO.Directory.Exists(extLib))
+                    libPaths.Add(extLib);
+            }
             
             // Collect lib paths from component hierarchy
             CollectLibPathsRecursive(this.Children, command, libPaths);
@@ -149,6 +153,59 @@ namespace pyRevitExtensionParser
                     return true;
             }
             
+            return false;
+        }
+
+        /// <summary>
+        /// Collects all bin/ folder paths from the component hierarchy for locating invoke assemblies.
+        /// </summary>
+        public List<string> CollectBinaryPaths(ParsedComponent command)
+        {
+            var binPaths = new List<string>();
+
+            if (!string.IsNullOrEmpty(this.Directory))
+            {
+                var extBin = Path.Combine(this.Directory, "bin");
+                if (System.IO.Directory.Exists(extBin))
+                    binPaths.Add(extBin);
+            }
+
+            CollectBinPathsRecursive(this.Children, command, binPaths);
+
+            if (command != null && !string.IsNullOrEmpty(command.Directory))
+            {
+                var cmdBin = Path.Combine(command.Directory, "bin");
+                if (System.IO.Directory.Exists(cmdBin) && !binPaths.Contains(cmdBin))
+                    binPaths.Add(cmdBin);
+
+                if (!binPaths.Contains(command.Directory))
+                    binPaths.Add(command.Directory);
+            }
+
+            return binPaths;
+        }
+
+        private bool CollectBinPathsRecursive(IEnumerable<ParsedComponent> siblings, ParsedComponent target, List<string> binPaths)
+        {
+            if (siblings == null)
+                return false;
+
+            foreach (var comp in siblings)
+            {
+                if (!string.IsNullOrEmpty(comp.Directory))
+                {
+                    var compBin = Path.Combine(comp.Directory, "bin");
+                    if (System.IO.Directory.Exists(compBin) && !binPaths.Contains(compBin))
+                        binPaths.Add(compBin);
+                }
+
+                if (comp == target)
+                    return true;
+
+                if (comp.Children != null && CollectBinPathsRecursive(comp.Children, target, binPaths))
+                    return true;
+            }
+
             return false;
         }
 

@@ -20,7 +20,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
     /// </summary>
     public class RoslynCommandTypeGenerator
     {
-        public string GenerateExtensionCode(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null)
+        public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine("#nullable disable");
@@ -39,10 +39,13 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // 3. Library extensions
                 // 4. pyrevitlib/
                 // 5. site-packages/
-                var searchPathsList = new System.Collections.Generic.List<string>
-                {
-                    Path.GetDirectoryName(cmd.ScriptPath)
-                };
+                string scriptDir = string.IsNullOrEmpty(cmd.ScriptPath)
+                    ? string.Empty
+                    : Path.GetDirectoryName(cmd.ScriptPath);
+
+                var searchPathsList = new System.Collections.Generic.List<string>();
+                if (!string.IsNullOrEmpty(scriptDir))
+                    searchPathsList.Add(scriptDir);
                 
                 // Add lib/ folders from component hierarchy (extension -> tab -> panel -> button)
                 searchPathsList.AddRange(extension.CollectLibraryPaths(cmd));
@@ -62,7 +65,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 
                 string searchPaths = string.Join(";", searchPathsList);
                 string tooltip = cmd.Tooltip ?? string.Empty;
-                string bundle = Path.GetFileName(Path.GetDirectoryName(cmd.ScriptPath));
+                string bundle = string.IsNullOrEmpty(scriptDir) ? string.Empty : Path.GetFileName(scriptDir);
                 string extName = extension.Name;
                 string ctrlId = $"CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
                 string engineCfgs = "{\"clean\": false, \"persistent\": false, \"full_frame\": false}";
@@ -70,12 +73,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // Get context from component, default to "(zero-doc)" if not specified
                 string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
                 
-                // For URL buttons, pass the hyperlink as an argument
-                string arguments = string.Empty;
-                if (cmd.Type == ExtensionParser.CommandComponentType.UrlButton && !string.IsNullOrEmpty(cmd.Hyperlink))
-                {
-                    arguments = cmd.Hyperlink;
-                }
+                string arguments = CommandGenerationUtilities.BuildCommandArguments(extension, cmd, revitVersion);
 
                 // — Command class —
                 sb.AppendLine("[Regeneration(RegenerationOption.Manual)]");
@@ -190,7 +188,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <summary>
         /// Defines both the ScriptCommand-derived class and its matching _avail class.
         /// </summary>
-        public void DefineCommandType(ParsedExtension extension, ParsedComponent cmd, ModuleBuilder moduleBuilder, IEnumerable<ParsedExtension> libraryExtensions = null)
+        public void DefineCommandType(ParsedExtension extension, ParsedComponent cmd, ModuleBuilder moduleBuilder, IEnumerable<ParsedExtension> libraryExtensions = null, string revitVersion = null)
         {
             // 1) Generate the ScriptCommand type
             var typeName = SanitizeClassName(cmd.UniqueId);
@@ -259,12 +257,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Get bundle name (parent directory of script)
             string bundleName = string.IsNullOrEmpty(scriptDir) ? string.Empty : (Path.GetFileName(scriptDir) ?? string.Empty);
             
-            // For URL buttons, pass the hyperlink as an argument
-            string arguments = string.Empty;
-            if (cmd.Type == CommandComponentType.UrlButton && !string.IsNullOrEmpty(cmd.Hyperlink))
-            {
-                arguments = cmd.Hyperlink;
-            }
+            string arguments = CommandGenerationUtilities.BuildCommandArguments(extension, cmd, revitVersion);
             
             string[] args = {
                 scriptPath,
@@ -326,6 +319,93 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             foreach (char c in name)
                 sb.Append(char.IsLetterOrDigit(c) ? c : '_');
             return sb.ToString();
+        }
+    }
+
+    internal static class CommandGenerationUtilities
+    {
+        public static string BuildCommandArguments(ParsedExtension extension, ParsedComponent component, string revitVersion)
+        {
+            if (component == null)
+                return string.Empty;
+
+            if (component.Type == CommandComponentType.UrlButton && !string.IsNullOrEmpty(component.Hyperlink))
+                return component.Hyperlink;
+
+            if (component.Type == CommandComponentType.InvokeButton)
+            {
+                var assemblyPath = ResolveInvokeAssemblyPath(extension, component, revitVersion);
+                if (string.IsNullOrEmpty(component.CommandClass))
+                    return assemblyPath;
+
+                return $"{assemblyPath}::{component.CommandClass}";
+            }
+
+            return string.Empty;
+        }
+
+        public static string ResolveInvokeAssemblyPath(ParsedExtension extension, ParsedComponent component, string revitVersion)
+        {
+            if (component == null)
+                throw new ArgumentNullException(nameof(component));
+
+            if (string.IsNullOrWhiteSpace(component.TargetAssembly))
+                throw new InvalidOperationException($"Invoke button '{component.DisplayName}' must define an 'assembly' entry in bundle.yaml.");
+
+            var assemblyValue = component.TargetAssembly.Trim();
+
+            if (Path.IsPathRooted(assemblyValue) && File.Exists(assemblyValue))
+                return Path.GetFullPath(assemblyValue);
+
+            var baseFileName = assemblyValue;
+            var includesDirectories = assemblyValue.Contains(Path.DirectorySeparatorChar) || assemblyValue.Contains(Path.AltDirectorySeparatorChar);
+
+            if (!assemblyValue.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                baseFileName += ".dll";
+
+            var candidateNames = new List<string>();
+            if (!string.IsNullOrWhiteSpace(revitVersion))
+            {
+                var name = Path.GetFileNameWithoutExtension(baseFileName);
+                var ext = Path.GetExtension(baseFileName);
+                candidateNames.Add($"{name}_{revitVersion}{ext}");
+            }
+            candidateNames.Add(Path.GetFileName(baseFileName));
+
+            if (!Path.IsPathRooted(assemblyValue) && includesDirectories && !string.IsNullOrEmpty(component.Directory))
+            {
+                var relativePath = Path.GetFullPath(Path.Combine(component.Directory, assemblyValue));
+                if (File.Exists(relativePath))
+                    return relativePath;
+            }
+
+            var searchPaths = new List<string>();
+            if (extension != null)
+                searchPaths.AddRange(extension.CollectBinaryPaths(component));
+            else if (!string.IsNullOrEmpty(component.Directory))
+                searchPaths.Add(component.Directory);
+
+            if (!string.IsNullOrEmpty(extension?.Directory) && !searchPaths.Contains(extension.Directory))
+                searchPaths.Add(extension.Directory);
+
+            foreach (var path in searchPaths.Where(p => !string.IsNullOrEmpty(p)))
+            {
+                foreach (var candidate in candidateNames)
+                {
+                    var candidatePath = Path.Combine(path, candidate);
+                    if (File.Exists(candidatePath))
+                        return candidatePath;
+                }
+
+                if (!Path.IsPathRooted(assemblyValue))
+                {
+                    var fallback = Path.Combine(path, assemblyValue);
+                    if (File.Exists(fallback))
+                        return fallback;
+                }
+            }
+
+            throw new FileNotFoundException($"Invoke button '{component.DisplayName}' could not locate assembly '{assemblyValue}'.");
         }
     }
 }

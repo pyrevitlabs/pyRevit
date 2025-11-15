@@ -129,7 +129,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
         {
             var generator = new RoslynCommandTypeGenerator();
-            string code = generator.GenerateExtensionCode(extension, libraryExtensions);
+            string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions);
             File.WriteAllText(Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs"), code);
 
             var tree = CSharpSyntaxTree.ParseText(code);
@@ -178,7 +178,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 #endif
 
             foreach (var cmd in extension.CollectCommandComponents())
-                generator.DefineCommandType(extension, cmd, moduleBuilder, libraryExtensions);
+                generator.DefineCommandType(extension, cmd, moduleBuilder, libraryExtensions, _revitVersion);
 
 #if NETFRAMEWORK
             asmBuilder.Save(Path.GetFileName(outputPath));

@@ -19,6 +19,9 @@ namespace pyRevitExtensionParser
             public string TitleBackground { get; set; }
             public string SlideoutBackground { get; set; }
             public EngineConfig Engine { get; set; } = new EngineConfig();
+            public string Assembly { get; set; }
+            public string CommandClass { get; set; }
+            public string AvailabilityClass { get; set; }
         }
 
         public static class BundleYamlParser
@@ -107,6 +110,15 @@ namespace pyRevitExtensionParser
                                     parsed.PanelBackground = StripQuotes(value);
                                 }
                                 // Multi-line format handled below
+                                break;
+                            case "assembly":
+                                parsed.Assembly = StripQuotes(value);
+                                break;
+                            case "command_class":
+                                parsed.CommandClass = StripQuotes(value);
+                                break;
+                            case "availability_class":
+                                parsed.AvailabilityClass = StripQuotes(value);
                                 break;
                             case "title":
                             case "titles":

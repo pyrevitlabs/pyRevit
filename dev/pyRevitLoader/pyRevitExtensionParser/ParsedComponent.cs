@@ -21,6 +21,9 @@ namespace pyRevitExtensionParser
         public string Context { get; set; }
         public string Hyperlink { get; set; }
         public string Highlight { get; set; }
+        public string TargetAssembly { get; set; }
+        public string CommandClass { get; set; }
+        public string AvailabilityClass { get; set; }
         
         /// <summary>
         /// Panel background color (ARGB hex format, e.g., '#BB005591')

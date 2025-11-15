@@ -586,6 +586,81 @@ min_revit_version: 2019
             }
         }
 
+        [Test]
+        public void TestBundleTestsPulldownFromDevToolsExtension()
+        {
+            var repoRoot = Path.GetFullPath(Path.Combine(
+                TestContext.CurrentContext.TestDirectory,
+                "..", "..", "..", "..", "..", ".."));
+
+            var devToolsExtensionPath = Path.Combine(repoRoot, "extensions", "pyRevitDevTools.extension");
+            if (!Directory.Exists(devToolsExtensionPath))
+            {
+                Assert.Inconclusive("pyRevitDevTools extension directory is missing");
+                return;
+            }
+
+            var extensions = ParseInstalledExtensions(new[] { devToolsExtensionPath }).ToList();
+            Assert.IsNotEmpty(extensions, "Failed to parse any extensions from pyRevitDevTools");
+
+            var devToolsExtension = extensions
+                .FirstOrDefault(ext => ext.Name.Equals("pyRevitDevTools", StringComparison.OrdinalIgnoreCase))
+                ?? extensions.First();
+
+            var bundlePulldown = FindComponentRecursively(devToolsExtension, "BundleTests");
+            Assert.IsNotNull(bundlePulldown, "Bundle Tests pulldown not found in dev tools extension");
+            Assert.AreEqual(CommandComponentType.PullDown, bundlePulldown.Type);
+            Assert.AreEqual("new", bundlePulldown.Highlight);
+
+            var expectedLayout = new[]
+            {
+                "Test pyRevit Bundle",
+                "Test pyRevit Button",
+                "Test Smart Button",
+                "Test C# Script",
+                "Test Direct Invoke",
+                "Test Direct Invoke (ExecParams)",
+                "Test Direct Class Invoke",
+                "Test Link Button",
+                "Test VisualBasic",
+                "Test Ruby",
+                "Test DynamoBIM",
+                "Test DynamoBIM GUI",
+                "Test Grasshopper",
+                "Test Content Bundle",
+                "Test Hyperlink",
+                "Test Блог"
+            };
+
+            Assert.IsNotNull(bundlePulldown.LayoutOrder, "Pulldown layout order should be parsed");
+            CollectionAssert.AreEqual(expectedLayout, bundlePulldown.LayoutOrder);
+
+            Assert.IsNotNull(bundlePulldown.Children, "Pulldown children should not be null");
+            foreach (var layoutName in expectedLayout)
+            {
+                var child = bundlePulldown.Children.FirstOrDefault(c => c.DisplayName == layoutName);
+                Assert.IsNotNull(child, $"Pulldown child '{layoutName}' missing");
+            }
+
+            var directInvoke = FindComponentRecursively(bundlePulldown, "TestDirectInvoke");
+            Assert.IsNotNull(directInvoke);
+            Assert.AreEqual(CommandComponentType.InvokeButton, directInvoke.Type);
+            Assert.AreEqual("PyRevitTestBundles.dll", directInvoke.TargetAssembly);
+            Assert.IsNull(directInvoke.CommandClass);
+
+            var execInvoke = FindComponentRecursively(bundlePulldown, "TestDirectInvoke(ExecParams)");
+            Assert.IsNotNull(execInvoke);
+            Assert.AreEqual(CommandComponentType.InvokeButton, execInvoke.Type);
+            Assert.AreEqual("PyRevitTestBundles", execInvoke.TargetAssembly);
+            Assert.AreEqual("PyRevitTestInvokeCommandWithExecParams", execInvoke.CommandClass);
+
+            var classInvoke = FindComponentRecursively(bundlePulldown, "TestDirectClassInvoke");
+            Assert.IsNotNull(classInvoke);
+            Assert.AreEqual(CommandComponentType.InvokeButton, classInvoke.Type);
+            Assert.AreEqual("PyRevitTestBundles", classInvoke.TargetAssembly);
+            Assert.AreEqual("PyRevitTestInvokeCommand", classInvoke.CommandClass);
+        }
+
         // Helper method to find components recursively
         private ParsedComponent? FindComponentRecursively(ParsedComponent? parent, string componentName)
         {
