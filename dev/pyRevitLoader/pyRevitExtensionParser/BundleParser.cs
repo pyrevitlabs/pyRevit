@@ -15,6 +15,9 @@ namespace pyRevitExtensionParser
             public string Context { get; set; }
             public string Hyperlink { get; set; }
             public string Highlight { get; set; }
+            public string PanelBackground { get; set; }
+            public string TitleBackground { get; set; }
+            public string SlideoutBackground { get; set; }
             public EngineConfig Engine { get; set; } = new EngineConfig();
         }
 
@@ -96,6 +99,14 @@ namespace pyRevitExtensionParser
                                 break;
                             case "highlight":
                                 parsed.Highlight = value?.ToLowerInvariant();
+                                break;
+                            case "background":
+                                // Single-line format: background: '#BB005591'
+                                if (!string.IsNullOrEmpty(value))
+                                {
+                                    parsed.PanelBackground = StripQuotes(value);
+                                }
+                                // Multi-line format handled below
                                 break;
                             case "title":
                             case "titles":
@@ -182,6 +193,26 @@ namespace pyRevitExtensionParser
                                     break;
                                 case "persistent":
                                     parsed.Engine.Persistent = value == "true";
+                                    break;
+                            }
+                        }
+                        else if (currentSection == "background" && line.Contains(":"))
+                        {
+                            // Multi-line background configuration
+                            var colonIndex = line.IndexOf(':');
+                            var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
+                            var value = line.Substring(colonIndex + 1).Trim();
+
+                            switch (key)
+                            {
+                                case "title":
+                                    parsed.TitleBackground = StripQuotes(value);
+                                    break;
+                                case "panel":
+                                    parsed.PanelBackground = StripQuotes(value);
+                                    break;
+                                case "slideout":
+                                    parsed.SlideoutBackground = StripQuotes(value);
                                     break;
                             }
                         }
