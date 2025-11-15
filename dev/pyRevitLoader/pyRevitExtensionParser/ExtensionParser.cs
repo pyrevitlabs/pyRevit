@@ -129,15 +129,32 @@ namespace pyRevitExtensionParser
 
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
-                // Build reordered list with separators
+                // Build reordered list (first pass: add matching components)
                 var reorderedChildren = new List<ParsedComponent>();
                 
                 foreach (var layoutItem in component.LayoutOrder)
                 {
-                    // Check if this is a separator (-----) or slideout (>>>>>)
-                    if (layoutItem.Contains("---"))
+                    // Skip separator and slideout markers in first pass
+                    if (layoutItem.Contains("---") || layoutItem.Contains(">>>"))
+                        continue;
+                    
+                    // Find matching component by DisplayName
+                    var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
+                    if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
-                        // Create a separator component
+                        reorderedChildren.Add(matchingComponent);
+                    }
+                }
+                
+                // Second pass: insert separators and slideouts at their positions
+                for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
+                {
+                    var layoutItem = component.LayoutOrder[idx];
+                    
+                    // Check if this is a separator or slideout marker
+                    if (layoutItem.Contains("---") && idx < component.LayoutOrder.Count - 1)
+                    {
+                        // Create a separator component and insert at position
                         var separator = new ParsedComponent
                         {
                             Name = "---",
@@ -145,31 +162,20 @@ namespace pyRevitExtensionParser
                             Type = CommandComponentType.Separator,
                             Directory = component.Directory
                         };
-                        reorderedChildren.Add(separator);
+                        reorderedChildren.Insert(idx, separator);
                     }
-                    else if (layoutItem == ">>>>>")
+                    else if (layoutItem.Contains(">>>") && idx < component.LayoutOrder.Count - 1)
                     {
-                        // Mark the next component as having a slideout
-                        // Find next valid component in layout
-                        var currentIndex = component.LayoutOrder.IndexOf(layoutItem);
-                        if (currentIndex >= 0 && currentIndex < component.LayoutOrder.Count - 1)
+                        // Create a slideout marker component and insert at position
+                        var slideout = new ParsedComponent
                         {
-                            var nextLayoutItem = component.LayoutOrder[currentIndex + 1];
-                            var nextComponent = component.Children.Find(c => c?.DisplayName == nextLayoutItem);
-                            if (nextComponent != null)
-                            {
-                                nextComponent.HasSlideout = true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Find matching component by DisplayName
-                        var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
-                        if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
-                        {
-                            reorderedChildren.Add(matchingComponent);
-                        }
+                            Name = ">>>",
+                            DisplayName = ">>>",
+                            Type = CommandComponentType.Separator,  // Slideout acts like a separator
+                            HasSlideout = true,  // Mark it as a slideout marker
+                            Directory = component.Directory
+                        };
+                        reorderedChildren.Insert(idx, slideout);
                     }
                 }
                 
