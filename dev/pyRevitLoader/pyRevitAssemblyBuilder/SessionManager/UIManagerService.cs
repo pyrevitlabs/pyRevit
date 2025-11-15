@@ -179,7 +179,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                 var subBtn = splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                                 if (subBtn != null)
                                 {
-                                    ApplyIconToPushButtonThemeAware(subBtn, sub);
+                                    ApplyIconToPushButtonThemeAware(subBtn, sub, component);
                                     if (!string.IsNullOrEmpty(sub.Tooltip))
                                         subBtn.ToolTip = sub.Tooltip;
                                     ApplyHighlightToButton(subBtn, sub);
@@ -292,7 +292,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                                     if (subBtn != null)
                                     {
-                                        ApplyIconToPulldownSubButtonThemeAware(subBtn, sub);
+                                        ApplyIconToPulldownSubButtonThemeAware(subBtn, sub, origComponent);
                                         if (!string.IsNullOrEmpty(sub.Tooltip))
                                             subBtn.ToolTip = sub.Tooltip;
                                         ApplyHighlightToButton(subBtn, sub);
@@ -342,7 +342,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var subBtn = pdBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
                     if (subBtn != null)
                     {
-                        ApplyIconToPulldownSubButtonThemeAware(subBtn, sub);
+                        ApplyIconToPulldownSubButtonThemeAware(subBtn, sub, component);
                         if (!string.IsNullOrEmpty(sub.Tooltip))
                             subBtn.ToolTip = sub.Tooltip;
                         ApplyHighlightToButton(subBtn, sub);
@@ -391,11 +391,23 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         /// <summary>
         /// Applies icons from the component to a PushButton with theme awareness (primary method)
+        /// If the component doesn't have icons, falls back to the parent component's icons
         /// </summary>
-        private void ApplyIconToPushButtonThemeAware(PushButton button, ParsedComponent component)
+        private void ApplyIconToPushButtonThemeAware(PushButton button, ParsedComponent component, ParsedComponent parentComponent = null)
         {
+            // If the component doesn't have icons, try to use parent's icons
             if (!component.HasValidIcons)
-                return;
+            {
+                if (parentComponent != null && parentComponent.HasValidIcons)
+                {
+                    // Use parent's icons for this button
+                    component = parentComponent;
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             try
             {
@@ -487,11 +499,23 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <summary>
         /// Applies icons from the component to a PushButton within a pulldown with theme awareness
         /// Uses fixed 16x16 size for consistency with pulldown button appearance
+        /// If the component doesn't have icons, falls back to the parent component's icons
         /// </summary>
-        private void ApplyIconToPulldownSubButtonThemeAware(PushButton button, ParsedComponent component)
+        private void ApplyIconToPulldownSubButtonThemeAware(PushButton button, ParsedComponent component, ParsedComponent parentComponent = null)
         {
+            // If the component doesn't have icons, try to use parent's icons
             if (!component.HasValidIcons)
-                return;
+            {
+                if (parentComponent != null && parentComponent.HasValidIcons)
+                {
+                    // Use parent's icons for this button
+                    component = parentComponent;
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             try
             {
