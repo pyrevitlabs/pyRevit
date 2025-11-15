@@ -23,6 +23,21 @@ namespace pyRevitExtensionParser
         public string Highlight { get; set; }
         
         /// <summary>
+        /// Panel background color (ARGB hex format, e.g., '#BB005591')
+        /// </summary>
+        public string PanelBackground { get; set; }
+        
+        /// <summary>
+        /// Panel title background color (ARGB hex format, e.g., '#E2A000')
+        /// </summary>
+        public string TitleBackground { get; set; }
+        
+        /// <summary>
+        /// Panel slideout background color (ARGB hex format, e.g., '#E25200')
+        /// </summary>
+        public string SlideoutBackground { get; set; }
+        
+        /// <summary>
         /// The directory path where this component resides
         /// </summary>
         public string Directory { get; set; }

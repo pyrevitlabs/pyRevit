@@ -58,6 +58,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var panel = _uiApp.GetRibbonPanels(tabName)
                         .FirstOrDefault(p => p.Name == panelText)
                         ?? _uiApp.CreateRibbonPanel(tabName, panelText);
+                    
+                    // Apply background colors if specified
+                    ApplyPanelBackgroundColors(panel, component, tabName);
+                    
                     foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                         RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
                     break;
@@ -935,6 +939,137 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Converts an ARGB color string to a SolidColorBrush
+        /// </summary>
+        /// <param name="argbColor">Color string in format #AARRGGBB or #RRGGBB</param>
+        /// <returns>SolidColorBrush or null if conversion fails</returns>
+        private SolidColorBrush ArgbToBrush(string argbColor)
+        {
+            if (string.IsNullOrEmpty(argbColor))
+                return null;
+
+            try
+            {
+                // Default values
+                string a = "FF", r = "FF", g = "FF", b = "FF";
+
+                // Remove # if present
+                argbColor = argbColor.TrimStart('#');
+
+                // Parse color components
+                if (argbColor.Length >= 6)
+                {
+                    b = argbColor.Substring(argbColor.Length - 2, 2);
+                    g = argbColor.Substring(argbColor.Length - 4, 2);
+                    r = argbColor.Substring(argbColor.Length - 6, 2);
+                    
+                    if (argbColor.Length >= 8)
+                    {
+                        a = argbColor.Substring(argbColor.Length - 8, 2);
+                    }
+                }
+
+                byte alpha = Convert.ToByte(a, 16);
+                byte red = Convert.ToByte(r, 16);
+                byte green = Convert.ToByte(g, 16);
+                byte blue = Convert.ToByte(b, 16);
+
+                return new SolidColorBrush(Color.FromArgb(alpha, red, green, blue));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error converting color {argbColor}: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the Autodesk.Windows RibbonPanel for a given Revit RibbonPanel
+        /// </summary>
+        private Autodesk.Windows.RibbonPanel GetAdWindowsPanel(RibbonPanel revitPanel, string tabName)
+        {
+            try
+            {
+                var ribbon = ComponentManager.Ribbon;
+                if (ribbon?.Tabs == null)
+                    return null;
+
+                var tab = ribbon.Tabs.FirstOrDefault(t => t.Id == tabName);
+                if (tab?.Panels == null)
+                    return null;
+
+                return tab.Panels.FirstOrDefault(p => p.Source?.Title == revitPanel.Name);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting Autodesk.Windows.RibbonPanel: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Applies background colors to a panel based on component settings
+        /// </summary>
+        private void ApplyPanelBackgroundColors(RibbonPanel revitPanel, ParsedComponent component, string tabName)
+        {
+            if (component == null)
+                return;
+
+            // Check if any background colors are specified
+            bool hasBackgroundColors = !string.IsNullOrEmpty(component.PanelBackground) ||
+                                      !string.IsNullOrEmpty(component.TitleBackground) ||
+                                      !string.IsNullOrEmpty(component.SlideoutBackground);
+
+            if (!hasBackgroundColors)
+                return;
+
+            try
+            {
+                var adwPanel = GetAdWindowsPanel(revitPanel, tabName);
+                if (adwPanel == null)
+                    return;
+
+                // Reset backgrounds first
+                adwPanel.CustomPanelBackground = null;
+                adwPanel.CustomPanelTitleBarBackground = null;
+                adwPanel.CustomSlideOutPanelBackground = null;
+
+                // Apply panel background - if specified, it sets all three areas
+                // This matches Python's set_background() behavior
+                if (!string.IsNullOrEmpty(component.PanelBackground))
+                {
+                    var panelBrush = ArgbToBrush(component.PanelBackground);
+                    if (panelBrush != null)
+                    {
+                        adwPanel.CustomPanelBackground = panelBrush;
+                        adwPanel.CustomPanelTitleBarBackground = panelBrush;
+                        adwPanel.CustomSlideOutPanelBackground = panelBrush;
+                    }
+                }
+
+                // Override title background if explicitly specified
+                if (!string.IsNullOrEmpty(component.TitleBackground))
+                {
+                    var titleBrush = ArgbToBrush(component.TitleBackground);
+                    if (titleBrush != null)
+                        adwPanel.CustomPanelTitleBarBackground = titleBrush;
+                }
+
+                // Override slideout background if explicitly specified
+                if (!string.IsNullOrEmpty(component.SlideoutBackground))
+                {
+                    var slideoutBrush = ArgbToBrush(component.SlideoutBackground);
+                    if (slideoutBrush != null)
+                        adwPanel.CustomSlideOutPanelBackground = slideoutBrush;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error applying panel background colors: {ex.Message}");
+            }
         }
 
         /// <summary>

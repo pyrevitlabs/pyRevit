@@ -23,6 +23,7 @@
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="PanelButtonAndIconTests.cs" />
+    <Compile Include="PanelBackgroundTests.cs" />
     <Compile Include="IconParsingTests.cs" />
     <Compile Include="IconFunctionalityTests.cs" />
     <Compile Include="BundleTooltipFixTest.cs" />
