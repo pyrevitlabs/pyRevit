@@ -150,6 +150,7 @@ namespace pyRevitExtensionParser
                 for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
                 {
                     var layoutItem = component.LayoutOrder[idx];
+                    var insertIndex = Math.Min(idx, reorderedChildren.Count);
                     
                     // Check if this is a separator or slideout marker
                     if (layoutItem.Contains("---") && idx < component.LayoutOrder.Count - 1)
@@ -162,7 +163,7 @@ namespace pyRevitExtensionParser
                             Type = CommandComponentType.Separator,
                             Directory = component.Directory
                         };
-                        reorderedChildren.Insert(idx, separator);
+                        reorderedChildren.Insert(insertIndex, separator);
                     }
                     else if (layoutItem.Contains(">>>") && idx < component.LayoutOrder.Count - 1)
                     {
@@ -175,7 +176,7 @@ namespace pyRevitExtensionParser
                             HasSlideout = true,  // Mark it as a slideout marker
                             Directory = component.Directory
                         };
-                        reorderedChildren.Insert(idx, slideout);
+                        reorderedChildren.Insert(insertIndex, slideout);
                     }
                 }
                 
@@ -281,7 +282,8 @@ namespace pyRevitExtensionParser
                     componentType == CommandComponentType.SmartButton ||
                     componentType == CommandComponentType.PullDown ||
                     componentType == CommandComponentType.SplitButton ||
-                    componentType == CommandComponentType.SplitPushButton))
+                    componentType == CommandComponentType.SplitPushButton ||
+                    componentType == CommandComponentType.InvokeButton))
                 {
                     var yaml = Path.Combine(dir, "bundle.yaml");
                     if (File.Exists(yaml))
@@ -338,6 +340,9 @@ namespace pyRevitExtensionParser
                     TitleBackground = bundleInComponent?.TitleBackground,
                     SlideoutBackground = bundleInComponent?.SlideoutBackground,
                     Icons = ParseIconsForComponent(dir),
+                    TargetAssembly = bundleInComponent?.Assembly,
+                    CommandClass = bundleInComponent?.CommandClass,
+                    AvailabilityClass = bundleInComponent?.AvailabilityClass,
                     LocalizedTitles = bundleInComponent?.Titles,
                     LocalizedTooltips = bundleInComponent?.Tooltips,
                     Directory = dir
