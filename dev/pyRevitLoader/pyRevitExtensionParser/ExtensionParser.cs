@@ -105,6 +105,7 @@ namespace pyRevitExtensionParser
                 Directory = extDir,
                 Children = children,
                 LayoutOrder = parsedBundle?.LayoutOrder,
+                LayoutItemTitles = parsedBundle?.LayoutItemTitles,
                 Titles = parsedBundle?.Titles,
                 Tooltips = parsedBundle?.Tooltips,
                 MinRevitVersion = parsedBundle?.MinRevitVersion,
@@ -142,6 +143,13 @@ namespace pyRevitExtensionParser
                     var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
                     if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
+                        // Apply custom title if specified in LayoutItemTitles
+                        if (component.LayoutItemTitles != null && 
+                            component.LayoutItemTitles.ContainsKey(layoutItem))
+                        {
+                            matchingComponent.Title = component.LayoutItemTitles[layoutItem];
+                        }
+                        
                         reorderedChildren.Add(matchingComponent);
                     }
                 }
@@ -331,6 +339,7 @@ namespace pyRevitExtensionParser
                     Children = children,
                     BundleFile = File.Exists(bundleFile) ? bundleFile : null,
                     LayoutOrder = bundleInComponent?.LayoutOrder,
+                    LayoutItemTitles = bundleInComponent?.LayoutItemTitles,
                     Title = title,
                     Author = author,
                     Context = bundleInComponent?.Context,

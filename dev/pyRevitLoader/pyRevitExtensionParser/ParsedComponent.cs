@@ -15,6 +15,11 @@ namespace pyRevitExtensionParser
         public List<ParsedComponent> Children { get; set; }
         public string BundleFile { get; set; }
         public List<string> LayoutOrder { get; set; }
+        /// <summary>
+        /// Maps component names (from layout items) to their custom display titles.
+        /// Used when layout items specify a custom title like: "Component Name[title:Custom Title]"
+        /// </summary>
+        public Dictionary<string, string> LayoutItemTitles { get; set; }
         public bool HasSlideout { get; set; } = false;
         public string Title { get; set; }
         public string Author { get; set; }
