@@ -210,6 +210,30 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Finds a module DLL by searching binary paths.
+        /// Mimics the pythonic loader's find_bundle_module() function.
+        /// </summary>
+        public string FindModuleDll(string moduleName, ParsedComponent command)
+        {
+            // If moduleName is already a full path and exists, return it
+            if (Path.IsPathRooted(moduleName) && File.Exists(moduleName))
+                return moduleName;
+
+            // Get all binary paths for this command
+            var binaryPaths = CollectBinaryPaths(command);
+
+            // Search for the module in each binary path
+            foreach (var binPath in binaryPaths)
+            {
+                var possibleModulePath = Path.Combine(binPath, moduleName);
+                if (File.Exists(possibleModulePath))
+                    return possibleModulePath;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Finds the startup script in the extension directory
         /// Checks for startup files in order: .py, .cs, .vb, .rb
         /// </summary>

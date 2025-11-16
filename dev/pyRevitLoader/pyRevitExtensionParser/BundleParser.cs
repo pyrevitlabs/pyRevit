@@ -27,6 +27,7 @@ namespace pyRevitExtensionParser
             public string Assembly { get; set; }
             public string CommandClass { get; set; }
             public string AvailabilityClass { get; set; }
+            public List<string> Modules { get; set; } = new List<string>();
         }
 
         public static class BundleYamlParser
@@ -125,6 +126,9 @@ namespace pyRevitExtensionParser
                             case "availability_class":
                                 parsed.AvailabilityClass = StripQuotes(value);
                                 break;
+                            case "modules":
+                                // modules is a list, handled below
+                                break;
                             case "title":
                             case "titles":
                             case "tooltip":
@@ -168,6 +172,17 @@ namespace pyRevitExtensionParser
                             }
                             
                             parsed.LayoutOrder.Add(componentName);
+                        }
+                        else if (currentSection == "modules" && line.StartsWith("-"))
+                        {
+                            // Module list item
+                            var moduleName = line.Substring(1).Trim();
+                            if ((moduleName.StartsWith("\"") && moduleName.EndsWith("\"")) ||
+                                (moduleName.StartsWith("'") && moduleName.EndsWith("'")))
+                            {
+                                moduleName = moduleName.Substring(1, moduleName.Length - 2);
+                            }
+                            parsed.Modules.Add(moduleName);
                         }
                         else if ((currentSection == "title" || currentSection == "titles" || 
                                  currentSection == "tooltip" || currentSection == "tooltips") && line.Contains(":"))
