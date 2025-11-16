@@ -20,6 +20,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
     public class UIManagerService
     {
         private readonly UIApplication _uiApp;
+        private ParsedExtension _currentExtension;
 
         public UIManagerService(UIApplication uiApp)
         {
@@ -31,8 +32,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (extension?.Children == null)
                 return;
 
+            _currentExtension = extension;
             foreach (var component in extension.Children)
                 RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
+            _currentExtension = null;
         }
 
         private void RecursivelyBuildUI(
@@ -142,6 +145,20 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         ApplyHighlightToButton(btn, component);
                     }
                     break;
+                case CommandComponentType.LinkButton:
+                    var linkData = CreateLinkButton(component);
+                    if (linkData != null)
+                    {
+                        var linkBtn = parentPanel.AddItem(linkData) as PushButton;
+                        if (linkBtn != null)
+                        {
+                            ApplyIconToPushButtonThemeAware(linkBtn, component);
+                            if (!string.IsNullOrEmpty(component.Tooltip))
+                                linkBtn.ToolTip = component.Tooltip;
+                            ApplyHighlightToButton(linkBtn, component);
+                        }
+                    }
+                    break;
 
                 case CommandComponentType.PullDown:
                     CreatePulldown(component, parentPanel, tabName, assemblyInfo, true);
@@ -183,6 +200,21 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                     if (!string.IsNullOrEmpty(sub.Tooltip))
                                         subBtn.ToolTip = sub.Tooltip;
                                     ApplyHighlightToButton(subBtn, sub);
+                                }
+                            }
+                            else if (sub.Type == CommandComponentType.LinkButton)
+                            {
+                                var subLinkData = CreateLinkButton(sub);
+                                if (subLinkData != null)
+                                {
+                                    var linkSubBtn = splitBtn.AddPushButton(subLinkData);
+                                    if (linkSubBtn != null)
+                                    {
+                                        ApplyIconToPushButtonThemeAware(linkSubBtn, sub, component);
+                                        if (!string.IsNullOrEmpty(sub.Tooltip))
+                                            linkSubBtn.ToolTip = sub.Tooltip;
+                                        ApplyHighlightToButton(linkSubBtn, sub);
+                                    }
                                 }
                             }
                         }
@@ -233,6 +265,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 {
                     itemDataList.Add(CreatePushButton(child, assemblyInfo));
                     originalItems.Add(child);
+                }
+                else if (child.Type == CommandComponentType.LinkButton)
+                {
+                    var linkData = CreateLinkButton(child);
+                    if (linkData != null)
+                    {
+                        itemDataList.Add(linkData);
+                        originalItems.Add(child);
+                    }
                 }
                 else if (child.Type == CommandComponentType.PullDown)
                 {
@@ -348,6 +389,21 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         ApplyHighlightToButton(subBtn, sub);
                     }
                 }
+                else if (sub.Type == CommandComponentType.LinkButton)
+                {
+                    var linkData = CreateLinkButton(sub);
+                    if (linkData != null)
+                    {
+                        var linkSubBtn = pdBtn.AddPushButton(linkData);
+                        if (linkSubBtn != null)
+                        {
+                            ApplyIconToPulldownSubButtonThemeAware(linkSubBtn, sub, component);
+                            if (!string.IsNullOrEmpty(sub.Tooltip))
+                                linkSubBtn.ToolTip = sub.Tooltip;
+                            ApplyHighlightToButton(linkSubBtn, sub);
+                        }
+                    }
+                }
             }
             return pdData;
         }
@@ -374,6 +430,147 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             return pushButtonData;
+        }
+
+        /// <summary>
+        /// Creates a PushButtonData for a LinkButton that directly references an external assembly and class
+        /// </summary>
+        private PushButtonData CreateLinkButton(ParsedComponent component)
+        {
+            if (string.IsNullOrEmpty(component.TargetAssembly))
+            {
+                Console.WriteLine($"LinkButton '{component.DisplayName}' is missing 'assembly' in bundle.yaml");
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(component.CommandClass))
+            {
+                Console.WriteLine($"LinkButton '{component.DisplayName}' is missing 'command_class' in bundle.yaml");
+                return null;
+            }
+
+            try
+            {
+                // Resolve the assembly path
+                var assemblyPath = ResolveAssemblyPath(component);
+                if (string.IsNullOrEmpty(assemblyPath) || !System.IO.File.Exists(assemblyPath))
+                {
+                    Console.WriteLine($"LinkButton '{component.DisplayName}' could not locate assembly '{component.TargetAssembly}'");
+                    return null;
+                }
+
+                // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+                var buttonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+
+                // Get assembly name to construct fully qualified class names
+                var assemblyName = System.IO.Path.GetFileNameWithoutExtension(assemblyPath);
+                
+                // Construct fully qualified class name (Namespace.ClassName)
+                // If the class name already contains a dot (is fully qualified), use it as-is
+                var fullCommandClass = component.CommandClass.Contains(".") 
+                    ? component.CommandClass 
+                    : $"{assemblyName}.{component.CommandClass}";
+
+                var pushButtonData = new PushButtonData(
+                    component.UniqueId,
+                    buttonText,
+                    assemblyPath,
+                    fullCommandClass);
+
+                // Set availability class if specified
+                if (!string.IsNullOrEmpty(component.AvailabilityClass))
+                {
+                    var fullAvailClass = component.AvailabilityClass.Contains(".")
+                        ? component.AvailabilityClass
+                        : $"{assemblyName}.{component.AvailabilityClass}";
+                    pushButtonData.AvailabilityClassName = fullAvailClass;
+                }
+
+                Console.WriteLine($"Created LinkButton '{component.DisplayName}' -> {assemblyPath}::{component.CommandClass}");
+                return pushButtonData;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating LinkButton '{component.DisplayName}': {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Resolves the full path to an assembly specified in a LinkButton or InvokeButton
+        /// </summary>
+        private string ResolveAssemblyPath(ParsedComponent component)
+        {
+            if (string.IsNullOrWhiteSpace(component.TargetAssembly))
+                return null;
+
+            var assemblyValue = component.TargetAssembly.Trim();
+
+            // If it's already a rooted path and exists, return it
+            if (System.IO.Path.IsPathRooted(assemblyValue) && System.IO.File.Exists(assemblyValue))
+                return System.IO.Path.GetFullPath(assemblyValue);
+
+            // Ensure the assembly has a .dll extension
+            var baseFileName = assemblyValue;
+            if (!assemblyValue.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                baseFileName += ".dll";
+
+            // Check if path includes directories (relative path)
+            var includesDirectories = assemblyValue.Contains(System.IO.Path.DirectorySeparatorChar) || 
+                                    assemblyValue.Contains(System.IO.Path.AltDirectorySeparatorChar);
+
+            // Try relative path from component directory
+            if (!System.IO.Path.IsPathRooted(assemblyValue) && includesDirectories && !string.IsNullOrEmpty(component.Directory))
+            {
+                var relativePath = System.IO.Path.GetFullPath(System.IO.Path.Combine(component.Directory, assemblyValue));
+                if (System.IO.File.Exists(relativePath))
+                    return relativePath;
+            }
+
+            // Search in component directory and binary paths
+            var searchPaths = new System.Collections.Generic.List<string>();
+            
+            // Only use expensive CollectBinaryPaths for LinkButton and InvokeButton types
+            if (_currentExtension != null && 
+                (component.Type == CommandComponentType.LinkButton || component.Type == CommandComponentType.InvokeButton))
+            {
+                searchPaths.AddRange(_currentExtension.CollectBinaryPaths(component));
+            }
+            else if (!string.IsNullOrEmpty(component.Directory))
+            {
+                searchPaths.Add(component.Directory);
+                
+                // Also check bin subdirectory
+                var binPath = System.IO.Path.Combine(component.Directory, "bin");
+                if (System.IO.Directory.Exists(binPath))
+                    searchPaths.Add(binPath);
+            }
+
+            // Search in all paths
+            foreach (var searchPath in searchPaths)
+            {
+                var candidatePath = System.IO.Path.Combine(searchPath, baseFileName);
+                if (System.IO.File.Exists(candidatePath))
+                    return candidatePath;
+            }
+
+            // Search for loaded assembly in AppDomain
+            try
+            {
+                var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                var assemblyName = System.IO.Path.GetFileNameWithoutExtension(baseFileName);
+                var loadedAssembly = loadedAssemblies.FirstOrDefault(a => 
+                    a.GetName().Name.Equals(assemblyName, StringComparison.OrdinalIgnoreCase));
+                
+                if (loadedAssembly != null && !string.IsNullOrEmpty(loadedAssembly.Location))
+                    return loadedAssembly.Location;
+            }
+            catch
+            {
+                // Ignore errors searching loaded assemblies
+            }
+
+            return null;
         }
 
         /// <summary>
