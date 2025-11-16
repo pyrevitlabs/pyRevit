@@ -161,6 +161,22 @@ namespace pyRevitExtensionParserTest
             return results;
         }
 
+        private System.Collections.Generic.List<ParsedComponent> FindAllComponents(ParsedComponent component)
+        {
+            var results = new System.Collections.Generic.List<ParsedComponent>();
+            results.Add(component);
+
+            if (component.Children != null)
+            {
+                foreach (var child in component.Children)
+                {
+                    results.AddRange(FindAllComponents(child));
+                }
+            }
+
+            return results;
+        }
+
         private System.Collections.Generic.List<ParsedComponent> FindAllScripts(ParsedComponent component)
         {
             var results = new System.Collections.Generic.List<ParsedComponent>();
@@ -281,6 +297,112 @@ namespace pyRevitExtensionParserTest
             
             Assert.IsTrue(testCSharpScript.Modules.Count > 0, 
                 "Test C# Script should have at least one module (Markdown.dll)");
+        }
+
+        [Test]
+        public void TestLinkButtonDetection()
+        {
+            // Test that the parser can detect LinkButton bundles
+            var devToolsPath = Path.GetFullPath(Path.Combine(
+                TestContext.CurrentContext.TestDirectory,
+                "..", "..", "..", "..", "..", "..",
+                "extensions", "pyRevitDevTools.extension"));
+
+            TestContext.Out.WriteLine($"Looking for pyRevitDevTools at: {devToolsPath}");
+
+            if (!Directory.Exists(devToolsPath))
+            {
+                Assert.Inconclusive("pyRevitDevTools extension directory not found at: " + devToolsPath);
+                return;
+            }
+
+            var extensions = ParseInstalledExtensions(new[] { devToolsPath });
+            
+            TestContext.Out.WriteLine($"Found {extensions.Count()} extensions");
+            foreach (var ext in extensions)
+            {
+                TestContext.Out.WriteLine($"  - {ext.Name}");
+            }
+            
+            // Find the pyRevitDevTools extension
+            var devToolsExtension = extensions.FirstOrDefault(e => e.Name == "pyRevitDevTools");
+            
+            if (devToolsExtension == null)
+            {
+                Assert.Inconclusive($"pyRevitDevTools extension not found. Found extensions: {string.Join(", ", extensions.Select(e => e.Name))}");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing LinkButton Detection ===");
+            TestContext.Out.WriteLine($"Extension: {devToolsExtension.Name}");
+            
+            // Look for the Test Link Button
+            var linkButton = FindComponentByName(devToolsExtension, "TestLinkButton");
+            
+            if (linkButton == null)
+            {
+                // Try alternate search
+                TestContext.Out.WriteLine("Searching for LinkButton components...");
+                linkButton = FindAllComponents(devToolsExtension)
+                    .FirstOrDefault(c => c.Type == CommandComponentType.LinkButton);
+            }
+            
+            Assert.IsNotNull(linkButton, "Should find the Test Link Button component");
+            
+            TestContext.Out.WriteLine($"Found LinkButton: {linkButton.DisplayName}");
+            TestContext.Out.WriteLine($"Type: {linkButton.Type}");
+            TestContext.Out.WriteLine($"Directory: {linkButton.Directory}");
+            TestContext.Out.WriteLine($"BundleFile: {linkButton.BundleFile}");
+            
+            // Verify it's a LinkButton type
+            Assert.AreEqual(CommandComponentType.LinkButton, linkButton.Type, 
+                "Component should be of type LinkButton");
+            
+            // Verify bundle.yaml exists and was parsed
+            Assert.IsNotNull(linkButton.BundleFile, "LinkButton should have a bundle.yaml file");
+            Assert.IsTrue(File.Exists(linkButton.BundleFile), 
+                "Bundle file should exist at: " + linkButton.BundleFile);
+            
+            // Verify required LinkButton properties from bundle.yaml
+            TestContext.Out.WriteLine($"TargetAssembly: {linkButton.TargetAssembly ?? "NULL"}");
+            TestContext.Out.WriteLine($"CommandClass: {linkButton.CommandClass ?? "NULL"}");
+            TestContext.Out.WriteLine($"AvailabilityClass: {linkButton.AvailabilityClass ?? "NULL"}");
+            TestContext.Out.WriteLine($"Title: {linkButton.Title ?? "NULL"}");
+            TestContext.Out.WriteLine($"Tooltip: {linkButton.Tooltip ?? "NULL"}");
+            TestContext.Out.WriteLine($"Author: {linkButton.Author ?? "NULL"}");
+            TestContext.Out.WriteLine($"Highlight: {linkButton.Highlight ?? "NULL"}");
+            
+            Assert.IsNotNull(linkButton.TargetAssembly, 
+                "LinkButton should have 'assembly' property from bundle.yaml");
+            Assert.AreEqual("PyRevitTestBundles", linkButton.TargetAssembly, 
+                "TargetAssembly should match bundle.yaml content");
+            
+            Assert.IsNotNull(linkButton.CommandClass, 
+                "LinkButton should have 'command_class' property from bundle.yaml");
+            Assert.AreEqual("PyRevitTestLinkCommand", linkButton.CommandClass, 
+                "CommandClass should match bundle.yaml content");
+            
+            Assert.IsNotNull(linkButton.AvailabilityClass, 
+                "LinkButton should have 'availability_class' property from bundle.yaml");
+            Assert.AreEqual("PyRevitTestLinkCommandAvail", linkButton.AvailabilityClass, 
+                "AvailabilityClass should match bundle.yaml content");
+            
+            // Verify title from bundle.yaml
+            Assert.IsNotNull(linkButton.Title, "LinkButton should have a title");
+            Assert.IsTrue(linkButton.Title.Contains("Custom Title"), 
+                "Title should contain 'Custom Title' from bundle.yaml");
+            
+            // Verify tooltip
+            Assert.IsNotNull(linkButton.Tooltip, "LinkButton should have a tooltip");
+            Assert.IsTrue(linkButton.Tooltip.Contains("Link Button"), 
+                "Tooltip should contain 'Link Button'");
+            
+            // Verify highlight
+            Assert.IsNotNull(linkButton.Highlight, "LinkButton should have highlight property");
+            Assert.AreEqual("new", linkButton.Highlight.ToLowerInvariant(), 
+                "Highlight should be 'new'");
+            
+            TestContext.Out.WriteLine("LinkButton detection test passed!");
         }
     }
 }

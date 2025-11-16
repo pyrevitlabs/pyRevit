@@ -131,8 +131,24 @@ namespace pyRevitExtensionParser
                                 break;
                             case "title":
                             case "titles":
+                                // Check if this is a simple non-localized title on the same line
+                                if (!string.IsNullOrEmpty(value))
+                                {
+                                    // Single line title: "title: My Title"
+                                    parsed.Titles["en_us"] = StripQuotes(value);
+                                }
+                                // Otherwise it's a nested localized section, handled below
+                                break;
                             case "tooltip":
                             case "tooltips":
+                                // Check if this is a simple non-localized tooltip on the same line
+                                if (!string.IsNullOrEmpty(value))
+                                {
+                                    // Single line tooltip: "tooltip: My Tooltip"
+                                    parsed.Tooltips["en_us"] = StripQuotes(value);
+                                }
+                                // Otherwise it's a nested localized section, handled below
+                                break;
                             case "layout":
                             case "layout_order":
                             case "engine":
