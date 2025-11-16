@@ -39,6 +39,7 @@
     <Compile Include="StartupScriptTests.cs" />
     <Compile Include="SeparatorTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
+    <Compile Include="CSharpScriptTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

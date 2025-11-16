@@ -50,6 +50,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // Add lib/ folders from component hierarchy (extension -> tab -> panel -> button)
                 searchPathsList.AddRange(extension.CollectLibraryPaths(cmd));
                 
+                // Add binary paths from component hierarchy for module DLLs
+                searchPathsList.AddRange(extension.CollectBinaryPaths(cmd));
+                
                 // Add all library extension directories
                 if (libraryExtensions != null)
                 {

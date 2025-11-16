@@ -72,6 +72,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
 
+            // Pre-load module DLLs before building the assembly
+            // This matches the pythonic loader's approach: collect modules and load them
+            // so they're available in the AppDomain for CLREngine to reference
+            LoadExtensionModules(extension);
+
             // Use build strategy as seed to differentiate DLLs built with different strategies
             // This ensures DLLs are only regenerated when extension structure changes or build strategy changes
             string strategySeed = _buildStrategy == AssemblyBuildStrategy.ILPack ? "ILPack" : "Roslyn";
@@ -123,6 +128,116 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             catch
             {
                 throw; // Re-throw the original exception
+            }
+        }
+
+        /// <summary>
+        /// Pre-loads module DLLs for all commands in the extension.
+        /// Mimics the pythonic loader's approach: assmutils.load_asm_files(ui_ext_modules)
+        /// This makes the modules available in the AppDomain for CLREngine to reference.
+        /// </summary>
+        private void LoadExtensionModules(ParsedExtension extension)
+        {
+            var loadedModules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Collect all module DLLs from all commands
+            foreach (var cmd in extension.CollectCommandComponents())
+            {
+                if (cmd.Modules == null || cmd.Modules.Count == 0)
+                    continue;
+
+                foreach (var moduleName in cmd.Modules)
+                {
+                    // Find the module DLL using binary paths
+                    var modulePath = extension.FindModuleDll(moduleName, cmd);
+                    
+                    if (string.IsNullOrEmpty(modulePath))
+                    {
+                        Console.WriteLine($"Warning: Could not find module '{moduleName}' for command '{cmd.Name}'");
+                        continue;
+                    }
+
+                    // Skip if already loaded
+                    if (loadedModules.Contains(modulePath))
+                        continue;
+
+                    try
+                    {
+                        // Load the module DLL into the AppDomain
+                        Assembly.LoadFrom(modulePath);
+                        loadedModules.Add(modulePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Warning: Failed to load module '{modulePath}': {ex.Message}");
+                    }
+                }
+            }
+
+            // Update the environment dictionary with loaded module paths
+            // This matches pythonic loader's sessioninfo.update_loaded_pyrevit_referenced_modules()
+            if (loadedModules.Count > 0)
+            {
+                UpdateReferencedAssemblies(loadedModules);
+            }
+        }
+
+        /// <summary>
+        /// Updates the AppDomain's environment dictionary with referenced assemblies.
+        /// Mimics pythonic loader's sessioninfo.update_loaded_pyrevit_referenced_modules()
+        /// </summary>
+        private void UpdateReferencedAssemblies(HashSet<string> newModulePaths)
+        {
+            try
+            {
+                // Get the environment dictionary from AppDomain
+                const string envDictKey = "PYREVITEnvVarsDict";
+                const string refedAssmsKey = "PYREVIT_REFEDASSMS";
+                
+                var envDict = AppDomain.CurrentDomain.GetData(envDictKey);
+                if (envDict == null)
+                {
+                    Console.WriteLine("Warning: Environment dictionary not found in AppDomain. Module references will not be updated.");
+                    return;
+                }
+
+                // Use reflection to access the dictionary
+                var dictType = envDict.GetType();
+                var containsMethod = dictType.GetMethod("Contains", new[] { typeof(object) });
+                var getItemMethod = dictType.GetMethod("get_Item", new[] { typeof(object) });
+                var setItemMethod = dictType.GetMethod("set_Item", new[] { typeof(object), typeof(object) });
+
+                if (containsMethod == null || getItemMethod == null || setItemMethod == null)
+                {
+                    Console.WriteLine("Warning: Could not access dictionary methods.");
+                    return;
+                }
+
+                // Get existing referenced assemblies
+                var existingAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if ((bool)containsMethod.Invoke(envDict, new object[] { refedAssmsKey }))
+                {
+                    var existingValue = (string)getItemMethod.Invoke(envDict, new object[] { refedAssmsKey });
+                    if (!string.IsNullOrEmpty(existingValue))
+                    {
+                        foreach (var path in existingValue.Split(Path.PathSeparator))
+                        {
+                            if (!string.IsNullOrWhiteSpace(path))
+                                existingAssemblies.Add(path);
+                        }
+                    }
+                }
+
+                // Add new module paths
+                existingAssemblies.UnionWith(newModulePaths);
+
+                // Update the environment dictionary
+                var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
+                setItemMethod.Invoke(envDict, new object[] { refedAssmsKey, updatedValue });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Failed to update referenced assemblies in environment dictionary: {ex.Message}");
             }
         }
 

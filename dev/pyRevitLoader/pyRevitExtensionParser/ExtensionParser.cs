@@ -280,9 +280,18 @@ namespace pyRevitExtensionParser
 
                 if (scriptPath == null)
                 {
+                    // Look for script files in order of preference: .py, .cs, .vb, .rb, .dyn, .gh, .ghx, .rfa
                     scriptPath = Directory
-                        .EnumerateFiles(dir, "*", SearchOption.TopDirectoryOnly)
-                        .FirstOrDefault(f => f.EndsWith("script.py", StringComparison.OrdinalIgnoreCase));
+                        .EnumerateFiles(dir, "script.*", SearchOption.TopDirectoryOnly)
+                        .FirstOrDefault(f => 
+                            f.EndsWith("script.py", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith("script.cs", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith("script.vb", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith("script.rb", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith("script.dyn", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith("script.gh", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith("script.ghx", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith("script.rfa", StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (scriptPath == null &&
@@ -352,6 +361,7 @@ namespace pyRevitExtensionParser
                     TargetAssembly = bundleInComponent?.Assembly,
                     CommandClass = bundleInComponent?.CommandClass,
                     AvailabilityClass = bundleInComponent?.AvailabilityClass,
+                    Modules = bundleInComponent?.Modules ?? new List<string>(),
                     LocalizedTitles = bundleInComponent?.Titles,
                     LocalizedTooltips = bundleInComponent?.Tooltips,
                     Directory = dir
