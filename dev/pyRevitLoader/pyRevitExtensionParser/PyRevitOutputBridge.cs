@@ -242,6 +242,45 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Close the active output window
+        /// </summary>
+        /// <returns>True if successful</returns>
+        public static bool CloseOutputWindow()
+        {
+            var console = GetConsole();
+            if (console == null)
+                return false;
+
+            try
+            {
+                Type consoleType = console.GetType();
+                MethodInfo closeMethod = consoleType.GetMethod("Close");
+                
+                if (closeMethod != null)
+                {
+                    InvokeOnUI(console, () =>
+                    {
+                        try
+                        {
+                            closeMethod.Invoke(console, null);
+                        }
+                        catch
+                        {
+                            // Silent failure in UI thread
+                        }
+                    });
+                    return true;
+                }
+            }
+            catch
+            {
+                // Silent failure
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Test the bridge by writing various message types
         /// </summary>
         /// <returns>True if test was successful</returns>

@@ -291,9 +291,15 @@ def _new_session_csharp():
             _new_session()
             return
         
-        # Call the LoadSession method (no parameters needed)
+        # Get the output window from EXEC_PARAMS
+        output_window = None
+        if hasattr(EXEC_PARAMS, 'window_handle') and EXEC_PARAMS.window_handle:
+            output_window = EXEC_PARAMS.window_handle
+            mlogger.debug('Passing output window to C# LoadSession: %s', output_window)
+        
+        # Call the LoadSession method with output window parameter
         mlogger.info('Loading session using C# LoadSession method...')
-        result = load_session_method.Invoke(None, None)
+        result = load_session_method.Invoke(None, framework.Array[object]([output_window]))
         
         # Check if the result indicates success (Result.Succeeded = 0)
         if hasattr(result, 'value__') and result.value__ == 0:
