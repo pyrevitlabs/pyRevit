@@ -6,16 +6,20 @@ using System.Reflection;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitExtensionParser;
+using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class SessionManagerService
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        
         private readonly AssemblyBuilderService _assemblyBuilder;
         private readonly ExtensionManagerService _extensionManager;
         private readonly HookManager _hookManager;
         private readonly UIManagerService _uiManager;
         private readonly UIApplication _uiApp;
+        private readonly object _outputWindow;
         private Assembly _runtimeAssembly;
         private string _pyRevitRoot;
         private string _binDir;
@@ -31,17 +35,81 @@ namespace pyRevitAssemblyBuilder.SessionManager
             AssemblyBuilderService assemblyBuilder,
             ExtensionManagerService extensionManager,
             HookManager hookManager,
-            UIManagerService uiManager)
+            UIManagerService uiManager,
+            object outputWindow = null)
         {
             _assemblyBuilder = assemblyBuilder;
             _extensionManager = extensionManager;
             _hookManager = hookManager;
             _uiManager = uiManager;
+            _outputWindow = outputWindow;
             
             // Get UIApplication from UIManagerService
             var uiAppField = typeof(UIManagerService).GetField("_uiApp", 
                 BindingFlags.NonPublic | BindingFlags.Instance);
             _uiApp = (UIApplication)uiAppField?.GetValue(uiManager);
+            
+            // Redirect Console.Out to the output window's stream if provided
+            if (_outputWindow != null)
+            {
+                RedirectConsoleToOutputWindow();
+            }
+        }
+
+        private void RedirectConsoleToOutputWindow()
+        {
+            try
+            {
+                // Get the OutputStream property from the output window
+                var outputStreamProperty = _outputWindow.GetType().GetProperty("OutputStream");
+                if (outputStreamProperty != null)
+                {
+                    var outputStream = outputStreamProperty.GetValue(_outputWindow);
+                    if (outputStream != null)
+                    {
+                        // Redirect Console.Out to the output stream
+                        var streamWriter = new System.IO.StreamWriter((System.IO.Stream)outputStream);
+                        streamWriter.AutoFlush = true;
+                        Console.SetOut(streamWriter);
+                        
+                        // Configure NLog to write to the same output stream
+                        ConfigureNLogForOutputWindow();
+                        
+                        Trace.WriteLine("Console output and NLog redirected to output window stream");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Failed to redirect console output: {ex.Message}");
+            }
+        }
+        
+        private void ConfigureNLogForOutputWindow()
+        {
+            try
+            {
+                // Create a new NLog configuration that writes to Console.Out (which we just redirected)
+                var config = new pyRevitLabs.NLog.Config.LoggingConfiguration();
+                
+                // Create a console target that writes to Console.Out
+                var consoleTarget = new pyRevitLabs.NLog.Targets.ConsoleTarget("console")
+                {
+                    Layout = "${level:uppercase=true}: [${logger}] ${message}"
+                };
+                
+                config.AddTarget(consoleTarget);
+                config.AddRuleForAllLevels(consoleTarget);
+                
+                // Apply the configuration to LogManager
+                pyRevitLabs.NLog.LogManager.Configuration = config;
+                
+                Trace.WriteLine("NLog configured to write to output window");
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"Failed to configure NLog: {ex.Message}");
+            }
         }
 
         public void LoadSession()
@@ -59,16 +127,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 var assmInfo = _assemblyBuilder.BuildExtensionAssembly(ext, libraryExtensions);
                 _assemblyBuilder.LoadAssembly(assmInfo);
+                logger.Info($"Extension assembly created: {ext.Name}");
                 
                 // Execute startup script after building assembly but before creating UI
                 // This matches the Python loader flow
                 if (!string.IsNullOrEmpty(ext.StartupScript))
                 {
+                    logger.Info($"Running startup tasks for {ext.Name}");
                     ExecuteExtensionStartupScript(ext, libraryExtensions);
                 }
                 
                 _uiManager.BuildUI(ext, assmInfo);
-                _hookManager.RegisterHooks(ext);
+                logger.Info($"UI created for extension: {ext.Name}");
+                // _hookManager.RegisterHooks(ext);
             }
         }
 
@@ -232,15 +303,20 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 
                 try
                 {
+                    logger.Info($"Executing startup script for extension: {extension.Name}");
                     _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
+                    logger.Info($"Startup script completed for extension: {extension.Name}");
                 }
                 catch (System.Reflection.TargetInvocationException tie)
                 {
-                    throw tie.InnerException ?? tie;
+                    var ex = tie.InnerException ?? tie;
+                    logger.Error(ex, $"Startup script failed for extension: {extension.Name}");
+                    throw ex;
                 }
             }
             catch (Exception ex)
             {
+                logger.Error(ex, $"Startup script '{extension?.Name}' failed");
                 Trace.WriteLine($"Startup script '{extension?.Name}' failed: {ex}");
             }
         }

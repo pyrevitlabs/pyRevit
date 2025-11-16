@@ -22,5 +22,16 @@
         <Reference Include="WindowsBase" />
         <Reference Include="PresentationCore" />
         <Reference Include="PresentationFramework" />
+        <Reference Include="pyRevitLabs.NLog">
+            <HintPath>..\..\libs\netfx\pyRevitLabs.NLog.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+        <Reference Include="pyRevitLabs.NLog">
+            <HintPath>..\..\libs\netcore\pyRevitLabs.NLog.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
     </ItemGroup>
 </Project>

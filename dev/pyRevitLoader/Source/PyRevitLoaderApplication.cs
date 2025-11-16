@@ -143,7 +143,7 @@ namespace PyRevitLoader
             }
         }
 
-        public static Result LoadSession()
+        public static Result LoadSession(object outputWindow = null)
         {
             try
             {
@@ -194,7 +194,8 @@ namespace PyRevitLoader
                     assemblyBuilder,
                     extensionManager,
                     hookManager,
-                    uiManager
+                    uiManager,
+                    outputWindow
                 );
 
                 // Load the session using the C# SessionManagerService
