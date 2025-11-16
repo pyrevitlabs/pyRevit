@@ -17,6 +17,27 @@ namespace pyRevitExtensionParser
         public EngineConfig Engine { get; set; }
         public ExtensionConfig Config { get; set; }
         
+        // Cache directory existence checks to avoid repeated file system calls
+        private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();
+        
+        // Cache lib/bin paths per command to avoid repeated hierarchy traversal
+        private Dictionary<ParsedComponent, List<string>> _libPathsCache = new Dictionary<ParsedComponent, List<string>>();
+        private Dictionary<ParsedComponent, List<string>> _binPathsCache = new Dictionary<ParsedComponent, List<string>>();
+        
+        // Cached helper to check directory existence with memoization
+        private bool DirExists(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return false;
+                
+            if (!_dirExistsCache.TryGetValue(path, out bool exists))
+            {
+                exists = System.IO.Directory.Exists(path);
+                _dirExistsCache[path] = exists;
+            }
+            return exists;
+        }
+        
         /// <summary>
         /// Calculates a hash based on the modification times of all relevant files in the extension directory.
         /// This matches the Python implementation in coreutils.calculate_dir_hash()
@@ -75,10 +96,25 @@ namespace pyRevitExtensionParser
             }
         }
         
+        // Cached startup script path to avoid repeated file system checks
+        private string _startupScript;
+        private bool _startupScriptInitialized;
+        
         /// <summary>
         /// Gets the path to the startup script if it exists
         /// </summary>
-        public string StartupScript => FindStartupScript();
+        public string StartupScript
+        {
+            get
+            {
+                if (!_startupScriptInitialized)
+                {
+                    _startupScript = FindStartupScript();
+                    _startupScriptInitialized = true;
+                }
+                return _startupScript;
+            }
+        }
 
         private static readonly CommandComponentType[] _allowedTypes = new[] {
             CommandComponentType.PushButton,
@@ -114,18 +150,25 @@ namespace pyRevitExtensionParser
         /// </summary>
         public List<string> CollectLibraryPaths(ParsedComponent command)
         {
+            // Check cache first
+            if (_libPathsCache.TryGetValue(command, out var cached))
+                return cached;
+                
             var libPaths = new List<string>();
             
             // Start with extension's lib folder
             if (!string.IsNullOrEmpty(this.Directory))
             {
                 var extLib = Path.Combine(this.Directory, "lib");
-                if (System.IO.Directory.Exists(extLib))
+                if (DirExists(extLib))
                     libPaths.Add(extLib);
             }
             
             // Collect lib paths from component hierarchy
             CollectLibPathsRecursive(this.Children, command, libPaths);
+            
+            // Cache the result
+            _libPathsCache[command] = libPaths;
             
             return libPaths;
         }
@@ -140,7 +183,7 @@ namespace pyRevitExtensionParser
                 if (!string.IsNullOrEmpty(comp.Directory))
                 {
                     var compLib = Path.Combine(comp.Directory, "lib");
-                    if (System.IO.Directory.Exists(compLib) && !libPaths.Contains(compLib))
+                    if (DirExists(compLib) && !libPaths.Contains(compLib))
                         libPaths.Add(compLib);
                 }
                 
@@ -161,12 +204,16 @@ namespace pyRevitExtensionParser
         /// </summary>
         public List<string> CollectBinaryPaths(ParsedComponent command)
         {
+            // Check cache first
+            if (_binPathsCache.TryGetValue(command, out var cached))
+                return cached;
+                
             var binPaths = new List<string>();
 
             if (!string.IsNullOrEmpty(this.Directory))
             {
                 var extBin = Path.Combine(this.Directory, "bin");
-                if (System.IO.Directory.Exists(extBin))
+                if (DirExists(extBin))
                     binPaths.Add(extBin);
             }
 
@@ -175,13 +222,16 @@ namespace pyRevitExtensionParser
             if (command != null && !string.IsNullOrEmpty(command.Directory))
             {
                 var cmdBin = Path.Combine(command.Directory, "bin");
-                if (System.IO.Directory.Exists(cmdBin) && !binPaths.Contains(cmdBin))
+                if (DirExists(cmdBin) && !binPaths.Contains(cmdBin))
                     binPaths.Add(cmdBin);
 
                 if (!binPaths.Contains(command.Directory))
                     binPaths.Add(command.Directory);
             }
 
+            // Cache the result
+            _binPathsCache[command] = binPaths;
+            
             return binPaths;
         }
 
@@ -195,7 +245,7 @@ namespace pyRevitExtensionParser
                 if (!string.IsNullOrEmpty(comp.Directory))
                 {
                     var compBin = Path.Combine(comp.Directory, "bin");
-                    if (System.IO.Directory.Exists(compBin) && !binPaths.Contains(compBin))
+                    if (DirExists(compBin) && !binPaths.Contains(compBin))
                         binPaths.Add(compBin);
                 }
 

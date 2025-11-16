@@ -16,6 +16,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private readonly HookManager _hookManager;
         private readonly UIManagerService _uiManager;
         private readonly UIApplication _uiApp;
+        private Assembly _runtimeAssembly;
+        private string _pyRevitRoot;
+        private string _binDir;
+        private Type _scriptDataType;
+        private Type _scriptRuntimeConfigsType;
+        private Type _scriptExecutorType;
+        private Type _scriptExecutorConfigsType;
+        private MethodInfo _executeScriptMethod;
+        private PropertyInfo _externalCommandDataAppProperty;
+        private Dictionary<string, bool> _directoryExistsCache = new Dictionary<string, bool>();
 
         public SessionManagerService(
             AssemblyBuilderService assemblyBuilder,
@@ -64,16 +74,35 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         private void InitializeScriptExecutor()
         {
-            var runtimeAssembly = FindRuntimeAssembly() 
+            // Cache runtime assembly lookup - it's used by every extension
+            _runtimeAssembly = FindRuntimeAssembly() 
                 ?? throw new InvalidOperationException("Could not find PyRevit runtime assembly");
 
-            var scriptExecutorType = runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor")
+            var scriptExecutorType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor")
                 ?? throw new InvalidOperationException("Could not find ScriptExecutor type");
 
             var initializeMethod = scriptExecutorType.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Static)
                 ?? throw new InvalidOperationException("Could not find ScriptExecutor.Initialize method");
 
             initializeMethod.Invoke(null, null);
+            
+            // Cache bin directory and pyRevit root for repeated use
+            _binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            
+            // Cache reflection types and methods for startup script execution - HUGE performance boost
+            _scriptDataType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptData");
+            _scriptRuntimeConfigsType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptRuntimeConfigs");
+            _scriptExecutorType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor");
+            _scriptExecutorConfigsType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutorConfigs");
+            
+            if (_scriptDataType != null && _scriptRuntimeConfigsType != null && _scriptExecutorType != null)
+            {
+                _executeScriptMethod = _scriptExecutorType.GetMethod("ExecuteScript",
+                    new[] { _scriptDataType, _scriptRuntimeConfigsType, _scriptExecutorConfigsType });
+            }
+            
+            var externalCommandDataType = typeof(Autodesk.Revit.UI.ExternalCommandData);
+            _externalCommandDataAppProperty = externalCommandDataType.GetProperty("Application");
         }
 
         private Assembly FindRuntimeAssembly()
@@ -109,114 +138,101 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 // Build search paths for the startup script
                 var searchPaths = new List<string> { extension.Directory };
                 
-                // Add extension's lib folder if it exists
+                // Add extension's lib folder if it exists (cached)
                 var extLibPath = System.IO.Path.Combine(extension.Directory, "lib");
-                if (System.IO.Directory.Exists(extLibPath))
+                if (DirectoryExistsCached(extLibPath))
                 {
                     searchPaths.Insert(0, extLibPath);
                 }
                 
-                // Add library extension paths
+                // Add library extension paths (cached)
                 foreach (var libExt in libraryExtensions)
                 {
                     var libExtLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
-                    if (System.IO.Directory.Exists(libExtLibPath))
+                    if (DirectoryExistsCached(libExtLibPath))
                     {
                         searchPaths.Add(libExtLibPath);
                     }
                 }
                 
                 // Add core pyRevit paths (pyrevitlib + site-packages) by discovering repo root
-                var binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                var pyRevitRoot = FindPyRevitRoot(extension.Directory, binDir);
-                if (!string.IsNullOrEmpty(pyRevitRoot))
+                // Cache the root lookup - it's the same for all extensions
+                if (_pyRevitRoot == null)
                 {
-                    var pyRevitLibDir = System.IO.Path.Combine(pyRevitRoot, "pyrevitlib");
-                    if (System.IO.Directory.Exists(pyRevitLibDir))
+                    _pyRevitRoot = FindPyRevitRoot(extension.Directory, _binDir) ?? string.Empty;
+                }
+                
+                if (!string.IsNullOrEmpty(_pyRevitRoot))
+                {
+                    var pyRevitLibDir = System.IO.Path.Combine(_pyRevitRoot, "pyrevitlib");
+                    if (DirectoryExistsCached(pyRevitLibDir))
                     {
                         searchPaths.Add(pyRevitLibDir);
                     }
 
-                    var sitePackagesDir = System.IO.Path.Combine(pyRevitRoot, "site-packages");
-                    if (System.IO.Directory.Exists(sitePackagesDir))
+                    var sitePackagesDir = System.IO.Path.Combine(_pyRevitRoot, "site-packages");
+                    if (DirectoryExistsCached(sitePackagesDir))
                     {
                         searchPaths.Add(sitePackagesDir);
                     }
                 }
 
-                // Find the runtime assembly
-                var runtimeAssembly = FindRuntimeAssembly();
-                if (runtimeAssembly == null)
+                // Validate cached types
+                if (_scriptDataType == null || _scriptRuntimeConfigsType == null || _executeScriptMethod == null)
                 {
-                    throw new Exception("Could not find PyRevitLabs.PyRevit.Runtime assembly");
+                    throw new Exception("Reflection types not properly cached during initialization");
                 }
                 
-                // Create ScriptData
-                var scriptDataType = runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptData");
-                if (scriptDataType == null)
-                    throw new Exception("Could not find ScriptData type");
-                    
-                var scriptData = Activator.CreateInstance(scriptDataType);
-                SetMemberValue(scriptDataType, scriptData, "ScriptPath", extension.StartupScript);
-                SetMemberValue(scriptDataType, scriptData, "ConfigScriptPath", null);
-                SetMemberValue(scriptDataType, scriptData, "CommandUniqueId", string.Empty);
-                SetMemberValue(scriptDataType, scriptData, "CommandName", $"Starting {extension.Name}");
-                SetMemberValue(scriptDataType, scriptData, "CommandBundle", string.Empty);
-                SetMemberValue(scriptDataType, scriptData, "CommandExtension", extension.Name);
-                SetMemberValue(scriptDataType, scriptData, "HelpSource", string.Empty);
-                // Create temporary ExternalCommandData (matching Python's create_tmp_commanddata)
-                
-                var externalCommandDataType = typeof(Autodesk.Revit.UI.ExternalCommandData);
+                // Create ScriptData using cached type
+                var scriptData = Activator.CreateInstance(_scriptDataType);
+                SetMemberValue(_scriptDataType, scriptData, "ScriptPath", extension.StartupScript);
+                SetMemberValue(_scriptDataType, scriptData, "ConfigScriptPath", null);
+                SetMemberValue(_scriptDataType, scriptData, "CommandUniqueId", string.Empty);
+                SetMemberValue(_scriptDataType, scriptData, "CommandName", $"Starting {extension.Name}");
+                SetMemberValue(_scriptDataType, scriptData, "CommandBundle", string.Empty);
+                SetMemberValue(_scriptDataType, scriptData, "CommandExtension", extension.Name);
+                SetMemberValue(_scriptDataType, scriptData, "HelpSource", string.Empty);
+                // Create temporary ExternalCommandData using cached property
                 var tmpCommandData = System.Runtime.Serialization.FormatterServices
-                    .GetUninitializedObject(externalCommandDataType);
+                    .GetUninitializedObject(typeof(Autodesk.Revit.UI.ExternalCommandData));
                     
-                var appProp = externalCommandDataType.GetProperty("Application");
-                if (appProp == null)
+                if (_externalCommandDataAppProperty == null)
                     throw new Exception("Could not find Application property on ExternalCommandData");
                     
-                appProp.SetValue(tmpCommandData, _uiApp);
-                // Create ScriptRuntimeConfigs
-                var scriptRuntimeConfigsType = runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptRuntimeConfigs");
-                if (scriptRuntimeConfigsType == null)
-                    throw new Exception("Could not find ScriptRuntimeConfigs type");
-                    
-                var scriptRuntimeConfigs = Activator.CreateInstance(scriptRuntimeConfigsType);
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "UIApp", _uiApp);
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "CommandData", tmpCommandData);
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "SelectedElements", null);
+                _externalCommandDataAppProperty.SetValue(tmpCommandData, _uiApp);
+                // Create ScriptRuntimeConfigs using cached type
+                var scriptRuntimeConfigs = Activator.CreateInstance(_scriptRuntimeConfigsType);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "UIApp", _uiApp);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "CommandData", tmpCommandData);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SelectedElements", null);
                 
                 // Set search paths as List<string>
                 var listType = typeof(List<string>);
                 var searchPathsList = Activator.CreateInstance(listType, new object[] { searchPaths });
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "SearchPaths", searchPathsList);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SearchPaths", searchPathsList);
                 
                 // Set empty arguments
                 var argumentsList = Activator.CreateInstance(listType, new object[] { new string[0] });
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
                 
                 // Set engine configs for persistent, clean, full-frame IronPython engine (JSON string)
                 var engineConfigsJson = "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
                 
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "ConfigMode", false);
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "DebugMode", false);
-                SetMemberValue(scriptRuntimeConfigsType, scriptRuntimeConfigs, "ExecutedFromUI", false);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ConfigMode", false);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "DebugMode", false);
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ExecutedFromUI", false);
                 
-                // Execute the script
-                var scriptExecutorType = runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor");
-                var executeMethod = scriptExecutorType.GetMethod("ExecuteScript", 
-                    new[] { scriptDataType, scriptRuntimeConfigsType, 
-                    runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutorConfigs") });
-                    
-                if (scriptData == null || scriptRuntimeConfigs == null || executeMethod == null)
+                // Execute the script using cached method
+                if (scriptData == null || scriptRuntimeConfigs == null || _executeScriptMethod == null)
                 {
                     throw new Exception("One or more required objects is null");
                 }
                 
                 try
                 {
-                    executeMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
+                    _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
                 }
                 catch (System.Reflection.TargetInvocationException tie)
                 {
@@ -248,6 +264,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             throw new Exception($"Could not find member '{memberName}' on type {targetType.FullName}");
         }
 
+        private bool DirectoryExistsCached(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return false;
+                
+            if (!_directoryExistsCache.TryGetValue(path, out bool exists))
+            {
+                exists = System.IO.Directory.Exists(path);
+                _directoryExistsCache[path] = exists;
+            }
+            return exists;
+        }
+        
         private static string FindPyRevitRoot(params string[] hintPaths)
         {
             foreach (var hint in hintPaths)

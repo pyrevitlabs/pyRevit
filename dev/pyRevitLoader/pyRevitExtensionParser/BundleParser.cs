@@ -32,8 +32,15 @@ namespace pyRevitExtensionParser
 
         public static class BundleYamlParser
         {
+            // Cache parsed bundles to avoid re-parsing the same YAML files
+            private static Dictionary<string, ParsedBundle> _bundleCache = new Dictionary<string, ParsedBundle>();
+            
             public static ParsedBundle Parse(string filePath)
             {
+                // Check cache first
+                if (_bundleCache.TryGetValue(filePath, out var cached))
+                    return cached;
+                    
                 var parsed = new ParsedBundle();
                 var lines = File.ReadAllLines(filePath);
                 string currentSection = null;
@@ -290,6 +297,9 @@ namespace pyRevitExtensionParser
                                        isLiteralMultiline, isFoldedMultiline);
                 }
 
+                // Cache the result before returning
+                _bundleCache[filePath] = parsed;
+                
                 return parsed;
             }
 
