@@ -46,14 +46,15 @@ namespace pyRevitExtensionParser
         public int? SizeSpecification { get; set; }
 
         /// <summary>
-        /// Whether this icon exists and is accessible
+        /// Whether this icon exists and is accessible (cached to avoid repeated file checks)
         /// </summary>
-        public bool IsValid => File.Exists(FilePath);
+        public bool IsValid { get; private set; }
 
         public ComponentIcon(string filePath)
         {
             FilePath = filePath;
-            if (File.Exists(filePath))
+            IsValid = File.Exists(filePath);
+            if (IsValid)
             {
                 var fileInfo = new FileInfo(filePath);
                 FileSize = fileInfo.Length;

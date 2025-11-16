@@ -25,6 +25,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
     {
         private readonly string _revitVersion;
         private readonly AssemblyBuildStrategy _buildStrategy;
+        private static readonly string _executingAssemblyLocation = Assembly.GetExecutingAssembly().Location;
+        private static readonly string _baseDir = Path.GetDirectoryName(_executingAssemblyLocation);
+        private static readonly string _appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
         public AssemblyBuilderService(string revitVersion, AssemblyBuildStrategy buildStrategy)
         {
@@ -35,7 +38,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (_buildStrategy == AssemblyBuildStrategy.ILPack)
             {
                 // On .NET Core, hook into AssemblyLoadContext to resolve Lokad.ILPack two folders up
-                var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var baseDir = _baseDir;
                 var ilPackPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "Lokad.ILPack.dll"));
                 AssemblyLoadContext.Default.Resolving += (context, name) =>
                 {
@@ -51,7 +54,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (_buildStrategy == AssemblyBuildStrategy.ILPack)
             {
                 // On .NET Framework, hook into AppDomain to resolve Lokad.ILPack two folders up
-                var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var baseDir = _baseDir;
                 var ilPackPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "Lokad.ILPack.dll"));
                 AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
                 {
@@ -101,10 +104,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     
                     return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading: false);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // If file is corrupted or invalid, delete it and rebuild
-                    Console.WriteLine($"Warning: Existing assembly is invalid, rebuilding: {ex.Message}");
                     try
                     {
                         File.Delete(outputPath);
@@ -153,7 +155,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     
                     if (string.IsNullOrEmpty(modulePath))
                     {
-                        Console.WriteLine($"Warning: Could not find module '{moduleName}' for command '{cmd.Name}'");
                         continue;
                     }
 
@@ -167,9 +168,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                         Assembly.LoadFrom(modulePath);
                         loadedModules.Add(modulePath);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        Console.WriteLine($"Warning: Failed to load module '{modulePath}': {ex.Message}");
+                        // Silently ignore module load failures
                     }
                 }
             }
@@ -197,7 +198,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 var envDict = AppDomain.CurrentDomain.GetData(envDictKey);
                 if (envDict == null)
                 {
-                    Console.WriteLine("Warning: Environment dictionary not found in AppDomain. Module references will not be updated.");
                     return;
                 }
 
@@ -209,7 +209,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
                 if (containsMethod == null || getItemMethod == null || setItemMethod == null)
                 {
-                    Console.WriteLine("Warning: Could not access dictionary methods.");
                     return;
                 }
 
@@ -235,9 +234,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
                 setItemMethod.Invoke(envDict, new object[] { refedAssmsKey, updatedValue });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Warning: Failed to update referenced assemblies in environment dictionary: {ex.Message}");
+                // Silently ignore environment dictionary update failures
             }
         }
 
@@ -267,7 +266,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         private void BuildWithILPack(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
         {
             // Load runtime for dependecy (Probably temparary due to future implementation of env loader in C#)
-            var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var loaderDir = _baseDir;
             var twoUp = Path.GetFullPath(Path.Combine(loaderDir, "..", ".."));
             var runtimeName = $"PyRevitLabs.PyRevit.Runtime.{_revitVersion}.dll";
             var runtimePath = Directory
@@ -304,7 +303,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
         private List<MetadataReference> ResolveRoslynReferences()
         {
-            string baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string baseDir = _baseDir;
             var refs = new List<MetadataReference>
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),

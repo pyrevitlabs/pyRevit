@@ -13,15 +13,60 @@ namespace pyRevitExtensionParser
         /// Default locale used for localization fallback
         /// </summary>
         public static string DefaultLocale { get; set; } = "en_us";
+        
+        // Cache file existence checks to avoid repeated file system calls
+        private static Dictionary<string, bool> _fileExistsCache = new Dictionary<string, bool>();
+        
+        // Cache directory file listings to avoid repeated Directory.GetFiles calls
+        private static Dictionary<string, string[]> _directoryFilesCache = new Dictionary<string, string[]>();
+        
+        // Cache icon parsing results per component directory
+        private static Dictionary<string, ComponentIconCollection> _iconCache = new Dictionary<string, ComponentIconCollection>();
+        
+        private static bool FileExists(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return false;
+                
+            if (!_fileExistsCache.TryGetValue(path, out bool exists))
+            {
+                exists = File.Exists(path);
+                _fileExistsCache[path] = exists;
+            }
+            return exists;
+        }
+        
+        private static string[] GetFilesInDirectory(string directory, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        {
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                return Array.Empty<string>();
+                
+            var cacheKey = $"{directory}|{searchPattern}|{searchOption}";
+            if (!_directoryFilesCache.TryGetValue(cacheKey, out string[] files))
+            {
+                files = Directory.GetFiles(directory, searchPattern, searchOption);
+                _directoryFilesCache[cacheKey] = files;
+            }
+            return files;
+        }
+
+        // Cache extension roots to avoid repeated directory traversal and config reading
+        private static List<string> _cachedExtensionRoots;
+        
+        private static List<string> GetCachedExtensionRoots()
+        {
+            if (_cachedExtensionRoots == null)
+            {
+                var config = GetConfig();
+                _cachedExtensionRoots = GetExtensionRoots();
+                _cachedExtensionRoots.AddRange(config.UserExtensionsList);
+            }
+            return _cachedExtensionRoots;
+        }
 
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
         {
-            PyRevitConfig config = PyRevitConfig.Load();
-            List<string> extensionRoots = GetExtensionRoots();
-            extensionRoots.AddRange(config.UserExtensionsList);
-
-            // TODO check if they are activated in the config
-            // ParseExtensionByName
+            var extensionRoots = GetCachedExtensionRoots();
 
             foreach (var root in extensionRoots)
             {
@@ -84,6 +129,15 @@ namespace pyRevitExtensionParser
             }
         }
 
+        // Cache config instance to avoid reloading for each extension
+        private static PyRevitConfig _cachedConfig;
+        private static PyRevitConfig GetConfig()
+        {
+            if (_cachedConfig == null)
+                _cachedConfig = PyRevitConfig.Load();
+            return _cachedConfig;
+        }
+
         /// <summary>
         /// Parses a single extension from the given extension directory path
         /// </summary>
@@ -95,9 +149,13 @@ namespace pyRevitExtensionParser
             var children = ParseComponents(extDir, extName);
 
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
-            ParsedBundle parsedBundle = File.Exists(bundlePath)
+            ParsedBundle parsedBundle = FileExists(bundlePath)
                 ? BundleYamlParser.Parse(bundlePath)
                 : null;
+
+            // Read extension config from pyRevit config file (cached)
+            var config = GetConfig();
+            var extConfig = config.ParseExtensionByName(extName);
 
             var parsedExtension = new ParsedExtension
             {
@@ -110,7 +168,8 @@ namespace pyRevitExtensionParser
                 Tooltips = parsedBundle?.Tooltips,
                 MinRevitVersion = parsedBundle?.MinRevitVersion,
                 Context = parsedBundle?.Context,
-                Engine = parsedBundle?.Engine
+                Engine = parsedBundle?.Engine,
+                Config = extConfig
             };
 
             ReorderByLayout(parsedExtension);
@@ -229,7 +288,7 @@ namespace pyRevitExtensionParser
                 "pyRevit",
                 "pyRevit_config.ini");
 
-            if (File.Exists(configPath))
+            if (FileExists(configPath))
             {
                 foreach (var line in File.ReadAllLines(configPath))
                 {
@@ -274,16 +333,16 @@ namespace pyRevitExtensionParser
                 if (componentType == CommandComponentType.UrlButton)
                 {
                     var yaml = Path.Combine(dir, "bundle.yaml");
-                    if (File.Exists(yaml))
+                    if (FileExists(yaml))
                         scriptPath = yaml;
                 }
 
                 if (scriptPath == null)
                 {
                     // Look for script files in order of preference: .py, .cs, .vb, .rb, .dyn, .gh, .ghx, .rfa
-                    scriptPath = Directory
-                        .EnumerateFiles(dir, "script.*", SearchOption.TopDirectoryOnly)
-                        .FirstOrDefault(f => 
+                    // Use cached file listing instead of EnumerateFiles
+                    var dirFiles = GetFilesInDirectory(dir, "script.*", SearchOption.TopDirectoryOnly);
+                    scriptPath = dirFiles.FirstOrDefault(f => 
                             f.EndsWith("script.py", StringComparison.OrdinalIgnoreCase) ||
                             f.EndsWith("script.cs", StringComparison.OrdinalIgnoreCase) ||
                             f.EndsWith("script.vb", StringComparison.OrdinalIgnoreCase) ||
@@ -303,7 +362,7 @@ namespace pyRevitExtensionParser
                     componentType == CommandComponentType.InvokeButton))
                 {
                     var yaml = Path.Combine(dir, "bundle.yaml");
-                    if (File.Exists(yaml))
+                    if (FileExists(yaml))
                         scriptPath = yaml;
                 }
 
@@ -318,7 +377,7 @@ namespace pyRevitExtensionParser
                 }
 
                 // Then parse bundle and override with bundle values if they exist
-                var bundleInComponent = File.Exists(bundleFile) ? BundleYamlParser.Parse(bundleFile) : null;
+                var bundleInComponent = FileExists(bundleFile) ? BundleYamlParser.Parse(bundleFile) : null;
                 
                 // Override script values with bundle values (bundle takes precedence)
                 if (bundleInComponent != null)
@@ -346,7 +405,7 @@ namespace pyRevitExtensionParser
                     UniqueId = SanitizeClassName(fullPath.ToLowerInvariant()),
                     Type = componentType,
                     Children = children,
-                    BundleFile = File.Exists(bundleFile) ? bundleFile : null,
+                    BundleFile = FileExists(bundleFile) ? bundleFile : null,
                     LayoutOrder = bundleInComponent?.LayoutOrder,
                     LayoutItemTitles = bundleInComponent?.LayoutItemTitles,
                     Title = title,
@@ -403,8 +462,16 @@ namespace pyRevitExtensionParser
             return sb.ToString();
         }
 
+        // Cache Python script constant parsing to avoid re-reading files
+        private static Dictionary<string, (string title, string author, string doc)> _pythonScriptCache = 
+            new Dictionary<string, (string title, string author, string doc)>();
+
         private static (string title, string author, string doc) ReadPythonScriptConstants(string scriptPath)
         {
+            // Check cache first
+            if (_pythonScriptCache.TryGetValue(scriptPath, out var cached))
+                return cached;
+                
             string title = null, author = null, doc = null;
 
             foreach (var line in File.ReadLines(scriptPath))
@@ -423,7 +490,9 @@ namespace pyRevitExtensionParser
                 }
             }
 
-            return (title, author, doc);
+            var result = (title, author, doc);
+            _pythonScriptCache[scriptPath] = result;
+            return result;
         }
 
         private static string ExtractPythonConstantValue(string line)
@@ -446,15 +515,22 @@ namespace pyRevitExtensionParser
         /// <returns>A collection of discovered icons</returns>
         private static ComponentIconCollection ParseIconsForComponent(string componentDirectory)
         {
+            // Check cache first
+            if (_iconCache.TryGetValue(componentDirectory, out var cached))
+                return cached;
+                
             var icons = new ComponentIconCollection();
 
             if (!Directory.Exists(componentDirectory))
+            {
+                _iconCache[componentDirectory] = icons;
                 return icons;
+            }
 
             try
             {
-                // Get all files in the component directory
-                var files = Directory.GetFiles(componentDirectory, "*", SearchOption.TopDirectoryOnly);
+                // Get all files in the component directory (cached)
+                var files = GetFilesInDirectory(componentDirectory, "*", SearchOption.TopDirectoryOnly);
 
                 foreach (var file in files)
                 {
@@ -482,6 +558,9 @@ namespace pyRevitExtensionParser
                 System.Diagnostics.Debug.WriteLine($"Error parsing icons for {componentDirectory}: {ex.Message}");
             }
 
+            // Cache the result
+            _iconCache[componentDirectory] = icons;
+            
             return icons;
         }
 

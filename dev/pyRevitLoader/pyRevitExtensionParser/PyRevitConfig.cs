@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Documents;
 
@@ -93,16 +94,27 @@ namespace pyRevitExtensionParser
 
         public ExtensionConfig ParseExtensionByName(string extensionName)
         {
-            var sectionPattern = new Regex($"^{extensionName}\\.(extension|lib)$", RegexOptions.IgnoreCase);
-
-            foreach (var section in _ini.GetSections())
+            // Try both possible section names directly
+            var possibleSections = new[]
             {
-                if (sectionPattern.IsMatch(section))
+                $"{extensionName}.extension",
+                $"{extensionName}.lib"
+            };
+
+            foreach (var section in possibleSections)
+            {
+                // Try to read the 'disabled' key - if it returns non-empty, the section exists
+                var disabledValue = _ini.IniReadValue(section, "disabled");
+                
+                if (!string.IsNullOrEmpty(disabledValue) || 
+                    !string.IsNullOrEmpty(_ini.IniReadValue(section, "private_repo")) ||
+                    !string.IsNullOrEmpty(_ini.IniReadValue(section, "username")))
                 {
+                    // Section exists, parse all values
                     return new ExtensionConfig
                     {
                         Name = extensionName,
-                        Disabled = bool.TryParse(_ini.IniReadValue(section, "disabled"), out var disabled) && disabled,
+                        Disabled = bool.TryParse(disabledValue, out var disabled) && disabled,
                         PrivateRepo = bool.TryParse(_ini.IniReadValue(section, "private_repo"), out var privateRepo) && privateRepo,
                         Username = _ini.IniReadValue(section, "username"),
                         Password = _ini.IniReadValue(section, "password")

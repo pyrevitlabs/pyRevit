@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -241,10 +241,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 adwPanel.Source.Items.Remove(adwBtn);
                 adwPanel.Source.DialogLauncher = (RibbonButton)adwBtn;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine("Failed modify PushButton to PanelButton");
-                Console.WriteLine(ex.Message);
+                // Silently fail - button modification is non-critical
             }
         }
 
@@ -439,13 +438,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             if (string.IsNullOrEmpty(component.TargetAssembly))
             {
-                Console.WriteLine($"LinkButton '{component.DisplayName}' is missing 'assembly' in bundle.yaml");
                 return null;
             }
 
             if (string.IsNullOrEmpty(component.CommandClass))
             {
-                Console.WriteLine($"LinkButton '{component.DisplayName}' is missing 'command_class' in bundle.yaml");
                 return null;
             }
 
@@ -455,7 +452,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var assemblyPath = ResolveAssemblyPath(component);
                 if (string.IsNullOrEmpty(assemblyPath) || !System.IO.File.Exists(assemblyPath))
                 {
-                    Console.WriteLine($"LinkButton '{component.DisplayName}' could not locate assembly '{component.TargetAssembly}'");
                     return null;
                 }
 
@@ -486,12 +482,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     pushButtonData.AvailabilityClassName = fullAvailClass;
                 }
 
-                Console.WriteLine($"Created LinkButton '{component.DisplayName}' -> {assemblyPath}::{component.CommandClass}");
                 return pushButtonData;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error creating LinkButton '{component.DisplayName}': {ex.Message}");
                 return null;
             }
         }
@@ -609,8 +603,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                Console.WriteLine($"Applying theme-aware icons to PushButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
-                Console.WriteLine($"Component has {component.Icons.Count} total icons, {component.Icons.DarkIcons.Count()} dark icons, {component.Icons.LightIcons.Count()} light icons");
 
                 // Get the best icons for large and small sizes with theme awareness
                 var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
@@ -622,7 +614,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied large icon: {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
 
@@ -632,13 +623,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied small icon: {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to apply theme-aware icon to PushButton {component.DisplayName}: {ex.Message}");
             }
         }
 
@@ -654,7 +643,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                Console.WriteLine($"Applying theme-aware icons to PulldownButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
 
                 // For pulldown buttons, use fixed 16x16 size for consistent appearance
                 // This ensures pulldown icons remain at the expected size regardless of DPI scaling
@@ -672,7 +660,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied pulldown large icon (32x32): {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
 
@@ -683,13 +670,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied pulldown small icon (16x16): {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to apply theme-aware icon to PulldownButton {component.DisplayName}: {ex.Message}");
             }
         }
 
@@ -717,7 +702,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                Console.WriteLine($"Applying theme-aware icons to pulldown sub-button '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
 
                 // For pulldown sub-buttons, use fixed 16x16 size for consistency with pulldown appearance
                 const int pulldownSubButtonIconSize = 16;
@@ -734,13 +718,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         // Some Revit contexts require both Image and LargeImage to be set
                         button.Image = smallBitmap;
                         button.LargeImage = smallBitmap;
-                        Console.WriteLine($"Applied pulldown sub-button icon (16x16): {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to apply theme-aware icon to pulldown sub-button {component.DisplayName}: {ex.Message}");
             }
         }
 
@@ -755,7 +737,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             try
             {
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                Console.WriteLine($"Applying theme-aware icons to SplitButton '{component.DisplayName}' - Current theme: {(isDarkTheme ? "Dark" : "Light")}");
 
                 // Get the best icons for large and small sizes with theme awareness
                 var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
@@ -767,7 +748,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied large icon to split button: {largeIcon.FileName} (Dark: {largeIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
                     }
                 }
 
@@ -777,14 +757,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied small icon to split button: {smallIcon.FileName} (Dark: {smallIcon.IsDark}, Theme: {(isDarkTheme ? "Dark" : "Light")})");
+                        
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to apply theme-aware icon to SplitButton {component.DisplayName}: {ex.Message}");
-            }
+                            }
         }
 
         /// <summary>
@@ -799,7 +778,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var exactSizeThemeIcon = component.Icons.GetBySize(preferredSize, isDarkTheme);
             if (exactSizeThemeIcon?.IsValid == true)
             {
-                Console.WriteLine($"Found exact size+theme icon for size {preferredSize}: {exactSizeThemeIcon.FileName} (Dark: {isDarkTheme})");
+                
                 return exactSizeThemeIcon;
             }
 
@@ -823,7 +802,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             
             if (typeBasedIcon?.IsValid == true)
             {
-                Console.WriteLine($"Found type-based theme icon for size {preferredSize}: {typeBasedIcon.FileName} (Dark: {isDarkTheme})");
+                
                 return typeBasedIcon;
             }
 
@@ -831,7 +810,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var primaryIcon = GetPrimaryIconWithTheme(component, isDarkTheme);
             if (primaryIcon?.IsValid == true)
             {
-                Console.WriteLine($"Fallback to primary theme icon for size {preferredSize}: {primaryIcon.FileName} (Dark: {isDarkTheme})");
+                
                 return primaryIcon;
             }
 
@@ -839,7 +818,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var fallbackIcon = component.Icons.FirstOrDefault(i => i.IsValid);
             if (fallbackIcon != null)
             {
-                Console.WriteLine($"Final fallback icon for size {preferredSize}: {fallbackIcon.FileName} (Dark: {fallbackIcon.IsDark})");
+                
             }
             return fallbackIcon;
         }
@@ -855,19 +834,17 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var darkIcon = component.Icons.GetByType(darkType);
                 if (darkIcon?.IsValid == true)
                 {
-                    Console.WriteLine($"Found dark icon of type {darkType}: {darkIcon.FileName}");
-                    return darkIcon;
+                                        return darkIcon;
                 }
                 
                 // If no dark icon of this type, log it but continue to light fallback
-                Console.WriteLine($"No dark icon found for type {darkType}, falling back to light type {lightType}");
-            }
+                            }
             
             // Use light icon (either because we're in light theme, or as fallback in dark theme)
             var lightIcon = component.Icons.GetByType(lightType);
             if (lightIcon?.IsValid == true)
             {
-                Console.WriteLine($"Using light icon of type {lightType}: {lightIcon.FileName} (requested dark: {isDarkTheme})");
+                
                 return lightIcon;
             }
             
@@ -888,18 +865,17 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var primaryDarkIcon = component.Icons.PrimaryDarkIcon;
                 if (primaryDarkIcon?.IsValid == true)
                 {
-                    Console.WriteLine($"Using primary dark icon: {primaryDarkIcon.FileName}");
-                    return primaryDarkIcon;
+                                        return primaryDarkIcon;
                 }
                 
-                Console.WriteLine($"No primary dark icon found, falling back to light primary (Dark theme: {isDarkTheme}, Has dark icons: {component.Icons.HasDarkIcons})");
+                
             }
             
             // Use primary light icon (either because we're in light theme, or as fallback)
             var primaryIcon = component.Icons.PrimaryIcon;
             if (primaryIcon?.IsValid == true)
             {
-                Console.WriteLine($"Using primary light icon: {primaryIcon.FileName} (requested dark: {isDarkTheme})");
+                
                 return primaryIcon;
             }
 
@@ -931,18 +907,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 bitmap.EndInit();
                 bitmap.Freeze(); // Make it thread-safe
 
-                Console.WriteLine($"Loaded icon: {Path.GetFileName(imagePath)} " +
-                                $"Original: {bitmap.PixelWidth}x{bitmap.PixelHeight} " +
-                                $"DPI: {bitmap.DpiX:F1}x{bitmap.DpiY:F1} " +
-                                $"Target: {targetSize}x{targetSize}");
+                
 
                 // Ensure proper DPI for Revit (96 DPI is standard)
                 return EnsureProperDpi(bitmap, targetSize);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to load image from {imagePath}: {ex.Message}");
-                return null;
+                                return null;
             }
         }
 
@@ -963,16 +935,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 
                 if (!needsDpiAdjustment && !needsSizeAdjustment)
                 {
-                    Console.WriteLine($"Icon already at correct size and DPI: {source.PixelWidth}x{source.PixelHeight} @ {source.DpiX:F1} DPI");
-                    return source;
+                                        return source;
                 }
 
                 // Calculate the target dimensions
                 int width = targetSize > 0 ? targetSize : source.PixelWidth;
                 int height = targetSize > 0 ? targetSize : source.PixelHeight;
 
-                Console.WriteLine($"Adjusting icon: {source.PixelWidth}x{source.PixelHeight} @ {source.DpiX:F1} DPI → {width}x{height} @ {targetDpi} DPI");
-
+                
                 // Create a properly sized and DPI-adjusted bitmap
                 var targetBitmap = new RenderTargetBitmap(
                     width, 
@@ -991,13 +961,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 targetBitmap.Render(visual);
                 targetBitmap.Freeze();
                 
-                Console.WriteLine($"Icon adjusted successfully to {targetBitmap.PixelWidth}x{targetBitmap.PixelHeight} @ {targetBitmap.DpiX:F1} DPI");
-                return targetBitmap;
+                                return targetBitmap;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to adjust image DPI/size: {ex.Message}");
-                return source; // Return original if adjustment fails
+                                return source; // Return original if adjustment fails
             }
         }
 
@@ -1042,7 +1010,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 var (smallSize, largeSize) = GetOptimalIconSizes();
                 var isDarkTheme = RevitThemeDetector.IsDarkTheme();
                 
-                Console.WriteLine($"Applying DPI-aware icons to PushButton '{component.DisplayName}' - Theme: {(isDarkTheme ? "Dark" : "Light")}, Sizes: {smallSize}x{smallSize}, {largeSize}x{largeSize}");
+                
                 
                 // Get the best icons for the calculated sizes with theme awareness
                 var largeIcon = GetBestIconForSizeWithTheme(component, largeSize, isDarkTheme);
@@ -1054,7 +1022,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
-                        Console.WriteLine($"Applied DPI-aware large icon: {largeIcon.FileName} (Dark: {largeIcon.IsDark})");
+                        
                     }
                 }
 
@@ -1064,14 +1032,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        Console.WriteLine($"Applied DPI-aware small icon: {smallIcon.FileName} (Dark: {smallIcon.IsDark})");
+                        
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to apply DPI-aware icon to PushButton {component.DisplayName}: {ex.Message}");
-                // Fallback to standard method
+                                // Fallback to standard method
                 ApplyIconToPushButtonThemeAware(button, component);
             }
         }
@@ -1108,13 +1075,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     if (highlightValue == "new")
                     {
                         highlightModeValue = Enum.Parse(highlightModeType, "New");
-                        Console.WriteLine($"Applied 'new' highlight to button: {component.DisplayName}");
-                    }
+                                            }
                     else if (highlightValue == "updated")
                     {
                         highlightModeValue = Enum.Parse(highlightModeType, "Updated");
-                        Console.WriteLine($"Applied 'updated' highlight to button: {component.DisplayName}");
-                    }
+                                            }
 
                     if (highlightModeValue != null)
                     {
@@ -1122,10 +1087,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Failed to apply highlight to button {component.DisplayName}: {ex.Message}");
-            }
+                            }
         }
 
         /// <summary>
@@ -1159,10 +1123,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error getting Autodesk.Windows.RibbonButton: {ex.Message}");
-            }
+                            }
 
             return null;
         }
@@ -1205,10 +1168,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 return new SolidColorBrush(Color.FromArgb(alpha, red, green, blue));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error converting color {argbColor}: {ex.Message}");
-                return null;
+                                return null;
             }
         }
 
@@ -1229,10 +1191,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 return tab.Panels.FirstOrDefault(p => p.Source?.Title == revitPanel.Name);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error getting Autodesk.Windows.RibbonPanel: {ex.Message}");
-                return null;
+                                return null;
             }
         }
 
@@ -1292,10 +1253,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         adwPanel.CustomSlideOutPanelBackground = slideoutBrush;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error applying panel background colors: {ex.Message}");
-            }
+                            }
         }
 
         /// <summary>
