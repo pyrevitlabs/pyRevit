@@ -15,12 +15,24 @@ using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
+    /// <summary>
+    /// Enumeration of available assembly build strategies.
+    /// </summary>
     public enum AssemblyBuildStrategy
     {
+        /// <summary>
+        /// Build using Roslyn compiler (C# code generation).
+        /// </summary>
         Roslyn,
+        /// <summary>
+        /// Build using ILPack (Reflection.Emit with IL packing).
+        /// </summary>
         ILPack
     }
 
+    /// <summary>
+    /// Service for building extension assemblies from parsed extensions.
+    /// </summary>
     public class AssemblyBuilderService
     {
         private readonly string _revitVersion;
@@ -29,6 +41,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         private static readonly string _baseDir = Path.GetDirectoryName(_executingAssemblyLocation);
         private static readonly string _appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AssemblyBuilderService"/> class.
+        /// </summary>
+        /// <param name="revitVersion">The Revit version number (e.g., "2024").</param>
+        /// <param name="buildStrategy">The build strategy to use for creating assemblies.</param>
+        /// <exception cref="ArgumentNullException">Thrown when revitVersion is null.</exception>
         public AssemblyBuilderService(string revitVersion, AssemblyBuildStrategy buildStrategy)
         {
             _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
@@ -70,6 +88,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 #endif
         }
 
+        /// <summary>
+        /// Builds an assembly for the specified extension.
+        /// </summary>
+        /// <param name="extension">The parsed extension to build an assembly for.</param>
+        /// <param name="libraryExtensions">Optional collection of library extensions to include as references.</param>
+        /// <returns>Information about the built assembly.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when extension is null.</exception>
+        /// <exception cref="Exception">Thrown when assembly building fails.</exception>
         public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null)
         {
             if (extension == null)
@@ -192,8 +218,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             try
             {
                 // Get the environment dictionary from AppDomain
-                const string envDictKey = "PYREVITEnvVarsDict";
-                const string refedAssmsKey = "PYREVIT_REFEDASSMS";
+                const string envDictKey = pyRevitAssemblyBuilder.SessionManager.Constants.ENV_DICT_KEY;
+                const string refedAssmsKey = pyRevitAssemblyBuilder.SessionManager.Constants.REFED_ASSMS_KEY;
                 
                 var envDict = AppDomain.CurrentDomain.GetData(envDictKey);
                 if (envDict == null)
@@ -331,6 +357,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Loads an assembly into the current AppDomain.
+        /// </summary>
+        /// <param name="info">Information about the assembly to load.</param>
+        /// <exception cref="FileNotFoundException">Thrown when the assembly file is not found.</exception>
+        /// <exception cref="Exception">Thrown when assembly loading fails.</exception>
         public void LoadAssembly(ExtensionAssemblyInfo info)
         {
             if (!File.Exists(info.Location))

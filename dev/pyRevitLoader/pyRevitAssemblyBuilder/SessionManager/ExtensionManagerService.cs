@@ -5,8 +5,15 @@ using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
+    /// <summary>
+    /// Service for managing and querying installed pyRevit extensions.
+    /// </summary>
     public class ExtensionManagerService
     {
+        /// <summary>
+        /// Gets all installed extensions that are not disabled.
+        /// </summary>
+        /// <returns>An enumerable collection of parsed extensions.</returns>
         public IEnumerable<ParsedExtension> GetInstalledExtensions()
         {
             var installedExtensions = ExtensionParser.ParseInstalledExtensions();

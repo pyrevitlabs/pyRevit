@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Diagnostics;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.Attributes;
 using pyRevitAssemblyBuilder.AssemblyMaker;
@@ -70,9 +71,10 @@ namespace PyRevitLoader
                 {
                     Assembly.LoadFrom(engineDll);
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    // Log assembly load failures - some assemblies may fail to load and that's acceptable
+                    Trace.WriteLine($"Failed to load assembly '{engineDll}': {ex.Message}");
                 }
             }
         }
@@ -143,7 +145,7 @@ namespace PyRevitLoader
             }
         }
 
-        public static Result LoadSession(object outputWindow = null)
+        public static Result LoadSession(object outputWindow = null, string buildStrategy = null)
         {
             try
             {
@@ -164,49 +166,53 @@ namespace PyRevitLoader
                 // Get the current Revit version
                 var revitVersion = uiControlledApplication.ControlledApplication.VersionNumber;
 
-                // Create the build strategy enum value - default to ILPack
+                // Determine build strategy: use provided parameter, or read from config, or default to ILPack
                 var assemblyBuildStrategyType = typeof(pyRevitAssemblyBuilder.AssemblyMaker.AssemblyBuildStrategy);
-                var strategyValue = Enum.Parse(assemblyBuildStrategyType, "ILPack");
+                object strategyValue;
+                
+                if (!string.IsNullOrEmpty(buildStrategy))
+                {
+                    // Use provided build strategy from Python
+                    strategyValue = Enum.Parse(assemblyBuildStrategyType, buildStrategy);
+                }
+                else
+                {
+                    // Fallback: read from config
+                    try
+                    {
+                        var config = PyRevitConfig.Load();
+                        var strategyName = config.NewLoaderRoslyn ? "Roslyn" : "ILPack";
+                        strategyValue = Enum.Parse(assemblyBuildStrategyType, strategyName);
+                    }
+                    catch
+                    {
+                        // Final fallback: default to ILPack
+                        strategyValue = Enum.Parse(assemblyBuildStrategyType, "ILPack");
+                    }
+                }
 
-                // Instantiate the services (following the same pattern as Python code)
-                var assemblyBuilderServiceType = typeof(pyRevitAssemblyBuilder.AssemblyMaker.AssemblyBuilderService);
-                var assemblyBuilder = Activator.CreateInstance(
-                    assemblyBuilderServiceType,
+                // Create services using factory
+                var strategyEnum = (pyRevitAssemblyBuilder.AssemblyMaker.AssemblyBuildStrategy)strategyValue;
+                var sessionManager = pyRevitAssemblyBuilder.SessionManager.ServiceFactory.CreateSessionManagerService(
                     revitVersion,
-                    strategyValue
-                );
-
-                var extensionManagerServiceType = typeof(pyRevitAssemblyBuilder.SessionManager.ExtensionManagerService);
-                var extensionManager = Activator.CreateInstance(extensionManagerServiceType);
-
-                var hookManagerType = typeof(pyRevitAssemblyBuilder.SessionManager.HookManager);
-                var hookManager = Activator.CreateInstance(hookManagerType);
-
-                var uiManagerServiceType = typeof(pyRevitAssemblyBuilder.SessionManager.UIManagerService);
-                var uiManager = Activator.CreateInstance(
-                    uiManagerServiceType,
-                    uiApplication
-                );
-
-                var sessionManagerServiceType = typeof(pyRevitAssemblyBuilder.SessionManager.SessionManagerService);
-                var sessionManager = Activator.CreateInstance(
-                    sessionManagerServiceType,
-                    assemblyBuilder,
-                    extensionManager,
-                    hookManager,
-                    uiManager,
-                    outputWindow
-                );
+                    strategyEnum,
+                    uiApplication,
+                    outputWindow);
 
                 // Load the session using the C# SessionManagerService
-                var loadSessionMethod = sessionManagerServiceType.GetMethod("LoadSession");
-                loadSessionMethod.Invoke(sessionManager, null);
+                sessionManager.LoadSession();
 
                 return Result.Succeeded;
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("Error Loading C# Session", ex.ToString());
+                // Log detailed error information before showing dialog
+                Trace.WriteLine($"Error Loading C# Session: {ex}");
+                Trace.WriteLine($"Stack Trace: {ex.StackTrace}");
+                
+                // Show user-friendly error dialog
+                TaskDialog.Show("Error Loading C# Session", 
+                    $"An error occurred while loading the C# session:\n\n{ex.Message}\n\nCheck the output window for details.");
                 return Result.Failed;
             }
         }
