@@ -12,7 +12,7 @@
 	<UseLoader>false</UseLoader>
 	<UseIronPython>false</UseIronPython>
     <UseRevit>false</UseRevit>
-    <UseAssemblyBuilder>false</UseAssemblyBuilder>
+    <UseAssemblyBuilder>true</UseAssemblyBuilder>
     <UseExtensionParser>true</UseExtensionParser>
     <LangVersion>latest</LangVersion>
 	<!-- Suppress NUnit analyzer suggestions for classic assertion model -->
@@ -40,6 +40,9 @@
     <Compile Include="SeparatorTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />
+    <Compile Include="ExtensionManagerServiceTests.cs" />
+    <Compile Include="AssemblyBuilderServiceTests.cs" />
+    <Compile Include="SessionManagerIntegrationTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

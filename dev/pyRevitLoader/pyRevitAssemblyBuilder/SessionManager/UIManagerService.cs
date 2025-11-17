@@ -14,27 +14,66 @@ using RibbonButton = Autodesk.Windows.RibbonButton;
 using RibbonItem = Autodesk.Revit.UI.RibbonItem;
 using static pyRevitExtensionParser.ExtensionParser;
 using pyRevitExtensionParser;
+using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
+    /// <summary>
+    /// Service for building Revit UI elements from parsed extensions.
+    /// </summary>
     public class UIManagerService
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly UIApplication _uiApp;
         private ParsedExtension _currentExtension;
 
+        /// <summary>
+        /// Gets the UIApplication instance used by this service.
+        /// </summary>
+        public UIApplication UIApplication => _uiApp;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UIManagerService"/> class.
+        /// </summary>
+        /// <param name="uiApp">The Revit UIApplication instance.</param>
         public UIManagerService(UIApplication uiApp)
         {
             _uiApp = uiApp;
         }
 
+        /// <summary>
+        /// Builds the UI for the specified extension using the provided assembly information.
+        /// </summary>
+        /// <param name="extension">The parsed extension containing UI component definitions.</param>
+        /// <param name="assemblyInfo">Information about the assembly containing command implementations.</param>
         public void BuildUI(ParsedExtension extension, ExtensionAssemblyInfo assemblyInfo)
         {
-            if (extension?.Children == null)
+            if (extension == null)
+            {
+                logger.Warn("Cannot build UI: extension is null.");
                 return;
+            }
+            
+            if (assemblyInfo == null)
+            {
+                logger.Warn($"Cannot build UI for extension '{extension.Name}': assemblyInfo is null.");
+                return;
+            }
+            
+            if (extension.Children == null)
+            {
+                logger.Debug($"Extension '{extension.Name}' has no children to build UI for.");
+                return;
+            }
 
             _currentExtension = extension;
             foreach (var component in extension.Children)
-                RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
+            {
+                if (component != null)
+                {
+                    RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
+                }
+            }
             _currentExtension = null;
         }
 
@@ -45,28 +84,32 @@ namespace pyRevitAssemblyBuilder.SessionManager
             string tabName,
             ExtensionAssemblyInfo assemblyInfo)
         {
+            if (component == null)
+            {
+                logger.Warn("Cannot build UI: component is null.");
+                return;
+            }
+            
+            if (assemblyInfo == null)
+            {
+                logger.Warn("Cannot build UI: assemblyInfo is null.");
+                return;
+            }
+            
+            if (string.IsNullOrEmpty(tabName))
+            {
+                logger.Warn($"Cannot build UI for component '{component.DisplayName}': tabName is null or empty.");
+                return;
+            }
+            
             switch (component.Type)
             {
                 case CommandComponentType.Tab:
-                    // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
-                    var tabText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
-                    try { _uiApp.CreateRibbonTab(tabText); } catch { }
-                    foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                        RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
+                    CreateTab(component, assemblyInfo);
                     break;
 
                 case CommandComponentType.Panel:
-                    // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
-                    var panelText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
-                    var panel = _uiApp.GetRibbonPanels(tabName)
-                        .FirstOrDefault(p => p.Name == panelText)
-                        ?? _uiApp.CreateRibbonPanel(tabName, panelText);
-                    
-                    // Apply background colors if specified
-                    ApplyPanelBackgroundColors(panel, component, tabName);
-                    
-                    foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                        RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
+                    CreatePanel(component, tabName, assemblyInfo);
                     break;
 
                 default:
@@ -79,11 +122,62 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
         }
 
+        /// <summary>
+        /// Creates a ribbon tab from the specified component and recursively builds its children.
+        /// </summary>
+        /// <param name="component">The tab component to create.</param>
+        /// <param name="assemblyInfo">Information about the assembly containing command implementations.</param>
+        private void CreateTab(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
+        {
+            // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+            var tabText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+            try 
+            { 
+                _uiApp.CreateRibbonTab(tabText); 
+            } 
+            catch (Exception ex)
+            {
+                // Tab may already exist, which is acceptable - log at debug level
+                logger.Debug(ex, "Failed to create ribbon tab '{0}'. Tab may already exist.", tabText);
+            }
+            foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
+                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
+        }
+
+        /// <summary>
+        /// Creates a ribbon panel from the specified component and recursively builds its children.
+        /// </summary>
+        /// <param name="component">The panel component to create.</param>
+        /// <param name="tabName">The name of the tab containing this panel.</param>
+        /// <param name="assemblyInfo">Information about the assembly containing command implementations.</param>
+        private void CreatePanel(ParsedComponent component, string tabName, ExtensionAssemblyInfo assemblyInfo)
+        {
+            // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+            var panelText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+            var panel = _uiApp.GetRibbonPanels(tabName)
+                .FirstOrDefault(p => p.Name == panelText)
+                ?? _uiApp.CreateRibbonPanel(tabName, panelText);
+            
+            // Apply background colors if specified
+            ApplyPanelBackgroundColors(panel, component, tabName);
+            
+            foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
+                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
+        }
+
         private void EnsureSlideOutApplied(ParsedComponent parentComponent,RibbonPanel parentPanel)
         {
             if (parentPanel != null && parentComponent.Type == CommandComponentType.Panel)
             {
-                try { parentPanel.AddSlideOut(); } catch { }
+                try 
+                { 
+                    parentPanel.AddSlideOut(); 
+                } 
+                catch (Exception ex)
+                {
+                    // Slideout may already exist or panel may not support it - log at debug level
+                    logger.Debug(ex, "Failed to add slideout to panel '{0}'.", parentPanel.Name);
+                }
             }
         }
 
@@ -99,7 +193,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     // Add separator to panel or pulldown
                     if (parentPanel != null)
                     {
-                        try { parentPanel.AddSeparator(); } catch { }
+                        try 
+                        { 
+                            parentPanel.AddSeparator(); 
+                        } 
+                        catch (Exception ex)
+                        {
+                            // Separator addition may fail in some contexts - log at debug level
+                            logger.Debug(ex, "Failed to add separator to panel '{0}'.", parentPanel.Name);
+                        }
                     }
                     break;
                     
@@ -174,7 +276,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                             if (sub.Type == CommandComponentType.Separator)
                             {
                                 // Add separator to split button
-                                try { splitBtn.AddSeparator(); } catch { }
+                                try 
+                                { 
+                                    splitBtn.AddSeparator(); 
+                                } 
+                                catch (Exception ex)
+                                {
+                                    logger.Debug(ex, "Failed to add separator to split button '{0}'.", splitButtonText);
+                                }
                             }
                             else if (sub.Type == CommandComponentType.PushButton ||
                                      sub.Type == CommandComponentType.UrlButton ||
@@ -228,9 +337,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 adwPanel.Source.Items.Remove(adwBtn);
                 adwPanel.Source.DialogLauncher = (RibbonButton)adwBtn;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Silently fail - button modification is non-critical
+                // Button modification is non-critical, but log for debugging
+                logger.Debug(ex, "Failed to modify button '{0}' to panel button in tab '{1}'.", panelBtn.ItemText, tabName);
             }
         }
 
@@ -310,7 +420,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                                 if (sub.Type == CommandComponentType.Separator)
                                 {
                                     // Add separator to pulldown in stack
-                                    try { pdBtn.AddSeparator(); } catch { }
+                                    try 
+                                    { 
+                                        pdBtn.AddSeparator(); 
+                                    } 
+                                    catch (Exception ex)
+                                    {
+                                        logger.Debug(ex, "Failed to add separator to pulldown button in stack.");
+                                    }
                                 }
                                 else if (sub.Type == CommandComponentType.PushButton ||
                                          sub.Type == CommandComponentType.UrlButton ||
@@ -360,7 +477,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 if (sub.Type == CommandComponentType.Separator)
                 {
                     // Add separator to pulldown
-                    try { pdBtn.AddSeparator(); } catch { }
+                    try 
+                    { 
+                        pdBtn.AddSeparator(); 
+                    } 
+                    catch (Exception ex)
+                    {
+                        logger.Debug(ex, "Failed to add separator to pulldown button '{0}'.", pulldownText);
+                    }
                 }
                 else if (sub.Type == CommandComponentType.PushButton ||
                          sub.Type == CommandComponentType.UrlButton ||
@@ -471,8 +595,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 return pushButtonData;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                logger.Debug(ex, "Failed to resolve assembly path for LinkButton '{0}'.", component.DisplayName);
                 return null;
             }
         }
@@ -613,8 +738,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                logger.Debug(ex, "Failed to apply icon to push button '{0}'.", component.DisplayName);
             }
         }
 
@@ -660,8 +786,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                logger.Debug(ex, "Failed to apply icon to push button '{0}'.", component.DisplayName);
             }
         }
 
@@ -708,8 +835,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                logger.Debug(ex, "Failed to apply icon to push button '{0}'.", component.DisplayName);
             }
         }
 
@@ -748,9 +876,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                            }
+                logger.Debug(ex, "Failed to apply icon to split button '{0}'.", component.DisplayName);
+            }
         }
 
         /// <summary>
@@ -899,9 +1028,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 // Ensure proper DPI for Revit (96 DPI is standard)
                 return EnsureProperDpi(bitmap, targetSize);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                                return null;
+                logger.Debug(ex, "Failed to load bitmap source from '{0}'.", imagePath);
+                return null;
             }
         }
 
@@ -950,9 +1080,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 
                                 return targetBitmap;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                                return source; // Return original if adjustment fails
+                logger.Debug(ex, "Failed to adjust DPI for bitmap source.");
+                return source; // Return original if adjustment fails
             }
         }
 
@@ -1023,9 +1154,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                                // Fallback to standard method
+                logger.Debug(ex, "Failed to apply icon with DPI awareness to push button '{0}', falling back to standard method.", component.DisplayName);
+                // Fallback to standard method
                 ApplyIconToPushButtonThemeAware(button, component);
             }
         }
@@ -1074,9 +1206,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                            }
+                logger.Debug(ex, "Failed to apply highlight to button '{0}'.", revitButton?.ItemText ?? "unknown");
+            }
         }
 
         /// <summary>
@@ -1110,9 +1243,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                            }
+                logger.Debug(ex, "Failed to get Autodesk.Windows button for '{0}'.", revitButton?.ItemText ?? "unknown");
+            }
 
             return null;
         }
@@ -1155,9 +1289,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 return new SolidColorBrush(Color.FromArgb(alpha, red, green, blue));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                                return null;
+                logger.Debug(ex, "Failed to convert ARGB color string '{0}' to SolidColorBrush.", argbColor);
+                return null;
             }
         }
 
@@ -1178,9 +1313,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 return tab.Panels.FirstOrDefault(p => p.Source?.Title == revitPanel.Name);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                                return null;
+                logger.Debug(ex, "Failed to get Autodesk.Windows panel for '{0}' in tab '{1}'.", revitPanel?.Name ?? "unknown", tabName);
+                return null;
             }
         }
 
@@ -1240,9 +1376,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         adwPanel.CustomSlideOutPanelBackground = slideoutBrush;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                            }
+                logger.Debug(ex, "Failed to apply background colors to panel '{0}' in tab '{1}'.", revitPanel?.Name ?? "unknown", tabName);
+            }
         }
 
         /// <summary>
