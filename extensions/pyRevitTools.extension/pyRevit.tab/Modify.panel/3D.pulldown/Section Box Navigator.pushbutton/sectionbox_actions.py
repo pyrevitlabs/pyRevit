@@ -55,17 +55,19 @@ def hide(doc):
             .OfCategory(DB.BuiltInCategory.OST_SectionBox)
             .ToElements()
         )
-        for sec_box in [
-            x for x in view_elements if x.CanBeHidden(current_view)
-        ]:
-            if sec_box.IsHidden(current_view):
+        was_hidden = None  # store previous state
+
+        for sec_box in [x for x in view_elements if x.CanBeHidden(current_view)]:
+            was_hidden = sec_box.IsHidden(current_view)
+
+            if was_hidden:
                 current_view.UnhideElements(List[DB.ElementId]([sec_box.Id]))
             else:
                 current_view.HideElements(List[DB.ElementId]([sec_box.Id]))
 
-        current_view.DisableTemporaryViewMode(
-            DB.TemporaryViewMode.RevealHiddenElements
-        )
+        current_view.DisableTemporaryViewMode(DB.TemporaryViewMode.RevealHiddenElements)
+
+    return was_hidden
 
 
 def align_to_face(doc, uidoc):

@@ -7,21 +7,30 @@
         <Style TargetType="Button">
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Height" Value="30"/>
-            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="Background" Value="#FFDDDDDD"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}" 
                                 CornerRadius="5"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <!-- Hover -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#B0D0FF"/>
+                                <Setter TargetName="border" Property="Background" Value="#FFBEE6FD"/>
                             </Trigger>
+
+                            <!-- Pressed -->
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#90B0E0"/>
+                                <Setter TargetName="border" Property="Background" Value="#FFB0D8F9"/>
+                            </Trigger>
+
+                            <!-- Disabled -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.5"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
