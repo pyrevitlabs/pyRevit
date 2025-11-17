@@ -203,11 +203,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "Length Label (adjust in Project Units): \n" + length_unit_label
             )
         self.txtLevelNudgeAmount.Text = str(round(default_nudge_value, 3))
-        self.txtLevelNudgeUnit.Text = length_unit_symbol_label
+        self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
         self.txtExpandAmount.Text = str(round(default_nudge_value, 3))
-        self.txtExpandUnit.Text = length_unit_symbol_label
+        self.txtExpandUnit.Text = length_unit_symbol_label or ""
         self.txtGridNudgeAmount.Text = str(round(default_nudge_value, 3))
-        self.txtGridNudgeUnit.Text = length_unit_symbol_label
+        self.txtGridNudgeUnit.Text = length_unit_symbol_label or ""
 
         self.update_info()
         self.update_grid_status()
@@ -791,7 +791,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not elements:
                 self.show_status_message(1, "No cropbox or elements found to extend scopebox to", "error")
                 return
-            boxes = [el.get_BoundingBox(source_view) for el in elements]
+            boxes = [b for b in [el.get_BoundingBox(source_view) for el in elements] if b]
             min_x = min(b.Min.X for b in boxes if b)
             min_y = min(b.Min.Y for b in boxes if b)
             max_x = max(b.Max.X for b in boxes if b)

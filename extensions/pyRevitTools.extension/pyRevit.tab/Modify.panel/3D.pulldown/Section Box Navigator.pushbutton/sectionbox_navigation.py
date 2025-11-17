@@ -25,7 +25,7 @@ def get_all_levels(doc, include_linked=False):
                     levels.append(lvl_host_elev)
 
     # Sort by elevation (transformed if linked)
-    levels = sorted(levels, key=lambda x: getattr(x, 'Elevation', x.Elevation))
+    levels = sorted(levels, key=lambda x: x.Elevation)
     return levels
 
 
@@ -144,13 +144,15 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
 
     for grid in grids:
         try:
-            # Handle both regular Grid and LinkedGrid objects / Exception on multi segment grids
+            # Handle LinkedGrid objects (has Curve attribute)
             if hasattr(grid, 'Curve'):
                 curve = grid.Curve
+            # Handle regular DB.Grid objects (has Element.Curve)
             elif hasattr(grid, 'Element'):
                 curve = grid.Element.Curve
             else:
-                curve = grid.Curve  # Regular DB.Grid
+                # Regular DB.Grid - access Curve directly
+                curve = grid.Curve
                 
             if not curve or not isinstance(curve, DB.Line):
                 continue

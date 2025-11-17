@@ -74,8 +74,6 @@ def align_to_face(doc, uidoc):
     if not isinstance(current_view, DB.View3D):
         return
     try:
-        world_normal = None
-
         with forms.WarningBar(title="Pick a face on a solid object"):
             reference = uidoc.Selection.PickObject(
                 UI.Selection.ObjectType.PointOnElement,

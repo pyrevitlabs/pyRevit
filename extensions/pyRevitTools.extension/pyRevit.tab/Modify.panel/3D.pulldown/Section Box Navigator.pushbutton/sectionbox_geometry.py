@@ -14,10 +14,10 @@ def get_section_box_info(view, datafilename):
             view_boxes = script.load_data(datafilename)
         except Exception:
             return None
-        view_id_value = get_elementid_value(view.Id)  
-        if view_id_value not in view_boxes:  
-            return None 
-        bbox_data = view_boxes[view_id_value]
+        view_id_value = get_elementid_value(view.Id)
+        bbox_data = view_boxes.get(view_id_value)
+        if not bbox_data:
+            return None
         section_box = revit.deserialize(bbox_data)
     else:
         section_box = view.GetSectionBox()
