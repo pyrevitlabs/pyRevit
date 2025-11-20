@@ -111,7 +111,7 @@ namespace PyRevitLoader
             return result;
         }
 
-        public static Result LoadSession(object outputWindow = null, string buildStrategy = null)
+        public static Result LoadSession(object pythonLogger = null, string buildStrategy = null)
         {
             try
             {
@@ -163,7 +163,7 @@ namespace PyRevitLoader
                     revitVersion,
                     strategyEnum,
                     uiApplication,
-                    outputWindow);
+                    pythonLogger);
 
                 // Load the session using the C# SessionManagerService
                 sessionManager.LoadSession();

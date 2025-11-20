@@ -62,6 +62,19 @@ namespace pyRevitExtensionParser
                 _ini.IniWriteValue("core", "new_loader_roslyn", value.ToString().ToLowerInvariant());
             }
         }
+        
+        public int StartupLogTimeout
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "startuplogtimeout");
+                return int.TryParse(value, out var result) ? result : 10; // Default to 10 seconds
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "startuplogtimeout", value.ToString());
+            }
+        }
         public List<string> UserExtensionsList
         {
             get

@@ -6,7 +6,6 @@ using System.Reflection;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitExtensionParser;
-using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -15,14 +14,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public class SessionManagerService
     {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        
         private readonly AssemblyBuilderService _assemblyBuilder;
         private readonly ExtensionManagerService _extensionManager;
         private readonly HookManager _hookManager;
         private readonly UIManagerService _uiManager;
         private readonly UIApplication _uiApp;
-        private readonly object _outputWindow;
+        private readonly LoggingHelper _logger;
         private Assembly _runtimeAssembly;
         private string _pyRevitRoot;
         private string _binDir;
@@ -41,20 +38,20 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="extensionManager">Service for managing extensions.</param>
         /// <param name="hookManager">Service for managing hooks.</param>
         /// <param name="uiManager">Service for building UI elements.</param>
-        /// <param name="outputWindow">Optional output window for logging.</param>
+        /// <param name="pythonLogger">Python logger instance for logging.</param>
         /// <exception cref="ArgumentNullException">Thrown when uiManager is null or does not have a valid UIApplication.</exception>
         public SessionManagerService(
             AssemblyBuilderService assemblyBuilder,
             ExtensionManagerService extensionManager,
             HookManager hookManager,
             UIManagerService uiManager,
-            object outputWindow = null)
+            object pythonLogger = null)
         {
             _assemblyBuilder = assemblyBuilder;
             _extensionManager = extensionManager;
             _hookManager = hookManager;
             _uiManager = uiManager;
-            _outputWindow = outputWindow;
+            _logger = new LoggingHelper(pythonLogger);
             
             // Get UIApplication from UIManagerService via public property
             _uiApp = uiManager?.UIApplication;
@@ -62,68 +59,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (_uiApp == null)
             {
                 throw new ArgumentNullException(nameof(uiManager), "UIManagerService must have a valid UIApplication.");
-            }
-            
-            // Redirect Console.Out to the output window's stream if provided
-            if (_outputWindow != null)
-            {
-                RedirectConsoleToOutputWindow();
-            }
-        }
-
-        private void RedirectConsoleToOutputWindow()
-        {
-            try
-            {
-                // Get the OutputStream property from the output window
-                var outputStreamProperty = _outputWindow.GetType().GetProperty("OutputStream");
-                if (outputStreamProperty != null)
-                {
-                    var outputStream = outputStreamProperty.GetValue(_outputWindow);
-                    if (outputStream != null)
-                    {
-                        // Redirect Console.Out to the output stream
-                        var streamWriter = new System.IO.StreamWriter((System.IO.Stream)outputStream);
-                        streamWriter.AutoFlush = true;
-                        Console.SetOut(streamWriter);
-                        
-                        // Configure NLog to write to the same output stream
-                        ConfigureNLogForOutputWindow();
-                        
-                        Trace.WriteLine("Console output and NLog redirected to output window stream");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine($"Failed to redirect console output: {ex.Message}");
-            }
-        }
-        
-        private void ConfigureNLogForOutputWindow()
-        {
-            try
-            {
-                // Create a new NLog configuration that writes to Console.Out (which we just redirected)
-                var config = new pyRevitLabs.NLog.Config.LoggingConfiguration();
-                
-                // Create a console target that writes to Console.Out
-                var consoleTarget = new pyRevitLabs.NLog.Targets.ConsoleTarget("console")
-                {
-                    Layout = "${level:uppercase=true}: [${logger}] ${message}"
-                };
-                
-                config.AddTarget(consoleTarget);
-                config.AddRuleForAllLevels(consoleTarget);
-                
-                // Apply the configuration to LogManager
-                pyRevitLabs.NLog.LogManager.Configuration = config;
-                
-                Trace.WriteLine("NLog configured to write to output window");
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine($"Failed to configure NLog: {ex.Message}");
             }
         }
 
@@ -153,15 +88,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
             
             if (uiExtensions == null)
             {
-                logger.Warn("No UI extensions found or extension manager is null.");
+                _logger.Warning("No UI extensions found or extension manager is null.");
                 return;
             }
-
+            
             foreach (var ext in uiExtensions)
             {
                 if (ext == null)
                 {
-                    logger.Warn("Skipping null extension.");
+                    _logger.Warning("Skipping null extension.");
                     continue;
                 }
                 
@@ -170,30 +105,31 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions);
                     if (assmInfo == null)
                     {
-                        logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
+                        _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
                         continue;
                     }
                     
                     _assemblyBuilder?.LoadAssembly(assmInfo);
-                    logger.Info($"Extension assembly created: {ext.Name}");
+                    _logger.Info($"Extension assembly created: {ext.Name}");
                     
                     // Execute startup script after building assembly but before creating UI
                     // This matches the Python loader flow
                     if (!string.IsNullOrEmpty(ext.StartupScript))
                     {
-                        logger.Info($"Running startup tasks for {ext.Name}");
+                        _logger.Info($"Running startup tasks for {ext.Name}");
                         ExecuteExtensionStartupScript(ext, libraryExtensions);
                     }
                     
                     _uiManager?.BuildUI(ext, assmInfo);
-                    logger.Info($"UI created for extension: {ext.Name}");
+                    _logger.Info($"UI created for extension: {ext.Name}");
                     // _hookManager.RegisterHooks(ext);
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, $"Error processing extension '{ext?.Name ?? "unknown"}': {ex.Message}");
+                    _logger.Error($"Error processing extension '{ext?.Name ?? "unknown"}': {ex.Message}");
                 }
             }
+            
         }
 
         private void InitializeScriptExecutor()
@@ -282,20 +218,30 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 
                 try
                 {
-                    logger.Info($"Executing startup script for extension: {extension.Name}");
-                    _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
-                    logger.Info($"Startup script completed for extension: {extension.Name}");
+                    _logger.Info($"Executing startup script for extension: {extension.Name}");
+                    
+                    var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
+                    
+                    // Check if the script execution succeeded (result code 0 = success)
+                    if (result != null && (int)result != 0)
+                    {
+                        _logger.Warning($"Startup script returned non-zero result for extension: {extension.Name}, result: {result}");
+                    }
+                    else
+                    {
+                        _logger.Info($"Startup script completed successfully for extension: {extension.Name}");
+                    }
                 }
                 catch (System.Reflection.TargetInvocationException tie)
                 {
                     var ex = tie.InnerException ?? tie;
-                    logger.Error(ex, $"Startup script failed for extension: {extension.Name}");
+                    _logger.Error($"Startup script failed for extension: {extension.Name}: {ex.Message}");
                     throw ex;
                 }
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Startup script '{extension?.Name}' failed");
+                _logger.Error($"Startup script '{extension?.Name}' failed: {ex.Message}");
                 Trace.WriteLine($"Startup script '{extension?.Name}' failed: {ex}");
             }
         }
