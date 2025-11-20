@@ -40,6 +40,7 @@
     <Compile Include="SeparatorTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />
+    <Compile Include="DynamoScriptTests.cs" />
     <Compile Include="ExtensionManagerServiceTests.cs" />
     <Compile Include="AssemblyBuilderServiceTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />

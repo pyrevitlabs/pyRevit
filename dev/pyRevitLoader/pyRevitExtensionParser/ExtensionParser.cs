@@ -342,15 +342,34 @@ namespace pyRevitExtensionParser
                     // Look for script files in order of preference: .py, .cs, .vb, .rb, .dyn, .gh, .ghx, .rfa
                     // Use cached file listing instead of EnumerateFiles
                     var dirFiles = GetFilesInDirectory(dir, "script.*", SearchOption.TopDirectoryOnly);
-                    scriptPath = dirFiles.FirstOrDefault(f => 
-                            f.EndsWith("script.py", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith("script.cs", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith("script.vb", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith("script.rb", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith("script.dyn", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith("script.gh", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith("script.ghx", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith("script.rfa", StringComparison.OrdinalIgnoreCase));
+                    
+                    // Check for scripts in priority order
+                    var scriptExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".rfa" };
+                    foreach (var scriptExt in scriptExtensions)
+                    {
+                        var scriptFile = $"script{scriptExt}";
+                        scriptPath = dirFiles.FirstOrDefault(f => 
+                            f.EndsWith(scriptFile, StringComparison.OrdinalIgnoreCase));
+                        if (scriptPath != null)
+                            break;
+                    }
+                    
+                    // If no script.* file found, look for any file with the target extensions
+                    // This handles cases like BIM1_ArrowHeadSwitcher_script.dyn
+                    if (scriptPath == null)
+                    {
+                        var allFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
+                        foreach (var scriptExt in scriptExtensions)
+                        {
+                            // Look for any file ending with _script{ext} or just {ext}
+                            scriptPath = allFiles.FirstOrDefault(f => 
+                                (f.EndsWith($"_script{scriptExt}", StringComparison.OrdinalIgnoreCase) ||
+                                 (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) && 
+                                  !f.EndsWith($"_config{scriptExt}", StringComparison.OrdinalIgnoreCase))));
+                            if (scriptPath != null)
+                                break;
+                        }
+                    }
                 }
 
                 if (scriptPath == null &&
@@ -423,7 +442,8 @@ namespace pyRevitExtensionParser
                     Modules = bundleInComponent?.Modules ?? new List<string>(),
                     LocalizedTitles = bundleInComponent?.Titles,
                     LocalizedTooltips = bundleInComponent?.Tooltips,
-                    Directory = dir
+                    Directory = dir,
+                    Engine = bundleInComponent?.Engine
                 });
             }
 

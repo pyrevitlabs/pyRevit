@@ -265,6 +265,27 @@ namespace pyRevitExtensionParser
                                 case "persistent":
                                     parsed.Engine.Persistent = value == "true";
                                     break;
+                                case "mainthread":
+                                    parsed.Engine.MainThread = value == "true";
+                                    break;
+                                case "automate":
+                                    parsed.Engine.Automate = value == "true";
+                                    break;
+                                case "dynamo_path":
+                                    parsed.Engine.DynamoPath = value;
+                                    break;
+                                case "dynamo_path_exec":
+                                    parsed.Engine.DynamoPathExec = value == "true";
+                                    break;
+                                case "dynamo_path_check_existing":
+                                    parsed.Engine.DynamoPathCheckExisting = value == "true";
+                                    break;
+                                case "dynamo_force_manual_run":
+                                    parsed.Engine.DynamoForceManualRun = value == "true";
+                                    break;
+                                case "dynamo_model_nodes_info":
+                                    parsed.Engine.DynamoModelNodesInfo = value;
+                                    break;
                             }
                         }
                         else if (currentSection == "background" && line.Contains(":"))

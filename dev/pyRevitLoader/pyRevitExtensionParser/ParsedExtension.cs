@@ -14,7 +14,6 @@ namespace pyRevitExtensionParser
         public Dictionary<string, string> Titles { get; set; }
         public Dictionary<string, string> Tooltips { get; set; }
         public string MinRevitVersion { get; set; }
-        public EngineConfig Engine { get; set; }
         public ExtensionConfig Config { get; set; }
         
         // Cache directory existence checks to avoid repeated file system calls
@@ -324,8 +323,25 @@ namespace pyRevitExtensionParser
 
     public class EngineConfig
     {
-        public bool Clean { get; set; }
-        public bool FullFrame { get; set; }
-        public bool Persistent { get; set; }
+        // Core engine settings
+        public bool Clean { get; set; } = false;
+        public bool FullFrame { get; set; } = false;
+        public bool Persistent { get; set; } = false;
+        
+        // Threading settings
+        public bool? MainThread { get; set; }  // Generic mainthread option
+        public bool? Automate { get; set; }    // Dynamo-specific synonym for mainthread
+        
+        // Dynamo-specific settings
+        public string DynamoPath { get; set; }
+        public bool? DynamoPathExec { get; set; } = true;  // Default true for backward compatibility
+        public bool? DynamoPathCheckExisting { get; set; } = false;
+        public bool? DynamoForceManualRun { get; set; } = false;
+        public string DynamoModelNodesInfo { get; set; }
+        
+        /// <summary>
+        /// Gets whether the engine should run on main thread (considers both mainthread and automate settings)
+        /// </summary>
+        public bool RequiresMainThread => (MainThread ?? false) || (Automate ?? false);
     }
 }
