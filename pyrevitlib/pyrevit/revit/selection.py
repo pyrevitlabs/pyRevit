@@ -185,7 +185,7 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
     else:
         return_values = []
         for ref in refs:
-            element = DOCS.doc.GetElement(ref)  # Cache to avoid 3x calls
+            element = DOCS.doc.GetElement(ref)
             if obj_type == UI.Selection.ObjectType.LinkedElement and isinstance(element, DB.RevitLinkInstance):
                 link_doc = element.GetLinkDocument()
                 if link_doc and ref.LinkedElementId != DB.ElementId.InvalidElementId:
