@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Elements selection utilities."""
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework, DB, UI
@@ -183,7 +184,12 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
             return_values = [ref.UVPoint for ref in refs]
     else:
         return_values = [
-            DOCS.doc.GetElement(ref).GetGeometryObjectFromReference(ref) for ref in refs
+            DOCS.doc.GetElement(ref).GetGeometryObjectFromReference(ref)
+            if not isinstance(DOCS.doc.GetElement(ref), DB.RevitLinkInstance)
+            else DOCS.doc.GetElement(ref.ElementId)
+            .GetLinkDocument()
+            .GetElement(ref.LinkedElementId)
+            for ref in refs
         ]
 
     mlogger.debug("Processed return elements are: %s", return_values)
