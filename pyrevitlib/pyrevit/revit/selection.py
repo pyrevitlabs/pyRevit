@@ -183,14 +183,18 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
         else:
             return_values = [ref.UVPoint for ref in refs]
     else:
-        return_values = [
-            DOCS.doc.GetElement(ref).GetGeometryObjectFromReference(ref)
-            if not isinstance(DOCS.doc.GetElement(ref), DB.RevitLinkInstance)
-            else DOCS.doc.GetElement(ref.ElementId)
-            .GetLinkDocument()
-            .GetElement(ref.LinkedElementId)
-            for ref in refs
-        ]
+        return_values = []
+        for ref in refs:
+            element = DOCS.doc.GetElement(ref)  # Cache to avoid 3x calls
+            if obj_type == UI.Selection.ObjectType.LinkedElement and isinstance(element, DB.RevitLinkInstance):
+                link_doc = element.GetLinkDocument()
+                if link_doc and ref.LinkedElementId != DB.ElementId.InvalidElementId:
+                    return_values.append(link_doc.GetElement(ref.LinkedElementId))
+                else:
+                    mlogger.debug("Skipping unloaded link or invalid reference: %s", ref)
+                    return_values.append(None)
+            else:
+                return_values.append(element.GetGeometryObjectFromReference(ref))
 
     mlogger.debug("Processed return elements are: %s", return_values)
 
