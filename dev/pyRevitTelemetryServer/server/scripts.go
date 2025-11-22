@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"pyrevittelemetryserver/cli"
 	"pyrevittelemetryserver/persistence"
@@ -47,7 +48,9 @@ func RouteScripts(router *mux.Router, opts *cli.Options, dbConn persistence.Conn
 	// https://stackoverflow.com/a/26212073
 	router.HandleFunc("/api/v1/scripts/", func(w http.ResponseWriter, r *http.Request) {
 		// parse given json data into a new record
-		logrec := persistence.ScriptTelemetryRecordV1{}
+		logrec := persistence.ScriptTelemetryRecordV1{
+			CommandResults: sync.Map{},
+		}
 		decodeErr := json.NewDecoder(r.Body).Decode(&logrec)
 		if decodeErr != nil {
 			logger.Debug(decodeErr)
@@ -78,7 +81,14 @@ func RouteScripts(router *mux.Router, opts *cli.Options, dbConn persistence.Conn
 
 	router.HandleFunc("/api/v2/scripts/", func(w http.ResponseWriter, r *http.Request) {
 		// parse given json data into a new record
-		logrec := persistence.ScriptTelemetryRecordV2{}
+		logrec := persistence.ScriptTelemetryRecordV2{
+			CommandResults: sync.Map{},
+			TraceInfo: persistence.TraceInfoV2{
+				EngineInfo: persistence.EngineInfoV2{
+					Configs: sync.Map{},
+				},
+			},
+		}
 		decodeErr := json.NewDecoder(r.Body).Decode(&logrec)
 		if decodeErr != nil {
 			logger.Debug(decodeErr)

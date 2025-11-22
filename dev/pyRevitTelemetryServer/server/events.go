@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"pyrevittelemetryserver/cli"
 	"pyrevittelemetryserver/persistence"
@@ -37,7 +38,9 @@ func RouteEvents(router *mux.Router, opts *cli.Options, dbConn persistence.Conne
 	// https://stackoverflow.com/a/26212073
 	router.HandleFunc("/api/v2/events/", func(w http.ResponseWriter, r *http.Request) {
 		// parse given json data into a new record
-		logrec := persistence.EventTelemetryRecordV2{}
+		logrec := persistence.EventTelemetryRecordV2{
+			EventArgs: sync.Map{},
+		}
 		decodeErr := json.NewDecoder(r.Body).Decode(&logrec)
 		if decodeErr != nil {
 			logger.Debug(decodeErr)
