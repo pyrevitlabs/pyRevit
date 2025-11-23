@@ -312,36 +312,4 @@ namespace pyRevitExtensionParser
         }
 
     }
-    public class ExtensionConfig
-    {
-        public string Name { get; set; }
-        public bool Disabled { get; set; }
-        public bool PrivateRepo { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-    }
-
-    public class EngineConfig
-    {
-        // Core engine settings
-        public bool Clean { get; set; } = false;
-        public bool FullFrame { get; set; } = false;
-        public bool Persistent { get; set; } = false;
-        
-        // Threading settings
-        public bool? MainThread { get; set; }  // Generic mainthread option
-        public bool? Automate { get; set; }    // Dynamo-specific synonym for mainthread
-        
-        // Dynamo-specific settings
-        public string DynamoPath { get; set; }
-        public bool? DynamoPathExec { get; set; } = true;  // Default true for backward compatibility
-        public bool? DynamoPathCheckExisting { get; set; } = false;
-        public bool? DynamoForceManualRun { get; set; } = false;
-        public string DynamoModelNodesInfo { get; set; }
-        
-        /// <summary>
-        /// Gets whether the engine should run on main thread (considers both mainthread and automate settings)
-        /// </summary>
-        public bool RequiresMainThread => (MainThread ?? false) || (Automate ?? false);
-    }
 }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using static pyRevitExtensionParser.BundleParser;
 
 namespace pyRevitExtensionParser
 {
@@ -150,7 +149,7 @@ namespace pyRevitExtensionParser
 
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
             ParsedBundle parsedBundle = FileExists(bundlePath)
-                ? BundleYamlParser.Parse(bundlePath)
+                ? BundleParser.BundleYamlParser.Parse(bundlePath)
                 : null;
 
             // Read extension config from pyRevit config file (cached)
@@ -399,7 +398,7 @@ namespace pyRevitExtensionParser
                 }
 
                 // Then parse bundle and override with bundle values if they exist
-                var bundleInComponent = FileExists(bundleFile) ? BundleYamlParser.Parse(bundleFile) : null;
+                var bundleInComponent = FileExists(bundleFile) ? BundleParser.BundleYamlParser.Parse(bundleFile) : null;
                 
                 // Override script values with bundle values (bundle takes precedence)
                 if (bundleInComponent != null)
