@@ -1,7 +1,4 @@
-using System;
 using System.IO;
-using System.Linq;
-using NUnit.Framework;
 using pyRevitExtensionParser;
 using static pyRevitExtensionParser.ExtensionParser;
 
@@ -14,18 +11,15 @@ namespace pyRevitExtensionParserTest
         public void TestCSharpScriptDetection()
         {
             // Test that the parser can detect C# scripts in pyRevitDevTools extension
-            var extensionRoot = Path.GetFullPath(Path.Combine(
-                TestContext.CurrentContext.TestDirectory,
-                "..", "..", "..", "..", "..", "..",
-                "extensions"));
+            var extensionPath = TestConfiguration.TestExtensionPath;
 
-            if (!Directory.Exists(extensionRoot))
+            if (!Directory.Exists(extensionPath))
             {
-                Assert.Inconclusive("Extensions directory not found at: " + extensionRoot);
+                Assert.Inconclusive("pyRevitDevTools extension directory not found at: " + extensionPath);
                 return;
             }
 
-            var extensions = ParseInstalledExtensions(new[] { extensionRoot });
+            var extensions = ParseInstalledExtensions(new[] { extensionPath });
             
             // Find the pyRevitDevTools extension
             var devToolsExtension = extensions.FirstOrDefault(e => e.Name == "pyRevitDevTools");
@@ -60,7 +54,8 @@ namespace pyRevitExtensionParserTest
         public void TestSpecificCSharpScript()
         {
             // Test the specific C# script mentioned in the user's request
-            var scriptPath = @"C:\dev\romangolev\pyRevit\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Bundle Tests.pulldown\Test C# Script.pushbutton";
+            var extensionPath = TestConfiguration.TestExtensionPath;
+            var scriptPath = Path.Combine(extensionPath, "pyRevitDev.tab", "Debug.panel", "Bundle Tests.pulldown", "Test C# Script.pushbutton");
             
             if (!Directory.Exists(scriptPath))
             {
@@ -72,8 +67,7 @@ namespace pyRevitExtensionParserTest
             Assert.IsTrue(File.Exists(scriptFile), "script.cs should exist in the Test C# Script button");
 
             // Parse the extension containing this script
-            var extensionRoot = Path.GetFullPath(Path.Combine(scriptPath, "..", "..", "..", ".."));
-            var extensions = ParseInstalledExtensions(new[] { extensionRoot });
+            var extensions = ParseInstalledExtensions(new[] { extensionPath });
             
             var devToolsExtension = extensions.FirstOrDefault(e => e.Name == "pyRevitDevTools");
             Assert.IsNotNull(devToolsExtension, "pyRevitDevTools extension should be parsed");
@@ -103,18 +97,15 @@ namespace pyRevitExtensionParserTest
         public void TestMultipleScriptTypes()
         {
             // Test that the parser can handle various script types
-            var extensionRoot = Path.GetFullPath(Path.Combine(
-                TestContext.CurrentContext.TestDirectory,
-                "..", "..", "..", "..", "..", "..",
-                "extensions"));
+            var extensionPath = TestConfiguration.TestExtensionPath;
 
-            if (!Directory.Exists(extensionRoot))
+            if (!Directory.Exists(extensionPath))
             {
-                Assert.Inconclusive("Extensions directory not found");
+                Assert.Inconclusive("pyRevitDevTools extension directory not found at: " + extensionPath);
                 return;
             }
 
-            var extensions = ParseInstalledExtensions(new[] { extensionRoot });
+            var extensions = ParseInstalledExtensions(new[] { extensionPath });
             
             var allScripts = new System.Collections.Generic.List<ParsedComponent>();
             foreach (var ext in extensions)
@@ -242,18 +233,15 @@ namespace pyRevitExtensionParserTest
         public void TestCSharpScriptModuleLoading()
         {
             // Test that modules are parsed and can be found
-            var extensionRoot = Path.GetFullPath(Path.Combine(
-                TestContext.CurrentContext.TestDirectory,
-                "..", "..", "..", "..", "..", "..",
-                "extensions"));
+            var extensionPath = TestConfiguration.TestExtensionPath;
 
-            if (!Directory.Exists(extensionRoot))
+            if (!Directory.Exists(extensionPath))
             {
-                Assert.Inconclusive("Extensions directory not found at: " + extensionRoot);
+                Assert.Inconclusive("pyRevitDevTools extension directory not found at: " + extensionPath);
                 return;
             }
 
-            var extensions = ParseInstalledExtensions(new[] { extensionRoot });
+            var extensions = ParseInstalledExtensions(new[] { extensionPath });
             var devToolsExtension = extensions.FirstOrDefault(e => e.Name == "pyRevitDevTools");
             
             if (devToolsExtension == null)
@@ -263,7 +251,7 @@ namespace pyRevitExtensionParserTest
             }
 
             // Find the Test C# Script component
-            var scriptPath = @"C:\dev\romangolev\pyRevit\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Debug.panel\Bundle Tests.pulldown\Test C# Script.pushbutton";
+            var scriptPath = Path.Combine(extensionPath, "pyRevitDev.tab", "Debug.panel", "Bundle Tests.pulldown", "Test C# Script.pushbutton");
             var testCSharpScript = FindComponentByPath(devToolsExtension, scriptPath);
             
             if (testCSharpScript == null)
@@ -303,10 +291,7 @@ namespace pyRevitExtensionParserTest
         public void TestLinkButtonDetection()
         {
             // Test that the parser can detect LinkButton bundles
-            var devToolsPath = Path.GetFullPath(Path.Combine(
-                TestContext.CurrentContext.TestDirectory,
-                "..", "..", "..", "..", "..", "..",
-                "extensions", "pyRevitDevTools.extension"));
+            var devToolsPath = TestConfiguration.TestExtensionPath;
 
             TestContext.Out.WriteLine($"Looking for pyRevitDevTools at: {devToolsPath}");
 

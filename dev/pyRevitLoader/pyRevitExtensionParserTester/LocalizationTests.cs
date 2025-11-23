@@ -1,7 +1,5 @@
-using NUnit.Framework;
 using pyRevitExtensionParser;
 using System.IO;
-using System.Linq;
 using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParserTest
@@ -12,7 +10,7 @@ namespace pyRevitExtensionParserTest
         [Test]
         public void TestPanelOneButton1LocalizedBundle()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "..", "..", "extensions", "pyRevitDevTools.extension");
             
             // Parse extensions
             var extensions = ParseInstalledExtensions(new[] { testBundlePath });

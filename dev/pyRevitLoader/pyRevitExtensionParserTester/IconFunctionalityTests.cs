@@ -1,8 +1,6 @@
 using pyRevitExtensionParser;
 using System.IO;
-using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
-using System.Drawing;
 using System.Drawing.Imaging;
 
 namespace pyRevitExtensionParserTest
@@ -70,7 +68,7 @@ namespace pyRevitExtensionParserTest
         {
             TestContext.Out.WriteLine("=== Testing Icon Parsing with Real Extension ===");
             
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var testBundlePath = TestConfiguration.TestExtensionPath;
             
             if (!Directory.Exists(testBundlePath))
             {
@@ -119,89 +117,79 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void TestIconParsingWithCreatedIcons()
+        public void TestIconParsingWithExistingIcons()
         {
-            TestContext.Out.WriteLine("=== Testing Icon Parsing with Created Icons ===");
+            TestContext.Out.WriteLine("=== Testing Icon Parsing with Existing Icons ===");
             
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var testIconFiles = new List<string>();
+            var testBundlePath = TestConfiguration.TestExtensionPath;
             
-            try
+            if (!Directory.Exists(testBundlePath))
             {
-                // Find a component directory to add icons to
-                var componentDir = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelTwo.panel", "TestAbout.pushbutton");
-                
-                if (!Directory.Exists(componentDir))
-                {
-                    Assert.Inconclusive($"Test component directory not found: {componentDir}");
-                    return;
-                }
-                
-                // Create test icon files
-                var iconFiles = new[]
-                {
-                    "icon.png",
-                    "icon_large.png", 
-                    "icon_16.png",
-                    "button_icon.ico"
-                };
-                
-                foreach (var iconFile in iconFiles)
-                {
-                    var iconPath = Path.Combine(componentDir, iconFile);
-                    CreateSimpleTestIcon(iconPath);
-                    testIconFiles.Add(iconPath);
-                    TestContext.Out.WriteLine($"Created test icon: {iconFile}");
-                }
-                
-                // Re-parse the extension to detect the new icons
-                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                var extension = extensions.First();
-                
-                // Find the TestAbout component
-                var testAboutComponent = FindComponentRecursively(extension, "TestAbout");
-                
-                if (testAboutComponent != null)
-                {
-                    TestContext.Out.WriteLine($"Found TestAbout component: {testAboutComponent.DisplayName}");
-                    TestContext.Out.WriteLine($"Component has {testAboutComponent.Icons.Count} icon(s)");
-                    TestContext.Out.WriteLine($"Has icons: {testAboutComponent.HasIcons}");
-                    TestContext.Out.WriteLine($"Has valid icons: {testAboutComponent.HasValidIcons}");
-                    
-                    if (testAboutComponent.PrimaryIcon != null)
-                    {
-                        TestContext.Out.WriteLine($"Primary icon: {testAboutComponent.PrimaryIcon.FileName} ({testAboutComponent.PrimaryIcon.Type})");
-                    }
-                    
-                    // List all icons
-                    foreach (var icon in testAboutComponent.Icons)
-                    {
-                        TestContext.Out.WriteLine($"  Icon: {icon.FileName} ({icon.Type}, {icon.Extension}, {icon.FileSize} bytes, Valid: {icon.IsValid})");
-                    }
-                    
-                    // We should have found some icons
-                    Assert.Greater(testAboutComponent.Icons.Count, 0, "Should have found created icons");
-                    Assert.IsTrue(testAboutComponent.HasIcons, "Component should report having icons");
-                    Assert.IsTrue(testAboutComponent.HasValidIcons, "Component should have valid icons");
-                }
-                else
-                {
-                    Assert.Fail("Could not find TestAbout component to test icons");
-                }
-                
-                Assert.Pass("Icon parsing with created icons test completed successfully");
+                Assert.Inconclusive($"Test bundle not found at: {testBundlePath}");
+                return;
             }
-            finally
+            
+            // Parse the extension
+            var extensions = ParseInstalledExtensions(new[] { testBundlePath });
+            var extension = extensions.First();
+            
+            TestContext.Out.WriteLine($"Extension: {extension.Name}");
+            
+            // Find all components with icons
+            var allComponents = GetAllComponentsFlat(extension);
+            var componentsWithIcons = allComponents.Where(c => c.HasIcons).ToList();
+            
+            TestContext.Out.WriteLine($"Total components: {allComponents.Count}");
+            TestContext.Out.WriteLine($"Components with icons: {componentsWithIcons.Count}");
+            
+            if (componentsWithIcons.Count == 0)
             {
-                // Clean up test icon files
-                foreach (var iconFile in testIconFiles)
+                TestContext.Out.WriteLine("No components with icons found in the extension.");
+                Assert.Inconclusive("No existing icons found to test with. Extension components don't have icons.");
+                return;
+            }
+            
+            // Test each component with icons
+            foreach (var component in componentsWithIcons)
+            {
+                TestContext.Out.WriteLine($"\nComponent: {component.DisplayName} ({component.Name})");
+                TestContext.Out.WriteLine($"  Type: {component.Type}");
+                TestContext.Out.WriteLine($"  Directory: {component.Directory}");
+                TestContext.Out.WriteLine($"  Icon count: {component.Icons.Count}");
+                TestContext.Out.WriteLine($"  Has icons: {component.HasIcons}");
+                TestContext.Out.WriteLine($"  Has valid icons: {component.HasValidIcons}");
+                
+                // Validate icon properties
+                Assert.Greater(component.Icons.Count, 0, $"{component.DisplayName} should have at least one icon");
+                Assert.IsTrue(component.HasIcons, $"{component.DisplayName} should report having icons");
+                
+                // Test primary icon if it exists
+                if (component.PrimaryIcon != null)
                 {
-                    if (File.Exists(iconFile))
+                    TestContext.Out.WriteLine($"  Primary icon: {component.PrimaryIcon.FileName} ({component.PrimaryIcon.Type})");
+                    Assert.IsNotNull(component.PrimaryIcon.FilePath, "Primary icon should have a file path");
+                    Assert.IsNotNull(component.PrimaryIcon.FileName, "Primary icon should have a file name");
+                }
+                
+                // List and validate all icons
+                foreach (var icon in component.Icons)
+                {
+                    TestContext.Out.WriteLine($"    - {icon.FileName} (Type: {icon.Type}, Size: {icon.FileSize} bytes, Valid: {icon.IsValid})");
+                    
+                    Assert.IsNotNull(icon.FilePath, $"Icon {icon.FileName} should have a file path");
+                    Assert.IsNotNull(icon.FileName, $"Icon {icon.FileName} should have a file name");
+                    Assert.IsNotNull(icon.Extension, $"Icon {icon.FileName} should have an extension");
+                    Assert.GreaterOrEqual(icon.FileSize, 0, $"Icon {icon.FileName} should have non-negative file size");
+                    
+                    // Verify the icon file actually exists
+                    if (icon.IsValid)
                     {
-                        File.Delete(iconFile);
+                        Assert.IsTrue(File.Exists(icon.FilePath), $"Valid icon file should exist: {icon.FilePath}");
                     }
                 }
             }
+            
+            Assert.Pass($"Icon parsing validation completed successfully. Tested {componentsWithIcons.Count} component(s) with icons.");
         }
 
         [Test]

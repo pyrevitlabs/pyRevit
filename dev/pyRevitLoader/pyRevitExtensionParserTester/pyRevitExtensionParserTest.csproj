@@ -20,6 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TestConfiguration.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="PanelButtonAndIconTests.cs" />
@@ -58,12 +59,6 @@
 
   <ItemGroup>
     <Using Include="NUnit.Framework" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Resources\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
 </Project>

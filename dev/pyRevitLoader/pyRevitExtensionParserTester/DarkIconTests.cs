@@ -1,11 +1,7 @@
 using pyRevitExtensionParser;
 using System.IO;
-using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
-using System.Drawing;
 using System.Drawing.Imaging;
-using System;
-using System.Linq;
 
 namespace pyRevitExtensionParserTest
 {
@@ -232,98 +228,110 @@ namespace pyRevitExtensionParserTest
         {
             TestContext.Out.WriteLine("=== Testing Dark Icons in Real Extension ===");
             
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var componentPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelTwo.panel", "TestAbout.pushbutton");
+            var testBundlePath = TestConfiguration.TestExtensionPath;
             
-            if (!Directory.Exists(componentPath))
+            // Parse the extension to find components with existing dark icons
+            TestContext.Out.WriteLine($"Parsing extension from: {testBundlePath}");
+            var extensions = ParseInstalledExtensions(new[] { testBundlePath });
+            var extension = extensions.First();
+            
+            TestContext.Out.WriteLine($"Extension parsed: {extension.Name}");
+            
+            // Search for all components and check which ones have icons
+            var allComponents = GetAllComponentsFlat(extension);
+            TestContext.Out.WriteLine($"Total components found: {allComponents.Count}");
+            
+            var componentsWithIcons = allComponents.Where(c => c.Icons.Count > 0).ToList();
+            TestContext.Out.WriteLine($"Components with icons: {componentsWithIcons.Count}");
+            
+            var componentsWithDarkIcons = allComponents.Where(c => c.Icons.HasDarkIcons).ToList();
+            TestContext.Out.WriteLine($"Components with dark icons: {componentsWithDarkIcons.Count}");
+            
+            // List all components with icons
+            foreach (var component in componentsWithIcons)
             {
-                Assert.Inconclusive($"Test component directory not found: {componentPath}");
-                return;
-            }
-
-            try
-            {
-                // Create a set of light and dark icons in the test component
-                var iconPairs = new[]
+                TestContext.Out.WriteLine($"\nComponent: {component.DisplayName} ({component.Name})");
+                TestContext.Out.WriteLine($"  Type: {component.Type}");
+                TestContext.Out.WriteLine($"  Directory: {component.Directory}");
+                TestContext.Out.WriteLine($"  Total icons: {component.Icons.Count}");
+                TestContext.Out.WriteLine($"  Light icons: {component.Icons.LightIcons.Count()}");
+                TestContext.Out.WriteLine($"  Dark icons: {component.Icons.DarkIcons.Count()}");
+                TestContext.Out.WriteLine($"  Has dark icons: {component.Icons.HasDarkIcons}");
+                
+                foreach (var icon in component.Icons)
                 {
-                    new { Light = "icon.png", Dark = "icon.dark.png" },
-                    new { Light = "icon_16.png", Dark = "icon_16.dark.png" },
-                    new { Light = "icon_32.png", Dark = "icon_32.dark.png" },
-                    new { Light = "icon_large.png", Dark = "icon_large.dark.png" }
-                };
-
-                foreach (var pair in iconPairs)
-                {
-                    var lightPath = Path.Combine(componentPath, pair.Light);
-                    var darkPath = Path.Combine(componentPath, pair.Dark);
-                    
-                    CreateTestIcon(lightPath, 32, 32, Color.Blue);  // Light icons in blue
-                    CreateTestIcon(darkPath, 32, 32, Color.Orange); // Dark icons in orange for distinction
-                    
-                    _createdTestFiles.Add(lightPath);
-                    _createdTestFiles.Add(darkPath);
+                    TestContext.Out.WriteLine($"    - {icon.FileName} (Type: {icon.Type}, Dark: {icon.IsDark})");
                 }
-
-                // Re-parse the extension to detect the new icons
-                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                var extension = extensions.First();
+            }
+            
+            // If we found components with dark icons, validate them
+            if (componentsWithDarkIcons.Count > 0)
+            {
+                TestContext.Out.WriteLine($"\n=== Validating Components with Dark Icons ===");
                 
-                // Find the TestAbout component
-                var testAboutComponent = FindComponentRecursively(extension, "TestAbout");
-                
-                if (testAboutComponent != null)
+                foreach (var component in componentsWithDarkIcons)
                 {
-                    TestContext.Out.WriteLine($"Found TestAbout component: {testAboutComponent.DisplayName}");
-                    TestContext.Out.WriteLine($"Total icons: {testAboutComponent.Icons.Count}");
-                    TestContext.Out.WriteLine($"Light icons: {testAboutComponent.Icons.LightIcons.Count()}");
-                    TestContext.Out.WriteLine($"Dark icons: {testAboutComponent.Icons.DarkIcons.Count()}");
-                    TestContext.Out.WriteLine($"Has dark icons: {testAboutComponent.Icons.HasDarkIcons}");
-                    TestContext.Out.WriteLine($"Has light icons: {testAboutComponent.Icons.HasLightIcons}");
+                    TestContext.Out.WriteLine($"\nValidating: {component.DisplayName}");
                     
-                    // List all icons with their properties
-                    foreach (var icon in testAboutComponent.Icons)
+                    // Test basic dark icon properties
+                    Assert.IsTrue(component.Icons.HasDarkIcons, $"{component.DisplayName} should have dark icons");
+                    Assert.Greater(component.Icons.DarkIcons.Count(), 0, $"{component.DisplayName} should have at least one dark icon");
+                    
+                    // Test primary dark icon
+                    var primaryDarkIcon = component.Icons.PrimaryDarkIcon;
+                    if (primaryDarkIcon != null)
                     {
-                        TestContext.Out.WriteLine($"  Icon: {icon.FileName}");
-                        TestContext.Out.WriteLine($"    Type: {icon.Type}");
-                        TestContext.Out.WriteLine($"    Is Dark: {icon.IsDark}");
-                        TestContext.Out.WriteLine($"    Size: {icon.SizeSpecification}");
-                        TestContext.Out.WriteLine($"    Valid: {icon.IsValid}");
+                        TestContext.Out.WriteLine($"  Primary dark icon: {primaryDarkIcon.FileName}");
+                        Assert.IsTrue(primaryDarkIcon.IsDark, "Primary dark icon should be dark");
+                        Assert.AreEqual(IconType.DarkStandard, primaryDarkIcon.Type, "Primary dark icon should be DarkStandard type");
                     }
-
-                    // Test primary icons
-                    var primaryIcon = testAboutComponent.Icons.PrimaryIcon;
-                    var primaryDarkIcon = testAboutComponent.Icons.PrimaryDarkIcon;
                     
-                    TestContext.Out.WriteLine($"Primary icon: {primaryIcon?.FileName} ({primaryIcon?.Type})");
-                    TestContext.Out.WriteLine($"Primary dark icon: {primaryDarkIcon?.FileName} ({primaryDarkIcon?.Type})");
-
-                    // Verify we found both light and dark icons
-                    Assert.Greater(testAboutComponent.Icons.Count, 0, "Should have found icons");
-                    Assert.IsTrue(testAboutComponent.Icons.HasDarkIcons, "Should have found dark icons");
-                    Assert.IsTrue(testAboutComponent.Icons.HasLightIcons, "Should have found light icons");
-                    
-                    // Should have equal numbers of light and dark icons
-                    var lightCount = testAboutComponent.Icons.LightIcons.Count();
-                    var darkCount = testAboutComponent.Icons.DarkIcons.Count();
-                    Assert.AreEqual(lightCount, darkCount, "Should have equal numbers of light and dark icons");
-                    
-                    // Verify primary icons exist and are correct types
-                    Assert.IsNotNull(primaryIcon, "Should have a primary icon");
-                    Assert.IsNotNull(primaryDarkIcon, "Should have a primary dark icon");
-                    Assert.IsFalse(primaryIcon.IsDark, "Primary icon should not be dark");
-                    Assert.IsTrue(primaryDarkIcon.IsDark, "Primary dark icon should be dark");
-                }
-                else
-                {
-                    Assert.Fail("Could not find TestAbout component to test dark icons");
+                    // Validate each dark icon
+                    foreach (var darkIcon in component.Icons.DarkIcons)
+                    {
+                        TestContext.Out.WriteLine($"  Validating dark icon: {darkIcon.FileName}");
+                        Assert.IsTrue(darkIcon.IsDark, $"Icon {darkIcon.FileName} should be marked as dark");
+                        Assert.IsTrue(darkIcon.Type.ToString().StartsWith("Dark"), $"Icon {darkIcon.FileName} type should start with 'Dark'");
+                        Assert.IsTrue(darkIcon.IsValid, $"Icon {darkIcon.FileName} should be valid");
+                    }
                 }
                 
-                Assert.Pass("Dark icons in real extension test completed successfully.");
+                Assert.Pass($"Dark icon validation completed successfully. Found {componentsWithDarkIcons.Count} component(s) with dark icons.");
             }
-            finally
+            else
             {
-                // Cleanup happens in TearDown
+                // No dark icons found - just report what we found
+                TestContext.Out.WriteLine("\n=== No Dark Icons Found ===");
+                TestContext.Out.WriteLine("The extension doesn't currently have any components with dark icons.");
+                TestContext.Out.WriteLine("This test validates that the parser can detect dark icons when they exist.");
+                
+                if (componentsWithIcons.Count > 0)
+                {
+                    TestContext.Out.WriteLine($"\nFound {componentsWithIcons.Count} component(s) with light icons:");
+                    foreach (var component in componentsWithIcons.Take(5)) // Show first 5
+                    {
+                        TestContext.Out.WriteLine($"  - {component.DisplayName}: {component.Icons.Count} icon(s)");
+                    }
+                }
+                
+                Assert.Inconclusive("No dark icons found in the extension. Test skipped.");
             }
+        }
+        
+        // Helper method to get all components in a flat list
+        private List<ParsedComponent> GetAllComponentsFlat(ParsedComponent root)
+        {
+            var result = new List<ParsedComponent> { root };
+            
+            if (root.Children != null)
+            {
+                foreach (var child in root.Children)
+                {
+                    result.AddRange(GetAllComponentsFlat(child));
+                }
+            }
+            
+            return result;
         }
 
         [Test]

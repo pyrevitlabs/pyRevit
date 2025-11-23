@@ -16,8 +16,7 @@ namespace pyRevitExtensionParserTest
         [SetUp]
         public void Setup()
         {
-            // Use the test bundle from Resources folder
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "..", "..", "extensions", "pyRevitDevTools.extension");
             _installedExtensions = ParseInstalledExtensions(new[] { testBundlePath });
         }
 
