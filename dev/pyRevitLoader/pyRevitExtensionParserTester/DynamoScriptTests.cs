@@ -49,7 +49,7 @@ namespace pyRevitExtensionParserTest
                 "script.dyn file should exist");
             
             // Also verify config.dyn exists in same directory
-            var configPath = Path.Combine(Path.GetDirectoryName(dynamoButton.ScriptPath), "config.dyn");
+            var configPath = Path.Combine(Path.GetDirectoryName(dynamoButton.ScriptPath)!, "config.dyn");
             Assert.That(File.Exists(configPath), Is.True, "config.dyn should also exist");
             
             TestContext.WriteLine($"Found TestDynamoBIM script at: {dynamoButton.ScriptPath}");
@@ -81,7 +81,7 @@ namespace pyRevitExtensionParserTest
                 "BIM1_ArrowHeadSwitcher_script.dyn file should exist");
             
             // Also verify the config file exists
-            var configPath = Path.Combine(Path.GetDirectoryName(dynamoGuiButton.ScriptPath), 
+            var configPath = Path.Combine(Path.GetDirectoryName(dynamoGuiButton.ScriptPath)!, 
                 "BIM1_DeleteUnusedViewTemplates_config.dyn");
             Assert.That(File.Exists(configPath), Is.True, 
                 "BIM1_DeleteUnusedViewTemplates_config.dyn should also exist");
@@ -116,7 +116,7 @@ namespace pyRevitExtensionParserTest
                 "TestDynamoBIMGUI should be a PushButton");
         }
 
-        private ParsedComponent FindComponentRecursively(ParsedComponent parent, string name)
+        private ParsedComponent? FindComponentRecursively(ParsedComponent parent, string name)
         {
             if (parent.Name == name || parent.DisplayName == name)
                 return parent;
@@ -131,7 +131,7 @@ namespace pyRevitExtensionParserTest
                 }
             }
 
-            return null;
+            return null!;
         }
     }
 }

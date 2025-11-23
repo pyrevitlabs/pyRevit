@@ -197,7 +197,7 @@ namespace pyRevitExtensionParserTest
             return results;
         }
 
-        private ParsedComponent FindComponentByName(ParsedComponent component, string name)
+        private ParsedComponent? FindComponentByName(ParsedComponent component, string name)
         {
             if (component.Name.Replace(" ", "").Equals(name, StringComparison.OrdinalIgnoreCase))
             {
@@ -214,10 +214,10 @@ namespace pyRevitExtensionParserTest
                 }
             }
 
-            return null;
+            return null!;
         }
 
-        private ParsedComponent FindComponentByPath(ParsedComponent component, string path)
+        private ParsedComponent? FindComponentByPath(ParsedComponent component, string path)
         {
             if (component.Directory != null && 
                 Path.GetFullPath(component.Directory).Equals(Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase))

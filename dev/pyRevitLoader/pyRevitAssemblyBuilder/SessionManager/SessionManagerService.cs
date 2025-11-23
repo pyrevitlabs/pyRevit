@@ -323,9 +323,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>The created ScriptRuntimeConfigs object.</returns>
         private object CreateScriptRuntimeConfigs(List<string> searchPaths)
         {
-            // Create temporary ExternalCommandData using cached property
+            // Create temporary ExternalCommandData
+#if NETFRAMEWORK
             var tmpCommandData = System.Runtime.Serialization.FormatterServices
                 .GetUninitializedObject(typeof(Autodesk.Revit.UI.ExternalCommandData));
+#else
+            var tmpCommandData = System.Runtime.CompilerServices.RuntimeHelpers
+                .GetUninitializedObject(typeof(Autodesk.Revit.UI.ExternalCommandData));
+#endif
                 
             if (_externalCommandDataAppProperty == null)
                 throw new Exception("Could not find Application property on ExternalCommandData");
