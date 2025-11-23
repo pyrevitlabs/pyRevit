@@ -87,7 +87,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 sb.AppendLine("{");
                 sb.AppendLine($"    public {safeClassName}() : base(");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");
-                sb.AppendLine($"        @\"\",");
+                sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");  // configScriptPath - defaults to scriptPath when no separate config exists
                 sb.AppendLine($"        @\"{EscapeForVerbatim(searchPaths)}\",");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(arguments)}\",");
                 sb.AppendLine($"        \"\",");
@@ -222,7 +222,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             // Prepare the 13 args - ensure all values are non-null for Ldstr
             string scriptPath = cmd.ScriptPath ?? string.Empty;
-            string configPath = string.Empty;
+            string configPath = scriptPath;  // defaults to scriptPath when no separate config exists
             
             // Build search paths matching Python's behavior:
             // 1. Script's own directory

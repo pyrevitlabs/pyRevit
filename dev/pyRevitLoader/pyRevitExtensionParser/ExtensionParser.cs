@@ -390,9 +390,12 @@ namespace pyRevitExtensionParser
 
                 // First, get values from Python script
                 string title = null, author = null, doc = null;
+                Dictionary<string, string> scriptLocalizedTitles = null;
+                Dictionary<string, string> scriptLocalizedTooltips = null;
+                
                 if (scriptPath != null && scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
                 {
-                    (title, author, doc) = ReadPythonScriptConstants(scriptPath);
+                    (title, scriptLocalizedTitles, author, doc, scriptLocalizedTooltips) = ReadPythonScriptConstants(scriptPath);
                 }
 
                 // Then parse bundle and override with bundle values if they exist
@@ -413,6 +416,27 @@ namespace pyRevitExtensionParser
                         
                     if (!string.IsNullOrEmpty(bundleInComponent.Author))
                         author = bundleInComponent.Author;
+                }
+
+                // Merge localized values: bundle takes precedence over script
+                var finalLocalizedTitles = scriptLocalizedTitles ?? new Dictionary<string, string>();
+                var finalLocalizedTooltips = scriptLocalizedTooltips ?? new Dictionary<string, string>();
+                
+                // If bundle has localized values, they override script values
+                if (bundleInComponent?.Titles != null)
+                {
+                    foreach (var kvp in bundleInComponent.Titles)
+                    {
+                        finalLocalizedTitles[kvp.Key] = kvp.Value;
+                    }
+                }
+                
+                if (bundleInComponent?.Tooltips != null)
+                {
+                    foreach (var kvp in bundleInComponent.Tooltips)
+                    {
+                        finalLocalizedTooltips[kvp.Key] = kvp.Value;
+                    }
                 }
 
                 components.Add(new ParsedComponent
@@ -440,8 +464,8 @@ namespace pyRevitExtensionParser
                     CommandClass = bundleInComponent?.CommandClass,
                     AvailabilityClass = bundleInComponent?.AvailabilityClass,
                     Modules = bundleInComponent?.Modules ?? new List<string>(),
-                    LocalizedTitles = bundleInComponent?.Titles,
-                    LocalizedTooltips = bundleInComponent?.Tooltips,
+                    LocalizedTitles = finalLocalizedTitles.Count > 0 ? finalLocalizedTitles : null,
+                    LocalizedTooltips = finalLocalizedTooltips.Count > 0 ? finalLocalizedTooltips : null,
                     Directory = dir,
                     Engine = bundleInComponent?.Engine
                 });
@@ -483,22 +507,35 @@ namespace pyRevitExtensionParser
         }
 
         // Cache Python script constant parsing to avoid re-reading files
-        private static Dictionary<string, (string title, string author, string doc)> _pythonScriptCache = 
-            new Dictionary<string, (string title, string author, string doc)>();
+        private static Dictionary<string, (string title, Dictionary<string, string> localizedTitles, string author, string doc, Dictionary<string, string> localizedTooltips)> _pythonScriptCache = 
+            new Dictionary<string, (string title, Dictionary<string, string> localizedTitles, string author, string doc, Dictionary<string, string> localizedTooltips)>();
 
-        private static (string title, string author, string doc) ReadPythonScriptConstants(string scriptPath)
+        private static (string title, Dictionary<string, string> localizedTitles, string author, string doc, Dictionary<string, string> localizedTooltips) ReadPythonScriptConstants(string scriptPath)
         {
             // Check cache first
             if (_pythonScriptCache.TryGetValue(scriptPath, out var cached))
                 return cached;
                 
             string title = null, author = null, doc = null;
+            Dictionary<string, string> localizedTitles = null;
+            Dictionary<string, string> localizedTooltips = null;
 
             foreach (var line in File.ReadLines(scriptPath))
             {
                 if (line.StartsWith("__title__"))
                 {
-                    title = ExtractPythonConstantValue(line);
+                    // Check if it's a dictionary
+                    var dictValue = ExtractPythonDictionary(line);
+                    if (dictValue != null)
+                    {
+                        localizedTitles = dictValue;
+                        // Get default locale value for backward compatibility
+                        title = GetLocalizedValue(localizedTitles);
+                    }
+                    else
+                    {
+                        title = ExtractPythonConstantValue(line);
+                    }
                 }
                 else if (line.StartsWith("__author__"))
                 {
@@ -506,11 +543,22 @@ namespace pyRevitExtensionParser
                 }
                 else if (line.StartsWith("__doc__"))
                 {
-                    doc = ExtractPythonConstantValue(line);
+                    // Check if it's a dictionary for multi-language tooltip
+                    var dictValue = ExtractPythonDictionary(line);
+                    if (dictValue != null)
+                    {
+                        localizedTooltips = dictValue;
+                        // Get default locale value for backward compatibility
+                        doc = GetLocalizedValue(localizedTooltips);
+                    }
+                    else
+                    {
+                        doc = ExtractPythonConstantValue(line);
+                    }
                 }
             }
 
-            var result = (title, author, doc);
+            var result = (title, localizedTitles, author, doc, localizedTooltips);
             _pythonScriptCache[scriptPath] = result;
             return result;
         }
@@ -521,9 +569,78 @@ namespace pyRevitExtensionParser
             if (parts.Length == 2)
             {
                 var value = parts[1].Trim().Trim('\'', '"');
-                // Process escape sequences (e.g., \n, \t, \\)
-                value = System.Text.RegularExpressions.Regex.Unescape(value);
+                // Don't process escape sequences - Python already handles them when the script is parsed
+                // Processing them here would double-process and corrupt paths with backslashes
                 return value;
+            }
+            return null;
+        }
+
+        private static Dictionary<string, string> ExtractPythonDictionary(string line)
+        {
+            var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2)
+            {
+                var value = parts[1].Trim();
+                // Check if it's a dictionary literal
+                if (value.StartsWith("{") && value.EndsWith("}"))
+                {
+                    var dict = new Dictionary<string, string>();
+                    // Remove outer braces
+                    value = value.Substring(1, value.Length - 2);
+                    
+                    // Split by comma, but handle commas within quoted strings
+                    var items = new List<string>();
+                    var currentItem = "";
+                    var inQuote = false;
+                    var quoteChar = '\0';
+                    
+                    for (int i = 0; i < value.Length; i++)
+                    {
+                        var ch = value[i];
+                        
+                        if (!inQuote && (ch == '"' || ch == '\''))
+                        {
+                            inQuote = true;
+                            quoteChar = ch;
+                            currentItem += ch;
+                        }
+                        else if (inQuote && ch == quoteChar && (i == 0 || value[i - 1] != '\\'))
+                        {
+                            inQuote = false;
+                            quoteChar = '\0';
+                            currentItem += ch;
+                        }
+                        else if (!inQuote && ch == ',')
+                        {
+                            if (!string.IsNullOrWhiteSpace(currentItem))
+                                items.Add(currentItem.Trim());
+                            currentItem = "";
+                        }
+                        else
+                        {
+                            currentItem += ch;
+                        }
+                    }
+                    
+                    if (!string.IsNullOrWhiteSpace(currentItem))
+                        items.Add(currentItem.Trim());
+                    
+                    // Parse each key-value pair
+                    foreach (var item in items)
+                    {
+                        var colonIndex = item.IndexOf(':');
+                        if (colonIndex > 0)
+                        {
+                            var key = item.Substring(0, colonIndex).Trim().Trim('\'', '"');
+                            var val = item.Substring(colonIndex + 1).Trim().Trim('\'', '"');
+                            // Don't process escape sequences - Python already handles them when the script is parsed
+                            dict[key] = val;
+                        }
+                    }
+                    
+                    return dict.Count > 0 ? dict : null;
+                }
             }
             return null;
         }

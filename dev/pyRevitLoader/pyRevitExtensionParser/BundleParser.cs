@@ -334,13 +334,17 @@ namespace pyRevitExtensionParser
                 // Handle single quotes
                 if (value.StartsWith("'") && value.EndsWith("'") && value.Length >= 2)
                 {
-                    return value.Substring(1, value.Length - 2);
+                    var unquoted = value.Substring(1, value.Length - 2);
+                    // Process escape sequences (e.g., \n, \t, \\)
+                    return System.Text.RegularExpressions.Regex.Unescape(unquoted);
                 }
                 
                 // Handle double quotes
                 if (value.StartsWith("\"") && value.EndsWith("\"") && value.Length >= 2)
                 {
-                    return value.Substring(1, value.Length - 2);
+                    var unquoted = value.Substring(1, value.Length - 2);
+                    // Process escape sequences (e.g., \n, \t, \\)
+                    return System.Text.RegularExpressions.Regex.Unescape(unquoted);
                 }
                 
                 return value;

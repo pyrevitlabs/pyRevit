@@ -44,6 +44,7 @@
     <Compile Include="ExtensionManagerServiceTests.cs" />
     <Compile Include="AssemblyBuilderServiceTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />
+    <Compile Include="PythonScriptMultiLangTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
