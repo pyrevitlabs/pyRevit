@@ -569,11 +569,62 @@ namespace pyRevitExtensionParser
             if (parts.Length == 2)
             {
                 var value = parts[1].Trim().Trim('\'', '"');
-                // Don't process escape sequences - Python already handles them when the script is parsed
-                // Processing them here would double-process and corrupt paths with backslashes
-                return value;
+                // Process Python escape sequences to match runtime behavior
+                return ProcessPythonEscapeSequences(value);
             }
             return null;
+        }
+
+        private static string ProcessPythonEscapeSequences(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            var result = new StringBuilder();
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] == '\\' && i + 1 < value.Length)
+                {
+                    // Process Python escape sequences
+                    switch (value[i + 1])
+                    {
+                        case 'n':
+                            result.Append('\n');
+                            i++; // Skip next character
+                            break;
+                        case 't':
+                            result.Append('\t');
+                            i++;
+                            break;
+                        case 'r':
+                            result.Append('\r');
+                            i++;
+                            break;
+                        case '\\':
+                            result.Append('\\');
+                            i++;
+                            break;
+                        case '\'':
+                            result.Append('\'');
+                            i++;
+                            break;
+                        case '"':
+                            result.Append('"');
+                            i++;
+                            break;
+                        default:
+                            // For unrecognized escape sequences, keep the backslash
+                            // This handles cases like paths (e.g., "C:\path")
+                            result.Append(value[i]);
+                            break;
+                    }
+                }
+                else
+                {
+                    result.Append(value[i]);
+                }
+            }
+            return result.ToString();
         }
 
         private static Dictionary<string, string> ExtractPythonDictionary(string line)

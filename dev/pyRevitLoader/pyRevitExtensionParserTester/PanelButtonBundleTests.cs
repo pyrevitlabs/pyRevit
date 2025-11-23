@@ -5,6 +5,7 @@ using static pyRevitExtensionParser.ExtensionParser;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace pyRevitExtensionParserTest
 {
@@ -741,6 +742,57 @@ print('test')");
                 Assert.That(testButton.Title, Does.Not.Contain("\\n"), "Title should not contain literal \\n");
                 
                 TestContext.Out.WriteLine($"Title successfully parsed with newline: '{testButton.Title}'");
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Test]
+        public void TestButtonWithVariousEscapeSequences()
+        {
+            // Test various Python escape sequences
+            var tempDir = Path.Combine(Path.GetTempPath(), "TestEscapeSequences.extension");
+            var tabDir = Path.Combine(tempDir, "TestTab.tab");
+            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
+            var buttonDir = Path.Combine(panelDir, "TestButton.pushbutton");
+            
+            try
+            {
+                Directory.CreateDirectory(buttonDir);
+                
+                var scriptPath = Path.Combine(buttonDir, "script.py");
+                // Test with various escape sequences - use raw Python string literals
+                var scriptContent = new StringBuilder();
+                scriptContent.AppendLine("__title__ = 'Line1\\nLine2\\tTab'");
+                scriptContent.AppendLine("__author__ = \"Test's Author\"");
+                scriptContent.AppendLine("__doc__ = 'Backslash: \\\\'");
+                scriptContent.AppendLine("print('test')");
+                File.WriteAllText(scriptPath, scriptContent.ToString());
+                
+                // Parse the extension
+                var extensions = ParseInstalledExtensions(new[] { tempDir });
+                var extension = extensions.FirstOrDefault();
+                
+                Assert.IsNotNull(extension, "Extension should be parsed");
+                
+                var testButton = FindComponentRecursively(extension, "TestButton");
+                Assert.IsNotNull(testButton, "TestButton should be found");
+                
+                // Verify newline and tab are converted
+                Assert.That(testButton.Title, Is.EqualTo("Line1\nLine2\tTab"), "Title should have \\n and \\t converted");
+                
+                // Verify single quote (no escape needed when using double quotes in Python)
+                Assert.That(testButton.Author, Is.EqualTo("Test's Author"), "Author should preserve single quote");
+                
+                // Verify backslash escape
+                Assert.That(testButton.Tooltip, Is.EqualTo("Backslash: \\"), "Tooltip should have \\\\ converted to single backslash");
+                
+                TestContext.Out.WriteLine($"Title: '{testButton.Title}'");
+                TestContext.Out.WriteLine($"Author: '{testButton.Author}'");
+                TestContext.Out.WriteLine($"Tooltip: '{testButton.Tooltip}'");
             }
             finally
             {

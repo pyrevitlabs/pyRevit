@@ -115,9 +115,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 default:
                     if (component.HasSlideout)
                     {
+                        // When a component is marked as a slideout, apply the slideout
+                        // but don't process it further (i.e., don't add a separator)
                         EnsureSlideOutApplied(parentComponent, parentPanel);
                     }
-                    HandleComponentBuilding(component, parentPanel, tabName, assemblyInfo);
+                    else
+                    {
+                        // Only handle the component if it's not a slideout marker
+                        HandleComponentBuilding(component, parentPanel, tabName, assemblyInfo);
+                    }
                     break;
             }
         }
