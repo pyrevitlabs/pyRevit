@@ -252,39 +252,41 @@ namespace pyRevitExtensionParser
                             // Engine configuration
                             var colonIndex = line.IndexOf(':');
                             var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
-                            var value = line.Substring(colonIndex + 1).Trim().ToLowerInvariant();
+                            var rawValue = line.Substring(colonIndex + 1).Trim();
 
                             switch (key)
                             {
                                 case "clean":
-                                    parsed.Engine.Clean = value == "true";
+                                    parsed.Engine.Clean = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "full_frame":
-                                    parsed.Engine.FullFrame = value == "true";
+                                    parsed.Engine.FullFrame = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "persistent":
-                                    parsed.Engine.Persistent = value == "true";
+                                    parsed.Engine.Persistent = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "mainthread":
-                                    parsed.Engine.MainThread = value == "true";
+                                    parsed.Engine.MainThread = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "automate":
-                                    parsed.Engine.Automate = value == "true";
+                                    parsed.Engine.Automate = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "dynamo_path":
-                                    parsed.Engine.DynamoPath = value;
+                                    // Path should preserve case and have quotes stripped (but no escape processing)
+                                    parsed.Engine.DynamoPath = StripQuotes(rawValue);
                                     break;
                                 case "dynamo_path_exec":
-                                    parsed.Engine.DynamoPathExec = value == "true";
+                                    parsed.Engine.DynamoPathExec = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "dynamo_path_check_existing":
-                                    parsed.Engine.DynamoPathCheckExisting = value == "true";
+                                    parsed.Engine.DynamoPathCheckExisting = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "dynamo_force_manual_run":
-                                    parsed.Engine.DynamoForceManualRun = value == "true";
+                                    parsed.Engine.DynamoForceManualRun = rawValue.ToLowerInvariant() == "true";
                                     break;
                                 case "dynamo_model_nodes_info":
-                                    parsed.Engine.DynamoModelNodesInfo = value;
+                                    // Preserve case for node info
+                                    parsed.Engine.DynamoModelNodesInfo = StripQuotes(rawValue);
                                     break;
                             }
                         }
