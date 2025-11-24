@@ -11,11 +11,8 @@ title:
 tooltip: 
   fr_fr: >-
     Color Splasher permet de colorer les éléments de la vue active en fonction de leurs valeurs de paramètre. Il permet également la création d'une légende ou d'une liste de filtres de vue.
-
     Basé sur ColorSplasher par BIMOne - Licence MIT - 2021 BIM One Inc.
-
     Première version Dynamo - Python décembre 2023: Nonica par Estudio Alonso Candau SLP - Jaime Alonso Candau - Voir l'accord de licence non-commercial spécifique pour Nonica dans le script
-
     Refactor et version pyRevit par Jean-Marc Couffin, décembre 2023
   en_us: >-
     Color Splasher allows you to color the elements of the active view according to their parameter values. It also allows the creation of a legend or a list of view filters.
