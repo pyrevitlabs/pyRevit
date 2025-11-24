@@ -61,7 +61,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             string revitVersion,
             AssemblyBuildStrategy buildStrategy,
             UIApplication uiApplication,
-            object outputWindow = null)
+            object pythonLogger = null)
         {
             var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy);
             var extensionManager = CreateExtensionManagerService();
@@ -69,11 +69,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var uiManager = CreateUIManagerService(uiApplication);
 
             return new SessionManagerService(
-                assemblyBuilder,
+                assemblyBuilder, 
                 extensionManager,
                 hookManager,
                 uiManager,
-                outputWindow);
+                pythonLogger);
         }
     }
 }

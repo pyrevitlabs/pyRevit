@@ -1,6 +1,5 @@
 using pyRevitExtensionParser;
 using System.IO;
-using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParserTest
@@ -14,7 +13,7 @@ namespace pyRevitExtensionParserTest
         [SetUp]
         public void Setup()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var testBundlePath = TestConfiguration.TestExtensionPath;
             _installedExtensions = ParseInstalledExtensions(new[] { testBundlePath });
         }
 
@@ -42,14 +41,14 @@ namespace pyRevitExtensionParserTest
         [Test]
         public void TestIconFileDiscovery()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var testBundlePath = TestConfiguration.TestExtensionPath;
             
             // Create test icon files in button directories
             var buttonDirectories = new[]
             {
-                Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelTwo.panel", "TestAbout.pushbutton"),
-                Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "PanelOneButton1.pushbutton"),
-                Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "PanelOneButton2.pushbutton")
+                Path.Combine(testBundlePath, "pyRevitDev.tab", "TestPanelTwo.panel", "TestAbout.pushbutton"),
+                Path.Combine(testBundlePath, "pyRevitDev.tab", "TestPanelOne.panel", "PanelOneButton1.pushbutton"),
+                Path.Combine(testBundlePath, "pyRevitDev.tab", "TestPanelOne.panel", "PanelOneButton2.pushbutton")
             };
 
             // Create different types of icon files
@@ -99,8 +98,8 @@ namespace pyRevitExtensionParserTest
         [Test]
         public void TestIconFileTypes()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var buttonDir = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelTwo.panel", "TestAbout.pushbutton");
+            var testBundlePath = TestConfiguration.TestExtensionPath;
+            var buttonDir = Path.Combine(testBundlePath, "pyRevitDev.tab", "TestPanelTwo.panel", "TestAbout.pushbutton");
             
             if (!Directory.Exists(buttonDir))
             {
@@ -144,8 +143,8 @@ namespace pyRevitExtensionParserTest
         [Test]
         public void TestIconNamingConventions()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var buttonDir = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelTwo.panel", "TestAbout.pushbutton");
+            var testBundlePath = TestConfiguration.TestExtensionPath;
+            var buttonDir = Path.Combine(testBundlePath, "pyRevitDev.tab", "TestPanelTwo.panel", "TestAbout.pushbutton");
             
             if (!Directory.Exists(buttonDir))
             {
@@ -197,7 +196,7 @@ namespace pyRevitExtensionParserTest
                 return;
             }
 
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            var testBundlePath = TestConfiguration.TestExtensionPath;
             
             // Create icons for specific components
             var componentIconPairs = new[]

@@ -1,10 +1,6 @@
 using pyRevitExtensionParser;
 using System.IO;
-using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace pyRevitExtensionParserTest
 {
@@ -114,12 +110,12 @@ namespace pyRevitExtensionParserTest
         }
 
         // Helper method to find a component recursively
-        private ParsedComponent FindComponentRecursively(ParsedExtension extension, string name)
+        private ParsedComponent? FindComponentRecursively(ParsedExtension extension, string name)
         {
             return FindComponentRecursively(extension.Children, name);
         }
         
-        private ParsedComponent FindComponentRecursively(List<ParsedComponent> components, string name)
+        private ParsedComponent? FindComponentRecursively(List<ParsedComponent>? components, string name)
         {
             if (components == null) return null;
             

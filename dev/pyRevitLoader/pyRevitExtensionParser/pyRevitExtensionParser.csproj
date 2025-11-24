@@ -20,10 +20,10 @@
       <Compile Include="BundleParser.cs" />
       <Compile Include="CommandAvailability.cs" />
       <Compile Include="ComponentIcon.cs" />
+      <Compile Include="ParsedBundle.cs" />
       <Compile Include="ParsedComponent.cs" />
       <Compile Include="ParsedExtension.cs" />
       <Compile Include="PyRevitConfig.cs" />
-      <Compile Include="PyRevitOutputBridge.cs" />
       <Compile Include="ExtensionParser.cs" />
       <Compile Include="IniFile.cs" />
     </ItemGroup>

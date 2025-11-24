@@ -20,6 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TestConfiguration.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="PanelButtonAndIconTests.cs" />
@@ -40,9 +41,11 @@
     <Compile Include="SeparatorTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />
+    <Compile Include="DynamoScriptTests.cs" />
     <Compile Include="ExtensionManagerServiceTests.cs" />
     <Compile Include="AssemblyBuilderServiceTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />
+    <Compile Include="PythonScriptMultiLangTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,12 +59,6 @@
 
   <ItemGroup>
     <Using Include="NUnit.Framework" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Resources\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
 </Project>

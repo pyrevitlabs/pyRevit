@@ -1,8 +1,23 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace pyRevitExtensionParser
 {
+    /// <summary>
+    /// High-performance parser for pyRevit bundle YAML configuration files.
+    /// </summary>
+    /// <remarks>
+    /// <para>This parser is optimized for pyRevit's specific YAML subset and provides:</para>
+    /// <list type="bullet">
+    /// <item><description>File modification-based caching for improved performance</description></item>
+    /// <item><description>Support for localized titles and tooltips</description></item>
+    /// <item><description>YAML multiline syntax (literal |- and folded >-)</description></item>
+    /// <item><description>Custom layout title syntax: Component[title:Custom Title]</description></item>
+    /// </list>
+    /// <para>This is NOT a full YAML 1.2 parser - it only supports the subset used by pyRevit bundles.</para>
+    /// </remarks>
     public class BundleParser
     {
         public class ParsedBundle
@@ -10,282 +25,469 @@ namespace pyRevitExtensionParser
             public List<string> LayoutOrder { get; set; } = new List<string>();
             public Dictionary<string, string> Titles { get; set; } = new Dictionary<string, string>();
             public Dictionary<string, string> Tooltips { get; set; } = new Dictionary<string, string>();
-            /// <summary>
-            /// Maps component names (from layout items) to their custom display titles.
-            /// Used when layout items specify a custom title like: "Component Name[title:Custom Title]"
-            /// </summary>
-            public Dictionary<string, string> LayoutItemTitles { get; set; } = new Dictionary<string, string>();
-            public string Author { get; set; }
-            public string MinRevitVersion { get; set; }
-            public string Context { get; set; }
-            public string Hyperlink { get; set; }
-            public string Highlight { get; set; }
-            public string PanelBackground { get; set; }
-            public string TitleBackground { get; set; }
-            public string SlideoutBackground { get; set; }
-            public EngineConfig Engine { get; set; } = new EngineConfig();
-            public string Assembly { get; set; }
-            public string CommandClass { get; set; }
-            public string AvailabilityClass { get; set; }
-            public List<string> Modules { get; set; } = new List<string>();
+        /// <summary>
+        /// Cached parsed bundles with file modification tracking for invalidation.
+        /// Key: file path, Value: (ParsedBundle, LastWriteTimeUtc)
+        /// </summary>
+        private static readonly Dictionary<string, CachedBundle> _bundleCache = 
+            new Dictionary<string, CachedBundle>();
+
+        /// <summary>
+        /// Regex for unescaping string values (compiled for performance).
+        /// </summary>
+        private static readonly Regex _unescapeRegex = new Regex(
+            @"\\([nrt\\'])",
+            RegexOptions.Compiled
+        );
+
+        /// <summary>
+        /// Represents a cached bundle with its last modification time for invalidation.
+        /// </summary>
+        private struct CachedBundle
+        {
+            public ParsedBundle Bundle;
+            public DateTime LastModified;
         }
 
+        /// <summary>
+        /// Nested class providing the main parsing API.
+        /// Maintains backward compatibility with existing code.
+        /// </summary>
         public static class BundleYamlParser
         {
-            // Cache parsed bundles to avoid re-parsing the same YAML files
-            private static Dictionary<string, ParsedBundle> _bundleCache = new Dictionary<string, ParsedBundle>();
-            
+            /// <summary>
+            /// Parses a bundle YAML file and returns the configuration.
+            /// Uses intelligent caching based on file modification time.
+            /// </summary>
+            /// <param name="filePath">Full path to the bundle.yaml file to parse.</param>
+            /// <returns>
+            /// A <see cref="ParsedBundle"/> object containing all parsed configuration.
+            /// </returns>
+            /// <exception cref="ArgumentNullException">Thrown when filePath is null or empty.</exception>
+            /// <exception cref="FileNotFoundException">Thrown when the specified file does not exist.</exception>
+            /// <exception cref="IOException">Thrown when file cannot be read.</exception>
+            /// <remarks>
+            /// <para>The parser implements a file modification-based cache:</para>
+            /// <list type="number">
+            /// <item><description>Checks if file is already cached</description></item>
+            /// <item><description>Validates cache by comparing file modification time</description></item>
+            /// <item><description>Returns cached result if file hasn't changed</description></item>
+            /// <item><description>Re-parses and updates cache if file was modified</description></item>
+            /// </list>
+            /// <para>This provides significant performance improvements when parsing the same
+            /// bundle multiple times during extension loading or refresh operations.</para>
+            /// </remarks>
+            /// <example>
+            /// <code>
+            /// var bundle = BundleParser.BundleYamlParser.Parse(@"C:\Extensions\MyExt\MyCommand.pushbutton\bundle.yaml");
+            /// Console.WriteLine($"Command: {bundle.Titles["en_us"]}");
+            /// Console.WriteLine($"Engine Clean: {bundle.Engine.Clean}");
+            /// </code>
+            /// </example>
             public static ParsedBundle Parse(string filePath)
             {
-                // Check cache first
+                if (string.IsNullOrEmpty(filePath))
+                    throw new ArgumentNullException(nameof(filePath));
+
+                if (!File.Exists(filePath))
+                    throw new FileNotFoundException($"Bundle file not found: {filePath}", filePath);
+
+                // Check cache with file modification validation
+                var lastModified = File.GetLastWriteTimeUtc(filePath);
                 if (_bundleCache.TryGetValue(filePath, out var cached))
-                    return cached;
-                    
-                var parsed = new ParsedBundle();
-                var lines = File.ReadAllLines(filePath);
+                {
+                    // Validate cache by checking modification time
+                    if (cached.LastModified == lastModified)
+                    {
+                        return cached.Bundle;
+                    }
+                }
+
+                // Parse the file
+                var parsed = ParseInternal(filePath);
+
+                // Update cache with new data and modification time
+                _bundleCache[filePath] = new CachedBundle
+                {
+                    Bundle = parsed,
+                    LastModified = lastModified
+                };
+
+                return parsed;
+            }
+
+            /// <summary>
+            /// Clears the internal parse cache, forcing re-parsing on next access.
+            /// </summary>
+            /// <remarks>
+            /// Use this method when you know bundle files have been modified externally
+            /// and need to ensure fresh parsing, or to free memory if many bundles
+            /// were parsed and are no longer needed.
+            /// </remarks>
+            public static void ClearCache()
+            {
+                _bundleCache.Clear();
+            }
+
+            /// <summary>
+            /// Removes a specific file from the cache.
+            /// </summary>
+            /// <param name="filePath">Full path to the bundle file to remove from cache.</param>
+            /// <returns>True if the item was removed; false if it wasn't in the cache.</returns>
+            public static bool InvalidateCache(string filePath)
+            {
+                return _bundleCache.Remove(filePath);
+            }
+        }
+
+        /// <summary>
+        /// Internal parsing logic separated from caching concerns.
+        /// </summary>
+        private static ParsedBundle ParseInternal(string filePath)
+        {
+            var parsed = new ParsedBundle();
+            var lines = File.ReadAllLines(filePath);
                 string currentSection = null;
                 string currentLanguageKey = null;
                 bool isInMultilineValue = false;
                 bool isLiteralMultiline = false; // |-
                 bool isFoldedMultiline = false;  // >-
                 var multilineContent = new List<string>();
+            
+            // Parser state
+            var state = new ParserState();
 
-                for (int i = 0; i < lines.Length; i++)
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var raw = lines[i];
+                var line = raw.Trim();
+
+                // Skip empty lines (but preserve them in multiline content)
+                if (string.IsNullOrWhiteSpace(line))
                 {
-                    var raw = lines[i];
-                    var line = raw.Trim();
-                    
-                    // Skip empty lines (but preserve them in multiline content)
-                    if (string.IsNullOrWhiteSpace(line))
+                    if (state.IsInMultilineValue)
                     {
-                        if (isInMultilineValue)
-                        {
-                            multilineContent.Add("");
-                        }
+                        state.MultilineContent.Add("");
+                    }
+                    continue;
+                }
+
+                // Handle multiline content continuation
+                if (state.IsInMultilineValue)
+                {
+                    // Content must be indented more than the language key (more than 2 spaces)
+                    if (raw.StartsWith("    ") || raw.StartsWith("\t\t"))
+                    {
+                        var content = raw.TrimStart();
+                        state.MultilineContent.Add(content);
                         continue;
                     }
-
-                    // Handle multiline content continuation
-                    if (isInMultilineValue)
+                    else
                     {
-                        // Content must be indented more than the language key (more than 2 spaces)
-                        if (raw.StartsWith("    ") || raw.StartsWith("\t\t"))
-                        {
-                            var content = raw.TrimStart();
-                            multilineContent.Add(content);
-                            continue;
-                        }
-                        else
-                        {
-                            // End of multiline - process accumulated content
-                            FinishMultilineValue(parsed, currentSection, currentLanguageKey, multilineContent, 
-                                               isLiteralMultiline, isFoldedMultiline);
-                            
-                            // Reset multiline state
-                            isInMultilineValue = false;
-                            isLiteralMultiline = false;
-                            isFoldedMultiline = false;
-                            multilineContent.Clear();
-                            currentLanguageKey = null;
-                            
-                            // Continue to process the current line that ended the multiline
-                        }
+                        // End of multiline - process accumulated content
+                        FinishMultilineValue(parsed, state);
+                        state.ResetMultiline();
+                        // Continue to process the current line that ended the multiline
                     }
+                }
 
-                    // Top-level sections (no indentation)
-                    if (!raw.StartsWith(" ") && !raw.StartsWith("\t") && line.Contains(":"))
+                // Parse the line based on indentation level
+                if (!raw.StartsWith(" ") && !raw.StartsWith("\t"))
+                {
+                    ParseTopLevelSection(line, parsed, state);
+                }
+                else if ((raw.StartsWith("  ") && !raw.StartsWith("    ")) ||
+                         (raw.StartsWith("\t") && !raw.StartsWith("\t\t")))
+                {
+                    ParseSecondLevelItem(line, raw, parsed, state);
+                }
+            }
+
+            // Handle any remaining multiline content at end of file
+            if (state.IsInMultilineValue && state.MultilineContent.Count > 0)
+            {
+                FinishMultilineValue(parsed, state);
+            }
+
+            return parsed;
+        }
+
+        /// <summary>
+        /// Parses top-level sections (no indentation).
+        /// </summary>
+        private static void ParseTopLevelSection(string line, ParsedBundle parsed, ParserState state)
+        {
+            if (!line.Contains(":"))
+                return;
+
+            var colonIndex = line.IndexOf(':');
+            state.CurrentSection = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
+            var value = line.Substring(colonIndex + 1).Trim();
+
+            switch (state.CurrentSection)
+            {
+                case "author":
+                    parsed.Author = value;
+                    break;
+                case "min_revit_version":
+                    parsed.MinRevitVersion = value;
+                    break;
+                case "context":
+                    parsed.Context = value;
+                    break;
+                case "hyperlink":
+                    parsed.Hyperlink = StripQuotes(value);
+                    break;
+                case "highlight":
+                    parsed.Highlight = value?.ToLowerInvariant();
+                    break;
+                case "background":
+                    // Single-line format: background: '#BB005591'
+                    if (!string.IsNullOrEmpty(value))
                     {
-                        var colonIndex = line.IndexOf(':');
-                        currentSection = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
-                        var value = line.Substring(colonIndex + 1).Trim();
-
-                        switch (currentSection)
-                        {
-                            case "author":
-                                parsed.Author = value;
-                                break;
-                            case "min_revit_version":
-                                parsed.MinRevitVersion = value;
-                                break;
-                            case "context":
-                                parsed.Context = value;
-                                break;
-                            case "hyperlink":
-                                parsed.Hyperlink = StripQuotes(value);
-                                break;
-                            case "highlight":
-                                parsed.Highlight = value?.ToLowerInvariant();
-                                break;
-                            case "background":
-                                // Single-line format: background: '#BB005591'
-                                if (!string.IsNullOrEmpty(value))
-                                {
-                                    parsed.PanelBackground = StripQuotes(value);
-                                }
+                        parsed.PanelBackground = StripQuotes(value);
+                    }
                                 // Multi-line format handled below
-                                break;
-                            case "assembly":
-                                parsed.Assembly = StripQuotes(value);
-                                break;
-                            case "command_class":
-                                parsed.CommandClass = StripQuotes(value);
-                                break;
-                            case "availability_class":
-                                parsed.AvailabilityClass = StripQuotes(value);
-                                break;
+                    break;
+                case "assembly":
+                    parsed.Assembly = StripQuotes(value);
+                    break;
+                case "command_class":
+                    parsed.CommandClass = StripQuotes(value);
+                    break;
+                case "availability_class":
+                    parsed.AvailabilityClass = StripQuotes(value);
+                    break;
                             case "modules":
                                 // modules is a list, handled below
                                 break;
-                            case "title":
-                            case "titles":
-                                // Check if this is a simple non-localized title on the same line
-                                if (!string.IsNullOrEmpty(value))
-                                {
-                                    // Single line title: "title: My Title"
-                                    parsed.Titles["en_us"] = StripQuotes(value);
-                                }
-                                // Otherwise it's a nested localized section, handled below
-                                break;
-                            case "tooltip":
-                            case "tooltips":
-                                // Check if this is a simple non-localized tooltip on the same line
-                                if (!string.IsNullOrEmpty(value))
-                                {
-                                    // Single line tooltip: "tooltip: My Tooltip"
-                                    parsed.Tooltips["en_us"] = StripQuotes(value);
-                                }
-                                // Otherwise it's a nested localized section, handled below
-                                break;
-                            case "layout":
-                            case "layout_order":
-                            case "engine":
-                                // These sections have nested content
-                                break;
-                        }
-                        continue;
-                    }
-
-                    // Second-level items (indented with 2 spaces or 1 tab)
-                    if ((raw.StartsWith("  ") && !raw.StartsWith("    ")) || 
-                        (raw.StartsWith("\t") && !raw.StartsWith("\t\t")))
+                case "title":
+                case "titles":
+                    // Check if this is a simple non-localized title on the same line
+                    if (!string.IsNullOrEmpty(value))
                     {
-                        if ((currentSection == "layout" || currentSection == "layout_order") && line.StartsWith("-"))
-                        {
+                                    // Single line title: "title: My Title"
+                        parsed.Titles["en_us"] = StripQuotes(value);
+                    }
+                                // Otherwise it's a nested localized section, handled below
+                    break;
+                case "tooltip":
+                case "tooltips":
+                    // Check if this is a simple non-localized tooltip on the same line
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                                    // Single line tooltip: "tooltip: My Tooltip"
+                        parsed.Tooltips["en_us"] = StripQuotes(value);
+                    }
+                                // Otherwise it's a nested localized section, handled below
+                    break;
+                // Other sections handled by nested parsing
+            }
+                        continue;
+        }
+
+        /// <summary>
+        /// Parses second-level items (indented with 2 spaces or 1 tab).
+        /// </summary>
+        private static void ParseSecondLevelItem(string line, string raw, ParsedBundle parsed, ParserState state)
+        {
+            // Layout list items
+            if ((state.CurrentSection == "layout" || state.CurrentSection == "layout_order") && line.StartsWith("-"))
+            {
+                ParseLayoutItem(line, parsed);
+                return;
+            }
+
+            // Module list items
+            if (state.CurrentSection == "modules" && line.StartsWith("-"))
+            {
+                ParseModuleItem(line, parsed);
+                return;
+            }
+
+            // Localized titles/tooltips
+            if ((state.CurrentSection == "title" || state.CurrentSection == "titles" ||
+                 state.CurrentSection == "tooltip" || state.CurrentSection == "tooltips") && line.Contains(":"))
+            {
+                ParseLocalizedText(line, parsed, state);
+                return;
+            }
+
+            // Engine configuration
+            if (state.CurrentSection == "engine" && line.Contains(":"))
+            {
+                ParseEngineConfig(line, parsed);
+                return;
+            }
+
+            // Background configuration
+            if (state.CurrentSection == "background" && line.Contains(":"))
+            {
+                ParseBackgroundConfig(line, parsed);
+            }
+        }
+
+        /// <summary>
+        /// Parses a layout list item with optional custom title syntax.
+        /// </summary>
+        private static void ParseLayoutItem(string line, ParsedBundle parsed)
+        {
                             // Layout list item
-                            var item = line.Substring(1).Trim();
-                            if ((item.StartsWith("\"") && item.EndsWith("\"")) ||
-                                (item.StartsWith("'") && item.EndsWith("'")))
-                            {
-                                item = item.Substring(1, item.Length - 2);
-                            }
-                            
-                            // Check for custom title syntax: "Component[title:Custom Title]"
-                            var componentName = item;
-                            if (item.Contains("[title:") && item.EndsWith("]"))
-                            {
-                                var titleStartIndex = item.IndexOf("[title:");
-                                componentName = item.Substring(0, titleStartIndex);
-                                var titleValue = item.Substring(titleStartIndex + 7, item.Length - titleStartIndex - 8);
-                                
-                                // Unescape \n to newline
-                                titleValue = titleValue.Replace("\\n", "\n");
-                                
-                                // Store the custom title mapping
-                                parsed.LayoutItemTitles[componentName] = titleValue;
-                            }
-                            
-                            parsed.LayoutOrder.Add(componentName);
-                        }
-                        else if (currentSection == "modules" && line.StartsWith("-"))
-                        {
+            var item = line.Substring(1).Trim();
+            
+            // Strip quotes if present
+            if ((item.StartsWith("\"") && item.EndsWith("\"")) ||
+                (item.StartsWith("'") && item.EndsWith("'")))
+            {
+                item = item.Substring(1, item.Length - 2);
+            }
+
+            // Check for custom title syntax: "Component[title:Custom Title]"
+            var componentName = item;
+            if (item.Contains("[title:") && item.EndsWith("]"))
+            {
+                var titleStartIndex = item.IndexOf("[title:");
+                componentName = item.Substring(0, titleStartIndex);
+                var titleValue = item.Substring(titleStartIndex + 7, item.Length - titleStartIndex - 8);
+
+                // Unescape \n to newline
+                titleValue = titleValue.Replace("\\n", "\n");
+
+                // Store the custom title mapping
+                parsed.LayoutItemTitles[componentName] = titleValue;
+            }
+
+            parsed.LayoutOrder.Add(componentName);
+        }
+
+        /// <summary>
+        /// Parses a module list item.
+        /// </summary>
+        private static void ParseModuleItem(string line, ParsedBundle parsed)
+        {
                             // Module list item
-                            var moduleName = line.Substring(1).Trim();
-                            if ((moduleName.StartsWith("\"") && moduleName.EndsWith("\"")) ||
-                                (moduleName.StartsWith("'") && moduleName.EndsWith("'")))
-                            {
-                                moduleName = moduleName.Substring(1, moduleName.Length - 2);
-                            }
-                            parsed.Modules.Add(moduleName);
-                        }
-                        else if ((currentSection == "title" || currentSection == "titles" || 
-                                 currentSection == "tooltip" || currentSection == "tooltips") && line.Contains(":"))
-                        {
+            var moduleName = line.Substring(1).Trim();
+            
+            // Strip quotes if present
+            if ((moduleName.StartsWith("\"") && moduleName.EndsWith("\"")) ||
+                (moduleName.StartsWith("'") && moduleName.EndsWith("'")))
+            {
+                moduleName = moduleName.Substring(1, moduleName.Length - 2);
+            }
+            
+            parsed.Modules.Add(moduleName);
+        }
+
+        /// <summary>
+        /// Parses localized title or tooltip entries with multiline support.
+        /// </summary>
+        private static void ParseLocalizedText(string line, ParsedBundle parsed, ParserState state)
+        {
                             // Language-specific title or tooltip
-                            var colonIndex = line.IndexOf(':');
-                            currentLanguageKey = line.Substring(0, colonIndex).Trim();
-                            var value = line.Substring(colonIndex + 1).Trim();
+            var colonIndex = line.IndexOf(':');
+            state.CurrentLanguageKey = line.Substring(0, colonIndex).Trim();
+            var value = line.Substring(colonIndex + 1).Trim();
 
-                            if (value == "|-")
-                            {
-                                // Literal multiline (preserve line breaks)
-                                isInMultilineValue = true;
-                                isLiteralMultiline = true;
-                            }
-                            else if (value == ">-")
-                            {
-                                // Folded multiline (join lines)
-                                isInMultilineValue = true;
-                                isFoldedMultiline = true;
-                            }
-                            else if (value == "|" || value == ">")
-                            {
-                                // Legacy multiline
-                                isInMultilineValue = true;
-                            }
-                            else if (!string.IsNullOrEmpty(value))
-                            {
-                                // Single-line value - strip quotes if present
-                                value = StripQuotes(value);
-                                if (currentSection == "title" || currentSection == "titles")
-                                    parsed.Titles[currentLanguageKey] = value;
-                                else if (currentSection == "tooltip" || currentSection == "tooltips")
-                                    parsed.Tooltips[currentLanguageKey] = value;
-                            }
-                            else
-                            {
-                                // Empty value after colon - might be implicit multiline
-                                isInMultilineValue = true;
-                            }
-                        }
-                        else if (currentSection == "engine" && line.Contains(":"))
-                        {
+            if (value == "|-")
+            {
+                // Literal multiline (preserve line breaks)
+                state.IsInMultilineValue = true;
+                state.IsLiteralMultiline = true;
+            }
+            else if (value == ">-")
+            {
+                // Folded multiline (join lines)
+                state.IsInMultilineValue = true;
+                state.IsFoldedMultiline = true;
+            }
+            else if (value == "|" || value == ">")
+            {
+                // Legacy multiline
+                state.IsInMultilineValue = true;
+            }
+            else if (!string.IsNullOrEmpty(value))
+            {
+                // Single-line value
+                value = StripQuotes(value);
+                if (state.CurrentSection == "title" || state.CurrentSection == "titles")
+                    parsed.Titles[state.CurrentLanguageKey] = value;
+                else if (state.CurrentSection == "tooltip" || state.CurrentSection == "tooltips")
+                    parsed.Tooltips[state.CurrentLanguageKey] = value;
+            }
+            else
+            {
+                // Empty value after colon - might be implicit multiline
+                state.IsInMultilineValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Parses engine configuration options.
+        /// </summary>
+        private static void ParseEngineConfig(string line, ParsedBundle parsed)
+        {
                             // Engine configuration
-                            var colonIndex = line.IndexOf(':');
-                            var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
-                            var value = line.Substring(colonIndex + 1).Trim().ToLowerInvariant();
+            var colonIndex = line.IndexOf(':');
+            var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
+            var rawValue = line.Substring(colonIndex + 1).Trim();
 
-                            switch (key)
-                            {
-                                case "clean":
-                                    parsed.Engine.Clean = value == "true";
-                                    break;
-                                case "full_frame":
-                                    parsed.Engine.FullFrame = value == "true";
-                                    break;
-                                case "persistent":
-                                    parsed.Engine.Persistent = value == "true";
-                                    break;
-                            }
-                        }
-                        else if (currentSection == "background" && line.Contains(":"))
-                        {
+            switch (key)
+            {
+                case "clean":
+                    parsed.Engine.Clean = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "full_frame":
+                    parsed.Engine.FullFrame = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "persistent":
+                    parsed.Engine.Persistent = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "mainthread":
+                    parsed.Engine.MainThread = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "automate":
+                    parsed.Engine.Automate = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "dynamo_path":
+                    parsed.Engine.DynamoPath = StripQuotes(rawValue);
+                    break;
+                case "dynamo_path_exec":
+                    parsed.Engine.DynamoPathExec = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "dynamo_path_check_existing":
+                    parsed.Engine.DynamoPathCheckExisting = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "dynamo_force_manual_run":
+                    parsed.Engine.DynamoForceManualRun = rawValue.ToLowerInvariant() == "true";
+                    break;
+                case "dynamo_model_nodes_info":
+                    parsed.Engine.DynamoModelNodesInfo = StripQuotes(rawValue);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Parses background color configuration.
+        /// </summary>
+        private static void ParseBackgroundConfig(string line, ParsedBundle parsed)
+        {
                             // Multi-line background configuration
-                            var colonIndex = line.IndexOf(':');
-                            var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
-                            var value = line.Substring(colonIndex + 1).Trim();
+            var colonIndex = line.IndexOf(':');
+            var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
+            var value = line.Substring(colonIndex + 1).Trim();
 
-                            switch (key)
-                            {
-                                case "title":
-                                    parsed.TitleBackground = StripQuotes(value);
-                                    break;
-                                case "panel":
-                                    parsed.PanelBackground = StripQuotes(value);
-                                    break;
-                                case "slideout":
-                                    parsed.SlideoutBackground = StripQuotes(value);
-                                    break;
-                            }
+            switch (key)
+            {
+                case "title":
+                    parsed.TitleBackground = StripQuotes(value);
+                    break;
+                case "panel":
+                    parsed.PanelBackground = StripQuotes(value);
+                    break;
+                case "slideout":
+                    parsed.SlideoutBackground = StripQuotes(value);
+                    break;
+            }
                         }
                     }
                 }
@@ -301,89 +503,148 @@ namespace pyRevitExtensionParser
                 _bundleCache[filePath] = parsed;
                 
                 return parsed;
-            }
+        }
 
-            private static string StripQuotes(string value)
-            {
-                if (string.IsNullOrEmpty(value))
-                    return value;
-                
-                // Handle single quotes
-                if (value.StartsWith("'") && value.EndsWith("'") && value.Length >= 2)
-                {
-                    return value.Substring(1, value.Length - 2);
-                }
-                
-                // Handle double quotes
-                if (value.StartsWith("\"") && value.EndsWith("\"") && value.Length >= 2)
-                {
-                    return value.Substring(1, value.Length - 2);
-                }
-                
+        /// <summary>
+        /// Strips surrounding quotes and processes escape sequences.
+        /// </summary>
+        /// <param name="value">The string value to process.</param>
+        /// <returns>The unquoted and unescaped string.</returns>
+        /// <remarks>
+        /// <para>Handles both single and double quotes.</para>
+        /// <para>Processes standard escape sequences: \n, \r, \t, \\, \'</para>
+        /// <para>Uses compiled regex for performance when processing escape sequences.</para>
+        /// </remarks>
+        private static string StripQuotes(string value)
+        {
+            if (string.IsNullOrEmpty(value))
                 return value;
-            }
 
-            private static void FinishMultilineValue(ParsedBundle parsed, string section, string languageKey,
-                                                   List<string> content, bool isLiteral, bool isFolded)
+            // Check for and remove quotes
+            if ((value.StartsWith("'") && value.EndsWith("'") && value.Length >= 2) ||
+                (value.StartsWith("\"") && value.EndsWith("\"") && value.Length >= 2))
             {
-                if (content.Count == 0 || string.IsNullOrEmpty(languageKey) || string.IsNullOrEmpty(section))
-                    return;
-
-                var processedValue = ProcessMultilineValue(content, isLiteral, isFolded);
+                var unquoted = value.Substring(1, value.Length - 2);
                 
-                if (section == "title" || section == "titles")
-                    parsed.Titles[languageKey] = processedValue;
-                else if (section == "tooltip" || section == "tooltips")
-                    parsed.Tooltips[languageKey] = processedValue;
+                // Process escape sequences using compiled regex for performance
+                return _unescapeRegex.Replace(unquoted, match =>
+                {
+                    switch (match.Groups[1].Value)
+                    {
+                        case "n": return "\n";
+                        case "r": return "\r";
+                        case "t": return "\t";
+                        case "\\": return "\\";
+                        case "'": return "'";
+                        default: return match.Value;
+                    }
+                });
             }
 
-            private static string ProcessMultilineValue(List<string> lines, bool isLiteral, bool isFolded)
+            return value;
+        }
+
+        /// <summary>
+        /// Completes multiline value processing and stores the result.
+        /// </summary>
+        private static void FinishMultilineValue(ParsedBundle parsed, ParserState state)
+        {
+            if (state.MultilineContent.Count == 0 || 
+                string.IsNullOrEmpty(state.CurrentLanguageKey) || 
+                string.IsNullOrEmpty(state.CurrentSection))
+                return;
+
+            var processedValue = ProcessMultilineValue(
+                state.MultilineContent,
+                state.IsLiteralMultiline,
+                state.IsFoldedMultiline);
+
+            if (state.CurrentSection == "title" || state.CurrentSection == "titles")
+                parsed.Titles[state.CurrentLanguageKey] = processedValue;
+            else if (state.CurrentSection == "tooltip" || state.CurrentSection == "tooltips")
+                parsed.Tooltips[state.CurrentLanguageKey] = processedValue;
+        }
+
+        /// <summary>
+        /// Processes multiline content according to YAML literal (|-) or folded (>-) syntax.
+        /// </summary>
+        /// <param name="lines">The collected multiline content lines.</param>
+        /// <param name="isLiteral">True if using literal syntax (|- preserves line breaks).</param>
+        /// <param name="isFolded">True if using folded syntax (>- joins lines with spaces).</param>
+        /// <returns>The processed multiline string.</returns>
+        /// <remarks>
+        /// <para>Literal style (|-): Preserves all line breaks</para>
+        /// <para>Folded style (>-): Joins lines with spaces, preserves paragraph breaks (empty lines)</para>
+        /// <para>Default style: Joins with newlines</para>
+        /// </remarks>
+        private static string ProcessMultilineValue(List<string> lines, bool isLiteral, bool isFolded)
+        {
+            if (lines.Count == 0)
+                return string.Empty;
+
+            if (isLiteral)
             {
-                if (lines.Count == 0)
-                    return string.Empty;
+                // Literal style: preserve line breaks
+                return string.Join("\n", lines).TrimEnd('\n');
+            }
+            else if (isFolded)
+            {
+                // Folded style: join lines with spaces, preserve paragraph breaks
+                var result = new List<string>();
+                var currentParagraph = new List<string>();
 
-                if (isLiteral)
+                foreach (var line in lines)
                 {
-                    // Literal style: preserve line breaks
-                    return string.Join("\n", lines).TrimEnd('\n');
-                }
-                else if (isFolded)
-                {
-                    // Folded style: join lines with spaces, preserve paragraph breaks
-                    var result = new List<string>();
-                    var currentParagraph = new List<string>();
-
-                    foreach (var line in lines)
+                    if (string.IsNullOrWhiteSpace(line))
                     {
-                        if (string.IsNullOrWhiteSpace(line))
+                        // Empty line - end current paragraph
+                        if (currentParagraph.Count > 0)
                         {
-                            // Empty line - end current paragraph
-                            if (currentParagraph.Count > 0)
-                            {
-                                result.Add(string.Join(" ", currentParagraph));
-                                currentParagraph.Clear();
-                            }
-                            result.Add("");
+                            result.Add(string.Join(" ", currentParagraph));
+                            currentParagraph.Clear();
                         }
-                        else
-                        {
-                            currentParagraph.Add(line.Trim());
-                        }
+                        result.Add("");
                     }
-
-                    // Add final paragraph
-                    if (currentParagraph.Count > 0)
+                    else
                     {
-                        result.Add(string.Join(" ", currentParagraph));
+                        currentParagraph.Add(line.Trim());
                     }
+                }
 
-                    return string.Join("\n", result).Trim();
-                }
-                else
+                // Add final paragraph
+                if (currentParagraph.Count > 0)
                 {
-                    // Default: join with newlines
-                    return string.Join("\n", lines);
+                    result.Add(string.Join(" ", currentParagraph));
                 }
+
+                return string.Join("\n", result).Trim();
+            }
+            else
+            {
+                // Default: join with newlines
+                return string.Join("\n", lines);
+            }
+        }
+
+        /// <summary>
+        /// Encapsulates the mutable state of the parser to avoid parameter passing.
+        /// </summary>
+        private class ParserState
+        {
+            public string CurrentSection { get; set; }
+            public string CurrentLanguageKey { get; set; }
+            public bool IsInMultilineValue { get; set; }
+            public bool IsLiteralMultiline { get; set; }
+            public bool IsFoldedMultiline { get; set; }
+            public List<string> MultilineContent { get; set; } = new List<string>();
+
+            public void ResetMultiline()
+            {
+                IsInMultilineValue = false;
+                IsLiteralMultiline = false;
+                IsFoldedMultiline = false;
+                MultilineContent.Clear();
+                CurrentLanguageKey = null;
             }
         }
     }

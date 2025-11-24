@@ -30,6 +30,7 @@ namespace pyRevitExtensionParser
         public string CommandClass { get; set; }
         public string AvailabilityClass { get; set; }
         public List<string> Modules { get; set; } = new List<string>();
+        public EngineConfig Engine { get; set; }
         
         /// <summary>
         /// Panel background color (ARGB hex format, e.g., '#BB005591')

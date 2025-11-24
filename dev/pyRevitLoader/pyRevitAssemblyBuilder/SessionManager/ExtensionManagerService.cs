@@ -20,91 +20,24 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return installedExtensions.Where(ext => ext.Config?.Disabled != true);
         }
 
-        private void ReorderChildren(ParsedExtension parsedExtension)
+        /// <summary>
+        /// Gets all installed UI extensions (extensions ending with .extension) that are not disabled.
+        /// </summary>
+        /// <returns>An enumerable collection of parsed UI extensions.</returns>
+        public IEnumerable<ParsedExtension> GetInstalledUIExtensions()
         {
-            // If LayoutOrder is null for the entire extension, no reordering for top-level children
-            if (parsedExtension.LayoutOrder == null)
-            {
-                // Continue checking for children that may have their own LayoutOrder
-                foreach (var child in parsedExtension.Children)
-                {
-                    // Reorder this component's children if they have their own LayoutOrder
-                    if (child.LayoutOrder != null)
-                    {
-                        ReorderChildrenForComponent(child);
-                    }
-                }
-                return;
-            }
-
-            // Otherwise, reorder top-level children based on LayoutOrder
-            parsedExtension.Children.Sort((x, y) =>
-            {
-                // Compare based on LayoutOrder index, or place items not found at the end
-                var indexX = parsedExtension.LayoutOrder.IndexOf(x.Name);
-                var indexY = parsedExtension.LayoutOrder.IndexOf(y.Name);
-
-                // Handle missing LayoutOrder by placing them at the end
-                return indexX.CompareTo(indexY);
-            });
-
-            // Recurse through children to reorder them if they have LayoutOrder defined
-            foreach (var child in parsedExtension.Children)
-            {
-                if (child.Children != null)
-                {
-                    ReorderChildren(new ParsedExtension
-                    {
-                        Children = child.Children,
-                        LayoutOrder = child.LayoutOrder // Pass LayoutOrder for child components
-                    });
-                }
-            }
+            return ExtensionParser.ParseInstalledExtensions()
+                .Where(ext => ext.Config?.Disabled != true && ext.Directory.EndsWith(".extension", System.StringComparison.OrdinalIgnoreCase));
         }
 
-        private void ReorderChildrenForComponent(ParsedComponent component)
+        /// <summary>
+        /// Gets all installed library extensions (extensions ending with .lib) that are not disabled.
+        /// </summary>
+        /// <returns>An enumerable collection of parsed library extensions.</returns>
+        public IEnumerable<ParsedExtension> GetInstalledLibraryExtensions()
         {
-            // Only reorder if this component has its own LayoutOrder
-            if (component.LayoutOrder == null) return;
-
-            component.Children.Sort((x, y) =>
-            {
-                var indexX = component.LayoutOrder.IndexOf(x.Name);
-                var indexY = component.LayoutOrder.IndexOf(y.Name);
-
-                // Handle missing LayoutOrder by placing them at the end
-                return indexX.CompareTo(indexY);
-            });
-
-            // Recurse for nested components (children of this component)
-            foreach (var child in component.Children)
-            {
-                if (child.Children != null)
-                {
-                    ReorderChildren(new ParsedExtension
-                    {
-                        Children = child.Children,
-                        LayoutOrder = child.LayoutOrder // Pass LayoutOrder for nested components
-                    });
-                }
-            }
-        }
-
-        private void FlattenAndEnrich(IEnumerable<ParsedComponent> components)
-        {
-            foreach (var component in components)
-            {
-                if (!string.IsNullOrEmpty(component.ScriptPath))
-                    yield return component;
-
-        private void FlattenAndEnrich(IEnumerable<ParsedComponent> components)
-        {
-            foreach (var component in components)
-            {
-                // Custom logic if needed, e.g., enrich tooltip or validate UniqueId
-                if (component.Children != null)
-                    FlattenAndEnrich(component.Children);
-            }
+            return ExtensionParser.ParseInstalledExtensions()
+                .Where(ext => ext.Config?.Disabled != true && ext.Directory.EndsWith(".lib", System.StringComparison.OrdinalIgnoreCase));
         }
     }
 }

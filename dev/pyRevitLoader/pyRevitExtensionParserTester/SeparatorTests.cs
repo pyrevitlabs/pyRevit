@@ -1,10 +1,6 @@
 using pyRevitExtensionParser;
 using System.IO;
-using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace pyRevitExtensionParserTest
 {
@@ -178,6 +174,70 @@ layout:
                 Assert.AreEqual(2, separatorCount, "Should have exactly 2 separators");
                 
                 TestContext.Out.WriteLine("Multiple separators test passed!");
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Test]
+        public void TestPanelWithSlideoutMarker()
+        {
+            // Test that slideout marker (>>>>>) creates a slideout but NOT a separator
+            var tempDir = Path.Combine(Path.GetTempPath(), "TestSlideoutPanel.extension");
+            var tabDir = Path.Combine(tempDir, "TestTab.tab");
+            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
+            var button1Dir = Path.Combine(panelDir, "Button1.pushbutton");
+            var button2Dir = Path.Combine(panelDir, "Button2.pushbutton");
+            var button3Dir = Path.Combine(panelDir, "Button3.pushbutton");
+            
+            try
+            {
+                Directory.CreateDirectory(button1Dir);
+                Directory.CreateDirectory(button2Dir);
+                Directory.CreateDirectory(button3Dir);
+                
+                File.WriteAllText(Path.Combine(button1Dir, "script.py"), "print('Button 1')");
+                File.WriteAllText(Path.Combine(button2Dir, "script.py"), "print('Button 2')");
+                File.WriteAllText(Path.Combine(button3Dir, "script.py"), "print('Button 3')");
+                
+                var bundlePath = Path.Combine(panelDir, "bundle.yaml");
+                var bundleContent = @"layout:
+  - Button1
+  - '>>>>>'
+  - Button2
+  - Button3";
+                
+                File.WriteAllText(bundlePath, bundleContent);
+                
+                var extensions = ParseInstalledExtensions(new[] { tempDir });
+                var extension = extensions.FirstOrDefault();
+                
+                Assert.IsNotNull(extension, "Extension should be parsed");
+                
+                var testPanel = FindComponentRecursively(extension, "TestPanel");
+                Assert.IsNotNull(testPanel, "TestPanel should be found");
+                Assert.IsNotNull(testPanel.Children, "Panel should have children");
+                
+                // Should have 3 buttons + 1 slideout marker = 4 children
+                Assert.AreEqual(4, testPanel.Children.Count, "Panel should have 4 children (3 buttons + 1 slideout marker)");
+                
+                // Find the slideout marker
+                var slideoutMarker = testPanel.Children.FirstOrDefault(c => c.HasSlideout);
+                Assert.IsNotNull(slideoutMarker, "Should have a slideout marker component");
+                Assert.AreEqual(CommandComponentType.Separator, slideoutMarker.Type, "Slideout marker should have Separator type");
+                Assert.IsTrue(slideoutMarker.HasSlideout, "Slideout marker should have HasSlideout = true");
+                Assert.AreEqual(">>>", slideoutMarker.DisplayName, "Slideout marker should be named '>>>'");
+                
+                // Verify layout order
+                Assert.AreEqual("Button1", testPanel.Children[0].DisplayName);
+                Assert.IsTrue(testPanel.Children[1].HasSlideout, "Second element should be the slideout marker");
+                Assert.AreEqual("Button2", testPanel.Children[2].DisplayName);
+                Assert.AreEqual("Button3", testPanel.Children[3].DisplayName);
+                
+                TestContext.Out.WriteLine("Panel with slideout marker test passed!");
             }
             finally
             {

@@ -1,7 +1,4 @@
-using System.Linq;
-using NUnit.Framework;
 using pyRevitAssemblyBuilder.SessionManager;
-using pyRevitExtensionParser;
 
 namespace pyRevitExtensionParserTester
 {

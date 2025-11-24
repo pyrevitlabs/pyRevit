@@ -134,18 +134,10 @@ namespace PyRevitLoader
                     }
                 }
 
-
-
-                return Result.Succeeded;
-            }
-            catch (Exception ex)
-            {
-                TaskDialog.Show("Error Starting pyRevit Session", ex.ToString());
-                return Result.Failed;
-            }
+            return result;
         }
 
-        public static Result LoadSession(object outputWindow = null, string buildStrategy = null)
+        public static Result LoadSession(object pythonLogger = null, string buildStrategy = null)
         {
             try
             {
@@ -197,7 +189,7 @@ namespace PyRevitLoader
                     revitVersion,
                     strategyEnum,
                     uiApplication,
-                    outputWindow);
+                    pythonLogger);
 
                 // Load the session using the C# SessionManagerService
                 sessionManager.LoadSession();

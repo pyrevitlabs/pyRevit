@@ -73,6 +73,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 string ctrlId = $"CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
                 string engineCfgs = "{\"clean\": false, \"persistent\": false, \"full_frame\": false}";
                 
+                // Build engine configs based on bundle configuration or script type
+                string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath);
+                
                 // Get context from component, default to "(zero-doc)" if not specified
                 string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
                 
@@ -85,7 +88,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 sb.AppendLine("{");
                 sb.AppendLine($"    public {safeClassName}() : base(");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");
-                sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");
+                sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");  // configScriptPath - defaults to scriptPath when no separate config exists
                 sb.AppendLine($"        @\"{EscapeForVerbatim(searchPaths)}\",");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(arguments)}\",");
                 sb.AppendLine($"        \"\",");
@@ -220,7 +223,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             // Prepare the 13 args - ensure all values are non-null for Ldstr
             string scriptPath = cmd.ScriptPath ?? string.Empty;
-            string configPath = cmd.ScriptPath ?? string.Empty;
+            string configPath = scriptPath;  // defaults to scriptPath when no separate config exists
             
             // Build search paths matching Python's behavior:
             // 1. Script's own directory
@@ -262,6 +265,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             
             string arguments = CommandGenerationUtilities.BuildCommandArguments(extension, cmd, revitVersion);
             
+            // Build engine configs based on bundle configuration or script type
+            string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath);
+            
             string[] args = {
                 scriptPath,
                 configPath,
@@ -275,7 +281,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 cmd.UniqueId ?? string.Empty,
                 $"CustomCtrl_%{extension.Name ?? string.Empty}%{bundleName}%{cmd.Name ?? string.Empty}",
                 context,
-                "{\"clean\":false,\"persistent\":false,\"full_frame\":false}"
+                engineCfgs
             };
             
             // Emit all string arguments - they should all be non-null now
@@ -345,6 +351,69 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
 
             return string.Empty;
+        }
+        
+        /// <summary>
+        /// Builds the engine configuration JSON string based on script type and bundle settings
+        /// </summary>
+        public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath)
+        {
+            var configs = new Dictionary<string, object>();
+            
+            // Check if this is a Dynamo script
+            bool isDynamoScript = scriptPath != null && 
+                                scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
+            
+            // Core engine settings (apply to all script types)
+            configs["clean"] = cmd.Engine?.Clean ?? false;
+            
+            if (isDynamoScript)
+            {
+                // For Dynamo scripts, use appropriate settings
+                // Use automate or mainthread setting (automate is Dynamo-specific synonym)
+                bool requiresMainThread = (cmd.Engine?.MainThread ?? false) || (cmd.Engine?.Automate ?? true);
+                configs["automate"] = requiresMainThread;
+                
+                // Add Dynamo-specific settings
+                if (!string.IsNullOrEmpty(cmd.Engine?.DynamoPath))
+                    configs["dynamo_path"] = cmd.Engine.DynamoPath;
+                    
+                // dynamo_path_exec defaults to true if not specified
+                configs["dynamo_path_exec"] = cmd.Engine?.DynamoPathExec ?? true;
+                
+                if (cmd.Engine?.DynamoPathCheckExisting != null)
+                    configs["dynamo_path_check_existing"] = cmd.Engine.DynamoPathCheckExisting.Value;
+                    
+                if (cmd.Engine?.DynamoForceManualRun != null)
+                    configs["dynamo_force_manual_run"] = cmd.Engine.DynamoForceManualRun.Value;
+                    
+                if (!string.IsNullOrEmpty(cmd.Engine?.DynamoModelNodesInfo))
+                    configs["dynamo_model_nodes_info"] = cmd.Engine.DynamoModelNodesInfo;
+            }
+            else
+            {
+                // For non-Dynamo scripts (Python, C#, etc.)
+                configs["full_frame"] = cmd.Engine?.FullFrame ?? false;
+                configs["persistent"] = cmd.Engine?.Persistent ?? false;
+                
+                // Include mainthread setting if specified (for Python scripts that need main thread)
+                if (cmd.Engine?.MainThread != null)
+                    configs["mainthread"] = cmd.Engine.MainThread.Value;
+            }
+            
+            // Build JSON string manually to ensure proper formatting
+            var jsonParts = new List<string>();
+            foreach (var kvp in configs)
+            {
+                if (kvp.Value is bool boolValue)
+                    jsonParts.Add($"\"{kvp.Key}\":{boolValue.ToString().ToLower()}");
+                else if (kvp.Value is string stringValue)
+                    jsonParts.Add($"\"{kvp.Key}\":\"{stringValue.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"");
+                else
+                    jsonParts.Add($"\"{kvp.Key}\":{kvp.Value}");
+            }
+            
+            return "{" + string.Join(",", jsonParts) + "}";
         }
 
         public static string ResolveInvokeAssemblyPath(ParsedExtension extension, ParsedComponent component, string revitVersion)

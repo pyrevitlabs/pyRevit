@@ -14,7 +14,6 @@ namespace pyRevitExtensionParser
         public Dictionary<string, string> Titles { get; set; }
         public Dictionary<string, string> Tooltips { get; set; }
         public string MinRevitVersion { get; set; }
-        public EngineConfig Engine { get; set; }
         public ExtensionConfig Config { get; set; }
         
         // Cache directory existence checks to avoid repeated file system calls
@@ -312,20 +311,5 @@ namespace pyRevitExtensionParser
             return null;
         }
 
-    }
-    public class ExtensionConfig
-    {
-        public string Name { get; set; }
-        public bool Disabled { get; set; }
-        public bool PrivateRepo { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-    }
-
-    public class EngineConfig
-    {
-        public bool Clean { get; set; }
-        public bool FullFrame { get; set; }
-        public bool Persistent { get; set; }
     }
 }
