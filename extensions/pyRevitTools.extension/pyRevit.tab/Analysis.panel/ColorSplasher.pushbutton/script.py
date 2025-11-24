@@ -813,129 +813,200 @@ class FormCats(Forms.Form):
         self.tooltips = Forms.ToolTip()
         self._config = pyrevit_script.get_config()
         self.SuspendLayout()
-        # Separator Top
-        self._spr_top.Anchor = (
-            Forms.AnchorStyles.Top | Forms.AnchorStyles.Left | Forms.AnchorStyles.Right
-        )
-        self._spr_top.Location = Drawing.Point(0, 0)
-        self._spr_top.Name = "spr_top"
-        self._spr_top.Size = Drawing.Size(2000, 2)
-        self._spr_top.BackColor = Drawing.Color.FromArgb(82, 53, 239)
-        # TextBlock2
+        # Layout constants
+        left_col_x = 12
+        left_col_width = 200
+        right_col_x = 220
+        right_col_width = 200
+        row1_y_start = 2
+        spacing = 5
+        section_margin = 15
+        
+        # LEFT COLUMN - Data Selection
+        left_y_pos = row1_y_start + section_margin
+        
+        # Category label
         self._txt_block2.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
-        self._txt_block2.Location = Drawing.Point(12, 2)
+        self._txt_block2.Location = Drawing.Point(left_col_x, left_y_pos)
         self._txt_block2.Name = "txtBlock2"
-        self._txt_block2.Size = Drawing.Size(120, 25)
-        self._txt_block2.Text = "Category:"
+        self._txt_block2.Size = Drawing.Size(left_col_width, 20)
+        self._txt_block2.Text = "Category Selection"
+        self._txt_block2.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
         self.tooltips.SetToolTip(
             self._txt_block2, "Select a category to start coloring."
         )
-        # comboBox1 Cat
-        self._categories.Anchor = (
-            Forms.AnchorStyles.Top
-            | Forms.AnchorStyles.Bottom
-            | Forms.AnchorStyles.Left
-            | Forms.AnchorStyles.Right
-        )
-        self._categories.Location = Drawing.Point(12, 27)
+        left_y_pos += 22
+        
+        # RIGHT COLUMN - Actions & Settings (start positioning)
+        right_y_pos = row1_y_start + section_margin
+        
+        # Section: Manage Schemes
+        self._lbl_manage_schemes.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._lbl_manage_schemes.Location = Drawing.Point(right_col_x, right_y_pos)
+        self._lbl_manage_schemes.Name = "lbl_manage_schemes"
+        self._lbl_manage_schemes.Size = Drawing.Size(right_col_width, 20)
+        self._lbl_manage_schemes.Text = "Manage Schemes"
+        self._lbl_manage_schemes.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
+        right_y_pos += 25
+        
+        # Category dropdown - align with Save/Load Color Scheme button (adjusted for button border)
+        self._categories.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._categories.Location = Drawing.Point(left_col_x, right_y_pos + 2)
         self._categories.Name = "dropDown"
         self._categories.DataSource = self.table_data
         self._categories.DisplayMember = "Key"
-        self._categories.Size = Drawing.Size(310, 244)
+        self._categories.Size = Drawing.Size(left_col_width, 21)
         self._categories.DropDownWidth = 150
         self._categories.DropDownStyle = Forms.ComboBoxStyle.DropDownList
         self._categories.SelectedIndexChanged += self.update_filter
         self.tooltips.SetToolTip(
             self._categories, "Select a category to start coloring."
         )
-        # TextBlock3
+        
+        # Save / Load Color Scheme button - align with Category dropdown
+        self._button_save_load_scheme.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._button_save_load_scheme.Location = Drawing.Point(right_col_x, right_y_pos)
+        self._button_save_load_scheme.Name = "button_save_load_scheme"
+        self._button_save_load_scheme.Size = Drawing.Size(right_col_width, 28)
+        self._button_save_load_scheme.Text = "Save / Load Color Scheme"
+        self._button_save_load_scheme.UseVisualStyleBackColor = True
+        self._button_save_load_scheme.Click += self.save_load_color_scheme
+        self.tooltips.SetToolTip(
+            self._button_save_load_scheme,
+            "Save the current color scheme or load an existing one.",
+        )
+        right_y_pos += 40
+        
+        # Parameters label - align with Generate Colors label
         self._txt_block3.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
-        self._txt_block3.Location = Drawing.Point(12, 57)
+        self._txt_block3.Location = Drawing.Point(left_col_x, right_y_pos)
         self._txt_block3.Name = "txtBlock3"
-        self._txt_block3.Size = Drawing.Size(120, 20)
-        self._txt_block3.Text = "Parameters:"
+        self._txt_block3.Size = Drawing.Size(left_col_width, 20)
+        self._txt_block3.Text = "Parameter Selection"
+        self._txt_block3.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
         self.tooltips.SetToolTip(
             self._txt_block3, "Select a parameter to color elements based on its value."
         )
-        # Search Label
-        self._search_label.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
-        self._search_label.Location = Drawing.Point(12, 77)
-        self._search_label.Name = "searchLabel"
-        self._search_label.Size = Drawing.Size(120, 16)
-        self._search_label.Text = "Search:"
-        self._search_label.Font = Drawing.Font(self.Font.FontFamily, 8)
-        # Search TextBox
-        self._search_box.Anchor = (
-            Forms.AnchorStyles.Top | Forms.AnchorStyles.Left | Forms.AnchorStyles.Right
-        )
-        self._search_box.Location = Drawing.Point(12, 95)
+        
+        # Section: Generate Colors - align with Parameters label
+        self._lbl_generate_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._lbl_generate_colors.Location = Drawing.Point(right_col_x, right_y_pos)
+        self._lbl_generate_colors.Name = "lbl_generate_colors"
+        self._lbl_generate_colors.Size = Drawing.Size(right_col_width, 20)
+        self._lbl_generate_colors.Text = "Generate Colors"
+        self._lbl_generate_colors.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
+        right_y_pos += 25
+        
+        # Search TextBox - align with Gradient Colors button (adjusted for button border)
+        self._search_box.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._search_box.Location = Drawing.Point(left_col_x, right_y_pos + 2)
         self._search_box.Name = "searchBox"
-        self._search_box.Size = Drawing.Size(310, 20)
-        self._search_box.Text = ""
+        self._search_box.Size = Drawing.Size(left_col_width, 20)
+        self._search_box.Text = "Search parameters..."
+        self._search_box.ForeColor = Drawing.Color.Gray
         self._search_box.TextChanged += self.on_search_text_changed
+        self._search_box.Enter += self.search_box_enter
+        self._search_box.Leave += self.search_box_leave
         self.tooltips.SetToolTip(
             self._search_box, "Type to search and filter parameters."
         )
-        # ComboBox for parameters
-        self._list_box1.Anchor = (
-            Forms.AnchorStyles.Top | Forms.AnchorStyles.Left | Forms.AnchorStyles.Right
+        
+        # Gradient Colors button - align with Search box
+        self._button_gradient_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._button_gradient_colors.Location = Drawing.Point(right_col_x, right_y_pos)
+        self._button_gradient_colors.Name = "button_gradient_colors"
+        self._button_gradient_colors.Size = Drawing.Size(right_col_width, 28)
+        self._button_gradient_colors.Text = "Gradient Colors"
+        self._button_gradient_colors.UseVisualStyleBackColor = True
+        self._button_gradient_colors.Click += self.button_click_gradient_colors
+        self.tooltips.SetToolTip(
+            self._button_gradient_colors,
+            "Based on the color of the first and last value,\nreassign gradients colors to all values.",
         )
+        right_y_pos += 32
+        
+        # Parameters dropdown - align with Random Colors button (adjusted for button border)
+        self._list_box1.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._list_box1.FormattingEnabled = True
         self._list_box1.DropDownStyle = Forms.ComboBoxStyle.DropDownList
-        self._list_box1.Location = Drawing.Point(12, 122)
+        self._list_box1.Location = Drawing.Point(left_col_x, right_y_pos + 2)
         self._list_box1.Name = "comboBoxParameters"
         self._list_box1.DisplayMember = "Key"
-        self._list_box1.Size = Drawing.Size(310, 21)
+        self._list_box1.Size = Drawing.Size(left_col_width, 21)
         self._list_box1.SelectedIndexChanged += self.check_item
         self.tooltips.SetToolTip(
             self._list_box1, "Select a parameter to color elements based on its value."
         )
-        # TextBlock4
+        
+        # Random Colors button - align with Parameters dropdown
+        self._button_random_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._button_random_colors.Location = Drawing.Point(right_col_x, right_y_pos)
+        self._button_random_colors.Name = "button_random_colors"
+        self._button_random_colors.Size = Drawing.Size(right_col_width, 28)
+        self._button_random_colors.Text = "Random Colors"
+        self._button_random_colors.UseVisualStyleBackColor = True
+        self._button_random_colors.Click += self.button_click_random_colors
+        self.tooltips.SetToolTip(
+            self._button_random_colors, "Reassign new random colors to all values."
+        )
+        right_y_pos += 40
+        
+        # Values label - align with Apply Settings label
         self._txt_block4.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
-        self._txt_block4.Location = Drawing.Point(12, 150)
+        self._txt_block4.Location = Drawing.Point(left_col_x, right_y_pos)
         self._txt_block4.Name = "txtBlock4"
-        self._txt_block4.Size = Drawing.Size(120, 23)
-        self._txt_block4.Text = "Values:"
+        self._txt_block4.Size = Drawing.Size(left_col_width, 20)
+        self._txt_block4.Text = "Values Color Assignment"
+        self._txt_block4.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
         self.tooltips.SetToolTip(
             self._txt_block4, "Reassign colors by clicking on their value."
         )
-        # TextBlock5
-        self._txt_block5.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
-        self._txt_block5.Location = Drawing.Point(12, 655)
-        self._txt_block5.Name = "txtBlock5"
-        self._txt_block5.Size = Drawing.Size(310, 27)
-        self._txt_block5.Text = "*Spaces may require a color scheme in the view."
-        self._txt_block5.ForeColor = Drawing.Color.Red
-        self._txt_block5.Font = Drawing.Font("Arial", 8, Drawing.FontStyle.Underline)
-        self._txt_block5.Visible = False
-        # checkedListBox2
-        self.list_box2.Anchor = (
-            Forms.AnchorStyles.Top
-            | Forms.AnchorStyles.Left
-            | Forms.AnchorStyles.Bottom
-            | Forms.AnchorStyles.Right
-        )
+        
+        # Section: Apply Settings - align with Values label
+        self._lbl_apply_settings.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._lbl_apply_settings.Location = Drawing.Point(right_col_x, right_y_pos)
+        self._lbl_apply_settings.Name = "lbl_apply_settings"
+        self._lbl_apply_settings.Size = Drawing.Size(right_col_width, 20)
+        self._lbl_apply_settings.Text = "Apply Settings"
+        self._lbl_apply_settings.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
+        right_y_pos += 25
+        
+        # Values listbox (will be sized to align with Set Colors button + margin)
+        values_listbox_top = right_y_pos
+        self.list_box2.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self.list_box2.FormattingEnabled = True
         self.list_box2.HorizontalScrollbar = True
-        self.list_box2.Location = Drawing.Point(12, 172)
+        self.list_box2.Location = Drawing.Point(left_col_x, values_listbox_top)
         self.list_box2.Name = "listBox2"
         self.list_box2.DisplayMember = "Key"
         self.list_box2.DrawMode = Forms.DrawMode.OwnerDrawFixed
         self.list_box2.DrawItem += self.colour_item
         self.new_fnt = Drawing.Font(
-            self.Font.FontFamily, self.Font.Size - 4, Drawing.FontStyle.Bold
+            self.Font.FontFamily, self.Font.Size, Drawing.FontStyle.Regular
         )
         g = self.list_box2.CreateGraphics()
         self.list_box2.ItemHeight = int(g.MeasureString("Sample", self.new_fnt).Height)
-        self.list_box2.Size = Drawing.Size(310, 280)
+        # Initial size - will be set properly after form height calculation
+        self.list_box2.Size = Drawing.Size(left_col_width, 350)
         self.tooltips.SetToolTip(
             self.list_box2, "Reassign colors by clicking on their value."
         )
+        
+        # TextBlock5 - Hidden warning message
+        self._txt_block5.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
+        self._txt_block5.Location = Drawing.Point(left_col_x, 600)
+        self._txt_block5.Name = "txtBlock5"
+        self._txt_block5.Size = Drawing.Size(left_col_width + right_col_width, 27)
+        self._txt_block5.Text = "*Spaces may require a color scheme in the view."
+        self._txt_block5.ForeColor = Drawing.Color.Red
+        self._txt_block5.Font = Drawing.Font("Arial", 8, Drawing.FontStyle.Underline)
+        self._txt_block5.Visible = False
+        
         # Checkbox: Line Color
-        self._chk_line_color.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
-        self._chk_line_color.Location = Drawing.Point(12, 646)
+        self._chk_line_color.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._chk_line_color.Location = Drawing.Point(right_col_x, right_y_pos)
         self._chk_line_color.Name = "chk_line_color"
-        self._chk_line_color.Size = Drawing.Size(310, 20)
+        self._chk_line_color.Size = Drawing.Size(right_col_width, 20)
         self._chk_line_color.Text = "Apply Line Color"
         self._chk_line_color.Checked = self._config.get_option("apply_line_color", False)
         self._chk_line_color.CheckedChanged += self.checkbox_changed
@@ -943,11 +1014,13 @@ class FormCats(Forms.Form):
             self._chk_line_color,
             "When enabled, applies the color to projection line color.",
         )
+        right_y_pos += 25
+        
         # Checkbox: Foreground Pattern Color
-        self._chk_foreground_pattern.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
-        self._chk_foreground_pattern.Location = Drawing.Point(12, 668)
+        self._chk_foreground_pattern.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._chk_foreground_pattern.Location = Drawing.Point(right_col_x, right_y_pos)
         self._chk_foreground_pattern.Name = "chk_foreground_pattern"
-        self._chk_foreground_pattern.Size = Drawing.Size(310, 20)
+        self._chk_foreground_pattern.Size = Drawing.Size(right_col_width, 20)
         self._chk_foreground_pattern.Text = "Apply Foreground Pattern Color"
         self._chk_foreground_pattern.Checked = self._config.get_option("apply_foreground_pattern_color", True)
         self._chk_foreground_pattern.CheckedChanged += self.checkbox_changed
@@ -955,11 +1028,13 @@ class FormCats(Forms.Form):
             self._chk_foreground_pattern,
             "When enabled, applies the color to surface and cut foreground pattern colors.",
         )
+        right_y_pos += 25
+        
         # Checkbox: Background Pattern Color
-        self._chk_background_pattern.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
-        self._chk_background_pattern.Location = Drawing.Point(12, 690)
+        self._chk_background_pattern.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._chk_background_pattern.Location = Drawing.Point(right_col_x, right_y_pos)
         self._chk_background_pattern.Name = "chk_background_pattern"
-        self._chk_background_pattern.Size = Drawing.Size(310, 20)
+        self._chk_background_pattern.Size = Drawing.Size(right_col_width, 20)
         self._chk_background_pattern.Text = "Apply Background Pattern Color"
         if HOST_APP.is_newer_than(2019, or_equal=True):
             self._chk_background_pattern.Checked = self._config.get_option("apply_background_pattern_color", False)
@@ -973,68 +1048,13 @@ class FormCats(Forms.Form):
             self._chk_background_pattern,
             "When enabled, applies the color to surface and cut background pattern colors. Requires Revit 2019 or newer.",
         )
-        # set_colors_button
-        self._button_set_colors.Anchor = (
-            Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Right
-        )
-        self._button_set_colors.Location = Drawing.Point(222, 715)
-        self._button_set_colors.Name = "button_set_colors"
-        self._button_set_colors.Size = Drawing.Size(100, 27)
-        self._button_set_colors.Text = "Set Colors"
-        self._button_set_colors.UseVisualStyleBackColor = True
-        self._button_set_colors.Click += self.button_click_set_colors
-        self.tooltips.SetToolTip(
-            self._button_set_colors,
-            "Apply the colors from each value in your Revit view.",
-        )
-        # reset_colors_button
-        self._button_reset_colors.Anchor = (
-            Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
-        )
-        self._button_reset_colors.Location = Drawing.Point(12, 715)
-        self._button_reset_colors.Name = "button_reset_colors"
-        self._button_reset_colors.Size = Drawing.Size(100, 27)
-        self._button_reset_colors.Text = "Reset"
-        self._button_reset_colors.UseVisualStyleBackColor = True
-        self._button_reset_colors.Click += self.button_click_reset
-        self.tooltips.SetToolTip(
-            self._button_reset_colors,
-            "Reset the colors in your Revit view to its initial stage.",
-        )
-        # random_colors_button
-        self._button_random_colors.Anchor = (
-            Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Right
-        )
-        self._button_random_colors.Location = Drawing.Point(167, 538)
-        self._button_random_colors.Name = "button_random_colors"
-        self._button_random_colors.Size = Drawing.Size(156, 25)
-        self._button_random_colors.Text = "Random Colors"
-        self._button_random_colors.UseVisualStyleBackColor = True
-        self._button_random_colors.Click += self.button_click_random_colors
-        self.tooltips.SetToolTip(
-            self._button_random_colors, "Reassign new random colors to all values."
-        )
-        # gradient_colors_button
-        self._button_gradient_colors.Anchor = (
-            Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
-        )
-        self._button_gradient_colors.Location = Drawing.Point(11, 538)
-        self._button_gradient_colors.Name = "button_gradient_colors"
-        self._button_gradient_colors.Size = Drawing.Size(156, 25)
-        self._button_gradient_colors.Text = "Gradient Colors"
-        self._button_gradient_colors.UseVisualStyleBackColor = True
-        self._button_gradient_colors.Click += self.button_click_gradient_colors
-        self.tooltips.SetToolTip(
-            self._button_gradient_colors,
-            "Based on the color of the first and last value,\nreassign gradients colors to all values.",
-        )
-        # create_legend_button
-        self._button_create_legend.Anchor = (
-            Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
-        )
-        self._button_create_legend.Location = Drawing.Point(11, 593)
+        right_y_pos += 40
+        
+        # Create Legend button
+        self._button_create_legend.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._button_create_legend.Location = Drawing.Point(right_col_x, right_y_pos)
         self._button_create_legend.Name = "button_create_legend"
-        self._button_create_legend.Size = Drawing.Size(156, 25)
+        self._button_create_legend.Size = Drawing.Size(right_col_width, 28)
         self._button_create_legend.Text = "Create Legend"
         self._button_create_legend.UseVisualStyleBackColor = True
         self._button_create_legend.Click += self.button_click_create_legend
@@ -1042,13 +1062,13 @@ class FormCats(Forms.Form):
             self._button_create_legend,
             "Create a new legend view for all the values and their colors.",
         )
-        # create_view_filters_button
-        self._button_create_view_filters.Anchor = (
-            Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Right
-        )
-        self._button_create_view_filters.Location = Drawing.Point(167, 593)
+        right_y_pos += 32
+        
+        # Create View Filters button
+        self._button_create_view_filters.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._button_create_view_filters.Location = Drawing.Point(right_col_x, right_y_pos)
         self._button_create_view_filters.Name = "button_create_view_filters"
-        self._button_create_view_filters.Size = Drawing.Size(156, 25)
+        self._button_create_view_filters.Size = Drawing.Size(right_col_width, 28)
         self._button_create_view_filters.Text = "Create View Filters"
         self._button_create_view_filters.UseVisualStyleBackColor = True
         self._button_create_view_filters.Click += self.button_click_create_view_filters
@@ -1056,26 +1076,65 @@ class FormCats(Forms.Form):
             self._button_create_view_filters,
             "Create view filters and rules for all the values and their colors.",
         )
-        # save_load_button
-        self._button_save_load_scheme.Anchor = (
-            Forms.AnchorStyles.Bottom
-            | Forms.AnchorStyles.Right
-            | Forms.AnchorStyles.Left
-        )
-        self._button_save_load_scheme.Location = Drawing.Point(11, 565)
-        self._button_save_load_scheme.Name = "button_save_load_scheme"
-        self._button_save_load_scheme.Size = Drawing.Size(312, 25)
-        self._button_save_load_scheme.Text = "Save / Load Color Scheme"
-        self._button_save_load_scheme.UseVisualStyleBackColor = True
-        self._button_save_load_scheme.Click += self.save_load_color_scheme
+        right_y_pos += 40
+        
+        # Reset and Set Colors buttons (grouped under Create View Filters)
+        button_width = int((right_col_width - 15) / 2)
+        button_spacing = 15
+        
+        # Reset button
+        self._button_reset_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._button_reset_colors.Location = Drawing.Point(right_col_x, right_y_pos)
+        self._button_reset_colors.Name = "button_reset_colors"
+        self._button_reset_colors.Size = Drawing.Size(button_width, 32)
+        self._button_reset_colors.Text = "Reset"
+        self._button_reset_colors.UseVisualStyleBackColor = True
+        self._button_reset_colors.Click += self.button_click_reset
         self.tooltips.SetToolTip(
-            self._button_save_load_scheme,
-            "Save the current color scheme or load an existing one.",
+            self._button_reset_colors,
+            "Reset the colors in your Revit view to its initial stage.",
         )
+        
+        # Set Colors button - Blue with white text
+        self._button_set_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
+        self._button_set_colors.Location = Drawing.Point(right_col_x + button_width + button_spacing, right_y_pos)
+        self._button_set_colors.Name = "button_set_colors"
+        self._button_set_colors.Size = Drawing.Size(button_width, 32)
+        self._button_set_colors.Text = "Set Colors"
+        self._button_set_colors.UseVisualStyleBackColor = False
+        blue_color = Drawing.Color.FromArgb(0, 102, 204)
+        self._button_set_colors.BackColor = blue_color
+        self._button_set_colors.ForeColor = Drawing.Color.White
+        self._button_set_colors.FlatStyle = Forms.FlatStyle.Flat
+        self._button_set_colors.FlatAppearance.BorderSize = 0
+        self._button_set_colors.Tag = blue_color
+        self._button_set_colors.MouseEnter += self.button_mouse_enter
+        self._button_set_colors.MouseLeave += self.button_mouse_leave
+        self._button_set_colors.Click += self.button_click_set_colors
+        self.tooltips.SetToolTip(
+            self._button_set_colors,
+            "Replace the colors per element in the view.",
+        )
+        
+        # Calculate form height: Set Colors button bottom + margin + extra margin for values section
+        set_colors_bottom = right_y_pos + 32
+        bottom_margin = 25
+        values_section_bottom_margin = 15
+        form_height = set_colors_bottom + bottom_margin + values_section_bottom_margin
+        
+        # Calculate values listbox height to align with Set Colors button + margin
+        # The listbox should end at the same level as Set Colors button + margin
+        values_listbox_bottom = set_colors_bottom + bottom_margin
+        values_listbox_height = values_listbox_bottom - values_listbox_top
+        if values_listbox_height < 100:
+            values_listbox_height = 100  # Minimum height
+        self.list_box2.Size = Drawing.Size(left_col_width, values_listbox_height)
+        
         # Form
         self.TopMost = True
         self.ShowInTaskbar = False
-        self.ClientSize = Drawing.Size(334, 752)
+        form_width = right_col_x + right_col_width + 12
+        self.ClientSize = Drawing.Size(form_width, form_height)
         self.MaximizeBox = 0
         self.MinimizeBox = 0
         self.CenterToScreen()
@@ -1084,26 +1143,27 @@ class FormCats(Forms.Form):
         self.ShowInTaskbar = True
         self.MaximizeBox = True
         self.MinimizeBox = True
-        self.Controls.Add(self._spr_top)
-        self.Controls.Add(self._chk_line_color)
-        self.Controls.Add(self._chk_foreground_pattern)
-        self.Controls.Add(self._chk_background_pattern)
-        self.Controls.Add(self._button_set_colors)
-        self.Controls.Add(self._button_reset_colors)
-        self.Controls.Add(self._button_random_colors)
-        self.Controls.Add(self._button_gradient_colors)
-        self.Controls.Add(self._button_create_legend)
-        self.Controls.Add(self._button_create_view_filters)
-        self.Controls.Add(self._button_save_load_scheme)
         self.Controls.Add(self._categories)
         self.Controls.Add(self._txt_block2)
         self.Controls.Add(self._txt_block3)
-        self.Controls.Add(self._search_label)
         self.Controls.Add(self._search_box)
         self.Controls.Add(self._txt_block4)
-        self.Controls.Add(self._txt_block5)
         self.Controls.Add(self._list_box1)
         self.Controls.Add(self.list_box2)
+        self.Controls.Add(self._lbl_generate_colors)
+        self.Controls.Add(self._button_gradient_colors)
+        self.Controls.Add(self._button_random_colors)
+        self.Controls.Add(self._lbl_manage_schemes)
+        self.Controls.Add(self._button_save_load_scheme)
+        self.Controls.Add(self._lbl_apply_settings)
+        self.Controls.Add(self._chk_line_color)
+        self.Controls.Add(self._chk_foreground_pattern)
+        self.Controls.Add(self._chk_background_pattern)
+        self.Controls.Add(self._button_create_legend)
+        self.Controls.Add(self._button_create_view_filters)
+        self.Controls.Add(self._button_reset_colors)
+        self.Controls.Add(self._button_set_colors)
+        self.Controls.Add(self._txt_block5)
         self.Name = "Color Elements By Parameter"
         self.Text = "Color Elements By Parameter"
         self.Closing += self.closing_event
@@ -1112,6 +1172,36 @@ class FormCats(Forms.Form):
             icon_filename = __file__.replace("script.py", "color_splasher.ico")
         self.Icon = Drawing.Icon(icon_filename)
         self.ResumeLayout(False)
+
+    def search_box_enter(self, sender, e):
+        """Clear placeholder text when search box gets focus"""
+        if self._search_box.Text == "Search parameters...":
+            self._search_box.Text = ""
+            self._search_box.ForeColor = Drawing.Color.Black
+
+    def search_box_leave(self, sender, e):
+        """Restore placeholder text if search box is empty"""
+        if self._search_box.Text == "":
+            self._search_box.Text = "Search parameters..."
+            self._search_box.ForeColor = Drawing.Color.Gray
+
+    def button_mouse_enter(self, sender, e):
+        """Lighten button color on hover - only for Set Colors button"""
+        if sender == self._button_set_colors and hasattr(sender, 'Tag') and sender.Tag is not None:
+            original_color = sender.Tag
+            lighter = Drawing.Color.FromArgb(
+                min(255, original_color.R + 20),
+                min(255, original_color.G + 20),
+                min(255, original_color.B + 20)
+            )
+            sender.BackColor = lighter
+            sender.ForeColor = Drawing.Color.White
+
+    def button_mouse_leave(self, sender, e):
+        """Restore original button color on leave - only for Set Colors button"""
+        if sender == self._button_set_colors and hasattr(sender, 'Tag') and sender.Tag is not None:
+            sender.BackColor = sender.Tag
+            sender.ForeColor = Drawing.Color.White
 
     def checkbox_changed(self, sender, e):
         self._config.set_option("apply_line_color", self._chk_line_color.Checked)
@@ -1313,6 +1403,9 @@ class FormCats(Forms.Form):
 
     def on_search_text_changed(self, sender, e):
         """Filter parameters based on search text"""
+        # Skip filtering if placeholder text is shown
+        if self._search_box.Text == "Search parameters...":
+            return
         search_text = self._search_box.Text.lower()
 
         # Create new filtered data table
