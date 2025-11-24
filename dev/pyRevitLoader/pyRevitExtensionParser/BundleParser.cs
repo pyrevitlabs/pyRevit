@@ -20,11 +20,6 @@ namespace pyRevitExtensionParser
     /// </remarks>
     public class BundleParser
     {
-        public class ParsedBundle
-        {
-            public List<string> LayoutOrder { get; set; } = new List<string>();
-            public Dictionary<string, string> Titles { get; set; } = new Dictionary<string, string>();
-            public Dictionary<string, string> Tooltips { get; set; } = new Dictionary<string, string>();
         /// <summary>
         /// Cached parsed bundles with file modification tracking for invalidation.
         /// Key: file path, Value: (ParsedBundle, LastWriteTimeUtc)
@@ -147,12 +142,6 @@ namespace pyRevitExtensionParser
         {
             var parsed = new ParsedBundle();
             var lines = File.ReadAllLines(filePath);
-                string currentSection = null;
-                string currentLanguageKey = null;
-                bool isInMultilineValue = false;
-                bool isLiteralMultiline = false; // |-
-                bool isFoldedMultiline = false;  // >-
-                var multilineContent = new List<string>();
             
             // Parser state
             var state = new ParserState();
@@ -247,7 +236,6 @@ namespace pyRevitExtensionParser
                     {
                         parsed.PanelBackground = StripQuotes(value);
                     }
-                                // Multi-line format handled below
                     break;
                 case "assembly":
                     parsed.Assembly = StripQuotes(value);
@@ -258,32 +246,24 @@ namespace pyRevitExtensionParser
                 case "availability_class":
                     parsed.AvailabilityClass = StripQuotes(value);
                     break;
-                            case "modules":
-                                // modules is a list, handled below
-                                break;
                 case "title":
                 case "titles":
                     // Check if this is a simple non-localized title on the same line
                     if (!string.IsNullOrEmpty(value))
                     {
-                                    // Single line title: "title: My Title"
                         parsed.Titles["en_us"] = StripQuotes(value);
                     }
-                                // Otherwise it's a nested localized section, handled below
                     break;
                 case "tooltip":
                 case "tooltips":
                     // Check if this is a simple non-localized tooltip on the same line
                     if (!string.IsNullOrEmpty(value))
                     {
-                                    // Single line tooltip: "tooltip: My Tooltip"
                         parsed.Tooltips["en_us"] = StripQuotes(value);
                     }
-                                // Otherwise it's a nested localized section, handled below
                     break;
                 // Other sections handled by nested parsing
             }
-                        continue;
         }
 
         /// <summary>
@@ -332,7 +312,6 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static void ParseLayoutItem(string line, ParsedBundle parsed)
         {
-                            // Layout list item
             var item = line.Substring(1).Trim();
             
             // Strip quotes if present
@@ -365,7 +344,6 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static void ParseModuleItem(string line, ParsedBundle parsed)
         {
-                            // Module list item
             var moduleName = line.Substring(1).Trim();
             
             // Strip quotes if present
@@ -383,7 +361,6 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static void ParseLocalizedText(string line, ParsedBundle parsed, ParserState state)
         {
-                            // Language-specific title or tooltip
             var colonIndex = line.IndexOf(':');
             state.CurrentLanguageKey = line.Substring(0, colonIndex).Trim();
             var value = line.Substring(colonIndex + 1).Trim();
@@ -426,7 +403,6 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static void ParseEngineConfig(string line, ParsedBundle parsed)
         {
-                            // Engine configuration
             var colonIndex = line.IndexOf(':');
             var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
             var rawValue = line.Substring(colonIndex + 1).Trim();
@@ -471,7 +447,6 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static void ParseBackgroundConfig(string line, ParsedBundle parsed)
         {
-                            // Multi-line background configuration
             var colonIndex = line.IndexOf(':');
             var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
             var value = line.Substring(colonIndex + 1).Trim();
@@ -488,21 +463,6 @@ namespace pyRevitExtensionParser
                     parsed.SlideoutBackground = StripQuotes(value);
                     break;
             }
-                        }
-                    }
-                }
-
-                // Handle any remaining multiline content at end of file
-                if (isInMultilineValue && multilineContent.Count > 0)
-                {
-                    FinishMultilineValue(parsed, currentSection, currentLanguageKey, multilineContent,
-                                       isLiteralMultiline, isFoldedMultiline);
-                }
-
-                // Cache the result before returning
-                _bundleCache[filePath] = parsed;
-                
-                return parsed;
         }
 
         /// <summary>

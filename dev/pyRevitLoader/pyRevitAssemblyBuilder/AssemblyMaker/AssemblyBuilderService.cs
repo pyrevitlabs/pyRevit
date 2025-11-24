@@ -377,21 +377,5 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 throw;
             }
         }
-
-        private static string GetStableHash(string input)
-        {
-            using (var sha1 = System.Security.Cryptography.SHA1.Create())
-            {
-                var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
-                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-            }
-        }
-        public void LoadAssembly(ExtensionAssemblyInfo assemblyInfo)
-        {
-            if (!File.Exists(assemblyInfo.Location))
-                throw new FileNotFoundException("Assembly file not found", assemblyInfo.Location);
-
-            Assembly.LoadFrom(assemblyInfo.Location);
-        }
     }
 }

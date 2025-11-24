@@ -71,7 +71,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 string bundle = string.IsNullOrEmpty(scriptDir) ? string.Empty : Path.GetFileName(scriptDir);
                 string extName = extension.Name;
                 string ctrlId = $"CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
-                string engineCfgs = "{\"clean\": false, \"persistent\": false, \"full_frame\": false}";
                 
                 // Build engine configs based on bundle configuration or script type
                 string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath);

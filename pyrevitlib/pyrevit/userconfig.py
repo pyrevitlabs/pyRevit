@@ -314,6 +314,22 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsNewLoaderKey,
             value=state
         )
+    
+    @property
+    def use_roslyn_loader(self):
+        """Whether to use Roslyn build strategy."""
+        return self.core.get_option(
+            CONSTS.ConfigsUseRoslynKey,
+            default_value=CONSTS.ConfigsUseRoslynDefault,
+        )
+    
+    @use_roslyn_loader.setter
+    def use_roslyn_loader(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsUseRoslynKey,
+            value=state
+        )
+    
     @property
     def output_close_others(self):
         """Whether to close other output windows."""
@@ -916,7 +932,6 @@ mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 # this pushes reading settings at first import of this module.
 try:
     verify_configs(CONFIG_FILE)
-    print('Using config file: %s', CONFIG_FILE)
     user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
                                 config_type=CONFIG_TYPE)
     upgrade.upgrade_user_config(user_config)
