@@ -858,6 +858,7 @@ class FormCats(Forms.Form):
         self._categories.Size = Drawing.Size(left_col_width, 21)
         self._categories.DropDownWidth = 150
         self._categories.DropDownStyle = Forms.ComboBoxStyle.DropDownList
+        self._categories.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._categories.SelectedIndexChanged += self.update_filter
         self.tooltips.SetToolTip(
             self._categories, "Select a category to start coloring."
@@ -869,6 +870,7 @@ class FormCats(Forms.Form):
         self._button_save_load_scheme.Name = "button_save_load_scheme"
         self._button_save_load_scheme.Size = Drawing.Size(right_col_width, 28)
         self._button_save_load_scheme.Text = "Save / Load Color Scheme"
+        self._button_save_load_scheme.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._button_save_load_scheme.UseVisualStyleBackColor = True
         self._button_save_load_scheme.Click += self.save_load_color_scheme
         self.tooltips.SetToolTip(
@@ -903,6 +905,7 @@ class FormCats(Forms.Form):
         self._search_box.Name = "searchBox"
         self._search_box.Size = Drawing.Size(left_col_width, 20)
         self._search_box.Text = "Search parameters..."
+        self._search_box.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._search_box.ForeColor = Drawing.Color.Gray
         self._search_box.TextChanged += self.on_search_text_changed
         self._search_box.Enter += self.search_box_enter
@@ -917,6 +920,7 @@ class FormCats(Forms.Form):
         self._button_gradient_colors.Name = "button_gradient_colors"
         self._button_gradient_colors.Size = Drawing.Size(right_col_width, 28)
         self._button_gradient_colors.Text = "Gradient Colors"
+        self._button_gradient_colors.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._button_gradient_colors.UseVisualStyleBackColor = True
         self._button_gradient_colors.Click += self.button_click_gradient_colors
         self.tooltips.SetToolTip(
@@ -933,6 +937,7 @@ class FormCats(Forms.Form):
         self._list_box1.Name = "comboBoxParameters"
         self._list_box1.DisplayMember = "Key"
         self._list_box1.Size = Drawing.Size(left_col_width, 21)
+        self._list_box1.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._list_box1.SelectedIndexChanged += self.check_item
         self.tooltips.SetToolTip(
             self._list_box1, "Select a parameter to color elements based on its value."
@@ -944,6 +949,7 @@ class FormCats(Forms.Form):
         self._button_random_colors.Name = "button_random_colors"
         self._button_random_colors.Size = Drawing.Size(right_col_width, 28)
         self._button_random_colors.Text = "Random Colors"
+        self._button_random_colors.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._button_random_colors.UseVisualStyleBackColor = True
         self._button_random_colors.Click += self.button_click_random_colors
         self.tooltips.SetToolTip(
@@ -981,8 +987,9 @@ class FormCats(Forms.Form):
         self.list_box2.DisplayMember = "Key"
         self.list_box2.DrawMode = Forms.DrawMode.OwnerDrawFixed
         self.list_box2.DrawItem += self.colour_item
+        self.list_box2.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self.new_fnt = Drawing.Font(
-            self.Font.FontFamily, self.Font.Size, Drawing.FontStyle.Regular
+            self.Font.FontFamily, 9, Drawing.FontStyle.Regular
         )
         g = self.list_box2.CreateGraphics()
         self.list_box2.ItemHeight = int(g.MeasureString("Sample", self.new_fnt).Height)
@@ -999,7 +1006,7 @@ class FormCats(Forms.Form):
         self._txt_block5.Size = Drawing.Size(left_col_width + right_col_width, 27)
         self._txt_block5.Text = "*Spaces may require a color scheme in the view."
         self._txt_block5.ForeColor = Drawing.Color.Red
-        self._txt_block5.Font = Drawing.Font("Arial", 8, Drawing.FontStyle.Underline)
+        self._txt_block5.Font = Drawing.Font(self.Font.FontFamily, 8, Drawing.FontStyle.Underline)
         self._txt_block5.Visible = False
         
         # Checkbox: Line Color
@@ -1008,6 +1015,7 @@ class FormCats(Forms.Form):
         self._chk_line_color.Name = "chk_line_color"
         self._chk_line_color.Size = Drawing.Size(right_col_width, 20)
         self._chk_line_color.Text = "Apply Line Color"
+        self._chk_line_color.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._chk_line_color.Checked = self._config.get_option("apply_line_color", False)
         self._chk_line_color.CheckedChanged += self.checkbox_changed
         self.tooltips.SetToolTip(
@@ -1022,6 +1030,7 @@ class FormCats(Forms.Form):
         self._chk_foreground_pattern.Name = "chk_foreground_pattern"
         self._chk_foreground_pattern.Size = Drawing.Size(right_col_width, 20)
         self._chk_foreground_pattern.Text = "Apply Foreground Pattern Color"
+        self._chk_foreground_pattern.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._chk_foreground_pattern.Checked = self._config.get_option("apply_foreground_pattern_color", True)
         self._chk_foreground_pattern.CheckedChanged += self.checkbox_changed
         self.tooltips.SetToolTip(
@@ -1036,6 +1045,7 @@ class FormCats(Forms.Form):
         self._chk_background_pattern.Name = "chk_background_pattern"
         self._chk_background_pattern.Size = Drawing.Size(right_col_width, 20)
         self._chk_background_pattern.Text = "Apply Background Pattern Color"
+        self._chk_background_pattern.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         if HOST_APP.is_newer_than(2019, or_equal=True):
             self._chk_background_pattern.Checked = self._config.get_option("apply_background_pattern_color", False)
             self._chk_background_pattern.Enabled = True
@@ -1056,6 +1066,7 @@ class FormCats(Forms.Form):
         self._button_create_legend.Name = "button_create_legend"
         self._button_create_legend.Size = Drawing.Size(right_col_width, 28)
         self._button_create_legend.Text = "Create Legend"
+        self._button_create_legend.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._button_create_legend.UseVisualStyleBackColor = True
         self._button_create_legend.Click += self.button_click_create_legend
         self.tooltips.SetToolTip(
@@ -1070,6 +1081,7 @@ class FormCats(Forms.Form):
         self._button_create_view_filters.Name = "button_create_view_filters"
         self._button_create_view_filters.Size = Drawing.Size(right_col_width, 28)
         self._button_create_view_filters.Text = "Create View Filters"
+        self._button_create_view_filters.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._button_create_view_filters.UseVisualStyleBackColor = True
         self._button_create_view_filters.Click += self.button_click_create_view_filters
         self.tooltips.SetToolTip(
@@ -1088,6 +1100,7 @@ class FormCats(Forms.Form):
         self._button_reset_colors.Name = "button_reset_colors"
         self._button_reset_colors.Size = Drawing.Size(button_width, 32)
         self._button_reset_colors.Text = "Reset"
+        self._button_reset_colors.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._button_reset_colors.UseVisualStyleBackColor = True
         self._button_reset_colors.Click += self.button_click_reset
         self.tooltips.SetToolTip(
@@ -1101,12 +1114,23 @@ class FormCats(Forms.Form):
         self._button_set_colors.Name = "button_set_colors"
         self._button_set_colors.Size = Drawing.Size(button_width, 32)
         self._button_set_colors.Text = "Set Colors"
+        self._button_set_colors.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Regular)
         self._button_set_colors.UseVisualStyleBackColor = False
         blue_color = Drawing.Color.FromArgb(0, 102, 204)
         self._button_set_colors.BackColor = blue_color
         self._button_set_colors.ForeColor = Drawing.Color.White
         self._button_set_colors.FlatStyle = Forms.FlatStyle.Flat
         self._button_set_colors.FlatAppearance.BorderSize = 0
+        # Add rounded corners using Region
+        import System.Drawing.Drawing2D as Drawing2D
+        rounded_path = Drawing2D.GraphicsPath()
+        corner_radius = 5
+        rounded_path.AddArc(0, 0, corner_radius * 2, corner_radius * 2, 180, 90)
+        rounded_path.AddArc(button_width - corner_radius * 2, 0, corner_radius * 2, corner_radius * 2, 270, 90)
+        rounded_path.AddArc(button_width - corner_radius * 2, 32 - corner_radius * 2, corner_radius * 2, corner_radius * 2, 0, 90)
+        rounded_path.AddArc(0, 32 - corner_radius * 2, corner_radius * 2, corner_radius * 2, 90, 90)
+        rounded_path.CloseFigure()
+        self._button_set_colors.Region = Drawing.Region(rounded_path)
         self._button_set_colors.Tag = blue_color
         self._button_set_colors.MouseEnter += self.button_mouse_enter
         self._button_set_colors.MouseLeave += self.button_mouse_leave
@@ -1440,7 +1464,7 @@ class FormSaveLoadScheme(Forms.Form):
     def __init__(self):
         self.Font = Drawing.Font(
             self.Font.FontFamily,
-            16,
+            9,
             Drawing.FontStyle.Regular,
             Drawing.GraphicsUnit.Pixel,
         )
