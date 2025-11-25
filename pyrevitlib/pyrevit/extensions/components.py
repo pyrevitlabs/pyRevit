@@ -312,24 +312,23 @@ class ComboBoxGroup(GenericUICommandGroup):
             raw_members = self.meta.get('members', [])
             mlogger.warning('ComboBoxGroup %s metadata members: %s', self.name, raw_members)
             if isinstance(raw_members, list):
-                # Process list of members - handle OrderedDict, dict, tuple, list, or string
+                # Process list of members - preserve full dict for rich metadata (icons, tooltips, etc.)
                 processed_members = []
                 for m in raw_members:
                     if isinstance(m, dict) or (hasattr(m, 'get') and hasattr(m, 'keys')):
-                        # OrderedDict or dict format: {'id': 'settings', 'text': 'Settings'}
-                        member_id = m.get('id', m.get('name', ''))
-                        member_text = m.get('text', m.get('title', member_id))
-                        processed_members.append((member_id, member_text))
+                        # OrderedDict or dict format: {'id': 'settings', 'text': 'Settings', 'icon': '...', ...}
+                        # Preserve the full dictionary to keep all properties (icon, tooltip, group, etc.)
+                        processed_members.append(m)
                     elif isinstance(m, (list, tuple)) and len(m) >= 2:
-                        # Tuple/list format: ('id', 'text')
-                        processed_members.append((m[0], m[1]))
+                        # Tuple/list format: ('id', 'text') - convert to dict for consistency
+                        processed_members.append({'id': m[0], 'text': m[1]})
                     elif isinstance(m, str):
-                        # String format: 'Option 1'
-                        processed_members.append((m, m))
+                        # String format: 'Option 1' - convert to dict for consistency
+                        processed_members.append({'id': m, 'text': m})
                 self.members = processed_members
             elif isinstance(raw_members, dict):
-                # Dict format: {'A': 'Option A'}
-                self.members = [(k, v) for k, v in raw_members.items()]
+                # Dict format: {'A': 'Option A'} - convert to list of dicts
+                self.members = [{'id': k, 'text': v} for k, v in raw_members.items()]
         else:
             mlogger.warning('ComboBoxGroup %s has no metadata', self.name)
         

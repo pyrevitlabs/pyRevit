@@ -886,7 +886,7 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
 
 
 class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
-    """Wrapper for Revit API ComboBox - bare minimum."""
+    """Wrapper for Revit API ComboBox with full property support."""
     
     def __init__(self, ribbon_combobox):
         GenericPyRevitUIContainer.__init__(self)
@@ -901,8 +901,308 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
         if not self.itemdata_mode:
             self.ui_title = self._rvtapi_object.ItemText if hasattr(self._rvtapi_object, 'ItemText') else self.name
         
-        # Store event handler reference to prevent garbage collection
+        # Store deferred tooltip media
+        self.tooltip_image = self.tooltip_video = None
+        
+        # Store event handler references to prevent garbage collection
         self._current_changed_handler = None
+        self._dropdown_opened_handler = None
+        self._dropdown_closed_handler = None
+    
+    def set_rvtapi_object(self, rvtapi_obj):
+        """Set underlying Revit API object for this ComboBox.
+        
+        Args:
+            rvtapi_obj (obj): Revit API ComboBox object
+        """
+        GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
+        # update the ui title for the newly added rvtapi_obj
+        if not self.itemdata_mode and hasattr(self._rvtapi_object, 'ItemText'):
+            self._rvtapi_object.ItemText = self.ui_title
+    
+    def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
+        """Set icon for the ComboBox.
+        
+        Args:
+            icon_file (str): Path to icon image file
+            icon_size (int, optional): Icon size. Defaults to ICON_MEDIUM.
+        """
+        try:
+            button_icon = ButtonIcons(icon_file)
+            rvtapi_obj = self.get_rvtapi_object()
+            if hasattr(rvtapi_obj, 'Image'):
+                rvtapi_obj.Image = button_icon.small_bitmap
+            if hasattr(rvtapi_obj, 'LargeImage'):
+                if icon_size == ICON_LARGE:
+                    rvtapi_obj.LargeImage = button_icon.large_bitmap
+                else:
+                    rvtapi_obj.LargeImage = button_icon.medium_bitmap
+            self._dirty = True
+        except Exception as icon_err:
+            raise PyRevitUIError('Error in applying icon to ComboBox > {} : {}'
+                                 .format(icon_file, icon_err))
+    
+    def set_tooltip(self, tooltip):
+        """Set tooltip for the ComboBox.
+        
+        Args:
+            tooltip (str): Tooltip text
+        """
+        try:
+            if tooltip:
+                self.get_rvtapi_object().ToolTip = tooltip
+            else:
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and adwindows_obj.ToolTip:
+                    adwindows_obj.ToolTip.Content = None
+            self._dirty = True
+        except Exception as tooltip_err:
+            raise PyRevitUIError('Item does not have tooltip property: {}'
+                                 .format(tooltip_err))
+    
+    def set_tooltip_ext(self, tooltip_ext):
+        """Set extended tooltip (long description) for the ComboBox.
+        
+        Args:
+            tooltip_ext (str): Extended tooltip text
+        """
+        try:
+            if tooltip_ext:
+                self.get_rvtapi_object().LongDescription = tooltip_ext
+            else:
+                adwindows_obj = self.get_adwindows_object()
+                if adwindows_obj and adwindows_obj.ToolTip:
+                    adwindows_obj.ToolTip.ExpandedContent = None
+            self._dirty = True
+        except Exception as tooltip_err:
+            raise PyRevitUIError('Item does not have extended '
+                                 'tooltip property: {}'.format(tooltip_err))
+    
+    def set_tooltip_image(self, tooltip_image):
+        """Set tooltip image for the ComboBox.
+        
+        Args:
+            tooltip_image (str): Path to tooltip image file
+        """
+        try:
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                exToolTip = self.get_rvtapi_object().ToolTip
+                if not isinstance(exToolTip, str):
+                    exToolTip = None
+                adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
+                adwindows_obj.ToolTip.Title = self.ui_title
+                adwindows_obj.ToolTip.Content = exToolTip
+                _StackPanel = System.Windows.Controls.StackPanel()
+                _image = System.Windows.Controls.Image()
+                _image.Source = load_bitmapimage(tooltip_image)
+                _StackPanel.Children.Add(_image)
+                adwindows_obj.ToolTip.ExpandedContent = _StackPanel
+                adwindows_obj.ResolveToolTip()
+            else:
+                self.tooltip_image = tooltip_image
+        except Exception as ttimage_err:
+            raise PyRevitUIError('Error setting tooltip image {} | {} '
+                                 .format(tooltip_image, ttimage_err))
+    
+    def set_tooltip_video(self, tooltip_video):
+        """Set tooltip video for the ComboBox.
+        
+        Args:
+            tooltip_video (str): Path to tooltip video file
+        """
+        try:
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj:
+                exToolTip = self.get_rvtapi_object().ToolTip
+                if not isinstance(exToolTip, str):
+                    exToolTip = None
+                adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
+                adwindows_obj.ToolTip.Title = self.ui_title
+                adwindows_obj.ToolTip.Content = exToolTip
+                _StackPanel = System.Windows.Controls.StackPanel()
+                _video = System.Windows.Controls.MediaElement()
+                _video.Source = Uri(tooltip_video)
+                _video.LoadedBehavior = System.Windows.Controls.MediaState.Manual
+                _video.UnloadedBehavior = System.Windows.Controls.MediaState.Manual
+
+                def on_media_ended(sender, args):
+                    sender.Position = System.TimeSpan.Zero
+                    sender.Play()
+                _video.MediaEnded += on_media_ended
+
+                def on_loaded(sender, args):
+                    sender.Play()
+                _video.Loaded += on_loaded
+                _StackPanel.Children.Add(_video)
+                adwindows_obj.ToolTip.ExpandedContent = _StackPanel
+                adwindows_obj.ResolveToolTip()
+            else:
+                self.tooltip_video = tooltip_video
+        except Exception as ttvideo_err:
+            raise PyRevitUIError('Error setting tooltip video {} | {} '
+                                 .format(tooltip_video, ttvideo_err))
+    
+    def set_tooltip_media(self, tooltip_media):
+        """Set tooltip media (image or video) for the ComboBox.
+        
+        Args:
+            tooltip_media (str): Path to tooltip media file
+        """
+        if tooltip_media.endswith(DEFAULT_TOOLTIP_IMAGE_FORMAT):
+            self.set_tooltip_image(tooltip_media)
+        elif tooltip_media.endswith(DEFAULT_TOOLTIP_VIDEO_FORMAT):
+            self.set_tooltip_video(tooltip_media)
+    
+    def set_title(self, ui_title):
+        """Set the display title (ItemText) for the ComboBox.
+        
+        Args:
+            ui_title (str): Display title text
+        """
+        if self.itemdata_mode:
+            self.ui_title = ui_title
+            self._dirty = True
+        else:
+            if hasattr(self._rvtapi_object, 'ItemText'):
+                self._rvtapi_object.ItemText = self.ui_title = ui_title
+                self._dirty = True
+    
+    def get_title(self):
+        """Get the display title (ItemText) for the ComboBox.
+        
+        Returns:
+            (str): Display title text
+        """
+        if self.itemdata_mode:
+            return self.ui_title
+        else:
+            if hasattr(self._rvtapi_object, 'ItemText'):
+                return self._rvtapi_object.ItemText
+            return self.ui_title
+    
+    @property
+    def current(self):
+        """Get or set the current selected ComboBox member.
+        
+        Returns:
+            (UI.ComboBoxMember): Current selected member, or None
+        """
+        if self.itemdata_mode:
+            return None
+        try:
+            return self._rvtapi_object.Current
+        except Exception:
+            return None
+    
+    @current.setter
+    def current(self, value):
+        """Set the current selected ComboBox member.
+        
+        Args:
+            value (UI.ComboBoxMember): ComboBox member to select
+        """
+        if not self.itemdata_mode and hasattr(self._rvtapi_object, 'Current'):
+            try:
+                self._rvtapi_object.Current = value
+                if value and hasattr(self._rvtapi_object, 'ItemText'):
+                    self._rvtapi_object.ItemText = value.ItemText
+                self._dirty = True
+            except Exception as current_err:
+                raise PyRevitUIError('Error setting current item: {}'
+                                     .format(current_err))
+    
+    def add_item(self, member_data):
+        """Add a new item to the ComboBox.
+        
+        Args:
+            member_data (UI.ComboBoxMemberData): Member data to add
+        
+        Returns:
+            (UI.ComboBoxMember): The created ComboBoxMember object, or None
+        """
+        if not self.itemdata_mode:
+            try:
+                member = self._rvtapi_object.AddItem(member_data)
+                self._dirty = True
+                return member
+            except Exception as add_err:
+                raise PyRevitUIError('Error adding item to ComboBox: {}'
+                                     .format(add_err))
+        return None
+    
+    def add_items(self, member_data_list):
+        """Add multiple items to the ComboBox.
+        
+        Args:
+            member_data_list (list): List of UI.ComboBoxMemberData objects
+        """
+        if not self.itemdata_mode:
+            try:
+                self._rvtapi_object.AddItems(member_data_list)
+                self._dirty = True
+            except Exception as add_err:
+                raise PyRevitUIError('Error adding items to ComboBox: {}'
+                                     .format(add_err))
+    
+    def add_separator(self):
+        """Add a separator to the ComboBox dropdown list."""
+        if not self.itemdata_mode:
+            try:
+                self._rvtapi_object.AddSeparator()
+                self._dirty = True
+            except Exception as sep_err:
+                raise PyRevitUIError('Error adding separator to ComboBox: {}'
+                                     .format(sep_err))
+    
+    def get_items(self):
+        """Get a copy of the collection of ComboBoxMembers.
+        
+        Returns:
+            (list): List of UI.ComboBoxMember objects
+        """
+        if self.itemdata_mode:
+            return []
+        try:
+            return list(self._rvtapi_object.GetItems())
+        except Exception:
+            return []
+    
+    def get_contexthelp(self):
+        """Get contextual help for the ComboBox.
+        
+        Returns:
+            (UI.ContextualHelp): Contextual help object
+        """
+        return self.get_rvtapi_object().GetContextualHelp()
+    
+    def set_contexthelp(self, ctxhelpurl):
+        """Set contextual help for the ComboBox.
+        
+        Args:
+            ctxhelpurl (str): URL for contextual help
+        """
+        if ctxhelpurl:
+            ch = UI.ContextualHelp(UI.ContextualHelpType.Url, ctxhelpurl)
+            self.get_rvtapi_object().SetContextualHelp(ch)
+    
+    def process_deferred(self):
+        """Process deferred tooltip media settings."""
+        GenericPyRevitUIContainer.process_deferred(self)
+
+        try:
+            if self.tooltip_image:
+                self.set_tooltip_image(self.tooltip_image)
+        except Exception as ttimage_err:
+            raise PyRevitUIError('Error setting deferred tooltip image {} | {} '
+                                 .format(self.tooltip_image, ttimage_err))
+
+        try:
+            if self.tooltip_video:
+                self.set_tooltip_video(self.tooltip_video)
+        except Exception as ttvideo_err:
+            raise PyRevitUIError('Error setting deferred tooltip video {} | {} '
+                                 .format(self.tooltip_video, ttvideo_err))
     
     def reset_highlights(self):
         """Reset highlight state."""

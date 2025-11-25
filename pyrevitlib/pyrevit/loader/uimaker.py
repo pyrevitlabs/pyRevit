@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """UI maker."""
 import sys
 import imp
@@ -10,6 +11,7 @@ from pyrevit.coreutils import applocales
 from pyrevit.api import UI
 
 from pyrevit.coreutils import ribbon
+from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
 #pylint: disable=W0703,C0302,C0103,C0413
 import pyrevit.extensions as exts
@@ -486,8 +488,10 @@ def _produce_ui_combobox(ui_maker_params):
 
         # Create combobox
         mlogger.warning('COMBOBOX: About to create ComboBox: %s', combobox_name)
+        mlogger.warning('COMBOBOX: combobox.directory: %s', getattr(combobox, 'directory', 'N/A'))
         try:
             parent_ribbon_panel.create_combobox(combobox_name, update_if_exists=True)
+            mlogger.warning('COMBOBOX: create_combobox() completed')
         except Exception as create_err:
             mlogger.error('COMBOBOX: Error calling create_combobox: %s', create_err)
             import traceback
@@ -498,10 +502,12 @@ def _produce_ui_combobox(ui_maker_params):
         if not combobox_ui:
             mlogger.error('COMBOBOX: Failed to get ComboBox UI item: %s', combobox_name)
             return None
+        mlogger.warning('COMBOBOX: Got combobox_ui: %s', type(combobox_ui).__name__)
 
         # Get the Revit API ComboBox object
         try:
             combobox_obj = combobox_ui.get_rvtapi_object()
+            mlogger.warning('COMBOBOX: Got combobox_obj: %s', type(combobox_obj).__name__ if combobox_obj else 'None')
         except Exception as rvtapi_err:
             mlogger.error(
                 'COMBOBOX: get_rvtapi_object() failed for %s: %s',
@@ -530,17 +536,93 @@ def _produce_ui_combobox(ui_maker_params):
 
         # From here on we have a real Autodesk.Revit.UI.ComboBox
 
-        # Set ItemText
-        combobox_obj.ItemText = getattr(combobox, 'ui_title', None) or combobox_name
+        # Set ItemText/Title
+        # Note: In Revit, ComboBox.ItemText displays the current selected item's text in the dropdown
+        # There is no separate visible "title" label for ComboBoxes like buttons have
+        # The title from bundle.yaml is used for tooltip and identification
+        # We'll set ItemText to the title initially, but it will be overwritten when current item is set
+        combobox_title = getattr(combobox, 'ui_title', None) or combobox_name
+        if combobox_title:
+            try:
+                # Set initial ItemText to title (will be overwritten when current item is set)
+                combobox_obj.ItemText = combobox_title
+                mlogger.warning('COMBOBOX: Set initial ItemText to title: %s', combobox_title)
+            except Exception as title_err:
+                mlogger.debug('COMBOBOX: Could not set ItemText: %s', title_err)
 
+        # Set icon if available
+        parent = ui_maker_params.parent_cmp
+        icon_file = getattr(combobox, 'icon_file', None) or getattr(parent, 'icon_file', None)
+        if icon_file:
+            try:
+                combobox_ui.set_icon(icon_file, icon_size=ICON_MEDIUM)
+                mlogger.debug('COMBOBOX: Set icon: %s', icon_file)
+            except Exception as icon_err:
+                mlogger.debug('COMBOBOX: Error setting icon: %s', icon_err)
+
+        # Set tooltip if available
+        tooltip = getattr(combobox, 'tooltip', None)
+        if tooltip:
+            try:
+                combobox_ui.set_tooltip(tooltip)
+                mlogger.debug('COMBOBOX: Set tooltip')
+            except Exception as tooltip_err:
+                mlogger.debug('COMBOBOX: Error setting tooltip: %s', tooltip_err)
+
+        # Set extended tooltip if available
+        tooltip_ext = getattr(combobox, 'tooltip_ext', None)
+        if tooltip_ext:
+            try:
+                combobox_ui.set_tooltip_ext(tooltip_ext)
+                mlogger.debug('COMBOBOX: Set extended tooltip')
+            except Exception as tooltip_ext_err:
+                mlogger.debug('COMBOBOX: Error setting extended tooltip: %s', tooltip_ext_err)
+
+        # Set tooltip media (image/video) if available
+        tooltip_media = getattr(combobox, 'media_file', None)
+        if tooltip_media:
+            try:
+                combobox_ui.set_tooltip_media(tooltip_media)
+                mlogger.debug('COMBOBOX: Set tooltip media: %s', tooltip_media)
+            except Exception as tooltip_media_err:
+                mlogger.debug('COMBOBOX: Error setting tooltip media: %s', tooltip_media_err)
+
+        # Set contextual help if available
+        help_url = getattr(combobox, 'help_url', None)
+        if help_url:
+            try:
+                combobox_ui.set_contexthelp(help_url)
+                mlogger.debug('COMBOBOX: Set contextual help')
+            except Exception as help_err:
+                mlogger.debug('COMBOBOX: Error setting contextual help: %s', help_err)
+
+        # Check if ComboBox already has members (from cache/previous load)
+        existing_items = combobox_ui.get_items()
+        if existing_items:
+            mlogger.warning('COMBOBOX: Found %d existing members - will add new ones', len(existing_items))
+        
         # Add members from metadata
         if hasattr(combobox, 'members') and combobox.members:
+            mlogger.warning('COMBOBOX: Processing %d members from metadata', len(combobox.members))
             for member in combobox.members:
+                member_id = None
+                member_text = None
+                member_icon = None
+                member_group = None
+                member_tooltip = None
+                member_tooltip_ext = None
+                member_tooltip_image = None
+                
                 if isinstance(member, (list, tuple)) and len(member) >= 2:
                     member_id, member_text = member[0], member[1]
                 elif isinstance(member, dict) or (hasattr(member, 'get') and hasattr(member, 'keys')):
                     member_id = member.get('id', member.get('name', ''))
                     member_text = member.get('text', member.get('title', member_id))
+                    member_icon = member.get('icon', None)
+                    member_group = member.get('group', member.get('groupName', None))
+                    member_tooltip = member.get('tooltip', None)
+                    member_tooltip_ext = member.get('tooltip_ext', member.get('longDescription', None))
+                    member_tooltip_image = member.get('tooltip_image', member.get('tooltipImage', None))
                 elif isinstance(member, str):
                     member_id = member_text = member
                 else:
@@ -550,16 +632,106 @@ def _produce_ui_combobox(ui_maker_params):
                     )
                     continue
 
+                if not member_id or not member_text:
+                    mlogger.warning('COMBOBOX: Skipping member with missing id or text')
+                    continue
+
+                # Create member data (minimal - just id and text)
                 member_data = UI.ComboBoxMemberData(member_id, member_text)
-                combobox_obj.AddItem(member_data)
-                mlogger.warning('COMBOBOX: Added member: %s (%s)', member_text, member_id)
+                
+                # Add member to ComboBox first (returns ComboBoxMember object)
+                try:
+                    member = combobox_ui.add_item(member_data)
+                    if not member:
+                        mlogger.warning('COMBOBOX: AddItem returned None for: %s', member_text)
+                        continue
+                    
+                    mlogger.warning('COMBOBOX: Added member: %s (%s), type: %s', member_text, member_id, type(member).__name__)
+                    
+                    # Now set properties on the actual ComboBoxMember object (not the data)
+                    
+                    # Set member icon if available
+                    if member_icon:
+                        try:
+                            # Resolve icon path (relative to bundle directory or absolute)
+                            if combobox.directory and not op.isabs(member_icon):
+                                icon_path = op.join(combobox.directory, member_icon)
+                            else:
+                                icon_path = member_icon
+                            
+                            mlogger.warning('COMBOBOX: Attempting to set icon for %s: %s (exists: %s)', 
+                                          member_text, icon_path, op.exists(icon_path))
+                            
+                            if op.exists(icon_path):
+                                button_icon = ribbon.ButtonIcons(icon_path)
+                                mlogger.warning('COMBOBOX: Created ButtonIcons, setting member.Image...')
+                                member.Image = button_icon.small_bitmap
+                                mlogger.warning('COMBOBOX: [OK] Set icon for member: %s (Image type: %s)', 
+                                              member_text, type(member.Image).__name__ if hasattr(member, 'Image') else 'N/A')
+                            else:
+                                mlogger.warning('COMBOBOX: [ERROR] Icon file not found: %s (directory: %s)', 
+                                              icon_path, combobox.directory)
+                        except Exception as member_icon_err:
+                            mlogger.warning('COMBOBOX: [ERROR] Error setting member icon for %s: %s', 
+                                          member_text, member_icon_err)
+                            import traceback
+                            mlogger.warning('COMBOBOX: Traceback: %s', traceback.format_exc())
+                    
+                    # Set member group if available
+                    if member_group and hasattr(member, 'GroupName'):
+                        try:
+                            member.GroupName = member_group
+                            mlogger.debug('COMBOBOX: Set group for member: %s', member_text)
+                        except Exception as group_err:
+                            mlogger.debug('COMBOBOX: Error setting member group: %s', group_err)
+                    
+                    # Set member tooltip if available
+                    if member_tooltip and hasattr(member, 'ToolTip'):
+                        try:
+                            member.ToolTip = member_tooltip
+                            mlogger.debug('COMBOBOX: Set tooltip for member: %s', member_text)
+                        except Exception as tooltip_err:
+                            mlogger.debug('COMBOBOX: Error setting member tooltip: %s', tooltip_err)
+                    
+                    # Set member extended tooltip if available
+                    if member_tooltip_ext and hasattr(member, 'LongDescription'):
+                        try:
+                            member.LongDescription = member_tooltip_ext
+                            mlogger.debug('COMBOBOX: Set extended tooltip for member: %s', member_text)
+                        except Exception as tooltip_ext_err:
+                            mlogger.debug('COMBOBOX: Error setting member extended tooltip: %s', tooltip_ext_err)
+                    
+                    # Set member tooltip image if available
+                    if member_tooltip_image and hasattr(member, 'ToolTipImage'):
+                        try:
+                            # Resolve tooltip image path (relative to bundle directory or absolute)
+                            if combobox.directory and not op.isabs(member_tooltip_image):
+                                tooltip_image_path = op.join(combobox.directory, member_tooltip_image)
+                            else:
+                                tooltip_image_path = member_tooltip_image
+                            
+                            if op.exists(tooltip_image_path):
+                                from pyrevit.coreutils.ribbon import load_bitmapimage
+                                tooltip_bitmap = load_bitmapimage(tooltip_image_path)
+                                member.ToolTipImage = tooltip_bitmap
+                                mlogger.debug('COMBOBOX: Set tooltip image for member: %s', member_text)
+                        except Exception as tooltip_image_err:
+                            mlogger.debug('COMBOBOX: Error setting member tooltip image: %s', tooltip_image_err)
+                
+                except Exception as add_err:
+                    mlogger.warning('COMBOBOX: Error adding member: %s', add_err)
 
         # Set Current to first item
-        items = combobox_obj.GetItems()
+        # Note: Setting current will overwrite ItemText with the selected item's text
+        # This is expected behavior - ComboBox.ItemText shows the current selection
+        items = combobox_ui.get_items()
         if items and len(items) > 0:
-            combobox_obj.Current = items[0]
-            combobox_obj.ItemText = items[0].ItemText
-            mlogger.warning('COMBOBOX: Set current item: %s', items[0].ItemText)
+            try:
+                combobox_ui.current = items[0]
+                mlogger.warning('COMBOBOX: Set current item: %s (ItemText now shows: %s)', 
+                              items[0].ItemText, combobox_obj.ItemText if hasattr(combobox_obj, 'ItemText') else 'N/A')
+            except Exception as current_err:
+                mlogger.debug('COMBOBOX: Error setting current item: %s', current_err)
 
         # Call __selfinit__ on script (SmartButton pattern)
         try:
