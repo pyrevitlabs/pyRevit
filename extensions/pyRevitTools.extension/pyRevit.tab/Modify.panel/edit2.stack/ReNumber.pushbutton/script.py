@@ -36,6 +36,7 @@ class RNOpts(object):
             return '{} <- {}'.format(self._cat.Name, self._by_cat.Name)
         return self._cat.Name
 
+
 def get_open_views():
     """
     Collect open views in the current document.
@@ -61,7 +62,8 @@ def toggle_element_selection_handles(target_views, bicat, state=True):
         # if view has template, toggle temp VG overrides
         if state and bicat != BIC.OST_Viewports:
             for target_view in target_views:
-                target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
+                if target_view.CanEnableTemporaryViewPropertiesMode():
+                    target_view.EnableTemporaryViewPropertiesMode(target_view.Id)
                 try:
                     rr_cat.Visible[target_view] = state
                 except Exception as vex:
@@ -164,7 +166,7 @@ def set_number(target_element, new_number):
         mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
     if isinstance(target_element, DB.Viewport):
         mark_param = target_element.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
-    # set now 
+    # set now
     if mark_param:
         mark_param.Set(new_number)
 
@@ -385,7 +387,6 @@ if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.Vie
             renumber_options.insert(1, RNOpts(cat=BIC.OST_Areas))
     else:
         renumber_options = [RNOpts(cat=BIC.OST_Viewports)]
-
 
     options_dict = OrderedDict()
     for renumber_option in renumber_options:
