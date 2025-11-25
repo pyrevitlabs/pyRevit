@@ -305,12 +305,10 @@ class ComboBoxGroup(GenericUICommandGroup):
     def __init__(self, cmp_path=None):
         GenericUICommandGroup.__init__(self, cmp_path=cmp_path)
         self.members = []
-        mlogger.warning('=== ComboBoxGroup created: %s (path: %s) ===', self.name, cmp_path)
         
         # Read members from metadata
         if self.meta:
             raw_members = self.meta.get('members', [])
-            mlogger.warning('ComboBoxGroup %s metadata members: %s', self.name, raw_members)
             if isinstance(raw_members, list):
                 # Process list of members - preserve full dict for rich metadata (icons, tooltips, etc.)
                 processed_members = []
@@ -329,10 +327,6 @@ class ComboBoxGroup(GenericUICommandGroup):
             elif isinstance(raw_members, dict):
                 # Dict format: {'A': 'Option A'} - convert to list of dicts
                 self.members = [{'id': k, 'text': v} for k, v in raw_members.items()]
-        else:
-            mlogger.warning('ComboBoxGroup %s has no metadata', self.name)
-        
-        mlogger.warning('ComboBoxGroup %s final members: %s', self.name, self.members)
 
 
 class SplitPushButtonGroup(GenericUICommandGroup):
