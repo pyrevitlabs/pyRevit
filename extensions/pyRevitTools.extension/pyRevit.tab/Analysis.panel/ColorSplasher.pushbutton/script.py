@@ -1957,14 +1957,6 @@ def launch_color_splasher():
         error_msg.MainContent = "Please ensure you have a Revit project open and try again."
         error_msg.Show()
         return
-    
-    try:
-    except (AttributeError, RuntimeError, Exception) as e:
-        error_msg = UI.TaskDialog("Color Splasher Error")
-        error_msg.MainInstruction = "Unable to access Revit application"
-        error_msg.MainContent = "Please ensure you have a Revit project open and try again."
-        error_msg.Show()
-        return
 
     sel_view = get_active_view(doc)
     if sel_view != 0:
