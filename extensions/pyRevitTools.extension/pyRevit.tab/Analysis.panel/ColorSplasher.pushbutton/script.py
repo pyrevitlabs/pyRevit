@@ -1960,7 +1960,6 @@ def launch_color_splasher():
         return
     
     try:
-        version = int(HOST_APP.version)
         uiapp = HOST_APP.uiapp
     except (AttributeError, RuntimeError, Exception) as e:
         error_msg = UI.TaskDialog("Color Splasher Error")
