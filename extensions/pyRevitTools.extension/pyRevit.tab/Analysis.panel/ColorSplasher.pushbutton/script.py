@@ -1923,9 +1923,9 @@ def get_color_shades(base_color, apply_line, apply_foreground, apply_background)
     """
     r, g, b = base_color.Red, base_color.Green, base_color.Blue
     
-    # Foreground and background always use the full base color to match UI swatches
     foreground_color = base_color
     background_color = base_color
+    
     
     # Line color is faded when used with other types, otherwise uses base color
     if apply_line and (apply_foreground or apply_background):
