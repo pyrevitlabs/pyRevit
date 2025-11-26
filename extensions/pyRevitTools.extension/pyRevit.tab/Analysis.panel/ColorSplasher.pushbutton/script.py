@@ -1835,7 +1835,7 @@ def get_used_categories_parameters(cat_exc, acti_view, doc_param=None):
     try:
         if doc_param is None:
             doc_param = acti_view.Document
-    except:
+    except (AttributeError, RuntimeError):
         # Fallback to Revit context if view doesn't have Document
         doc_param = revit.DOCS.doc
     # Get All elements and filter unneeded
