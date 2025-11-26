@@ -1960,7 +1960,6 @@ def launch_color_splasher():
         return
     
     try:
-        uidoc = HOST_APP.uiapp.ActiveUIDocument
         version = int(HOST_APP.version)
         uiapp = HOST_APP.uiapp
     except (AttributeError, RuntimeError, Exception) as e:
