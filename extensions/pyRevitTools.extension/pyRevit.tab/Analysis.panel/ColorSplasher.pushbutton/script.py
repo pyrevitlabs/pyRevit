@@ -1877,7 +1877,7 @@ def get_used_categories_parameters(cat_exc, acti_view, doc_param=None):
                     list_parameters.append(ParameterInfo(1, par))
         # Sort and add
         list_parameters = sorted(
-        list_parameters, key=lambda x: x.name.upper()
+            list_parameters, key=lambda x: x.name.upper()
         )
         list_cat.append(CategoryInfo(ele.Category, list_parameters))
     list_cat = sorted(list_cat, key=lambda x: x.name)
