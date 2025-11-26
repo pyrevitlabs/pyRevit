@@ -1960,7 +1960,6 @@ def launch_color_splasher():
         return
     
     try:
-        uiapp = HOST_APP.uiapp
     except (AttributeError, RuntimeError, Exception) as e:
         error_msg = UI.TaskDialog("Color Splasher Error")
         error_msg.MainInstruction = "Unable to access Revit application"
