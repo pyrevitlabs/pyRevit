@@ -218,7 +218,7 @@ class ApplyColors(UI.IExternalEventHandler):
                                 ogs.SetSurfaceForegroundPatternId(solid_fill_id)
                                 ogs.SetCutForegroundPatternId(solid_fill_id)
                         # Apply background pattern color if enabled (Revit 2019+)
-                        version = int(HOST_APP.version)
+                        # version already defined above
                         if apply_background_pattern_color and version >= 2019:
                             ogs.SetSurfaceBackgroundPatternColor(background_color)
                             ogs.SetCutBackgroundPatternColor(background_color)
