@@ -1850,8 +1850,8 @@ def get_used_categories_parameters(cat_exc, acti_view, doc_param=None):
         if ele.Category is None:
             continue
         # Use the function from compat, not the global-scoped function
-        get_elementid_value_func_instance = get_elementid_value_func()
-        current_int_cat_id = get_elementid_value_func_instance(ele.Category.Id)
+        elementid_value_getter = get_elementid_value_func()
+        current_int_cat_id = elementid_value_getter(ele.Category.Id)
         if (
             current_int_cat_id in cat_exc
             or current_int_cat_id >= -1
