@@ -809,9 +809,17 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def _setup_printers(self):
         printers = list(Drawing.Printing.PrinterSettings.InstalledPrinters)
+
+        if IS_REVIT_2022_OR_NEWER:
+            printers.insert(0, "Revit Internal Printer")
+            
         self.printers_cb.ItemsSource = printers
-        print_mgr = self._get_printmanager()
-        self.printers_cb.SelectedItem = print_mgr.PrinterName
+        
+        if IS_REVIT_2022_OR_NEWER and "Revit Internal Printer" in printers:
+            self.printers_cb.SelectedItem = "Revit Internal Printer"
+        else:
+            print_mgr = self._get_printmanager()
+            self.printers_cb.SelectedItem = print_mgr.PrinterName
 
     def _get_psetting_items(self, doc,
                             psettings=None, include_varsettings=False):
@@ -1058,7 +1066,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if not per_sheet_psettings:
                     print_mgr.PrintSetup.CurrentPrintSetting = \
                         self.selected_print_setting.print_settings
-                print_mgr.SelectNewPrintDriver(self.selected_printer)
+                if not (IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer"):
+                    print_mgr.SelectNewPrintDriver(self.selected_printer)
                 print_mgr.PrintRange = DB.PrintRange.Current
             except Exception as cpSetEx:
                 forms.alert(
@@ -1090,7 +1099,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                             try:
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
-                                                if IS_REVIT_2022_OR_NEWER:
+                                                if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
                                                     optspdf = PrintUtils.pdf_opts()
                                                     PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                                 else:
@@ -1139,7 +1148,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                             try:
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
-                                                if IS_REVIT_2022_OR_NEWER:
+                                                if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
                                                     optspdf = PrintUtils.pdf_opts()
                                                     PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                                 else:
@@ -1161,7 +1170,8 @@ class PrintSheetsWindow(forms.WPFWindow):
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         print_mgr.PrintToFile = True
-        print_mgr.SelectNewPrintDriver(self.selected_printer)
+        if not (IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer"):
+            print_mgr.SelectNewPrintDriver(self.selected_printer)
         print_mgr.PrintRange = DB.PrintRange.Current
 
 
@@ -1193,7 +1203,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                     try:
                                         pb1.update_progress(pbCount1, pbTotal1)
                                         pbCount1 += 1
-                                        if IS_REVIT_2022_OR_NEWER:
+                                        if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
                                             optspdf = PrintUtils.pdf_opts()
                                             PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                         else:
@@ -1476,6 +1486,10 @@ class PrintSheetsWindow(forms.WPFWindow):
 
     def printers_changed(self, sender, args):
         print_mgr = self._get_printmanager()
+
+        if self.selected_printer == "Revit Internal Printer":
+            return
+    
         print_mgr.SelectNewPrintDriver(self.selected_printer)
         self._setup_print_settings()
 
