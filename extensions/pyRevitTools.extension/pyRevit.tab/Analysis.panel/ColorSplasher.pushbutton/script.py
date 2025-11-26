@@ -1052,7 +1052,7 @@ class FormCats(Forms.Form):
         else:
             self._chk_background_pattern.Checked = False
             self._chk_background_pattern.Enabled = False
-            self._chk_background_pattern.Text += " (Requires Revit 2019+)"
+            self._chk_background_pattern.Text += " (Requires Revit 2019 or newer)"
         self._chk_background_pattern.CheckedChanged += self.checkbox_changed
         self.tooltips.SetToolTip(
             self._chk_background_pattern,
