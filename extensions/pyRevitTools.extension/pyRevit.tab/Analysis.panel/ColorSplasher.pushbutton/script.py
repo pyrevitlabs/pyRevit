@@ -90,7 +90,7 @@ class SubscribeView(UI.IExternalEventHandler):
                             current_doc = revit.DOCS.doc
                             if not new_doc.Equals(current_doc):
                                 wndw.Close()
-                        except:
+                        except (AttributeError, RuntimeError):
                             # If can't get current doc, just continue
                             pass
                 # Update categories in dropdown
