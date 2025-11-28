@@ -16,8 +16,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>An enumerable collection of parsed extensions.</returns>
         public IEnumerable<ParsedExtension> GetInstalledExtensions()
         {
-            var installedExtensions = ExtensionParser.ParseInstalledExtensions();
-            return installedExtensions.Where(ext => ext.Config?.Disabled != true);
+            return ExtensionParser.ParseInstalledExtensions()
+                .Where(ext => ext.Config?.Disabled != true);
         }
 
         /// <summary>
