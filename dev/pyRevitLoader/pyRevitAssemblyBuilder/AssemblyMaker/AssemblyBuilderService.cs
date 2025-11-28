@@ -52,12 +52,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
             _buildStrategy = buildStrategy;
 
-#if !NETFRAMEWORK
             if (_buildStrategy == AssemblyBuildStrategy.ILPack)
             {
                 // On .NET Core, hook into AssemblyLoadContext to resolve Lokad.ILPack two folders up
                 var baseDir = _baseDir;
                 var ilPackPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "Lokad.ILPack.dll"));
+#if !NETFRAMEWORK
                 AssemblyLoadContext.Default.Resolving += (context, name) =>
                 {
                     if (string.Equals(name.Name, "Lokad.ILPack", StringComparison.OrdinalIgnoreCase)
@@ -67,13 +67,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     }
                     return null;
                 };
-            }
 #else
-            if (_buildStrategy == AssemblyBuildStrategy.ILPack)
-            {
-                // On .NET Framework, hook into AppDomain to resolve Lokad.ILPack two folders up
-                var baseDir = _baseDir;
-                var ilPackPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "Lokad.ILPack.dll"));
                 AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
                 {
                     var name = new AssemblyName(args.Name).Name;
@@ -84,8 +78,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     }
                     return null;
                 };
-            }
 #endif
+            }
         }
 
         /// <summary>
