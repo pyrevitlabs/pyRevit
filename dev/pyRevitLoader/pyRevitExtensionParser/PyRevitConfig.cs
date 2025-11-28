@@ -126,7 +126,7 @@ namespace pyRevitExtensionParser
             get
             {
                 var value = _ini.IniReadValue("core", "startuplogtimeout");
-                return int.TryParse(value, out var result) ? result : 10; // Default to 10 seconds
+                return int.TryParse(value, out var result) ? result : 10;
             }
             set
             {
