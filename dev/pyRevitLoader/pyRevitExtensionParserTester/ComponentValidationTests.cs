@@ -144,6 +144,18 @@ namespace pyRevitExtensionParserTest
                 Assert.IsNotNull(extension.Children, "Extension should have children collection");
                 TestContext.Out.WriteLine($"Extension has {extension.Children.Count} child(ren)");
                 
+                var validButtonTypes = new[]
+                {
+                    CommandComponentType.PushButton,
+                    CommandComponentType.PanelButton,
+                    CommandComponentType.PullDown,
+                    CommandComponentType.Stack,
+                    CommandComponentType.SmartButton,
+                    CommandComponentType.Separator,
+                    CommandComponentType.NoButton,
+                    CommandComponentType.UrlButton
+                };
+                
                 // Validate tab structure
                 foreach (var tab in extension.Children)
                 {
@@ -165,19 +177,7 @@ namespace pyRevitExtensionParserTest
                                 {
                                     TestContext.Out.WriteLine($"      Button: {button.DisplayName} ({button.Type})");
                                     
-                                    // Validate button types are valid
-                                    var validButtonTypes = new[]
-                                    {
-                                        CommandComponentType.PushButton,
-                                        CommandComponentType.PanelButton,
-                                        CommandComponentType.PullDown,
-                                        CommandComponentType.Stack,
-                                        CommandComponentType.SmartButton,
-                                        CommandComponentType.Separator,
-                                        CommandComponentType.NoButton,
-                                        CommandComponentType.UrlButton
-                                    };
-                                    
+                                    // Validate button type is valid
                                     Assert.Contains(button.Type, validButtonTypes, 
                                                    $"Button should have a valid type, but was: {button.Type}");
                                 }

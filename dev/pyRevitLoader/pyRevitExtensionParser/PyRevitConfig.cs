@@ -40,7 +40,6 @@ namespace pyRevitExtensionParser
             get
             {
                 var value = _ini.IniReadValue("core", "userextensions");
-                // Avoid Trim() allocation if value is already null/empty
                 return string.IsNullOrEmpty(value) ? null : value.Trim();
             }
             set
@@ -64,7 +63,6 @@ namespace pyRevitExtensionParser
             get
             {
                 var value = _ini.IniReadValue("core", "user_locale");
-                // Avoid Trim() allocation if value is already null/empty
                 return string.IsNullOrEmpty(value) ? null : value.Trim();
             }
             set
@@ -88,7 +86,6 @@ namespace pyRevitExtensionParser
             }
             set
             {
-                // Use cached strings to avoid ToString().ToLowerInvariant() allocations
                 _ini.IniWriteValue("core", "new_loader", value ? TrueString : FalseString);
             }
         }
@@ -108,7 +105,6 @@ namespace pyRevitExtensionParser
             }
             set
             {
-                // Use cached strings to avoid ToString().ToLowerInvariant() allocations
                 _ini.IniWriteValue("core", "new_loader_roslyn", value ? TrueString : FalseString);
             }
         }

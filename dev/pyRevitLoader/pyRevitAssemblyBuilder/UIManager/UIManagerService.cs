@@ -8,7 +8,6 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using Autodesk.Windows;
-using Autodesk.Internal.Windows;
 using RibbonPanel = Autodesk.Revit.UI.RibbonPanel;
 using RibbonButton = Autodesk.Windows.RibbonButton;
 using RibbonItem = Autodesk.Revit.UI.RibbonItem;
