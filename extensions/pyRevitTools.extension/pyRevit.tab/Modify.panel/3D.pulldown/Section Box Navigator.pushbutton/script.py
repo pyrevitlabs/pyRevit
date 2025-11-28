@@ -7,7 +7,6 @@ from pyrevit.framework import System
 from pyrevit.revit import events
 from pyrevit.compat import get_elementid_value_func
 from pyrevit import DB, UI
-from pyrevit import traceback
 
 from sectionbox_navigation import (
     get_all_levels,
@@ -49,7 +48,6 @@ length_unit_symbol = length_format_options.GetSymbolTypeId()
 length_unit_symbol_label = None
 if not length_unit_symbol.Empty():
     length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
-ufu = DB.UnitFormatUtils
 
 DEFAULT_NUDGE_VALUE_MM = 500.0
 default_nudge_value = DB.UnitUtils.Convert(
@@ -72,7 +70,7 @@ def create_preview_mesh(section_box, color):
         )
         return mesh
     except Exception:
-        logger.error("Error creating preview mesh: {}".format(traceback.format_exc()))
+        logger.exception("Error creating preview mesh.")
         return None
 
 
@@ -124,6 +122,10 @@ def create_adjusted_box(
     new_box.Transform = transform
 
     return new_box
+
+
+def format_length_value(value):
+    return DB.UnitFormatUtils.Format(doc.GetUnits(), DB.SpecTypeId.Length, value, False)
 
 
 # --------------------
@@ -266,13 +268,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
 
             if top_level_elevation:
-                top_level_elevation = ufu.Format(
-                    doc.GetUnits(), DB.SpecTypeId.Length, top_level_elevation, False
-                )
+                top_level_elevation = format_length_value(top_level_elevation)
             if bottom_level_elevation:
-                bottom_level_elevation = ufu.Format(
-                    doc.GetUnits(), DB.SpecTypeId.Length, bottom_level_elevation, False
-                )
+                bottom_level_elevation = format_length_value(bottom_level_elevation)
 
             # Update top info
             if top_level:
@@ -282,9 +280,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             else:
                 self.txtTopLevel.Text = "Top: No level above"
 
-            top = ufu.Format(
-                doc.GetUnits(), DB.SpecTypeId.Length, transformed_max.Z, False
-            )
+            top = format_length_value(transformed_max.Z)
             self.txtTopPosition.Text = "Position: {}".format(top)
 
             # Update bottom info
@@ -295,13 +291,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             else:
                 self.txtBottomLevel.Text = "Bottom: No level below"
 
-            bottom = ufu.Format(
-                doc.GetUnits(), DB.SpecTypeId.Length, transformed_min.Z, False
-            )
+            bottom = format_length_value(transformed_min.Z)
             self.txtBottomPosition.Text = "Position: {}".format(bottom)
 
         except Exception:
-            logger.error("Error updating info: {}".format(traceback.format_exc()))
+            logger.exception("Error updating info.")
 
     def show_status_message(self, column, message, message_type="info"):
         """
@@ -608,9 +602,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
             else:
                 # Nudge mode - show nudge amount
-                nudge_display = ufu.Format(
-                    doc.GetUnits(), DB.SpecTypeId.Length, abs(nudge_amount), False
-                )
+                nudge_display = format_length_value(abs(nudge_amount))
+
                 self.show_status_message(
                     1,
                     "Nudged {} by {} {}".format(target, nudge_display, movement),
@@ -634,9 +627,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             max_z_change=adjustment,
         ):
             # Success - show informative message
-            amount_display = ufu.Format(
-                doc.GetUnits(), DB.SpecTypeId.Length, amount, False
-            )
+            amount_display = format_length_value(amount)
             operation = "Expanded" if is_expand else "Shrunk"
             self.show_status_message(
                 3,
@@ -806,9 +797,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 )
             else:
                 # Nudge mode
-                nudge_display = ufu.Format(
-                    doc.GetUnits(), DB.SpecTypeId.Length, nudge_amount, False
-                )
+                nudge_display = format_length_value(nudge_amount)
+
                 direction_display = cardinal_dir.upper()
                 self.show_status_message(
                     2,
@@ -1365,20 +1355,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.event_handler.parameters = self.pending_action
         self.ext_event.Raise()
 
-    def btn_refresh_click(self, sender, e):
-        """Manually refresh the information."""
-        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
-        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
-        self.update_info()
-        # Only update status if there's no current message (i.e., status is "Ready" or empty)
-        if self.txtGridStatus.Text == "..." or self.txtGridStatus.Text == "-":
-            self.update_grid_status()
-        if (
-            self.txtExpandActionsStatus.Text == "..."
-            or self.txtExpandActionsStatus.Text == "-"
-        ):
-            self.update_expand_actions_status()
-
     def chkIncludeLinks_checked(self, sender, e):
         """Refresh levels and grids when checkbox is toggled."""
         self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
@@ -1500,7 +1476,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 logger.warning("Error refreshing view: {}".format(ex))
 
         except Exception:
-            logger.error("Error during cleanup: {}".format(traceback.format_exc()))
+            logger.exception("Error during cleanup.")
 
 
 # ---------
