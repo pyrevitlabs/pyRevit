@@ -361,15 +361,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         {
             if (!File.Exists(info.Location))
                 throw new FileNotFoundException("Assembly not found", info.Location);
-                
-            try
-            {
-                Assembly.LoadFrom(info.Location);
-            }
-            catch
-            {
-                throw;
-            }
+            Assembly.LoadFrom(info.Location);
         }
     }
 }
