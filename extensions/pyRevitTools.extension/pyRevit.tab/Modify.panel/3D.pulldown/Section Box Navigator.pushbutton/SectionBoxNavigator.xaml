@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Section Box Navigator" Height="670" Width="600" 
+        Title="Section Box Navigator" Height="635" Width="560" 
         ShowInTaskbar="False" Topmost="True"
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
     <Window.Resources>
@@ -368,7 +368,7 @@
             <StackPanel Orientation="Horizontal" Margin="5">
                 <CheckBox x:Name="chkPreview" Content="Show preview on hover" 
                         Margin="5" IsChecked="True"/>
-                <CheckBox x:Name="chkAutoupdate" Content="Autoupdate UI on Events" 
+                <CheckBox x:Name="chkAutoupdate" Content="Update UI on Events" 
                         Margin="5" IsChecked="True"/>
                 <CheckBox x:Name="chkIncludeLinks" Content="Include Linked Levels and Grids" 
                         Margin="5" IsChecked="False"
