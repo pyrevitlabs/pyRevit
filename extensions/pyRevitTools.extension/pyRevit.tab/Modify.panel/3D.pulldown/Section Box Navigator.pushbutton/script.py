@@ -16,7 +16,13 @@ from sectionbox_navigation import (
     get_next_level_below,
     find_next_grid_in_direction,
 )
-from sectionbox_utils import is_2d_view, get_view_range_and_crop
+from sectionbox_utils import (
+    is_2d_view,
+    get_view_range_and_crop,
+    get_crop_element,
+    compute_rotation_angle,
+    apply_plan_viewrange_from_sectionbox,
+)
 from sectionbox_actions import toggle, hide, align_to_face
 from sectionbox_geometry import (
     get_section_box_info,
@@ -242,6 +248,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
             self.current_view = doc.ActiveView
 
+            if is_2d_view(self.current_view):
+                self.btnAlignToView.Content = "Align with 3D View"
+            elif isinstance(self.current_view, DB.View3D):
+                self.btnAlignToView.Content = "Align with 2D View"
+
             if (
                 not isinstance(self.current_view, DB.View3D)
                 or not self.current_view.IsSectionBoxActive
@@ -404,8 +415,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_align_to_face()
             elif action_type == "expand_shrink":
                 self.do_expand_shrink(params)
-            elif action_type == "align_to_view":
-                self.do_align_to_view(params)
+            elif action_type == "align_to_2d_view":
+                self.do_align_to_2d_view(params)
+            elif action_type == "align_to_3d_view":
+                self.do_align_to_3d_view(params)
             elif action_type == "grid_move":
                 self.do_grid_move(params)
 
@@ -413,7 +426,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.Dispatcher.Invoke(System.Action(self.update_info))
 
         except Exception as ex:
-            logger.error("Error executing action: {}".format(ex))
+            logger.exception("Error executing action: {}".format(ex))
 
     def do_level_move(self, params):
         """Move section box to level or by nudge amount."""
@@ -808,7 +821,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     "success",
                 )
 
-    def do_align_to_view(self, params):
+    def do_align_to_2d_view(self, params):
         """Align section box to a 2D view's range and crop."""
         view_data = params.get("view_data")
         if not view_data:
@@ -881,6 +894,62 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "Section box aligned to view '{}'".format(view_data["view"].Name),
                 "success",
             )
+
+    def do_align_to_3d_view(self, params):
+        view_data = params.get("view_data")
+        if not view_data:
+            return
+
+        vt = view_data.get("view_type", None)
+        section_box = view_data.get("section_box", None)
+
+        # Has to be a seperate Transaction for rotate_crop_element to find the bbox
+        with revit.Transaction("Activate CropBox"):
+            if not self.current_view.CropBoxActive:
+                self.current_view.CropBoxActive = True
+
+            if not self.current_view.CropBoxVisible:
+                self.current_view.CropBoxVisible = True
+
+        with revit.Transaction("Align 2D View to 3D Section Box"):
+            if vt == DB.ViewType.FloorPlan or vt == DB.ViewType.CeilingPlan:
+                self.current_view.CropBox = section_box
+                crop_el = get_crop_element(doc, self.current_view)
+                if crop_el:
+                    # --- 1. Compute 3D section box centroid in world coordinates ---
+                    tf = section_box.Transform
+                    sb_min = tf.OfPoint(section_box.Min)
+                    sb_max = tf.OfPoint(section_box.Max)
+                    sb_centroid = DB.XYZ(
+                        (sb_min.X + sb_max.X) / 2.0,
+                        (sb_min.Y + sb_max.Y) / 2.0,
+                        0  # Z is ignored for plan rotation
+                    )
+
+                    # --- 2. Compute current crop element centroid in view coordinates ---
+                    crop_box = crop_el.get_BoundingBox(self.current_view)
+                    crop_centroid = DB.XYZ(
+                        (crop_box.Min.X + crop_box.Max.X) / 2.0,
+                        (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
+                        0
+                    )
+
+                    # --- 3. Translate crop element so centroids align (XY only) ---
+                    translation = sb_centroid - crop_centroid
+                    DB.ElementTransformUtils.MoveElement(doc, crop_el.Id, translation)
+
+                    # --- 4. Rotate crop element around vertical axis through its centroid ---
+                    angle = compute_rotation_angle(section_box, self.current_view)
+                    axis = DB.Line.CreateBound(
+                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 0),
+                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 1)
+                    )
+                    DB.ElementTransformUtils.RotateElement(doc, crop_el.Id, axis, angle)
+                apply_plan_viewrange_from_sectionbox(doc, self.current_view, section_box)
+
+            else:
+                self.show_status_message(1, "Unsupported view type.", "warning")
+                return
 
     def do_toggle(self):
         """Toggle section box."""
@@ -1168,29 +1237,58 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
 
     def btn_align_box_to_view_click(self, sender, e):
-        """Align section box to a selected 2D view."""
-        # Select a 2D view
-        selected_view = forms.select_views(
-            multiple=False,
-            filterfunc=is_2d_view,
-            title="Select 2D View for Section Box",
-        )
+        """Align section box to a selected view."""
+        self.current_view = doc.ActiveView
+        # Select the view to align
+        if isinstance(self.current_view, DB.View3D):
+            selected_view = forms.select_views(
+                multiple=False,
+                filterfunc=is_2d_view,
+                title="Select 2D View for Section Box",
+            )
 
-        if not selected_view:
+            if not selected_view:
+                return
+
+            # Get view range and crop information
+            view_data = get_view_range_and_crop(selected_view, doc)
+            self.pending_action = {
+                "action": "align_to_2d_view",
+                "view_data": view_data,
+            }
+
+        elif is_2d_view(self.current_view, only_plan=True):
+
+            selected_view = forms.select_views(
+                multiple=False,
+                filterfunc=lambda v: isinstance(v, DB.View3D),
+                title="Select 3D View to Copy From",
+            )
+            if not selected_view:
+                return
+
+            info = get_section_box_info(selected_view, DATAFILENAME)
+            section_box = info.get("box")
+            if not section_box:
+                self.show_status_message(1, "3D view has no section box.", "error")
+                return
+
+            view_data = {
+                "view_type": self.current_view.ViewType,
+                "section_box": section_box,
+            }
+            self.pending_action = {
+                "action": "align_to_3d_view",
+                "view_data": view_data,
+            }
+
+        else:
             return
-
-        # Get view range and crop information
-        view_data = get_view_range_and_crop(selected_view, doc)
 
         if not view_data:
             self.show_status_message(1, "Could not extract view information.", "error")
             return
 
-        # Queue the action to be executed in Revit context
-        self.pending_action = {
-            "action": "align_to_view",
-            "view_data": view_data,
-        }
         self.event_handler.parameters = self.pending_action
         self.ext_event.Raise()
 
@@ -1486,14 +1584,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 if __name__ == "__main__":
     try:
         # Check if section box is active
-        if not isinstance(active_view, DB.View3D) or not active_view.IsSectionBoxActive:
+        if not active_view.IsSectionBoxActive:
             try:
-                view_boxes = script.load_data(DATAFILENAME)
-                view_id_value = get_elementid_value(active_view.Id)
-                if view_id_value not in view_boxes:
-                    raise KeyError("View not found in stored boxes")
-                bbox_data = view_boxes[view_id_value]
-                restored_bbox = revit.deserialize(bbox_data)
+                info = get_section_box_info(active_view, DATAFILENAME)
+                restored_bbox = info.get("box")
+                if not restored_bbox:
+                    raise Exception
 
                 # Ask user if they want to restore
                 if forms.alert(
@@ -1505,7 +1601,7 @@ if __name__ == "__main__":
                         active_view.SetSectionBox(restored_bbox)
             except Exception:
                 forms.alert(
-                    "The current view isn't 3D or doesn't have an active section box.",
+                    "The current view doesn't have an active or stored section box.",
                     title="No Section Box",
                     exitscript=True,
                 )
