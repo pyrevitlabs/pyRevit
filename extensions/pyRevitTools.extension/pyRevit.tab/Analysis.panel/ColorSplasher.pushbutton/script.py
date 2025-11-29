@@ -166,13 +166,13 @@ class ApplyColors(UI.IExternalEventHandler):
 
             with revit.Transaction("Apply colors to elements"):
                 get_elementid_value = get_elementid_value_func()
+                version = int(HOST_APP.version)
                 if get_elementid_value(sel_cat.cat.Id) in (
                     int(DB.BuiltInCategory.OST_Rooms),
                     int(DB.BuiltInCategory.OST_MEPSpaces),
                     int(DB.BuiltInCategory.OST_Areas),
                 ):
                     # In case of rooms, spaces and areas. Check Color scheme is applied and if not
-                    version = int(HOST_APP.version)
                     if version > 2021:
                         if wndw.crt_view.GetColorFillSchemeId(sel_cat.cat.Id).ToString() == "-1":
                             color_schemes = (
@@ -586,6 +586,7 @@ class CreateFilters(UI.IExternalEventHandler):
                     categories = List[DB.ElementId]()
                     categories.Add(sel_cat.cat.Id)
                     solid_fill_id = solid_fill_pattern_id()
+                    version = int(HOST_APP.version)
                     items_listbox = wndw.list_box2.Items
                     for i, element in enumerate(items_listbox):
                         item = wndw.list_box2.Items[i]["Value"]
