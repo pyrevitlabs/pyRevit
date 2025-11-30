@@ -264,10 +264,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 not isinstance(self.current_view, DB.View3D)
                 or not self.current_view.IsSectionBoxActive
             ):
-                self.txtTopLevel.Text = "Top: No section box active"
+                self.txtTopLevelAbove.Text = "No section box active"
                 self.txtTopPosition.Text = ""
-                self.txtBottomLevel.Text = "Bottom: No section box active"
+                self.txtTopLevelBelow.Text = ""
+                self.txtBottomLevelAbove.Text = ""
                 self.txtBottomPosition.Text = ""
+                self.txtBottomLevelBelow.Text = ""
                 return
 
             info = get_section_box_info(self.current_view, DATAFILENAME)
@@ -278,39 +280,61 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             transformed_min = info["transformed_min"]
 
             # Get levels
-            top_level, top_level_elevation = get_next_level_above(
+            top_level_above, top_level_above_elevation = get_next_level_above(
                 transformed_max.Z, self.all_levels, TOLERANCE
             )
-            bottom_level, bottom_level_elevation = get_next_level_below(
+            top_level_below, top_level_below_elevation = get_next_level_below(
+                transformed_max.Z, self.all_levels, TOLERANCE
+            )
+            bottom_level_above, bottom_level_above_elevation = get_next_level_above(
+                transformed_min.Z, self.all_levels, TOLERANCE
+            )
+            bottom_level_below, bottom_level_below_elevation = get_next_level_below(
                 transformed_min.Z, self.all_levels, TOLERANCE
             )
 
-            if top_level_elevation:
-                top_level_elevation = format_length_value(top_level_elevation)
-            if bottom_level_elevation:
-                bottom_level_elevation = format_length_value(bottom_level_elevation)
+            if top_level_above_elevation:
+                top_level_above_elevation = format_length_value(top_level_above_elevation)
+            if top_level_below_elevation:
+                top_level_below_elevation = format_length_value(top_level_below_elevation)
+            if bottom_level_above_elevation:
+                bottom_level_above_elevation = format_length_value(bottom_level_above_elevation)
+            if bottom_level_below_elevation:
+                bottom_level_below_elevation = format_length_value(bottom_level_below_elevation)
 
             # Update top info
-            if top_level:
-                self.txtTopLevel.Text = "Top: Above: {} @ {}".format(
-                    top_level.Name, top_level_elevation
+            if top_level_above:
+                self.txtTopLevelAbove.Text = "Above Top: {} @ {}".format(
+                    top_level_above.Name, top_level_above_elevation
                 )
             else:
-                self.txtTopLevel.Text = "Top: No level above"
+                self.txtTopLevelAbove.Text = "No level above top"
+            if top_level_below:
+                self.txtTopLevelBelow.Text = "Below Top: {} @ {}".format(
+                    top_level_below.Name, top_level_below_elevation
+                )
+            else:
+                self.txtTopLevelBelow.Text = "No level below top"
 
             top = format_length_value(transformed_max.Z)
-            self.txtTopPosition.Text = "Position: {}".format(top)
+            self.txtTopPosition.Text = "Top of Box: {}".format(top)
 
             # Update bottom info
-            if bottom_level:
-                self.txtBottomLevel.Text = "Bottom: Below: {} @ {}".format(
-                    bottom_level.Name, bottom_level_elevation
+            if bottom_level_above:
+                self.txtBottomLevelAbove.Text = "Above Bottom: {} @ {}".format(
+                    bottom_level_above.Name, bottom_level_above_elevation
                 )
             else:
-                self.txtBottomLevel.Text = "Bottom: No level below"
+                self.txtBottomLevelAbove.Text = "No level above bottom"
+            if bottom_level_below:
+                self.txtBottomLevelBelow.Text = "Below Bottom: {} @ {}".format(
+                    bottom_level_below.Name, bottom_level_below_elevation
+                )
+            else:
+                self.txtBottomLevelBelow.Text = "No level below bottom"
 
             bottom = format_length_value(transformed_min.Z)
-            self.txtBottomPosition.Text = "Position: {}".format(bottom)
+            self.txtBottomPosition.Text = "Bottom of Box: {}".format(bottom)
 
         except Exception:
             logger.exception("Error updating info.")
