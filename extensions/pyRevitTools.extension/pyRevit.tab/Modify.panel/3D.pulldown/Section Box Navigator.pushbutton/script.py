@@ -968,28 +968,44 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 return
 
     def do_toggle(self):
-        """Toggle section box."""
-        was_active = self.current_view.IsSectionBoxActive
-        toggle(doc, DATAFILENAME)
-        # Check new state
-        is_now_active = self.current_view.IsSectionBoxActive
+        """Toggle section or crop box."""
+        if isinstance(self.current_view, DB.View3D):
+            was_active = self.current_view.IsSectionBoxActive
+            toggle(doc, DATAFILENAME)
+            is_now_active = self.current_view.IsSectionBoxActive
+        elif is_2d_view(self.current_view):
+            was_active = self.current_view.CropBoxActive
+            with revit.Transaction("Toggle CropBox Active State"):
+                self.current_view.CropBoxActive = not was_active
+            is_now_active = self.current_view.CropBoxActive
+        else:
+            return
         if was_active != is_now_active:
             state = "activated" if is_now_active else "deactivated"
-            self.show_status_message(3, "Section box {}".format(state), "success")
+            self.show_status_message(3, "Box {}".format(state), "success")
         else:
-            self.show_status_message(3, "Section box toggle failed", "error")
+            self.show_status_message(3, "Box toggle failed", "error")
 
     def do_hide(self):
-        """Hide or Unhide section box."""
+        """Hide or Unhide section or crop box."""
         try:
-            was_hidden = hide(doc)
+            if isinstance(self.current_view, DB.View3D):
+                was_hidden = hide(doc)
+            elif is_2d_view(self.current_view):
+                was_hidden = self.current_view.CropBoxVisible
+                with revit.Transaction("Toggle CropBox Visibility"):
+                    self.current_view.CropBoxVisible = not was_hidden
+            else:
+                return
             state = "hidden" if not was_hidden else "unhidden"
-            self.show_status_message(3, "Section box {}".format(state), "success")
+            self.show_status_message(3, "Box {}".format(state), "success")
         except Exception:
-            self.show_status_message(3, "Error in Section box visibility", "error")
+            self.show_status_message(3, "Error in Box visibility", "error")
 
     def do_align_to_face(self):
         """Align to face"""
+        if not isinstance(self.current_view, DB.View3D):
+            return
         try:
             align_to_face(doc, uidoc)
             self.show_status_message(3, "Section box aligned to face", "success")
