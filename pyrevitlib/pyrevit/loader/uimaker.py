@@ -118,7 +118,7 @@ def _get_effective_classname(button):
 
     This means that typemaker has created a executor type for this command.
     If class_name is not set, this function returns button.unique_name.
-    This allows for the UI button to be created and linked to the previously 
+    This allows for the UI button to be created and linked to the previously
     created assembly.
     If the type does not exist in the assembly, the UI button will not work,
     however this allows updating the command with the correct executor type,
@@ -505,6 +505,13 @@ def _produce_ui_stacks(ui_maker_params):
         try:
             parent_ui_panel.close_stack()
             mlogger.debug('Closed stack: %s', stack_cmp.name)
+            for component in stack_cmp:
+                if hasattr(component, 'highlight_type') and component.highlight_type:
+                    # Get the UI item for this component
+                    ui_item = parent_ui_panel.button(component.name)
+                    if ui_item:
+                        _set_highlights(component, ui_item)
+            mlogger.debug('Set highlights on stack: %s', stack_cmp.name)
             return stack_cmp
         except PyRevitException as err:
             mlogger.error('Error creating stack | %s', err)
@@ -542,7 +549,7 @@ def _produce_ui_panelpushbutton(ui_maker_params):
             avail_class_name=panelpushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(panelpushbutton))
-        
+
         panelpushbutton_ui = parent_ui_item.button(panelpushbutton.name)
 
         _set_highlights(panelpushbutton, panelpushbutton_ui)
