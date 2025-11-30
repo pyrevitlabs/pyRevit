@@ -138,3 +138,16 @@ def apply_plan_viewrange_from_sectionbox(doc, view, section_box):
     vr.SetOffset(DB.PlanViewPlane.ViewDepthPlane, depth_offset)
 
     view.SetViewRange(vr)
+
+
+def to_world_identity(bbox):
+    t = bbox.Transform
+
+    p1 = t.OfPoint(bbox.Min)
+    p2 = t.OfPoint(bbox.Max)
+
+    new_box = DB.BoundingBoxXYZ()
+    new_box.Transform = DB.Transform.Identity
+    new_box.Min = DB.XYZ(min(p1.X, p2.X), min(p1.Y, p2.Y), min(p1.Z, p2.Z))
+    new_box.Max = DB.XYZ(max(p1.X, p2.X), max(p1.Y, p2.Y), max(p1.Z, p2.Z))
+    return new_box

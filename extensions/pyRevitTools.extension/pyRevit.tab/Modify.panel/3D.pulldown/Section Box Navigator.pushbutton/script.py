@@ -22,6 +22,7 @@ from sectionbox_utils import (
     get_crop_element,
     compute_rotation_angle,
     apply_plan_viewrange_from_sectionbox,
+    to_world_identity,
 )
 from sectionbox_actions import toggle, hide, align_to_face
 from sectionbox_geometry import (
@@ -246,12 +247,16 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def update_info(self):
         """Update the information display."""
         try:
+            last_view = self.current_view.Id
             self.current_view = doc.ActiveView
 
             if is_2d_view(self.current_view):
                 self.btnAlignToView.Content = "Align with 3D View"
+                self.clear_status_message()
             elif isinstance(self.current_view, DB.View3D):
                 self.btnAlignToView.Content = "Align with 2D View"
+                if last_view != self.current_view.Id:
+                    self.clear_status_message()
 
             if (
                 not isinstance(self.current_view, DB.View3D)
@@ -285,7 +290,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             # Update top info
             if top_level:
-                self.txtTopLevel.Text = "Top: Next level up: {} @ {}".format(
+                self.txtTopLevel.Text = "Top: Above: {} @ {}".format(
                     top_level.Name, top_level_elevation
                 )
             else:
@@ -296,7 +301,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             # Update bottom info
             if bottom_level:
-                self.txtBottomLevel.Text = "Bottom: Next level down: {} @ {}".format(
+                self.txtBottomLevel.Text = "Bottom: Below: {} @ {}".format(
                     bottom_level.Name, bottom_level_elevation
                 )
             else:
@@ -343,7 +348,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception as ex:
             logger.error("Error showing status message: {}".format(ex))
 
-    def clear_status_message(self, column):
+    def clear_status_message(self, column=None):
         """Clear the status message for the specified column."""
         try:
 
@@ -353,6 +358,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 elif column == 2:
                     self.txtGridStatus.Text = ""
                 elif column == 3:
+                    self.txtExpandActionsStatus.Text = ""
+                elif column is None:
+                    self.txtVerticalStatus.Text = ""
+                    self.txtGridStatus.Text = ""
                     self.txtExpandActionsStatus.Text = ""
 
             self.Dispatcher.Invoke(System.Action(update_ui))
@@ -846,7 +855,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     1, "Could not get crop box from section.", "error"
                 )
                 return
-            new_box = crop_box
+            new_box = to_world_identity(crop_box)
 
         elif crop_box:
             # For floor plans, use the existing logic
