@@ -5,7 +5,6 @@
 from pyrevit import revit, script, forms
 from pyrevit.framework import System
 from pyrevit.revit import events
-from pyrevit.compat import get_elementid_value_func
 from pyrevit import DB, UI
 
 from sectionbox_navigation import (
@@ -32,7 +31,6 @@ from sectionbox_geometry import (
     make_xy_transform_only,
 )
 
-get_elementid_value = get_elementid_value_func()
 
 # --------------------
 # Initialize Variables
@@ -189,7 +187,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
         self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.preview_server = None
-        self.preview_box = None
 
         # Initialize DC3D Server
         try:
@@ -294,13 +291,21 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
 
             if top_level_above_elevation:
-                top_level_above_elevation = format_length_value(top_level_above_elevation)
+                top_level_above_elevation = format_length_value(
+                    top_level_above_elevation
+                )
             if top_level_below_elevation:
-                top_level_below_elevation = format_length_value(top_level_below_elevation)
+                top_level_below_elevation = format_length_value(
+                    top_level_below_elevation
+                )
             if bottom_level_above_elevation:
-                bottom_level_above_elevation = format_length_value(bottom_level_above_elevation)
+                bottom_level_above_elevation = format_length_value(
+                    bottom_level_above_elevation
+                )
             if bottom_level_below_elevation:
-                bottom_level_below_elevation = format_length_value(bottom_level_below_elevation)
+                bottom_level_below_elevation = format_length_value(
+                    bottom_level_below_elevation
+                )
 
             # Update top info
             if top_level_above:
@@ -898,7 +903,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     3, "No cropbox or elements found to extend scopebox to", "error"
                 )
                 return
-            boxes = [b for b in [el.get_BoundingBox(source_view) for el in elements] if b]
+            boxes = [
+                b for b in [el.get_BoundingBox(source_view) for el in elements] if b
+            ]
             min_x = min(b.Min.X for b in boxes if b)
             min_y = min(b.Min.Y for b in boxes if b)
             max_x = max(b.Max.X for b in boxes if b)
@@ -958,7 +965,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     sb_centroid = DB.XYZ(
                         (sb_min.X + sb_max.X) / 2.0,
                         (sb_min.Y + sb_max.Y) / 2.0,
-                        0  # Z is ignored for plan rotation
+                        0,  # Z is ignored for plan rotation
                     )
 
                     # --- 2. Compute current crop element centroid in view coordinates ---
@@ -966,7 +973,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     crop_centroid = DB.XYZ(
                         (crop_box.Min.X + crop_box.Max.X) / 2.0,
                         (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
-                        0
+                        0,
                     )
 
                     # --- 3. Translate crop element so centroids align (XY only) ---
@@ -977,15 +984,17 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     angle = compute_rotation_angle(section_box, self.current_view)
                     axis = DB.Line.CreateBound(
                         DB.XYZ(sb_centroid.X, sb_centroid.Y, 0),
-                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 1)
+                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 1),
                     )
                     DB.ElementTransformUtils.RotateElement(doc, crop_el.Id, axis, angle)
-                apply_plan_viewrange_from_sectionbox(doc, self.current_view, section_box)
+                apply_plan_viewrange_from_sectionbox(
+                    doc, self.current_view, section_box
+                )
                 self.show_status_message(
                     3,
                     "Crop box aligned to view '{}'".format(view_data["view"].Name),
                     "success",
-                    )
+                )
 
             else:
                 self.show_status_message(3, "Unsupported view type.", "warning")
@@ -1147,6 +1156,107 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             except Exception as ex:
                 logger.warning("Error hiding preview: {}".format(ex))
 
+    # Helper Functions
+
+    def _handle_level_move(self, direction):
+        """Helper to handle level movement based on mode."""
+        is_level_mode = self.rbLevel.IsChecked
+
+        if is_level_mode:
+            # Level mode - move to next level
+            self.pending_action = {
+                "action": "level_move",
+                "direction": direction,
+                "is_level_mode": True,
+            }
+            self.event_handler.parameters = self.pending_action
+            self.ext_event.Raise()
+        else:
+            # Nudge mode - move by amount
+            try:
+                distance = self._get_validated_nudge_amount(self.txtLevelNudgeAmount, 1)
+                self.pending_action = {
+                    "action": "level_move",
+                    "direction": direction,
+                    "is_level_mode": False,
+                    "nudge_amount": distance,
+                }
+                self.event_handler.parameters = self.pending_action
+                self.ext_event.Raise()
+
+            except ValueError:
+                self.show_status_message(1, "Please enter a valid number", "warning")
+                return
+            except Exception as ex:
+                logger.error("Error in level nudge: {}".format(ex))
+                self.show_status_message(
+                    1, "An error occurred: {}".format(str(ex)), "error"
+                )
+                return
+
+    def _handle_grid_move(self, direction):
+        """Helper to handle grid movement."""
+        is_grid_mode = self.rbGrid.IsChecked
+
+        if is_grid_mode:
+            # Grid mode - move to next grid
+            self.pending_action = {
+                "action": "grid_move",
+                "direction": direction,
+                "is_grid_mode": True,
+            }
+            self.event_handler.parameters = self.pending_action
+            self.ext_event.Raise()
+        else:
+            # Nudge mode - move by amount
+            try:
+                distance = self._get_validated_nudge_amount(self.txtGridNudgeAmount, 2)
+                self.pending_action = {
+                    "action": "grid_move",
+                    "direction": direction,
+                    "is_grid_mode": False,
+                    "nudge_amount": distance,
+                }
+                self.event_handler.parameters = self.pending_action
+                self.ext_event.Raise()
+
+            except ValueError:
+                self.show_status_message(2, "Please enter a valid number", "warning")
+                return
+            except Exception as ex:
+                logger.error("Error in horizontal nudge: {}".format(ex))
+                self.show_status_message(
+                    2, "An error occurred: {}".format(str(ex)), "error"
+                )
+                return
+
+    def _get_validated_nudge_amount(self, text_control, column=None, unit=length_unit):
+        """Extract and validate nudge amount from text control.
+
+        Returns:
+            float: Converted distance in internal units, or None if invalid
+        """
+        try:
+            distance_text = text_control.Text.strip()
+            if column and not distance_text:
+                self.show_status_message(
+                    column, "Please enter a nudge amount", "warning"
+                )
+                return None
+
+            distance = float(distance_text)
+            if column and distance <= 0:
+                self.show_status_message(
+                    column, "Amount must be greater than 0", "warning"
+                )
+                return None
+
+            return DB.UnitUtils.ConvertToInternalUnits(distance, unit)
+
+        except ValueError:
+            self.show_status_message(column, "Please enter a valid number", "warning")
+            return None
+
     # Button Handlers
 
     def btn_top_up_click(self, sender, e):
@@ -1173,75 +1283,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Move entire box down."""
         self._handle_level_move(sender.Tag)
 
-    def _handle_level_move(self, direction):
-        """Helper to handle level movement based on mode."""
-        is_level_mode = self.rbLevel.IsChecked
-
-        if is_level_mode:
-            # Level mode - move to next level
-            self.pending_action = {
-                "action": "level_move",
-                "direction": direction,
-                "is_level_mode": True,
-            }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
-        else:
-            # Nudge mode - move by amount
-            try:
-                distance_text = self.txtLevelNudgeAmount.Text.strip()
-                if not distance_text:
-                    self.show_status_message(
-                        1, "Please enter a nudge amount", "warning"
-                    )
-                    return
-
-                distance = float(distance_text)
-                if distance <= 0:
-                    self.show_status_message(
-                        1, "Nudge amount must be greater than 0", "warning"
-                    )
-                    return
-
-                distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
-
-                self.pending_action = {
-                    "action": "level_move",
-                    "direction": direction,
-                    "is_level_mode": False,
-                    "nudge_amount": distance,
-                }
-                self.event_handler.parameters = self.pending_action
-                self.ext_event.Raise()
-
-            except ValueError:
-                self.show_status_message(1, "Please enter a valid number", "warning")
-                return
-            except Exception as ex:
-                logger.error("Error in level nudge: {}".format(ex))
-                self.show_status_message(
-                    1, "An error occurred: {}".format(str(ex)), "error"
-                )
-                return
-
     def btn_expansion_top_up_click(self, sender, e):
         """Expand the section box."""
         try:
-            amount_text = self.txtExpandAmount.Text.strip()
-            if not amount_text:
-                self.show_status_message(
-                    3, "Please enter an expansion amount", "warning"
-                )
-                return
-
-            amount = float(amount_text)
-            if amount <= 0:
-                self.show_status_message(
-                    3, "Expansion amount must be greater than 0", "warning"
-                )
-                return
-
-            amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
+            amount = self._get_validated_nudge_amount(self.txtExpandAmount, 3)
             self.pending_action = {
                 "action": "expand_shrink",
                 "amount": amount,
@@ -1349,138 +1394,81 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.event_handler.parameters = self.pending_action
         self.ext_event.Raise()
 
-    def btn_preview_level_box_enter(self, sender, e):
-        """Show preview when hovering over level buttons."""
+    def btn_preview_enter(self, sender, e):
+        """Show preview when hovering over level, grid, or expansion buttons."""
         if not self.chkPreview.IsChecked:
             return
 
         try:
-            is_level_mode = self.rbLevel.IsChecked
-            direction = sender.Tag  # e.g., 'top-up', 'bottom-down', 'box-up'
+            tag = sender.Tag
 
-            if is_level_mode:
-                # Level mode - preview next level
+            # Determine button type from tag
+            is_level_button = any(word in tag for word in ["top", "bottom", "box"])
+            is_grid_button = any(
+                word in tag for word in ["north", "east", "south", "west"]
+            )
+            is_expansion_button = any(word in tag for word in ["expand", "shrink"])
+            is_toggle_button = "toggle" in tag
+
+            box = None
+
+            if is_level_button:
+                is_level_mode = self.rbLevel.IsChecked
+                distance = self._get_validated_nudge_amount(self.txtLevelNudgeAmount)
+                if not is_level_mode and distance is None:
+                    return
+
                 params = {
-                    "direction": direction,
-                    "is_level_mode": True,
+                    "direction": tag,
+                    "is_level_mode": is_level_mode,
+                    "nudge_amount": distance,
                     "do_not_apply": True,
                 }
                 box = self.do_level_move(params)
-            else:
-                # Nudge mode - preview nudge
-                try:
-                    distance_text = self.txtLevelNudgeAmount.Text.strip()
-                    if not distance_text:
-                        return
 
-                    distance = float(distance_text)
-                    if distance <= 0:
-                        return
-
-                    distance = DB.UnitUtils.ConvertToInternalUnits(
-                        distance, length_unit
-                    )
-
-                    params = {
-                        "direction": direction,
-                        "is_level_mode": False,
-                        "nudge_amount": distance,
-                        "do_not_apply": True,
-                    }
-                    box = self.do_level_move(params)
-
-                except ValueError:
+            elif is_grid_button:
+                is_grid_mode = self.rbGrid.IsChecked
+                distance = self._get_validated_nudge_amount(self.txtGridNudgeAmount)
+                if not is_grid_mode and distance is None:
                     return
 
-            if box:
                 params = {
-                    "box": box,
-                }
-                self.show_preview("box", params)
-
-        except Exception as ex:
-            logger.warning("Error in level preview: {}".format(ex))
-
-    def btn_preview_expansion_enter(self, sender, e):
-        """Show preview when hovering over expansion buttons."""
-        if not self.chkPreview.IsChecked:
-            return
-
-        try:
-            amount = float(self.txtExpandAmount.Text)
-            amount = DB.UnitUtils.ConvertToInternalUnits(amount, length_unit)
-
-            button_content = sender.Content
-            is_expand = "Expand" in button_content
-
-            # Calculate adjustment (negative for shrink)
-            adjustment = amount if is_expand else -amount
-
-            params = {
-                "adjustment": adjustment,
-            }
-            self.show_preview("expand_shrink", params)
-
-        except Exception as ex:
-            logger.warning("Error in expansion preview: {}".format(ex))
-
-    def btn_preview_grid_enter(self, sender, e):
-        """Show preview when hovering over buttons."""
-        if not self.chkPreview.IsChecked:
-            return
-        try:
-            is_grid_mode = self.rbGrid.IsChecked
-
-            if is_grid_mode:
-                # Grid mode - move to next grid
-                params = {
-                    "direction": sender.Tag,
-                    "is_grid_mode": True,
+                    "direction": tag,
+                    "is_grid_mode": is_grid_mode,
+                    "nudge_amount": distance,
                     "do_not_apply": True,
                 }
                 box = self.do_grid_move(params)
-            else:
-                # Nudge mode - move by amount
-                try:
-                    distance_text = self.txtGridNudgeAmount.Text.strip()
-                    if not distance_text:
-                        return
 
-                    distance = float(distance_text)
-                    if distance <= 0:
-                        return
+            elif is_expansion_button:
+                amount = self._get_validated_nudge_amount(self.txtExpandAmount)
+                if amount is None:
+                    return
 
-                    distance = DB.UnitUtils.ConvertToInternalUnits(
-                        distance, length_unit
+                is_expand = "expand" in sender.Tag
+                adjustment = amount if is_expand else -amount
+
+                info = get_section_box_info(self.current_view, DATAFILENAME)
+                if info:
+                    box = create_adjusted_box(
+                        info,
+                        min_x=-adjustment,
+                        max_x=adjustment,
+                        min_y=-adjustment,
+                        max_y=adjustment,
+                        min_z=-adjustment,
+                        max_z=adjustment,
                     )
 
-                    params = {
-                        "direction": sender.Tag,
-                        "is_grid_mode": False,
-                        "nudge_amount": distance,
-                        "do_not_apply": True,
-                    }
-                    box = self.do_grid_move(params)
-
-                except ValueError:
-                    # Don't show alert in preview mode
-                    return
+            # Show preview if we got a valid box
             if box:
-                params = {
-                    "box": box,
-                }
+                params = {"box": box}
                 self.show_preview("box", params)
-        except Exception as ex:
-            logger.warning("Error in general preview grid: {}".format(ex))
+            elif is_toggle_button:
+                self.show_preview("toggle")
 
-    def btn_preview_toggle_enter(self, sender, e):
-        """Show preview when hovering over buttons."""
-        if not self.chkPreview.IsChecked:
-            return
-        try:
-            self.show_preview("toggle")
         except Exception as ex:
-            logger.warning("Error in general preview: {}".format(ex))
+            logger.warning("Error in preview: {}".format(ex))
 
     def btn_preview_leave(self, sender, e):
         """Hide preview when leaving buttons."""
@@ -1549,51 +1537,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def btn_grid_east_in_click(self, sender, e):
         """Move east side inward (west direction)."""
         self._handle_grid_move(sender.Tag)
-
-    def _handle_grid_move(self, direction):
-        """Helper to handle grid movement."""
-        is_grid_mode = self.rbGrid.IsChecked
-
-        if is_grid_mode:
-            # Grid mode - move to next grid
-            self.pending_action = {
-                "action": "grid_move",
-                "direction": direction,
-                "is_grid_mode": True,
-            }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
-        else:
-            # Nudge mode - move by amount
-            try:
-                distance_text = self.txtGridNudgeAmount.Text.strip()
-                if not distance_text:
-                    self.show_status_message(2, "Please enter a nudge amount", "warning")
-                    return
-
-                distance = float(distance_text)
-                if distance <= 0:
-                    self.show_status_message(2, "Nudge amount must be greater than 0", "warning")
-                    return
-
-                distance = DB.UnitUtils.ConvertToInternalUnits(distance, length_unit)
-
-                self.pending_action = {
-                    "action": "grid_move",
-                    "direction": direction,
-                    "is_grid_mode": False,
-                    "nudge_amount": distance,
-                }
-                self.event_handler.parameters = self.pending_action
-                self.ext_event.Raise()
-
-            except ValueError:
-                self.show_status_message(2, "Please enter a valid number", "warning")
-                return
-            except Exception as ex:
-                logger.error("Error in horizontal nudge: {}".format(ex))
-                self.show_status_message(2, "An error occurred: {}".format(str(ex)), "error")
-                return
 
     def form_closed(self, sender, args):
         """Cleanup when form is closed."""
