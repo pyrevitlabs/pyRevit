@@ -83,7 +83,6 @@ class SubscribeView(UI.IExternalEventHandler):
             if self.registered == 0:
                 new_doc = e.Document
                 if new_doc:
-                    new_uiapp = new_doc.Application
                     if wndw:
                         # Compare with current document from Revit context
                         try:
@@ -166,13 +165,13 @@ class ApplyColors(UI.IExternalEventHandler):
 
             with revit.Transaction("Apply colors to elements"):
                 get_elementid_value = get_elementid_value_func()
+                version = int(HOST_APP.version)
                 if get_elementid_value(sel_cat.cat.Id) in (
                     int(DB.BuiltInCategory.OST_Rooms),
                     int(DB.BuiltInCategory.OST_MEPSpaces),
                     int(DB.BuiltInCategory.OST_Areas),
                 ):
                     # In case of rooms, spaces and areas. Check Color scheme is applied and if not
-                    version = int(HOST_APP.version)
                     if version > 2021:
                         if wndw.crt_view.GetColorFillSchemeId(sel_cat.cat.Id).ToString() == "-1":
                             color_schemes = (
@@ -439,7 +438,7 @@ class CreateLegend(UI.IExternalEventHandler):
                 list_y = []
                 list_text_heights = []
                 y_pos = 0
-                spacing = 0.1
+                spacing = 0
                 for index, vw_item in enumerate(wndw.list_box2.Items):
                     punto = DB.XYZ(0, y_pos, 0)
                     item = vw_item["Value"]
@@ -586,6 +585,7 @@ class CreateFilters(UI.IExternalEventHandler):
                     categories = List[DB.ElementId]()
                     categories.Add(sel_cat.cat.Id)
                     solid_fill_id = solid_fill_pattern_id()
+                    version = int(HOST_APP.version)
                     items_listbox = wndw.list_box2.Items
                     for i, element in enumerate(items_listbox):
                         item = wndw.list_box2.Items[i]["Value"]
@@ -820,10 +820,10 @@ class FormCats(Forms.Form):
         row1_y_start = 2
         spacing = 5
         section_margin = 15
-        
+
         # LEFT COLUMN - Data Selection
         left_y_pos = row1_y_start + section_margin
-        
+
         # Category label
         self._txt_block2.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._txt_block2.Location = Drawing.Point(left_col_x, left_y_pos)
@@ -835,10 +835,10 @@ class FormCats(Forms.Form):
             self._txt_block2, "Select a category to start coloring."
         )
         left_y_pos += 22
-        
+
         # RIGHT COLUMN - Actions & Settings (start positioning)
         right_y_pos = row1_y_start + section_margin
-        
+
         # Section: Manage Schemes
         self._lbl_manage_schemes.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._lbl_manage_schemes.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -847,7 +847,7 @@ class FormCats(Forms.Form):
         self._lbl_manage_schemes.Text = "Manage Schemes"
         self._lbl_manage_schemes.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
         right_y_pos += 25
-        
+
         # Category dropdown - align with Save/Load Color Scheme button (adjusted for button border)
         self._categories.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._categories.Location = Drawing.Point(left_col_x, right_y_pos + 2)
@@ -862,7 +862,7 @@ class FormCats(Forms.Form):
         self.tooltips.SetToolTip(
             self._categories, "Select a category to start coloring."
         )
-        
+
         # Save / Load Color Scheme button - align with Category dropdown
         self._button_save_load_scheme.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._button_save_load_scheme.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -877,7 +877,7 @@ class FormCats(Forms.Form):
             "Save the current color scheme or load an existing one.",
         )
         right_y_pos += 40
-        
+
         # Parameters label - align with Generate Colors label
         self._txt_block3.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._txt_block3.Location = Drawing.Point(left_col_x, right_y_pos)
@@ -888,7 +888,7 @@ class FormCats(Forms.Form):
         self.tooltips.SetToolTip(
             self._txt_block3, "Select a parameter to color elements based on its value."
         )
-        
+
         # Section: Generate Colors - align with Parameters label
         self._lbl_generate_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._lbl_generate_colors.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -897,7 +897,7 @@ class FormCats(Forms.Form):
         self._lbl_generate_colors.Text = "Generate Colors"
         self._lbl_generate_colors.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
         right_y_pos += 25
-        
+
         # Search TextBox - align with Gradient Colors button (adjusted for button border)
         self._search_box.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._search_box.Location = Drawing.Point(left_col_x, right_y_pos + 2)
@@ -912,7 +912,7 @@ class FormCats(Forms.Form):
         self.tooltips.SetToolTip(
             self._search_box, "Type to search and filter parameters."
         )
-        
+
         # Gradient Colors button - align with Search box
         self._button_gradient_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._button_gradient_colors.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -927,7 +927,7 @@ class FormCats(Forms.Form):
             "Based on the color of the first and last value,\nreassign gradients colors to all values.",
         )
         right_y_pos += 32
-        
+
         # Parameters dropdown - align with Random Colors button (adjusted for button border)
         self._list_box1.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._list_box1.FormattingEnabled = True
@@ -941,7 +941,7 @@ class FormCats(Forms.Form):
         self.tooltips.SetToolTip(
             self._list_box1, "Select a parameter to color elements based on its value."
         )
-        
+
         # Random Colors button - align with Parameters dropdown
         self._button_random_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._button_random_colors.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -955,7 +955,7 @@ class FormCats(Forms.Form):
             self._button_random_colors, "Reassign new random colors to all values."
         )
         right_y_pos += 40
-        
+
         # Values label - align with Apply Settings label
         self._txt_block4.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._txt_block4.Location = Drawing.Point(left_col_x, right_y_pos)
@@ -966,7 +966,7 @@ class FormCats(Forms.Form):
         self.tooltips.SetToolTip(
             self._txt_block4, "Reassign colors by clicking on their value."
         )
-        
+
         # Section: Apply Settings - align with Values label
         self._lbl_apply_settings.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._lbl_apply_settings.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -975,7 +975,7 @@ class FormCats(Forms.Form):
         self._lbl_apply_settings.Text = "Apply Settings"
         self._lbl_apply_settings.Font = Drawing.Font(self.Font.FontFamily, 9, Drawing.FontStyle.Bold)
         right_y_pos += 25
-        
+
         # Values listbox (will be sized to align with Set Colors button + margin)
         values_listbox_top = right_y_pos
         self.list_box2.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
@@ -997,7 +997,7 @@ class FormCats(Forms.Form):
         self.tooltips.SetToolTip(
             self.list_box2, "Reassign colors by clicking on their value."
         )
-        
+
         # TextBlock5 - Hidden warning message
         self._txt_block5.Anchor = Forms.AnchorStyles.Bottom | Forms.AnchorStyles.Left
         self._txt_block5.Location = Drawing.Point(left_col_x, 600)
@@ -1007,7 +1007,7 @@ class FormCats(Forms.Form):
         self._txt_block5.ForeColor = Drawing.Color.Red
         self._txt_block5.Font = Drawing.Font(self.Font.FontFamily, 8, Drawing.FontStyle.Underline)
         self._txt_block5.Visible = False
-        
+
         # Checkbox: Line Color
         self._chk_line_color.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._chk_line_color.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -1022,7 +1022,7 @@ class FormCats(Forms.Form):
             "When enabled, applies the color to projection line color.",
         )
         right_y_pos += 25
-        
+
         # Checkbox: Foreground Pattern Color
         self._chk_foreground_pattern.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._chk_foreground_pattern.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -1037,7 +1037,7 @@ class FormCats(Forms.Form):
             "When enabled, applies the color to surface and cut foreground pattern colors.",
         )
         right_y_pos += 25
-        
+
         # Checkbox: Background Pattern Color
         self._chk_background_pattern.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._chk_background_pattern.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -1058,7 +1058,7 @@ class FormCats(Forms.Form):
             "When enabled, applies the color to surface and cut background pattern colors. Requires Revit 2019 or newer.",
         )
         right_y_pos += 40
-        
+
         # Create Legend button
         self._button_create_legend.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._button_create_legend.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -1073,7 +1073,7 @@ class FormCats(Forms.Form):
             "Create a new legend view for all the values and their colors.",
         )
         right_y_pos += 32
-        
+
         # Create View Filters button
         self._button_create_view_filters.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._button_create_view_filters.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -1088,11 +1088,11 @@ class FormCats(Forms.Form):
             "Create view filters and rules for all the values and their colors.",
         )
         right_y_pos += 40
-        
+
         # Reset and Set Colors buttons (grouped under Create View Filters)
         button_width = int((right_col_width - 15) / 2)
         button_spacing = 15
-        
+
         # Reset button
         self._button_reset_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._button_reset_colors.Location = Drawing.Point(right_col_x, right_y_pos)
@@ -1106,7 +1106,7 @@ class FormCats(Forms.Form):
             self._button_reset_colors,
             "Reset the colors in your Revit view to its initial stage.",
         )
-        
+
         # Set Colors button - Blue with white text
         self._button_set_colors.Anchor = Forms.AnchorStyles.Top | Forms.AnchorStyles.Left
         self._button_set_colors.Location = Drawing.Point(right_col_x + button_width + button_spacing, right_y_pos)
@@ -1138,13 +1138,13 @@ class FormCats(Forms.Form):
             self._button_set_colors,
             "Replace the colors per element in the view.",
         )
-        
+
         # Calculate form height: Set Colors button bottom + margin + extra margin for values section
         set_colors_bottom = right_y_pos + 32
         bottom_margin = 25
         values_section_bottom_margin = 15
         form_height = set_colors_bottom + bottom_margin + values_section_bottom_margin
-        
+
         # Calculate values listbox height to align with Set Colors button + margin
         # The listbox should end at the same level as Set Colors button + margin
         values_listbox_bottom = set_colors_bottom + bottom_margin
@@ -1152,7 +1152,7 @@ class FormCats(Forms.Form):
         if values_listbox_height < 100:
             values_listbox_height = 100  # Minimum height
         self.list_box2.Size = Drawing.Size(left_col_width, values_listbox_height)
-        
+
         # Form
         self.TopMost = True
         self.ShowInTaskbar = False
@@ -1921,11 +1921,11 @@ def get_color_shades(base_color, apply_line, apply_foreground, apply_background)
     Only line color is faded when used with other types.
     """
     r, g, b = base_color.Red, base_color.Green, base_color.Blue
-    
+
     foreground_color = base_color
     background_color = base_color
-    
-    
+
+
     # Line color is faded when used with other types, otherwise uses base color
     if apply_line and (apply_foreground or apply_background):
         # When line is used with pattern colors, make line color more faded
@@ -1941,7 +1941,7 @@ def get_color_shades(base_color, apply_line, apply_foreground, apply_background)
     else:
         # When line is used alone, use base color
         line_color = base_color
-    
+
     return line_color, foreground_color, background_color
 
 
@@ -1951,7 +1951,7 @@ def launch_color_splasher():
         doc = revit.DOCS.doc
         if doc is None:
             raise AttributeError("Revit document is not available")
-    except (AttributeError, RuntimeError, Exception) as e:
+    except (AttributeError, RuntimeError, Exception):
         error_msg = UI.TaskDialog("Color Splasher Error")
         error_msg.MainInstruction = "Unable to access Revit document"
         error_msg.MainContent = "Please ensure you have a Revit project open and try again."
@@ -1988,7 +1988,7 @@ def launch_color_splasher():
         )
         wndw._categories.SelectedIndex = -1
         wndw.Show()
-        
+
         # Store wndw reference for event handlers
         SubscribeView._wndw = wndw
         ApplyColors._wndw = wndw
