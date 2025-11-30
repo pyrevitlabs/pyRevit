@@ -252,7 +252,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             if is_2d_view(self.current_view):
                 self.btnAlignToView.Content = "Align with 3D View"
-                self.clear_status_message()
+                if last_view != self.current_view.Id:
+                    self.clear_status_message()
+
             elif isinstance(self.current_view, DB.View3D):
                 self.btnAlignToView.Content = "Align with 2D View"
                 if last_view != self.current_view.Id:
@@ -320,7 +322,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         Args:
             column: 1 (Vertical), 2 (Grid), 3 (Expand/Actions)
             message: Text to display
-            message_type: "info", "error", "warning" (for color coding)
+            message_type: "info", "error", "warning", "success" (for color coding)
         """
         try:
             # Define color mapping
@@ -852,7 +854,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if is_section:
             if not crop_box:
                 self.show_status_message(
-                    1, "Could not get crop box from section.", "error"
+                    3, "Could not get crop box from section.", "error"
                 )
                 return
             new_box = to_world_identity(crop_box)
@@ -869,7 +871,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             elements = revit.query.get_all_elements_in_view(source_view)
             if not elements:
                 self.show_status_message(
-                    1, "No cropbox or elements found to extend scopebox to", "error"
+                    3, "No cropbox or elements found to extend scopebox to", "error"
                 )
                 return
             boxes = [b for b in [el.get_BoundingBox(source_view) for el in elements] if b]
@@ -899,7 +901,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             with revit.Transaction("Align to View"):
                 self.current_view.SetSectionBox(new_box)
             self.show_status_message(
-                1,
+                3,
                 "Section box aligned to view '{}'".format(view_data["view"].Name),
                 "success",
             )
@@ -955,9 +957,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     )
                     DB.ElementTransformUtils.RotateElement(doc, crop_el.Id, axis, angle)
                 apply_plan_viewrange_from_sectionbox(doc, self.current_view, section_box)
+                self.show_status_message(
+                    3,
+                    "Crop box aligned to view '{}'".format(view_data["view"].Name),
+                    "success",
+                    )
 
             else:
-                self.show_status_message(1, "Unsupported view type.", "warning")
+                self.show_status_message(3, "Unsupported view type.", "warning")
                 return
 
     def do_toggle(self):
@@ -979,7 +986,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             state = "hidden" if not was_hidden else "unhidden"
             self.show_status_message(3, "Section box {}".format(state), "success")
         except Exception:
-            self.show_status_message(3, "Error in Section box visibility", "info")
+            self.show_status_message(3, "Error in Section box visibility", "error")
 
     def do_align_to_face(self):
         """Align to face"""
@@ -1279,12 +1286,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             info = get_section_box_info(selected_view, DATAFILENAME)
             section_box = info.get("box")
             if not section_box:
-                self.show_status_message(1, "3D view has no section box.", "error")
+                self.show_status_message(3, "3D view has no section box.", "error")
                 return
 
             view_data = {
                 "view_type": self.current_view.ViewType,
                 "section_box": section_box,
+                "view": self.current_view,
             }
             self.pending_action = {
                 "action": "align_to_3d_view",
@@ -1295,7 +1303,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             return
 
         if not view_data:
-            self.show_status_message(1, "Could not extract view information.", "error")
+            self.show_status_message(3, "Could not extract view information.", "error")
             return
 
         self.event_handler.parameters = self.pending_action
@@ -1467,14 +1475,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
         self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.update_info()
-        # Only update status if there's no current message (i.e., status is "Ready" or empty)
-        if self.txtGridStatus.Text == "..." or self.txtGridStatus.Text == "-":
-            self.update_grid_status()
-        if (
-            self.txtExpandActionsStatus.Text == "..."
-            or self.txtExpandActionsStatus.Text == "-"
-        ):
-            self.update_expand_actions_status()
 
     # Grid Navigation Button Handlers
 
