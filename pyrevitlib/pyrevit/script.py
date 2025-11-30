@@ -48,6 +48,7 @@ ICON_SMALL = 16
 ICON_MEDIUM = 24
 ICON_LARGE = 32
 
+
 def get_info():
     """Return info on current pyRevit command.
 
@@ -799,3 +800,60 @@ def data_exists(slot_name, this_project=True):
                                   file_ext=DATAFEXT,
                                   add_cmd_name=False)
     return os.path.exists(data_file)
+
+
+def restore_window_position(window, command_name=EXEC_PARAMS.command_name):
+    """
+    Restore window position from saved data.
+
+    Args:
+        window: WPF window instance
+        command_name: Unique identifier for this window
+
+    Returns:
+        bool: True if position was restored, False if centered to screen
+    """
+    storage_key = "last_window_position_" + command_name
+
+    try:
+        pos = load_data(storage_key, this_project=False)
+        if not pos:
+            raise Exception("No saved position")
+
+        # Get all screen working areas
+        all_bounds = [s.WorkingArea for s in framework.Forms.Screen.AllScreens]
+        x, y = pos.get("Left", 0), pos.get("Top", 0)
+
+        # Check if position is visible on any screen
+        visible = any(
+            (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom) for b in all_bounds
+        )
+
+        if visible:
+            window.WindowStartupLocation = (
+                framework.Windows.WindowStartupLocation.Manual
+            )
+            window.Left = x
+            window.Top = y
+            return True
+        else:
+            raise Exception("Position not visible on any screen")
+
+    except Exception:
+        window.WindowStartupLocation = (
+            framework.Windows.WindowStartupLocation.CenterScreen
+        )
+        return False
+
+
+def save_window_position(window, command_name=EXEC_PARAMS.command_name):
+    """
+    Save window position to persistent storage.
+
+    Args:
+        window: WPF window instance
+        command_name: Unique identifier for this window
+    """
+    storage_key = "last_window_position_" + command_name
+    position_data = {"Left": window.Left, "Top": window.Top}
+    store_data(storage_key, position_data, this_project=False)
