@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c9d95fd2769728c8694d60b0c5966eec2a004117b694354f206c9c0ab4e2f33e"
+            "sha256": "0bca905a7c157559ea51ad5d9316123a525cd966759c11aea1a1e2942dbfb963"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -923,11 +923,11 @@
     "develop": {
         "astroid": {
             "hashes": [
-                "sha256:0d778ec0def05b935e198412e62f9bcca8b3b5c39fdbe50b0ba074005e477aab",
-                "sha256:37ab2f107d14dc173412327febf6c78d39590fdafcb44868f03b6c03452e3db0"
+                "sha256:ac8fb7ca1c08eb9afec91ccc23edbd8ac73bb22cbdd7da1d488d9fb8d6579070",
+                "sha256:d7546c00a12efc32650b19a2bb66a153883185d3179ab0d4868086f807338b9b"
             ],
             "markers": "python_full_version >= '3.10.0'",
-            "version": "==4.0.1"
+            "version": "==4.0.2"
         },
         "colorama": {
             "hashes": [
@@ -1033,12 +1033,12 @@
         },
         "pylint": {
             "hashes": [
-                "sha256:9627ccd129893fb8ee8e8010261cb13485daca83e61a6f854a85528ee579502d",
-                "sha256:9c22dfa52781d3b79ce86ab2463940f874921a3e5707bcfc98dd0c019945014e"
+                "sha256:63e06a37d5922555ee2c20963eb42559918c20bd2b21244e4ef426e7c43b92e0",
+                "sha256:d9b71674e19b1c36d79265b5887bf8e55278cbe236c9e95d22dc82cf044fdbd2"
             ],
             "index": "pypi",
             "markers": "python_full_version >= '3.10.0'",
-            "version": "==4.0.2"
+            "version": "==4.0.4"
         },
         "tomli": {
             "hashes": [
