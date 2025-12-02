@@ -425,12 +425,12 @@
         },
         "mkdocs-gen-files": {
             "hashes": [
-                "sha256:4c7cf256b5d67062a788f6b1d035e157fc1a9498c2399be9af5257d4ff4d19bc",
-                "sha256:7ac060096f3f40bd19039e7277dd3050be9a453c8ac578645844d4d91d7978ea"
+                "sha256:52022dc14dcc0451e05e54a8f5d5e7760351b6701eff816d1e9739577ec5635e",
+                "sha256:815af15f3e2dbfda379629c1b95c02c8e6f232edf2a901186ea3b204ab1135b2"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.7'",
-            "version": "==0.5.0"
+            "markers": "python_version >= '3.9'",
+            "version": "==0.6.0"
         },
         "mkdocs-get-deps": {
             "hashes": [
