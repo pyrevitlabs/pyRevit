@@ -155,7 +155,7 @@ with forms.ProgressBar(title="List family sizes", cancellable=True) as pb:
                 except Exception as ex:
                     logger.warning(
                         "Skipping family '%s': could not open for edit: %s",
-                        fam_name, ex
+                        fam, ex
                     )
                     continue
                 fam_path = fam_doc.PathName
