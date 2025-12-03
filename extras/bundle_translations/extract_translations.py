@@ -1,11 +1,23 @@
+"""Extract translation strings from pyRevit bundle YAML files.
+
+This script scans bundle.yaml files for title and tooltip fields,
+extracting English source text and any existing translations to a CSV file
+for easier translation workflow.
+
+Configuration:
+    BASE_DIR: Root directory containing bundle YAML files
+    OUTPUT_CSV: Path where the CSV file will be written
+    LANGUAGE_KEY: Translation language key (e.g., 'chinese_s')
+    SOURCE_LANG: Source language key (default: 'en_us')
+"""
 import os
 from pathlib import Path
 from ruamel.yaml import YAML  # pip install ruamel.yaml
 import csv
 
 # -------- CONFIG --------
-BASE_DIR = r"C:\Program Files\pyRevit-Master\extensions\pyRevitTools.extension"
-OUTPUT_CSV = r"C:\temp\translations.csv"
+BASE_DIR = r"C:\Program Files\pyRevit-Master\extensions\pyRevitTools.extension"  # adjust for custom installation 
+OUTPUT_CSV = r"C:\temp\translations.csv"  # same path as in other script
 LANGUAGE_KEY = "chinese_s"  # translation key to extract/merge
 SOURCE_LANG = "en_us"  # main source language
 # ------------------------
