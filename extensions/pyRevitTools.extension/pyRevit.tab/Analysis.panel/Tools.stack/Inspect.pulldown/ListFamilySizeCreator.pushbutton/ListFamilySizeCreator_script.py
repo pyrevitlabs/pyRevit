@@ -7,6 +7,7 @@ from collections import defaultdict
 from pyrevit import revit, forms, script, DB, HOST_APP
 
 output = script.get_output()
+logger = script.get_logger()
 
 FIELDS = ["Size", "Name", "Category", "Creator", "Count"]
 # temporary path for saving families
@@ -155,7 +156,7 @@ with forms.ProgressBar(title="List family sizes", cancellable=True) as pb:
                 except Exception as ex:
                     logger.warning(
                         "Skipping family '%s': could not open for edit: %s",
-                        fam, ex
+                        fam.Name, ex
                     )
                     continue
                 fam_path = fam_doc.PathName
@@ -163,8 +164,6 @@ with forms.ProgressBar(title="List family sizes", cancellable=True) as pb:
                 #  only if the wasn't opened when the script was started
                 if fam_doc.Title not in opened_families and (
                         not fam_path or not os.path.exists(fam_path)):
-                    # edit family
-                    fam_doc = revit.doc.EditFamily(fam)
                     # save with temporary path, to know family size
                     fam_path = os.path.join(temp_dir, fam_doc.Title)
                     fam_doc.SaveAs(fam_path, save_as_options)
