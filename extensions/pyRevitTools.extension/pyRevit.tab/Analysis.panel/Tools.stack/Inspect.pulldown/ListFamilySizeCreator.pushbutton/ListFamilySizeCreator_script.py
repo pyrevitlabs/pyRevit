@@ -150,7 +150,14 @@ with forms.ProgressBar(title="List family sizes", cancellable=True) as pb:
     for fam in all_fams:
         with revit.ErrorSwallower() as swallower:
             if fam.IsEditable:
-                fam_doc = revit.doc.EditFamily(fam)
+                try:
+                    fam_doc = revit.doc.EditFamily(fam)
+                except Exception as ex:
+                    logger.warning(
+                        "Skipping family '%s': could not open for edit: %s",
+                        fam_name, ex
+                    )
+                    continue
                 fam_path = fam_doc.PathName
                 # if the family path does not exists, save it temporary
                 #  only if the wasn't opened when the script was started
