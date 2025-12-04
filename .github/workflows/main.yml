@@ -28,16 +28,11 @@ on:
 env:
   ReleaseBranch: "master"
   MainRepo: "pyrevitlabs/pyRevit"
-  PYTHONIOENCODING: "utf-8"
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Ensure console uses UTF-8 code page (Windows runners)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: chcp 65001
       - name: Report Context
         run: |
           echo "run: ${{ github.run_number }}"
@@ -98,6 +93,8 @@ jobs:
         if: (github.base_ref != env.ReleaseBranch && github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set build wip
+        env:
+          PYTHONIOENCODING: "utf-8"
 
       # RELEASE only
       - name: Update Build Info (Release)
@@ -113,6 +110,8 @@ jobs:
       - name: Build Products
         run: |
           pipenv run pyrevit build products
+        env: |
+          PYTHONIOENCODING: "utf-8"
 
       - name: Get Build Version
         if: (github.repository == env.MainRepo)
