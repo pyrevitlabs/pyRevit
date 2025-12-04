@@ -1,4 +1,6 @@
 name: pyRevitCI
+env:
+  PYTHONIOENCODING: "utf-8"
 on:
   # when PRs from forked repos are merged
   push:
@@ -33,6 +35,10 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
+      - name: Ensure console uses UTF-8 code page (Windows runners)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: chcp 65001
       - name: Report Context
         run: |
           echo "run: ${{ github.run_number }}"
