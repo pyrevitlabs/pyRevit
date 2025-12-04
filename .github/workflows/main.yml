@@ -110,7 +110,7 @@ jobs:
       - name: Build Products
         run: |
           pipenv run pyrevit build products
-        env: |
+        env: 
           PYTHONIOENCODING: "utf-8"
 
       - name: Get Build Version
