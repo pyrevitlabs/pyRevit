@@ -1,6 +1,4 @@
 name: pyRevitCI
-env:
-  PYTHONIOENCODING: "utf-8"
 on:
   # when PRs from forked repos are merged
   push:
@@ -30,6 +28,7 @@ on:
 env:
   ReleaseBranch: "master"
   MainRepo: "pyrevitlabs/pyRevit"
+  PYTHONIOENCODING: "utf-8"
 
 jobs:
   build:
