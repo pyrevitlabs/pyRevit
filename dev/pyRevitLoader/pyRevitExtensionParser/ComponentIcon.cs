@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace pyRevitExtensionParser
 {
@@ -66,54 +67,36 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Regex pattern to detect dark icon variants in filenames.
+        /// Matches patterns like: .dark., _dark., -dark., _dark_, -dark-, or ending with _dark, -dark, .dark
+        /// Excludes filenames that start with "dark" to avoid false positives like "dark_icon.png"
+        /// </summary>
+        private static readonly Regex DarkIconPattern = new Regex(
+            @"(?<!^dark)([._-]dark[._-]|[._-]dark$)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Regex pattern to remove dark indicators from filenames for base type detection.
+        /// </summary>
+        private static readonly Regex DarkIndicatorRemovalPattern = new Regex(
+            @"[._-]dark(?=[._-]|$)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
         /// Detects if this icon is a dark theme variant based on filename patterns
         /// </summary>
         private bool DetectDarkIcon()
         {
-            var fileName = FileName.ToLowerInvariant();
-            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            
-            // Common dark icon patterns - check various positions and separators
-            return fileName.Contains(".dark.") ||           // icon.dark.png
-                   fileName.Contains("_dark.") ||          // icon_dark.png
-                   fileName.Contains("-dark.") ||          // icon-dark.png
-                   fileName.Contains("_dark_") ||          // icon_dark_theme.png
-                   fileName.Contains("-dark-") ||          // icon-dark-theme.png
-                   fileNameWithoutExtension.EndsWith("_dark") ||    // icon_dark.png
-                   fileNameWithoutExtension.EndsWith("-dark") ||    // icon-dark.png
-                   fileNameWithoutExtension.EndsWith(".dark") ||    // icon.dark.png
-                   (fileNameWithoutExtension.Contains("_dark") && !fileNameWithoutExtension.StartsWith("dark")) ||  // icon_dark_theme but not dark_icon
-                   (fileNameWithoutExtension.Contains("-dark") && !fileNameWithoutExtension.StartsWith("dark"));    // icon-dark-theme but not dark-icon
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(FileName);
+            return DarkIconPattern.IsMatch(fileNameWithoutExtension);
         }
 
         private IconType DetermineIconType()
         {
-            var fileName = FileName.ToLowerInvariant();
-            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(FileName).ToLowerInvariant();
             
             // Remove dark indicators for type detection to get base type
-            var baseFileName = fileName
-                .Replace(".dark.", ".")
-                .Replace("_dark.", ".")
-                .Replace("-dark.", ".")
-                .Replace("_dark_", "_")
-                .Replace("-dark-", "-")
-                .Replace(".dark" + Extension.ToLowerInvariant(), Extension.ToLowerInvariant())
-                .Replace("_dark" + Extension.ToLowerInvariant(), Extension.ToLowerInvariant())
-                .Replace("-dark" + Extension.ToLowerInvariant(), Extension.ToLowerInvariant());
-            
-            // Also handle dark indicators in the middle of filenames
-            var baseFileNameWithoutExt = Path.GetFileNameWithoutExtension(baseFileName);
-            if (fileNameWithoutExtension.Contains("_dark") && !fileNameWithoutExtension.StartsWith("dark"))
-            {
-                baseFileNameWithoutExt = fileNameWithoutExtension.Replace("_dark", "");
-                baseFileName = baseFileNameWithoutExt + Extension.ToLowerInvariant();
-            }
-            else if (fileNameWithoutExtension.Contains("-dark") && !fileNameWithoutExtension.StartsWith("dark"))
-            {
-                baseFileNameWithoutExt = fileNameWithoutExtension.Replace("-dark", "");
-                baseFileName = baseFileNameWithoutExt + Extension.ToLowerInvariant();
-            }
+            var baseFileName = DarkIndicatorRemovalPattern.Replace(fileNameWithoutExtension, "");
             
             if (baseFileName.Contains("large"))
                 return IsDark ? IconType.DarkLarge : IconType.Large;
