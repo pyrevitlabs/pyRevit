@@ -9,9 +9,6 @@ from pyrevit import forms
 from pyrevit import script
 from pyrevit.userconfig import user_config
 
-__title__= "test_title"
-__author__= "test_author"
-__doc__ = "test_doc"
 logger = script.get_logger()
 
 
