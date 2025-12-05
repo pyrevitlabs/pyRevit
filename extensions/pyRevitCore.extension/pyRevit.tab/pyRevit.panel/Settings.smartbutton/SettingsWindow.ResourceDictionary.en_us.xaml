@@ -58,7 +58,7 @@
     <system:String x:Key="CoreSettings.Development.LoadBeta">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</system:String>
 
     <system:String x:Key="CoreSettings.Loader">Loader</system:String>
-    <system:String x:Key="CoreSettings.Loader.NewLoader">Enables new, faster version of pyRevit loader (beta)</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Enables new pyRevit loader (beta)</system:String>
     <system:String x:Key="CoreSettings.Loader.RoslynLoader">Use RoslynLoader</system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Close other open consoles</system:String>

@@ -57,7 +57,8 @@
     <system:String x:Key="CoreSettings.Development.Description">Options diverses pour le développement de pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Charger les outils bêta (Scripts avec __beta__ = True, le rechargement est requis)</system:String>
 
-    <system:String x:Key="CoreSettings.Loader.NewLoader">Active une nouvelle version plus rapide du chargeur pyRevit (bêta)</system:String>
+    <system:String x:Key="CoreSettings.Loader">Chargeur</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Active une nouvelle version du chargeur pyRevit (bêta)</system:String>
     <system:String x:Key="CoreSettings.Loader.RoslynLoader">Utiliser le chargeur RoslynLoader</system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Fermer les consoles ouvertes</system:String>
