@@ -43,6 +43,10 @@ from pyrevit import DB, UI, revit
 #pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
+# Build strategy constants (match C# AssemblyBuildStrategy enum values)
+BUILD_STRATEGY_ROSLYN = "Roslyn"
+BUILD_STRATEGY_ILPACK = "ILPack"
+
 
 AssembledExtension = namedtuple('AssembledExtension', ['ext', 'assm'])
 
@@ -258,7 +262,7 @@ def _new_session_csharp():
             return
         
         # Determine build strategy based on configuration
-        build_strategy = "Roslyn" if user_config.use_roslyn_loader else "ILPack"
+        build_strategy = BUILD_STRATEGY_ROSLYN if user_config.use_roslyn_loader else BUILD_STRATEGY_ILPACK
         mlogger.info('Using %s build strategy for C# session manager', build_strategy)
         
         # Find the PyRevitLoaderApplication type from loaded assemblies
