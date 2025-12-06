@@ -48,7 +48,13 @@ def get_open_views():
     for ui_View in ui_views:
         viewId = ui_View.ViewId
         view = doc.GetElement(viewId)
-        if view.ViewType in (DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan, DB.ViewType.DrawingSheet):
+        if view.ViewType in (
+            DB.ViewType.FloorPlan,
+            DB.ViewType.CeilingPlan,
+            DB.ViewType.DrawingSheet,
+            DB.ViewType.AreaPlan,
+            DB.ViewType.ThreeD,
+        ):
             views.append(view)
     return views
 
@@ -171,7 +177,7 @@ def set_number(target_element, new_number):
         mark_param.Set(new_number)
 
 
-def mark_element_as_renumbered(target_view, room):
+def mark_element_as_renumbered(target_views, room):
     """Override element VG to transparent and halftone.
 
     Intended to mark processed renumbered elements visually.
@@ -179,15 +185,19 @@ def mark_element_as_renumbered(target_view, room):
     ogs = DB.OverrideGraphicSettings()
     ogs.SetHalftone(True)
     ogs.SetSurfaceTransparency(100)
-    target_view.SetElementOverrides(room.Id, ogs)
+    for target_view in target_views:
+        target_view.SetElementOverrides(room.Id, ogs)
 
 
 def unmark_renamed_elements(target_views, marked_element_ids):
-    """Rest element VG to default."""
-    for marked_element_id in marked_element_ids:
-        ogs = DB.OverrideGraphicSettings()
+    """Rest element VG to previous state or default."""
+    for elid, view_dict in marked_element_ids.items():
         for target_view in target_views:
-            target_view.SetElementOverrides(marked_element_id, ogs)
+            if target_view.Id in view_dict:
+                ogs = view_dict[target_view.Id]
+            else:
+                ogs = DB.OverrideGraphicSettings()
+            target_view.SetElementOverrides(elid, ogs)
 
 
 def get_elements_dict(views, builtin_cat):
@@ -244,7 +254,7 @@ def renumber_element(target_element, new_number, elements_dict):
     set_number(target_element, new_number)
     elements_dict[new_number] = target_element.Id
     # mark the element visually to renumbered
-    mark_element_as_renumbered(revit.active_view, target_element)
+    mark_element_as_renumbered(get_open_views(), target_element)
 
 
 def ask_for_starting_number(category_name):
@@ -274,8 +284,8 @@ def pick_and_renumber(rnopts, starting_index):
             index = starting_index
             # collect existing elements number:id data
             existing_elements_data = get_elements_dict(open_views, rnopts.bicat)
-            # list to collect renumbered elements
-            renumbered_element_ids = []
+            # dict to collect renumbered elements
+            renumbered_element_ids = {}
             # ask user to pick elements and renumber them
             for picked_element in revit.get_picked_elements_by_category(
                     rnopts.bicat,
@@ -283,11 +293,14 @@ def pick_and_renumber(rnopts, starting_index):
                 # need nested transactions to push revit to update view
                 # on each renumber task
                 with revit.Transaction("Renumber {}".format(rnopts.name)):
+                    # record the renumbered element
+                    if picked_element.Id not in renumbered_element_ids:
+                        renumbered_element_ids[picked_element.Id] = {}
+                    for v in get_open_views():
+                        renumbered_element_ids[picked_element.Id][v.Id] = v.GetElementOverrides(picked_element.Id)
                     # actual renumber task
                     renumber_element(picked_element,
                                      index, existing_elements_data)
-                    # record the renumbered element
-                    renumbered_element_ids.append(picked_element.Id)
                 index = increment(index)
             # unmark all renumbered elements
             _unmark_collected(rnopts.name, renumbered_element_ids)
@@ -300,7 +313,7 @@ def door_by_room_renumber(rnopts):
     with revit.TransactionGroup("Renumber Doors by Room"):
         # collect existing elements number:id data
         existing_doors_data = get_elements_dict(open_views, rnopts.bicat)
-        renumbered_door_ids = []
+        renumbered_door_ids = {}
         # make sure target elements are easily selectable
         with EasilySelectableElements(open_views, rnopts.bicat) \
                 and EasilySelectableElements(open_views, rnopts.by_bicat):
