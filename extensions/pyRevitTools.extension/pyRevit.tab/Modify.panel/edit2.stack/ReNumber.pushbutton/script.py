@@ -179,7 +179,7 @@ def set_number(target_element, new_number):
 
 
 def mark_element_as_renumbered(target_views, element):
-    """Override element VG to transparent and halftone.
+    """Override element VG to transparent and halftone in each target view.
 
     Intended to mark processed renumbered elements visually.
     """
@@ -227,7 +227,7 @@ def find_replacement_number(existing_number, elements_dict):
     return replaced_number
 
 
-def renumber_element(target_element, new_number, elements_dict):
+def renumber_element(target_views, target_element, new_number, elements_dict):
     """Renumber given element."""
     # check if elements with same number exists
     if new_number in elements_dict:
@@ -255,7 +255,7 @@ def renumber_element(target_element, new_number, elements_dict):
     set_number(target_element, new_number)
     elements_dict[new_number] = target_element.Id
     # mark the element visually to renumbered
-    mark_element_as_renumbered(get_open_views(), target_element)
+    mark_element_as_renumbered(target_views, target_element)
 
 
 def ask_for_starting_number(category_name):
@@ -297,10 +297,10 @@ def pick_and_renumber(rnopts, starting_index):
                     # record the renumbered element
                     if picked_element.Id not in renumbered_element_ids:
                         renumbered_element_ids[picked_element.Id] = {}
-                    for v in open_views:
-                        renumbered_element_ids[picked_element.Id][v.Id] = v.GetElementOverrides(picked_element.Id)
+                        for v in open_views:
+                            renumbered_element_ids[picked_element.Id][v.Id] = v.GetElementOverrides(picked_element.Id)
                     # actual renumber task
-                    renumber_element(picked_element,
+                    renumber_element(open_views, picked_element,
                                      index, existing_elements_data)
                 index = increment(index)
             # unmark all renumbered elements
@@ -349,17 +349,17 @@ def door_by_room_renumber(rnopts):
                     if door_count == 1:
                         if picked_door.Id not in renumbered_door_ids:
                             renumbered_door_ids[picked_door.Id] = {}
-                        for v in open_views:
-                            renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
+                            for v in open_views:
+                                renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
                         # match door number to room number
-                        renumber_element(picked_door,
+                        renumber_element(open_views, picked_door,
                                          room_number,
                                          existing_doors_data)
                     elif door_count > 1:
                         if picked_door.Id not in renumbered_door_ids:
                             renumbered_door_ids[picked_door.Id] = {}
-                        for v in open_views:
-                            renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
+                            for v in open_views:
+                                renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
                         # match door number to extended room number e.g. 100A
                         # check numbers of existing room doors and pick the next
                         room_door_numbers = [get_number(x) for x in room_doors]
@@ -368,7 +368,7 @@ def door_by_room_renumber(rnopts):
                         # max_attempts =len([x for x in room_door_numbers if x])
                         while new_number in room_door_numbers:
                             new_number = increment(new_number)
-                        renumber_element(picked_door,
+                        renumber_element(open_views, picked_door,
                                          new_number,
                                          existing_doors_data)
 
