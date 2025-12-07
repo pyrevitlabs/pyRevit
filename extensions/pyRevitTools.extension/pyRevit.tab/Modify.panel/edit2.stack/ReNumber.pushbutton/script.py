@@ -177,7 +177,7 @@ def set_number(target_element, new_number):
         mark_param.Set(new_number)
 
 
-def mark_element_as_renumbered(target_views, room):
+def mark_element_as_renumbered(target_views, element):
     """Override element VG to transparent and halftone.
 
     Intended to mark processed renumbered elements visually.
@@ -186,11 +186,11 @@ def mark_element_as_renumbered(target_views, room):
     ogs.SetHalftone(True)
     ogs.SetSurfaceTransparency(100)
     for target_view in target_views:
-        target_view.SetElementOverrides(room.Id, ogs)
+        target_view.SetElementOverrides(element.Id, ogs)
 
 
 def unmark_renamed_elements(target_views, marked_element_ids):
-    """Rest element VG to previous state or default."""
+    """Reset element VG to previous state or default."""
     for elid, view_dict in marked_element_ids.items():
         for target_view in target_views:
             if target_view.Id in view_dict:
@@ -207,15 +207,15 @@ def get_elements_dict(views, builtin_cat):
     # on current sheet, if a viewport with the same
     # number exists on any other sheet
     for view in views:
-        if BIC.OST_Viewports == builtin_cat \
-                and isinstance(view, DB.ViewSheet):
-            return {get_number(revit.doc.GetElement(vpid)):vpid
-                for vpid in view.GetAllViewports()}
+        if BIC.OST_Viewports == builtin_cat and isinstance(view, DB.ViewSheet):
+            return {
+                get_number(revit.doc.GetElement(vpid)): vpid
+                for vpid in view.GetAllViewports()
+            }
 
-    all_elements = \
-        revit.query.get_elements_by_categories([builtin_cat])
+    all_elements = revit.query.get_elements_by_categories([builtin_cat])
 
-    return {get_number(x):x.Id for x in all_elements}
+    return {get_number(x): x.Id for x in all_elements}
 
 
 def find_replacement_number(existing_number, elements_dict):
@@ -265,10 +265,10 @@ def ask_for_starting_number(category_name):
         )
 
 
-def _unmark_collected(category_name, renumbered_element_ids):
+def _unmark_collected(category_name, target_views, renumbered_element_ids):
     # unmark all renumbered elements
     with revit.Transaction("Unmark {}".format(category_name)):
-        unmark_renamed_elements(get_open_views(), renumbered_element_ids)
+        unmark_renamed_elements(target_views, renumbered_element_ids)
 
 
 def pick_and_renumber(rnopts, starting_index):
@@ -296,14 +296,14 @@ def pick_and_renumber(rnopts, starting_index):
                     # record the renumbered element
                     if picked_element.Id not in renumbered_element_ids:
                         renumbered_element_ids[picked_element.Id] = {}
-                    for v in get_open_views():
+                    for v in open_views:
                         renumbered_element_ids[picked_element.Id][v.Id] = v.GetElementOverrides(picked_element.Id)
                     # actual renumber task
                     renumber_element(picked_element,
                                      index, existing_elements_data)
                 index = increment(index)
             # unmark all renumbered elements
-            _unmark_collected(rnopts.name, renumbered_element_ids)
+            _unmark_collected(rnopts.name, open_views, renumbered_element_ids)
 
 
 def door_by_room_renumber(rnopts):
@@ -324,7 +324,7 @@ def door_by_room_renumber(rnopts):
                                                    message="Select a door")
                 if not picked_door:
                     # user cancelled
-                    return _unmark_collected("Doors", renumbered_door_ids)
+                    return _unmark_collected("Doors", open_views, renumbered_door_ids)
                 # grab the associated rooms
                 from_room, to_room = revit.query.get_door_rooms(picked_door)
 
@@ -336,7 +336,7 @@ def door_by_room_renumber(rnopts):
                                                        message="Select a room")
                     if not picked_room:
                         # user cancelled
-                        return _unmark_collected("Rooms", renumbered_door_ids)
+                        return _unmark_collected("Rooms", open_views, renumbered_door_ids)
                 else:
                     picked_room = from_room or to_room
 
@@ -346,12 +346,19 @@ def door_by_room_renumber(rnopts):
                 with revit.Transaction("Renumber Door"):
                     door_count = len(room_doors)
                     if door_count == 1:
+                        if picked_door.Id not in renumbered_door_ids:
+                            renumbered_door_ids[picked_door.Id] = {}
+                        for v in open_views:
+                            renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
                         # match door number to room number
                         renumber_element(picked_door,
                                          room_number,
                                          existing_doors_data)
-                        renumbered_door_ids.append(picked_door.Id)
                     elif door_count > 1:
+                        if picked_door.Id not in renumbered_door_ids:
+                            renumbered_door_ids[picked_door.Id] = {}
+                        for v in open_views:
+                            renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
                         # match door number to extended room number e.g. 100A
                         # check numbers of existing room doors and pick the next
                         room_door_numbers = [get_number(x) for x in room_doors]
@@ -363,7 +370,6 @@ def door_by_room_renumber(rnopts):
                         renumber_element(picked_door,
                                          new_number,
                                          existing_doors_data)
-                        renumbered_door_ids.append(picked_door.Id)
 
 
 # [X] enable room reference lines on view
@@ -418,7 +424,8 @@ if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.Vie
             if selected_option.bicat == BIC.OST_Doors \
                     and selected_option.by_bicat == BIC.OST_Rooms:
                 with forms.WarningBar(
-                    title='Pick Pairs of Door and Room. ESCAPE to end.'):
+                    title="Pick Pairs of Door and Room. ESCAPE to end."
+                ):
                     door_by_room_renumber(selected_option)
 
         else:
