@@ -272,7 +272,7 @@ def _unmark_collected(category_name, target_views, renumbered_element_ids):
         unmark_renamed_elements(target_views, renumbered_element_ids)
 
 
-def pick_and_renumber(rnopts, starting_index):
+def pick_and_renumber(rnopts, starting_index, pb):
     """Main renumbering routine for elements of given category."""
     # all actions under one transaction
     if rnopts.bicat != BIC.OST_Viewports:
@@ -293,6 +293,7 @@ def pick_and_renumber(rnopts, starting_index):
                     message="Select {} in order".format(rnopts.name.lower())):
                 # need nested transactions to push revit to update view
                 # on each renumber task
+                pb.update_progress(int(index), int(starting_index))
                 with revit.Transaction("Renumber {}".format(rnopts.name)):
                     # record the renumbered element
                     if picked_element.Id not in renumbered_element_ids:
@@ -432,7 +433,10 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
         else:
             starting_number = ask_for_starting_number(selected_option.name)
             if starting_number:
-                with forms.WarningBar(
-                    title='Pick {} One by One. ESCAPE to end.'.format(
-                        selected_option.name)):
-                    pick_and_renumber(selected_option, starting_number)
+                with forms.ProgressBar(
+                    title="Pick {} One by One. ESCAPE to end. Current(Last set): {{value}}. Start: {{max_value}}".format(
+                        selected_option.name
+                    )
+                ) as pb:
+                    pb.update_progress(int(starting_number), int(starting_number))
+                    pick_and_renumber(selected_option, starting_number, pb)
