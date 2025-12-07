@@ -17,6 +17,13 @@ output = script.get_output()
 # shortcut for DB.BuiltInCategory
 BIC = DB.BuiltInCategory
 
+ALLOWED_VIEW_CLASSES = (
+    DB.View3D,
+    DB.ViewPlan,
+    DB.ViewSection,
+    DB.ViewSheet,
+)
+
 
 class RNOpts(object):
     """Renumber tool option"""
@@ -48,13 +55,7 @@ def get_open_views():
     for ui_View in ui_views:
         viewId = ui_View.ViewId
         view = doc.GetElement(viewId)
-        if view.ViewType in (
-            DB.ViewType.FloorPlan,
-            DB.ViewType.CeilingPlan,
-            DB.ViewType.DrawingSheet,
-            DB.ViewType.AreaPlan,
-            DB.ViewType.ThreeD,
-        ):
+        if isinstance(view, ALLOWED_VIEW_CLASSES):
             views.append(view)
     return views
 
@@ -386,7 +387,7 @@ def door_by_room_renumber(rnopts):
 # [X] renumber doors by room
 
 
-if isinstance(revit.active_view, (DB.View3D, DB.ViewPlan, DB.ViewSection, DB.ViewSheet)):
+if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
     # prepare options
     if not isinstance(revit.active_view, DB.ViewSheet):
         renumber_options = [
