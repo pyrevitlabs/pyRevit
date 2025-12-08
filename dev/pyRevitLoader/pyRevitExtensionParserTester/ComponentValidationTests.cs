@@ -365,17 +365,16 @@ namespace pyRevitExtensionParserTest
         {
             TestContext.Out.WriteLine("=== Validating Icon Collection Methods ===");
             
-            // Create a test collection with various icon types
+            // Create a test collection with supported icon types
+            // Only Standard and DarkStandard are supported
             var iconCollection = new ComponentIconCollection();
             
             // Note: These are test paths, not actual files
             var testIcons = new[]
             {
                 new ComponentIcon("test/icon.png") { Type = IconType.Standard },
-                new ComponentIcon("test/icon_large.png") { Type = IconType.Large },
-                new ComponentIcon("test/icon_16.png") { Type = IconType.Size16, SizeSpecification = 16 },
-                new ComponentIcon("test/icon_32.png") { Type = IconType.Size32, SizeSpecification = 32 },
-                new ComponentIcon("test/button_icon.ico") { Type = IconType.Button }
+                new ComponentIcon("test/icon.dark.png") { Type = IconType.DarkStandard },
+                new ComponentIcon("test/button_icon.ico") { Type = IconType.Standard }
             };
             
             // Manually set types for testing (since files don't exist)
@@ -392,15 +391,15 @@ namespace pyRevitExtensionParserTest
             Assert.IsNotNull(primaryIcon, "Should have a primary icon");
             Assert.AreEqual(IconType.Standard, primaryIcon.Type, "Primary icon should be Standard type");
             
-            // Test GetByType
-            var largeIcon = iconCollection.GetByType(IconType.Large);
-            Assert.IsNotNull(largeIcon, "Should find Large type icon");
-            Assert.AreEqual("icon_large.png", largeIcon.FileName);
+            // Test PrimaryDarkIcon
+            var darkIcon = iconCollection.PrimaryDarkIcon;
+            Assert.IsNotNull(darkIcon, "Should find dark icon");
+            Assert.AreEqual(IconType.DarkStandard, darkIcon.Type, "Dark icon should be DarkStandard type");
             
-            // Test GetBySize
-            var size16Icon = iconCollection.GetBySize(16);
-            Assert.IsNotNull(size16Icon, "Should find 16px icon");
-            Assert.AreEqual(16, size16Icon.SizeSpecification);
+            // Test GetByType
+            var standardIcon = iconCollection.GetByType(IconType.Standard);
+            Assert.IsNotNull(standardIcon, "Should find Standard type icon");
+            Assert.AreEqual("icon.png", standardIcon.FileName);
             
             // Test GetByExtension
             var pngIcons = iconCollection.GetByExtension(".png").ToList();

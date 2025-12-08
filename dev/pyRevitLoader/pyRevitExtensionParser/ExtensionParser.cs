@@ -828,38 +828,6 @@ namespace pyRevitExtensionParser
                     return 1;
                 case IconType.DarkStandard:
                     return 2;
-                case IconType.Size32:
-                    return 3;
-                case IconType.DarkSize32:
-                    return 4;
-                case IconType.Size16:
-                    return 5;
-                case IconType.DarkSize16:
-                    return 6;
-                case IconType.Size64:
-                    return 7;
-                case IconType.DarkSize64:
-                    return 8;
-                case IconType.Large:
-                    return 9;
-                case IconType.DarkLarge:
-                    return 10;
-                case IconType.Small:
-                    return 11;
-                case IconType.DarkSmall:
-                    return 12;
-                case IconType.Button:
-                    return 13;
-                case IconType.DarkButton:
-                    return 14;
-                case IconType.Command:
-                    return 15;
-                case IconType.DarkCommand:
-                    return 16;
-                case IconType.Other:
-                    return 17;
-                case IconType.DarkOther:
-                    return 18;
                 default:
                     return 19;
             }

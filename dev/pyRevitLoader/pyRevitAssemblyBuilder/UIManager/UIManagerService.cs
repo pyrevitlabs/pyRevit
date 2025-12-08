@@ -888,119 +888,30 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Gets the best icon for a specific size with theme preference - IMPROVED LOGIC
+        /// Gets the best icon for a specific size with theme preference.
+        /// Only icon.png (Standard) and icon.dark.png (DarkStandard) are supported.
         /// </summary>
         private ComponentIcon GetBestIconForSizeWithTheme(ParsedComponent component, int preferredSize, bool isDarkTheme)
         {
             if (!component.HasValidIcons)
                 return null;
 
-            // Step 1: Try to find exact size match with theme preference
-            var exactSizeThemeIcon = component.Icons.GetBySize(preferredSize, isDarkTheme);
-            if (exactSizeThemeIcon?.IsValid == true)
-            {
-                
-                return exactSizeThemeIcon;
-            }
-
-            // Step 2: Try to find icon type based on size with theme preference
-            ComponentIcon typeBasedIcon = null;
-            if (preferredSize <= 16)
-            {
-                typeBasedIcon = GetIconByTypeWithTheme(component, IconType.Size16, IconType.DarkSize16, isDarkTheme) ?? 
-                               GetIconByTypeWithTheme(component, IconType.Small, IconType.DarkSmall, isDarkTheme);
-            }
-            else if (preferredSize <= 32)
-            {
-                typeBasedIcon = GetIconByTypeWithTheme(component, IconType.Size32, IconType.DarkSize32, isDarkTheme) ?? 
-                               GetIconByTypeWithTheme(component, IconType.Standard, IconType.DarkStandard, isDarkTheme);
-            }
-            else
-            {
-                typeBasedIcon = GetIconByTypeWithTheme(component, IconType.Size64, IconType.DarkSize64, isDarkTheme) ?? 
-                               GetIconByTypeWithTheme(component, IconType.Large, IconType.DarkLarge, isDarkTheme);
-            }
-            
-            if (typeBasedIcon?.IsValid == true)
-            {
-                
-                return typeBasedIcon;
-            }
-
-            // Step 3: Fallback to primary icon with theme preference
-            var primaryIcon = GetPrimaryIconWithTheme(component, isDarkTheme);
-            if (primaryIcon?.IsValid == true)
-            {
-                
-                return primaryIcon;
-            }
-
-            // Step 4: Final fallback - use any valid icon
-            var fallbackIcon = component.Icons.FirstOrDefault(i => i.IsValid);
-            if (fallbackIcon != null)
-            {
-                
-            }
-            return fallbackIcon;
-        }
-
-        /// <summary>
-        /// Gets an icon by type with theme preference - IMPROVED
-        /// </summary>
-        private ComponentIcon GetIconByTypeWithTheme(ParsedComponent component, IconType lightType, IconType darkType, bool isDarkTheme)
-        {
+            // Return the appropriate icon based on theme preference
             if (isDarkTheme)
             {
-                // In dark theme, prefer dark icons
-                var darkIcon = component.Icons.GetByType(darkType);
+                // In dark theme, prefer dark icon, fall back to light
+                var darkIcon = component.Icons.PrimaryDarkIcon;
                 if (darkIcon?.IsValid == true)
-                {
-                                        return darkIcon;
-                }
-                
-                // If no dark icon of this type, log it but continue to light fallback
-                            }
-            
-            // Use light icon (either because we're in light theme, or as fallback in dark theme)
-            var lightIcon = component.Icons.GetByType(lightType);
+                    return darkIcon;
+            }
+
+            // Use light icon (either because we're in light theme, or as fallback)
+            var lightIcon = component.Icons.PrimaryIcon;
             if (lightIcon?.IsValid == true)
-            {
-                
                 return lightIcon;
-            }
-            
-            return null;
-        }
 
-        /// <summary>
-        /// Gets the primary icon for a component with theme preference - IMPROVED
-        /// </summary>
-        private ComponentIcon GetPrimaryIconWithTheme(ParsedComponent component, bool isDarkTheme)
-        {
-            if (!component.HasValidIcons)
-                return null;
-
-            if (isDarkTheme)
-            {
-                // In dark theme, prefer primary dark icon
-                var primaryDarkIcon = component.Icons.PrimaryDarkIcon;
-                if (primaryDarkIcon?.IsValid == true)
-                {
-                                        return primaryDarkIcon;
-                }
-                
-                
-            }
-            
-            // Use primary light icon (either because we're in light theme, or as fallback)
-            var primaryIcon = component.Icons.PrimaryIcon;
-            if (primaryIcon?.IsValid == true)
-            {
-                
-                return primaryIcon;
-            }
-
-            return null;
+            // Final fallback - use any valid icon
+            return component.Icons.FirstOrDefault(i => i.IsValid);
         }
 
         /// <summary>
@@ -1091,82 +1002,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 return source; // Return original if adjustment fails
             }
         }
-
-        /// <summary>
-        /// Gets the optimal icon sizes for Revit UI based on current DPI settings
-        /// </summary>
-        private (int smallSize, int largeSize) GetOptimalIconSizes()
-        {
-            try
-            {
-                // Get system DPI scaling factor
-                var dpiScale = System.Windows.Media.VisualTreeHelper.GetDpi(System.Windows.Application.Current.MainWindow);
-                var scaleFactor = dpiScale.DpiScaleX;
-                
-                // Base sizes for 96 DPI
-                int baseSmallSize = 16;
-                int baseLargeSize = 32;
-                
-                // Scale according to system DPI, but keep within reasonable bounds
-                int smallSize = Math.Min(32, Math.Max(16, (int)(baseSmallSize * scaleFactor)));
-                int largeSize = Math.Min(64, Math.Max(24, (int)(baseLargeSize * scaleFactor)));
-                
-                return (smallSize, largeSize);
-            }
-            catch
-            {
-                // Fallback to standard sizes if DPI detection fails
-                return (16, 32);
-            }
-        }
-
-        /// <summary>
-        /// Enhanced icon application that considers system DPI and UI theme
-        /// </summary>
-        private void ApplyIconToPushButtonWithDpiAwareness(PushButton button, ParsedComponent component)
-        {
-            if (!component.HasValidIcons)
-                return;
-
-            try
-            {
-                var (smallSize, largeSize) = GetOptimalIconSizes();
-                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
-                
-                
-                
-                // Get the best icons for the calculated sizes with theme awareness
-                var largeIcon = GetBestIconForSizeWithTheme(component, largeSize, isDarkTheme);
-                var smallIcon = GetBestIconForSizeWithTheme(component, smallSize, isDarkTheme);
-
-                if (largeIcon != null)
-                {
-                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, largeSize);
-                    if (largeBitmap != null)
-                    {
-                        button.LargeImage = largeBitmap;
-                        
-                    }
-                }
-
-                if (smallIcon != null)
-                {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, smallSize);
-                    if (smallBitmap != null)
-                    {
-                        button.Image = smallBitmap;
-                        
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Debug(ex, "Failed to apply icon with DPI awareness to push button '{0}', falling back to standard method.", component.DisplayName);
-                // Fallback to standard method
-                ApplyIconToPushButtonThemeAware(button, component);
-            }
-        }
-
         #endregion
 
         #region Highlight Management
@@ -1404,7 +1239,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 
                 // Check in split buttons
-                if (item is Autodesk.Windows.RibbonSplitButton splitButton && splitButton.Items != null)
+                if (item is RibbonSplitButton splitButton && splitButton.Items != null)
                 {
                     var found = FindButtonInItems(splitButton.Items, automationName);
                     if (found != null)
